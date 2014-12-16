@@ -1,0 +1,310 @@
+# Makefile for evohmm
+# 
+SHELL       = /bin/sh
+
+# Installation targets
+#
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+LIBDIR      = @libdir@
+INCLUDEDIR  = @includedir@
+BINDIR      = @bindir@
+MANDIR      = @mandir@
+PDFDIR      = @pdfdir@
+
+#MYLIBDIR = -Lsrc -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel -Llib/lib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
+#MYINCDIR = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
+MYLIBDIR = -Lsrc -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel 
+MYINCDIR = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel
+
+LIBS     = -lm
+#MYLIBS   = -lhmmer -leasel -llbfgs
+#LFLAGS   = -Lsrc -Llib/hmmer4/src -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel -Llib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
+#IFLAGS   = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
+
+MYLIBS   = -lhmmer -leasel 
+LFLAGS   = -Lsrc -Llib/hmmer4/src -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel 
+IFLAGS   = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel 
+
+# Compiler configuration
+#
+CC        = @CC@
+CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ @PIC_FLAGS@
+LDFLAGS   = -static @LDFLAGS@
+SIMDFLAGS = @SIMD_CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+
+# Other tools
+#
+AR        = @AR@ 
+RANLIB    = @RANLIB@
+INSTALL   = @INSTALL@
+
+#######
+## You should not need to modify below this line.
+#######
+
+PACKAGE     = @PACKAGE_NAME@
+BASENAME    = @PACKAGE_TARNAME@
+RELEASE     = @EVOHMM_VERSION@
+RELEASEDATE = "@EVOHMM_DATE@"
+COPYRIGHT   = "@EVOHMM_COPYRIGHT@"
+LICENSELINE = "@EVOHMM_LICENSE@"
+COMPRESS    = gzip
+
+# Code manifests
+#
+PROGS    = src/scorematrix2rate\
+	   src/programs/ehmmalign\
+	   src/programs/ehmmemit\
+	   src/programs/ehmmsearch\
+	   src/programs/ehmmscan\
+	   src/programs/ephmmer\
+	   src/programs/ejackhmmer\
+	   src/gappenalties\
+	   src/e1sim\
+	   src/tkfsim\
+	   src/e2msa\
+	   src/e2sim\
+	   src/e2train\
+	   src/pfamsets\
+	   src/pfamtrio\
+	   src/ptransmark\
+	   src/triomsa\
+	   src/shorthomset\
+	   src/pevomark\
+	   src/e2Dickerson\
+	   src/e2DickersonSynthetic\
+	   src/ehmmDickerson\
+
+HEADERS  = src/e2_config.h\
+	   src/ehmmDickerson.h\
+	   src/e2Dickerson.h\
+	   src/e2.h\
+	   src/e1_model.h\
+	   src/e1_rate.h\
+	   src/e1_emit.h\
+	   src/e1_goodness.h\
+	   src/e1_simulate.h\
+	   src/e2_evolve.h\
+           src/e2_generic_decoding.h\
+           src/e2_generic_fwdback.h\
+           src/e2_generic_optacc.h\
+           src/e2_generic_viterbi.h\
+           src/e2_generic_vtrace.h\
+           src/e2_gmx.h\
+	   src/e2_msa.h\
+	   src/e2_pipeline.h\
+           src/e2_profile.h\
+           src/e2_profile.h\
+           src/e2hmmer_profilesq.h\
+           src/e2_trace.h\
+           src/e2_train.h\
+	   src/e2_tree.h\
+           src/e2f_generic_decoding.h\
+           src/e2f_generic_fwdback.h\
+           src/e2f_generic_optacc.h\
+           src/e2fhmmer_generic_decoding.h\
+           src/e2fhmmer_generic_fwdback.h\
+           src/e2fhmmer_generic_optacc.h\
+           src/e2tracealign.h\
+           src/branchinference.h\
+           src/evohmmer.h\
+           src/evotracealign.h\
+           src/fastsp.h\
+           src/fetchpfamdb.h\
+           src/homology.h\
+           src/minimize.h\
+           src/miscellaneous.h\
+           src/msatree.h\
+           src/mya.h\
+           src/msaprobs.h\
+           src/msamanip.h\
+           src/muscle.h\
+	   src/modelconfig.h\
+           src/ncbiblast.h\
+           src/orthologs.h\
+           src/phmmer.h\
+           src/plot.h\
+           src/p7_evopipeline.h\
+           src/etophits_output_tabular.h\
+           src/ratebuilder.h\
+           src/ratematrix.h\
+           src/Dickersonrates.h\
+           src/fasta.h\
+           src/ssifile.h\
+	   src/tkf_rate.h\
+	   src/tkf_model.h\
+	   src/tkf_simulate.h\
+
+
+OBJS     = src/e1_bg.o\
+	   src/e1_model.o\
+	   src/e1_rate.o\
+	   src/e1_emit.o\
+	   src/e1_goodness.o\
+	   src/e1_simulate.o\
+	   src/e2_evolve.o\
+           src/e2_generic_decoding.o\
+           src/e2_generic_fwdback.o\
+           src/e2_generic_optacc.o\
+           src/e2_generic_viterbi.o\
+           src/e2_generic_vtrace.o\
+           src/e2_gmx.o\
+           src/e2_msa.o\
+	   src/e2_pipeline.o\
+           src/e2_profile.o\
+           src/e2hmmer_profile.o\
+           src/e2_profilesq.o\
+           src/e2_trace.o\
+           src/e2_train.o\
+	   src/e2_tree.o\
+           src/e2f_generic_decoding.o\
+           src/e2f_generic_fwdback.o\
+           src/e2f_generic_optacc.o\
+           src/e2fhmmer_generic_decoding.o\
+           src/e2fhmmer_generic_fwdback.o\
+           src/e2fhmmer_generic_optacc.o\
+           src/e2tracealign.o\
+           src/branchinference.o\
+           src/evohmmer.o\
+	   src/evotracealign.o\
+           src/fastsp.o\
+           src/fetchpfamdb.o\
+           src/homology.o\
+           src/logsum.o\
+           src/minimize.o\
+           src/miscellaneous.o\
+           src/msatree.o\
+           src/mya.o\
+           src/msaprobs.o\
+           src/msamanip.o\
+           src/muscle.o\
+	   src/modelconfig.o\
+           src/ncbiblast.o\
+           src/orthologs.o\
+           src/phmmer.o\
+           src/plot.o\
+           src/p7_evopipeline.o\
+           src/etophits_output_tabular.o\
+           src/ratematrix.o\
+           src/ratebuilder.o\
+           src/Dickersonrates.o\
+           src/fasta.o\
+           src/ssifile.o\
+	   src/tkf_model.o\
+	   src/tkf_rate.o\
+	   src/tkf_simulate.o\
+ 
+all: libsrc.a ${PROGS} 
+
+${PROGS}: %: %.o ${OBJS}
+	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} ${MYLIBS} 
+
+
+.c.o:   
+	${CC} ${MYINCDIR} ${IFLAGS} ${LFLAGS} ${CFLAGS} -o $@ -c $<
+
+libsrc.a:  ${OBJS}
+	${AR} -r src/libsrc.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} src/libsrc.a
+
+
+# install:   installs libeasel.a in LIBDIR/
+#            installs Easel headers in INCLUDEDIR/
+#            installs miniapp binaries in BINDIR/
+#
+# All install paths are prefaced with DESTDIR/ to facilitate
+# building RPMS in Linux distros. Usually DESTDIR is empty.
+#
+install:
+	mkdir -p ${DESTDIR}${LIBDIR}
+	mkdir -p ${DESTDIR}${INCLUDEDIR}
+	mkdir -p ${DESTDIR}${BINDIR}
+	cp libeasel.a ${DESTDIR}${LIBDIR}/
+	for file in ${HEADERS}; do\
+	   cp $$file ${DESTDIR}${INCLUDEDIR}/;\
+	done
+	(cd miniapps; make install)
+
+# `make check`: run user testsuite
+check:
+	(cd testsuite; make check)
+
+
+clean:
+	-rm -f ${PROGS} ${OBJS} src/libsrc.a  *.tab.c *.output src/*.o src/programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+	-rm -f example test testdrive stats
+	if test -d documentation; then  (cd documentation; make clean); fi
+	if test -d testsuite;     then  (cd testsuite;     make clean); fi
+	if test -d miniapps;      then  (cd miniapps;      make clean); fi
+
+distclean:
+	make clean
+	-rm esl_config.h
+	-rm -rf autom4te.cache
+	if test -d documentation; then (cd documentation; make distclean); fi
+	if test -d testsuite;     then (cd testsuite;     make distclean); fi
+	if test -d miniapps;      then (cd miniapps;      make distclean); fi
+	-rm LICENSE.csh
+	-rm Makefile
+
+#######
+## Targets below this line are meant for developers, not users.
+## Some may only work in context of a developer's Subversion working directory.
+#######
+
+# 'make REPOSITORY=... dist' : create a new distribution tarball
+#
+dist:
+	# Make sure we pointed the make dist to a subversion repository
+	@if test x${REPOSITORY} = 'x'; then\
+	  echo "REPOSITORY isn't set; use make REPOSITORY=... dist";\
+	  exit 1;\
+	fi
+	# Delete any old versions of the same release
+	@if test -d ../${BASENAME}-${RELEASE};        then rm -rf ../${BASENAME}-${RELEASE};        fi
+	@if test -e ../${BASENAME}-${RELEASE}.tar;    then rm -f  ../${BASENAME}-${RELEASE}.tar;    fi
+	@if test -e ../${BASENAME}-${RELEASE}.tar.Z;  then rm -f  ../${BASENAME}-${RELEASE}.tar.Z;  fi
+	@if test -e ../${BASENAME}-${RELEASE}.tar.gz; then rm -f  ../${BASENAME}-${RELEASE}.tar.gz; fi
+	# Export the release from Subversion control
+	svn export ${REPOSITORY} ../${BASENAME}-${RELEASE}
+	# Make the configure script from configure.ac
+	(cd ../${BASENAME}-${RELEASE};  autoconf)
+	# We'll need some basic Makefiles
+	(cd ../${BASENAME}-${RELEASE}/; ./configure)
+	# Set file permissions.
+	find ../${BASENAME}-${RELEASE} -type f -exec chmod +r {} \;
+	chmod +x ../${BASENAME}-${RELEASE}/devkit/sqc
+	chmod +x ../${BASENAME}-${RELEASE}/devkit/autodoc
+	# Compile the PDF documentation and move it to top level dir
+	(cd ../${BASENAME}-${RELEASE}/documentation/; make pdf)
+	mv ../${BASENAME}-${RELEASE}/documentation/current.pdf  ../${BASENAME}-${RELEASE}/Userguide.pdf
+	# Attach license stamps by replacing LICENSE keyword everywhere
+	find ../${BASENAME}-${RELEASE} -type f -exec devkit/sedition-pp LICENSE LICENSE.tag {} \;
+	# Other keyword replacements
+	devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} ../${BASENAME}-${RELEASE}/00README
+	devkit/sedition RELEASE ${RELEASE}                                                   ../${BASENAME}-${RELEASE}/INSTALL
+	# Cleanup
+	(cd ../${BASENAME}-${RELEASE}/; make implode)
+	(cd ../${BASENAME}-${RELEASE}/; make distclean)
+	# Packaging
+	(cd ..;	tar cvf ${BASENAME}-${RELEASE}.tar ${BASENAME}-${RELEASE})
+	(cd ..; ${COMPRESS} ${BASENAME}-${RELEASE}.tar)
+
+# `make dcheck`: run developer testsuite, save output in testsuite/dcheck.report
+dcheck:
+	(cd testsuite; make dcheck)
+
+
+# magic SVN for setting keyword ID replacement on a new module foo:
+# svn propset svn:keywords "Id" foo.[ch]
+
+################################################################
+# @LICENSE@
+################################################################
