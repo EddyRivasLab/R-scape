@@ -19,7 +19,8 @@
 #include "esl_msafile.h"
 #include "esl_getopts.h"
 #include "esl_vectorops.h"
-#include "esl_msaweights.h"
+
+#include "ribosum_matrix.h"
 
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
  * 
@@ -232,8 +233,7 @@ main(int argc, char **argv)
     puts("");
     fflush(stdout);
     
-    esl_msaweight_BLOSUM(msa, cfg.thresh1);
-    RibosumWeights(msa, cfg.thresh1, cfg.thresh2);
+    Ribosum_Matrix(msa, cfg.thresh1, cfg.thresh2, cfg.errbuf);
 
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
