@@ -48,8 +48,12 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc)
 
   ESL_ALLOC(ribosum->bg, sizeof(double)*udim);
 
+  /* set joints to zero, ready to add counts */
+  esl_dmatrix_Set(ribosum->prnaP, 0.0);
+  esl_dmatrix_Set(ribosum->urnaP, 0.0);
+  esl_vec_DSet(ribosum->bg, udim, 0.0):
+  
   return ribosum;
-
 }
 
 void           
@@ -64,6 +68,7 @@ Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
     if (ribosum->urnaQ) esl_dmatrix_Destroy(ribosum->urnaQ);
     if (ribosum->bg)    free(ribosum->bg);
     if (ribosum->name)  free(ribosum->name);
+    free(ribosum);
   }
 }
 
