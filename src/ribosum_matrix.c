@@ -13,6 +13,9 @@
 #include "ribosum_matrix.h"
 
 static int ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *thresh2);
+static int prna_add_counts(char *seq1, char *seq2, ELS_DMATRIX *prnaP);
+static int urna_add_counts(char *seq1, char *seq2, ELS_DMATRIX *urnaP);
+static int bg_add_counts  (char *seq1, char *seq2, double *bg, int dim);
 
 int
 Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, char *errbuf)
@@ -53,7 +56,12 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc)
   esl_dmatrix_Set(ribosum->urnaP, 0.0);
   esl_vec_DSet(ribosum->bg, udim, 0.0):
   
-  return ribosum;
+  esl_dmatrix_Set(ribosum->prnaC, -1.0);
+  esl_dmatrix_Set(ribosum->urnaQ, -1.0);
+  esl_dmatrix_Set(ribosum->prnaC, -1.0);
+  esl_dmatrix_Set(ribosum->urnaQ, -1.0);
+
+   return ribosum;
 }
 
 void           
@@ -74,9 +82,45 @@ Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
 
 
 static int                  
-ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *thresh2)
+ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *threshid)
 {
+  double wgt;
+  double pid;
+  int    i, j;
 
+  for (i = 0; i < msa->nseq; i++) {
+    for (j = 0; j < i; j++) {
+      
+      esl_dst_CPairId(msa->aseq[i], msa->aseq[j], &pid, NULL, NULL);
+      if (pid < thresid) continue; // not above cutoff
+
+      wgt = msa->wgt[i] * msa->wgt[j]; 
+      
+      prna_add_counts(msa->aseq[i], msa->aseq[j], ribosum->prnaC);
+      urna_add_counts(msa->aseq[i], msa->aseq[j], ribosum->urnaC);
+      bg_add_counts  (msa->aseq[i], msa->aseq[j], ribosum->bg);
+
+    }
+  }
+
+  return eslOK;
+}
+
+
+static int
+prna_add_counts(char *seq1, char *seq2, ELS_DMATRIX *prnaP)
+{
+  return eslOK;
+}
+
+static int
+urna_add_counts(char *seq1, char *seq2, ELS_DMATRIX *urnaP)
+{
+  return eslOK;
+}
+static int
+bg_add_counts(char *seq1, char *seq2, double *bg, int dim)
+{
   return eslOK;
 }
 
