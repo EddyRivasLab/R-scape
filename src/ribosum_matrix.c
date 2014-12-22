@@ -12,6 +12,7 @@
 
 #include "ribosum_matrix.h"
 
+static int ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *thresh2);
 
 int
 Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, char *errbuf)
@@ -23,16 +24,8 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed msaweight_BLOSUM");
   
   /* add the counts */
-  status = Ribosum_matrix_AddCounts(msa, ribosum, thresh2);
-
-  return eslOK;
-}
-
-
-int 
-Ribosum_matrix_AddCounts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *thresh)
-{
-  int status;
+  status = ribosum_matrix_add_counts(msa, ribosum, thresh2);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed ribosum_matrix_add_counts()");
 
   return eslOK;
 }
@@ -49,5 +42,22 @@ void
 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
 {
   if (ribosum) {
+    if (ribosum->prnaP) esl_dmatrix_Destroy(ribosum->prnaP);
+    if (ribosum->prnaC) esl_dmatrix_Destroy(ribosum->prnaC);
+    if (ribosum->prnaQ) esl_dmatrix_Destroy(ribosum->prnaQ);
+    if (ribosum->urnaP) esl_dmatrix_Destroy(ribosum->urnaP);
+    if (ribosum->urnaC) esl_dmatrix_Destroy(ribosum->urnaC);
+    if (ribosum->urnaQ) esl_dmatrix_Destroy(ribosum->urnaQ);
+    if (ribosum->bg)    free(ribosum->bg);
+    if (ribosum->name)  free(ribosum->name);
   }
 }
+
+
+static int                  
+ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float *thresh2)
+{
+
+  return eslOK;
+}
+

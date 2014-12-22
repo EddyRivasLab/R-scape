@@ -178,20 +178,24 @@ output_header(FILE *ofp, ESL_GETOPTS *go)
 int
 main(int argc, char **argv)
 {
-  char           *msg = "e2msa failed";
-  ESL_GETOPTS    *go;
-  struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
-  ESL_MSA        *msa = NULL;             /* the input alignment  */
-  int             nfrags = 0;	  	  /* # of fragments removed */
-  int             nremoved = 0;	          /* # of identical sequences removed */
-  int             idx;
-  int             status = eslOK;
-  int             hstatus = eslOK;
+  char                *msg = "ribosum failed";
+  ESL_GETOPTS         *go;
+  struct cfg_s         cfg;
+  ESLX_MSAFILE        *afp = NULL;
+  ESL_MSA             *msa = NULL;                /* the input alignment  */
+  struct ribomatrix_s *ribosum = NULL;
+  int                  nfrags = 0;	  	  /* # of fragments removed */
+  int                  nremoved = 0;	          /* # of identical sequences removed */
+  int                  idx;
+  int                  status = eslOK;
+  int                  hstatus = eslOK;
   
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
   
+  ribosum = Ribosum_matrix_Create();
+  if (ribosum == NULL) 
+
   /* Open the MSA file */
   status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
   if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
@@ -233,7 +237,7 @@ main(int argc, char **argv)
     puts("");
     fflush(stdout);
     
-    Ribosum_Matrix(msa, cfg.thresh1, cfg.thresh2, cfg.errbuf);
+    Ribosum_matrix_Calculate(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.errbuf);
 
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
@@ -247,6 +251,7 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
+  Ribosum_matrix_Destroy(ribosum);
   return status;
 }
 
