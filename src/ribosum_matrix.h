@@ -27,7 +27,7 @@ struct ribomatrix_s {
 }
   
 extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, char *errbuf);
-extern struct ribomatrix_s *Ribosum_matrix_Create();
+extern struct ribomatrix_s *Ribosum_matrix_Create(ESL_ALPHABET *abc);
 extern void                 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
 
 #endif

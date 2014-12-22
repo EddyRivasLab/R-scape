@@ -193,8 +193,8 @@ main(int argc, char **argv)
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
   
-  ribosum = Ribosum_matrix_Create();
-  if (ribosum == NULL) 
+  ribosum = Ribosum_matrix_Create(cfg.abc);
+  if (ribosum == NULL) ESL_XFAI(eslFAIL, "bad ribosum allocation", cfg.errbuf);
 
   /* Open the MSA file */
   status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);

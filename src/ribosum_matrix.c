@@ -31,11 +31,25 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
 }
 
 struct ribomatrix_s *
-Ribosum_matrix_Create()
+Ribosum_matrix_Create(ESL_ALPHABET *abc)
 {
   struct ribomatrix_s *ribosum = NULL;
+  int    udim = abc->K;
+  int    pdim = abc->K * abc->K;
+
+  ESL_ALLOC(ribosum, sizeof(struct ribomatrix_s));
+
+  ribosum->prnaP = esl_dmatrix_Create(pdim,pdim);
+  ribosum->prnaC = esl_dmatrix_Create(pdim,pdim);
+  ribosum->prnaQ = esl_dmatrix_Create(pdim,pdim);
+  ribosum->urnaP = esl_dmatrix_Create(pdim,pdim);
+  ribosum->urnaC = esl_dmatrix_Create(pdim,pdim);
+  ribosum->urnaQ = esl_dmatrix_Create(pdim,pdim);
+
+  ESL_ALLOC(ribosum->bg, sizeof(double)*udim);
 
   return ribosum;
+
 }
 
 void           
