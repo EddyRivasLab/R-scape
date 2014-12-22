@@ -77,6 +77,8 @@ PROGS    = src/scorematrix2rate\
 	   src/e2Dickerson\
 	   src/e2DickersonSynthetic\
 	   src/ehmmDickerson\
+	   src/rnacov\
+	   src/ribosum\
 
 HEADERS  = src/e2_config.h\
 	   src/ehmmDickerson.h\
@@ -137,6 +139,7 @@ HEADERS  = src/e2_config.h\
 	   src/tkf_rate.h\
 	   src/tkf_model.h\
 	   src/tkf_simulate.h\
+	   src/ribosum_matrix.h\
 
 
 OBJS     = src/e1_bg.o\
@@ -196,6 +199,7 @@ OBJS     = src/e1_bg.o\
 	   src/tkf_model.o\
 	   src/tkf_rate.o\
 	   src/tkf_simulate.o\
+	   src/ribosum_matrix.o\
  
 all: libsrc.a ${PROGS} 
 

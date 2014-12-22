@@ -1,4 +1,4 @@
-/* rnacov -- statistical test for RNA covatiation in an alignment
+/* rnacov -- statistical test for covariation in an RNA structural alignment
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,8 +39,8 @@ struct cfg_s {
   int              nmsa;
   char            *msafile;
   
-  float              tol;
-  int                verbose;
+  float            tol;
+  int              verbose;
 };
 
  static ESL_OPTIONS options[] = {
