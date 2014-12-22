@@ -15,15 +15,16 @@
 #include "esl_dmatrix.h"	/* ESL_DMATRIX           */
 
 struct ribomatrix_s {
-  ESL_DMATRIX *prnaP;      // paired joint       16x16 matrix 
-  ESL_DMATRIX *prnaC;      // paired conditional 16x16 matrix
-  ESL_DMATRIX *prnaQ;      // paired rate        16x16 matrix
-  ESL_DMATRIX *urnaP;      // unpaired joint        4x4 matrix
-  ESL_DMATRIX *urnaC;      // unpaired conditional  4x4 matrix
-  ESL_DMATRIX *urnaQ;      // unpaired rate         4x4 matrix
+  ESL_DMATRIX *prnaP;      // paired joint         16x16 matrix 
+  ESL_DMATRIX *prnaC;      // paired conditional   16x16 matrix
+  ESL_DMATRIX *prnaQ;      // paired rate          16x16 matrix
+  ESL_DMATRIX *urnaP;      // unpaired joint         4x4 matrix
+  ESL_DMATRIX *urnaC;      // unpaired conditional   4x4 matrix
+  ESL_DMATRIX *urnaQ;      // unpaired rate          4x4 matrix
   double      *bg;         // background frequencies
   
-  char        *name;
+  esl_alphabet *abc;
+  char         *name;
 }
   
 extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, char *errbuf);

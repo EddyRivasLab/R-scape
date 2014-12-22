@@ -41,6 +41,7 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc)
   int    pdim = abc->K * abc->K;
 
   ESL_ALLOC(ribosum, sizeof(struct ribomatrix_s));
+  ribosum->abc = abc;
 
   ribosum->prnaP = esl_dmatrix_Create(pdim,pdim);
   ribosum->prnaC = esl_dmatrix_Create(pdim,pdim);
