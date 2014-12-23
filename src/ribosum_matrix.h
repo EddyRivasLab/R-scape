@@ -1,4 +1,4 @@
-/* ribosum_matrix.c
+/* ribosum_matrix.h
  *
  *   
 */
