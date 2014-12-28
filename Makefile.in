@@ -77,8 +77,8 @@ PROGS    = src/scorematrix2rate\
 	   src/e2Dickerson\
 	   src/e2DickersonSynthetic\
 	   src/ehmmDickerson\
-	   src/rnacov\
 	   src/ribosum\
+	   src/rnacov\
 
 HEADERS  = src/e2_config.h\
 	   src/ehmmDickerson.h\

@@ -11,14 +11,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
+#include "esl_config.h"
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
+#include "esl_getopts.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
-#include "esl_getopts.h"
+#include "esl_stopwatch.h"
 #include "esl_vectorops.h"
+
+#include "msamanip.h"
+#include "msatree.h"
 
 #include "ribosum_matrix.h"
 
@@ -46,9 +52,17 @@ struct cfg_s {
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
   char            *msaheader;          /* header for all msa-specific output files */
+  int              infmt;
+  char            *name;
   
+  int              submsa;              /* set to the number of random seqs taken from original msa.
+					 * Set to 0 if we are taking all */
+  MSA_STAT         mstat;               /* statistics of the input alignment */
+  float           *msafrq;
+
   float            thresh1;            /* cluster threshold */
   float            thresh2;            /* percentage id threshold */
+  int              logodds;
 
   float            tol;
   int              verbose;
@@ -56,7 +70,9 @@ struct cfg_s {
 
 static ESL_OPTIONS options[] = {
   /* name           type              default   env  range   toggles        reqs   incomp               help                                       docgroup*/
-  { "-h",           eslARG_NONE,        FALSE, NULL, NULL,      NULL,        NULL,  NULL,               "show brief help on version and usage",                         0 },
+  { "-h",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "show brief help on version and usage",                         0 },
+  { "-v",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "be verbose",                                                                                0 },  
+  { "--logodds",    eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "output as logodds",                                                                                0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
@@ -65,10 +81,15 @@ static ESL_OPTIONS options[] = {
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",  
                          0},
   /* options for ribosum thresholds */
-  { "-1",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "clustering threshold",                                                                      0 },
-  { "-2",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "percentage id threshold",                                                                   0 },
+  { "-1",             eslARG_REAL,    "0.80",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "clustering threshold",                                                                      0 },
+  { "-2",             eslARG_REAL,    "0.65",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "percentage id threshold",                                                                   0 },
   /* Control of output */
-  { "-o",           eslARG_OUTFILE,      NULL, NULL, NULL,      NULL,        NULL,  NULL,                "direct output to file <f>, not stdout",                        0 },
+  { "-o",           eslARG_OUTFILE,      NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "direct output to file <f>, not stdout",                                                     0 },
+  /* msa format */
+  { "--informat",    eslARG_STRING,      NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             0 },
+  /* other options */
+  { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
+  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       5 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -92,20 +113,16 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      p7_banner(stdout, argv[0], banner);
+      esl_banner(stdout, argv[0], banner);
       esl_usage(stdout, argv[0], usage);
-      if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+      if (puts("\noptions:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
       exit(0);
     }
   
-  if (esl_opt_ArgNumber(go) != 1)    { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-  if ((*ret_msafile  = esl_opt_GetArg(go, 1)) == NULL) { if (puts("Failed to get <msafile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-  
   /* the msa with RNA secondary structure */
   cfg.msafile = NULL;
-  if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-  
+  if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
@@ -138,14 +155,18 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
   if (esl_opt_IsOn(go, "--submsa")) cfg.submsa = esl_opt_GetInteger(go, "--submsa");
   else                              cfg.submsa = 0;
+  if (esl_opt_IsOn(go, "--logodds")) cfg.logodds = esl_opt_GetBoolean(go, "--logodds");
+  else                               cfg.logodds = FALSE;
   
   /* options for mdifying the input msa */
   cfg.thresh1 = esl_opt_GetReal(go, "-1");
   cfg.thresh2 = esl_opt_GetReal(go, "-2");
 
   /* other options */
-  cfg.tol        = esl_opt_GetReal   (go, "--tol");
-  cfg.verbose    = esl_opt_GetBoolean(go, "-v");
+  cfg.tol     = esl_opt_GetReal   (go, "--tol");
+  cfg.verbose = esl_opt_GetBoolean(go, "-v");
+  
+  esl_sprintf(&cfg.name, "%s%d-%d", (cfg.logodds)? "RIBOSUM":"RIBOPROB", (int)(cfg.thresh1*100), (int)(cfg.thresh2*100));
   
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -167,7 +188,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 static int
 output_header(FILE *ofp, ESL_GETOPTS *go)
 {
-  p7_banner(ofp, go->argv[0], banner);
+  esl_banner(ofp, go->argv[0], banner);
   
   if (esl_opt_IsUsed(go, "-o")          && fprintf(ofp, "# output directed to file:         %s\n",             esl_opt_GetString(go, "-o"))          < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n")                                                  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
@@ -184,17 +205,19 @@ main(int argc, char **argv)
   ESLX_MSAFILE        *afp = NULL;
   ESL_MSA             *msa = NULL;                /* the input alignment  */
   struct ribomatrix_s *ribosum = NULL;
+  int                  seq_cons_len = 0;
   int                  nfrags = 0;	  	  /* # of fragments removed */
   int                  nremoved = 0;	          /* # of identical sequences removed */
   int                  idx;
+  int                  i;
   int                  status = eslOK;
   int                  hstatus = eslOK;
   
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
   
-  ribosum = Ribosum_matrix_Create(cfg.abc);
-  if (ribosum == NULL) ESL_XFAI(eslFAIL, "bad ribosum allocation", cfg.errbuf);
+  ribosum = Ribosum_matrix_Create(cfg.abc, cfg.name);
+  if (ribosum == NULL) esl_fatal("bad ribosum allocation");
 
   /* Open the MSA file */
   status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
@@ -220,24 +243,26 @@ main(int argc, char **argv)
     
     /* given msa aveid and avematch */
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);
-    msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
+    //msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
     
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
     
     /* Make all seqs upper case */
-    for (idx = 0; idx < msa->nseq; idx++) s2upper(msa->aseq[idx]);
+    for (idx = 0; idx < msa->nseq; idx++) 
+      for (i = 0; i < msa->alen; i ++)
+      msa->aseq[idx][i] = toupper(msa->aseq[idx][i]);
     
     /* Print some stuff about what we're about to do.
      */
     if (msa->name != NULL) printf("Alignment:           %s\n",  msa->name);
-    else                   printf("Alignment:           #%d\n", cfg.nmsa+1);
+    else                   printf("Alignment:           #%d\n", cfg.nmsa);
     printf                       ("Number of sequences: %d\n",  msa->nseq);
-    printf                       ("Number of columns:   %d\n",  msa->alen);
+    printf                       ("Number of columns:   %"PRId64"\n",  msa->alen);
     puts("");
     fflush(stdout);
     
-    Ribosum_matrix_Calculate(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.errbuf);
+    Ribosum_matrix_Calculate(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.outfp, cfg.verbose, cfg.errbuf);
 
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;

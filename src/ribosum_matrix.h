@@ -14,6 +14,8 @@
 #include "esl_alphabet.h"	/* ESL_DSQ, ESL_ALPHABET */
 #include "esl_dmatrix.h"	/* ESL_DMATRIX           */
 
+#define IDX(i,j,L)     ( (i) * (L) + (j) )
+
 struct ribomatrix_s {
   ESL_DMATRIX *prnaP;      // paired joint         16x16 matrix 
   ESL_DMATRIX *prnaC;      // paired conditional   16x16 matrix
@@ -21,14 +23,18 @@ struct ribomatrix_s {
   ESL_DMATRIX *urnaP;      // unpaired joint         4x4 matrix
   ESL_DMATRIX *urnaC;      // unpaired conditional   4x4 matrix
   ESL_DMATRIX *urnaQ;      // unpaired rate          4x4 matrix
+
+  double      *prna;       // [16] marginals for paired   positions 
+  double      *urna;       // [4]  marginals for unpaired positions 
   double      *bg;         // background frequencies
   
-  esl_alphabet *abc;
+  ESL_ALPHABET *abc;
   char         *name;
-}
+};
   
-extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, char *errbuf);
-extern struct ribomatrix_s *Ribosum_matrix_Create(ESL_ALPHABET *abc);
+extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, int verbose, char *errbuf);
+extern struct ribomatrix_s *Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name);
 extern void                 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
+extern int                  Ribosum_matrix_Write(FILE *fp, struct ribomatrix_s *ribosum);
 
 #endif
