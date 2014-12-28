@@ -23,6 +23,7 @@ int
 Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, int verbose, char *errbuf)
 {						
   float sum;
+  int   i, j;
   int   status;
   
   /* calculate the weight BLOSUM-style */
@@ -42,7 +43,29 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   if (sum > 0.) esl_vec_DScale(ribosum->bg, ribosum->abc->K, 1.0/sum);
 
   /* calculate conditionals and marginals */
-
+  for (i = 0; i < ribosum->prnaP->m; i ++) {
+    sum = 0.;
+    for (j = 0; j < ribosum->prnaP->n; j ++) {
+      ribosum->prnaC->mx[i][j] = ribosum->prnaP->mx[i][j];
+      sum += ribosum->prnaP->mx[i][j];
+    }
+    if (sum > 0) {
+      ribosum->prna[i] = sum;
+      for (j = 0; j < ribosum->prnaP->n; j ++) ribosum->prnaC->mx[i][j] *= 1.0/sum;
+    }
+  }
+  for (i = 0; i < ribosum->urnaP->m; i ++) {
+    sum = 0.;
+    for (j = 0; j < ribosum->urnaP->n; j ++) {
+      ribosum->urnaC->mx[i][j] = ribosum->urnaP->mx[i][j];
+      sum += ribosum->urnaP->mx[i][j];
+    }
+    if (sum > 0) {
+      ribosum->urna[i] = sum;
+      for (j = 0; j < ribosum->urnaP->n; j ++) ribosum->urnaC->mx[i][j] *= 1.0/sum;
+    }
+  }
+    
   /* calculate rates */
 
   if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
@@ -187,6 +210,7 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
   char c1, c2;
   char cc1, cc2;
   int  left, right;
+  int  pair1, pair2;
 
   for (pos = 0; pos < alen; pos++) {
     c1 = seq1[pos];
@@ -206,8 +230,12 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
 	    left  = IDX(esl_abc_DigitizeSymbol(abc, c1),  esl_abc_DigitizeSymbol(abc, c2),  abc->K);
 	    right = IDX(esl_abc_DigitizeSymbol(abc, cc1), esl_abc_DigitizeSymbol(abc, cc2), abc->K);
 
-	    prnaP->mx[left][right] += wgt;
-	    prnaP->mx[right][left] += wgt;
+	    pair1 = IDX(esl_abc_DigitizeSymbol(abc, c1), esl_abc_DigitizeSymbol(abc, cc1), abc->K);
+	    pair2 = IDX(esl_abc_DigitizeSymbol(abc, c2), esl_abc_DigitizeSymbol(abc, cc2), abc->K);
+
+	    //prnaP->mx[left][right] += wgt;
+	    prnaP->mx[pair1][pair2] += wgt;
+	    prnaP->mx[pair2][pair1] += wgt;
 	  }
       }
   }
