@@ -23,9 +23,11 @@ static int rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, in
 
 int
 Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, double tol, int verbose, char *errbuf)
-{						
-  float sum;
-  int   status;
+{	
+  ESL_DMATRIX *pC = NULL;
+  ESL_DMATRIX *uC = NULL;
+  float        sum;
+  int          status;
   
   /* calculate the weight BLOSUM-style */
   status = esl_msaweight_BLOSUM(msa, thresh1);
@@ -51,11 +53,23 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
 
+  pC = ratematrix_ConditionalsFromRate(1.0, ribosum->prnaQ, tol, errbuf, verbose);
+  uC = ratematrix_ConditionalsFromRate(1.0, ribosum->urnaQ, tol, errbuf, verbose);
+  ratematrix_specialDump(pC);
+  ratematrix_specialDump(uC);
+
+  ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prna);
+  ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urna);
   if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
   Ribosum_matrix_Write(fp, ribosum);
+
+  if (pC) esl_dmatrix_Destroy(pC);
+  if (uC) esl_dmatrix_Destroy(uC);
   return eslOK;
   
  ERROR:
+  if (pC) esl_dmatrix_Destroy(pC);
+  if (uC) esl_dmatrix_Destroy(uC);
   return status;
 }
 
@@ -64,6 +78,7 @@ Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, i
 {
   double sum;
   int    i, j;
+  int    status;
   
   for (i = 0; i < ribosum->prnaP->m; i ++) {
     sum = 0.;
@@ -76,6 +91,9 @@ Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, i
       for (j = 0; j < ribosum->prnaP->n; j ++) ribosum->prnaC->mx[i][j] *= 1.0/sum;
     }
   }
+  status = ratematrix_ValidateP(ribosum->prnaC, tol, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "prnaC did not validate");
+
   for (i = 0; i < ribosum->urnaP->m; i ++) {
     sum = 0.;
     for (j = 0; j < ribosum->urnaP->n; j ++) {
@@ -87,8 +105,13 @@ Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, i
       for (j = 0; j < ribosum->urnaP->n; j ++) ribosum->urnaC->mx[i][j] *= 1.0/sum;
     }
   }
+  status = ratematrix_ValidateP(ribosum->urnaC, tol, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "urnaC did not validate");
   
   return eslOK;
+
+ ERROR:
+  return status;
 }
 
 struct ribomatrix_s *
