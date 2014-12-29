@@ -12,18 +12,19 @@
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
+#include "ratematrix.h"
 #include "ribosum_matrix.h"
 
 static int ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh, char *errbuf);
 static int prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *prnaP);
 static int urna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *urnaP);
 static int bg_add_counts  (ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, int alen, double *bg);
+static int rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, char *errbuf);
 
 int
-Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, int verbose, char *errbuf)
+Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, double tol, int verbose, char *errbuf)
 {						
   float sum;
-  int   i, j;
   int   status;
   
   /* calculate the weight BLOSUM-style */
@@ -43,6 +44,27 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   if (sum > 0.) esl_vec_DScale(ribosum->bg, ribosum->abc->K, 1.0/sum);
 
   /* calculate conditionals and marginals */
+  status = Ribosum_matrix_ConditionalsFromJoint(ribosum, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_ConditionalsFromJoint()");
+
+  /* calculate rates */
+  status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
+
+  if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
+  Ribosum_matrix_Write(fp, ribosum);
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+int 
+Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
+{
+  double sum;
+  int    i, j;
+  
   for (i = 0; i < ribosum->prnaP->m; i ++) {
     sum = 0.;
     for (j = 0; j < ribosum->prnaP->n; j ++) {
@@ -65,15 +87,8 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
       for (j = 0; j < ribosum->urnaP->n; j ++) ribosum->urnaC->mx[i][j] *= 1.0/sum;
     }
   }
-    
-  /* calculate rates */
-
-  if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
-  Ribosum_matrix_Write(fp, ribosum);
+  
   return eslOK;
-
- ERROR:
-  return status;
 }
 
 struct ribomatrix_s *
@@ -88,32 +103,35 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   ribosum->abc = abc;
   ribosum->name = NULL;
   if (name) ribosum->name = name;
-
+  
   ribosum->prnaP = esl_dmatrix_Create(pdim, pdim);
   ribosum->prnaC = esl_dmatrix_Create(pdim, pdim);
   ribosum->prnaQ = esl_dmatrix_Create(pdim, pdim);
   ribosum->urnaP = esl_dmatrix_Create(udim, udim);
   ribosum->urnaC = esl_dmatrix_Create(udim, udim);
   ribosum->urnaQ = esl_dmatrix_Create(udim, udim);
-
+  
   ESL_ALLOC(ribosum->prna, sizeof(double) * pdim);
   ESL_ALLOC(ribosum->urna, sizeof(double) * udim);
   ESL_ALLOC(ribosum->bg,   sizeof(double) * udim);
-
+  
   /* set joints to zero, ready to add counts */
   esl_dmatrix_Set(ribosum->prnaP, 0.0);
   esl_dmatrix_Set(ribosum->urnaP, 0.0);
+  esl_vec_DSet(ribosum->bg, udim, 0.0);
+  
+  /* conditionals and marginals */
+  esl_dmatrix_Set(ribosum->prnaC, 0.0);
+  esl_dmatrix_Set(ribosum->prnaC, 0.0);
   esl_vec_DSet(ribosum->prna, pdim, 0.0);
   esl_vec_DSet(ribosum->urna, udim, 0.0);
-  esl_vec_DSet(ribosum->bg,   udim, 0.0);
   
-  esl_dmatrix_Set(ribosum->prnaC, -1.0);
-  esl_dmatrix_Set(ribosum->urnaQ, -1.0);
-  esl_dmatrix_Set(ribosum->prnaC, -1.0);
-  esl_dmatrix_Set(ribosum->urnaQ, -1.0);
-
+  /* rates */
+  esl_dmatrix_Set(ribosum->prnaQ, 0.0);
+  esl_dmatrix_Set(ribosum->urnaQ, 0.0);
+  
   return ribosum;
-
+  
  ERROR:
   return NULL;
 }
@@ -134,6 +152,46 @@ Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum)
     if (ribosum->name)  free(ribosum->name);
     free(ribosum);
   }
+}
+
+int 
+Ribosum_matrix_RateFromConditionals(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
+{
+  int status;
+
+  status = rate_from_conditionals(ribosum->prnaC, ribosum->prnaQ, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed prna RateFromConditionals()");
+
+  status = rate_from_conditionals(ribosum->urnaC, ribosum->urnaQ, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed urna RateFromConditionals()");
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, char *errbuf)
+{
+  int i;
+  int status;
+
+  if (C == NULL) return eslOK;
+
+  status = ratematrix_ValidatePLog(C, tol, errbuf); /* Make sure that we can take the log of P */
+  if (status != eslOK) { printf("failed to validate PLog\n%s\n", errbuf); goto ERROR; }
+    
+  dmx_Log(C, Q, tol);                      /* take the log */
+  for (i = 0; i < Q->n; i++)               /* regularize in case some entries are not good */
+    ratematrix_QOGRegularization(Q->mx[i], Q->m, i, tol, errbuf);
+  status = ratematrix_ValidateQ(Q, tol, errbuf);    /* Make sure Q is a rate matrix */
+  if (status != eslOK) { printf("failed to validate rate Q\n%s\n", errbuf); goto ERROR; }
+
+  return eslOK;
+
+ ERROR:
+  return status;
 }
 
 int 
