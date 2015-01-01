@@ -44,7 +44,9 @@ struct ribomatrix_s {
 };
   
 extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp,
-						     double tol, int verbose, char *errbuf);
+						     double tol, int verbose, char *errbuf);;
+extern int                  Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, 
+							 double tol, int verbose, char *errbuf)
 extern int                  Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
 extern struct ribomatrix_s *Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name);
 extern void                 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);
