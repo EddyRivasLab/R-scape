@@ -38,10 +38,10 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed ribosum_matrix_add_counts()");
 
   /* normalize */
-  sum = esl_dmx_Sum(ribosum->prnaP);
-  if (sum > 0.) esl_dmx_Scale(ribosum->prnaP, 1.0/sum);
-  sum = esl_dmx_Sum(ribosum->urnaP);
-  if (sum > 0.) esl_dmx_Scale(ribosum->urnaP, 1.0/sum);
+  sum = esl_dmx_Sum(ribosum->prnaJ);
+  if (sum > 0.) esl_dmx_Scale(ribosum->prnaJ, 1.0/sum);
+  sum = esl_dmx_Sum(ribosum->urnaJ);
+  if (sum > 0.) esl_dmx_Scale(ribosum->urnaJ, 1.0/sum);
   sum = esl_vec_DSum(ribosum->bg, ribosum->abc->K);
   if (sum > 0.) esl_vec_DScale(ribosum->bg, ribosum->abc->K, 1.0/sum);
 
@@ -80,29 +80,29 @@ Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, i
   int    i, j;
   int    status;
   
-  for (i = 0; i < ribosum->prnaP->m; i ++) {
+  for (i = 0; i < ribosum->prnaJ->m; i ++) {
     sum = 0.;
-    for (j = 0; j < ribosum->prnaP->n; j ++) {
-      ribosum->prnaC->mx[i][j] = ribosum->prnaP->mx[i][j];
-      sum += ribosum->prnaP->mx[i][j];
+    for (j = 0; j < ribosum->prnaJ->n; j ++) {
+      ribosum->prnaC->mx[i][j] = ribosum->prnaJ->mx[i][j];
+      sum += ribosum->prnaJ->mx[i][j];
     }
     if (sum > 0) {
       ribosum->prna[i] = sum;
-      for (j = 0; j < ribosum->prnaP->n; j ++) ribosum->prnaC->mx[i][j] *= 1.0/sum;
+      for (j = 0; j < ribosum->prnaJ->n; j ++) ribosum->prnaC->mx[i][j] *= 1.0/sum;
     }
   }
   status = ratematrix_ValidateP(ribosum->prnaC, tol, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "prnaC did not validate");
 
-  for (i = 0; i < ribosum->urnaP->m; i ++) {
+  for (i = 0; i < ribosum->urnaJ->m; i ++) {
     sum = 0.;
-    for (j = 0; j < ribosum->urnaP->n; j ++) {
-      ribosum->urnaC->mx[i][j] = ribosum->urnaP->mx[i][j];
-      sum += ribosum->urnaP->mx[i][j];
+    for (j = 0; j < ribosum->urnaJ->n; j ++) {
+      ribosum->urnaC->mx[i][j] = ribosum->urnaJ->mx[i][j];
+      sum += ribosum->urnaJ->mx[i][j];
     }
     if (sum > 0) {
       ribosum->urna[i] = sum;
-      for (j = 0; j < ribosum->urnaP->n; j ++) ribosum->urnaC->mx[i][j] *= 1.0/sum;
+      for (j = 0; j < ribosum->urnaJ->n; j ++) ribosum->urnaC->mx[i][j] *= 1.0/sum;
     }
   }
   status = ratematrix_ValidateP(ribosum->urnaC, tol, errbuf);
@@ -127,10 +127,10 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   ribosum->name = NULL;
   if (name) ribosum->name = name;
   
-  ribosum->prnaP = esl_dmatrix_Create(pdim, pdim);
+  ribosum->prnaJ = esl_dmatrix_Create(pdim, pdim);
   ribosum->prnaC = esl_dmatrix_Create(pdim, pdim);
   ribosum->prnaQ = esl_dmatrix_Create(pdim, pdim);
-  ribosum->urnaP = esl_dmatrix_Create(udim, udim);
+  ribosum->urnaJ = esl_dmatrix_Create(udim, udim);
   ribosum->urnaC = esl_dmatrix_Create(udim, udim);
   ribosum->urnaQ = esl_dmatrix_Create(udim, udim);
   
@@ -139,8 +139,8 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   ESL_ALLOC(ribosum->bg,   sizeof(double) * udim);
   
   /* set joints to zero, ready to add counts */
-  esl_dmatrix_Set(ribosum->prnaP, 0.0);
-  esl_dmatrix_Set(ribosum->urnaP, 0.0);
+  esl_dmatrix_Set(ribosum->prnaJ, 0.0);
+  esl_dmatrix_Set(ribosum->urnaJ, 0.0);
   esl_vec_DSet(ribosum->bg, udim, 0.0);
   
   /* conditionals and marginals */
@@ -163,10 +163,10 @@ void
 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum)
 {
   if (ribosum) {
-    if (ribosum->prnaP) esl_dmatrix_Destroy(ribosum->prnaP);
+    if (ribosum->prnaJ) esl_dmatrix_Destroy(ribosum->prnaJ);
     if (ribosum->prnaC) esl_dmatrix_Destroy(ribosum->prnaC);
     if (ribosum->prnaQ) esl_dmatrix_Destroy(ribosum->prnaQ);
-    if (ribosum->urnaP) esl_dmatrix_Destroy(ribosum->urnaP);
+    if (ribosum->urnaJ) esl_dmatrix_Destroy(ribosum->urnaJ);
     if (ribosum->urnaC) esl_dmatrix_Destroy(ribosum->urnaC);
     if (ribosum->urnaQ) esl_dmatrix_Destroy(ribosum->urnaQ);
     if (ribosum->prna)  free(ribosum->prna);
@@ -221,8 +221,8 @@ int
 Ribosum_matrix_Write(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "%s\n", ribosum->name);
-  if (ribosum->prnaP) esl_dmatrix_Dump(fp, ribosum->prnaP, NULL, NULL);
-  if (ribosum->urnaP) esl_dmatrix_Dump(fp, ribosum->urnaP, "ACGU", "ACGU");
+  if (ribosum->prnaJ) esl_dmatrix_Dump(fp, ribosum->prnaJ, NULL, NULL);
+  if (ribosum->urnaJ) esl_dmatrix_Dump(fp, ribosum->urnaJ, "ACGU", "ACGU");
   fprintf(fp, "Background frequencies\n");
   if (ribosum->bg)    esl_vec_DDump   (fp, ribosum->bg, ribosum->abc->K, "ACGU");
 
@@ -267,8 +267,8 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
       ssi = (msa->ss_cons)? msa->ss_cons: msa->ss[i];
       ssj = (msa->ss_cons)? msa->ss_cons: msa->ss[j];
       
-      prna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->prnaP);
-      urna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->urnaP);
+      prna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->prnaJ);
+      urna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->urnaJ);
       bg_add_counts  (ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], msa->alen, ribosum->bg);
     }
   }
@@ -284,7 +284,7 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
 
 
 static int
-prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *prnaP)
+prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *prnaJ)
 {
   int  pos;
   int  cpos1, cpos2;
@@ -314,9 +314,9 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
 	    pair1 = IDX(esl_abc_DigitizeSymbol(abc, c1), esl_abc_DigitizeSymbol(abc, cc1), abc->K);
 	    pair2 = IDX(esl_abc_DigitizeSymbol(abc, c2), esl_abc_DigitizeSymbol(abc, cc2), abc->K);
 
-	    //prnaP->mx[left][right] += wgt;
-	    prnaP->mx[pair1][pair2] += wgt;
-	    prnaP->mx[pair2][pair1] += wgt;
+	    //prnaJ->mx[left][right] += wgt;
+	    prnaJ->mx[pair1][pair2] += wgt;
+	    prnaJ->mx[pair2][pair1] += wgt;
 	  }
       }
   }
@@ -325,7 +325,7 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
 }
 
 static int
-urna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *urnaP)
+urna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *urnaJ)
 {
   int  pos;
   char c1, c2;
@@ -335,8 +335,8 @@ urna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
     c2 = seq2[pos];
     if (ct1[pos+1] != 0 || ct2[pos+1] != 0) continue;
     if (esl_abc_CIsCanonical(abc, c1) && esl_abc_CIsCanonical(abc, c2)) {
-      urnaP->mx[esl_abc_DigitizeSymbol(abc, c1)][esl_abc_DigitizeSymbol(abc, c2)] += wgt;
-      urnaP->mx[esl_abc_DigitizeSymbol(abc, c2)][esl_abc_DigitizeSymbol(abc, c1)] += wgt;
+      urnaJ->mx[esl_abc_DigitizeSymbol(abc, c1)][esl_abc_DigitizeSymbol(abc, c2)] += wgt;
+      urnaJ->mx[esl_abc_DigitizeSymbol(abc, c2)][esl_abc_DigitizeSymbol(abc, c1)] += wgt;
     }
   }
 
