@@ -268,8 +268,9 @@ main(int argc, char **argv)
     free(cfg.msafrq); cfg.msafrq = NULL;
   }
 
-  status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.outfp, cfg.tol, cfg.verbose, cfg.errbuf);
-  
+  status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
+  Ribosum_matrix_Write(cfg.outfp, ribosum);
+
   /* cleanup */
   esl_stopwatch_Destroy(cfg.w);
   fclose(cfg.outfp);

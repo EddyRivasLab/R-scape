@@ -43,9 +43,8 @@ struct ribomatrix_s {
   double      *bg;         // background frequencies
 };
   
-extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp,
-						     double tol, int verbose, char *errbuf);
-extern int                  Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, FILE *fp, double tol, int verbose, char *errbuf);
+extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf);
+extern int                  Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_JointsAddWeights(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_JointsNormalize(struct ribomatrix_s *ribosum, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, 

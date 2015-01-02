@@ -25,7 +25,7 @@ static int conditionals_from_joints(ESL_DMATRIX *J, ESL_DMATRIX *C, double *marg
 static int rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, char *errbuf);
 
 int
-Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, FILE *fp, double tol, int verbose, char *errbuf)
+Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
 {	
   ESL_DMATRIX *pC = NULL;
   ESL_DMATRIX *uC = NULL;
@@ -53,7 +53,6 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
   ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
   if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
-  Ribosum_matrix_Write(fp, ribosum);
 
   if (pC) esl_dmatrix_Destroy(pC);
   if (uC) esl_dmatrix_Destroy(uC);
@@ -66,7 +65,7 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
 }
 
 int
-Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, FILE *fp, double tol, int verbose, char *errbuf)
+Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
 {	
   ESL_DMATRIX *pC = NULL;
   ESL_DMATRIX *uC = NULL;
@@ -94,7 +93,6 @@ Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, FILE *fp, doub
   ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
   ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
   if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
-  Ribosum_matrix_Write(fp, ribosum);
 
   if (pC) esl_dmatrix_Destroy(pC);
   if (uC) esl_dmatrix_Destroy(uC);
@@ -156,7 +154,7 @@ Ribosum_matrix_JointsNormalize(struct ribomatrix_s *ribosum, int verbose, char *
 int
 Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
 {	
-  int          status;
+  int status;
   
   /* Calculate weight and add the counts */ 
   status = Ribosum_matrix_JointsAddWeights(msa, ribosum, thresh1, thresh2, verbose, errbuf);
