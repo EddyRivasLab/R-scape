@@ -262,11 +262,13 @@ main(int argc, char **argv)
     puts("");
     fflush(stdout);
     
-    Ribosum_matrix_Calculate(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.outfp, cfg.verbose, cfg.errbuf);
+    status = Ribosum_matrix_JointsAddWeights(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.verbose, cfg.errbuf);
 
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
   }
+
+  status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.outfp, cfg.tol, cfg.verbose, cfg.errbuf);
   
   /* cleanup */
   esl_stopwatch_Destroy(cfg.w);

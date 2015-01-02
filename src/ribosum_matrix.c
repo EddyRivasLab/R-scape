@@ -66,11 +66,51 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
 }
 
 int
-Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
+Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, FILE *fp, double tol, int verbose, char *errbuf)
 {	
-  float        sum;
+  ESL_DMATRIX *pC = NULL;
+  ESL_DMATRIX *uC = NULL;
   int          status;
   
+  /* normalize Joints */
+  status = Ribosum_matrix_JointsNormalize(ribosum, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_JointsNormalize()");
+
+  /* calculate conditionals and marginals */
+  status = Ribosum_matrix_ConditionalsFromJoint(ribosum, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_ConditionalsFromJoint()");
+
+  /* calculate rates */
+  status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
+
+  pC = ratematrix_ConditionalsFromRate(1.0, ribosum->prnaQ, tol, errbuf, verbose);
+  uC = ratematrix_ConditionalsFromRate(1.0, ribosum->urnaQ, tol, errbuf, verbose);
+  ratematrix_specialDump(pC);
+  ratematrix_specialDump(uC);
+
+  ratematrix_Rescale(ribosum->bprsQ, NULL, ribosum->bprsM);
+  ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prnaM);
+  ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
+  ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
+  if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
+  Ribosum_matrix_Write(fp, ribosum);
+
+  if (pC) esl_dmatrix_Destroy(pC);
+  if (uC) esl_dmatrix_Destroy(uC);
+  return eslOK;
+  
+ ERROR:
+  if (pC) esl_dmatrix_Destroy(pC);
+  if (uC) esl_dmatrix_Destroy(uC);
+  return status;
+}
+
+int
+Ribosum_matrix_JointsAddWeights(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, int verbose, char *errbuf)
+{
+  int status;
+
   /* calculate the weight BLOSUM-style */
   status = esl_msaweight_BLOSUM(msa, thresh1);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed msaweight_BLOSUM");
@@ -79,7 +119,19 @@ Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float t
   status = ribosum_matrix_add_counts(msa, ribosum, thresh2, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed ribosum_matrix_add_counts()");
 
-  /* normalize */
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+	
+int
+Ribosum_matrix_JointsNormalize(struct ribomatrix_s *ribosum, int verbose, char *errbuf)
+{	
+  float        sum;
+  int          status;
+  
+ /* normalize */
   sum = esl_dmx_Sum(ribosum->bprsJ);
   if (sum > 0.) esl_dmx_Scale(ribosum->bprsJ, 1.0/sum);
 
@@ -94,6 +146,25 @@ Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float t
 
   sum = esl_vec_DSum(ribosum->bg, ribosum->abc->K);
   if (sum > 0.) esl_vec_DScale(ribosum->bg, ribosum->abc->K, 1.0/sum);
+
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+int
+Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
+{	
+  int          status;
+  
+  /* Calculate weight and add the counts */ 
+  status = Ribosum_matrix_JointsAddWeights(msa, ribosum, thresh1, thresh2, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_JointsAddWeights()");
+
+  /* normalize Joints */
+  status = Ribosum_matrix_JointsNormalize(ribosum, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_JointsNormalize()");
 
   return eslOK;
   
