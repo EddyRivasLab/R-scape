@@ -405,7 +405,8 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
   int  cpos1, cpos2;
   char c1, c2;
   char cc1, cc2;
-  int  left, right;
+  int  d1, d2;
+  int  dd1, dd2;
 
   for (pos = 0; pos < alen; pos++) {
     c1 = seq1[pos];
@@ -422,11 +423,16 @@ prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
 	if (esl_abc_CIsCanonical(abc, cc1) && esl_abc_CIsCanonical(abc, cc2)) 
 	  {
 
-	    left  = esl_abc_DigitizeSymbol(abc, c1);
-	    right = esl_abc_DigitizeSymbol(abc, cc2);
+	    d1  = esl_abc_DigitizeSymbol(abc, c1);
+	    d2  = esl_abc_DigitizeSymbol(abc, c2);
+	    dd1 = esl_abc_DigitizeSymbol(abc, cc1);
+	    dd2 = esl_abc_DigitizeSymbol(abc, cc2);
 
-	    prnaJ->mx[left][right] += wgt;
-	    prnaJ->mx[right][left] += wgt;	
+	    prnaJ->mx[d1][d2]   += wgt;
+	    prnaJ->mx[d2][d1]   += wgt;
+	
+	    prnaJ->mx[dd1][dd2] += wgt;
+	    prnaJ->mx[dd2][dd1] += wgt;	
 	  }
       }
   }
@@ -457,14 +463,18 @@ xrna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1
 {
   int  pos;
   char c1, c2;
+  int  d1, d2;
   
   for (pos = 0; pos < alen; pos++) {
     c1 = seq1[pos];
     c2 = seq2[pos];
 
     if (esl_abc_CIsCanonical(abc, c1) && esl_abc_CIsCanonical(abc, c2)) {
-      xrnaJ->mx[esl_abc_DigitizeSymbol(abc, c1)][esl_abc_DigitizeSymbol(abc, c2)] += wgt;
-      xrnaJ->mx[esl_abc_DigitizeSymbol(abc, c2)][esl_abc_DigitizeSymbol(abc, c1)] += wgt;
+      d1 = esl_abc_DigitizeSymbol(abc, c1);
+      d2 = esl_abc_DigitizeSymbol(abc, c2);
+
+      xrnaJ->mx[d1][d2] += wgt;
+      xrnaJ->mx[d2][d1] += wgt;
     }
   }
 
