@@ -269,6 +269,8 @@ main(int argc, char **argv)
   }
 
   status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
+  status = Ribosum_matrix_Saturation(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
+  if (cfg.verbose) Ribosum_matrix_Write(stdout, ribosum);
   Ribosum_matrix_Write(cfg.outfp, ribosum);
 
   /* cleanup */
