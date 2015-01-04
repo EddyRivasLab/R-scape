@@ -266,7 +266,7 @@ main(int argc, char **argv)
     if (status != eslOK) esl_fatal(msg);
 
     esl_msa_Destroy(msa); msa = NULL;
-    free(cfg.msafrq); cfg.msafrq = NULL;
+    if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
   }
 
   status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
