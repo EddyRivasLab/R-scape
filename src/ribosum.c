@@ -263,13 +263,18 @@ main(int argc, char **argv)
     fflush(stdout);
     
     status = Ribosum_matrix_JointsAddWeights(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.verbose, cfg.errbuf);
+    if (status != eslOK) esl_fatal(msg);
 
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
   }
 
   status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
+  if (status != eslOK) esl_fatal(msg);
+  
   status = Ribosum_matrix_Saturation(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
+  if (status != eslOK) esl_fatal(msg);
+  
   if (cfg.verbose) Ribosum_matrix_Write(stdout, ribosum);
   Ribosum_matrix_Write(cfg.outfp, ribosum);
 

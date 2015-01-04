@@ -16,6 +16,15 @@
 
 #define IDX(i,j,L)  ( (i) * (L) + (j) )
 
+typedef enum {
+  JOIN = 0,
+  COND = 1,
+  RATE = 2,
+  MARG = 3,
+  SATU = 4,
+  BACK = 5,
+} MTX;
+
 struct ribomatrix_s {
   char         *name;
   ESL_ALPHABET *abc;
@@ -61,11 +70,14 @@ extern int                  Ribosum_matrix_JointsNormalize(struct ribomatrix_s *
 extern int                  Ribosum_matrix_JointsFromMSA(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, 
 							 double tol, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_RateFromConditionals(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
+extern struct ribomatrix_s *Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_Saturation(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
-extern int                  Ribosum_matrix_Write(FILE *fp, struct ribomatrix_s *ribosum);
-extern int                  Ribosum_matrix_WriteJoints(FILE *fp, struct ribomatrix_s *ribosum);
-extern int                  Ribosum_matrix_WriteConditionals(FILE *fp, struct ribomatrix_s *ribosum);
-extern int                  Ribosum_matrix_WriteRates(FILE *fp, struct ribomatrix_s *ribosum);
-extern int                  Ribosum_matrix_WriteSaturation(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_Write(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteJoints(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteConditionals(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteRates(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteMarginals(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteBackground(FILE *fp, struct ribomatrix_s *ribosum);
+extern void                 Ribosum_matrix_WriteSaturation(FILE *fp, struct ribomatrix_s *ribosum);
 
 #endif

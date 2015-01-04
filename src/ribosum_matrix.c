@@ -4,9 +4,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "easel.h"
 #include "esl_distance.h"
+#include "esl_fileparser.h"
 #include "esl_msa.h"
 #include "esl_msaweight.h"
 #include "esl_vectorops.h"
@@ -318,6 +320,77 @@ Ribosum_matrix_RateFromConditionals(struct ribomatrix_s *ribosum, double tol, in
   return status;
 }
 
+struct ribomatrix_s *
+Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf)
+{
+  struct ribomatrix_s *ribosum = NULL;
+  ESL_FILEPARSER      *efp = NULL;
+  MTX                  mtx;
+  char                *tok;
+  char                *tok2;
+  int                  status;
+
+  if (esl_fileparser_Open(filename, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  ribosum = Ribosum_matrix_Create(abc, NULL);
+  if (ribosum == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad ribosum allocation");
+
+  while (esl_fileparser_NextLine(efp) == eslOK)
+  {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", filename);
+
+    if (strncmp(tok, "RIBO", 4) == 0){
+      mtx = JOIN;
+      esl_sprintf(&ribosum->name, tok);
+    }
+    else if (strcmp(tok, "Background") == 0){
+      mtx = BACK;
+    }
+    else if (strcmp(tok, "Conditionals") == 0){
+      mtx = COND;
+    }
+    else if (strcmp(tok, "Marginals") == 0){
+      mtx = MARG;
+    }
+    else if (strcmp(tok, "Rates") == 0){
+      mtx = RATE;
+    }
+    else if (strcmp(tok, "Saturation") == 0){
+      mtx = SATU;
+    }
+    else {
+      switch(mtx) {
+      case JOIN:
+	if (strcmp(tok, "1") == 0){
+	  if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", filename);
+
+	}
+	break;
+      case COND:
+	break;
+      case RATE:
+	break;
+      case MARG:
+	break;
+      case SATU:
+	break;
+      case BACK:
+	break;
+      }
+    }
+    
+  }
+  esl_fileparser_Close(efp);
+
+  if (verbose) Ribosum_matrix_Write(stdout, ribosum);
+
+  return ribosum;
+
+ ERROR:
+  return NULL;
+}
+
 int 
 Ribosum_matrix_Saturation(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
 {
@@ -341,16 +414,18 @@ Ribosum_matrix_Saturation(struct ribomatrix_s *ribosum, double tol, int verbose,
   return status;
 }
 
-int 
+void
 Ribosum_matrix_Write(FILE *fp, struct ribomatrix_s *ribosum)
 {
   Ribosum_matrix_WriteJoints(fp, ribosum);
   Ribosum_matrix_WriteConditionals(fp, ribosum);
   Ribosum_matrix_WriteRates(fp, ribosum);
-  Ribosum_matrix_WriteSaturation(fp, ribosum);
+  Ribosum_matrix_WriteMarginals(fp, ribosum);
+  Ribosum_matrix_WriteBackground(fp, ribosum);
+  //Ribosum_matrix_WriteSaturation(fp, ribosum);
 }
 
-int 
+void
 Ribosum_matrix_WriteJoints(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "%s\n", ribosum->name);
@@ -358,28 +433,19 @@ Ribosum_matrix_WriteJoints(FILE *fp, struct ribomatrix_s *ribosum)
   if (ribosum->prnaJ) esl_dmatrix_Dump(fp, ribosum->prnaJ, "ACGU", "ACGU");
   if (ribosum->urnaJ) esl_dmatrix_Dump(fp, ribosum->urnaJ, "ACGU", "ACGU");
   if (ribosum->xrnaJ) esl_dmatrix_Dump(fp, ribosum->xrnaJ, "ACGU", "ACGU");
-  fprintf(fp, "Background frequencies\n");
-  if (ribosum->bg)    esl_vec_DDump   (fp, ribosum->bg, ribosum->abc->K, "ACGU");
-
-  return eslOK;
 }
 
-int 
+void
 Ribosum_matrix_WriteConditionals(FILE *fp, struct ribomatrix_s *ribosum)
 {
-  fprintf(fp, "Conditionals and Marginals\n");
+  fprintf(fp, "Conditionals\n");
   if (ribosum->bprsC) esl_dmatrix_Dump(fp, ribosum->bprsC, NULL, NULL);
-  if (ribosum->bprsM) esl_vec_DDump   (fp, ribosum->bprsM, ribosum->bprsC->m, NULL);
   if (ribosum->prnaC) esl_dmatrix_Dump(fp, ribosum->prnaC, "ACGU", "ACGU");
-  if (ribosum->prnaM) esl_vec_DDump   (fp, ribosum->prnaM, ribosum->prnaC->m, NULL);
   if (ribosum->urnaC) esl_dmatrix_Dump(fp, ribosum->urnaC, "ACGU", "ACGU");
-  if (ribosum->urnaM) esl_vec_DDump   (fp, ribosum->urnaM, ribosum->urnaC->m, NULL);
   if (ribosum->xrnaC) esl_dmatrix_Dump(fp, ribosum->xrnaC, "ACGU", "ACGU");
-  if (ribosum->xrnaM) esl_vec_DDump   (fp, ribosum->xrnaM, ribosum->xrnaC->m, NULL);
-  return eslOK;
 }
 
-int 
+void
 Ribosum_matrix_WriteRates(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Rates\n");
@@ -387,26 +453,40 @@ Ribosum_matrix_WriteRates(FILE *fp, struct ribomatrix_s *ribosum)
   if (ribosum->prnaQ) esl_dmatrix_Dump(fp, ribosum->prnaQ, "ACGU", "ACGU");
   if (ribosum->urnaQ) esl_dmatrix_Dump(fp, ribosum->urnaQ, "ACGU", "ACGU");
   if (ribosum->xrnaQ) esl_dmatrix_Dump(fp, ribosum->xrnaQ, "ACGU", "ACGU");
-
-  return eslOK;
 }
 
-int 
+void
+Ribosum_matrix_WriteMarginals(FILE *fp, struct ribomatrix_s *ribosum)
+{
+  fprintf(fp, "Marginals\n");
+  if (ribosum->bprsM) esl_vec_DDump   (fp, ribosum->bprsM, ribosum->bprsC->m, NULL);
+  if (ribosum->prnaM) esl_vec_DDump   (fp, ribosum->prnaM, ribosum->prnaC->m, "ACGU");
+  if (ribosum->urnaM) esl_vec_DDump   (fp, ribosum->urnaM, ribosum->urnaC->m, "ACGU");
+  if (ribosum->xrnaM) esl_vec_DDump   (fp, ribosum->xrnaM, ribosum->xrnaC->m, "ACGU");
+}
+
+void
+Ribosum_matrix_WriteBackground(FILE *fp, struct ribomatrix_s *ribosum)
+{
+  fprintf(fp, "Background frequencies\n");
+  if (ribosum->bg)    esl_vec_DDump   (fp, ribosum->bg, ribosum->abc->K, "ACGU");
+}
+
+void
 Ribosum_matrix_WriteSaturation(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Saturation probabilities\n");
   fprintf(fp, "bprsQ: tsat = %f\n", ribosum->bprs_tsat);
-  if (ribosum->bprs_psat) esl_vec_DDump(fp, ribosum->bprs_psat, ribosum->bprsC->m, NULL);
+  if (ribosum->bprs_psat) esl_vec_DDump(fp, ribosum->bprs_psat, ribosum->bprsC->m, "ACGU");
 
   fprintf(fp, "prnaQ: tsat = %f\n", ribosum->prna_tsat);
-  if (ribosum->prna_psat) esl_vec_DDump(fp, ribosum->prna_psat, ribosum->prnaC->m, NULL);
+  if (ribosum->prna_psat) esl_vec_DDump(fp, ribosum->prna_psat, ribosum->prnaC->m, "ACGU");
 
   fprintf(fp, "urnaQ: tsat = %f\n", ribosum->urna_tsat);
-  if (ribosum->urna_psat) esl_vec_DDump(fp, ribosum->urna_psat, ribosum->urnaC->m, NULL);
+  if (ribosum->urna_psat) esl_vec_DDump(fp, ribosum->urna_psat, ribosum->urnaC->m, "ACGU");
 
   fprintf(fp, "xrnaQ: tsat = %f\n", ribosum->xrna_tsat);
-  if (ribosum->xrna_psat) esl_vec_DDump(fp, ribosum->xrna_psat, ribosum->xrnaC->m, NULL);
-  return eslOK;
+  if (ribosum->xrna_psat) esl_vec_DDump(fp, ribosum->xrna_psat, ribosum->xrnaC->m, "ACGU");
 }
 
 
