@@ -25,6 +25,9 @@ static int xrna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2
 static int bg_add_counts  (ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, int alen, double *bg);
 static int conditionals_from_joints(ESL_DMATRIX *J, ESL_DMATRIX *C, double *marginals, double tol, int verbose, char *errbuf);
 static int rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, char *errbuf);
+static int parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf);
+static int parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf);
+static int parse_bg(ESL_FILEPARSER *efp, struct ribomatrix_s *ribosum, char *errbuf);
 
 int
 Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
@@ -325,9 +328,10 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
 {
   struct ribomatrix_s *ribosum = NULL;
   ESL_FILEPARSER      *efp = NULL;
-  MTX                  mtx;
+  MTX                  mtxtype;
   char                *tok;
-  char                *tok2;
+  int                  dim = abc->K;
+  int                  dim2 = abc->K * abc->K;
   int                  status;
 
   if (esl_fileparser_Open(filename, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
@@ -341,41 +345,70 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", filename);
 
     if (strncmp(tok, "RIBO", 4) == 0){
-      mtx = JOIN;
+      mtxtype = JOIN;
       esl_sprintf(&ribosum->name, tok);
-    }
-    else if (strcmp(tok, "Background") == 0){
-      mtx = BACK;
+      ribosum->bprsJ = esl_dmatrix_Create(dim2, dim2);
+      ribosum->prnaJ = esl_dmatrix_Create(dim,  dim);
+      ribosum->urnaJ = esl_dmatrix_Create(dim,  dim);
+      ribosum->xrnaJ = esl_dmatrix_Create(dim,  dim);
     }
     else if (strcmp(tok, "Conditionals") == 0){
-      mtx = COND;
+      mtxtype = COND;
+      ribosum->bprsC = esl_dmatrix_Create(dim2, dim2);
+      ribosum->prnaC = esl_dmatrix_Create(dim,  dim);
+      ribosum->urnaC = esl_dmatrix_Create(dim,  dim);
+      ribosum->xrnaC = esl_dmatrix_Create(dim,  dim);
     }
-    else if (strcmp(tok, "Marginals") == 0){
-      mtx = MARG;
+     else if (strcmp(tok, "Rates") == 0){
+      mtxtype = RATE;
+      ribosum->bprsQ = esl_dmatrix_Create(dim2, dim2);
+      ribosum->prnaQ = esl_dmatrix_Create(dim,  dim);
+      ribosum->urnaQ = esl_dmatrix_Create(dim,  dim);
+      ribosum->xrnaQ = esl_dmatrix_Create(dim,  dim);
     }
-    else if (strcmp(tok, "Rates") == 0){
-      mtx = RATE;
+   else if (strcmp(tok, "Marginals") == 0){
+      mtxtype = MARG;
+      ESL_ALLOC(ribosum->bprsM, sizeof(double) * dim2);
+      ESL_ALLOC(ribosum->prnaM, sizeof(double) * dim);
+      ESL_ALLOC(ribosum->urnaM, sizeof(double) * dim);
+      ESL_ALLOC(ribosum->xrnaM, sizeof(double) * dim);
     }
     else if (strcmp(tok, "Saturation") == 0){
-      mtx = SATU;
+      mtxtype = SATU;
+      ESL_ALLOC(ribosum->bprs_psat, sizeof(double) * dim2);
+      ESL_ALLOC(ribosum->prna_psat, sizeof(double) * dim);
+      ESL_ALLOC(ribosum->urna_psat, sizeof(double) * dim);
+      ESL_ALLOC(ribosum->xrna_psat, sizeof(double) * dim);
+    }
+   else if (strcmp(tok, "Background") == 0){
+      mtxtype = BACK;
+     ESL_ALLOC(ribosum->bg, sizeof(double) * dim);
     }
     else {
-      switch(mtx) {
+      switch(mtxtype) {
       case JOIN:
-	if (strcmp(tok, "1") == 0){
-	  if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", filename);
-
-	}
+	status = parse_mtx(efp, JOIN, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Joints");
 	break;
       case COND:
+	status = parse_mtx(efp, COND, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Conditionals");
 	break;
       case RATE:
+	status = parse_mtx(efp, RATE, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Rates");
 	break;
       case MARG:
+	status = parse_vec(efp, MARG, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Marginals");
 	break;
       case SATU:
+	status = parse_vec(efp, SATU, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Saturation probabilities");
 	break;
       case BACK:
+	status = parse_bg(efp, ribosum, errbuf);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
 	break;
       }
     }
@@ -733,5 +766,39 @@ bg_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, int alen, d
   }
 
   return eslOK;
+}
+
+static int
+parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf)
+{
+  return eslOK;
+}
+
+static int
+parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf)
+{
+  return eslOK;
+}
+
+static int
+parse_bg(ESL_FILEPARSER *efp, struct ribomatrix_s *ribosum, char *errbuf)
+{
+  char *tok;
+  int   status;
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, "", errbuf);
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[A]");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[C]");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[G]");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[U]");
+
+
+  return eslOK;
+
+ ERROR:
+  return status;
 }
 
