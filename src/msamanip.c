@@ -413,6 +413,7 @@ msamanip_OutfileHeader(char *acc, char **ret_outheader)
   esl_sprintf(&outheader, "%s", st);
  
   *ret_outheader = outheader;
+  free(st);
 
   return eslOK;
 }

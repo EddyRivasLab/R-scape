@@ -418,9 +418,7 @@ int
 ratematrix_ValidateQ(const ESL_DMATRIX *Q, double tol, char *errbuf)
 { 
   if (Q == NULL) return eslOK;
-
-  esl_rmx_ValidateQ((ESL_DMATRIX *)Q, tol, errbuf);
-  return eslOK;
+  return esl_rmx_ValidateQ((ESL_DMATRIX *)Q, tol, errbuf);
 }
 
 /* a wrapper around esl_rmx_ValidateP that allows P = NULL */
@@ -428,9 +426,7 @@ int
 ratematrix_ValidateP(const ESL_DMATRIX *P, double tol, char *errbuf)
 { 
   if (P == NULL) return eslOK;
-
-  esl_rmx_ValidateP((ESL_DMATRIX *)P, tol, errbuf);
-  return eslOK;
+  return esl_rmx_ValidateP((ESL_DMATRIX *)P, tol, errbuf);
 }
 
 
@@ -550,7 +546,7 @@ ratematrix_QOMRegularization(double *q, int n, int whichrow, double tol, char *e
   esl_vec_DIncrement(q, n, -lambda);
   
   /* calculate perm[i] */
-  perm = vec_PermDIncresing(q, n);
+  perm = vec_PermDIncreasing(q, n);
   
   /* c[i] = w_p(1) + \sum_{j=0}^{n-i-1}w_p(n-j) - (n-i+1) w_p(i+1) for i=2,\ldots,n-1 */
   ESL_ALLOC(c, sizeof(double)*n);
@@ -612,11 +608,11 @@ ratematrix_QOMRegularization(double *q, int n, int whichrow, double tol, char *e
  *
  *            this algorithm had a typo in the paper in step (3)
  *
- * (1) Permutate row vector so that r(1) = R(whichrow, whichrow)
+ * (1) Permutate vector so that q[0] = R(whichrow, whichrow)
  *
- * (2) Construct the vector w, such that w(i) = r(i)-\lambd$ where  \lambda = \frac{1}{n}\sum_i r(i).
+ * (2) Construct q(i)-\lambda where  \lambda = \frac{1}{n}\sum_{i=0}{n-1} q(i).
  *
- * (3) Calculate the permutation w_p= P(w) such that w_p(i) < w_p(i+1). # wrong in the paper
+ * (3) Calculate the permutation such that w_p(i) < w_p(i+1). # wrong in the paper
  *
  * (4) Construct C(k) = w_p(k) + \sum_{i=0}^{n-k-1}w_p(n-i) - (n-k+1)w_p(k+1) for k=2,\ldots,n-1.
  *
@@ -637,29 +633,29 @@ ratematrix_QOMRegularization(double *q, int n, int whichrow, double tol, char *e
  * Returns:  void.
  */
 int
-ratematrix_QOGRegularization(double *q, int n, int whichrow, double tol, char *errbuf)
+ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errbuf)
 {
-  double *c     = NULL;
-  double *r1    = NULL;
-  int     *perm = NULL;
+  double *c    = NULL;
+  double *copy = NULL;
+  int    *perm = NULL;
   double  corr;
   double  lambda;
   int     i, j;
-  int     k_min;
+  int     imin;
   int     status;
 
   /* Check for off-diagonal negative entries */
   for (i = 0; i < n; i++) 
-    if (i != whichrow && q[i] < 0.0) break; 
+    if (i != which && q[i] < 0.0) break; 
   if (i == n) return eslOK; /* rate does not have negative non-diagonal entries */
 
- /* Reorder row so that r(1) = R(whichrow, whichrow) */
-  ESL_ALLOC(r1, sizeof(double)*n);
-  esl_vec_DCopy(q, n, r1);
+ /* Reorder row so that r(1) = R(which, which) */
+  ESL_ALLOC(copy, sizeof(double) * n);
+  esl_vec_DCopy(q, n, copy);
  
-  if (whichrow > 0) {
-    q[0] = r1[whichrow];
-    for (i = 1; i < n; i++) if (i <= whichrow) q[i] = r1[i-1];
+  if (which > 0) {
+    q[0] = copy[which];
+    for (i = 1; i < n; i++) if (i <= which) q[i] = copy[i-1];
   }
 
   /* Construct q(i) = q(i) - lambda, for lambda = 1/n sum_i q(i) */
@@ -667,64 +663,64 @@ ratematrix_QOGRegularization(double *q, int n, int whichrow, double tol, char *e
   esl_vec_DIncrement(q, n, -lambda);
 
   /* calculate perm[i] */
-  perm = vec_PermDIncresing(q, n);
+  perm = vec_PermDIncreasing(q, n);
  
-  /* c[i] = w_p(1) + \sum_{j=0}^{n-i-1}w_p(n-j) - (n-i+1) w_p(i+1) for i=2,\ldots,n-1 */
-  ESL_ALLOC(c, sizeof(double)*n);
+  /* c[i] = w_p(0) + \sum_{j=i}^{n-1} w_p(j) - (n-i) w_p(i) for i=1,\ldots,n-2 */
+  ESL_ALLOC(c, sizeof(double) * n);
   esl_vec_DSet(c, n, 0.0);  
   for (i = 1; i < n-1; i++) {
-    c[i] = q[perm[0]] - (n-i+1)*q[perm[i+1]];
-    for (j = i+1; j < n; j++) c[i] += q[perm[j]];
+    c[i] = q[perm[0]] - (n-i) * q[perm[i]];
+    for (j = i; j < n; j++) c[i] += q[perm[j]];
   }
   
-  /* calculate k_min = \min [ k;  2\leq k\leq n-1 such that C(k) <= 0 ] */
-  k_min = n;
+  /* calculate imin = \min [ i;  1\leq i\leq n-2 such that C(i) <= 0 ] */
+  imin = n;
   for (i = 1; i < n-1; i++) {
-    if (c[i] <= 0.0) { k_min = i; break; }
+    if (c[i] <= 0.0) { imin = i; break; }
   }
 
   /* regularize:
    *
-   *  if (2<=i<=k_min)  q(i) <--- 0
-   *  else              q(i) <--- q(i) - corr,,   where: corr = 1/(n-k_{min}+1) \sum_{j=k_min+1} w_p(j)
+   *  if (1<=i<=imin)  q(i) <--- 0
+   *  else             q(i) <--- q(i) - corr   where: corr = 1/(n-imin) \sum_{j=imin+1} w_p(j)
    *
    */
   corr = q[perm[0]];
-  for (i = k_min+1; i < n; i++) corr += q[perm[i]];
-  corr /= (n-k_min+1);
+  for (i = imin+1; i < n; i++) corr += q[perm[i]];
+  corr /= (n-imin);
   
   for (i = 1; i < n; i++) {
-    if (i <= k_min) q[perm[i]]  = 0.0;
-    else            q[perm[i]] -= corr;
+    if (i <= imin) q[perm[i]]  = 0.0;
+    else           q[perm[i]] -= corr;
   }
   
   /* Reorder row to original form */
-  esl_vec_DCopy(q, n, r1);
-  if (whichrow > 0) {
-    q[whichrow] = r1[0];
-    for (i = 0; i < n; i++) if (i < whichrow) q[i] = r1[i+1];
+  esl_vec_DCopy(q, n, copy);
+  if (which > 0) {
+    q[which] = copy[0];
+    for (i = 0; i < n; i++) if (i < which) q[i] = copy[i+1];
   }
   
   /* consistency test */
   for (i = 0; i < n; i++) {    
-    if (i == whichrow) { if (q[i] > 0.0) ESL_FAIL(eslFAIL, errbuf, "diag elem %d %d < 0", whichrow, i); }
-    else               { if (q[i] < 0.0) ESL_FAIL(eslFAIL, errbuf, "offdiag elem %d,%d < 0", whichrow, i); }
+    if (i == which) { if (q[i] > 0.0) ESL_XFAIL(eslFAIL, errbuf, "diag elem %d %d > 0, %f", which, i, q[i]); }
+    else            { if (q[i] < 0.0) ESL_XFAIL(eslFAIL, errbuf, "offdiag elem %d,%d < 0", which, i); }
   }
-  if (fabs(esl_vec_DSum(q, n)) > tol) ESL_FAIL(eslFAIL, errbuf, "row %d does not sum to 0.0 but %f", whichrow, fabs(esl_vec_DSum(q, n)));
+  if (fabs(esl_vec_DSum(q, n)) > tol) ESL_XFAIL(eslFAIL, errbuf, "row %d does not sum to 0.0 but %f", which, fabs(esl_vec_DSum(q, n)));
   
   free(c);
-  free(r1);
+  free(copy);
   free(perm);
-
   return eslOK;
 
  ERROR:
   if (c)    free(c);
-  if (r1)   free(r1);
+  if (copy) free(copy);
   if (perm) free(perm);
-
   return status;
 }
+
+
 
 /* Function: ratematrix_SecondDegreeSol()
  * Date:     ER, Thu Jul 25 13:22:05 CDT 2002 [janelia]
@@ -1071,20 +1067,19 @@ dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double t
  
   if (A->n != A->m) ESL_EXCEPTION(eslEINVAL, "matrix isn't square");
 
-  ESL_ALLOC(Er, sizeof(double) * A->n);
-  ESL_ALLOC(Ei, sizeof(double) * A->n);
- 
-  H  = dmx_Hessenberg(A); if (H == NULL)                { status = eslFAIL; goto ERROR; } 
-   if (dmx_Hessenberg2Eigen(H, &Er, &Ei, tol) != eslOK) { status = eslFAIL; goto ERROR; }
+  H = dmx_Hessenberg(A); if (H == NULL)                { status = eslFAIL; goto ERROR; } 
+  if (dmx_Hessenberg2Eigen(H, &Er, &Ei, tol) != eslOK) { status = eslFAIL; goto ERROR; }
 
   if (ret_Er != NULL) *ret_Er = Er; else free(Er);
   if (ret_Ei != NULL) *ret_Ei = Ei; else free(Ei);
 
-  free(H);
+  esl_dmatrix_Destroy(H);
 
   return eslOK;
 
  ERROR:
+  if (Er) free(Er);
+  if (Ei) free(Ei);
   if (ret_Er != NULL) *ret_Er = NULL;
   if (ret_Ei != NULL) *ret_Ei = NULL;
   return status;
@@ -1321,8 +1316,6 @@ dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double to
 	  esl_dmatrix_Destroy(C); C = NULL;
 	}
 	else { /* ok, do the actual QR decomposition */ 
-	  if ((I = esl_dmatrix_Create(A->n, A->n)) == NULL) { status = eslEMEM; goto ERROR; }
-
 	  /* shift matrix */
 	  Ann = A->mx[A->n-1][A->n-1];
 	  I = esl_dmatrix_Create(A->n, A->n);
@@ -1467,20 +1460,20 @@ dmx_QRdecomposition (ESL_DMATRIX *X, ESL_DMATRIX **ret_Q, ESL_DMATRIX **ret_R, d
   *ret_Q = Q;
   *ret_R = R;
   
-  free(C);
-  free(Xdup);
+  esl_dmatrix_Destroy(C);
+  esl_dmatrix_Destroy(Xdup);
   return eslOK;
 
  ERROR:
-  if (Q    != NULL) free (Q);
-  if (R    != NULL) free (R);
-  if (C    != NULL) free (C);
-  if (Xdup != NULL) free (Xdup);
+  if (Q    != NULL) esl_dmatrix_Destroy(Q);
+  if (R    != NULL) esl_dmatrix_Destroy(R);
+  if (C    != NULL) esl_dmatrix_Destroy(C);
+  if (Xdup != NULL) esl_dmatrix_Destroy(Xdup);
   return status;
 }
   
 int *
-vec_PermDIncresing(double *p, int n)
+vec_PermDIncreasing(double *p, int n)
 {
   int *perm = NULL;
   int  i, j;

@@ -503,11 +503,14 @@ rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, 
   if (status != eslOK) { printf("failed to validate PLog\n%s\n", errbuf); goto ERROR; }
     
   dmx_Log(C, Q, tol);                      /* take the log */
-  for (i = 0; i < Q->n; i++)               /* regularize in case some entries are not good */
-    ratematrix_QOGRegularization(Q->mx[i], Q->m, i, tol, errbuf);
+  for (i = 0; i < Q->n; i++) {             /* regularize in case some entries are not good */
+    status = ratematrix_QOGRegularization(Q->mx[i], Q->m, i, tol, errbuf);
+    if (status != eslOK) { printf("failed to validate rate Q(%d)(%d)\n%s\n", Q->m, Q->n, errbuf); }    
+  }
+  
   status = ratematrix_ValidateQ(Q, tol, errbuf);    /* Make sure Q is a rate matrix */
-  if (status != eslOK) { printf("failed to validate rate Q\n%s\n", errbuf); goto ERROR; }
-
+  if (status != eslOK) { printf("failed to validate rate Q\n%s\n", errbuf); goto ERROR; }    
+  
   return eslOK;
 
  ERROR:
@@ -551,9 +554,13 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
   int      i, j;
   int      status;
   
-  ESL_ALLOC(ct, sizeof(int **) * msa->nseq);
+  ESL_ALLOC(ct, sizeof(int *) * msa->nseq);
+  ct[0] = NULL;
+
+  ESL_ALLOC(ct[0], sizeof(int) * (msa->alen+1) * msa->nseq);
+  for (i = 1; i < msa->nseq; i ++) ct[i] = ct[0] + i * (msa->alen+1);
+
   for (i = 0; i < msa->nseq; i ++) {
-    ESL_ALLOC(ct[i], sizeof(int *) * msa->alen);
     if      (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct[i]);
     else if (msa->ss[i])   esl_wuss2ct(msa->ss[i],   msa->alen, ct[i]);
     else                   ESL_XFAIL(eslFAIL, "no ss for sequence %d\n", errbuf);
@@ -576,16 +583,15 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
     }
   }
 
-  for (i = 0; i < msa->nseq; i ++) free(ct[i]);
+  free(ct[0]);
   free(ct);
   
   return eslOK;
 
  ERROR:
-  if (ct) {
-    for (i = 0; i < msa->nseq; i ++) if (ct[i]) free(ct[i]);
-    free(ct);
-  }
+  if (ct[0]) free(ct[0]);
+  if (ct) free(ct);
+  
   return status;
 }
 

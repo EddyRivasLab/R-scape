@@ -268,6 +268,7 @@ main(int argc, char **argv)
 
     esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
+    free(cfg.msaheader); cfg.msaheader = NULL;
   }
 
   status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
@@ -288,6 +289,7 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
   Ribosum_matrix_Destroy(ribosum);
+  free(cfg.gnuplot);
   return status;
 }
 

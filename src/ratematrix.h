@@ -798,7 +798,7 @@ extern int          dmx_Diagonalize(const ESL_DMATRIX *P, double **ret_Er, doubl
 extern ESL_DMATRIX *dmx_Hessenberg(const ESL_DMATRIX *A);
 extern int          dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double tol);
 extern int          dmx_QRdecomposition (ESL_DMATRIX *X, ESL_DMATRIX **ret_Q, ESL_DMATRIX **ret_R, double tol);
-extern int         *vec_PermDIncresing(double *p, int n);
+extern int         *vec_PermDIncreasing(double *p, int n);
 extern int         *vec_PermDDecreasing(double *p, int n);
 extern int          ratematrix_emrate_Set(const char *name,  const ESL_DMATRIX *rate, float *f, EMRATE *R, double tol, char *errbuf, int verbose);
 extern EMRATE      *ratematrix_emrate_Create(const ESL_ALPHABET *abc, int N);
