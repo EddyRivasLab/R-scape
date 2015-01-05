@@ -776,7 +776,7 @@ ratematrix_Rescale(ESL_DMATRIX *Q, ESL_DMATRIX *E, double *p)
 {
   double rt = 0.0;
   int   i, j;
-  int   status;
+  int   status = eslOK;
 
   for (i = 0; i < Q->n; i ++) 
     rt += -p[i] * Q->mx[i][i];

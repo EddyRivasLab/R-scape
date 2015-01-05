@@ -551,9 +551,9 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
   int      i, j;
   int      status;
   
-  ESL_ALLOC(ct, sizeof(int *) * msa->nseq);
+  ESL_ALLOC(ct, sizeof(int **) * msa->nseq);
   for (i = 0; i < msa->nseq; i ++) {
-    ESL_ALLOC(ct[i], sizeof(int)*msa->alen);
+    ESL_ALLOC(ct[i], sizeof(int *) * msa->alen);
     if      (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct[i]);
     else if (msa->ss[i])   esl_wuss2ct(msa->ss[i],   msa->alen, ct[i]);
     else                   ESL_XFAIL(eslFAIL, "no ss for sequence %d\n", errbuf);
@@ -578,10 +578,14 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
 
   for (i = 0; i < msa->nseq; i ++) free(ct[i]);
   free(ct);
-
+  
   return eslOK;
 
  ERROR:
+  if (ct) {
+    for (i = 0; i < msa->nseq; i ++) if (ct[i]) free(ct[i]);
+    free(ct);
+  }
   return status;
 }
 
