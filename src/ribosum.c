@@ -243,6 +243,7 @@ main(int argc, char **argv)
     
     /* given msa aveid and avematch */
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);
+    cfg.msafrq = NULL;
     //msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
     
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
