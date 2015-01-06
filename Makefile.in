@@ -125,6 +125,7 @@ HEADERS  = src/e2_config.h\
            src/msamanip.h\
            src/muscle.h\
 	   src/modelconfig.h\
+	   src/mutualinfo.h\
            src/ncbiblast.h\
            src/orthologs.h\
            src/phmmer.h\
@@ -185,6 +186,7 @@ OBJS     = src/e1_bg.o\
            src/msamanip.o\
            src/muscle.o\
 	   src/modelconfig.o\
+	   src/mutualinfo.o\
            src/ncbiblast.o\
            src/orthologs.o\
            src/phmmer.o\
