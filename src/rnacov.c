@@ -1,6 +1,6 @@
 /* rnacov -- statistical test for covariation in an RNA structural alignment
  */
-#include <stdio.h>
+ #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,6 +12,11 @@
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
+ 
+#include "msamanip.h"
+#include "msatree.h"
+
+#include "ribosum_matrix.h"
 
 
 
@@ -38,7 +43,26 @@ struct cfg_s {
 
   int              nmsa;
   char            *msafile;
+  FILE            *outfp; 
+  char            *outheader;          /* header for all output files */
+  char            *msaheader;          /* header for all msa-specific output files */
+  int              infmt;
   
+  ESL_TREE        *T;
+  double           treeavgt;
+ 
+  char                *ribofile;
+  struct ribomatrix_s *ribosum;
+
+  char            *gnuplot;
+  
+  int              submsa;              /* set to the number of random seqs taken from original msa.
+					 * Set to 0 if we are taking all */
+  MSA_STAT         mstat;               /* statistics of the input alignment */
+  float           *msafrq;
+  
+  int              voutput;
+
   float            tol;
   int              verbose;
 };
@@ -53,19 +77,11 @@ struct cfg_s {
   { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      0 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      0 },
-  /* options for evolutionary method */
-  { "--fixpid",       eslARG_REAL,       NULL,   NULL,"0<=x<=100",   NULL,    NULL,  NULL,               "TRUE for using a fix pid for the ehmm model",                                               0 },
-  { "--fixtime",      eslARG_REAL,       NULL,   NULL,     "x>=0",      NULL, NULL,  NULL,               "TRUE for using a fix time for the evolutionary models of a pair",                           0 },
-  /* Control of scoring system - substitutions */
-  { "--mx",           eslARG_STRING,"BLOSUM62",  NULL,       NULL,   NULL,    NULL,  "--mxfile",         "substitution rate matrix choice (of some built-in matrices)",                               0 },
-  { "--mxfile",       eslARG_INFILE,      NULL,  NULL,       NULL,   NULL,    NULL,  "--mx",             "read substitution rate matrix from file <f>",                                               0 },
+  /* Control of scoring system - ribosum */
+  { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                               0 },
   /* Control of output */
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
- /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
   /* msa format */
   { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             0 },
   /* other options */
@@ -77,6 +93,7 @@ static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - statistical test for RNA covatiation in an alignment";
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -100,7 +117,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      p7_banner(stdout, cfg.argv[0], banner);
+      esl_banner(stdout, cfg.argv[0], banner);
       esl_usage(stdout, cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
@@ -128,11 +145,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.nmsa = 0;
 
   /* alphabet */
-  if      (esl_opt_GetBoolean(go, "--amino"))   cfg.abc = esl_alphabet_Create(eslAMINO);
-  else if (esl_opt_GetBoolean(go, "--dna"))     cfg.abc = esl_alphabet_Create(eslDNA);
-  else if (esl_opt_GetBoolean(go, "--rna"))     cfg.abc = esl_alphabet_Create(eslRNA);
-  else                                          cfg.abc = NULL;
-
+  cfg.abc = esl_alphabet_Create(eslRNA);
+ 
   cfg.w = esl_stopwatch_Create(); 
 
   /*  output file */
@@ -150,11 +164,15 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
 
-  /* branch length options */
-  cfg.fixpid     = esl_opt_IsOn(go, "--fixpid")?  esl_opt_GetReal(go, "--fixpid") : -1.0; 
-  cfg.fixtime    = esl_opt_IsOn(go, "--fixtime")? esl_opt_GetReal(go, "--fixtime") : -1.0;
-
   cfg.T = NULL;
+
+  /* the ribosum matrices */
+  cfg.ribofile = NULL;
+  if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
+  else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
+
+  cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, cfg.verbose, cfg.errbuf);
+  if (cfg.ribosum == NULL) esl_fatal("failed to create ribosum matrices from file %s\n", cfg.ribofile);
 
   *ret_go = go;
   *ret_cfg = cfg;
@@ -215,17 +233,15 @@ main(int argc, char **argv)
     
     /* given msa aveid and avematch */
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);
-    msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
 
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
 
     /* print some info */
     if (cfg.voutput) {
-      esl_sprintf(&cfg.msarfname, "%s.%s", cfg.msaheader, e1_rate_EvomodelType(cfg.evomodel)); 
       fprintf(cfg.outfp, "Given alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
-      if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.msarfname); 
+      if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
     }
     
@@ -234,6 +250,8 @@ main(int argc, char **argv)
     
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
+    esl_tree_Destroy(cfg.T); cfg.T = NULL;
+    free(cfg.msaheader); cfg.msaheader = NULL;
   }
 
   /* cleanup */
@@ -242,6 +260,10 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
+  fclose(cfg.outfp);
+  free(cfg.outheader);
+  free(cfg.gnuplot);
+  Ribosum_matrix_Destroy(cfg.ribosum);
   return 0;
 }
 
@@ -252,9 +274,8 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int      status;
   
   /* the TREE */
-  status = e2_tree_UPGMA(&cfg->T, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0,
-			 cfg->tol, cfg->errbuf, cfg->verbose);
-  if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
+  if (Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+    if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
   cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
   
@@ -265,6 +286,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
+  ESL_MSA   *dmsa = NULL;
   float      sc;
   int        nnodes;
   int        r;
@@ -282,25 +304,16 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
 
  /* main function */
-  status = e2_msa(cfg->r, cfg->R1[0], cfg->R7, dmsa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, cfg->bg7, cfg->e2ali, cfg->e2optimize, 
-		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
-  if (status != eslOK)  { esl_fatal(cfg->errbuf); }
-  esl_stopwatch_Stop(cfg->w);
-  msamanip_CStats(cfg->abc, e2msa, &alle2mstat);
-  
-#if 0
-  if (cfg->voutput) { /* write output alignment */
-    fprintf(cfg->outfp, "\ne2msa-%s alignment with nodes\n", e1_rate_EvomodelType(cfg->evomodel));
-    eslx_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
-    msamanip_DumpStats(cfg->outfp, e2msa, alle2mstat);
-  }
-#endif
+   
   
   if (cfg->T) esl_tree_Destroy(cfg->T);
-  
+  esl_msa_Destroy(dmsa);
   return eslOK;
 
  ERROR:
+  if (cfg->T) esl_tree_Destroy(cfg->T);
+  if (dmsa) esl_msa_Destroy(dmsa);
+
  return status;
 }
 

@@ -334,14 +334,18 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
   int                  dim2 = abc->K * abc->K;
   int                  status;
 
+  if (verbose) printf("ribosum file: %s\n", filename);
+
   if (esl_fileparser_Open(filename, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
   esl_fileparser_SetCommentChar(efp, '#');
-  
+
   ribosum = Ribosum_matrix_Create(abc, NULL);
   if (ribosum == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad ribosum allocation");
 
   while (esl_fileparser_NextLine(efp) == eslOK)
   {
+    printf("\n%s\n", efp->buf);
+
     if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", filename);
 
     if (strncmp(tok, "RIBO", 4) == 0){
@@ -786,7 +790,9 @@ parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *
   else if (mtxtype == RATE) { bprs = ribosum->bprsQ; prna = ribosum->prnaQ; urna = ribosum->urnaQ; xrna = ribosum->xrnaQ; }
   else ESL_XFAIL(eslFAIL, errbuf, "cannot find mtxtype");
 
+  printf("\n^^buf: %s\n", efp->buf);
   if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
+  printf("\n^^buf: %s\n", efp->buf);
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
   if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
 
