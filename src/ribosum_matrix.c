@@ -771,30 +771,165 @@ bg_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, int alen, d
 static int
 parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf)
 {
+  char        *tok;
+  ESL_DMATRIX *bprs;
+  ESL_DMATRIX *prna;
+  ESL_DMATRIX *urna;
+  ESL_DMATRIX *xrna;
+  int          dim = ribosum->abc->K;
+  int          dim2 = ribosum->abc->K*ribosum->abc->K;
+  int          i, j;
+  int          status;
+
+  if      (mtxtype == JOIN) { bprs = ribosum->bprsJ; prna = ribosum->prnaJ; urna = ribosum->urnaJ; xrna = ribosum->xrnaJ; }
+  else if (mtxtype == COND) { bprs = ribosum->bprsC; prna = ribosum->prnaC; urna = ribosum->urnaC; xrna = ribosum->xrnaC; }
+  else if (mtxtype == RATE) { bprs = ribosum->bprsQ; prna = ribosum->prnaQ; urna = ribosum->urnaQ; xrna = ribosum->xrnaQ; }
+  else ESL_XFAIL(eslFAIL, errbuf, "cannot find mtxtype");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  for (i = 0; i < dim2; i ++) {
+    if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+    if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+    for (j = 0; j < dim2; j ++) {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+      if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse M[%d,%d]", i, j);
+      bprs->mx[i][j] = atof(tok);
+    }
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  for (i = 0; i < dim; i ++) {
+    if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+    if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+    for (j = 0; j < dim; j ++) {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+      if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse M[%d,%d]", i, j);
+      prna->mx[i][j] = atof(tok);
+    }
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  for (i = 0; i < dim; i ++) {
+    if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+    if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+    for (j = 0; j < dim; j ++) {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+      if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse M[%d,%d]", i, j);
+      urna->mx[i][j] = atof(tok);
+    }
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  for (i = 0; i < dim; i ++) {
+    if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+    if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+    for (j = 0; j < dim; j ++) {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+      if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse M[%d,%d]", i, j);
+      xrna->mx[i][j] = atof(tok);
+    }
+  }
+
   return eslOK;
+
+ ERROR:
+  return status;
 }
 
 static int
 parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, char *errbuf)
 {
+  char *tok;
+  int   i;
+  int   status;
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+  for (i = 0; i < ribosum->abc->K*ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    ribosum->bprsM[i] = atof(tok);
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+  for (i = 0; i < ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    ribosum->prnaM[i] = atof(tok);
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+  for (i = 0; i < ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    ribosum->urnaM[i] = atof(tok);
+  }
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+  for (i = 0; i < ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    ribosum->xrnaM[i] = atof(tok);
+  }
+
   return eslOK;
+
+ ERROR:
+  return status;
 }
 
 static int
 parse_bg(ESL_FILEPARSER *efp, struct ribomatrix_s *ribosum, char *errbuf)
 {
   char *tok;
+  int   i;
   int   status;
 
   if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
+  if (esl_strcmp(tok, "A") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse background header");
 
-  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, "", errbuf);
-  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[A]");
-  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[C]");
-  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[G]");
-  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[U]");
-
+  if (esl_fileparser_NextLine(efp) == eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+  for (i = 0; i < ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bg[%d]", i);
+    ribosum->bg[i] = atof(tok);
+  }
 
   return eslOK;
 
