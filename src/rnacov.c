@@ -180,7 +180,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   *ret_go = go;
   *ret_cfg = cfg;
-  free(cfg.gnuplot);
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
