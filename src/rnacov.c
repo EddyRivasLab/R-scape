@@ -143,10 +143,13 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
       (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
+  cfg.msafrq = NULL;
 
   /* alphabet */
   cfg.abc = esl_alphabet_Create(eslRNA);
- 
+  esl_alphabet_SetEquiv(cfg.abc, '=', '-');     /* allow = as a gap character too */
+  esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
+
   cfg.w = esl_stopwatch_Create(); 
 
   /*  output file */
@@ -172,7 +175,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
 
   cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, cfg.verbose, cfg.errbuf);
-  if (cfg.ribosum == NULL) esl_fatal("failed to create ribosum matrices from file %s\n", cfg.ribofile);
+  if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
+  if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
 
   *ret_go = go;
   *ret_cfg = cfg;
@@ -212,6 +216,7 @@ main(int argc, char **argv)
   /* Open the MSA file */
   status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
   if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  eslx_msafile_SetDigital(afp, cfg.abc);
 
   /* read the MSA */
   while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
@@ -232,7 +237,7 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubset(cfg.r, &msa, cfg.idthresh, &nremoved);
     
     /* given msa aveid and avematch */
-    msamanip_CStats(cfg.abc, msa, &cfg.mstat);
+    msamanip_XStats(msa, &cfg.mstat);
 
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
@@ -246,10 +251,10 @@ main(int argc, char **argv)
     }
     
     status = run_rnacov(go, &cfg, msa);
-    if (status != eslOK) esl_fatal("%s Failed to run e2msa", cfg.errbuf);
+    if (status != eslOK) esl_fatal("%s Failed to run rnacov", cfg.errbuf);
     
     esl_msa_Destroy(msa); msa = NULL;
-    free(cfg.msafrq); cfg.msafrq = NULL;
+    if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     esl_tree_Destroy(cfg.T); cfg.T = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
   }
@@ -275,7 +280,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   /* the TREE */
   if (Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-    if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
+  if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
   cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
   
@@ -286,33 +291,24 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA   *dmsa = NULL;
-  float      sc;
   int        nnodes;
-  int        r;
   int        status;
 
   esl_stopwatch_Start(cfg->w);
 
-  dmsa = esl_msa_Clone(msa);
-  esl_msa_Digitize(cfg->abc, dmsa, NULL);
-  
-  /* get the tree
+  /* produce a tree
    */
-  status = create_tree(go, cfg, dmsa);
+  status = create_tree(go, cfg, msa);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
 
  /* main function */
    
   
-  if (cfg->T) esl_tree_Destroy(cfg->T);
-  esl_msa_Destroy(dmsa);
   return eslOK;
 
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
-  if (dmsa) esl_msa_Destroy(dmsa);
 
  return status;
 }
