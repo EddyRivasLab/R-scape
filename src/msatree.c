@@ -138,7 +138,7 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
   if ((status = esl_tree_Validate(T, NULL))                            != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
     
   /* make sure the seq has the same index in msa and T */
-  if ((status = Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to reorder taxa according to msa");
+  if ((status = Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)) != eslOK) goto ERROR;
       
   /* root the Tree */
   if (rootatmid && Tree_RootAtMidPoint(&T, NULL, errbuf, verbose) != eslOK) ESL_XFAIL(status, errbuf, "Failed to root the tree");
