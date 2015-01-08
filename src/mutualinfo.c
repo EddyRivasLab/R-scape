@@ -163,11 +163,21 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
       if (T->left[v] <= 0)  idx = nnodes - T->left[v];
       else                  idx = T->left[v];  
       pp[idx] = esl_dmatrix_Create(K, K);
+      if (T->left[v] <= 0) {
+	esl_dmatrix_Set(pp[idx], 0.0);
+	pp[idx]->mx[msa->aseq[idx][i]][msa->aseq[idx][j]] = 1.0;
+      }
+
       ppl = pp[idx];
 
       if (T->right[v] <= 0) idx = nnodes - T->right[v];
       else                  idx = T->right[v];  
       pp[idx] = esl_dmatrix_Create(K, K);
+      if (T->right[v] <= 0) {
+	esl_dmatrix_Set(pp[idx], 0.0);
+	pp[idx]->mx[msa->aseq[idx][i]][msa->aseq[idx][j]] = 1.0;
+      }
+
       ppr = pp[idx];
 
      if (ppl != NULL && ppr != NULL) { /* ready to go: calculate ps and pp at the parent node */
@@ -201,15 +211,18 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
 static int    
 mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, int verbose, char *errbuf)
 {
-  ESL_STACK  *vs = NULL;   /* node index stack */
-  double    **ps = NULL;
-  double     *psl, *psr;
-  int         dim;
-  int         K = msa->abc->K;
-  int         nnodes;
-  int         v;
-  int         idx;
-  int         status;
+  ESL_STACK    *vs = NULL;   /* node index stack */
+  ESL_DMATRIX  *Cl = NULL;
+  ESL_DMATRIX  *Cr = NULL;
+  double      **ps = NULL;
+  double       *psl, *psr;
+  int           dim;
+  int           K = msa->abc->K;
+  int           nnodes;
+  int           v;
+  int           idx;
+  int           x, y;
+  int           status;
   
   /* allocate the single and pair probs for theinternal nodes */
   nnodes = (T->N > 1)? T->N-1 : T->N;
@@ -225,23 +238,37 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
       if (T->left[v] <= 0) idx = nnodes - T->left[v];
       else                 idx = T->left[v];  
       ESL_ALLOC(ps[idx], sizeof(double) * K);
+      
+      if (T->left[v] <= 0) {
+	esl_vec_DSet(ps[idx], K, 0.0);
+	ps[idx][msa->aseq[idx][i]] = 1.0;
+      }
       psl = ps[idx];
 
       if (T->right[v] <= 0) idx = nnodes - T->right[v];
       else                  idx = T->right[v];  
       ESL_ALLOC(ps[idx], sizeof(double) * K);
+      if (T->right[v] <= 0) {
+	esl_vec_DSet(ps[idx], K, 0.0);
+	ps[idx][msa->aseq[idx][i]] = 1.0;
+      }
       psr = ps[idx];
       
       if (psl != NULL && psr != NULL) { /* ready to go: calculate ps at the parent node */
+	
+	esl_vec_DSet(ps[v], K, 0.0);
+	for (x = 0; x < K; x ++)
+	  for (y = 0; y < K; y ++)
+	    ps[v][x] += psl[y] * Cl->mx[y][x];
 	
 	/* push parent into stack unless already at the root */
 	if (v > 0 && esl_stack_IPush(vs, T->parent[v]) != eslOK) { status = eslFAIL; goto ERROR; }; 
       }
       else if (psl == NULL) { /* not ready: push left child  into stack */	
-	if (esl_stack_IPush(vs, T->left[v])   != eslOK) { status = eslFAIL; goto ERROR; };
+	if (esl_stack_IPush(vs, T->left[v])  != eslOK) { status = eslFAIL; goto ERROR; };
       }
       else if (psr == NULL) { /* not ready: push right child into stack */	
-  	if (esl_stack_IPush(vs, T->right[v])  != eslOK) { status = eslFAIL; goto ERROR; }
+  	if (esl_stack_IPush(vs, T->right[v]) != eslOK) { status = eslFAIL; goto ERROR; }
       }
     }
 
@@ -249,6 +276,8 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
 
   for (v = 0; v < dim; v ++) free(ps[v]);
   free(ps);
+  if (Cl) esl_dmatrix_Destroy(Cl);
+  if (Cr) esl_dmatrix_Destroy(Cr);
   esl_stack_Destroy(vs);
 
   return eslOK;
@@ -257,6 +286,8 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   if (vs) esl_stack_Destroy(vs);
   for (v = 0; v < dim; v ++) if (ps[v]) free(ps[v]);
   if (ps) free(ps);
+  if (Cl) esl_dmatrix_Destroy(Cl);
+  if (Cr) esl_dmatrix_Destroy(Cr);
   return status;
 }
 
