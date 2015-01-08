@@ -93,7 +93,7 @@ static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - statistical test for RNA covatiation in an alignment";
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **ret_mi);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -198,16 +198,17 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 int
 main(int argc, char **argv)
 { 
-  char           *msg = "e2msa failed";
-  ESL_GETOPTS    *go;
-  struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
-  ESL_MSA        *msa = NULL;          /* the input alignment  */
-  int             seq_cons_len = 0;
-  int             nfrags = 0;	  	  /* # of fragments removed */
-  int             nremoved = 0;	          /* # of identical sequences removed */
-  int             status = eslOK;
-  int             hstatus = eslOK;
+  char            *msg = "e2msa failed";
+  ESL_GETOPTS     *go;
+  struct cfg_s     cfg;
+  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSA         *msa = NULL;          /* the input alignment  */
+  struct mutual_s *mi;
+  int              seq_cons_len = 0;
+  int              nfrags = 0;	  	  /* # of fragments removed */
+  int              nremoved = 0;	          /* # of identical sequences removed */
+  int              status = eslOK;
+  int              hstatus = eslOK;
 
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
@@ -249,10 +250,12 @@ main(int argc, char **argv)
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
     }
     
-    status = run_rnacov(go, &cfg, msa);
+    /* main function */
+    status = run_rnacov(go, &cfg, msa, &mi);
     if (status != eslOK) esl_fatal("%s Failed to run rnacov", cfg.errbuf);
     
     esl_msa_Destroy(msa); msa = NULL;
+    Mutual_Destroy(mi); mi = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     esl_tree_Destroy(cfg.T); cfg.T = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
@@ -288,10 +291,11 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **ret_mi)
 {
-  int        nnodes;
-  int        status;
+  struct mutual_s *mi = NULL;
+  int              nnodes;
+  int              status;
 
   esl_stopwatch_Start(cfg->w);
 
@@ -301,14 +305,19 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
 
- /* main function */
-   
+  /* create the MI structure */
+  mi = Mutual_Create(msa->alen);
   
+ /* main function */
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->verbose, cfg->errbuf);   
+  if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+  
+  *ret_mi = mi;
   return eslOK;
 
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
-
+  if (mi) Mutual_Destroy(mi);
  return status;
 }
 
