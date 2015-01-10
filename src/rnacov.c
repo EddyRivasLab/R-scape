@@ -281,7 +281,8 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int      status;
   
   /* the TREE */
-  if (Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+  status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
   if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
   cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
@@ -309,7 +310,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   mi = Mutual_Create(msa->alen);
   
  /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   
   *ret_mi = mi;
