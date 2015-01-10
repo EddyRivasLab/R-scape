@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "easel.h"
+#include "esl_alphabet.h"
 #include "esl_dmatrix.h"
 #include "esl_msa.h"
 #include "esl_stack.h"
@@ -59,13 +60,13 @@ Mutual_Create(int64_t alen, int K)
   ESL_ALLOC(mi, sizeof(struct mutual_s));
   mi->alen = alen;
   
-  ESL_ALLOC(mi->pp,      sizeof(double **) * alen);
-  ESL_ALLOC(mi->ps,      sizeof(double  *) * alen);
+  ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
+  ESL_ALLOC(mi->ps,           sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
-    ESL_ALLOC(mi->pp[i], sizeof(double  *) * alen);
-    ESL_ALLOC(mi->ps[i], sizeof(double   ) * K);
+    ESL_ALLOC(mi->pp[i],      sizeof(double  *) * alen);
+    ESL_ALLOC(mi->ps[i],      sizeof(double   ) * K);
     for (j = 0; j < alen; j++) 
-      ESL_ALLOC(mi->pp[i], sizeof(double ) * K2);
+      ESL_ALLOC(mi->pp[i][j], sizeof(double ) * K2);
   }
    
   mi->MI  = esl_dmatrix_Create(alen, alen);
@@ -173,6 +174,7 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
   int            v;
   int            which;
   int            idx;
+  int            resi, resj;
   int            x, y;
   int            xx, yy;
   int            status;
@@ -195,10 +197,27 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
       which = (T->left[v] <= 0)? -T->left[v] : T->left[v];
       idx   = (T->left[v] <= 0)? nnodes + which : which;
       if (T->left[v] <= 0) {
-	//printf("v=%d parent %d pp l time %f %d which %d i %d %d j %d %d \n", v, T->parent[v], T->ld[v], idx, which, i, msa->ax[which][i+1], j, msa->ax[which][j+1]);
 	pp[idx] = esl_dmatrix_Create(K, K);
 	esl_dmatrix_Set(pp[idx], 0.0);
-	pp[idx]->mx[msa->ax[which][i+1]][msa->ax[which][j+1]] = 1.0;
+	resi = msa->ax[which][i+1];
+	resj = msa->ax[which][j+1];
+	printf("v=%d parent %d pp l time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
+	       v, T->parent[v], T->ld[v], idx, which, 
+	       i, resi, esl_abc_XIsResidue(msa->abc, resi), 
+	       j, resj, esl_abc_XIsResidue(msa->abc, resj));
+
+	if (esl_abc_XIsResidue(msa->abc, resi) && esl_abc_XIsResidue(msa->abc, resj)) {
+	  pp[idx]->mx[resi][resj] = 1.0;
+	}
+	else if (esl_abc_XIsResidue(msa->abc, resi)) {
+	  for (y = 0; y < K; y ++) pp[idx]->mx[resi][y] = 1.0/(double)K;
+	}
+	else if (esl_abc_XIsResidue(msa->abc, resj)) {
+	  for (x = 0; x < K; x ++) pp[idx]->mx[x][resj] = 1.0/(double)K;
+	}
+	else {
+	  esl_dmatrix_Set(pp[idx], 1.0/(double)K2);
+	}
       }
       ppl = pp[idx];
 
@@ -206,9 +225,27 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
       idx   = (T->right[v] <= 0)? nnodes + which : which;
       if (T->right[v] <= 0) {
 	pp[idx] = esl_dmatrix_Create(K, K);
-	esl_dmatrix_Set(pp[idx], 0.0);
-	pp[idx]->mx[msa->ax[which][i+1]][msa->ax[which][j+1]] = 1.0;
-	//printf("v=%d parent %d pp r time %f %d which %d i %d %d j %d %d \n", v, T->parent[v], T->rd[v], idx, which, i, msa->ax[which][i+1], j, msa->ax[which][j+1]);
+	esl_dmatrix_Set(pp[idx], 0.0); 
+	resi = msa->ax[which][i+1];
+	resj = msa->ax[which][j+1];
+	printf("v=%d parent %d pp r time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
+	       v, T->parent[v], T->rd[v], idx, which, 
+	       i, resi, esl_abc_XIsResidue(msa->abc, resi), 
+	       j, resj, esl_abc_XIsResidue(msa->abc, resj));
+
+
+	if (esl_abc_XIsResidue(msa->abc, resi) && esl_abc_XIsResidue(msa->abc, resj)) {
+	  pp[idx]->mx[resi][resj] = 1.0;
+	}
+	else if (esl_abc_XIsResidue(msa->abc, resi)) {
+	  for (y = 0; y < K; y ++) pp[idx]->mx[resi][y] = 1.0/(double)K;
+	}
+	else if (esl_abc_XIsResidue(msa->abc, resj)) {
+	  for (x = 0; x < K; x ++) pp[idx]->mx[x][resj] = 1.0/(double)K;
+	}
+	else {
+	  esl_dmatrix_Set(pp[idx], 1.0/(double)K2);
+	}
       }
       ppr = pp[idx];
 
@@ -277,6 +314,7 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   int            idx;
   int            which;
   int            x, y;
+  int            resi;
   int            status;
   
   /* allocate the single and pair probs for theinternal nodes */
@@ -295,18 +333,32 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
       which = (T->left[v] <= 0)? -T->left[v] : T->left[v];
       idx   = (T->left[v] <= 0)? nnodes + which : which;
       if (T->left[v] <= 0) {
+	resi = msa->ax[which][i+1];
 	ESL_ALLOC(ps[idx], sizeof(double)*K);
 	esl_vec_DSet(ps[idx], K, 0.0);
-	ps[idx][msa->ax[which][i+1]] = 1.0;
+	if (esl_abc_XIsResidue(msa->abc, resi)) {
+	  ps[idx][resi] = 1.0;
+	}
+	else {
+	  esl_vec_DSet(ps[idx], K, 1.0/(double)K);
+	}
+
       }
       psl = ps[idx];
       
       which = (T->right[v] <= 0)? -T->right[v] : T->right[v];
       idx   = (T->right[v] <= 0)? nnodes + which : which;
       if (T->right[v] <= 0) {
+	resi = msa->ax[which][i+1];
 	ESL_ALLOC(ps[idx], sizeof(double)*K);
 	esl_vec_DSet(ps[idx], K, 0.0);
-	ps[idx][msa->ax[which][i+1]] = 1.0;
+	esl_vec_DSet(ps[idx], K, 0.0);
+	if (esl_abc_XIsResidue(msa->abc, resi)) {
+	  ps[idx][resi] = 1.0;
+	}
+	else {
+	  esl_vec_DSet(ps[idx], K, 1.0/(double)K);
+	}
       }
       psr = ps[idx];
       
