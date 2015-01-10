@@ -232,6 +232,7 @@ main(int argc, char **argv)
     msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader); 
    
     esl_msa_Hash(msa);
+    esl_msa_ConvertDegen2X(msa);
    
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubset(cfg.r, &msa, cfg.idthresh, &nremoved);
