@@ -52,22 +52,22 @@ struct mutual_s *
 Mutual_Create(int64_t alen, int K)
 {
   struct mutual_s *mi = NULL;
+  int              K2 = K * K;
   int              i, j;
   int              status;
 
   ESL_ALLOC(mi, sizeof(struct mutual_s));
   mi->alen = alen;
   
-  ESL_ALLOC(mi->pp,    sizeof(double **) * alen);
-  ESL_ALLOC(mi->ps,    sizeof(double  *) * alen);
-  ESL_ALLOC(mi->pp[0], sizeof(double  *) * alen * alen);
-  for (i = 1; i < alen; i++) mi->pp[i] = mi->pp[0] + i*alen;
-
-  ESL_ALLOC(mi->ps[0], sizeof(double   ) * alen * K);
-  ESL_ALLOC(mi->pp[0][0], sizeof(double   ) * alen * alen * K);
-  for (i = 1; i < alen; i++) mi->pp[i] = mi->ps[0] + i*K;
-  for (i = 1; i < alen; i++) mi->ps[i] = mi->ps[0] + i*K;
-  
+  ESL_ALLOC(mi->pp,      sizeof(double **) * alen);
+  ESL_ALLOC(mi->ps,      sizeof(double  *) * alen);
+  for (i = 0; i < alen; i++) {
+    ESL_ALLOC(mi->pp[i], sizeof(double  *) * alen);
+    ESL_ALLOC(mi->ps[i], sizeof(double   ) * K);
+    for (j = 0; j < alen; j++) 
+      ESL_ALLOC(mi->pp[i], sizeof(double ) * K2);
+  }
+   
   mi->MI  = esl_dmatrix_Create(alen, alen);
   mi->MIa = esl_dmatrix_Create(alen, alen);
   mi->MIp = esl_dmatrix_Create(alen, alen);
@@ -78,7 +78,8 @@ Mutual_Create(int64_t alen, int K)
     esl_vec_DSet(mi->ps[i], K, 0.0);
     mi->H[i]  = 0.0;
     for (j = 0; j < alen; j++) {
-      mi->pp->mx[i][j]  = 0.0;
+      esl_vec_DSet(mi->pp[i][j], K2, 0.0);
+       
       mi->MI->mx[i][j]  = 0.0;
       mi->MIa->mx[i][j] = 0.0;
       mi->MIp->mx[i][j] = 0.0;
@@ -95,12 +96,21 @@ Mutual_Create(int64_t alen, int K)
 void                
 Mutual_Destroy(struct mutual_s *mi)
 {
+  int i, j;
+
   if (mi) {
-    esl_dmatrix_Destroy(mi->pp);
+    for (i = 0; i < mi->alen; i++) {
+      for (j = 0; j < mi->alen; j++) {
+	free(mi->pp[i][j]);
+      }
+      free(mi->pp[i]);
+      free(mi->ps[i]);
+    }
     esl_dmatrix_Destroy(mi->MI);
     esl_dmatrix_Destroy(mi->MIa);
     esl_dmatrix_Destroy(mi->MIp);
     esl_dmatrix_Destroy(mi->MIr);
+    free(mi->pp);
     free(mi->ps);
     free(mi->H);
     free(mi);
@@ -232,7 +242,9 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
       }
     }
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "pp did not transverse tree to the root");
-  mi->pp->mx[i][j] = pp[v]->mx[i][j];
+  for (xx = 0; xx < K; xx ++) 
+    for (yy = 0; yy < K; yy ++) 
+      mi->pp[i][j][IDX(xx,yy,K)] = pp[v]->mx[xx][yy];
 
   for (v = 0; v < dim; v ++) esl_dmatrix_Destroy(pp[v]);
   free(pp);
@@ -324,7 +336,7 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
       }
     }
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "ps did not transverse tree to the root");
-  mi->ps[i] = ps[v][i];
+  esl_vec_DCopy(ps[v], mi->pp[i], K);
 
   for (v = 0; v < dim; v ++) free(ps[v]);
   free(ps);
