@@ -48,6 +48,7 @@ struct cfg_s {
   char            *msaheader;          /* header for all msa-specific output files */
   int              infmt;
   
+  int              naive;
   ESL_TREE        *T;
   double           treeavgt;
  
@@ -70,6 +71,7 @@ struct cfg_s {
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
+  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
@@ -164,19 +166,22 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")? esl_opt_GetReal(go, "-F") : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
+  cfg.naive      = esl_opt_GetBoolean(go, "--naive");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
 
   cfg.T = NULL;
 
   /* the ribosum matrices */
-  cfg.ribofile = NULL;
-  if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
-  else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
-
-  cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
-  if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
-  if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
+  if (!cfg.naive) {
+    cfg.ribofile = NULL;
+    if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
+    else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
+    
+    cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
+    if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
+    if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
+  }
 
   *ret_go = go;
   *ret_cfg = cfg;
@@ -258,7 +263,7 @@ main(int argc, char **argv)
     esl_msa_Destroy(msa); msa = NULL;
     Mutual_Destroy(mi); mi = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
-    esl_tree_Destroy(cfg.T); cfg.T = NULL;
+    if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
   }
 
@@ -271,7 +276,7 @@ main(int argc, char **argv)
   fclose(cfg.outfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
-  Ribosum_matrix_Destroy(cfg.ribosum);
+  if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   return 0;
 }
 
@@ -303,15 +308,17 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
 
   /* produce a tree
    */
-  status = create_tree(go, cfg, msa);
-  if (status != eslOK)  { esl_fatal(cfg->errbuf); }
-  nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
+  if (!cfg->naive) {
+    status = create_tree(go, cfg, msa);
+    if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+    nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
+  }
 
   /* create the MI structure */
   mi = Mutual_Create(msa->alen, cfg->abc->K);
   
  /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->naive, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   
   *ret_mi = mi;

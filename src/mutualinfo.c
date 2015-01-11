@@ -19,13 +19,15 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
+static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
 				  int verbose, char *errbuf);
 static int mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 double tol, int verbose, char *errbuf);
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, int naive, double tol, int verbose, char *errbuf)
 {
   double      H, MI, MIa, MIp, MIr;
   int         i, j;
@@ -33,11 +35,20 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   int         K = msa->abc->K;
   int         status;
   
-  status = Mutual_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  
-  status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
+  if (naive) {
+    status = Mutual_NaivePP(msa, mi, tol, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+    
+    status = Mutual_NaivePS(msa, mi, tol, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+  else {
+    status = Mutual_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+    
+    status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
   
   // H
   for (i = 0; i < mi->alen; i++) {
@@ -141,6 +152,43 @@ Mutual_Destroy(struct mutual_s *mi)
 
 
 int 
+Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+  int64_t alen = msa->alen;
+  int     i, j;
+  int     status;
+
+  for (i = 0; i < alen; i ++)
+    for (j = i; j < alen; j ++) {
+      status = mutual_naive_ppij(i, j, msa, mi, tol, verbose, errbuf);
+      if (status != eslOK) goto ERROR;
+    }
+  
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int 
+Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+  int64_t alen = msa->alen;
+  int     i;
+  int     status;
+
+  for (i = 0; i < alen; i ++) {
+    status = mutual_naive_psi(i, msa, mi, tol, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int 
 Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
@@ -179,6 +227,20 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
 /*---------------- internal functions --------------------- */
 
+
+static int    
+mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+
+  return eslOK;
+}
+
+static int    
+mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+
+  return eslOK;
+}
 
 int 
 mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
