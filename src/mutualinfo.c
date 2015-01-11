@@ -20,10 +20,11 @@
 #include "ribosum_matrix.h"
 
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-static int mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
+static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
 				  int verbose, char *errbuf);
-static int mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
+static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+
+static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 double tol, int verbose, char *errbuf);
 
 int                 
@@ -48,6 +49,20 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
     
     status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;
+  }
+  
+  if (verbose) {
+    for (i = 0; i < mi->alen; i ++) {
+      for (j = i; j < mi->alen; j ++) {
+	printf("pp[%d][%d] = ", i, j);
+	for (x = 0; x < K; x ++) 
+	  for (y = 0; y < K; y ++) {
+	    printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
+	  }
+	printf("\n");
+      }
+      esl_vec_DDump(stdout, mi->ps[i], K, NULL);
+    }
   }
   
   // H
@@ -108,10 +123,10 @@ Mutual_Create(int64_t alen, int K)
   ESL_ALLOC(mi->H, sizeof(double) * alen);
  
   for (i = 0; i < alen; i++) {
-    esl_vec_DSet(mi->ps[i], K, 0.0);
+    esl_vec_DSet(mi->ps[i], K, 1.0); // laplace prior
     mi->H[i]  = 0.0;
     for (j = 0; j < alen; j++) {
-      esl_vec_DSet(mi->pp[i][j], K2, 0.0);
+      esl_vec_DSet(mi->pp[i][j], K2, 1.0); // laplace prior
        
       mi->MI->mx[i][j]  = 0.0;
       mi->MIa->mx[i][j] = 0.0;
@@ -174,6 +189,7 @@ int
 Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
+  int     K = msa->abc->K;
   int     i;
   int     status;
 
@@ -197,7 +213,7 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
   for (i = 0; i < alen; i ++)
     for (j = i; j < alen; j ++) {
-      status = mutual_post_order_ppij(i, j, msa, T, ribosum, mi, tol, verbose, errbuf);
+      status = mutual_postorder_ppij(i, j, msa, T, ribosum, mi, tol, verbose, errbuf);
       if (status != eslOK) goto ERROR;
     }
   
@@ -215,7 +231,7 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
   int     status;
 
   for (i = 0; i < alen; i ++) {
-    status = mutual_post_order_psi(i, msa, T, ribosum, mi, tol, verbose, errbuf);
+    status = mutual_postorder_psi(i, msa, T, ribosum, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
 
@@ -231,19 +247,55 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 static int    
 mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
+  double *pp = mi->pp[i][j];
+  int          K = msa->abc->K;
+  int          s;
+  int          resi, resj;
+  int          x, y;
+
+  for (s = 0; s < msa->nseq; s ++) {
+    resi = msa->ax[s][i+1];
+    resj = msa->ax[s][j+1];
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) pp[IDX(resi,resj,K)] += 1.0;
+    else if (esl_abc_XIsCanonical(msa->abc, resi)) for (y = 0; y < K; y ++)           pp[IDX(resi,y,K)] += 1.0;
+    else if (esl_abc_XIsCanonical(msa->abc, resj)) for (x = 0; x < K; x ++)           pp[IDX(x,resj,K)] += 1.0;
+    else {
+      for (y = 0; y < K; y ++)
+	for (y = 0; y < K; y ++) 
+	  pp[IDX(x,y,K)] += 1.0;
+    }
+  }
+
+  esl_vec_DNorm(pp, K*K);
 
   return eslOK;
 }
 
+
 static int    
 mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
+  double *ps = mi->ps[i];
+  int     K = msa->abc->K;
+  int     s;
+  int     resi;
+  int     x;
+
+  for (s = 0; s < msa->nseq; s ++) {
+    resi = msa->ax[s][i+1];
+    if (esl_abc_XIsCanonical(msa->abc, resi)) ps[resi] += 1.0;
+    else {             
+      for (x = 0; x < K; x ++) ps[x] += 1.0;
+    }
+  }
+
+  esl_vec_DNorm(ps, K);
 
   return eslOK;
 }
 
 int 
-mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   ESL_STACK     *vs = NULL;   /* node index stack */
   ESL_DMATRIX  **pp = NULL;
@@ -363,13 +415,10 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
     }
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "pp did not transverse tree to the root");
   
-  printf("pp[%d][%d] = ", i, j);
   for (x = 0; x < K; x ++) 
     for (y = 0; y < K; y ++) {
       mi->pp[i][j][IDX(x,y,K)] = pp[v]->mx[x][y] * ribosum->bprsM[IDX(x,y,K)];
-      printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
     }
-  printf("\n");
 
   for (v = 0; v < dim; v ++) esl_dmatrix_Destroy(pp[v]);
   free(pp);
@@ -388,7 +437,7 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
 }
 
 static int    
-mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   ESL_STACK     *vs = NULL;   /* node index stack */
   double       **ps = NULL;
@@ -477,7 +526,7 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
     }
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "ps did not transverse tree to the root");
   for (x = 0; x < K; x ++) mi->ps[i][x] = ps[v][x] * ribosum->prnaM[x];
- 
+  
   for (v = 0; v < dim; v ++) free(ps[v]);
   free(ps);
   if (CL) esl_dmatrix_Destroy(CL);
