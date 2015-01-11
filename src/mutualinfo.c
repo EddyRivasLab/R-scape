@@ -197,7 +197,8 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
   int            idx;
   int            resi, resj;
   int            x, y;
-  int            xx, yy;
+  int            xl, yl;
+  int            xr, yr;
   int            status;
   
   /* allocate the single and pair probs for theinternal nodes */
@@ -280,10 +281,12 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
 	esl_dmatrix_Set(pp[v], 0.0);
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) {
-
-	    for (xx = 0; xx < K; xx ++) 
-	      for (yy = 0; yy < K; yy ++) 
-		pp[v]->mx[x][y] += ppl->mx[xx][yy] * CL->mx[IDX(x,y,K)][IDX(xx,yy,K)] * ppr->mx[xx][yy] * CR->mx[IDX(x,y,K)][IDX(xx,yy,K)];
+	    
+	    for (xl = 0; xl < K; xl ++) 
+	      for (yl = 0; yl < K; yl ++) 
+		for (xr = 0; xr < K; xr ++) 
+		  for (yr = 0; yr < K; yr ++) 
+		    pp[v]->mx[x][y] += ppl->mx[xl][yl] * CL->mx[IDX(x,y,K)][IDX(xl,yl,K)] * ppr->mx[xr][yr] * CR->mx[IDX(x,y,K)][IDX(xr,yr,K)];
 	  }
 	
 	/* push parent into stack unless already at the root */
@@ -299,10 +302,10 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "pp did not transverse tree to the root");
   
   printf("pp[%d][%d] = ", i, j);
-  for (xx = 0; xx < K; xx ++) 
-    for (yy = 0; yy < K; yy ++) {
-      mi->pp[i][j][IDX(xx,yy,K)] = pp[v]->mx[xx][yy];
-      printf(" %f ", mi->pp[i][j][IDX(xx,yy,K)]);
+  for (x = 0; x < K; x ++) 
+    for (y = 0; y < K; y ++) {
+      mi->pp[i][j][IDX(x,y,K)] = pp[v]->mx[x][y];
+      printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
     }
   printf("\n");
 
@@ -336,7 +339,8 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   int            v;
   int            idx;
   int            which;
-  int            x, y;
+  int            x;
+  int            yl, yr;
   int            resi;
   int            status;
   
@@ -394,8 +398,9 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
 	ESL_ALLOC(ps[v], sizeof(double)*K);
 	esl_vec_DSet(ps[v], K, 0.0);
 	for (x = 0; x < K; x ++) {
-	  for (y = 0; y < K; y ++)
-	    ps[v][x] += psl[y] * CL->mx[x][y] * psr[y] * CR->mx[x][y];
+	  for (yl = 0; yl < K; yl ++)
+	    for (yr = 0; yr < K; yr ++)
+	      ps[v][x] += psl[yl] * CL->mx[x][yl] * psr[yr] * CR->mx[x][yr];
 	}
 	
 	/* push node into stack unless already at the root */
