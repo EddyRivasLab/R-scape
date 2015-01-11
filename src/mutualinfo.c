@@ -304,7 +304,7 @@ mutual_post_order_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatri
   printf("pp[%d][%d] = ", i, j);
   for (x = 0; x < K; x ++) 
     for (y = 0; y < K; y ++) {
-      mi->pp[i][j][IDX(x,y,K)] = pp[v]->mx[x][y];
+      mi->pp[i][j][IDX(x,y,K)] = pp[v]->mx[x][y] * ribosum->bprsM[IDX(x,y,K)];
       printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
     }
   printf("\n");
@@ -414,8 +414,8 @@ mutual_post_order_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
       }
     }
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "ps did not transverse tree to the root");
-  esl_vec_DCopy(ps[v], mi->ps[i], K);
-
+  for (x = 0; x < K; x ++) mi->ps[i][x] = ps[v][x] * ribosum->prnaM[x];
+ 
   for (v = 0; v < dim; v ++) free(ps[v]);
   free(ps);
   if (CL) esl_dmatrix_Destroy(CL);
