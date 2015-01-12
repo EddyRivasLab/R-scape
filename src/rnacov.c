@@ -173,8 +173,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.T = NULL;
 
   /* the ribosum matrices */
+  cfg.ribofile = NULL;
+  cfg.ribosum  = NULL;
   if (!cfg.naive) {
-    cfg.ribofile = NULL;
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
     else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
     
@@ -249,6 +250,7 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
 
     /* print some info */
+    fprintf(cfg.outfp, "Given alignment %s\n", msa->name);
     if (cfg.voutput) {
       fprintf(cfg.outfp, "Given alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
