@@ -42,17 +42,46 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
     status = Mutual_NaivePP(msa, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;
     
-    status = Mutual_NaivePS(msa, mi, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
+    //status = Mutual_NaivePS(msa, mi, tol, verbose, errbuf);
+    //if (status != eslOK) goto ERROR;
   }
   else {
     status = Mutual_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;
     
-    status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
+    //status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
+    //if (status != eslOK) goto ERROR;
   }
   
+  // pp validation
+  for (i = 0; i < mi->alen-1; i ++) 
+    for (j = i+1; j < mi->alen; j ++) {
+      status = esl_vec_DValidate(mi->pp[i][j], K*K, tol, errbuf);
+      if (status != eslOK) {
+	printf("pp[%d][%d]\n", i, j);
+	esl_vec_DDump(stdout, mi->pp[i][j], K*K, NULL);
+	goto ERROR;
+      }
+    }
+
+  // ps are the marginals
+  for (i = 0; i < mi->alen; i ++) {
+    esl_vec_DSet(mi->ps[i], K, 0.0);
+
+    for (j = 0; j < mi->alen; j ++)     
+      for (x = 0; x < K; x ++) 
+	for (y = 0; y < K; y ++) 
+	  if (j != i) mi->ps[i][x] += mi->pp[i][j][IDX(x,y,K)];
+      
+    esl_vec_DNorm(mi->ps[i], K);
+    status = esl_vec_DValidate(mi->ps[i], K, tol, errbuf);
+    if (status != eslOK) {
+      printf("ps[%d]\n", i);
+      esl_vec_DDump(stdout, mi->ps[i], K, "ACGU");
+      goto ERROR;
+    }
+  }
+
   if (verbose) {
     for (i = 0; i < mi->alen-1; i ++) {
       for (j = i+1; j < mi->alen; j ++) {
@@ -85,8 +114,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
 	  HH -= mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]);
 	  MI += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
 	}	  
-      MI = mi->H[i] + mi->H[j] - HH; // alternative definition?
-
+ 
       mi->MI->mx[i][j]  = mi->MI->mx[j][i]  = MI;
       mi->MIr->mx[i][j] = mi->MIr->mx[j][i] = (HH > 0.0)? MI/HH : 0.0;
     }
@@ -117,7 +145,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   if (1||verbose) {
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (1||mi->MI->mx[i][j] > 0.1) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
+	if (mi->MIp->mx[i][j] > 0.5) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
 					   i, j, mi->MI->mx[i][j], mi->MIa->mx[i][j], mi->MIp->mx[i][j], mi->MIr->mx[i][j],
 					   mi->H[i], mi->H[j], MIx[i], MIx[j], MIavg);
       } 
@@ -224,7 +252,6 @@ int
 Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
-  int     K = msa->abc->K;
   int     i;
   int     status;
 
@@ -246,7 +273,7 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
   int     i, j;
   int     status;
 
-  for (i = 0; i < alen-1; i ++)
+  for (i = 0; i < alen-1; i ++) 
     for (j = i+1; j < alen; j ++) {
       status = mutual_postorder_ppij(i, j, msa, T, ribosum, mi, tol, verbose, errbuf);
       if (status != eslOK) goto ERROR;
@@ -302,9 +329,7 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
 	  pp[IDX(x,y,K)] += 1.0;
     }
   }
-
   esl_vec_DNorm(pp, K*K);
-
   esl_vec_DCopy(pp, K*K, mi->pp[j][i]);
   
   return eslOK;
@@ -436,7 +461,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	esl_dmatrix_Set(pp[v], 0.0);
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) {
-	    
 	    for (xl = 0; xl < K; xl ++) 
 	      for (yl = 0; yl < K; yl ++) 
 		for (xr = 0; xr < K; xr ++) 
@@ -457,9 +481,8 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "pp did not transverse tree to the root");
   
   for (x = 0; x < K; x ++) 
-    for (y = 0; y < K; y ++) {
+    for (y = 0; y < K; y ++) 
       mi->pp[i][j][IDX(x,y,K)] = pp[v]->mx[x][y] * ribosum->bprsM[IDX(x,y,K)];
-    }
   esl_vec_DNorm(mi->pp[i][j], K*K);
 
   for (v = 0; v < dim; v ++) esl_dmatrix_Destroy(pp[v]);
