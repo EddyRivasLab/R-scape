@@ -43,26 +43,27 @@ Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
 {
   double thresh;
   double inc;
+  double delta = 50;
   int    status;
   
-  inc = (mi->maxMI - mi->minMI)/ 20.;
+  inc = (mi->maxMI - mi->minMI)/ delta;
   for (thresh = mi->minMI; thresh < mi->maxMI+inc; thresh += inc) {
     status = mutual_analyze_ranking(ct, mi, MI, thresh, verbose, errbuf);
   }
 
-  inc = (mi->maxMIa - mi->minMIa)/ 20.;
+  inc = (mi->maxMIa - mi->minMIa)/ delta;
   for (thresh = mi->minMIa; thresh < mi->maxMIa+inc; thresh += inc) {
     status = mutual_analyze_ranking(ct, mi, MIa, thresh, verbose, errbuf);
   }
 
-  inc = (mi->maxMIp - mi->minMIp)/ 20.;
+  inc = (mi->maxMIp - mi->minMIp)/ delta;
   for (thresh = mi->minMIp; thresh < mi->maxMIp+inc; thresh += inc) {
     status = mutual_analyze_ranking(ct, mi, MIp, thresh, verbose, errbuf);
   }
 
-  inc = (mi->maxMIp - mi->minMIp)/ 20.;
-  for (thresh = mi->minMIp; thresh < mi->maxMIp+inc; thresh += inc) {
-    status = mutual_analyze_ranking(ct, mi, MIp, thresh, verbose, errbuf);
+  inc = (mi->maxMIr - mi->minMIr)/ delta;
+  for (thresh = mi->minMIr; thresh < mi->maxMIr+inc; thresh += inc) {
+    status = mutual_analyze_ranking(ct, mi, MIr, thresh, verbose, errbuf);
   }
 
   return eslOK;
@@ -397,16 +398,16 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thre
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
       if (mtx->mx[i][j] > thresh)   f  ++;
-      if (ct[i] == j) {             t  ++;
+      if (ct[i+1] == j+1) {         t  ++;
 	if (mtx->mx[i][j] > thresh) tf ++;
       }
     }
 
-  sen = (t > 0)? (double)tf / (double)t : 0.0;
-  ppv = (f > 0)? (double)tf / (double)f : 0.0;
+  sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
+  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
   F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
 
-  printf("%f %d %d %d %f %f %f\n", thresh, tf, t, f, sen, ppv, F);
+  printf("%.5f %d %d %d %.2f %.2f %.2f\n", thresh, tf, t, f, sen, ppv, F);
   return eslOK;
 
  ERROR:
