@@ -20,6 +20,7 @@
 #include "ribosum_matrix.h"
 
 static int mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf);
+static int mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MItype whichmi, int verbose, char *errbuf);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
 				  int verbose, char *errbuf);
@@ -34,6 +35,20 @@ Mutual_Analyze(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
   int status;
 
   status = Mutual_AnalyzeRanking(ct, mi, verbose, errbuf);
+  status = Mutual_AnalyzeSignificantPairs(ct, mi, verbose, errbuf);
+
+  return eslOK;
+}
+
+int                 
+Mutual_AnalyzeSignificantPairs(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
+{
+  int status;
+  
+  status = mutual_analyze_significant_pairs(ct, mi, MI, verbose, errbuf);
+  status = mutual_analyze_significant_pairs(ct, mi, MIa, verbose, errbuf);
+  status = mutual_analyze_significant_pairs(ct, mi, MIp, verbose, errbuf);
+  status = mutual_analyze_significant_pairs(ct, mi, MIr, verbose, errbuf);
 
   return eslOK;
 }
@@ -373,6 +388,51 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 }
 
 /*---------------- internal functions --------------------- */
+
+static int
+mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MItype whichmi, int verbose, char *errbuf)
+{
+  ESL_DMATRIX *mtx;
+  double       avg;
+  double       std;
+  double       zscore;
+  int          i, j;
+  int          status;
+
+  switch(whichmi) {
+  case MI:  mtx = mi->MI; break;
+  case MIa: mtx = mi->MIa; break; 
+  case MIp: mtx = mi->MIp; break; 
+  case MIr: mtx = mi->MIr; break; 
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MItype");
+  }
+  
+  for (i = 0; i < mi->alen; i ++) {
+    if (ct[i+1] > 0 && ct[i+1] > i+1) {
+      avg    = 0.0;
+      std    = 0.0;
+      zscore = 0.0;
+
+      for (j = 0; j < mi->alen; j ++) {
+	if (ct[i+1] != j+1) {       
+	  avg += mtx->mx[i][j];
+	  std += mtx->mx[i][j] * mtx->mx[i][j];
+	}
+      }
+      avg /= mi->alen-1;
+      std /= mi->alen-1;
+      std -= avg*avg;
+      std = sqrt(std);
+
+      zscore = (mtx->mx[i][ct[i+1]-1] - avg) / std;
+      printf("[%d][%d] %f | %f %f %f\n", i, ct[i+1]-1, mtx->mx[i][ct[i+1]-1], avg, std, zscore);
+    }
+  }  
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
 
 static int
 mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf)

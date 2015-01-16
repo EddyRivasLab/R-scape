@@ -50,6 +50,7 @@ struct mutual_s {
 };
 
 extern int              Mutual_Analyze(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_AnalyzeSignificantPairs(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
 extern int              Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					 int naive, double tol, int verbose, char *errbuf);
