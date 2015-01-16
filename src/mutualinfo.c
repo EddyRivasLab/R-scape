@@ -19,6 +19,7 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
+static int mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
 				  int verbose, char *errbuf);
@@ -26,6 +27,47 @@ static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol
 
 static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 double tol, int verbose, char *errbuf);
+
+int                 
+Mutual_Analyze(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
+{
+  int status;
+
+  status = Mutual_AnalyzeRanking(ct, mi, verbose, errbuf);
+
+  return eslOK;
+}
+
+int                 
+Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
+{
+  double thresh;
+  double inc;
+  int    status;
+  
+  inc = (mi->maxMI - mi->minMI)/ 20.;
+  for (thresh = mi->minMI; thresh < mi->maxMI+inc; thresh += inc) {
+    status = mutual_analyze_ranking(ct, mi, MI, thresh, verbose, errbuf);
+  }
+
+  inc = (mi->maxMIa - mi->minMIa)/ 20.;
+  for (thresh = mi->minMIa; thresh < mi->maxMIa+inc; thresh += inc) {
+    status = mutual_analyze_ranking(ct, mi, MIa, thresh, verbose, errbuf);
+  }
+
+  inc = (mi->maxMIp - mi->minMIp)/ 20.;
+  for (thresh = mi->minMIp; thresh < mi->maxMIp+inc; thresh += inc) {
+    status = mutual_analyze_ranking(ct, mi, MIp, thresh, verbose, errbuf);
+  }
+
+  inc = (mi->maxMIp - mi->minMIp)/ 20.;
+  for (thresh = mi->minMIp; thresh < mi->maxMIp+inc; thresh += inc) {
+    status = mutual_analyze_ranking(ct, mi, MIp, thresh, verbose, errbuf);
+  }
+
+  return eslOK;
+}
+
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, int naive, double tol, int verbose, char *errbuf)
@@ -117,6 +159,8 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
  
       mi->MI->mx[i][j]  = mi->MI->mx[j][i]  = MI;
       mi->MIr->mx[i][j] = mi->MIr->mx[j][i] = (HH > 0.0)? MI/HH : 0.0;
+      if (mi->MI->mx[i][j] < mi->minMI) mi->minMI = mi->MI->mx[i][j];
+      if (mi->MI->mx[i][j] > mi->maxMI) mi->maxMI = mi->MI->mx[i][j];
     }
 
   // MIavg
@@ -140,12 +184,21 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
     for (j = 0; j < mi->alen; j++) {
       mi->MIp->mx[i][j] = (MIavg != 0.0)? mi->MI->mx[i][j] - MIx[i] * MIx[j] / MIavg : 0.0;
       mi->MIa->mx[i][j] = mi->MI->mx[i][j] - (MIx[i] + MIx[j] - MIavg);
+      if (mi->MIa->mx[i][j] < mi->minMIa) mi->minMIa = mi->MIa->mx[i][j];
+      if (mi->MIa->mx[i][j] > mi->maxMIa) mi->maxMIa = mi->MIa->mx[i][j];
+      if (mi->MIp->mx[i][j] < mi->minMIp) mi->minMIp = mi->MIp->mx[i][j];
+      if (mi->MIp->mx[i][j] > mi->maxMIp) mi->maxMIp = mi->MIp->mx[i][j];
+      if (mi->MIr->mx[i][j] < mi->minMIr) mi->minMIr = mi->MIr->mx[i][j];
+      if (mi->MIr->mx[i][j] > mi->maxMIr) mi->maxMIr = mi->MIr->mx[i][j];
+ 
    }
 
   if (1||verbose) {
+    printf("MI[%f,%f] MIa[%f,%f] MIp[%f,%f] MIr[%f,%f] \n", 
+	   mi->minMI, mi->maxMI, mi->minMIa, mi->maxMIa, mi->minMIp, mi->maxMIp, mi->minMIr, mi->maxMIr);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (mi->MIp->mx[i][j] > 0.5) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
+	if (mi->MIp->mx[i][j] > 0.4) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
 					   i, j, mi->MI->mx[i][j], mi->MIa->mx[i][j], mi->MIp->mx[i][j], mi->MIr->mx[i][j],
 					   mi->H[i], mi->H[j], MIx[i], MIx[j], MIavg);
       } 
@@ -197,6 +250,21 @@ Mutual_Create(int64_t alen, int K)
       mi->MIr->mx[i][j] = 0.0;
     }
   }
+
+  mi->threshMI  = 0.0;
+  mi->threshMIa = 0.0;
+  mi->threshMIp = 0.0;
+  mi->threshMIr = 0.0;
+
+  mi->minMI  = eslINFINITY;
+  mi->minMIa = eslINFINITY;
+  mi->minMIp = eslINFINITY;
+  mi->minMIr = eslINFINITY;
+
+  mi->maxMI  = -eslINFINITY;
+  mi->maxMIa = -eslINFINITY;
+  mi->maxMIp = -eslINFINITY;
+  mi->maxMIr = -eslINFINITY;
 
   return mi;
 
@@ -305,6 +373,45 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
 /*---------------- internal functions --------------------- */
 
+static int
+mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf)
+{
+  ESL_DMATRIX *mtx;
+  double       sen;
+  double       ppv;
+  double       F;
+  int          tf = 0;
+  int          f  = 0;
+  int          t  = 0;
+  int          i, j;
+  int          status;
+
+  switch(whichmi) {
+  case MI:  mtx = mi->MI; break;
+  case MIa: mtx = mi->MIa; break; 
+  case MIp: mtx = mi->MIp; break; 
+  case MIr: mtx = mi->MIr; break; 
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MItype");
+  }
+  
+  for (i = 0; i < mi->alen-1; i ++) 
+    for (j = i+1; j < mi->alen; j ++) {
+      if (mtx->mx[i][j] > thresh)   f  ++;
+      if (ct[i] == j) {             t  ++;
+	if (mtx->mx[i][j] > thresh) tf ++;
+      }
+    }
+
+  sen = (t > 0)? (double)tf / (double)t : 0.0;
+  ppv = (f > 0)? (double)tf / (double)f : 0.0;
+  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
+
+  printf("%f %d %d %d %f %f %f\n", thresh, tf, t, f, sen, ppv, F);
+  return eslOK;
+
+ ERROR:
+  return status;
+}
 
 static int    
 mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)

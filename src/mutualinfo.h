@@ -16,6 +16,12 @@
 #include "esl_tree.h"
 #include "ribosum_matrix.h"
 
+typedef enum {
+  MI  = 0,
+  MIa = 1,
+  MIp = 2,
+  MIr = 3,
+} MItype;
 
 struct mutual_s {
   int64_t      alen;
@@ -27,9 +33,24 @@ struct mutual_s {
   ESL_DMATRIX   *MIp;    // MIp mutual information
   ESL_DMATRIX   *MIr;    // MIr mutual information
   double        *H;      // entropy per position
- 
+
+  double         threshMI;
+  double         threshMIa;
+  double         threshMIp;
+  double         threshMIr;
+
+  double         minMI;
+  double         maxMI;
+  double         minMIa;
+  double         maxMIa;
+  double         minMIp;
+  double         maxMIp;
+  double         minMIr;
+  double         maxMIr;
 };
 
+extern int              Mutual_Analyze(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					 int naive, double tol, int verbose, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int K);

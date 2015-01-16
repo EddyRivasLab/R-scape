@@ -12,6 +12,7 @@
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
+#include "esl_wuss.h"
  
 #include "msamanip.h"
 #include "msatree.h"
@@ -61,7 +62,8 @@ struct cfg_s {
 					 * Set to 0 if we are taking all */
   MSA_STAT         mstat;               /* statistics of the input alignment */
   float           *msafrq;
-  
+  int             *ct;
+
   int              voutput;
 
   float            tol;
@@ -170,7 +172,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
 
-  cfg.T = NULL;
+  cfg.T  = NULL;
+  cfg.ct = NULL;
 
   /* the ribosum matrices */
   cfg.ribofile = NULL;
@@ -208,11 +211,11 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
-  ESL_MSA         *msa = NULL;          /* the input alignment  */
+  ESL_MSA         *msa = NULL;            /* the input alignment  */
   struct mutual_s *mi;
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
-  int              nremoved = 0;	          /* # of identical sequences removed */
+  int              nremoved = 0;	  /* # of identical sequences removed */
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -258,9 +261,14 @@ main(int argc, char **argv)
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
     }
     
+    /* the ct vector */
+    ESL_ALLOC(cfg.ct, sizeof(int) * (msa->alen+1));
+    if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, cfg.ct);
+    else esl_fatal("no ss for msa\n");
+    
     /* main function */
     status = run_rnacov(go, &cfg, msa, &mi);
-    if (status != eslOK) esl_fatal("%s Failed to run rnacov", cfg.errbuf);
+    if (status != eslOK) esl_fatal("%s Failed to run rnacov");
     
     esl_msa_Destroy(msa); msa = NULL;
     Mutual_Destroy(mi); mi = NULL;
@@ -274,11 +282,15 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
+  free(cfg.ct);
   eslx_msafile_Close(afp);
   fclose(cfg.outfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
+  return 0;
+
+ ERROR:
   return 0;
 }
 
@@ -319,8 +331,12 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   /* create the MI structure */
   mi = Mutual_Create(msa->alen, cfg->abc->K);
   
- /* main function */
+  /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->naive, cfg->tol, cfg->verbose, cfg->errbuf);   
+  if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+
+  /* analyze results */
+  status = Mutual_Analyze(cfg->ct, mi, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   
   *ret_mi = mi;
