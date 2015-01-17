@@ -1,0 +1,47 @@
+# STOCKHOLM 1.0
+#=GF AC random20
+#=GF AU Koala
+
+DE3880         --GACC-CA-AU-G-GUCAAGAU--GGUU--AAGACA-U-AACAU-UUUCACUGUU-AGU-------------------------G---CGGG-AGU-UCA-AU--CCU-CC-C-UUGGGUU-G---
+#=GR DE3880 SS ::((((-((-(,,,,<<<_______________>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DF5320         --GUUA-AU-GU-A-GCUUAAUA--AC----AAAGCA-A-AGCAC-UGAAAAUGCU-UAG-------------------------A---UGGA-U-A-AUU-GU----A-UC-C-CAUAAAC-A---
+#=GR DF5320 SS ::(((--((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<_____________>->>->,)))-))):::::
+DF6740         --GCGG-GG-AU-A-GCUCAGUU--GGG---AGAGCG-U-CAGAC-UGAAGAUCUG-AAG-------------------------GU--CGCG-UGU-UCG-AU--CCA-CG-C-UCACCGC-A---
+#=GR DF6740 SS ::((((--(-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))-)))):::::
+DG1581         --GCGG-GA-GU-A-GCUCAGUU--GGU---AGAGCA-U-CGGCU-UCCCAAGCCG-AGG-------------------------GU--CGCG-GGU-UCG-AG--UCC-CG-U-CUCCCGC-UCCA
+#=GR DG1581 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DG5360         --AUUC-UU-UU-A-GUAUUAA---CU----AGUACA-G-CUGAC-UUCCAAUCAG-CUA-------------------------G---UUUC-GGU-CUA-GU---CC-GA-A-AAAGAAU-A---
+#=GR DG5360 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DI1230         --GGAC-CC-GU-A-GCUCAGUU--GGUU--AGAGCU-A-CCGGC-UCAUAACCGG-UCG-------------------------GU--CGUU-GGU-UCG-AG--UCC-AA-C-CGGGUCC-ACCA
+#=GR DI1230 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DK6160         --GCCC-AG-AU-A-GCUCAGUC--GGU---AGAGCG-C-AAGGC-UUUUAACCUU-GUG-------------------------GU--CGGG-GGU-UCG-AG--CCC-CC-C-UUUGGGC-G---
+#=GR DK6160 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DL4700         --UGAA-AG-CU-G-GCAGAG----UU----AAUGCG-C-UUGAU-UUAGGAUCAA-UUU-------------------------A---UAAG-UA--UCC-A----UA-CU-U-GCUUUCA-U---
+#=GR DL4700 SS ::((((-((-(,,,,<<<_______________>>>,,,,<<<<________>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DL5001         --GCUG-AA-AU-A-GCAAAGU---GGU---AAUGCG-A-GAAGC-CUAAGAUUUC-UUU-------------------------AU--CGAA-GGU-UCA-AA--UCC-UU-C-UUUCAGU-U---
+#=GR DL5001 SS ::((((-((-(,,,,<<<_______________>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DL5280         --ACUU-UU-AU-A-GGAUAGA---AGU---AAUCCA-U-UGGUC-UUAGGAACCA-AAA-------------------------A---CCUU-GGU-GCA-AC--UCC-AA-A-UAAAAGU-A---
+#=GR DL5280 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<-<<___________>>->>,,,))))))):::::
+DM1180         --GGCG-GG-GU-A-GCUCAGUU--GGUU--AGAGCG-U-UCGGU-UCAUACCCGA-AAG-------------------------GU--CGAG-AGU-UCA-AC--UCU-CU-C-CCCCGCU-ACCA
+#=GR DM1180 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DM1260         --GGCG-GG-AU-A-GCUCAGCU--GGUU--AGAGCG-C-UCGGC-UCAUACCCGG-GAG-------------------------GU--CAAG-AGU-UCA-AG--UCU-CU-U-UCUCGCU-ACCA
+#=GR DM1260 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DM1660         --GGCU-AC-GU-A-GCUCAGUU--GGUU--AGAGCA-C-AUCAC-UCAUAAUGAU-GGG-------------------------GU--CACA-GGU-UCG-AA--UCC-CG-U-CGUAGCC-ACCA
+#=GR DM1660 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<--<<___________>>-->->,))))))):::::
+DQ4040         --UGGG-UU-GU-U-GACUAAUA--GGU---AAGUCC-C-UGAAA-UUUGACUUCA-GUC-------------------------UA--UGUA-AGU-UCG-AA--UCU-UA-C-CAUCCCA-U---
+#=GR DQ4040 SS ::((((--(-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))-)))):::::
+DT1663         --GCCG-AU-AU-A-GCUCAGUU--GGU---AGAGCA-G-CGCAU-UCGUAAUGCG-AAG-------------------------GU--CGUA-GGU-UCG-AC--UCC-UA-U-UAUCGGC-ACCA
+#=GR DT1663 SS ::((((-((-(,,,,<<<<_____________>>>>,,,,<<<<________>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DV5910         --CAAG-AU-AU-A-GCUUAA----AC----AAAGCA-U-CUAGU-UUACACCUAG-AAG-------------------------A---UUUC-ACA-UAC-G----AU-GA-A-UGUCUUG-A---
+#=GR DV5910 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<_____________>->>->,))))))):::::
+DV5940         --CAAG-AC-AU-A-GCUUAA----AC----AAAGCA-U-CUAGU-UUACACCUAG-AAG-------------------------A---UUCC-AUA-CAC-U----AU-GA-A-UGUCUUG-A---
+#=GR DV5940 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<-<-<<___________>>->-->,))))))):::::
+DX5040         --AGCA-GA-GU-A-AGCUAAGU--GCU---AAGCUU-U-UGGGC-UCAUACCCCA-AGA-------------------------A---UGGAAGGA-UAG-AA--ACC-UC-C-CUCUGCU-U---
+#=GR DX5040 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<<___________>>->>->,))))))):::::
+DY1540         --GGAG-GG-GU-A-GCGAAGU---GGCUA-AACGCG-G-CGGAC-UGUAAAUCCG-CU--CCC-----UCA----------GGGUU--CGGC-AGU-UCG-AA--UCU-GC-C-CCCCUCC-ACCA
+#=GR DY1540 SS ::((((-((-(,,,,<<<_______________>>>,,<-<<<<________>>>>->,,,<<<__________________>>>,,,,,<<<-<<___________>>->>->,))))))):::::
+DY4080         --GGAG-GG-AU-U-UCCAAUGU-UGGUAA-UUGGAG-U-UGAGC-UGUAAACUCA-AU--GAU-----UAU---AU-----AUCUU--CAUA-GGU-UCA-AU--UCC-UA-U-UCCCUUC-A---
+#=GR DY4080 SS ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,<<<__________________>>>,,,,,<<<-<<___________>>->>->,))))))):::::
+#=GC SS_cons   ::((((-((-(,,,,<<<<_____________>>>>,,<-<<<<________>>>>->,,,<<<-<<<<________>>>>->>>,,,,,<<<-<<___________>>->>->,))))))):::::
+#=GC RF        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//
