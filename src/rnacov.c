@@ -12,7 +12,7 @@
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
-#include "esl_wuss.h"
+ #include "esl_wuss.h"
  
 #include "msamanip.h"
 #include "msatree.h"
@@ -65,6 +65,8 @@ struct cfg_s {
   int             *ct;
 
   int              voutput;
+  int              plotroc;
+  int              maxFP;
 
   float            tol;
   int              verbose;
@@ -73,6 +75,7 @@ struct cfg_s {
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
+  { "--maxFP",        eslARG_INT,       "10",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
   { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* options for input msa (if seqs are given as a reference msa) */
@@ -171,6 +174,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.naive      = esl_opt_GetBoolean(go, "--naive");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
+  cfg.plotroc    = FALSE;
+  cfg.maxFP      = esl_opt_GetInteger(go, "--maxFP");
 
   cfg.T  = NULL;
   cfg.ct = NULL;
@@ -253,7 +258,6 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
 
     /* print some info */
-    fprintf(cfg.outfp, "Given alignment %s\n", msa->name);
     if (cfg.voutput) {
       fprintf(cfg.outfp, "Given alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
@@ -336,7 +340,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 
   /* analyze results */
-  status = Mutual_Analyze(cfg->ct, mi, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Analyze(cfg->ct, mi, cfg->plotroc, cfg->maxFP, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   
   *ret_mi = mi;

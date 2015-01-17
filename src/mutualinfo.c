@@ -19,8 +19,11 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
-static int mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf);
-static int mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MItype whichmi, int verbose, char *errbuf);
+static int mutual_analyze_ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf);
+static int mutual_analyze_ranking_thresh(int *ct, struct mutual_s *mi, MITYPE whichmi, double thresh, 
+					 int *ret_tf, int *ret_t, int *ret_f, double *ret_sen, double *ret_ppv, double *ret_F, 
+					 int plotroc, int maxFP, int verbose, char *errbuf);
+static int mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MITYPE whichmi, int verbose, char *errbuf);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, 
 				  int verbose, char *errbuf);
@@ -30,12 +33,12 @@ static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomat
 				 double tol, int verbose, char *errbuf);
 
 int                 
-Mutual_Analyze(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
+Mutual_Analyze(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf)
 {
   int status;
 
-  status = Mutual_AnalyzeRanking(ct, mi, verbose, errbuf);
-  status = Mutual_AnalyzeSignificantPairs(ct, mi, verbose, errbuf);
+  status = Mutual_AnalyzeRanking(ct, mi, plotroc, maxFP, verbose, errbuf);
+  // status = Mutual_AnalyzeSignificantPairs(ct, mi, verbose, errbuf);
 
   return eslOK;
 }
@@ -48,39 +51,21 @@ Mutual_AnalyzeSignificantPairs(int *ct, struct mutual_s *mi, int verbose, char *
   status = mutual_analyze_significant_pairs(ct, mi, MI, verbose, errbuf);
   status = mutual_analyze_significant_pairs(ct, mi, MIa, verbose, errbuf);
   status = mutual_analyze_significant_pairs(ct, mi, MIp, verbose, errbuf);
-  status = mutual_analyze_significant_pairs(ct, mi, MIr, verbose, errbuf);
+  //status = mutual_analyze_significant_pairs(ct, mi, MIr, verbose, errbuf);
 
   return eslOK;
 }
 
 int                 
-Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int verbose, char *errbuf)
+Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf)
 {
-  double thresh;
-  double inc;
-  double delta = 50;
   int    status;
   
-  inc = (mi->maxMI - mi->minMI)/ delta;
-  for (thresh = mi->minMI; thresh < mi->maxMI+inc; thresh += inc) {
-    status = mutual_analyze_ranking(ct, mi, MI, thresh, verbose, errbuf);
-  }
-
-  inc = (mi->maxMIa - mi->minMIa)/ delta;
-  for (thresh = mi->minMIa; thresh < mi->maxMIa+inc; thresh += inc) {
-    status = mutual_analyze_ranking(ct, mi, MIa, thresh, verbose, errbuf);
-  }
-
-  inc = (mi->maxMIp - mi->minMIp)/ delta;
-  for (thresh = mi->minMIp; thresh < mi->maxMIp+inc; thresh += inc) {
-    status = mutual_analyze_ranking(ct, mi, MIp, thresh, verbose, errbuf);
-  }
-
-  inc = (mi->maxMIr - mi->minMIr)/ delta;
-  for (thresh = mi->minMIr; thresh < mi->maxMIr+inc; thresh += inc) {
-    status = mutual_analyze_ranking(ct, mi, MIr, thresh, verbose, errbuf);
-  }
-
+  status = mutual_analyze_ranking(ct, mi, MI,  plotroc, maxFP, verbose, errbuf);
+  status = mutual_analyze_ranking(ct, mi, MIa, plotroc, maxFP, verbose, errbuf);
+  status = mutual_analyze_ranking(ct, mi, MIp, plotroc, maxFP, verbose, errbuf);
+  //status = mutual_analyze_ranking(ct, mi, MIr, plotroc, maxFP, verbose, errbuf);
+ 
   return eslOK;
 }
 
@@ -209,7 +194,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
  
    }
 
-  if (1||verbose) {
+  if (verbose) {
     printf("MI[%f,%f] MIa[%f,%f] MIp[%f,%f] MIr[%f,%f] \n", 
 	   mi->minMI, mi->maxMI, mi->minMIa, mi->maxMIa, mi->minMIp, mi->maxMIp, mi->minMIr, mi->maxMIr);
     for (i = 0; i < mi->alen-1; i++) 
@@ -267,10 +252,10 @@ Mutual_Create(int64_t alen, int K)
     }
   }
 
-  mi->threshMI  = 0.0;
-  mi->threshMIa = 0.0;
-  mi->threshMIp = 0.0;
-  mi->threshMIr = 0.0;
+  mi->besthreshMI  = 0.0;
+  mi->besthreshMIa = 0.0;
+  mi->besthreshMIp = 0.0;
+  mi->besthreshMIr = 0.0;
 
   mi->minMI  = eslINFINITY;
   mi->minMIa = eslINFINITY;
@@ -390,42 +375,64 @@ Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 /*---------------- internal functions --------------------- */
 
 static int
-mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MItype whichmi, int verbose, char *errbuf)
+mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MITYPE whichmi, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx;
-  double       avg;
-  double       std;
+  double       avgi, avgj;
+  double       stdi, stdj;
+  double       zscorei, zscorej;
   double       zscore;
-  int          i, j;
+  int          i, j, k;
+  int          ipair;
   int          status;
 
   switch(whichmi) {
-  case MI:  mtx = mi->MI; break;
-  case MIa: mtx = mi->MIa; break; 
-  case MIp: mtx = mi->MIp; break; 
-  case MIr: mtx = mi->MIr; break; 
-  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MItype");
+  case MI:  mtx = mi->MI;  printf("\n# MI ");  break;
+  case MIa: mtx = mi->MIa; printf("\n# MIa "); break; 
+  case MIp: mtx = mi->MIp; printf("\n# MIp "); break; 
+  case MIr: mtx = mi->MIr; printf("\n# MIr "); break; 
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
   }
-  
+  printf("zscore mij avg std\n");
+
   for (i = 0; i < mi->alen; i ++) {
     if (ct[i+1] > 0 && ct[i+1] > i+1) {
-      avg    = 0.0;
-      std    = 0.0;
-      zscore = 0.0;
+      ipair = ct[i+1]-1;
 
+      avgi = 0.0;
+      stdi = 0.0;
+      
       for (j = 0; j < mi->alen; j ++) {
-	if (ct[i+1] != j+1) {       
-	  avg += mtx->mx[i][j];
-	  std += mtx->mx[i][j] * mtx->mx[i][j];
+	if (j != ipair) {   
+	  if (j != i) {
+	    avgi += mtx->mx[i][j];
+	    stdi += mtx->mx[i][j] * mtx->mx[i][j];
+	  }
+	}
+	else {
+	  avgj = 0.0;
+	  stdj = 0.0;
+	  for (k = 0; k < mi->alen; k ++) {
+	    if (k != j && k != i) {       
+	      avgj += mtx->mx[j][k];
+	      stdj += mtx->mx[j][k] * mtx->mx[j][k];
+	    }
+	  }
+	  avgj /= (mi->alen-2);
+	  stdj /= (mi->alen-2);
+	  stdj -= avgj*avgj;
+	  stdj = sqrt(stdj);
 	}
       }
-      avg /= mi->alen-1;
-      std /= mi->alen-1;
-      std -= avg*avg;
-      std = sqrt(std);
+      avgi /= (mi->alen-2);
+      stdi /= (mi->alen-2);
+      stdi -= avgi*avgi;
+      stdi = sqrt(stdi);
 
-      zscore = (mtx->mx[i][ct[i+1]-1] - avg) / std;
-      printf("[%d][%d] %f | %f %f %f\n", i, ct[i+1]-1, mtx->mx[i][ct[i+1]-1], avg, std, zscore);
+      zscorei = (mtx->mx[i][ipair] - avgi) / stdi;
+      zscorej = (mtx->mx[i][ipair] - avgj) / stdj;
+      zscore  = ESL_MIN(zscorej, zscorej);
+      printf("[%d][%d] %f | %f | %f %f | %f %f\n", i, ipair, zscore, mtx->mx[i][ipair], avgi, stdi, avgj, stdj);
     }
   }  
   return eslOK;
@@ -435,7 +442,121 @@ mutual_analyze_significant_pairs(int *ct, struct mutual_s *mi, MItype whichmi, i
 }
 
 static int
-mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thresh, int verbose, char *errbuf)
+mutual_analyze_ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf)
+{
+  MITYPE       which;
+  ESL_DMATRIX *mtx;
+  char        *mitype;
+  double       delta = 500;
+  double       inc;
+  double       min;
+  double       max;
+  double       sen;
+  double       ppv;
+  double       F;
+  double       bestF = 0.0;
+  double       bestsen;
+  double       bestppv;
+  double       thresh;
+  double       besthresh;
+  double       maxFPF;
+  double       maxFPsen;
+  double       maxFPppv;
+  double       maxFPthresh;
+  int          optimal = TRUE;
+  int          tf, t, f;
+  int          best_tf, best_t, best_f, best_fp;
+  int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
+  int          n = 0;
+  int          i, j;
+  int          status;
+
+  switch(whichmi) {
+  case MI:  if (plotroc) printf("\n# MI ");  max = mi->maxMI;  min = mi->minMI;  which = MI;  break;
+  case MIa: if (plotroc) printf("\n# MIa "); max = mi->maxMIa; min = mi->minMIa; which = MIa; break; 
+  case MIp: if (plotroc) printf("\n# MIp "); max = mi->maxMIp; min = mi->minMIp; which = MIp; break; 
+  case MIr: if (plotroc) printf("\n# MIr "); max = mi->maxMIr; min = mi->minMIr; which = MIr; break; 
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
+  }
+  if (plotroc) printf("thresh tp true found sen ppv F\n"); 
+  
+  inc = (max - min) / delta;
+  for (thresh = max; thresh > min-inc; thresh -= inc) {
+    mutual_analyze_ranking_thresh(ct, mi, which, thresh, &tf, &t, &f, &sen, &ppv, &F, plotroc, maxFP, verbose, errbuf);
+    if (f-tf <= maxFP) {
+      maxFPF      = F;
+      maxFPsen    = sen;
+      maxFPppv    = ppv;
+      maxFP_tf    = tf;
+      maxFP_f     = f;
+      maxFP_t     = t;
+      maxFP_fp    = f - tf;
+      maxFPthresh = thresh;
+    }
+    if (F > bestF) { 
+      bestF     = F; 
+      bestsen   = sen;
+      bestppv   = ppv;
+      best_tf   = tf;
+      best_t    = t;
+      best_f    = f;
+      best_fp   = f - tf;
+      besthresh = thresh; 
+    }
+  }
+
+  switch(whichmi) {
+  case MI:  mi->besthreshMI  = besthresh;  break;
+  case MIa: mi->besthreshMIa = besthresh;  break;
+  case MIp: mi->besthreshMIp = besthresh;  break;
+  case MIr: mi->besthreshMIr = besthresh;  break;
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
+  }
+  
+  switch(whichmi) {
+  case MI:  mtx = mi->MI;  esl_sprintf(&mitype, "MI");  break;
+  case MIa: mtx = mi->MIa; esl_sprintf(&mitype, "MIa"); break;
+  case MIp: mtx = mi->MIp; esl_sprintf(&mitype, "MIp"); break; 
+  case MIr: mtx = mi->MIr; esl_sprintf(&mitype, "MIr"); break;
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
+  }
+  
+  if (best_fp < maxFP_fp) {
+    printf("%s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, besthresh, min, max,
+	   best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (mtx->mx[i][j] > besthresh) {
+	  n ++; 
+	  if (ct[i+1] == j+1) printf("*[%d] %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	  else                printf("[%d]  %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	}
+      }
+  }
+  else {
+    printf("%s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, maxFP, maxFPthresh, min, max,
+	   maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (mtx->mx[i][j] > maxFPthresh) {
+	  n ++; 
+	  if (ct[i+1] == j+1) printf("*[%d] %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	  else                printf("[%d]  %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	}
+      }
+  }
+  
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+
+static int
+mutual_analyze_ranking_thresh(int *ct, struct mutual_s *mi, MITYPE whichmi, double thresh, 
+			      int *ret_tf, int *ret_t, int *ret_f, double *ret_sen, double *ret_ppv, double *ret_F, 
+			      int plotroc, int maxFP, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx;
   double       sen;
@@ -444,15 +565,16 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thre
   int          tf = 0;
   int          f  = 0;
   int          t  = 0;
+  int          fp;
   int          i, j;
   int          status;
 
   switch(whichmi) {
-  case MI:  mtx = mi->MI; break;
+  case MI:  mtx = mi->MI;  break;
   case MIa: mtx = mi->MIa; break; 
   case MIp: mtx = mi->MIp; break; 
   case MIr: mtx = mi->MIr; break; 
-  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MItype");
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
   }
   
   for (i = 0; i < mi->alen-1; i ++) 
@@ -463,11 +585,20 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MItype whichmi, double thre
       }
     }
 
+  fp  = f - tf;
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
   F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
 
-  printf("%.5f %d %d %d %.2f %.2f %.2f\n", thresh, tf, t, f, sen, ppv, F);
+  if (plotroc && fp <= maxFP) printf("%.5f %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, sen, ppv, F);
+
+  if (ret_tf)  *ret_tf  = tf;
+  if (ret_t)   *ret_t   = t;
+  if (ret_f)   *ret_f   = f;
+  if (ret_sen) *ret_sen = sen;
+  if (ret_ppv) *ret_ppv = ppv;
+  if (ret_F)   *ret_F   = F;
+
   return eslOK;
 
  ERROR:

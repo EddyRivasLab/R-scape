@@ -92,10 +92,14 @@ MSA_Subset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *e
 
   esl_msa_MinimGaps(new, errbuf, "-_.~", TRUE);
 
-/* change the accession of the msa to reflect that it is a subset of the original */
-  st = msa->acc; /* remove the version from the accession */
-  esl_strtok(&st, ".", &newacc);
-  esl_sprintf(&(new->acc), "%s.random%d.%s", newacc, nseq, st);
+  /* change the accession of the msa to reflect that it is a subset of the original */
+  if (msa->acc) {
+    st = msa->acc; /* remove the version from the accession */
+    esl_strtok(&st, ".", &newacc);
+    esl_sprintf(&(new->acc), "%s.random%d.%s", newacc, nseq, st);
+  }
+  else
+    esl_sprintf(&(new->acc), "random%d", nseq);
 
   /* write the submsa to file */
   if (omsafile) esl_sprintf(&newfile, "%s.random%d", omsafile, nseq);
