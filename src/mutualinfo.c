@@ -114,8 +114,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
     for (j = 0; j < mi->alen; j ++)     
       for (x = 0; x < K; x ++) 
 	for (y = 0; y < K; y ++) 
-	  if (j != i) mi->ps[i][x] += mi->pp[i][j][IDX(x,y,K)];
-      
+	  mi->ps[i][x] += mi->pp[i][j][IDX(x,y,K)];
     esl_vec_DNorm(mi->ps[i], K);
     status = esl_vec_DValidate(mi->ps[i], K, tol, errbuf);
     if (status != eslOK) {
@@ -128,14 +127,16 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   if (verbose) {
     for (i = 0; i < mi->alen-1; i ++) {
       for (j = i+1; j < mi->alen; j ++) {
-	printf("pp[%d][%d] = ", i, j);
-	for (x = 0; x < K; x ++) 
-	  for (y = 0; y < K; y ++) {
-	    printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
-	  }
-	printf("\n");
+	if (i==4&&j==119) {
+	  printf("pp[%d][%d] = ", i, j);
+	  for (x = 0; x < K; x ++) 
+	    for (y = 0; y < K; y ++) {
+	      printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
+	    }
+	  printf("\n");
+	}
       }
-      esl_vec_DDump(stdout, mi->ps[i], K, NULL);
+      if (i==4) esl_vec_DDump(stdout, mi->ps[i], K, NULL);
     }
   }
 
@@ -463,11 +464,11 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc
   double       maxFPsen;
   double       maxFPppv;
   double       maxFPthresh;
-  int          optimal = TRUE;
   int          tf, t, f;
   int          best_tf, best_t, best_f, best_fp;
   int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
-  int          n = 0;
+  int          nt = 0;
+  int          nf = 0;
   int          i, j;
   int          status;
 
@@ -527,9 +528,8 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
 	if (mtx->mx[i][j] > besthresh) {
-	  n ++; 
-	  if (ct[i+1] == j+1) printf("*[%d] %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
-	  else                printf("[%d]  %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
+	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
 	}
       }
   }
@@ -539,9 +539,8 @@ mutual_analyze_ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
 	if (mtx->mx[i][j] > maxFPthresh) {
-	  n ++; 
-	  if (ct[i+1] == j+1) printf("*[%d] %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
-	  else                printf("[%d]  %s[%d][%d] = %f\n", n, mitype, i, j, mtx->mx[i][j]); 
+	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
+	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); } 
 	}
       }
   }
@@ -667,6 +666,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   ESL_DMATRIX   *ppl, *ppr;
   ESL_DMATRIX   *CL = NULL;
   ESL_DMATRIX   *CR = NULL;
+  double         sum;
   int            dim;
   int            K = msa->abc->K;
   int            K2 = K*K;
@@ -702,10 +702,14 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	esl_dmatrix_Set(pp[idx], 0.0);
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
-	//printf("v=%d parent %d pp l time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
-	//       v, T->parent[v], T->ld[v], idx, which, 
-	//       i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
-	//       j, resj, esl_abc_XIsCanonical(msa->abc, resj));
+#if 1
+	if (i==4&&j==119) {
+	  printf("v=%d parent %d pp l time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
+		 v, T->parent[v], T->ld[v], idx, which, 
+		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
+		 j, resj, esl_abc_XIsCanonical(msa->abc, resj));
+	}
+#endif
 
 	if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
 	  pp[idx]->mx[resi][resj] = 1.0;
@@ -729,11 +733,14 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	esl_dmatrix_Set(pp[idx], 0.0); 
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
-	//printf("v=%d parent %d pp r time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
-	//       v, T->parent[v], T->rd[v], idx, which, 
-	//       i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
-	//       j, resj, esl_abc_XIsCanonical(msa->abc, resj));
-
+#if 1
+	if (i==4&&j==119) {
+	  printf("v=%d parent %d pp r time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
+		 v, T->parent[v], T->rd[v], idx, which, 
+		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
+		 j, resj, esl_abc_XIsCanonical(msa->abc, resj));
+	}
+#endif
 
 	if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
 	  pp[idx]->mx[resi][resj] = 1.0;
@@ -750,23 +757,35 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
       }
       ppr = pp[idx];
 
-     if (ppl != NULL && ppr != NULL) { /* ready to go: calculate ps and pp at the parent node */
-       status = ratematrix_CalculateConditionalsFromRate(T->ld[v], ribosum->bprsQ, CL, tol, errbuf, verbose);
-       if (status != eslOK) goto ERROR;
-       status = ratematrix_CalculateConditionalsFromRate(T->rd[v], ribosum->bprsQ, CR, tol, errbuf, verbose);
-       if (status != eslOK) goto ERROR;
-
-       pp[v] = esl_dmatrix_Create(K, K);
+      if (ppl != NULL && ppr != NULL) { /* ready to go: calculate ps and pp at the parent node */
+	status = ratematrix_CalculateConditionalsFromRate(T->ld[v], ribosum->bprsQ, CL, tol, errbuf, verbose);
+	if (status != eslOK) goto ERROR;
+	status = ratematrix_CalculateConditionalsFromRate(T->rd[v], ribosum->bprsQ, CR, tol, errbuf, verbose);
+	if (status != eslOK) goto ERROR;
+	
+	pp[v] = esl_dmatrix_Create(K, K);
 	esl_dmatrix_Set(pp[v], 0.0);
 	for (x = 0; x < K; x ++) 
-	  for (y = 0; y < K; y ++) {
+	  for (y = 0; y < K; y ++) 
 	    for (xl = 0; xl < K; xl ++) 
 	      for (yl = 0; yl < K; yl ++) 
 		for (xr = 0; xr < K; xr ++) 
 		  for (yr = 0; yr < K; yr ++) 
 		    pp[v]->mx[x][y] += ppl->mx[xl][yl] * CL->mx[IDX(x,y,K)][IDX(xl,yl,K)] * ppr->mx[xr][yr] * CR->mx[IDX(x,y,K)][IDX(xr,yr,K)];
-	  }
-	
+	sum = esl_dmx_Sum(pp[v]);
+	esl_dmx_Scale(pp[v], (sum != 0.)? 1.0/sum:1.0);
+
+#if 1
+	if (i==4&&j==119) {
+	  printf("l %d r %d v %d\n", T->left[v], T->right[v], v);
+	  esl_dmatrix_Dump(stdout, CL, NULL, NULL);
+	  esl_dmatrix_Dump(stdout, CR, NULL, NULL);
+	  esl_dmatrix_Dump(stdout, ppl, "ACGU", "ACGU");
+	  esl_dmatrix_Dump(stdout, ppr, "ACGU", "ACGU");
+	  esl_dmatrix_Dump(stdout, pp[v], "ACGU", "ACGU");
+	}
+#endif
+
 	/* push parent into stack unless already at the root */
 	if (v > 0 && esl_stack_IPush(vs, T->parent[v]) != eslOK) { status = eslFAIL; goto ERROR; }; 
       }
