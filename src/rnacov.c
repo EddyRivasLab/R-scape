@@ -49,7 +49,7 @@ struct cfg_s {
   char            *msaheader;          /* header for all msa-specific output files */
   int              infmt;
   
-  int              naive;
+  METHOD           method;
   ESL_TREE        *T;
   double           treeavgt;
  
@@ -76,8 +76,12 @@ struct cfg_s {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
   { "--maxFP",        eslARG_INT,       "10",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
-  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
+  /* method */
+  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
+  { "--phylo",        eslARG_NONE,      TRUE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
+  { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
+  { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
@@ -241,12 +245,11 @@ main(int argc, char **argv)
     if (cfg.submsa) {
       if (MSA_Subset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
-    
-    /* outheader for all msa-output files */
-    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader); 
-   
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
+ 
+    /* outheader for all msa-output files */
+    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader);    
    
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubset(cfg.r, &msa, cfg.idthresh, &nremoved);
@@ -307,6 +310,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the TREE */
   status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
   if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+
   if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
   cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);

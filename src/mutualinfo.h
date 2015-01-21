@@ -23,6 +23,13 @@ typedef enum {
   MIr = 3,
 } MITYPE;
 
+typedef enum{
+  NAIVE  = 0,
+  PHYLO  = 1,
+  DCA    = 2,
+  AKMAEV = 3,
+} METHOD;
+
 struct mutual_s {
   int64_t      alen;
   double       ***pp;    // joint probability dist. of two position at the root [0,alen-1][0.alen-1][0..15]
@@ -53,7 +60,7 @@ extern int              Mutual_Analyze(int *ct, struct mutual_s *mi, int plotroc
 extern int              Mutual_AnalyzeSignificantPairs(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
 extern int              Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf);
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					 int naive, double tol, int verbose, char *errbuf);
+					 METHOD method, double tol, int verbose, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int K);
 extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);

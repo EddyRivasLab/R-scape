@@ -73,7 +73,7 @@ Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int 
 
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, int naive, double tol, int verbose, char *errbuf)
+Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf)
 {
   double     *MIx = NULL;
   double      H, HH, MI;
@@ -83,19 +83,24 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   int         K = msa->abc->K;
   int         status;
   
-  if (naive) {
+  switch(method) {
+  case NAIVE:
     status = Mutual_NaivePP(msa, mi, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
-    
+    if (status != eslOK) goto ERROR;    
     //status = Mutual_NaivePS(msa, mi, tol, verbose, errbuf);
     //if (status != eslOK) goto ERROR;
-  }
-  else {
+    break;
+  case PHYLO:
     status = Mutual_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
-    
+    if (status != eslOK) goto ERROR;    
     //status = Mutual_PostOrderPS(msa, T, ribosum, mi, tol, verbose, errbuf);
     //if (status != eslOK) goto ERROR;
+    break;
+  case: DCA:
+    break;
+  case AKMAEV:
+    break;
+  default: 
   }
   
   // pp validation
@@ -129,7 +134,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   if (verbose) {
     for (i = 0; i < mi->alen-1; i ++) {
       for (j = i+1; j < mi->alen; j ++) {
-	if (i==4&&j==119) {
+	if (i==3&&j==28) {
 	  printf("pp[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
@@ -138,7 +143,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
 	  printf("\n");
 	}
       }
-      if (i==4) esl_vec_DDump(stdout, mi->ps[i], K, NULL);
+      if (i==3) esl_vec_DDump(stdout, mi->ps[i], K, NULL);
     }
   }
 
@@ -202,7 +207,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
 	   mi->minMI, mi->maxMI, mi->minMIa, mi->maxMIa, mi->minMIp, mi->maxMIp, mi->minMIr, mi->maxMIr);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==4&&j==119) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
+	if (i==3&&j==28) printf("MI[%d][%d] = %f | %f %f %f | %f %f | %f %f | %f\n", 
 					   i, j, mi->MI->mx[i][j], mi->MIa->mx[i][j], mi->MIp->mx[i][j], mi->MIr->mx[i][j],
 					   mi->H[i], mi->H[j], MIx[i], MIx[j], MIavg);
       } 
@@ -668,6 +673,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   ESL_DMATRIX   *ppl, *ppr;
   ESL_DMATRIX   *CL = NULL;
   ESL_DMATRIX   *CR = NULL;
+  double         sum;
   double         sc;
   int            dim;
   int            K = msa->abc->K;
@@ -707,7 +713,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
 #if 1
-	if (i==4&&j==119) {
+	if (i==3&&j==28) {
 	  printf("v=%d parent %d pp l time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
 		 v, T->parent[v], T->ld[v], idx, which, 
 		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
@@ -738,7 +744,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
 #if 1
-	if (i==4&&j==119) {
+	if (i==3&&j==28) {
 	  printf("v=%d parent %d pp r time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
 		 v, T->parent[v], T->rd[v], idx, which, 
 		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
@@ -776,11 +782,21 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 		for (xr = 0; xr < K; xr ++) 
 		  for (yr = 0; yr < K; yr ++) 
 		    sc = p7_FLogsum(sc, ppl->mx[xl][yl] + log(CL->mx[IDX(x,y,K)][IDX(xl,yl,K)]) + ppr->mx[xr][yr] + log(CR->mx[IDX(x,y,K)][IDX(xr,yr,K)]));
-	    pp[v]->mx[x][y] = sc;
+	    pp[v]->mx[x][y] = sc; 
 	  }
+	
+#if 0
+	sum = -eslINFINITY;
+	for (x = 0; x < K; x ++) 
+	  for (y = 0; y < K; y ++) 
+	    sum = p7_FLogsum(sum, pp[v]->mx[x][y]);
+	for (x = 0; x < K; x ++) 
+	  for (y = 0; y < K; y ++) 
+	    pp[v]->mx[x][y] -= sum;
+#endif
 
 #if 1
-	if (i==4&&j==119) {
+	if (i==3&&j==28) {
 	  printf("l %d r %d v %d\n", T->left[v], T->right[v], v);
 	  esl_dmatrix_Dump(stdout, CL, NULL, NULL);
 	  esl_dmatrix_Dump(stdout, CR, NULL, NULL);
@@ -803,8 +819,9 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "pp did not transverse tree to the root");
   
   for (x = 0; x < K; x ++) 
-    for (y = 0; y < K; y ++) 
-     mi->pp[i][j][IDX(x,y,K)] = exp(pp[v]->mx[x][y]) * ribosum->bprsM[IDX(x,y,K)];
+    for (y = 0; y < K; y ++) {
+      mi->pp[i][j][IDX(x,y,K)] = exp(pp[v]->mx[x][y]) * ribosum->bprsM[IDX(x,y,K)];
+    }
   esl_vec_DNorm(mi->pp[i][j], K*K);
 
   for (v = 0; v < dim; v ++) esl_dmatrix_Destroy(pp[v]);
