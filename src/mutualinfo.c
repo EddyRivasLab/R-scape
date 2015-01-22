@@ -30,9 +30,8 @@ static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, do
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-
 static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				 double tol, int verbose, char *errbuf);
+				ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 
 int                 
 Mutual_Analyze(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf)
@@ -361,7 +360,7 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
     CL[v] = ratematrix_ConditionalsFromRate(T->ld[v], ribosum->bprsQ, tol, errbuf, verbose);
     if (CL[v] == NULL) goto ERROR;
     CR[v] = ratematrix_ConditionalsFromRate(T->rd[v], ribosum->bprsQ, tol, errbuf, verbose);
-    if (CR[v] == NULL) goto ERROR;   
+    if (CR[v] == NULL) goto ERROR;
   }
  
   for (i = 0; i < alen-1; i ++) 
@@ -385,25 +384,50 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
   }
   if (CL) free(CL);
   if (CR) free(CR);
-
   return status;
 }
 
 int 
 Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
-  int64_t alen = msa->alen;
-  int     i;
-  int     status;
+  ESL_DMATRIX **CL = NULL;
+  ESL_DMATRIX **CR = NULL;
+  int64_t       alen = msa->alen;
+  int           nnodes;
+  int           v;
+  int           i;
+  int           status;
 
+  nnodes = (T->N > 1)? T->N - 1 : 1;
+  ESL_ALLOC(CL, sizeof(ESL_DMATRIX *) * nnodes);
+  ESL_ALLOC(CR, sizeof(ESL_DMATRIX *) * nnodes);
+  for (v = 0; v < nnodes; v++) {
+    CL[v] = ratematrix_ConditionalsFromRate(T->ld[v], ribosum->prnaQ, tol, errbuf, verbose);
+    if (CL[v] == NULL) goto ERROR;
+    CR[v] = ratematrix_ConditionalsFromRate(T->rd[v], ribosum->prnaQ, tol, errbuf, verbose);
+    if (CR[v] == NULL) goto ERROR;
+  }
+ 
   for (i = 0; i < alen; i ++) {
-    status = mutual_postorder_psi(i, msa, T, ribosum, mi, tol, verbose, errbuf);
+    status = mutual_postorder_psi(i, msa, T, ribosum, mi, CL, CR, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
 
+  for (v = 0; v < nnodes; v++) {
+    esl_dmatrix_Destroy(CL[v]);
+    esl_dmatrix_Destroy(CR[v]);
+  }
+  free(CL);
+  free(CR);
   return eslOK;
 
  ERROR:
+ for (v = 0; v < nnodes; v++) {
+    if (CL[v]) esl_dmatrix_Destroy(CL[v]);
+    if (CR[v]) esl_dmatrix_Destroy(CR[v]);
+  }
+  if (CL) free(CL);
+  if (CR) free(CR);
   return status;
 }
 
@@ -700,7 +724,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   ESL_DMATRIX  **lk = NULL;
   ESL_DMATRIX   *lkl, *lkr;
   ESL_DMATRIX   *cl, *cr;
-  double         sum;
   double         sc;
   int            dim;
   int            K = msa->abc->K;
@@ -793,8 +816,10 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
       lkr = lk[idx];
 
       if (lkl != NULL && lkr != NULL) { /* ready to go: calculate ps and lk at the parent node */
-	cl  = CL[v];
-	cr  = CR[v];
+	cl = CL[v];
+	cr = CR[v];
+ 	cl = ribosum->bprsJ;
+	cr = ribosum->bprsJ;
       
 	lk[v] = esl_dmatrix_Create(K, K);
 	for (x = 0; x < K; x ++) 
@@ -860,13 +885,13 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 }
 
 static int    
-mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
+		     double tol, int verbose, char *errbuf)
 {
   ESL_STACK     *vs = NULL;   /* node index stack */
   double       **lk = NULL;
   double        *lkl, *lkr;
-  ESL_DMATRIX   *CL = NULL;
-  ESL_DMATRIX   *CR = NULL;
+  ESL_DMATRIX   *cl, *cr;
   double         sc;
   int            dim;
   int            K = msa->abc->K;
@@ -886,8 +911,6 @@ mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribo
   dim    = nnodes + T->N;
   ESL_ALLOC(lk, sizeof(double *) * dim);
   for (v = 0; v < dim; v ++) lk[v] = NULL;
-  CL = esl_dmatrix_Create(K, K);
-  CR = esl_dmatrix_Create(K, K);
  
   /* PostOrder trasversal */
   if ((vs = esl_stack_ICreate())   == NULL) { status = eslFAIL; goto ERROR; }
@@ -926,17 +949,15 @@ mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribo
       lkr = lk[idx];
       
       if (lkl != NULL && lkr != NULL) { /* ready to go: calculate lk at the parent node */
-	status = ratematrix_CalculateConditionalsFromRate(T->ld[v], ribosum->xrnaQ, CL, tol, errbuf, verbose);
-	if (status != eslOK) goto ERROR;
-	status = ratematrix_CalculateConditionalsFromRate(T->rd[v], ribosum->xrnaQ, CR, tol, errbuf, verbose);
-	if (status != eslOK) goto ERROR;
-	
+	cl = CL[v];
+	cr = CR[v];
+
 	ESL_ALLOC(lk[v], sizeof(double)*K);
 	for (x = 0; x < K; x ++) {
 	  sc = -eslINFINITY;
 	  for (yl = 0; yl < K; yl ++)
 	    for (yr = 0; yr < K; yr ++)
-	      sc = p7_FLogsum(sc, lkl[yl] + log(CL->mx[x][yl]) + lkr[yr] + log(CR->mx[x][yr]));
+	      sc = p7_FLogsum(sc, lkl[yl] + log(cl->mx[x][yl]) + lkr[yr] + log(cr->mx[x][yr]));
 	}
 	
 	/* push node into stack unless already at the root */
@@ -955,8 +976,6 @@ mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribo
 
   for (v = 0; v < dim; v ++) free(lk[v]);
   free(lk);
-  if (CL) esl_dmatrix_Destroy(CL);
-  if (CR) esl_dmatrix_Destroy(CR);
   esl_stack_Destroy(vs);
   return eslOK;
 
@@ -964,8 +983,6 @@ mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribo
   if (vs) esl_stack_Destroy(vs);
   for (v = 0; v < dim; v ++) if (lk[v]) free(lk[v]);
   if (lk) free(lk);
-  if (CL) esl_dmatrix_Destroy(CL);
-  if (CR) esl_dmatrix_Destroy(CR);
   return status;
 }
 
