@@ -357,9 +357,11 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
   ESL_ALLOC(CL, sizeof(ESL_DMATRIX *) * nnodes);
   ESL_ALLOC(CR, sizeof(ESL_DMATRIX *) * nnodes);
   for (v = 0; v < nnodes; v++) {
-    CL[v] = ratematrix_ConditionalsFromRate(T->ld[v], ribosum->bprsQ, tol, errbuf, verbose);
+    //CL[v] = ratematrix_ConditionalsFromRate(T->ld[v], ribosum->bprsQ, tol, errbuf, verbose);
+     CL[v] = ratematrix_ConditionalsFromRate(0.1, ribosum->bprsQ, tol, errbuf, verbose);
     if (CL[v] == NULL) goto ERROR;
-    CR[v] = ratematrix_ConditionalsFromRate(T->rd[v], ribosum->bprsQ, tol, errbuf, verbose);
+    //CR[v] = ratematrix_ConditionalsFromRate(T->rd[v], ribosum->bprsQ, tol, errbuf, verbose);
+    CR[v] = ratematrix_ConditionalsFromRate(0.1, ribosum->bprsQ, tol, errbuf, verbose);
     if (CR[v] == NULL) goto ERROR;
   }
  
@@ -818,9 +820,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
       if (lkl != NULL && lkr != NULL) { /* ready to go: calculate ps and lk at the parent node */
 	cl = CL[v];
 	cr = CR[v];
- 	cl = ribosum->bprsJ;
-	cr = ribosum->bprsJ;
-      
+     
 	lk[v] = esl_dmatrix_Create(K, K);
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) {
