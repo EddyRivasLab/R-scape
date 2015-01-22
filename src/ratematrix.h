@@ -775,7 +775,7 @@ extern int          ratematrix_ExchangeFromRate(const ESL_DMATRIX *Q, const doub
 extern int          ratematrix_DRateFromExchange(const ESL_DMATRIX *E, const double *p, ESL_DMATRIX *Q);
 extern int          ratematrix_FRateFromExchange(const ESL_DMATRIX *E, const float *p, ESL_DMATRIX *Q);
 extern int          ratematrix_CalculateConditionalsFromRate(double rt, const ESL_DMATRIX *Q, ESL_DMATRIX *P,  double tol, char *errbuf, int verbose);
-extern ESL_DMATRIX *ratematrix_ConditionalsFromRate(double rt, const ESL_DMATRIX *Q,double tol, char *errbuf, int verbose);
+extern ESL_DMATRIX *ratematrix_ConditionalsFromRate(double rt, const ESL_DMATRIX *Q, double tol, char *errbuf, int verbose);
 extern ESL_DMATRIX *ratematrix_ConditionalsFromRateYang93(double rt, double b, double c, const ESL_DMATRIX *Q, int ncat, int discrete, double tol, char *errbuf, int verbose);
 extern int          ratematrix_SaturationTime(const ESL_DMATRIX *Q, double *ret_tsat, double **ret_psat, double tol, char *errbuf, int verbose);
 extern int          ratematrix_isnan(const ESL_DMATRIX *P, char *errbuf);

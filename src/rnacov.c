@@ -22,6 +22,8 @@
 
 
 #define ALPHOPTS "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
+#define METHODOPTS "--naive,--phylo,--dca,--akmaev"              
+
 /* Exclusive options for evolutionary model choice */
 
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
@@ -78,10 +80,10 @@ struct cfg_s {
   { "--maxFP",        eslARG_INT,       "10",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
-  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
-  { "--phylo",        eslARG_NONE,      TRUE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
-  { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
-  { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "naive MI calculations",                                                                                0 },
+  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                                0 },
+  { "--phylo",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo MI calculations",                                                                                0 },
+  { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                                                                0 },
+  { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                                                0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
@@ -175,19 +177,23 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")? esl_opt_GetReal(go, "-F") : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
-  cfg.naive      = esl_opt_GetBoolean(go, "--naive");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
   cfg.plotroc    = FALSE;
   cfg.maxFP      = esl_opt_GetInteger(go, "--maxFP");
-
+  
+  if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
+  else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
+  else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
+  else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
+ 
   cfg.T  = NULL;
   cfg.ct = NULL;
 
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
-  if (!cfg.naive) {
+  if (cfg.method == PHYLO || cfg.method == AKMAEV) {
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
     else esl_sprintf(&cfg.ribofile, "ssu-lsu.ribosum");
     
@@ -330,7 +336,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
 
   /* produce a tree
    */
-  if (!cfg->naive) {
+  if (cfg->method != NAIVE) {
     status = create_tree(go, cfg, msa);
     if (status != eslOK)  { esl_fatal(cfg->errbuf); }
     nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
@@ -340,7 +346,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   mi = Mutual_Create(msa->alen, cfg->abc->K);
   
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->naive, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 
   /* analyze results */
