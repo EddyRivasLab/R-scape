@@ -24,6 +24,7 @@ static ESL_OPTIONS options[] = {
 /* Control of output */
   { "-o",           eslARG_OUTFILE,      NULL, NULL, NULL,      NULL,        NULL,  NULL,              "direct output to file <f>, not stdout",                        0 },
   { "-r",           eslARG_NONE,        FALSE, NULL, NULL,      NULL,        NULL,  NULL,              "rescale rate to 1 subsitution per site",                       0 },
+  { "--time",       eslARG_REAL,        "0.0", NULL, "x>=0",    NULL,        NULL,  NULL,              "write P at time <x>",                                          0 },
 /* alphabet */
   { "--abc",        eslARG_STRING, "eslAMINO", NULL, NULL,      NULL,        NULL,  NULL,              "alphabet",                                                     0 },
 /* Control of scoring system */
@@ -101,12 +102,14 @@ main(int argc, char **argv)
   ESL_ALPHABET    *abc = NULL;            /* sequence alphabet                                */
   RATEBUILDER     *ratebld = NULL;        /* construction configuration                       */
   ESL_DMATRIX     *P = NULL;
+  ESL_DMATRIX     *Pt = NULL;
   ESL_DMATRIX     *Psat = NULL;
   P7_BG           *bg  = NULL;		  /* null model (copies made of this into threads)    */
   double           subsite;
   double           fsubsite;
   float            rt  = 1.0;
   double           tol = 0.0001;
+  double           time;
   int              rescale;
   int              verbose = FALSE;
 
@@ -119,6 +122,7 @@ main(int argc, char **argv)
   /* Initializations */
   abc = esl_alphabet_Create(eslAMINO);
   bg  = p7_bg_Create(abc);
+  time  = esl_opt_GetReal(go, "--time");
 
   /* Initialize a default ratebuilder configuration,
    * then set only the options we need for single sequence search
@@ -134,7 +138,7 @@ main(int argc, char **argv)
   if (1||verbose) {
     esl_dmatrix_Dump(stdout, ratebld->P, NULL, NULL);
     fsubsite = ratematrix_DFreqSubsPerSite(ratebld->P, ratebld->p);
-    printf("Frequency of SubsPerSite %f\n", fsubsite);
+    printf("Frequency of SubsPerSite %f pid %f\n", fsubsite, 1.0-fsubsite);
   }
   status = ratematrix_CreateFromConditionals(ratebld->P, ratebld->p, &(ratebld->Q), &(ratebld->E), tol, errbuf, verbose);
   if (status != eslOK) p7_Fail("Failed to calculate rate matrix\n%s\n", errbuf);
@@ -168,6 +172,14 @@ main(int argc, char **argv)
   esl_dmatrix_Dump(stdout, ratebld->E, NULL, NULL);
   ratematrix_specialDump(ratebld->E);                    /* special print */
    
+  if (time > 0.0) {
+    fprintf(stdout, "\nAt time %f \n", time);
+    Pt = ratematrix_ConditionalsFromRate(time, ratebld->Q, tol, errbuf, verbose);
+    esl_dmatrix_Dump(stdout, Pt, NULL, NULL);
+    fsubsite = ratematrix_DFreqSubsPerSite(Pt, ratebld->p);
+    printf("Frequency of SubsPerSite %f pid %f\n", fsubsite, 1.0-fsubsite);
+  }
+
   /* Saturation */
   fprintf(stdout, "\nAt saturation \n");
   Psat = ratematrix_ConditionalsFromRate(18749624320.0, ratebld->Q, tol, errbuf, verbose);
@@ -179,6 +191,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(abc);
   p7_bg_Destroy(bg);
   esl_dmatrix_Destroy(P);
+  esl_dmatrix_Destroy(Pt);
   esl_dmatrix_Destroy(Psat);
   return status;
 }
