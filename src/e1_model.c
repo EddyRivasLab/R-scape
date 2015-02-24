@@ -580,12 +580,12 @@ e1_model_LI_BetaFunc(void *params, double *ret_func)
   double expoI;
   double ll, mm, lm;
   double Al, Am;
-   double num, den;
+  double num, den;
   int    status;
-
+  
   if (p->time == 0.0)          { *ret_func = 0.0; return eslOK; } /* special case time = 0 */
   if (p->rateparam.ldI == 0.0) { *ret_func = 0.0; return eslOK; } /* special case ldI = muI = 0 */
-
+  
   /* some asignments */
   a     = p->rateparam.ldI - p->rateparam.muI;
   alpha = fabs(a);
@@ -617,7 +617,7 @@ e1_model_LI_BetaFunc(void *params, double *ret_func)
   func = (fabs(den) > 0.)? num/den : p->fsmall;
    
 #if 0
-  printf("\nLIBetaFunc[t=%f] = %.8f special? %d ldI=%.8f\tmuI=%.8f\n", 
+  if (p->time > 0.99 && p->time <= 1.) printf("\nLIBetaFunc[t=%f] = %.8f special? %d ldI=%.8f\tmuI=%.8f\n", 
 	 p->time, func, p->special_case, p->rateparam.ldI, p->rateparam.muI);
 #endif
 
@@ -631,8 +631,6 @@ e1_model_LI_BetaFunc(void *params, double *ret_func)
  ERROR:
   return status;
 }
-
-
 
 /* internal functions 
 */
@@ -695,6 +693,7 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
  ERROR:
   return eslFAIL;
 }
+
 
 static int
 e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errbuf, int verbose)

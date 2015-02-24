@@ -34,8 +34,8 @@ static ESL_OPTIONS options[] = {
   { "-h",           eslARG_NONE,        FALSE, NULL, NULL,       NULL,       NULL,       NULL,              "show brief help on version and usage",                                               0 },
   { "--gapo",       eslARG_REAL,      "-11.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap open",                                                                           0 },
   { "--gape",       eslARG_REAL,       "-1.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap exted",                                                                          0 },
-  { "--gapsc",      eslARG_REAL,       "3.0",  NULL, "x>0",      NULL,       NULL,       NULL,              "gap scale",                                                                          0 },
-  { "--betainf",    eslARG_REAL,       "0.48", NULL, "0.5>x>=0", NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
+  { "--gapsc",      eslARG_REAL,       "2.0",  NULL, "x>0",      NULL,       NULL,       NULL,              "gap scale",                                                                          0 },
+  { "--betainf",    eslARG_REAL,       "0.48", NULL,"x>=0.", NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
   { "--rM",         eslARG_REAL,       "0.00", NULL, "x>=0",     NULL,       NULL,       NULL,              "fragment parameter rM",                                                              0 },
   { "-v",           eslARG_NONE,        FALSE, NULL, NULL,       NULL,       NULL,       NULL,              "be verbose",                                                                         0 },
   
@@ -121,6 +121,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
 {
   char               *msg = "e1model unit test failed";
   RATEBUILDER        *ratebld = NULL;           /* construction configuration */
+  ESL_DMATRIX        *P = NULL;
   E1_RATE            *R1   = NULL; 
   struct rateparam_s  rateparam;
   double              rX;
@@ -130,18 +131,20 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   double              tt;
   double              gapet, gapot;
   double              subsite;
+  double              pid;
+  double              totalt = 15.0;
   int                 x;
   int                 status;
   
   status = e1model_calculate_subrate(go, abc, bg, &ratebld, scaledrate, tol, errbuf, FALSE);
   if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
-  subsite = ratematrix_SubsPerSite(ratebld->Q, ratebld->p);
 
-  status = AFR_calculate_insrate(fp, &rX, &ld, &muA, gapo, gape, betainf, rM, tol, errbuf, FALSE);
+  status = AFR_calculate_insrate(fp, &rX, &muA, &ld, gapo, gape, betainf, rM, tol, errbuf, FALSE);
   if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
 
   /* pass the values to structure rateparam */
   rateparam.rI   = rX;
+  rateparam.rD   = rX;
   rateparam.rM   = rM;
   rateparam.ldI  = ld;
   rateparam.muAM = muA;
@@ -149,14 +152,20 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   R1 = e1_rate_CreateWithValues(abc, evomodel, rateparam, NULL, ratebld->Q, gapscale, tol, errbuf, FALSE);
   if (R1 == NULL) { printf("%s\n", errbuf); esl_fatal(msg); }
 
-  for (x = 0; x <= 2*N; x ++) {
+  for (x = 0; x <= totalt*N; x ++) {
     tt = (x<=N)? ttz + x*(1.0-ttz)/N : ttz + x*(1.0-ttz)/N;
+
+    P = ratematrix_ConditionalsFromRate(tt, ratebld->Q, tol, errbuf, verbose);
+    subsite = ratematrix_DFreqSubsPerSite(P, ratebld->p);
+    pid = (1.0 - subsite) * 100.;
 
     status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, tol, errbuf, FALSE);
     if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
     
-    if (verbose) fprintf(stdout, "%f %f %f %f \n", tt, subsite*tt, gapet, gapot);
-    fprintf(fp,     "%f %f %f %f\n", tt, subsite*tt, gapet, gapot);
+    if (verbose) fprintf(stdout, "%f %f %f %f \n", tt, pid, gapet, gapot);
+    fprintf(fp,     "%f %f %f %f\n", tt, pid, gapet, gapot);
+
+    esl_dmatrix_Destroy(P); P = NULL;
   }
   /* at infinity */
   tt = 1e+8;
@@ -174,6 +183,7 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
   double Tstar_MX;
   double Tstar_XX;
   double betastar;
+  double newbetastar;
   double muA;
   double ld;
   double rI;
@@ -181,21 +191,27 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
 
   /* the insertion/deletion rates */
   Tstar_XX = exp(gapesc * eslCONST_LOG2);
-  Tstar_MX = exp(gaposc * eslCONST_LOG2) * (1.0 - Tstar_XX) / Tstar_XX;
-  betastar = Tstar_XX/(1.0 - rM);
+  Tstar_MX = exp(gaposc * eslCONST_LOG2) *  Tstar_XX / (1.0 - Tstar_XX);
+  betastar = Tstar_MX/(1.0 - rM);
 
-  muA = betainf * (1.0 - betastar) / (betainf - betastar);
+  muA = log(betainf) + log(1.0 - betastar) - log(betainf - betastar);
   ld  = muA * betainf / (1.0 - betainf);
   rI  = (Tstar_XX - betastar) / (1.0 - betastar);
   
+  newbetastar = betainf * (1.0 - exp(-muA)) / (1.0 - betainf*exp(-muA));
   if (muA < 0.0) status = eslFAIL;
   if (ld  < 0.0) status = eslFAIL;
   if (rI >= 1.0 || rI <= 0.0) status = eslFAIL;
 
-  fprintf(fp, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f)\n", gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar));
-  fprintf(fp, "# rI  = %g\n", rI);
-  fprintf(fp, "# ld  = %g\n", ld);
-  fprintf(fp, "# muA = %g\n", muA);
+  fprintf(fp, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
+  fprintf(fp, "# rI  = %f\n", rI);
+  fprintf(fp, "# ld  = %f\n", ld);
+  fprintf(fp, "# muA = %f\n", muA);
+
+  fprintf(stdout, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
+  fprintf(stdout, "# rI  = %f\n", rI);
+  fprintf(stdout, "# ld  = %f\n", ld);
+  fprintf(stdout, "# muA = %f\n", muA);
 
   *ret_rI   = rI;
   *ret_muA  = muA;
@@ -215,6 +231,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   double    TXX;
   double    gapet;    
   double    gapot;    
+  double    betat;
   int       status;
 
   evom = e1_model_Create(R1, time, NULL, bg->f, mode, L, abc, tol, errbuf, verbose);
