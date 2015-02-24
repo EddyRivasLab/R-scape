@@ -100,7 +100,7 @@ ratebuilder_Create(const ESL_ALPHABET *abc)
  * Throws:    <eslEMEM> on allocation failure.
  */
 int
-ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg)
+ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int scaledrate)
 {
   ESL_DMATRIX *P = NULL;
   double      *f = NULL;

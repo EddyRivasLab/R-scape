@@ -78,9 +78,9 @@ typedef struct e1_rate_s {
 /* e1_rate.c */
 extern E1_RATE *e1_rate_Create(const ESL_ALPHABET *abc, EVOM evomodel);
 extern E1_RATE *e1_rate_CreateWithValues(const ESL_ALPHABET *abc, EVOM evomodel, struct rateparam_s rateparam,
-					 char *subsrate, ESL_DMATRIX *rate, double tol, char *errbuf, int verbose);
+					 char *subsrate, ESL_DMATRIX *rate, int subsratescaled, double tol, char *errbuf, int verbose);
 extern E1_RATE *e1_rate_CreateFromCosts(const ESL_ALPHABET *abc, EVOM evomodel, double popen, double pextend, double pcross,
-					 char *subsrate, ESL_DMATRIX *rate, double tol, char *errbuf, int verbose);
+					 char *subsrate, ESL_DMATRIX *rate, int subsratescaled, double tol, char *errbuf, int verbose);
 extern int      e1_rate_AssignTransitionsFromRates(E1_RATE *R, struct rateparam_s rateparam, char *errbuf, int verbose);
 extern int      e1_rate_AssignTransitionsFromCosts(E1_RATE *R, double popen, double pextend, double pcross, 
 						   struct rateparam_s *ret_rateparam, char *errbuf, int verbose);

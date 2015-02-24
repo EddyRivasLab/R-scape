@@ -27,7 +27,7 @@ typedef struct ratebuilder_s {
 } RATEBUILDER;
 
 extern RATEBUILDER *ratebuilder_Create(const ESL_ALPHABET *abc);
-extern int          ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg);
+extern int          ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int scaledrate);
 extern int          ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env, P7_BG *bg);
 extern void         ratebuilder_Destroy(RATEBUILDER *bld);
 #endif /*RATEBUILDER_INCLUDED*/

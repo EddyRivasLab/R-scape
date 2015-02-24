@@ -1550,7 +1550,7 @@ vec_PermDDecreasing(double *p, int n)
  * Throws:    <eslEMEM> on allocation error.
  */
 int
-ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRATE *R, double tol, char *errbuf, int verbose)
+ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRATE *R, int scaledrate, double tol, char *errbuf, int verbose)
 {
   int           which;
   int           nmat;
@@ -1558,11 +1558,12 @@ ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRAT
 
   if (R->abc_r->type == eslAMINO)
     {
-
       if (name) {
-	nmat = sizeof(SCALED_RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s);
-	for (which = 0; which < nmat; which++)
-	  if (strcmp(SCALED_RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
+	nmat = (scaledrate)? sizeof(SCALED_RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s) : sizeof(RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s);
+	for (which = 0; which < nmat; which++) {
+	  if ( scaledrate && strcmp(SCALED_RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
+	  if (!scaledrate && strcmp(       RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
+	}
 	if (which >= nmat) return eslENOTFOUND;
       }
   
@@ -1577,7 +1578,7 @@ ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRAT
   /* Transfer scores from static built-in storage */
   for (x = 0; x < R->E->n; x++) 
     for (y = 0; y < R->E->n; y++) 
-      R->Qstar->mx[x][y] = (name)? SCALED_RATEMATRIX_AA_PRELOADS[which].matrix[x][y] : rate->mx[x][y];
+      R->Qstar->mx[x][y] = (name)? ((scaledrate)? SCALED_RATEMATRIX_AA_PRELOADS[which].matrix[x][y] : RATEMATRIX_AA_PRELOADS[which].matrix[x][y] ): rate->mx[x][y];
  
   /* set Qstar and Qinfy identical for now */
   esl_dmatrix_Copy(R->Qstar, R->Qinfy);
@@ -1588,7 +1589,7 @@ ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRAT
       R->f[x] = (double)f[x];    
   }
   else if (name) {
-    for (x = 0; x < R->E->n; x++) R->f[x] = SCALED_RATEMATRIX_AA_PRELOADS[which].pmarg[x];
+    for (x = 0; x < R->E->n; x++) R->f[x] = (scaledrate)? SCALED_RATEMATRIX_AA_PRELOADS[which].pmarg[x] : RATEMATRIX_AA_PRELOADS[which].pmarg[x];
   }
 
   /* the exchangeabilities (in logspace) */
@@ -1817,7 +1818,7 @@ ratematrix_emrate_Validate(EMRATE *R, double tol, char *errbuf)
 }
 
 int
-ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix, const ESL_DMATRIX *rate, float *f, double tol, char *errbuf, int verbose)
+ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix, const ESL_DMATRIX *rate, float *f, int scaledrate, double tol, char *errbuf, int verbose)
 {
   int status;
  
@@ -1835,7 +1836,7 @@ ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix, const ESL_DMATRIX *r
   emR->Qinfy = esl_dmatrix_Create(emR->abc_r->K, emR->abc_r->K);
   emR->E     = esl_dmatrix_Create(emR->abc_r->K, emR->abc_r->K); 
  
-  status = ratematrix_emrate_Set(matrix, rate, f, emR, tol, errbuf, verbose); if (status != eslOK) goto ERROR;
+  status = ratematrix_emrate_Set(matrix, rate, f, emR, scaledrate, tol, errbuf, verbose); if (status != eslOK) goto ERROR;
 
   if      (status == eslENOTFOUND) ESL_XFAIL(status, errbuf, "no matrix named %s is available as a built-in", matrix);
   else if (status != eslOK)        ESL_XFAIL(status, errbuf, "failed to set score matrix %s as a built-in",   matrix);

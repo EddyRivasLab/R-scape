@@ -98,7 +98,7 @@ e1_rate_Create(const ESL_ALPHABET *abc, EVOM evomodel)
 
 E1_RATE *
 e1_rate_CreateWithValues(const ESL_ALPHABET *abc, EVOM evomodel, struct rateparam_s rateparam,
-			 char *subsrate, ESL_DMATRIX *rate, double tol, char *errbuf, int verbose)
+			 char *subsrate, ESL_DMATRIX *rate, int subsratescaled, double tol, char *errbuf, int verbose)
 {
   E1_RATE *R = NULL;
   int      status;
@@ -106,7 +106,7 @@ e1_rate_CreateWithValues(const ESL_ALPHABET *abc, EVOM evomodel, struct ratepara
   if ((R = e1_rate_Create(abc, evomodel)) == NULL) ESL_XFAIL(eslFAIL, errbuf, "e1_rate_Create failed");
  
   if (e1_rate_AssignTransitionsFromRates(R, rateparam, errbuf, verbose)             != eslOK) goto ERROR;
-  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, tol, errbuf, verbose) != eslOK) goto ERROR;
+  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescaled, tol, errbuf, verbose) != eslOK) goto ERROR;
   
   return R;
   
@@ -116,7 +116,7 @@ e1_rate_CreateWithValues(const ESL_ALPHABET *abc, EVOM evomodel, struct ratepara
 
 E1_RATE *
 e1_rate_CreateFromCosts(const ESL_ALPHABET *abc, EVOM evomodel, double popen, double pextend, double pcross,
-			 char *subsrate, ESL_DMATRIX *rate, double tol, char *errbuf, int verbose)
+			 char *subsrate, ESL_DMATRIX *rate, int subsratescaled, double tol, char *errbuf, int verbose)
 {
   E1_RATE            *R = NULL;
   struct rateparam_s  rateparam;
@@ -125,7 +125,7 @@ e1_rate_CreateFromCosts(const ESL_ALPHABET *abc, EVOM evomodel, double popen, do
   if ((R = e1_rate_Create(abc, evomodel)) == NULL) ESL_XFAIL(eslFAIL, errbuf, "e1_rate_Create failed");
  
   if (e1_rate_AssignTransitionsFromCosts(R, popen, pextend, pcross, &rateparam, errbuf, verbose) != eslOK) goto ERROR;
-  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, tol, errbuf, verbose)              != eslOK) goto ERROR;
+  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescaled, tol, errbuf, verbose)              != eslOK) goto ERROR;
   
   return R;
   
@@ -202,7 +202,7 @@ e1_rate_AssignTransitionsFromCosts(E1_RATE *R, double popen, double pextend, dou
      rateparam.muI = -log(1.0-gamma);
      rateparam.ldI = 0.0;
      
-     rateparam.rI = rM;
+     rateparam.rI = rD;
      break;
    case AIF:
      rateparam.muAM = -log(1.0-gamma);
@@ -473,7 +473,7 @@ e1_rate_assign_AFGR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose
   R->ldE[e1R_B] = R->ldE[e1R_S] = R->ldE[e1R_D] = R->ldE[e1R_I] = rp.ldI;  
   R->rI = rp.rI;
   R->rM = rp.rM;
-  R->rD = rp.rI;
+  R->rD = rp.rD;
 
   R->nrate = 2;
   R->nbern = 2;
@@ -489,7 +489,6 @@ e1_rate_assign_AFR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
 {
   e1_rate_assign_AFGR(R, rp, errbuf, verbose);
   R->rI = rp.rI;
-  R->rM = rp.rI;
   R->rD = rp.rI;
 
   R->nrate = 2;
