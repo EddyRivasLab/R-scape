@@ -338,7 +338,7 @@ main(int argc, char **argv)
 
   /* Calculate the hmm rate */
   emR = ratematrix_emrate_Create(cfg.abc, 1);
-  ratematrix_emrate_Set(cfg.subsmx, NULL, cfg.bg->f, emR, cfg.tol, cfg.errbuf, FALSE);
+  ratematrix_emrate_Set(cfg.subsmx, NULL, cfg.bg->f, emR, TRUE, cfg.tol, cfg.errbuf, FALSE);
   
   /* Calculate the hmm rate */
   if (!esl_opt_IsOn(go, "--noevo") && 

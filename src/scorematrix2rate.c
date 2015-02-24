@@ -128,7 +128,7 @@ main(int argc, char **argv)
 
    /* Default is stored in the --mx option, so it's always IsOn(). Check --mxfile first; then go to the --mx option and the default. */
   if (esl_opt_IsOn(go, "--mxfile")) status = ratebuilder_SetScoreSystem (ratebld, esl_opt_GetString(go, "--mxfile"), NULL, bg);
-  else                              status = ratebuilder_LoadScoreSystem(ratebld, esl_opt_GetString(go, "--mx"),           bg); 
+  else                              status = ratebuilder_LoadScoreSystem(ratebld, esl_opt_GetString(go, "--mx"),           bg, FALSE); 
   if (status != eslOK) p7_Fail("Failed to set single query seq score system:\n%s\n", ratebld->errbuf);
   
   if (1||verbose) {

@@ -339,7 +339,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     cfg.R1    = malloc(sizeof(E1_RATE) * cfg.nr);
     cfg.R1[0] = NULL;
     for (r = 0; r < cfg.nr; r ++) {
-      cfg.R1[r] = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, cfg.tol, cfg.errbuf, cfg.verbose);
+      cfg.R1[r] = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
       if (cfg.R1[r] == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg.errbuf); }
       if (1||cfg.verbose)   printf("rI %f rM %f rD %f | ldE %f muE %f ldI %f muI %f muA %f | model %s\n",  
 				    cfg.R1[r]->rI, cfg.R1[r]->rM, cfg.R1[r]->rD, 

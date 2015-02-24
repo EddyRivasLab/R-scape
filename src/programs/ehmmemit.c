@@ -143,13 +143,13 @@ main(int argc, char **argv)
       if (!esl_opt_IsOn(go, "--noevo")) { emR = ratematrix_emrate_Create(abc, 1);
 	
 	if (esl_opt_IsOn(go, "--mx")) {
-	  ratematrix_emrate_Set(esl_opt_GetString(go, "--mx"), NULL, bg->f, emR, tol, errbuf, FALSE);
+	  ratematrix_emrate_Set(esl_opt_GetString(go, "--mx"), NULL, bg->f, emR, TRUE, tol, errbuf, FALSE);
 	}
 	else if (esl_opt_IsOn(go, "--mxfile")) {
 	  /* TODO: read mx from a file */
 	}
 	else {
-	  ratematrix_emrate_Set("BLOSUM62", NULL, bg->f, emR, tol, errbuf, FALSE);
+	  ratematrix_emrate_Set("BLOSUM62", NULL, bg->f, emR, TRUE, tol, errbuf, FALSE);
 	}
       }
 

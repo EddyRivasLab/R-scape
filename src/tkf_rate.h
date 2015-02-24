@@ -29,7 +29,7 @@ typedef struct tkf_rate_s {
 
 extern TKF_RATE *tkf_rate_Create(const ESL_ALPHABET *abc);
 extern TKF_RATE *tkf_rate_CreateWithValues(const ESL_ALPHABET *abc, double mu, double ld, double etaz, 
-					   char *subsrate, ESL_DMATRIX *rate,  double tol, char *errbuf, int verbose);
+					   char *subsrate, ESL_DMATRIX *rate,  int subsratescale, double tol, char *errbuf, int verbose);
 extern void      tkf_rate_Destroy(TKF_RATE *R);
 
 

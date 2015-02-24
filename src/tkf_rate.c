@@ -65,7 +65,7 @@ tkf_rate_Create(const ESL_ALPHABET *abc)
 
 TKF_RATE *
 tkf_rate_CreateWithValues(const ESL_ALPHABET *abc, double mu, double ld, double etaz,  
-			 char *subsrate, ESL_DMATRIX *rate, double tol, char *errbuf, int verbose)
+			  char *subsrate, ESL_DMATRIX *rate, int subsratescale, double tol, char *errbuf, int verbose)
 {
   TKF_RATE *R = NULL;
   int      status;
@@ -77,7 +77,7 @@ tkf_rate_CreateWithValues(const ESL_ALPHABET *abc, double mu, double ld, double 
   R->etaz   = etaz;
 
   R->em = NULL;
-  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, tol, errbuf, verbose) != eslOK) goto ERROR;
+  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescale, tol, errbuf, verbose) != eslOK) goto ERROR;
    
   return R;
 

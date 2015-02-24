@@ -365,7 +365,7 @@ main(int argc, char **argv)
   if (cfg.e2ali == E2 || cfg.e2ali == E2F) {
     cfg.R1 = malloc(sizeof(E1_RATE) * cfg.nr);
     for (r = 0; r < cfg.nr; r ++) {
-      cfg.R1[r] = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, cfg.tol, cfg.errbuf, cfg.verbose);
+      cfg.R1[r] = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
       cfg.R1[r]->evomodel = cfg.evomodel; 
       
       if (cfg.R1[r] == NULL) { printf("%s. bad rate model\n", cfg.errbuf); esl_fatal(msg); }
@@ -385,7 +385,7 @@ main(int argc, char **argv)
     
     /* Calculate the hmm rate */
     emR = ratematrix_emrate_Create(cfg.abc, 1);
-    ratematrix_emrate_Set(cfg.subsmx, NULL, cfg.bg->f, emR, cfg.tol, cfg.errbuf, FALSE);
+    ratematrix_emrate_Set(cfg.subsmx, NULL, cfg.bg->f, emR, TRUE, cfg.tol, cfg.errbuf, FALSE);
 
     int betainf;
     int etainf;

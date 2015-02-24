@@ -699,9 +699,9 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->R1[0] = NULL;
   if (cfg->e2ali == E2 || cfg->e2ali == E2F) {
     for (r = 0; r < cfg->nr; r ++) {
-      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, cfg->tol, cfg->errbuf, cfg->verbose);
+      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       else               cfg->R1[r] = e1_rate_CreateFromCosts(cfg->abc, cfg->evomodel, cfg->popen, cfg->pextend, cfg->pcross, cfg->subsmx, 
-							      NULL, cfg->tol, cfg->errbuf, cfg->verbose);
+							      NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       if (cfg->R1[r] == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg->errbuf); }
       if (1||cfg->verbose)   printf("rI %f rM %f rD %f | ldEM %f muEM %f ldED %f muED %f ldI %f muI %f muA %f %f %f| model %s\n",  
 				    cfg->R1[r]->rI, cfg->R1[r]->rM, cfg->R1[r]->rD, 
@@ -724,7 +724,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     
     /* Calculate the hmm rate */
     cfg->emR = ratematrix_emrate_Create(cfg->abc, 1);
-    ratematrix_emrate_Set(cfg->subsmx, NULL, cfg->bg7->f, cfg->emR, cfg->tol, cfg->errbuf, FALSE);
+    ratematrix_emrate_Set(cfg->subsmx, NULL, cfg->bg7->f, cfg->emR, TRUE, cfg->tol, cfg->errbuf, FALSE);
 
     int betainf;
     int etainf;

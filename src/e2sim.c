@@ -279,7 +279,7 @@ main(int argc, char **argv)
   else                 abl = cfg.minabl;
 
   /* Create the evolutionary rate model */
-  cfg.R = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, cfg.tol, cfg.errbuf, cfg.verbose);
+  cfg.R = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
   if (cfg.R == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg.errbuf); }
   
   for (n = 0; n < cfg.nmsa; n ++) {

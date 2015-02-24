@@ -225,7 +225,7 @@ tkfsim(ESL_GETOPTS  *go, ESL_RANDOMNESS *r, FILE *fp, FILE *fitfp, int L, int N,
     if (ld >= mu) { printf("not a reversible model lambda %f should be smaller than mu = %f\n", ld, mu); esl_fatal(msg); }
   }
 
-  R = tkf_rate_CreateWithValues(NULL, mu, ld, etaz, NULL, NULL, tol, errbuf, FALSE);
+  R = tkf_rate_CreateWithValues(NULL, mu, ld, etaz, NULL, NULL, TRUE, tol, errbuf, FALSE);
   if (R == NULL) { printf("%s\n", errbuf); esl_fatal(msg); }
 
   /* generate the ancestral sequences */
