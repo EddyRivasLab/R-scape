@@ -34,9 +34,10 @@ static ESL_OPTIONS options[] = {
   { "-h",           eslARG_NONE,        FALSE, NULL, NULL,       NULL,       NULL,       NULL,              "show brief help on version and usage",                                               0 },
   { "--gapo",       eslARG_REAL,      "-11.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap open",                                                                           0 },
   { "--gape",       eslARG_REAL,       "-1.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap exted",                                                                          0 },
-  { "--gapsc",      eslARG_REAL,       "2.0",  NULL, "x>0",      NULL,       NULL,       NULL,              "gap scale",                                                                          0 },
-  { "--betainf",    eslARG_REAL,       "0.48", NULL,"x>=0.", NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
+  { "--gapsc",      eslARG_REAL,       "3.0",  NULL, "x>0",      NULL,       NULL,       NULL,              "gap scale",                                                                          0 },
+  { "--betainf",    eslARG_REAL,       "0.48", NULL, "x>=0.",    NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
   { "--rM",         eslARG_REAL,       "0.00", NULL, "x>=0",     NULL,       NULL,       NULL,              "fragment parameter rM",                                                              0 },
+  { "-N",           eslARG_INT,         "100",  NULL, "n>0",      NULL,       NULL,       NULL,              "number of time points",                                                              0 },
   { "-v",           eslARG_NONE,        FALSE, NULL, NULL,       NULL,       NULL,       NULL,              "be verbose",                                                                         0 },
   
   /* Control of scoring system */
@@ -68,7 +69,7 @@ main(int argc, char **argv)
   double        tol = 0.01;
   int           scaledrate = FALSE;
   int           mode = e2_GLOBAL;
-  int           N = 100;
+  int           N;
   int           L = 1e+20;
   int           verbose;
   
@@ -90,6 +91,7 @@ main(int argc, char **argv)
   gaposc   = gapo/gapscale;
   gapesc   = gape/gapscale;
   evomodel = AFR;
+  N        = esl_opt_GetInteger(go, "-N");
   betainf  = esl_opt_GetReal(go, "--betainf");
   rM       = esl_opt_GetReal(go, "--rM");
   verbose  = esl_opt_GetBoolean(go, "-v");
