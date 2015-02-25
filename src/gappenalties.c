@@ -68,7 +68,7 @@ main(int argc, char **argv)
   double        tol = 0.01;
   int           scaledrate = FALSE;
   int           mode = e2_GLOBAL;
-  int           N = 1000;
+  int           N = 100;
   int           L = 1e+20;
   int           verbose;
   
