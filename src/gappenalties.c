@@ -162,7 +162,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
     status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, tol, errbuf, FALSE);
     if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
     
-    if (verbose) fprintf(stdout, "%f %f %f %f \n", tt, pid, gapet, gapot);
+    if (verbose) fprintf(stdout, "%f %f %f %f %f \n", tt, pid, subsite, gapet, gapot);
     fprintf(fp,     "%f %f %f %f %f\n", tt, pid, subsite, gapet, gapot);
 
     esl_dmatrix_Destroy(P); P = NULL;
