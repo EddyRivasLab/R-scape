@@ -132,7 +132,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   double              gapet, gapot;
   double              subsite;
   double              pid;
-  double              totalt = 15.0;
+  double              totalt = 50.0;
   int                 x;
   int                 status;
   
@@ -163,7 +163,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
     if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
     
     if (verbose) fprintf(stdout, "%f %f %f %f \n", tt, pid, gapet, gapot);
-    fprintf(fp,     "%f %f %f %f\n", tt, pid, gapet, gapot);
+    fprintf(fp,     "%f %f %f %f %f\n", tt, pid, subsite, gapet, gapot);
 
     esl_dmatrix_Destroy(P); P = NULL;
   }
