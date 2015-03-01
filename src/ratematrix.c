@@ -790,6 +790,19 @@ ratematrix_Rescale(ESL_DMATRIX *Q, ESL_DMATRIX *E, double *p)
 }
 
 double 
+ratematrix_ExpScore(ESL_DMATRIX *P, double *p)
+{
+  double expsc = 0.0;
+  int    i, j;
+  
+  for (i = 0; i < P->n; i ++)
+    for (j = 0; j < P->m; j ++) 
+      expsc += p[i] * p[j] * ( log(P->mx[i][j]) - log(p[j]) );
+  
+  return expsc;
+}
+
+double 
 ratematrix_SubsPerSite(ESL_DMATRIX *Q, double *p)
 {
   double subs = 0.0;

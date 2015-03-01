@@ -832,6 +832,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	  }
 	
 #if 0
+	double sum;
 	sum = -eslINFINITY;
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) 
@@ -844,10 +845,10 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 #if 1
 	if (i==3&&j==28) {
 	  printf("l %d r %d v %d\n", T->left[v], T->right[v], v);
-	  esl_dmatrix_Dump(stdout, cl, NULL, NULL);
-	  esl_dmatrix_Dump(stdout, cr, NULL, NULL);
-	  esl_dmatrix_Dump(stdout, lkl, "ACGU", "ACGU");
-	  esl_dmatrix_Dump(stdout, lkr, "ACGU", "ACGU");
+	  esl_dmatrix_Dump(stdout, cl,    NULL,   NULL);
+	  esl_dmatrix_Dump(stdout, cr,    NULL,   NULL);
+	  esl_dmatrix_Dump(stdout, lkl,   "ACGU", "ACGU");
+	  esl_dmatrix_Dump(stdout, lkr,   "ACGU", "ACGU");
 	  esl_dmatrix_Dump(stdout, lk[v], "ACGU", "ACGU");
 	}
 #endif

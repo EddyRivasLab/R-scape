@@ -787,6 +787,7 @@ extern int          ratematrix_QOMRegularization(double *q, int n, int whichrow,
 extern int          ratematrix_QOGRegularization(double *q, int n, int whichrow, double tol, char *errbuf);
 extern int          ratematrix_SecondDegreeSol(double a, double b, double c, double *ret_r1, double *ret_i1, double *ret_r2, double *ret_i2);
 extern double       ratematrix_Rescale(ESL_DMATRIX *Q, ESL_DMATRIX *E, double *p);
+extern double       ratematrix_ExpScore(ESL_DMATRIX *P, double *p);
 extern double       ratematrix_SubsPerSite(ESL_DMATRIX *Q, double *p);
 extern double       ratematrix_DFreqSubsPerSite(ESL_DMATRIX *P, double *p);
 extern float        ratematrix_FFreqSubsPerSite(ESL_DMATRIX *P, float *p);

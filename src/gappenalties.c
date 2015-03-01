@@ -133,6 +133,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   double              tt;
   double              gapet, gapot;
   double              subsite;
+  double              expsc;
   double              pid;
   double              totalt = 50.0;
   int                 x;
@@ -160,12 +161,13 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
     P = ratematrix_ConditionalsFromRate(tt, ratebld->Q, tol, errbuf, verbose);
     subsite = ratematrix_DFreqSubsPerSite(P, ratebld->p);
     pid = (1.0 - subsite) * 100.;
+    expsc = 2.0 * ratematrix_ExpScore(P, ratebld->p) / eslCONST_LOG2; // in half bits
 
     status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, tol, errbuf, FALSE);
     if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
     
-    if (verbose) fprintf(stdout, "%f %f %f %f %f \n", tt, pid, 100*subsite, gapet, gapot);
-    fprintf(fp,     "%f %f %f %f %f\n", tt, pid, 100*subsite, gapet, gapot);
+    if (verbose) fprintf(stdout, "%f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot);
+    fprintf(fp,     "%f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot);
 
     esl_dmatrix_Destroy(P); P = NULL;
   }
