@@ -420,6 +420,8 @@ e1_rate_assign_LR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
   R->rM = 0;
   R->rD = 0;
 
+  R->p = rp.ldI / rp.muAM;
+
   R->nrate = 2;
   R->nbern = 0;
 
@@ -475,6 +477,8 @@ e1_rate_assign_AFGR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose
   R->rM = rp.rM;
   R->rD = rp.rD;
 
+  R->p = rp.ldI / rp.muAM;
+
   R->nrate = 2;
   R->nbern = 2;
 
@@ -490,6 +494,8 @@ e1_rate_assign_AFR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
   e1_rate_assign_AFGR(R, rp, errbuf, verbose);
   R->rI = rp.rI;
   R->rD = rp.rI;
+
+  R->p = rp.ldI / rp.muAM;
 
   R->nrate = 2;
   R->nbern = 1;
@@ -555,10 +561,8 @@ static int
 e1_rate_assign_AGA(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
 {
   R->muA[e1R_B] = R->muA[e1R_S] = R->muA[e1R_D] = R->muA[e1R_I] = rp.muAM;
-  R->muE[e1R_B] = R->muE[e1R_S] = rp.muEM;
-  R->ldE[e1R_B] = R->ldE[e1R_S] = rp.ldEM;
-  R->muE[e1R_D] = rp.muED; 
-  R->ldE[e1R_D] = rp.ldED;
+  R->muE[e1R_B] = R->muE[e1R_S] = R->muE[e1R_D] = rp.muEM;
+  R->ldE[e1R_B] = R->ldE[e1R_S] = R->ldE[e1R_D] = rp.ldEM;
   R->muE[e1R_I] = 0.0;
   R->ldE[e1R_I] = 0.0;
   R->sI         = rp.sI;
@@ -566,7 +570,7 @@ e1_rate_assign_AGA(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
   R->vI         = 0.0;
   R->vD         = 0.0;
 
-  R->nrate = 5;
+  R->nrate = 3;
   R->nbern = 1;
 
   return eslOK;

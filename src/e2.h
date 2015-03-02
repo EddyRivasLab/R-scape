@@ -12,6 +12,7 @@
 #define e2_NOMODE    0
 #define e2_GLOBAL    1	    
 #define e2_LOCAL     2	    
+#define JOINT        3	    
 
 typedef enum {
   AALI    = 0,   /* Linear Insert model*/
