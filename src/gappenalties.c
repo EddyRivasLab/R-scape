@@ -205,9 +205,9 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
   rI  = (Tstar_XX - betastar) / (1.0 - betastar);
   
   newbetastar = betainf * (1.0 - exp(-muA)) / (1.0 - betainf*exp(-muA));
-  if (muA < 0.0) status = eslFAIL;
-  if (ld  < 0.0) status = eslFAIL;
-  if (rI >= 1.0 || rI <= 0.0) status = eslFAIL;
+  if (muA < 0.0) { status = eslFAIL; goto ERROR; }
+  if (ld  < 0.0){  status = eslFAIL; goto ERROR; }
+  if (rI >= 1.0 || rI <= 0.0) { status = eslFAIL; goto ERROR; }
 
   fprintf(fp, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", 
 	  gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
@@ -239,9 +239,10 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   double    TMX;
   double    TXX;
   double    TXM;
+  double    TXY;
+  double    TXE;
   double    gapet;    
-  double    gapot;    
-  double    betat;
+  double    gapot;   
   int       status;
 
   evom = e1_model_Create(R1, time, NULL, bg->f, mode, L, abc, tol, errbuf, verbose);
@@ -251,8 +252,11 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   
   TMX = evom->t[e1H_SI];
   TXX = evom->t[e1H_II];
-  TXM = evom->t[e1H_IM];
+  TXM = evom->t[e1H_IS];
+  TXY = evom->t[e1H_ID];
+  TXE = evom->t[e1H_IE];
 
+  printf("time %f MX-XM %f XY %f MX-XE %f\n", time, log(TMX)+log(TXM), log(TXY), log(TMX) + log(TXE));
   gapet = log(TXX);
   gapot = log(TMX) + log(1.0 - TXX) - log(TXX);
  
