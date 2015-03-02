@@ -68,7 +68,7 @@ main(int argc, char **argv)
   double        rM;
   double        tol = 0.01;
   int           scaledrate = FALSE;
-  int           mode = JOINT;
+  int           mode = e2_JOINT;
   int           N;
   int           L = 1e+20;
   int           verbose;
@@ -256,7 +256,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   TXY = evom->t[e1H_ID];
   TXE = evom->t[e1H_IE];
 
-  printf("time %f MX-XM %f XY %f MX-XE %f MX(1-TXX) %f\n", time, log(TMX) + log(TXM), log(TXY), log(TMX) + log(TXE), log(TMX) + log(1-TXX));
+  printf("time %f MX-XM %f MX-half %f XY %f MX-(1-TXX) %f\n", time, log(TMX)+log(TXM), log(TMX)+0.5*log(TXM), log(TXY), log(TMX)+log(1-TXX));
   gapet = log(TXX);
   gapot = log(TMX) + log(1.0 - TXX) - log(TXX);
  

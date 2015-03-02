@@ -288,8 +288,6 @@ e2_transitions_pack_paramvector(int *ret_x, double *p, long np, E1_RATE *R, char
   case AGA:
     p[x++] = RATE2PARAM(rateparam.ldEM);      
     p[x++] = RATE2PARAM(rateparam.muEM);      
-    p[x++] = RATE2PARAM(rateparam.ldED);      
-    p[x++] = RATE2PARAM(rateparam.muED);      
     p[x++] = RATE2PARAM(rateparam.muAM); 
 
     p[x++] = BERN2PARAMLOG(rateparam.sI);
@@ -297,8 +295,6 @@ e2_transitions_pack_paramvector(int *ret_x, double *p, long np, E1_RATE *R, char
   case AGAX:
     p[x++] = RATE2PARAM(rateparam.ldEM);      
     p[x++] = RATE2PARAM(rateparam.muEM);      
-    p[x++] = RATE2PARAM(rateparam.ldED);      
-    p[x++] = RATE2PARAM(rateparam.muED);      
     p[x++] = RATE2PARAM(rateparam.muAM); 
     p[x++] = RATE2PARAM(rateparam.muAD); 
     p[x++] = RATE2PARAM(rateparam.muAI); 
@@ -473,8 +469,6 @@ e2_transitions_unpack_paramvector(int *ret_x, double *p, long np, E1_RATE *R, ch
   case AGA:
     rateparam.ldEM = PARAM2RATE(p[x]); x++; 
     rateparam.muEM = PARAM2RATE(p[x]); x++; 
-    rateparam.ldED = PARAM2RATE(p[x]); x++; 
-    rateparam.muED = PARAM2RATE(p[x]); x++; 
     rateparam.muAM = PARAM2RATE(p[x]); x++; 
 
     rateparam.sI   = PARAM2BERNLOG(p[x]); x++;
@@ -482,8 +476,6 @@ e2_transitions_unpack_paramvector(int *ret_x, double *p, long np, E1_RATE *R, ch
    case AGAX:
     rateparam.ldEM = PARAM2RATE(p[x]); x++; 
     rateparam.muEM = PARAM2RATE(p[x]); x++; 
-    rateparam.ldED = PARAM2RATE(p[x]); x++; 
-    rateparam.muED = PARAM2RATE(p[x]); x++; 
     rateparam.muAM = PARAM2RATE(p[x]); x++; 
     rateparam.muAD = PARAM2RATE(p[x]); x++; 
     rateparam.muAI = PARAM2RATE(p[x]); x++; 

@@ -582,10 +582,8 @@ e1_rate_assign_AGAX(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose
   R->muA[e1R_B] = R->muA[e1R_S] = rp.muAM;
   R->muA[e1R_D] = rp.muAD;
   R->muA[e1R_I] = rp.muAI;
-  R->muE[e1R_B] = R->muE[e1R_S] = rp.muEM;
-  R->ldE[e1R_B] = R->ldE[e1R_S] = rp.ldEM;
-  R->muE[e1R_D] = rp.muED; 
-  R->ldE[e1R_D] = rp.ldED;
+  R->muE[e1R_B] = R->muE[e1R_S] = R->muE[e1R_D] = rp.muEM;
+  R->ldE[e1R_B] = R->ldE[e1R_S] = R->ldE[e1R_D] = rp.ldEM;
   R->muE[e1R_I] = 0.0;
   R->ldE[e1R_I] = 0.0;
   R->sI         = rp.sI;
@@ -593,7 +591,7 @@ e1_rate_assign_AGAX(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose
   R->vI         = 0.0;
   R->vD         = 0.0;
 
-  R->nrate = 7;
+  R->nrate = 5;
   R->nbern = 1;
 
   return eslOK;

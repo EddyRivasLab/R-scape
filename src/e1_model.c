@@ -442,7 +442,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* B state */
   sum = 0.;
-  if (evom->mode = JOINT) {
+  if (evom->mode = e2_JOINT) {
     sum += evom->t[e1H_BS];
     sum += evom->t[e1H_BD];
     sum += evom->t[e1H_BI];
@@ -464,7 +464,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* S state */
   sum = 0.;
-  if (evom->mode = JOINT) {
+  if (evom->mode = e2_JOINT) {
     sum += evom->t[e1H_SS];
     sum += evom->t[e1H_SD];
     sum += evom->t[e1H_SI];
@@ -486,7 +486,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* D state */
   sum = 0.;
-  if (evom->mode = JOINT) {
+  if (evom->mode = e2_JOINT) {
     sum += evom->t[e1H_DS];
     sum += evom->t[e1H_DD];
     sum += evom->t[e1H_DI];
@@ -509,7 +509,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* I state */
   sum = 0.;
-  if (evom->mode = JOINT) {
+  if (evom->mode = e2_JOINT) {
     sum += evom->t[e1H_IS];
     sum += evom->t[e1H_ID];
     sum += evom->t[e1H_II];
@@ -677,7 +677,7 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   double           beta;
   double           move = 1.0 - (double)L/((double)L + 1.0);
 
-  if (evom->mode == JOINT && R->p < 0.0) { printf("JOINT mode, need a p\n"); goto ERROR; }
+  if (evom->mode == e2_JOINT && R->p < 0.0) { printf("e2_JOINT mode, need a p\n"); goto ERROR; }
 
   p.time           = evom->time;
   p.rateparam.muAM = R->muA[e1R_S];         
@@ -694,7 +694,7 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   gamma_func          (&p, &gammaI); if (gammaI < 0. || gammaI > 1.0 || isnan(gammaI)) { printf("gammaI failed %f\n", gammaI); goto ERROR; }
   e1_model_LI_BetaFunc(&p, &beta);  if (beta  < 0. || beta  > 1.0 || isnan(beta))  { printf("beta failed %f\n",  beta);  goto ERROR; }
 
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BS] =                 (1.0 - beta) * (1.0 - gammaM) * R->p;
     evom->t[e1H_SS] = (1.0 - R->rM) * (1.0 - beta) * (1.0 - gammaM) * R->p + R->rM;
     evom->t[e1H_DS] = (1.0 - R->rD) * (1.0 - beta) * (1.0 - gammaD) * R->p;
@@ -707,7 +707,7 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
     evom->t[e1H_IS] = (1.0 - R->rI) * (1.0 - beta) * (1.0 - gammaI);
   }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BD] =                 (1.0 - beta) * gammaM * R->p;
     evom->t[e1H_SD] = (1.0 - R->rM) * (1.0 - beta) * gammaM * R->p;
     evom->t[e1H_DD] = (1.0 - R->rD) * (1.0 - beta) * gammaD * R->p + R->rD;
@@ -725,7 +725,7 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   evom->t[e1H_DI] = ((1.0-R->rD)*beta == 1.0)? 1.0 - move : (1.0 - R->rD)   * beta;
   evom->t[e1H_II] = ((1.0-R->rI)*beta == 1.0)? 1.0 - move : (1.0 - R->rI) * beta + R->rI;
 
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
     evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
     evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
@@ -759,7 +759,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   double           beta;
   double           move = 1.0 - (double)L/((double)L + 1.0);
 
- if (evom->mode == JOINT && R->p < 0.0) { printf("JOINT mode, need a p\n"); goto ERROR; }
+ if (evom->mode == e2_JOINT && R->p < 0.0) { printf("e2_JOINT mode, need a p\n"); goto ERROR; }
 
   p.time           = evom->time;
   p.rateparam.muAM = R->muA[e1R_S];         
@@ -782,7 +782,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   if (gammaI < 0. || gammaI > 1.0 || isnan(gammaI)) { printf("gammaI failed %f\n", gammaI); goto ERROR; }
   e1_model_LI_BetaFunc(&p, &beta);  if (beta  < 0. || beta  > 1.0 || isnan(beta))  { printf("beta failed %f\n",  beta);  goto ERROR; }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BS] =                 (1.0 - beta) * (1.0 - gammaM) * R->p;
     evom->t[e1H_SS] = (1.0 - R->rM) * (1.0 - beta) * (1.0 - gammaM) * R->p + R->rM;
     evom->t[e1H_DS] = (1.0 - R->rD) * (1.0 - beta) * (1.0 - gammaD) * R->p;
@@ -795,7 +795,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
     evom->t[e1H_IS] = (1.0 - R->rI) * (1.0 - beta) * (1.0 - gammaI);
   }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BD] =                 (1.0 - beta) * gammaM * R->p;
     evom->t[e1H_SD] = (1.0 - R->rM) * (1.0 - beta) * gammaM * R->p;
     evom->t[e1H_DD] = (1.0 - R->rD) * (1.0 - beta) * gammaD * R->p + R->rD;
@@ -813,7 +813,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   evom->t[e1H_DI] = ((1.0-R->rD)*beta == 1.0)? 1.0 - move : (1.0 - R->rD) * beta;
   evom->t[e1H_II] = ((1.0-R->rI)*beta == 1.0)? 1.0 - move : (1.0 - R->rI) * beta + R->rI;
 
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
     evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
     evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
@@ -847,7 +847,7 @@ e1_model_transitions_AGA(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   double           betaM, betaD;
   double           move = 1.0 - (double)L/((double)L + 1.0);
 
- if (evom->mode == JOINT && R->p < 0.0) { printf("JOINT mode, need a p\n"); goto ERROR; }
+ if (evom->mode == e2_JOINT && R->p < 0.0) { printf("e2_JOINT mode, need a p\n"); goto ERROR; }
 
   p.time           = evom->time;
   p.rateparam.muAM = R->muA[e1R_S];         
@@ -870,7 +870,7 @@ e1_model_transitions_AGA(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   if (betaM  < 0. || betaM  > 1.0 || isnan(betaM))  { printf("betaM failed %f\n",  betaM);  goto ERROR; }
   if (betaD  < 0. || betaD  > 1.0 || isnan(betaD))  { printf("betaD failed %f\n",  betaD);  goto ERROR; }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BS] =                 (1.0 - betaM) * (1.0 - gammaM) * R->p;
     evom->t[e1H_SS] = (1.0 - R->rM) * (1.0 - betaM) * (1.0 - gammaM) * R->p + R->rM;
     evom->t[e1H_DS] = (1.0 - R->rD) * (1.0 - betaD) * (1.0 - gammaD) * R->p;
@@ -883,7 +883,7 @@ e1_model_transitions_AGA(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
     evom->t[e1H_IS] = (1.0 - R->sI) * (1.0 - gammaI);
   }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BD] =                 (1.0 - betaM) * gammaM * R->p;
     evom->t[e1H_SD] = (1.0 - R->rM) * (1.0 - betaM) * gammaM * R->p;
     evom->t[e1H_DD] = (1.0 - R->rD) * (1.0 - betaD) * gammaD * R->p + R->rD;
@@ -901,7 +901,7 @@ e1_model_transitions_AGA(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   evom->t[e1H_DI] = (betaD == 1.0)? 1.0 - move : betaD;
   evom->t[e1H_II] = (R->sI == 1.0)? 1.0 - move : R->sI;
 
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
     evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
     evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
@@ -937,7 +937,7 @@ e1_model_transitions_TKF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   double            hatbeta;
   double            move = 1.0 - (double)L/((double)L + 1.0);
 
- if (evom->mode == JOINT && R->p < 0.0) { printf("JOINT mode, need a p\n"); goto ERROR; }
+ if (evom->mode == e2_JOINT && R->p < 0.0) { printf("e2_JOINT mode, need a p\n"); goto ERROR; }
 
   p.time           = evom->time;
   p.rateparam.muAM = R->muA[e1R_S];         
@@ -966,7 +966,7 @@ e1_model_transitions_TKF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
     }
   }
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BS] =                 (1.0 - beta) * (1.0 - gamma) * R->p;
     evom->t[e1H_SS] = (1.0 - R->rM) * (1.0 - beta) * (1.0 - gamma) * R->p + R->rM;
     evom->t[e1H_DS] = (1.0 - R->rD) * (1.0 - beta) * (1.0 - gamma) * R->p;
@@ -979,7 +979,7 @@ e1_model_transitions_TKF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
     evom->t[e1H_IS] = (1.0 - R->rI) * (1.0 - beta)    * (1.0 - gamma);
   }
 
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BD] =                 (1.0 - beta) * gamma * R->p;
     evom->t[e1H_SD] = (1.0 - R->rM) * (1.0 - beta) * gamma * R->p;
     evom->t[e1H_DD] = (1.0 - R->rD) * (1.0 - beta) * gamma * R->p + R->rD;
@@ -997,7 +997,7 @@ e1_model_transitions_TKF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   evom->t[e1H_DI] = ((1.0-R->rD)*hatbeta == 1.0)? 1.0 - move : (1.0 - R->rD)   * hatbeta;
   evom->t[e1H_II] = ((1.0-R->rI)*beta    == 1.0)? 1.0 - move : (1.0 - R->rI) * beta  + R->rI;
   
-  if (evom->mode == JOINT) {
+  if (evom->mode == e2_JOINT) {
     evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
     evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
     evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
