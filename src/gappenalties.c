@@ -35,9 +35,9 @@ static ESL_OPTIONS options[] = {
   { "--gapo",       eslARG_REAL,      "-11.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap open",                                                                           0 },
   { "--gape",       eslARG_REAL,       "-1.0", NULL, "x<0",      NULL,       NULL,       NULL,              "gap exted",                                                                          0 },
   { "--gapsc",      eslARG_REAL,       "2.0",  NULL, "x>0",      NULL,       NULL,       NULL,              "gap scale",                                                                          0 },
-  { "--betainf",    eslARG_REAL,       "0.48", NULL, "x>=0.",    NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
+  { "--betainf",    eslARG_REAL,     "0.499",  NULL, "x>=0.",    NULL,       NULL,       NULL,              "betainf = beta at time infinity (if ld<muA)",                                        0 },
   { "--rM",         eslARG_REAL,       "0.00", NULL, "x>=0",     NULL,       NULL,       NULL,              "fragment parameter rM",                                                              0 },
-  { "-N",           eslARG_INT,         "100",  NULL, "n>0",      NULL,       NULL,       NULL,              "number of time points",                                                              0 },
+  { "-N",           eslARG_INT,        "100",  NULL, "n>0",      NULL,       NULL,       NULL,              "number of time points",                                                              0 },
   { "-v",           eslARG_NONE,        FALSE, NULL, NULL,       NULL,       NULL,       NULL,              "be verbose",                                                                         0 },
   
   /* Control of scoring system */
@@ -119,7 +119,8 @@ main(int argc, char **argv)
 
 
 static int
-AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, double betainf, double rM, int scaledrate, int N, double tol, char *errbuf, int verbose)
+AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, 
+	 double betainf, double rM, int scaledrate, int N, double tol, char *errbuf, int verbose)
 {
   char               *msg = "e1model unit test failed";
   RATEBUILDER        *ratebld = NULL;           /* construction configuration */
@@ -182,7 +183,8 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
 }
 
 static int
-AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld, double gaposc, double gapesc, double betainf, double rM, double tol, char *errbuf, int verbose)
+AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld, double gaposc, double gapesc, double betainf, double rM, 
+		      double tol, char *errbuf, int verbose)
 {
   double Tstar_MX;
   double Tstar_XX;
@@ -207,12 +209,14 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
   if (ld  < 0.0) status = eslFAIL;
   if (rI >= 1.0 || rI <= 0.0) status = eslFAIL;
 
-  fprintf(fp, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
+  fprintf(fp, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", 
+	  gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
   fprintf(fp, "# rI  = %f\n", rI);
   fprintf(fp, "# ld  = %f\n", ld);
   fprintf(fp, "# muA = %f\n", muA);
 
-  fprintf(stdout, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
+  fprintf(stdout, "# gap open/extend: %f %f | TstarXX %f TstarMX %f betastar %.10f (%f) new %f\n", 
+	  gaposc, gapesc, Tstar_XX, Tstar_MX, betastar, log(betastar), newbetastar);
   fprintf(stdout, "# rI  = %f\n", rI);
   fprintf(stdout, "# ld  = %f\n", ld);
   fprintf(stdout, "# muA = %f\n", muA);
@@ -228,11 +232,13 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
 }
 
 static int
-AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gapet, double *ret_gapot, double tol, char *errbuf, int verbose)
+AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gapet, double *ret_gapot,
+		       double tol, char *errbuf, int verbose)
 {
   E1_MODEL *evom = NULL;
   double    TMX;
   double    TXX;
+  double    TXM;
   double    gapet;    
   double    gapot;    
   double    betat;
@@ -245,6 +251,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   
   TMX = evom->t[e1H_SI];
   TXX = evom->t[e1H_II];
+  TXM = evom->t[e1H_IM];
 
   gapet = log(TXX);
   gapot = log(TMX) + log(1.0 - TXX) - log(TXX);
