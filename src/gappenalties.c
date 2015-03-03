@@ -27,7 +27,7 @@ static int AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, in
 		    double betainf, double rM, int scaledrate, int N, double tol, char *errbuf, int verbose);
 static int AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld, double gaposc, double gapesc, double betainf, double rM, double tol, char *errbuf, int verbose);
 static int AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gape, double *ret_gapo, 
-				  double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double tol, char *errbuf, int verbose);
+				  double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double *ret_go6, double tol, char *errbuf, int verbose);
 static int e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, P7_BG *bg, RATEBUILDER **ret_ratebld, int scaled, double tol, char *errbuf, int verbose);
 
 static ESL_OPTIONS options[] = {
@@ -91,7 +91,7 @@ main(int argc, char **argv)
   gapscale = esl_opt_GetReal(go, "--gapsc");
   gaposc   = gapo/gapscale;
   gapesc   = gape/gapscale;
-  evomodel = AFR;
+  evomodel = AFGR;
   N        = esl_opt_GetInteger(go, "-N");
   betainf  = esl_opt_GetReal(go, "--betainf");
   rM       = esl_opt_GetReal(go, "--rM");
@@ -134,7 +134,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   double              ttz = 1e-6;
   double              tt;
   double              gapet, gapot;
-  double              go1, go2, go3, go4, go5;
+  double              go1, go2, go3, go4, go5, go6;
   double              subsite;
   double              expsc;
   double              pid;
@@ -166,17 +166,17 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
     pid = (1.0 - subsite) * 100.;
     expsc = 2.0 * ratematrix_ExpScore(P, ratebld->p) / eslCONST_LOG2; // in half bits
 
-    status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, &go1, &go2, &go3, &go4, &go5, tol, errbuf, FALSE);
+    status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, &go1, &go2, &go3, &go4, &go5, &go6, tol, errbuf, FALSE);
     if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
     
-    if (verbose) fprintf(stdout, "%f %f %f %f %f %f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot, go1, go2, go3, go4, go5);
-    fprintf(fp,     "%f %f %f %f %f %f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot, go1, go2, go3, go4, go5);
+    if (verbose) fprintf(stdout, "%f %f %f %f %f %f %f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot, go1, go2, go3, go4, go5, go6);
+    fprintf(fp,     "%f %f %f %f %f %f %f %f %f %f %f %f\n", tt, pid, 100*subsite, expsc, gapet, gapot, go1, go2, go3, go4, go5, go6);
 
     esl_dmatrix_Destroy(P); P = NULL;
   }
   /* at infinity */
   tt = 1e+8;
-  status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, &go1, &go2, &go3, &go4, &go5, tol, errbuf, FALSE); 
+  status = AFR_calculate_gapcosts(R1, tt, abc, bg, mode, L, gapscale, &gapet, &gapot, &go1, &go2, &go3, &go4, &go5, &go6, tol, errbuf, FALSE); 
   if (status != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
   
   e1_rate_Destroy(R1);
@@ -235,16 +235,17 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
 
 static int
 AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gapet, double *ret_gapot,
-		       double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5,
+		       double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double *ret_go6,
 		       double tol, char *errbuf, int verbose)
 {
   E1_MODEL *evom = NULL;
+  double    TMM;
   double    TMX;
   double    TXX;
   double    TXM;
   double    TXY;
   double    TXE;
-  double    go1, go2, go3, go4, go5;
+  double    go1, go2, go3, go4, go5, go6;
   double    gapet;    
   double    gapot;   
   int       status;
@@ -254,6 +255,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
 
   if (verbose) e1_model_Dump(stdout, evom); 
   
+  TMM = evom->t[e1H_SS];
   TMX = evom->t[e1H_SI];
   TXX = evom->t[e1H_II];
   TXM = evom->t[e1H_IS];
@@ -265,9 +267,10 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   go3 =     log(TXY)                - log(TXX);
   go4 =     log(TMX) +     log(TXE) - log(TXX);
   go5 = 0.5*log(TXY) +     log(TXE) - log(TXX);
+  go6 = log((1.0-TMM)/2.0) + log(1.0 - TXX) - log(TXX);
 
   gapet = log(TXX);
-  gapot = log(TMX) + log(1.0 - TXX) - log(TXX);
+  gapot = log(TMX) + log(1.0-TXX) - log(TXX);
  
   gapet *= gapscale/eslCONST_LOG2;
   gapot *= gapscale/eslCONST_LOG2;
@@ -277,6 +280,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   go3   *= gapscale/eslCONST_LOG2;
   go4   *= gapscale/eslCONST_LOG2;
   go5   *= gapscale/eslCONST_LOG2;		     
+  go6   *= gapscale/eslCONST_LOG2;		     
  
   e1_model_Destroy(evom); evom = NULL;
   
@@ -287,6 +291,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
   *ret_go3   = go3;
   *ret_go4   = go4;
   *ret_go5   = go5;
+  *ret_go6   = go6;
 
   return eslOK;
 
