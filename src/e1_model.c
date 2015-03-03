@@ -721,15 +721,15 @@ e1_model_transitions_LI(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   }
 
   evom->t[e1H_BI] =  (evom->mode == e2_LOCAL)? 0.0 : ( (beta == 1.0)? 1.0 - move : beta );
-  evom->t[e1H_SI] = ((1.0-R->rM)*beta == 1.0)? 1.0 - move : (1.0 - R->rM)   * beta;
-  evom->t[e1H_DI] = ((1.0-R->rD)*beta == 1.0)? 1.0 - move : (1.0 - R->rD)   * beta;
+  evom->t[e1H_SI] = ((1.0-R->rM)*beta == 1.0)? 1.0 - move : (1.0 - R->rM) * beta;
+  evom->t[e1H_DI] = ((1.0-R->rD)*beta == 1.0)? 1.0 - move : (1.0 - R->rD) * beta;
   evom->t[e1H_II] = ((1.0-R->rI)*beta == 1.0)? 1.0 - move : (1.0 - R->rI) * beta + R->rI;
 
   if (evom->mode == e2_JOINT) {
-    evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
-    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
-    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
-    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - evom->t[e1H_II]);
+    evom->t[e1H_BE] = (1.0 - R->p) *                 (1.0 - beta);
+    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - R->rM) * (1.0 - beta);
+    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - R->rD) * (1.0 - beta);
+    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - R->rI) * (1.0 - beta);
   }
   if (evom->mode == e2_LOCAL) {
     evom->t[e1H_BE] = 1.0 - evom->t[e1H_BI];
@@ -814,10 +814,10 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
   evom->t[e1H_II] = ((1.0-R->rI)*beta == 1.0)? 1.0 - move : (1.0 - R->rI) * beta + R->rI;
 
   if (evom->mode == e2_JOINT) {
-    evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
-    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
-    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
-    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - evom->t[e1H_II]);
+    evom->t[e1H_BE] = (1.0 - R->p) *                 (1.0 - beta);
+    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - R->rM) * (1.0 - beta);
+    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - R->rD) * (1.0 - beta);
+    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - R->rI) * (1.0 - beta);
   }
  if (evom->mode == e2_LOCAL) {
     evom->t[e1H_BE] = 1.0 - evom->t[e1H_BI];
@@ -902,10 +902,10 @@ e1_model_transitions_AGA(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *err
   evom->t[e1H_II] = (R->sI == 1.0)? 1.0 - move : R->sI;
 
   if (evom->mode == e2_JOINT) {
-    evom->t[e1H_BE] = (1.0 - R->p) * (1.0 - evom->t[e1H_BI]);
-    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - evom->t[e1H_SI]);
-    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - evom->t[e1H_DI]);
-    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - evom->t[e1H_II]);
+    evom->t[e1H_BE] = (1.0 - R->p) *                 (1.0 - betaM);
+    evom->t[e1H_SE] = (1.0 - R->p) * (1.0 - R->rM) * (1.0 - betaM);
+    evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - R->rD) * (1.0 - betaD);
+    evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - R->rI) * (1.0 - R->sI);
   }
  if (evom->mode == e2_LOCAL) {
     evom->t[e1H_BE] = 1.0 - evom->t[e1H_BI];
