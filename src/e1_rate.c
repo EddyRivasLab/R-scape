@@ -475,7 +475,7 @@ e1_rate_assign_AFGR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose
   R->ldE[e1R_B] = R->ldE[e1R_S] = R->ldE[e1R_D] = R->ldE[e1R_I] = rp.ldI;  
   R->rI = rp.rI;
   R->rM = rp.rM;
-  R->rD = rp.rD;
+  R->rD = rp.rI;
 
   R->p = rp.ldI / rp.muAM;
 
@@ -493,6 +493,7 @@ e1_rate_assign_AFR(E1_RATE *R, struct rateparam_s rp, char *errbuf, int verbose)
 {
   e1_rate_assign_AFGR(R, rp, errbuf, verbose);
   R->rI = rp.rI;
+  R->rM = rp.rI;
   R->rD = rp.rI;
 
   R->p = rp.ldI / rp.muAM;
