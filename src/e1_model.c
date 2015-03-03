@@ -442,7 +442,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* B state */
   sum = 0.;
-  if (evom->mode = e2_JOINT) {
+  if (evom->mode == e2_JOINT) {
     sum += evom->t[e1H_BS];
     sum += evom->t[e1H_BD];
     sum += evom->t[e1H_BI];
@@ -453,7 +453,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
     sum += evom->t[e1H_BD];
     sum += evom->t[e1H_BI];
   }
-  if (fabs(sum-1.0) > tol) ESL_XFAIL(eslFAIL, errbuf, "B did not validate");
+  if (fabs(sum-1.0) > tol) ESL_XFAIL(eslFAIL, errbuf, "B did not validate sum=%f", sum);
   
   if (evom->mode == e2_LOCAL) {
     sum = 0.;
@@ -464,7 +464,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* S state */
   sum = 0.;
-  if (evom->mode = e2_JOINT) {
+  if (evom->mode == e2_JOINT) {
     sum += evom->t[e1H_SS];
     sum += evom->t[e1H_SD];
     sum += evom->t[e1H_SI];
@@ -475,7 +475,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
     sum += evom->t[e1H_SD];
     sum += evom->t[e1H_SI];
   }
-  if (fabs(sum-1.0) > tol) ESL_XFAIL(eslFAIL, errbuf, "M did not validate");
+  if (fabs(sum-1.0) > tol) ESL_XFAIL(eslFAIL, errbuf, "M did not validate sum=%f", sum);
   
   if (evom->mode == e2_LOCAL) {
     sum = 0.;
@@ -486,7 +486,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* D state */
   sum = 0.;
-  if (evom->mode = e2_JOINT) {
+  if (evom->mode == e2_JOINT) {
     sum += evom->t[e1H_DS];
     sum += evom->t[e1H_DD];
     sum += evom->t[e1H_DI];
@@ -509,7 +509,7 @@ e1_model_ValidateTransitions(E1_MODEL *evom, float tol, char *errbuf)
   
   /* I state */
   sum = 0.;
-  if (evom->mode = e2_JOINT) {
+  if (evom->mode == e2_JOINT) {
     sum += evom->t[e1H_IS];
     sum += evom->t[e1H_ID];
     sum += evom->t[e1H_II];
@@ -819,7 +819,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
     evom->t[e1H_DE] = (1.0 - R->p) * (1.0 - R->rD) * (1.0 - beta);
     evom->t[e1H_IE] = (1.0 - R->p) * (1.0 - R->rI) * (1.0 - beta);
   }
- if (evom->mode == e2_LOCAL) {
+  if (evom->mode == e2_LOCAL) {
     evom->t[e1H_BE] = 1.0 - evom->t[e1H_BI];
     evom->t[e1H_SE] = 1.0 - evom->t[e1H_SI];
     evom->t[e1H_DE] = 1.0 - evom->t[e1H_DI];
@@ -831,7 +831,7 @@ e1_model_transitions_AF(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errb
     evom->t[e1H_DE] = 1.0;
     evom->t[e1H_IE] = 1.0;
   }
-
+  
   return eslOK;
 
  ERROR:
