@@ -55,6 +55,7 @@ ratebuilder_Create(const ESL_ALPHABET *abc)
   bld->E            = NULL;
   bld->p            = NULL;
 
+  bld->lambda       = -1.0;
   bld->abc          = abc;
   bld->errbuf[0]    = '\0';
   return bld;
@@ -104,7 +105,6 @@ ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int
 {
   ESL_DMATRIX *P = NULL;
   double      *f = NULL;
-  double       slambda;
   int          i,j;	/* indices into canonical codes  */
   int          status;
 
@@ -128,7 +128,7 @@ ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int
 
   /* Backcalculate joint probability matrix P, given scores S and background freqs f.  */
   /* Failures shouldn't happen here: these are standard matrices.  */
-  status = esl_scorematrix_ProbifyGivenBG(bld->S, f, f, &slambda, &(P));
+  status = esl_scorematrix_ProbifyGivenBG(bld->S, f, f, &bld->lambda, &(P));
   if      (status == eslEINVAL)  ESL_XFAIL(eslEINVAL, bld->errbuf, "built-in score matrix %s has no valid solution for lambda", matrix);
   else if (status == eslENOHALT) ESL_XFAIL(eslEINVAL, bld->errbuf, "failed to solve score matrix %s for lambda", matrix);
   else if (status != eslOK)      ESL_XFAIL(eslEINVAL, bld->errbuf, "unexpected error in solving score matrix %s for probability parameters", matrix);
@@ -206,7 +206,6 @@ ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env
   ESL_FILEPARSER  *efp = NULL;
   ESL_DMATRIX     *P = NULL;
   double          *f;                /* single frequencies used to construct P */
-  double           slambda;
   int              i,j;              /* indices into canonical codes  */
   int              status;
 
@@ -237,7 +236,7 @@ ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env
   esl_vec_F2D(bg->f, bg->abc->K, f);
 
   /* Backcalculate joint probability matrix P, given scores S and background freqs bg->f.  */
-  status = esl_scorematrix_ProbifyGivenBG(bld->S, f, f, &slambda, &(P));
+  status = esl_scorematrix_ProbifyGivenBG(bld->S, f, f, &bld->lambda, &(P));
   if      (status == eslEINVAL)  ESL_XFAIL(eslEINVAL, bld->errbuf, "input score matrix %s has no valid solution for lambda", mxfile);
   else if (status == eslENOHALT) ESL_XFAIL(eslEINVAL, bld->errbuf, "failed to solve input score matrix %s for lambda: are you sure it's valid?", mxfile);
   else if (status != eslOK)      ESL_XFAIL(eslEINVAL, bld->errbuf, "unexpected error in solving input score matrix %s for probability parameters", mxfile);

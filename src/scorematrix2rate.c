@@ -139,6 +139,7 @@ main(int argc, char **argv)
     esl_dmatrix_Dump(stdout, ratebld->P, NULL, NULL);
     fsubsite = ratematrix_DFreqSubsPerSite(ratebld->P, ratebld->p);
     printf("Frequency of SubsPerSite %f pid %f\n", fsubsite, 1.0-fsubsite);
+    printf("lambda %f \n", ratebld->lambda);
   }
   status = ratematrix_CreateFromConditionals(ratebld->P, ratebld->p, &(ratebld->Q), &(ratebld->E), tol, errbuf, verbose);
   if (status != eslOK) p7_Fail("Failed to calculate rate matrix\n%s\n", errbuf);

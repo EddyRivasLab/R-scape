@@ -91,7 +91,7 @@ main(int argc, char **argv)
   gapscale = esl_opt_GetReal(go, "--gapsc");
   gaposc   = gapo/gapscale;
   gapesc   = gape/gapscale;
-  evomodel = AFGR;
+  evomodel = AFGR; // in the paper I call it AFR but it is the AFGR model (LR model and fragments rI=rD)
   N        = esl_opt_GetInteger(go, "-N");
   betainf  = esl_opt_GetReal(go, "--betainf");
   rM       = esl_opt_GetReal(go, "--rM");

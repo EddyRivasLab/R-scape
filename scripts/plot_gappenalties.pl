@@ -80,19 +80,55 @@ sub actual_plot{
     my $sPAM30file = "$plot.sP30";
     my $sPAM10file = "$plot.sP10";
 
+    my $which;
+    $which = "mills2013";
+    #$which = "pearson2013";
+    #$which = "fasta";
+    
+    print "which? $which\n"; 
     open(T1, ">$WPfile") || die;
-    printf T1 "91.1  8.9   -2  -16\n"; #VTML10
-    printf T1 "83.4  16.6  -2  -15\n"; #VTML20
-    printf T1 "68.9  31.1  -1  -13\n"; #VTML40
-    printf T1 "48.7  51.3  -1  -10\n"; #VTML80
-    printf T1 "35.5  64.5  -1  -11\n"; #VTML120
-    printf T1 "28.4  71.6  -1  -10\n"; #VTML140
-    printf T1 "28.0  72.9  %f  %f\n", -1.*2./3., -12.*2./3.; #VTML160
-    printf T1 "29.9  70.1  -1  -11\n";                       #BLOSUM62
-    printf T1 "27.1  72.9  %f  %f\n", -10.*2./3., -2.*2./3.; #BLOSUM50 
-    close(T1);
+    if ($which =~ /^mills2013$/) {
+	# from Mills and Pearson (2013)
+	printf T1 "90.520	9.480    -2  -16\n"; #VT10
+	printf T1 "82.104	17.896   -2  -15\n"; #VT20
+	printf T1 "67.965	32.035   -1  -12\n"; #VT40
+	printf T1 "47.775	52.225   -1  -11\n"; #VT80
+	printf T1 "40.582	59.418   -1  -10\n"; #VT100
+	printf T1 "34.778	65.222   -1  -11\n"; #VT120
+	printf T1 "30.071	69.929   -1  -10\n"; #VT140
+	printf T1 "26.231	73.769   %f  %f\n", -2 * 2/3, -12 * 2/3; #VT160
+	printf T1 "29.8516      70.1484  -1  -11\n"; #BLOSUM62
+	printf T1 "23.7136      76.2864  %f  %f\n", -2 * 2/3, -10 * 2/3; #BLOSUM50 
+   }
+    elsif ($which =~ /^pearson2013$/) {
+	# from Pearson (2013)
+	printf T1 "91.046	8.954    -2  -16\n"; #VTML10
+	printf T1 "83.071	16.929   -2  -15\n"; #VTML20
+	printf T1 "69.601	30.399   -1  -13\n"; #VTML40
+	printf T1 "50.146	49.854   -1  -10\n"; #VTML80
+	printf T1 "37.396	62.604   -1  -11\n"; #VTML120
+	printf T1 "32.704	67.296   -1  -10\n"; #VTML140
+	printf T1 "28.835	71.165   %f  %f\n", -2 * 2/3, -12 * 2/3; #VTML160
+	printf T1 "29.8516      70.1484  -1  -11\n"; #BLOSUM62
+	printf T1 "23.7136      76.2864  %f  %f\n", -2 * 2/3, -10 * 2/3; #BLOSUM50 
+    }
+    elsif ($which =~ /^fasta$/) {
+	# src/upam.h
+	printf T1 "90.520	9.480    -2  -16\n"; #VT10
+	printf T1 "82.104	17.896   -2  -15\n"; #VT20
+	printf T1 "67.965	32.035   -2  -14\n"; #VT40
+	printf T1 "47.775	52.225   -2  -14\n"; #VT80
+	printf T1 "34.778	65.222   -1  -10\n"; #VT120
+	printf T1 "26.231	73.769   %f  %f\n", -2 * 2/3, -12 * 2/3; #VT160
+	printf T1 "29.8516      70.1484  -1  -11\n"; #BLOSUM62
+	printf T1 "23.7136      76.2864  %f  %f\n", -2 * 2/3, -10 * 2/3; #BLOSUM50 
+    }
+    else {
+	print "bad which\n"; die;
+    }
+    close (T1);
 
-     open(T1, ">$tB45file") || die;
+    open(T1, ">$tB45file") || die;
     print T1 "$tB45\t 0\n";
     print T1 "$tB45\t $ymin\n";
     close(T1);

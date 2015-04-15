@@ -22,6 +22,8 @@ typedef struct ratebuilder_s {
   double              *p;                /* marginal probabilites such that p[a] P(b|a) = P(a|b) p[b] [0..k-1]  
 					  * this are also the saturation probabilities of the rate matrix       */
 
+  double               lambda;
+
   const ESL_ALPHABET  *abc;		 /* COPY of alphabet                                                    */
   char errbuf[eslERRBUFSIZE];            /* informative message on model construction failure                   */
 } RATEBUILDER;
