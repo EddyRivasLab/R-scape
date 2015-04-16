@@ -343,7 +343,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   }
 
   /* create the MI structure */
-  mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc->K);
+  mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->plotroc, cfg->maxFP, cfg->tol, cfg->verbose, cfg->errbuf);   
