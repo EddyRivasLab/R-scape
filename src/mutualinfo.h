@@ -17,10 +17,11 @@
 #include "ribosum_matrix.h"
 
 typedef enum {
-  MI  = 0,
-  MIa = 1,
-  MIp = 2,
-  MIr = 3,
+  CHI  = 0,
+  MI   = 1,
+  MIa  = 2,
+  MIp  = 3,
+  MIr  = 4,
 } MITYPE;
 
 typedef enum{
@@ -32,42 +33,38 @@ typedef enum{
 
 struct mutual_s {
   int64_t      alen;
-  double       ***pp;    // joint probability dist. of two position at the root [0,alen-1][0.alen-1][0..15]
-  double        **ps;    // probability dist. of a position at the root [0,alen-1][0..3]
+  int64_t      nseq;
+  double       ***pp;    // joint  counts/probabilities for two position [0,alen-1][0.alen-1][0..15]
+  double        **ps;    // single counts/probabilities for  a  position [0,alen-1][0..3]
 
-  ESL_DMATRIX   *MI;     // MI  mutual information
-  ESL_DMATRIX   *MIa;    // MIa mutual information
-  ESL_DMATRIX   *MIp;    // MIp mutual information
-  ESL_DMATRIX   *MIr;    // MIr mutual information
+  ESL_DMATRIX   *COV;    // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
   double        *H;      // entropy per position
 
-  double         besthreshMI;
-  double         besthreshMIa;
-  double         besthreshMIp;
-  double         besthreshMIr;
-
-  double         minMI;
-  double         maxMI;
-  double         minMIa;
-  double         maxMIa;
-  double         minMIp;
-  double         maxMIp;
-  double         minMIr;
-  double         maxMIr;
+  double         besthreshCOV;
+  double         minCOV;
+  double         maxCOV;
 };
 
-extern int              Mutual_Analyze(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf);
-extern int              Mutual_AnalyzeSignificantPairs(int *ct, struct mutual_s *mi, int verbose, char *errbuf);
-extern int              Mutual_AnalyzeRanking(int *ct, struct mutual_s *mi, int plotroc, int maxFP, int verbose, char *errbuf);
+
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					 METHOD method, double tol, int verbose, char *errbuf);
-extern struct mutual_s *Mutual_Create(int64_t alen, int K);
+					 METHOD method, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, int K);
+extern int              Mutual_ResetCOV(struct mutual_s *mi);
 extern void             Mutual_Destroy(struct mutual_s *mi);
-extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_NaivePPCounts(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_NaivePSCounts(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
+extern int              Mutual_SignificantPairs_Ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf);
+extern int              Mutual_SignificantPairs_ZScore(int *ct, struct mutual_s *mi, MITYPE whichmi, int verbose, char *errbuf);
+
 
 #endif
