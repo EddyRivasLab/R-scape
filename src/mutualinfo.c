@@ -41,24 +41,24 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   int         status;
   
   status = Mutual_Counts(msa, T, ribosum, mi, method, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   
   //status = Mutual_CalculateCHI(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  //if (status ! eslOK) goto ERROR;
+  //if (status != eslOK) goto ERROR;
   
   status = Mutual_Counts2Probs(mi, method, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   
   status = Mutual_CalculateH  (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   status = Mutual_CalculateMI (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   status = Mutual_CalculateMIa(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   status = Mutual_CalculateMIp(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   status = Mutual_CalculateMIr(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
   
   return eslOK;
   
@@ -242,7 +242,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double 
   }
   
   status = Mutual_SignificantPairs_Ranking(ct, mi, MI, plotroc, maxFP, verbose, cerrbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
 
   return status;
 
@@ -313,7 +313,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
   }
   
   status = Mutual_SignificantPairs_Ranking(ct, mi, MI, plotroc, maxFP, verbose, cerrbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
 
   free(MIx);
   esl_dmatrix_Destroy(MI);
@@ -387,7 +387,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
   }
 
   status = Mutual_SignificantPairs_Ranking(ct, mi, MI, plotroc, maxFP, verbose, cerrbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
 
   free(MIx);
   esl_dmatrix_Destroy(MI);
@@ -435,7 +435,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
   }
   
   status = Mutual_SignificantPairs_Ranking(ct, mi, MI, plotroc, maxFP, verbose, cerrbuf);
-  if (status ! eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
 
   return status;
 

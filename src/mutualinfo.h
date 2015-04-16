@@ -48,7 +48,9 @@ struct mutual_s {
 
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					 METHOD method, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_Counts(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
+int 
+Mutual_Counts2Probs(struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
@@ -63,6 +65,7 @@ extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct rib
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
+extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_Ranking(int *ct, struct mutual_s *mi, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_ZScore(int *ct, struct mutual_s *mi, MITYPE whichmi, int verbose, char *errbuf);
 
