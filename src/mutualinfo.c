@@ -208,6 +208,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 	for (y = 0; y < K; y ++) {
 	  exp = mi->nseq * mi->ps[i][x] * mi->ps[j][y];
 	  val = mi->cp[i][j][IDX(x,y,K)] - exp;
+	  //printf("%d %d obs  %f exp %f\n", i, j, mi->cp[i][j][IDX(x,y,K)], exp);
 	  chi += val * val / exp;
 	}	  
       
@@ -220,10 +221,10 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
       else 
 	chip = 0.;
 
-
+      chip = 1. - chip;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = chip;
-      if (chi < mi->minCOV) mi->minCOV = chip;
-      if (chi > mi->maxCOV) mi->maxCOV = chip;
+      if (chip < mi->minCOV) mi->minCOV = chip;
+      if (chip > mi->maxCOV) mi->maxCOV = chip;
     }
   
   if (verbose) {
