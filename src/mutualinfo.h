@@ -18,11 +18,12 @@
 #include "ribosum_matrix.h"
 
 typedef enum {
-  CHI  = 0,
-  MI   = 1,
-  MIa  = 2,
-  MIp  = 3,
-  MIr  = 4,
+  CHI   = 0,
+  GTST = 1,
+  MI    = 2,
+  MIa   = 3,
+  MIp   = 4,
+  MIr   = 5,
 } MITYPE;
 
 typedef enum{
@@ -55,11 +56,12 @@ extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribom
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIa (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIp (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc);
 extern int              Mutual_ReuseCOV(struct mutual_s *mi);
 extern void             Mutual_Destroy(struct mutual_s *mi);
