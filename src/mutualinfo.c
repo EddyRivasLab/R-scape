@@ -31,7 +31,7 @@ static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomat
 
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
    int         status;
   
@@ -41,19 +41,19 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateH  (mi, tol, FALSE, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateCHI (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateCHI (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateGTST(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateGTST(mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMI  (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMI  (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMIp (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIp (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;  
-  status = Mutual_CalculateMIa (mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIa (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
 #if 0
-  status = Mutual_CalculateMIr(mi, ct, plotroc, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIr(mi, ct, rocfp, maxFP, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 #endif
 
@@ -212,7 +212,7 @@ Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   double chi;
   double chip;
@@ -247,6 +247,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 	chip = 0.;
 
       chip = log(1. - chip);
+      chip = chi;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = chip;
       if (chip < mi->minCOV) mi->minCOV = chip;
       if (chip > mi->maxCOV) mi->maxCOV = chip;
@@ -260,7 +261,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, CHI, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, CHI, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -270,7 +271,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 }
 
 int                 
-Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   double G;
   double Gp;
@@ -305,6 +306,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, doubl
 	Gp = 0.;
 
       Gp = log(1. - Gp);
+      Gp = G;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = Gp;
       if (Gp < mi->minCOV) mi->minCOV = Gp;
       if (Gp > mi->maxCOV) mi->maxCOV = Gp;
@@ -318,7 +320,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, doubl
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, GTST, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, GTST, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -328,7 +330,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, doubl
 }
 
 int                 
-Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   double mutinf;
   int    i, j;
@@ -360,7 +362,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double 
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MI, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MI, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -371,7 +373,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double 
 
 
 int                 
-Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mutinf = NULL;
   double      *MIx = NULL;
@@ -394,14 +396,14 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 	  MIval += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
 	}	  
  
-      mutinf->mx[i][j]  = mutinf->mx[j][i]  = MIval;
+      mutinf->mx[i][j] = mutinf->mx[j][i] = MIval;
      }
 
   // MIavg
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) 
       MIavg += mutinf->mx[i][j];
-  if (mi->alen > 1) MIavg /= (mi->alen * (mi->alen-1));
+  if (mi->alen > 1) MIavg /= (double)mi->alen * ((double)mi->alen-1.);
 
   //MIx
   ESL_ALLOC(MIx, sizeof(double) * mi->alen);
@@ -410,7 +412,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
     for (j = 0; j < mi->alen; j++) {
       if (j != i) MIx[i] += mutinf->mx[i][j];
     }
-    if (mi->alen > 1) MIx[i] /= mi->alen -1;
+    if (mi->alen > 1) MIx[i] /= (double)mi->alen - 1.;
   }
 
   //MIa
@@ -431,7 +433,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIa, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIa, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   free(MIx);
@@ -445,7 +447,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 }
 
 int                 
-Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mutinf = NULL;
   double      *MIx = NULL;
@@ -505,7 +507,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
       } 
   }
 
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIp, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIp, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   free(MIx);
@@ -519,7 +521,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
 }
 
 int                 
-Mutual_CalculateMIr(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
 {
   double mutinf, HH;
   int    i, j;
@@ -553,7 +555,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIr, plotroc, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIr, rocfp, maxFP, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -836,7 +838,7 @@ Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *
 }
 
 int
-Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf)
+Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FILE *rocfp, int maxFP, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *mitype;
@@ -856,7 +858,12 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, in
   double       maxFPsen;
   double       maxFPppv;
   double       maxFPthresh;
+  double       oneFPF;
+  double       oneFPsen;
+  double       oneFPppv;
+  double       oneFPthresh;
   int          fp, tf, t, f;
+  int          oneFP_tf, oneFP_t, oneFP_f, oneFP_fp;
   int          best_tf, best_t, best_f, best_fp;
   int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
   int          nt = 0;
@@ -865,15 +872,15 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, in
   int          status;
 
   switch(whichmi) {
-  case CHI:  if (plotroc) printf("\n# CHI "); esl_sprintf(&mitype, "CHI");  break;
-  case GTST: if (plotroc) printf("\n# GTST"); esl_sprintf(&mitype, "GTST"); break;
-  case MI:   if (plotroc) printf("\n# MI  "); esl_sprintf(&mitype, "MI");   break;
-  case MIa:  if (plotroc) printf("\n# MIa "); esl_sprintf(&mitype, "MIa");  break; 
-  case MIp:  if (plotroc) printf("\n# MIp "); esl_sprintf(&mitype, "MIp");  break; 
-  case MIr:  if (plotroc) printf("\n# MIr "); esl_sprintf(&mitype, "MIr");  break; 
+  case CHI:  fprintf(rocfp, "\n# CHI "); esl_sprintf(&mitype, "CHI");  break;
+  case GTST: fprintf(rocfp, "\n# GTST"); esl_sprintf(&mitype, "GTST"); break;
+  case MI:   fprintf(rocfp, "\n# MI  "); esl_sprintf(&mitype, "MI");   break;
+  case MIa:  fprintf(rocfp, "\n# MIa "); esl_sprintf(&mitype, "MIa");  break; 
+  case MIp:  fprintf(rocfp, "\n# MIp "); esl_sprintf(&mitype, "MIp");  break; 
+  case MIr:  fprintf(rocfp, "\n# MIr "); esl_sprintf(&mitype, "MIr");  break; 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
   }
-  if (plotroc) printf("thresh fp tp true found sen ppv F\n"); 
+  fprintf(rocfp, "thresh fp tp true found sen ppv F\n"); 
   
   inc = (max - min) / delta;
   for (thresh = max; thresh > min-inc; thresh -= inc) {
@@ -892,9 +899,19 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, in
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
     
-    if (plotroc) printf("%.5f %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, sen, ppv, F);
+    fprintf(rocfp, "%.5f %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, sen, ppv, F);
     
-    if (fp <= maxFP) {
+    if (fp < 1) {
+      oneFPF      = F;
+      oneFPsen    = sen;
+      oneFPppv    = ppv;
+      oneFP_tf    = tf;
+      oneFP_f     = f;
+      oneFP_t     = t;
+      oneFP_fp    = fp;
+      oneFPthresh = thresh;
+    }
+   if (fp <= maxFP) {
       maxFPF      = F;
       maxFPsen    = sen;
       maxFPppv    = ppv;
@@ -911,21 +928,34 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, in
       best_tf   = tf;
       best_t    = t;
       best_f    = f;
-      best_fp   = f - tf;
+      best_fp   = fp;
       besthresh = thresh; 
     }
   }
  
   if (best_fp < maxFP_fp) {
-    printf("%s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, besthresh, min, max,
-	   best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
-    for (i = 0; i < mi->alen-1; i++) 
-      for (j = i+1; j < mi->alen; j++) {
-	if (mtx->mx[i][j] > besthresh) {
-	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
-	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
+    if (best_fp == 0 && oneFP_tf > best_tf) {
+      printf("%s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, oneFPthresh, min, max,
+	     oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
+      for (i = 0; i < mi->alen-1; i++) 
+	for (j = i+1; j < mi->alen; j++) {
+	  if (mtx->mx[i][j] > oneFPthresh) {
+	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
+	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
+	  }
 	}
-      }
+    }
+    else {
+      printf("%s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, besthresh, min, max,
+	     best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
+      for (i = 0; i < mi->alen-1; i++) 
+	for (j = i+1; j < mi->alen; j++) {
+	  if (mtx->mx[i][j] > besthresh) {
+	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
+	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
+	  }
+	}
+    }
   }
   else {
     printf("%s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, maxFP, maxFPthresh, min, max,

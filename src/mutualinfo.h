@@ -52,16 +52,16 @@ struct mutual_s {
 
 
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					 METHOD method, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+					 METHOD method, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGTST(struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIa (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIp (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, int plotroc, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIa (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIp (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc);
 extern int              Mutual_ReuseCOV(struct mutual_s *mi);
 extern void             Mutual_Destroy(struct mutual_s *mi);
@@ -71,7 +71,7 @@ extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct rib
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
-extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, int plotroc, int maxFP, int verbose, char *errbuf);
+extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FILE *rocfp, int maxFP, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *errbuf);
 
 

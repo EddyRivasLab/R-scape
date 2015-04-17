@@ -67,7 +67,7 @@ struct cfg_s {
   int             *ct;
 
   int              voutput;
-  int              plotroc;
+  FILE            *rocfp; 
   int              maxFP;
 
   float            tol;
@@ -93,6 +93,7 @@ struct cfg_s {
   /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                               0 },
   /* Control of output */
+  { "--rocplot",      eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write rocplot to file <f>"          ,                                                       0 },
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
   /* msa format */
@@ -169,6 +170,11 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   if ( esl_opt_IsOn(go, "-o") ) {
     if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
   } else cfg.outfp = stdout;
+
+  /*  rocplot file */
+  if ( esl_opt_IsOn(go, "--rocplot") ) {
+    if ((cfg.rocfp = fopen(esl_opt_GetString(go, "--rocplot"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--rocplot"));
+  } else cfg.rocfp = stdout;
   
   if (esl_opt_IsOn(go, "--submsa")) cfg.submsa = esl_opt_GetInteger(go, "--submsa");
   else                              cfg.submsa = 0;
@@ -179,7 +185,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
-  cfg.plotroc    = FALSE;
   cfg.maxFP      = esl_opt_GetInteger(go, "--maxFP");
   
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
@@ -346,7 +351,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->plotroc, cfg->maxFP, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 
   *ret_mi = mi;
