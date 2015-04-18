@@ -31,7 +31,8 @@ static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomat
 
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, FILE *rocfp, int maxFP, int ishuffled,
+		 double tol, int verbose, char *errbuf)
 {
    int         status;
   
@@ -41,15 +42,15 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateH  (mi, tol, FALSE, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateCHI (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateCHI (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateGTST(mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateGTST(mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMI  (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMI  (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMIp (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIp (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;  
-  status = Mutual_CalculateMIa (mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIa (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
 #if 0
@@ -212,7 +213,7 @@ Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   double chi;
   double chip;
@@ -261,7 +262,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, CHI, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, CHI, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -271,7 +272,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
 }
 
 int                 
-Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   double G;
   double Gp;
@@ -320,7 +321,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, doubl
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, GTST, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, GTST, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -330,7 +331,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, doubl
 }
 
 int                 
-Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   double mutinf;
   int    i, j;
@@ -362,7 +363,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double 
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MI, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MI, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -373,7 +374,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double 
 
 
 int                 
-Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mutinf = NULL;
   double      *MIx = NULL;
@@ -433,7 +434,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIa, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIa, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   free(MIx);
@@ -447,7 +448,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
 }
 
 int                 
-Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mutinf = NULL;
   double      *MIx = NULL;
@@ -507,7 +508,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
       } 
   }
 
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIp, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIp, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   free(MIx);
@@ -521,7 +522,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
 }
 
 int                 
-Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   double mutinf, HH;
   int    i, j;
@@ -555,7 +556,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, double
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIr, rocfp, maxFP, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, MIr, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -838,11 +839,11 @@ Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *
 }
 
 int
-Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FILE *rocfp, int maxFP, int verbose, char *errbuf)
+Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FILE *rocfp, int maxFP, int ishuffled, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *mitype;
-  double       delta = 1000.;
+  double       delta = 200.;
   double       inc;
   double       min = mi->minCOV;
   double       max = mi->maxCOV;
@@ -880,6 +881,8 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FI
   case MIr:  fprintf(rocfp, "\n# MIr "); esl_sprintf(&mitype, "MIr");  break; 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
   }
+  if (ishuffled) fprintf(rocfp, " shuffled ");
+
   fprintf(rocfp, "thresh fp tp true found sen ppv F\n"); 
   
   inc = (max - min) / delta;

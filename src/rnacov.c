@@ -51,6 +51,9 @@ struct cfg_s {
   char            *msaheader;          /* header for all msa-specific output files */
   int              infmt;
   
+  int              domsa;
+  int              doshuffle;
+
   METHOD           method;
   ESL_TREE        *T;
   double           treeavgt;
@@ -107,7 +110,7 @@ static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - statistical test for RNA covatiation in an alignment";
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **ret_mi);
+static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -180,6 +183,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else                              cfg.submsa = 0;
   
   /* other options */
+  cfg.domsa      = TRUE;
+  cfg.doshuffle  = TRUE;
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")? esl_opt_GetReal(go, "-F") : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
@@ -232,7 +237,7 @@ main(int argc, char **argv)
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment  */
-  struct mutual_s *mi;
+  ESL_MSA         *shmsa = NULL;          /* the shuffled alignment  */
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
@@ -285,11 +290,19 @@ main(int argc, char **argv)
     else esl_fatal("no ss for msa\n");
     
     /* main function */
-    status = run_rnacov(go, &cfg, msa, &mi);
-    if (status != eslOK) esl_fatal("%s Failed to run rnacov");
-    
+    if (cfg.domsa) {
+      status = run_rnacov(go, &cfg, msa, FALSE);
+      if (status != eslOK) esl_fatal("%s Failed to run rnacov");
+    }
+
+    if (cfg.doshuffle) {
+      MSA_Shuffle(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
+      status = run_rnacov(go, &cfg, shmsa, TRUE);
+      if (status != eslOK) esl_fatal("%s Failed to run rnacov shuffled");
+    }
+
     esl_msa_Destroy(msa); msa = NULL;
-    Mutual_Destroy(mi); mi = NULL;
+    if (shmsa) esl_msa_Destroy(shmsa); shmsa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
@@ -331,7 +344,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **ret_mi)
+run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 {
   struct mutual_s *mi = NULL;
   int              nnodes;
@@ -351,10 +364,10 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, struct mutual_s **r
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 
-  *ret_mi = mi;
+  Mutual_Destroy(mi); mi = NULL;
   return eslOK;
 
  ERROR:

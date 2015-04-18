@@ -35,7 +35,26 @@
 
 /*****************************************************************
  * 1. Miscellaneous functions for msatree
- *****************************************************************/ int
+ *****************************************************************/ 
+int
+MSA_Shuffle(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+{
+  ESL_MSA *shmsa = NULL;
+  int      status = eslOK;
+
+  shmsa = esl_msa_Clone(msa);
+  if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+
+  *ret_shmsa = shmsa;
+
+  return status;
+
+ ERROR:
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
+}
+
+int
 MSA_Subset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *errbuf, int verbose)
 {
   FILE         *msafp;

@@ -13,6 +13,7 @@
 #include "esl_tree.h"
 
 extern int       MSA_Subset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *errbuf, int verbose);
+extern int       MSA_Shuffle(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose);
 extern int       Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose);
 extern int       Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verbose);
 extern int       Tree_GetNodeTime(int node, ESL_TREE *T, double *ret_meantime, double *ret_mintime, double *ret_maxtime, char *errbuf, int verbose);
