@@ -40,16 +40,30 @@ int
 MSA_Shuffle(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
 {
   ESL_MSA *shmsa = NULL;
+  int     *perm = NULL;
+  int      i;
+  int      n;
   int      status = eslOK;
 
+  /* copy the original alignemt */
   shmsa = esl_msa_Clone(msa);
   if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
 
+  /* colums permutation */
+  ESL_ALLOC(perm, sizeof(int) * (msa->alen));
+  for (i = 0; i < msa->alen; i ++) perm[i] = i;
+  if ((status = esl_vec_IShuffle(r, perm, msa->alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+  for (n = 0; n < msa->nseq; n++) {
+  }
+
   *ret_shmsa = shmsa;
 
+  free(perm);
   return status;
 
  ERROR:
+  if (perm) free(perm);
   if (shmsa) esl_msa_Destroy(shmsa);
   return status;
 }
