@@ -316,6 +316,7 @@ main(int argc, char **argv)
   free(cfg.ct);
   eslx_msafile_Close(afp);
   fclose(cfg.outfp);
+  fclose(cfg.rocfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);

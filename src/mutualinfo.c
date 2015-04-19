@@ -342,7 +342,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
   Mutual_ReuseCOV(mi);
   
   // MI
-  for (i = 0; i < mi->alen-1; i++) 
+  for (i = 0; i < mi->alen-1; i++) {
     for (j = i+1; j < mi->alen; j++) {
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
@@ -354,6 +354,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       if (mutinf < mi->minCOV) mi->minCOV = mutinf;
       if (mutinf > mi->maxCOV) mi->maxCOV = mutinf;
     }
+  }
   
   if (verbose) {
     printf("MI[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -389,6 +390,7 @@ Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
   
   // MI
   mutinf = esl_dmatrix_Create(mi->alen, mi->alen);
+  esl_dmatrix_Set(mutinf, 0.0);
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
        MIval  = 0.0;
@@ -463,6 +465,7 @@ Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
   
   // MI
   mutinf = esl_dmatrix_Create(mi->alen, mi->alen);
+  esl_dmatrix_Set(mutinf, 0.0);
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
        MIval  = 0.0;
@@ -972,9 +975,11 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FI
       }
   }
   
+  free(mitype); 
   return eslOK;
 
  ERROR:
+  if (mitype) free(mitype);
   return status;
 }
 
