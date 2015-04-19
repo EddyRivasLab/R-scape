@@ -311,7 +311,7 @@ main(int argc, char **argv)
     esl_msa_Hash(cfg.msalist[cfg.nmsa]);
    
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &cfg.msalist[cfg.nmsa], &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")) msamanip_SelectSubset(cfg.r, &cfg.msalist[cfg.nmsa], cfg.idthresh, &nremoved);
+    if (esl_opt_IsOn(go, "-I")) msamanip_SelectSubsetByID(cfg.r, &cfg.msalist[cfg.nmsa], cfg.idthresh, &nremoved);
     
      msamanip_XBaseComp(cfg.msalist[cfg.nmsa], cfg.bg->f, &cfg.msafrq[cfg.nmsa]);
      

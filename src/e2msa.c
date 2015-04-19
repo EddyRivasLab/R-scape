@@ -551,7 +551,7 @@ main(int argc, char **argv)
 
     /* select submsa */
     if (cfg.submsa) {
-      if (MSA_Subset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
     
     /* outheader for all msa-output files */
@@ -560,7 +560,7 @@ main(int argc, char **argv)
     esl_msa_Hash(msa);
    
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubset(cfg.r, &msa, cfg.idthresh, &nremoved);
+    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved);
     
     /* given msa aveid and avematch */
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);

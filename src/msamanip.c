@@ -176,7 +176,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 /* Extract subset with sequences no more than idthesh similar to each other
  */
 int
-msamanip_SelectSubset(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
+msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
 {      
   ESL_MSA   *omsa  = NULL;
   ESL_MSA   *new  = NULL;
@@ -230,6 +230,165 @@ msamanip_SelectSubset(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret
   if (assignment != NULL) free(assignment);
   if (nin        != NULL) free(nin);
   if (new        != NULL) esl_msa_Destroy(new);
+ return status;
+}
+
+/* Extract subset with nseq sequences taken at random
+ */
+int
+msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *errbuf, int verbose)
+{
+  FILE         *msafp;
+  char         *newfile = NULL;
+  ESL_MSA      *new = NULL;
+  ESL_MSA      *msa = *omsa;
+  ESLX_MSAFILE *submsafp = NULL;
+  char         *omsafile = NULL;
+  char         *st;
+  char         *newacc = NULL;
+  int          *array = NULL;
+  int          *useme = NULL;
+  int           n;
+  int           s;
+  int           status;
+
+  if (nseq == 0 || nseq >= msa->nseq) return eslOK;
+ 
+  /* the newfile file with submsa */
+  if (msafile) {
+    omsafile = *msafile;
+    if (omsafile) esl_sprintf(&newfile, "%s.random%d", omsafile, nseq);
+    
+    /* if newfile exist, read the submsa from existing newfile */
+    if (esl_FileExists(newfile)) { 
+      free(omsafile);
+      *msafile = newfile;
+      
+      status = eslx_msafile_Open(&msa->abc, newfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &submsafp);
+      if (status != eslOK) eslx_msafile_OpenFailure(submsafp, status);
+      eslx_msafile_Read(submsafp, &new);
+      eslx_msafile_Close(submsafp); 
+      esl_msa_Destroy(msa);
+      *omsa = new;  
+      return eslOK; 
+    }
+  }
+
+  if (msa) esl_sprintf(&newfile, "%s.random%d", msa->name, nseq);
+
+  /* otherwise, proceed */
+  ESL_ALLOC(array, sizeof(int) * (msa->nseq+1));
+  for (n = 0; n <= msa->nseq; n ++) array[n] = n;
+
+  /* randomize array */
+  if ((status = esl_vec_IShuffle(r, array, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize array");
+
+  /* get the first 'nseq' */
+  ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+  esl_vec_ISet(useme, msa->nseq, 0);
+  for (s = 1; s <= nseq; s ++) useme[array[s]] = 1;
+  
+  if ((status = esl_msa_SequenceSubset(msa, useme, &new)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create msa subset");
+
+  esl_msa_MinimGaps(new, errbuf, "-_.~", TRUE);
+
+  /* change the accession of the msa to reflect that it is a subset of the original */
+  if (msa->acc) {
+    st = msa->acc; /* remove the version from the accession */
+    esl_strtok(&st, ".", &newacc);
+    esl_sprintf(&(new->acc), "%s.random%d.%s", newacc, nseq, st);
+  }
+  else
+    esl_sprintf(&(new->acc), "random%d", nseq);
+
+  /* write the submsa to file */
+  if (omsafile) esl_sprintf(&newfile, "%s.random%d", omsafile, nseq);
+  
+  if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
+  if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
+  fclose(msafp);
+
+  esl_msa_Destroy(msa);
+  if (omsafile) free(omsafile);
+
+  if (msafile) *msafile = newfile;
+  if (omsa)    *omsa    = new;
+
+  free(array);
+  free(useme);
+  return eslOK;
+
+ ERROR:
+  if (array)  free(array);
+  if (useme)  free(useme);
+  if (new)    esl_msa_Destroy(new);
+  return status;
+}
+
+
+int
+msamanip_SelectRandomSet(ESL_RANDOMNESS *r, ESL_MSA **msa, ESL_MSA **restmsa, int nset)
+{      
+  ESL_MSA   *omsa  = NULL;
+  ESL_MSA   *new   = NULL;
+  ESL_MSA   *rest  = NULL;
+  int       *useme = NULL;
+  int        nuse = 0;
+  int        try;
+  int        x;
+  int        status;
+
+  omsa = *msa;
+  
+  if (nset == 0) { 
+    if (restmsa) {
+      *restmsa = omsa;
+    }
+    else esl_msa_Destroy(omsa); 
+    *msa = NULL;
+    return eslOK;
+  }
+  if (omsa->nseq < nset) { printf("not enough sequences %d to get %d\n", omsa->nseq, nset); return eslOK; }
+ 
+  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
+  esl_vec_ISet(useme, omsa->nseq, 0);
+
+  try = esl_rnd_Roll(r, omsa->nseq); // pick a random seq 
+  useme[try] = 1;
+  nuse ++;
+  
+  while (nuse < nset) {
+    try = esl_rnd_Roll(r, omsa->nseq); // pick more random seq 
+    if (useme[try] == 0) {
+      useme[try] = 1;
+      nuse ++;
+    }
+  }
+  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
+  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+
+  if (restmsa) {
+    for (x = 0; x < omsa->nseq; x ++) {
+      useme[x] = abs(1-useme[x]);
+     }
+    
+    if ((status = esl_msa_SequenceSubset(omsa, useme, &rest))  != eslOK) goto ERROR;
+    if ((status = esl_msa_MinimGaps(rest, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+     *restmsa = rest;
+  }
+  
+  /* replace msa */
+  esl_msa_Destroy(omsa);
+  *msa = new;
+
+  free(useme);
+ 
+ return eslOK;
+
+ ERROR:
+  if (useme != NULL) free(useme);
+  if (new   != NULL) esl_msa_Destroy(new);
+  if (rest  != NULL) esl_msa_Destroy(rest);
  return status;
 }
 
@@ -338,69 +497,59 @@ msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idt
 }
 
 int
-msamanip_SelectRandomSet(ESL_RANDOMNESS *r, ESL_MSA **msa, ESL_MSA **restmsa, int nset)
-{      
-  ESL_MSA   *omsa  = NULL;
-  ESL_MSA   *new   = NULL;
-  ESL_MSA   *rest  = NULL;
-  int       *useme = NULL;
-  int        nuse = 0;
-  int        try;
-  int        x;
-  int        status;
+msamanip_ShuffleColums(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+{
+  ESL_MSA *shmsa = NULL;
+  int     *perm = NULL;
+  int      i;
+  int      n;
+  int      status = eslOK;
 
-  omsa = *msa;
+  /* copy the original alignemt */
+  shmsa = esl_msa_Clone(msa);
+  if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+
+  /* colums permutation */
+  ESL_ALLOC(perm, sizeof(int) * (msa->alen));
+  for (n = 0; n < msa->alen; n ++) perm[n] = n;
+  if ((status = esl_vec_IShuffle(r, perm, msa->alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
   
-  if (nset == 0) { 
-    if (restmsa) {
-      *restmsa = omsa;
+  /* aseq[0..nseq-1][0..alen-1] strings, or
+   * ax[0..nseq-1][(0) 1..alen (alen+1)] digital seqs 
+   */
+  if (! (msa->flags & eslMSA_DIGITAL))
+    {
+      for (i = 0; i < msa->nseq; i++) {
+	for (n = 0; n < msa->alen; n++) {
+	  shmsa->aseq[i][n] = msa->aseq[i][perm[n]];
+	}
+      }
     }
-    else esl_msa_Destroy(omsa); 
-    *msa = NULL;
-    return eslOK;
-  }
-  if (omsa->nseq < nset) { printf("not enough sequences %d to get %d\n", omsa->nseq, nset); return eslOK; }
- 
-  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  esl_vec_ISet(useme, omsa->nseq, 0);
-
-  try = esl_rnd_Roll(r, omsa->nseq); // pick a random seq 
-  useme[try] = 1;
-  nuse ++;
-  
-  while (nuse < nset) {
-    try = esl_rnd_Roll(r, omsa->nseq); // pick more random seq 
-    if (useme[try] == 0) {
-      useme[try] = 1;
-      nuse ++;
+#ifdef eslAUGMENT_ALPHABET
+  else
+    {
+      printf("\ndigital\n");
+      for (i = 0; i < msa->nseq; i++) {
+	for (n = 1; n <= msa->alen; n++) 
+	  shmsa->ax[i][n] = msa->ax[i][perm[n-1]+1];
+      }
     }
-  }
-  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+#endif
 
-  if (restmsa) {
-    for (x = 0; x < omsa->nseq; x ++) {
-      useme[x] = abs(1-useme[x]);
-     }
-    
-    if ((status = esl_msa_SequenceSubset(omsa, useme, &rest))  != eslOK) goto ERROR;
-    if ((status = esl_msa_MinimGaps(rest, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
-     *restmsa = rest;
-  }
-  
-  /* replace msa */
-  esl_msa_Destroy(omsa);
-  *msa = new;
+  if (1||verbose) {
+    eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+ }
 
-  free(useme);
- 
- return eslOK;
+  *ret_shmsa = shmsa;
+
+  free(perm);
+  return status;
 
  ERROR:
-  if (useme != NULL) free(useme);
-  if (new   != NULL) esl_msa_Destroy(new);
-  if (rest  != NULL) esl_msa_Destroy(rest);
- return status;
+  if (perm) free(perm);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
 }
 
 int

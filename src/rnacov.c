@@ -259,7 +259,7 @@ main(int argc, char **argv)
 
     /* select submsa */
     if (cfg.submsa) {
-      if (MSA_Subset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
@@ -268,8 +268,9 @@ main(int argc, char **argv)
     msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader);    
    
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubset(cfg.r, &msa, cfg.idthresh, &nremoved);
+    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved);
     
+    if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
     /* given msa aveid and avematch */
     msamanip_XStats(msa, &cfg.mstat);
 
@@ -296,7 +297,7 @@ main(int argc, char **argv)
     }
 
     if (cfg.doshuffle) {
-      MSA_Shuffle(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
+      msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
       status = run_rnacov(go, &cfg, shmsa, TRUE);
       if (status != eslOK) esl_fatal("%s Failed to run rnacov shuffled");
     }

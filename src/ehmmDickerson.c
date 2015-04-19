@@ -362,7 +362,7 @@ main(int argc, char **argv)
       
       /* select submsa (RIO has space limitations) */
       if (cfg.submsa) {
-	if (MSA_Subset(cfg.r, cfg.submsa, &msa, &cfg.msafile, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+	if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.msafile, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
       }
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (cfg.verbose) { if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal(msg); }
