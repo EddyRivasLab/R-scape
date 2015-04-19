@@ -50,12 +50,30 @@ MSA_Shuffle(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf,
   if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
 
   /* colums permutation */
-  ESL_ALLOC(perm, sizeof(int) * (msa->alen));
-  for (i = 0; i < msa->alen; i ++) perm[i] = i;
-  if ((status = esl_vec_IShuffle(r, perm, msa->alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+  ESL_ALLOC(perm, sizeof(int) * (msa->alen+1));
+  for (n = 0; n <= msa->alen; n ++) perm[n] = n;
+  if ((status = esl_vec_IShuffle(r, perm, msa->alen+1)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
 
-  for (n = 0; n < msa->nseq; n++) {
-  }
+  /* aseq[0..nseq-1][0..alen-1] strings, or
+   * ax[0..nseq-1][(0) 1..alen (alen+1)] digital seqs 
+   */
+  if (! (msa->flags & eslMSA_DIGITAL))
+    for (i = 0; i < msa->nseq; i++) 
+      for (n = 0; n < msa->alen; n++) 
+	shmsa->aseq[i][n] = msa->aseq[i][perm[n]];
+#ifdef eslAUGMENT_ALPHABET
+  else
+    {
+      for (i = 0; i < msa->nseq; i++) 
+	for (n = 0; n <= msa->alen; n++) 
+	  shmsa->ax[i][n] = msa->ax[i][perm[n]];
+    }
+#endif
+
+  if (1||verbose) {
+    eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+ }
 
   *ret_shmsa = shmsa;
 
