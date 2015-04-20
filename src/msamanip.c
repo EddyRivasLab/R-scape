@@ -528,7 +528,6 @@ msamanip_ShuffleColums(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, ch
 #ifdef eslAUGMENT_ALPHABET
   else
     {
-      printf("\ndigital\n");
       for (i = 0; i < msa->nseq; i++) {
 	for (n = 1; n <= msa->alen; n++) 
 	  shmsa->ax[i][n] = msa->ax[i][perm[n-1]+1];
@@ -536,7 +535,7 @@ msamanip_ShuffleColums(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, ch
     }
 #endif
 
-  if (1||verbose) {
+  if (verbose) {
     eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
     eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
  }

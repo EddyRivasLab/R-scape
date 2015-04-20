@@ -46,6 +46,7 @@ struct cfg_s {
 
   int              nmsa;
   char            *msafile;
+  char            *filename;
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
   char            *msaheader;          /* header for all msa-specific output files */
@@ -70,6 +71,7 @@ struct cfg_s {
   int             *ct;
 
   int              voutput;
+  char            *rocfile;
   FILE            *rocfp; 
   int              maxFP;
 
@@ -96,7 +98,6 @@ struct cfg_s {
   /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                               0 },
   /* Control of output */
-  { "--rocplot",      eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write rocplot to file <f>"          ,                                                       0 },
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
   /* msa format */
@@ -175,10 +176,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   } else cfg.outfp = stdout;
 
   /*  rocplot file */
-  if ( esl_opt_IsOn(go, "--rocplot") ) {
-    if ((cfg.rocfp = fopen(esl_opt_GetString(go, "--rocplot"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--rocplot"));
-  } else cfg.rocfp = stdout;
-  
+  esl_FileTail(cfg.msafile, TRUE, &cfg.filename);  
+  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.filename); 
+  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
+
+  printf("rocfile %s\n", cfg.rocfile);
+
   if (esl_opt_IsOn(go, "--submsa")) cfg.submsa = esl_opt_GetInteger(go, "--submsa");
   else                              cfg.submsa = 0;
   

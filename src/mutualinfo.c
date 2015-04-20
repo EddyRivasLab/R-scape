@@ -39,18 +39,19 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_Probs(msa, T, ribosum, mi, method, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
-  status = Mutual_CalculateH  (mi, tol, FALSE, errbuf);
+  status = Mutual_CalculateH(mi, tol, FALSE, errbuf);
   if (status != eslOK) goto ERROR;
 
   status = Mutual_CalculateCHI (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateGTST(mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
+  status = Mutual_CalculateGT(mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMI  (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
+
+  status = Mutual_CalculateMI(mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateMIp (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;  
-  status = Mutual_CalculateMIa (mi, ct, rocfp, maxFP, ishuffled, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
 #if 0
@@ -224,7 +225,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
   int    K = mi->abc->K;
   int    status = eslOK;
   
-  Mutual_ReuseCOV(mi);
+  Mutual_ReuseCOV(mi, CHI);
   
   // CHI
   for (i = 0; i < mi->alen-1; i++) 
@@ -262,7 +263,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, CHI, rocfp, maxFP, ishuffled, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -272,7 +273,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
 }
 
 int                 
-Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
+Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
 {
   double G;
   double Gp;
@@ -283,7 +284,7 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
   int    K = mi->abc->K;
   int    status = eslOK;
   
-  Mutual_ReuseCOV(mi);
+  Mutual_ReuseCOV(mi, GT);
   
   // G
   for (i = 0; i < mi->alen-1; i++) 
@@ -314,14 +315,14 @@ Mutual_CalculateGTST(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
     }
   
   if (verbose) {
-    printf("GTST[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    printf("GT[%f,%f]\n", mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("GTST[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	if (i==5&&j==118) printf("GT[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, GTST, rocfp, maxFP, ishuffled, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -339,7 +340,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
   int    K = mi->abc->K;
   int    status = eslOK;
   
-  Mutual_ReuseCOV(mi);
+  Mutual_ReuseCOV(mi, MI);
   
   // MI
   for (i = 0; i < mi->alen-1; i++) {
@@ -364,7 +365,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MI, rocfp, maxFP, ishuffled, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -374,155 +375,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
 }
 
 
-int                 
-Mutual_CalculateMIa(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
-{
-  ESL_DMATRIX *mutinf = NULL;
-  double      *MIx = NULL;
-  double       MIval;
-  double       MIavg = 0.0;
-  int          i, j;
-  int          x, y;
-  int          K = mi->abc->K;
-  int          status = eslOK;
 
-  Mutual_ReuseCOV(mi);
-  
-  // MI
-  mutinf = esl_dmatrix_Create(mi->alen, mi->alen);
-  esl_dmatrix_Set(mutinf, 0.0);
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) {
-       MIval  = 0.0;
-      for (x = 0; x < K; x ++)
-	for (y = 0; y < K; y ++) {
-	  MIval += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
-	}	  
- 
-      mutinf->mx[i][j] = mutinf->mx[j][i] = MIval;
-     }
-
-  // MIavg
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) 
-      MIavg += mutinf->mx[i][j];
-  if (mi->alen > 1) MIavg /= (double)mi->alen * ((double)mi->alen-1.);
-
-  //MIx
-  ESL_ALLOC(MIx, sizeof(double) * mi->alen);
-  for (i = 0; i < mi->alen; i++) {
-    MIx[i] = 0.0;
-    for (j = 0; j < mi->alen; j++) {
-      if (j != i) MIx[i] += mutinf->mx[i][j];
-    }
-    if (mi->alen > 1) MIx[i] /= (double)mi->alen - 1.;
-  }
-
-  //MIa
-  for (i = 0; i < mi->alen; i++) 
-    for (j = 0; j < mi->alen; j++) {
-      mi->COV->mx[i][j] = mutinf->mx[i][j] - (MIx[i] + MIx[j] - MIavg);
-      
-      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
-      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
-   }
-  
-  if (verbose) {
-    printf("MIa[%f,%f] \n", mi->minCOV, mi->maxCOV);
-    for (i = 0; i < mi->alen-1; i++) 
-      for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("MIa[%d][%d] = %f | MI %f | MIx %f MIy %f | MIavg %f\n", 
-				i, j, mi->COV->mx[i][j], mutinf->mx[i][j], MIx[i], MIx[j], MIavg);
-      } 
-  }
-  
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIa, rocfp, maxFP, ishuffled, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  free(MIx);
-  esl_dmatrix_Destroy(mutinf);
-  return status;
-
- ERROR:
-  if (MIx) free(MIx);
-  if (mutinf)  esl_dmatrix_Destroy(mutinf);
-  return status;
-}
-
-int                 
-Mutual_CalculateMIp(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
-{
-  ESL_DMATRIX *mutinf = NULL;
-  double      *MIx = NULL;
-  double       MIval;
-  double       MIavg = 0.0;
-  int          i, j;
-  int          x, y;
-  int          K = mi->abc->K;
-  int          status = eslOK;
-  
-  Mutual_ReuseCOV(mi);
-  
-  // MI
-  mutinf = esl_dmatrix_Create(mi->alen, mi->alen);
-  esl_dmatrix_Set(mutinf, 0.0);
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) {
-       MIval  = 0.0;
-      for (x = 0; x < K; x ++)
-	for (y = 0; y < K; y ++) {
-	  MIval += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
-	}	  
- 
-      mutinf->mx[i][j] = mutinf->mx[j][i]  = MIval;
-     }
-
-  // MIavg
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) 
-      MIavg += mutinf->mx[i][j];
-  if (mi->alen > 1) MIavg /= (mi->alen * (mi->alen-1));
-
-  //MIx
-  ESL_ALLOC(MIx, sizeof(double) * mi->alen);
-  for (i = 0; i < mi->alen; i++) {
-    MIx[i] = 0.0;
-    for (j = 0; j < mi->alen; j++) {
-      if (j != i) MIx[i] += mutinf->mx[i][j];
-    }
-    if (mi->alen > 1) MIx[i] /= mi->alen -1;
-  }
-
-  //MIp
-  for (i = 0; i < mi->alen; i++) 
-    for (j = 0; j < mi->alen; j++) {
-      mi->COV->mx[i][j] = (MIavg != 0.0)? mutinf->mx[i][j] - MIx[i] * MIx[j] / MIavg : 0.0;
-
-      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
-      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
-   }
-
-  if (verbose) {
-    printf("MIp[%f,%f] \n", mi->minCOV, mi->maxCOV);
-    for (i = 0; i < mi->alen-1; i++) 
-      for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("MIp[%d][%d] = %f | MI %f | MIx %f MIy %f | MIavg %f\n", 
-				i, j, mi->COV->mx[i][j], mutinf->mx[i][j], MIx[i], MIx[j], MIavg);
-      } 
-  }
-
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIp, rocfp, maxFP, ishuffled, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  free(MIx);
-  esl_dmatrix_Destroy(mutinf);
-  return status;
-
- ERROR:
-  if (MIx) free(MIx);
-  if (mutinf)  esl_dmatrix_Destroy(mutinf);
-  return status;
-}
 
 int                 
 Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, double tol, int verbose, char *errbuf)
@@ -533,7 +386,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
   int    K = mi->abc->K;
   int    status = eslOK;
   
-  Mutual_ReuseCOV(mi);
+  Mutual_ReuseCOV(mi, MIr);
   
   //MIr
   for (i = 0; i < mi->alen-1; i++) 
@@ -559,7 +412,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       } 
   }
   
-  status = Mutual_SignificantPairs_Ranking(mi, ct, MIr, rocfp, maxFP, ishuffled, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -568,6 +421,152 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
   return status;
 }
 
+
+
+int                 
+Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, CORRTYPE corrtype, double tol, int verbose, char *errbuf)
+{
+  char        *covtype = NULL;
+  ESL_DMATRIX *COV  = NULL;
+  double      *COVx = NULL;
+  double       COVavg = 0.0;
+  int          i, j;
+  int          status = eslOK;
+  
+  Mutual_COVTYPEString(&covtype, mi->type, errbuf);
+
+  switch(corrtype) {
+  case APC: esl_sprintf(&covtype, "%sp", covtype); break;
+  case ASC: esl_sprintf(&covtype, "%sa", covtype); break;
+  default:  
+    ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
+    break;
+  }
+  esl_dmatrix_Copy(mi->COV, COV);
+  
+  Mutual_String2COVTYPE(covtype, &mi->type, errbuf);
+  Mutual_ReuseCOV(mi, mi->type);
+  
+  // COVavg
+  for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) 
+      COVavg += COV->mx[i][j];
+  if (mi->alen > 1) COVavg /= (mi->alen * (mi->alen-1));
+
+  //COVx
+  ESL_ALLOC(COVx, sizeof(double) * mi->alen);
+  for (i = 0; i < mi->alen; i++) {
+    COVx[i] = 0.0;
+    for (j = 0; j < mi->alen; j++) {
+      if (j != i) COVx[i] += COV->mx[i][j];
+    }
+    if (mi->alen > 1) COVx[i] /= mi->alen -1;
+  }
+
+  //COVp
+  for (i = 0; i < mi->alen; i++) 
+    for (j = 0; j < mi->alen; j++) {
+
+      if (corrtype == APC) 
+	mi->COV->mx[i][j] = (COVavg != 0.0)? COV->mx[i][j] - COVx[i] * COVx[j] / COVavg : 0.0;
+      else if (corrtype == ASC) 
+	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
+      else 
+	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
+
+      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
+      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
+    }
+
+  if (verbose) {
+    printf("%s-[%f,%f] \n", covtype,  mi->minCOV, mi->maxCOV);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (i==5&&j==118) printf("%s-[%d][%d] = %f | MI %f | COVx %f COVy %f | COVavg %f\n", 
+				 covtype, i, j, mi->COV->mx[i][j], COV->mx[i][j], COVx[i], COVx[j], COVavg);
+      } 
+  }
+
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  if (covtype) free(covtype);
+  esl_dmatrix_Destroy(COV);
+  free(COVx);
+  return status;
+
+ ERROR:
+  if (covtype) free(covtype);
+  if (COV)     esl_dmatrix_Destroy(COV);
+  if (COVx)    free(COVx);
+  return status;
+}
+
+int 
+Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
+{
+  int status;
+
+  switch(type) {
+  case CHI:   esl_sprintf(ret_covtype, "CHI");   break;
+  case GT:    esl_sprintf(ret_covtype, "GT");    break;
+  case OMES:  esl_sprintf(ret_covtype, "OMES");  break;
+  case MI:    esl_sprintf(ret_covtype, "MI");    break;
+  case MIr:   esl_sprintf(ret_covtype, "MIr");   break; 
+
+  case CHIp:  esl_sprintf(ret_covtype, "CHIp");  break;
+  case GTp:   esl_sprintf(ret_covtype, "GTp");   break;
+  case OMESp: esl_sprintf(ret_covtype, "OMESp"); break;
+  case MIp:   esl_sprintf(ret_covtype, "MIp");   break;
+  case MIrp:  esl_sprintf(ret_covtype, "MIrp");  break; 
+
+  case CHIa:  esl_sprintf(ret_covtype, "CHIa");  break;
+  case GTa:   esl_sprintf(ret_covtype, "GTa");   break;
+  case OMESa: esl_sprintf(ret_covtype, "OMESa"); break;
+  case MIa:   esl_sprintf(ret_covtype, "MIa");   break;
+  case MIra:  esl_sprintf(ret_covtype, "MIra");  break; 
+
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE");
+  }
+
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+int 
+Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
+{
+  COVTYPE type;
+  int     status;
+
+  if      (!esl_strcmp(covtype, "CHI"))    type = CHI;
+  else if (!esl_strcmp(covtype, "GT"))     type = GT;
+  else if (!esl_strcmp(covtype, "OMES"))   type = OMES;
+  else if (!esl_strcmp(covtype, "MI"))     type = MI;
+  else if (!esl_strcmp(covtype, "MIr"))    type = MIr;
+  else if (!esl_strcmp(covtype, "CHIp"))   type = CHIp;
+  else if (!esl_strcmp(covtype, "GTp"))    type = GTp;
+  else if (!esl_strcmp(covtype, "OMESp"))  type = OMESp;
+  else if (!esl_strcmp(covtype, "MIp"))    type = MIp;
+  else if (!esl_strcmp(covtype, "MIrp"))   type = MIrp;
+  else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
+  else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
+  else if (!esl_strcmp(covtype, "OMESa"))  type = OMESa;
+  else if (!esl_strcmp(covtype, "MIa"))    type = MIa;
+  else if (!esl_strcmp(covtype, "MIra"))   type = MIra;
+  else
+    ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE %s", covtype);
+  
+
+
+  *ret_type = type;
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
 
 struct mutual_s *
 Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
@@ -582,7 +581,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
   mi->alen = alen;
   mi->nseq = nseq;
   mi->abc  = abc;
-  
+
   ESL_ALLOC(mi->cp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->ps,           sizeof(double  *) * alen);
@@ -611,7 +610,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
   }
 
   /* inititalize to zero the COV matrix */
-  Mutual_ReuseCOV(mi);
+  Mutual_ReuseCOV(mi, NONE);
   
   return mi;
   
@@ -620,10 +619,12 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
 }
 
 int
-Mutual_ReuseCOV(struct mutual_s *mi)
+Mutual_ReuseCOV(struct mutual_s *mi, COVTYPE mitype)
 {
   int  i, j;
   
+  mi->type = mitype;
+
   for (i = 0; i < mi->alen; i++) 
     for (j = 0; j < mi->alen; j++) 
       mi->COV->mx[i][j]  = 0.0;
@@ -842,10 +843,10 @@ Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *
 }
 
 int
-Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FILE *rocfp, int maxFP, int ishuffled, int verbose, char *errbuf)
+Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
-  char        *mitype;
+  char        *covtype = NULL;
   double       delta = 200.;
   double       inc;
   double       min = mi->minCOV;
@@ -875,15 +876,9 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FI
   int          i, j;
   int          status;
 
-  switch(whichmi) {
-  case CHI:  fprintf(rocfp, "\n# CHI "); esl_sprintf(&mitype, "CHI");  break;
-  case GTST: fprintf(rocfp, "\n# GTST"); esl_sprintf(&mitype, "GTST"); break;
-  case MI:   fprintf(rocfp, "\n# MI  "); esl_sprintf(&mitype, "MI");   break;
-  case MIa:  fprintf(rocfp, "\n# MIa "); esl_sprintf(&mitype, "MIa");  break; 
-  case MIp:  fprintf(rocfp, "\n# MIp "); esl_sprintf(&mitype, "MIp");  break; 
-  case MIr:  fprintf(rocfp, "\n# MIr "); esl_sprintf(&mitype, "MIr");  break; 
-  default: ESL_XFAIL(eslFAIL, errbuf, "wrong MITYPE");
-  }
+  Mutual_COVTYPEString(&covtype, mi->type, errbuf);
+
+  fprintf(rocfp, "\n# %s", covtype);  
   if (ishuffled) fprintf(rocfp, " shuffled ");
 
   fprintf(rocfp, "thresh fp tp true found sen ppv F\n"); 
@@ -941,45 +936,45 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, MITYPE whichmi, FI
  
   if (best_fp < maxFP_fp) {
     if (best_fp == 0 && oneFP_tf > best_tf) {
-      printf("%s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, oneFPthresh, min, max,
+      printf("%s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, min, max,
 	     oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
       for (i = 0; i < mi->alen-1; i++) 
 	for (j = i+1; j < mi->alen; j++) {
 	  if (mtx->mx[i][j] > oneFPthresh) {
-	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
-	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
+	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, covtype, i, j, mtx->mx[i][j]); }
+	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, covtype, i, j, mtx->mx[i][j]); }
 	  }
 	}
     }
     else {
-      printf("%s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, besthresh, min, max,
+      printf("%s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, min, max,
 	     best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
       for (i = 0; i < mi->alen-1; i++) 
 	for (j = i+1; j < mi->alen; j++) {
 	  if (mtx->mx[i][j] > besthresh) {
-	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
-	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); }
+	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, covtype, i, j, mtx->mx[i][j]); }
+	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, covtype, i, j, mtx->mx[i][j]); }
 	  }
 	}
     }
   }
   else {
-    printf("%s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", mitype, maxFP, maxFPthresh, min, max,
+    printf("%s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, min, max,
 	   maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
 	if (mtx->mx[i][j] > maxFPthresh) {
-	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, mitype, i, j, mtx->mx[i][j]); }
-	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, mitype, i, j, mtx->mx[i][j]); } 
+	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, covtype, i, j, mtx->mx[i][j]); }
+	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, covtype, i, j, mtx->mx[i][j]); } 
 	}
       }
   }
   
-  free(mitype); 
+  if (covtype) free(covtype); 
   return eslOK;
 
  ERROR:
-  if (mitype) free(mitype);
+  if (covtype) free(covtype);
   return status;
 }
 
