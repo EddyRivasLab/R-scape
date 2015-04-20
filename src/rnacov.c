@@ -169,21 +169,20 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
 
   cfg.w = esl_stopwatch_Create(); 
-
+  
   /*  output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
   } else cfg.outfp = stdout;
-
+  
+  esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
+  if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s_random%d", cfg.outheader, cfg.submsa); }
+  else                              { cfg.submsa = 0; }
+  
   /*  rocplot file */
-  esl_FileTail(cfg.msafile, TRUE, &cfg.filename);  
-  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.filename); 
+  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
-
   printf("rocfile %s\n", cfg.rocfile);
-
-  if (esl_opt_IsOn(go, "--submsa")) cfg.submsa = esl_opt_GetInteger(go, "--submsa");
-  else                              cfg.submsa = 0;
   
   /* other options */
   cfg.domsa      = TRUE;

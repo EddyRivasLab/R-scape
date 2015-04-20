@@ -51,6 +51,16 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
 
+  status = Mutual_CalculateOMES (mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR; 
+  status = Mutual_CalculateOMES (mi, ct, rocfp, maxFP, ishuffled, FALSE, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR; 
+
+  
   status = Mutual_CalculateGT(mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
@@ -59,15 +69,6 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   if (status != eslOK) goto ERROR;
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-
-  status = Mutual_CalculateOMES(mi, ct, rocfp, maxFP, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateOMES(mi, ct, rocfp, maxFP, ishuffled, FALSE, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
 
   status = Mutual_CalculateMI(mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -78,7 +79,7 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateMIr(mi, ct, rocfp, maxFP, tol, verbose, errbuf);
+  status = Mutual_CalculateMIr(mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
@@ -330,7 +331,7 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
       if (omes == 0.) 
 	omesp = 1.0;
       else if (omes != eslINFINITY) {
-	if ((status = esl_stats_OmesSquaredTest(mi->nseq, omes, &omesp)) != eslOK) goto ERROR;
+	if ((status = esl_stats_ChiSquaredTest(mi->nseq, omes, &omesp)) != eslOK) goto ERROR;
       }
       else 
 	omesp = 0.;
@@ -694,7 +695,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
   }
 
   /* inititalize to zero the COV matrix */
-  Mutual_ReuseCOV(mi, NONE);
+  Mutual_ReuseCOV(mi, COVNONE);
   
   return mi;
   
