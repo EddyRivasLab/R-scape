@@ -17,27 +17,30 @@
 #include "esl_tree.h"
 #include "ribosum_matrix.h"
 
-#define NCOVTYPE = 5;
+#define NCOVTYPE = 6;
 typedef enum {
-  CHI   = 0,
-  GT    = 1,
-  OMES  = 2,
-  MI    = 3,
-  MIr   = 4,
+  NAK   = 0,
+  CHI   = 1,
+  GT    = 2,
+  OMES  = 3,
+  MI    = 4,
+  MIr   = 5,
 
-  CHIp  = 5,
-  GTp   = 6,
-  OMESp = 7,
-  MIp   = 8,
-  MIrp  = 9,
+  NAKp  = 6,
+  CHIp  = 7,
+  GTp   = 8,
+  OMESp = 9,
+  MIp   = 10,
+  MIrp  = 11,
 
-  CHIa  = 10,
-  GTa   = 11,
-  OMESa = 12,
-  MIa   = 13,
-  MIra  = 14,
+  NAKa  = 12,
+  CHIa  = 13,
+  GTa   = 14,
+  OMESa = 15,
+  MIa   = 16,
+  MIra  = 17,
 
-  COVNONE  = 15,
+  COVNONE  = 18,
 } COVTYPE;
 
 typedef enum {
@@ -76,6 +79,7 @@ extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribom
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateNAK (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateGT  (struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf);
