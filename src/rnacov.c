@@ -261,7 +261,7 @@ main(int argc, char **argv)
 
    /* select submsa */
     if (cfg.submsa) {
-       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.outheader, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
