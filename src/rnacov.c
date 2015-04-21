@@ -259,16 +259,13 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
-    /* select submsa */
+   /* select submsa */
     if (cfg.submsa) {
-      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.outheader, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
  
-    /* outheader for all msa-output files */
-    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader);    
-   
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved);
     

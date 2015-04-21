@@ -1082,9 +1082,11 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
     resj = msa->ax[s][j+1];
 
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
-#if 0
+#if 1
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += 1./(double)K; }
+#endif
+#if 0
     else { 
       mi->nseff[i][j] ++; 
       for (x = 0; x < K; x ++)
@@ -1093,11 +1095,13 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
     }
 #endif
   }
-  esl_vec_DCopy(pp, K2, mi->pp[j][i]);  // symetrize counts
   
   /* the probabilities */
   esl_vec_DNorm(pp, K2);                // normalize
-  esl_vec_DCopy(pp, K2, mi->pp[j][i]);  // symetrize
+
+  /* symmetrize */
+  esl_vec_DCopy(pp, K2, mi->pp[j][i]);
+  mi->nseff[j][i] = mi->nseff[i][j];
 
   return eslOK;
 }

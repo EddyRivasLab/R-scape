@@ -257,7 +257,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   /* the newfile file with submsa */
   if (msafile) {
     omsafile = *msafile;
-    if (omsafile) esl_sprintf(&newfile, "%s.random%d", omsafile, nseq);
+    if (omsafile) esl_sprintf(&newfile, "%s.sto", omsafile);
     
     /* if newfile exist, read the submsa from existing newfile */
     if (esl_FileExists(newfile)) { 
@@ -274,7 +274,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     }
   }
 
-  if (msa) esl_sprintf(&newfile, "%s.random%d", msa->name, nseq);
+  if (msa) esl_sprintf(&newfile, "%s.sto", msa->name);
 
   /* otherwise, proceed */
   ESL_ALLOC(array, sizeof(int) * (msa->nseq+1));
@@ -302,7 +302,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     esl_sprintf(&(new->acc), "random%d", nseq);
 
   /* write the submsa to file */
-  if (omsafile) esl_sprintf(&newfile, "%s.random%d", omsafile, nseq);
+  if (omsafile) esl_sprintf(&newfile, "%s.sto", omsafile);
   
   if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
   if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
