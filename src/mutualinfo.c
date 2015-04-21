@@ -164,7 +164,7 @@ Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mut
 	  printf("Ex[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
-	      printf(" %f ", mi->nseq*mi->ps[i][x]*mi->ps[j][y]);
+	      printf(" %f ", mi->nseff[i][j]*mi->ps[i][x]*mi->ps[j][y]);
 	    }
 	  printf("\n");
 	}
@@ -263,17 +263,17 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       chi  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseq * mi->ps[i][x] * mi->ps[j][y];
+	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
 	  obs = mi->cp[i][j][IDX(x,y,K)];
 	  //printf("%d %d obs  %f exp %f\n", i, j, obs, exp);
-	  chi += (obs-exp) * (obs-exp) / exp;
+	  chi += (exp > 0.)? (obs-exp) * (obs-exp) / exp : 0.0 ;
 	}	  
       
       /* chi is distributed approximately chi^2. */
       if (chi == 0.) 
 	chip = 1.0;
       else if (chi != eslINFINITY) {
-	if ((status = esl_stats_ChiSquaredTest(mi->nseq, chi, &chip)) != eslOK) goto ERROR;
+	if ((status = esl_stats_ChiSquaredTest(mi->nseff[i][j], chi, &chip)) != eslOK) goto ERROR;
       }
       else 
 	chip = 0.;
@@ -322,16 +322,16 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
       omes  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseq * mi->ps[i][x] * mi->ps[j][y];
+	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
 	  obs = mi->cp[i][j][IDX(x,y,K)];
-	  omes += (obs-exp) * (obs-exp) / mi->nseq;
+	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / mi->nseff[i][j] : 0.0;
 	}	  
       
       /* omes is distributed approximately omes^2. */
       if (omes == 0.) 
 	omesp = 1.0;
       else if (omes != eslINFINITY) {
-	if ((status = esl_stats_ChiSquaredTest(mi->nseq, omes, &omesp)) != eslOK) goto ERROR;
+	if ((status = esl_stats_ChiSquaredTest(mi->nseff[i][j], omes, &omesp)) != eslOK) goto ERROR;
       }
       else 
 	omesp = 0.;
@@ -381,9 +381,9 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       gt  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseq * mi->ps[i][x] * mi->ps[j][y];
+	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
 	  obs = mi->cp[i][j][IDX(x,y,K)];
-	  gt += obs * log (obs / exp);
+	  gt += (exp > 0.) ? obs * log (obs / exp) : 0.0;
 	}	  
       gt *= 2.0;
 
@@ -391,7 +391,7 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       if (gt == 0.) 
 	gtp = 1.0;
       else if (gt != eslINFINITY) {
-	if ((status = esl_stats_ChiSquaredTest(mi->nseq, gt, &gtp)) != eslOK) goto ERROR;
+	if ((status = esl_stats_ChiSquaredTest(mi->nseff[i][j], gt, &gtp)) != eslOK) goto ERROR;
       }
       else 
 	gtp = 0.;
@@ -669,10 +669,12 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
 
   ESL_ALLOC(mi->cp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
+  ESL_ALLOC(mi->nseff,        sizeof(int     *) * alen);
   ESL_ALLOC(mi->ps,           sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
     ESL_ALLOC(mi->cp[i],      sizeof(double  *) * alen);
     ESL_ALLOC(mi->pp[i],      sizeof(double  *) * alen);
+    ESL_ALLOC(mi->nseff[i],   sizeof(int      ) * alen);
     ESL_ALLOC(mi->ps[i],      sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
       ESL_ALLOC(mi->cp[i][j], sizeof(double   ) * K2);
@@ -689,6 +691,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
     mi->H[i]  = 0.0;
 
     for (j = 0; j < alen; j++) {
+      mi->nseff[i][j] = 0;
       esl_vec_DSet(mi->cp[i][j], K2, 0.0); 
       esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
     }
@@ -733,11 +736,13 @@ Mutual_Destroy(struct mutual_s *mi)
 	free(mi->cp[i][j]);
 	free(mi->pp[i][j]);
       }
+      free(mi->nseff[i]);
       free(mi->cp[i]);
       free(mi->pp[i]);
       free(mi->ps[i]);
     }
     esl_dmatrix_Destroy(mi->COV);
+    free(mi->nseff);
     free(mi->cp);
     free(mi->pp);
     free(mi->ps);
@@ -1078,18 +1083,23 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
   int          x, y;
 
   esl_vec_DSet(cp, K*K, 1.0); // laplace prior
+  mi->nseff[i][j] = 1;
 
   for (s = 0; s < msa->nseq; s ++) {
     resi = msa->ax[s][i+1];
     resj = msa->ax[s][j+1];
-    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) cp[IDX(resi,resj,K)] += 1.0;
-    else if (esl_abc_XIsCanonical(msa->abc, resi)) for (y = 0; y < K; y ++)           cp[IDX(resi,y,   K)] += 1./(double)K;
-    else if (esl_abc_XIsCanonical(msa->abc, resj)) for (x = 0; x < K; x ++)           cp[IDX(x,   resj,K)] += 1./(double)K;
-    else {
-      for (x = 0; x < K; x ++)
-	for (y = 0; y < K; y ++) 
+
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; cp[IDX(resi,resj,K)] += 1.0; }
+#if 0
+    else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) cp[IDX(resi,y,   K)] += 1./(double)K; }
+    else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) cp[IDX(x,   resj,K)] += 1./(double)K; }
+    else { 
+    mi->nseff[i][j] ++; 
+    for (x = 0; x < K; x ++)
+      for (y = 0; y < K; y ++) 
 	  cp[IDX(x,y,K)] += 1./(double)(K*K);
-    }
+  }
+#endif
   }
   esl_vec_DCopy(cp, K*K, mi->cp[j][i]);  // symetrize counts
 

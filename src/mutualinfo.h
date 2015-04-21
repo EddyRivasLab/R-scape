@@ -60,6 +60,7 @@ struct mutual_s {
   double       ***cp;    // joint  counts for two position [0,alen-1][0.alen-1][0..15]
   double       ***pp;    // joint  probabilities for two position [0,alen-1][0.alen-1][0..15]
   double        **ps;    // single probabilities for  a  position [0,alen-1][0..3]
+  int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
   ESL_DMATRIX    *COV;    // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
