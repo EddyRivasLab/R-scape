@@ -42,16 +42,6 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateH(mi, tol, FALSE, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateNAK (mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateNAK (mi, ct, rocfp, maxFP, ishuffled, FALSE, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR; 
-
-
   status = Mutual_CalculateCHI (mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, APC, tol, verbose, errbuf);
@@ -69,7 +59,6 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   if (status != eslOK) goto ERROR;
   status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, maxFP, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-
   
   status = Mutual_CalculateGT(mi, ct, rocfp, maxFP, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -252,47 +241,6 @@ Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf)
   return status;
 }
 
-int                 
-Mutual_CalculateNAK(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
-{
-  double val;
-  int    i, j;
-  int    x, y;
-  int    K = mi->abc->K;
-  int    status = eslOK;
-  
-  Mutual_ReuseCOV(mi, NAK);
-  
-  // NAK
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) {
-      val  = 0.0;
-      for (x = 0; x < K; x ++)
-	for (y = 0; y < K; y ++) {
-	  val += (double)mi->cp[i][j][IDX(x,y,K)];
-	}	  
-      
-      mi->COV->mx[i][j] = mi->COV->mx[j][i] = val;
-      if (val < mi->minCOV) mi->minCOV = val;
-      if (val > mi->maxCOV) mi->maxCOV = val;
-    }
-  
-  if (1||verbose) {
-    printf("NAK[%f,%f]\n", mi->minCOV, mi->maxCOV);
-    for (i = 0; i < mi->alen-1; i++) 
-      for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("NAK[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
-      } 
-  }
-  
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, maxFP, ishuffled, TRUE, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  return status;
-
- ERROR:
-  return status;
-}
 
 int                 
 Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
@@ -415,8 +363,8 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
 int                 
 Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
-  double G;
-  double Gp;
+  double gt;
+  double gtp;
   double val;
   double obs;
   double exp;
@@ -427,28 +375,28 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
   
   Mutual_ReuseCOV(mi, GT);
   
-  // G
+  // GT
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-      G  = 0.0;
+      gt  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
 	  exp = mi->nseq * mi->ps[i][x] * mi->ps[j][y];
 	  obs = mi->cp[i][j][IDX(x,y,K)];
-	  G += obs * log (obs / exp);
+	  gt += obs * log (obs / exp);
 	}	  
-      G *= 2.0;
+      gt *= 2.0;
 
-      /* G is distributed approximately chi^2. */
-      if (G == 0.) 
-	Gp = 1.0;
-      else if (G != eslINFINITY) {
-	if ((status = esl_stats_ChiSquaredTest(mi->nseq, G, &Gp)) != eslOK) goto ERROR;
+      /* GT is distributed approximately chi^2. */
+      if (gt == 0.) 
+	gtp = 1.0;
+      else if (gt != eslINFINITY) {
+	if ((status = esl_stats_ChiSquaredTest(mi->nseq, gt, &gtp)) != eslOK) goto ERROR;
       }
       else 
-	Gp = 0.;
+	gtp = 0.;
 
-      val = G;
+      val = gt;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = val;
       if (val < mi->minCOV) mi->minCOV = val;
       if (val > mi->maxCOV) mi->maxCOV = val;
@@ -647,21 +595,18 @@ Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   int status;
 
   switch(type) {
-  case NAK:   esl_sprintf(ret_covtype, "NAK");   break;
   case CHI:   esl_sprintf(ret_covtype, "CHI");   break;
   case GT:    esl_sprintf(ret_covtype, "GT");    break;
   case OMES:  esl_sprintf(ret_covtype, "OMES");  break;
   case MI:    esl_sprintf(ret_covtype, "MI");    break;
   case MIr:   esl_sprintf(ret_covtype, "MIr");   break; 
 
-  case NAKp:  esl_sprintf(ret_covtype, "NAKp");  break;
   case CHIp:  esl_sprintf(ret_covtype, "CHIp");  break;
   case GTp:   esl_sprintf(ret_covtype, "GTp");   break;
   case OMESp: esl_sprintf(ret_covtype, "OMESp"); break;
   case MIp:   esl_sprintf(ret_covtype, "MIp");   break;
   case MIrp:  esl_sprintf(ret_covtype, "MIrp");  break; 
 
-  case NAKa:  esl_sprintf(ret_covtype, "NAKa");  break;
   case CHIa:  esl_sprintf(ret_covtype, "CHIa");  break;
   case GTa:   esl_sprintf(ret_covtype, "GTa");   break;
   case OMESa: esl_sprintf(ret_covtype, "OMESa"); break;
@@ -683,19 +628,16 @@ Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   COVTYPE type;
   int     status;
 
-  if      (!esl_strcmp(covtype, "NAK"))    type = NAK;
-  else if (!esl_strcmp(covtype, "CHI"))    type = CHI;
+  if      (!esl_strcmp(covtype, "CHI"))    type = CHI;
   else if (!esl_strcmp(covtype, "GT"))     type = GT;
   else if (!esl_strcmp(covtype, "OMES"))   type = OMES;
   else if (!esl_strcmp(covtype, "MI"))     type = MI;
   else if (!esl_strcmp(covtype, "MIr"))    type = MIr;
-  else if (!esl_strcmp(covtype, "NAKp"))   type = NAKp;
   else if (!esl_strcmp(covtype, "CHIp"))   type = CHIp;
   else if (!esl_strcmp(covtype, "GTp"))    type = GTp;
   else if (!esl_strcmp(covtype, "OMESp"))  type = OMESp;
   else if (!esl_strcmp(covtype, "MIp"))    type = MIp;
   else if (!esl_strcmp(covtype, "MIrp"))   type = MIrp;
-  else if (!esl_strcmp(covtype, "NAKa"))   type = NAKa;
   else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
   else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
   else if (!esl_strcmp(covtype, "OMESa"))  type = OMESa;
