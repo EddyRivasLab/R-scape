@@ -265,7 +265,6 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
 	for (y = 0; y < K; y ++) {
 	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
 	  obs = mi->cp[i][j][IDX(x,y,K)];
-	  //printf("%d %d obs  %f exp %f\n", i, j, obs, exp);
 	  chi += (exp > 0.)? (obs-exp) * (obs-exp) / exp : 0.0 ;
 	}	  
       
