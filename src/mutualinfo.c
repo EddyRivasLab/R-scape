@@ -157,7 +157,7 @@ Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mut
 	  printf("Cp[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
-	      printf(" %f ", mi->cp[i][j][IDX(x,y,K)]);
+	      printf(" %f ",  mi->nseff[i][j]*mi->pp[i][j][IDX(x,y,K)]);
 	    }
 	  printf("\n");
 	  printf("\n");
@@ -263,8 +263,8 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       chi  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
-	  obs = mi->cp[i][j][IDX(x,y,K)];
+	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  chi += (exp > 0.)? (obs-exp) * (obs-exp) / exp : 0.0 ;
 	}	  
       
@@ -321,9 +321,9 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
       omes  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
-	  obs = mi->cp[i][j][IDX(x,y,K)];
-	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / mi->nseff[i][j] : 0.0;
+	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
+	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / (double)mi->nseff[i][j] : 0.0;
 	}	  
       
       /* omes is distributed approximately omes^2. */
@@ -380,8 +380,8 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       gt  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
-	  obs = mi->cp[i][j][IDX(x,y,K)];
+	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  gt += (exp > 0.) ? obs * log (obs / exp) : 0.0;
 	}	  
       gt *= 2.0;
@@ -666,18 +666,15 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
   mi->nseq = nseq;
   mi->abc  = abc;
 
-  ESL_ALLOC(mi->cp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->nseff,        sizeof(int     *) * alen);
   ESL_ALLOC(mi->ps,           sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
-    ESL_ALLOC(mi->cp[i],      sizeof(double  *) * alen);
     ESL_ALLOC(mi->pp[i],      sizeof(double  *) * alen);
     ESL_ALLOC(mi->nseff[i],   sizeof(int      ) * alen);
     ESL_ALLOC(mi->ps[i],      sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
-      ESL_ALLOC(mi->cp[i][j], sizeof(double   ) * K2);
-      ESL_ALLOC(mi->pp[i][j], sizeof(double   ) * K2);
+       ESL_ALLOC(mi->pp[i][j], sizeof(double   ) * K2);
     }
   }
    
@@ -691,7 +688,6 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
 
     for (j = 0; j < alen; j++) {
       mi->nseff[i][j] = 0;
-      esl_vec_DSet(mi->cp[i][j], K2, 0.0); 
       esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
     }
   }
@@ -732,17 +728,14 @@ Mutual_Destroy(struct mutual_s *mi)
   if (mi) {
     for (i = 0; i < mi->alen; i++) {
       for (j = 0; j < mi->alen; j++) {
-	free(mi->cp[i][j]);
 	free(mi->pp[i][j]);
       }
       free(mi->nseff[i]);
-      free(mi->cp[i]);
       free(mi->pp[i]);
       free(mi->ps[i]);
     }
     esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
-    free(mi->cp);
     free(mi->pp);
     free(mi->ps);
     free(mi->H);
@@ -1074,38 +1067,37 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
 static int    
 mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
-  double *cp = mi->cp[i][j];
   double *pp = mi->pp[i][j];
   int          K = mi->abc->K;
+  int          K2 = K*K;
   int          s;
   int          resi, resj;
   int          x, y;
 
-  esl_vec_DSet(cp, K*K, 1.0); // laplace prior
+  esl_vec_DSet(pp, K2, 1.0/(double)K2); // laplace prior
   mi->nseff[i][j] = 1;
 
   for (s = 0; s < msa->nseq; s ++) {
     resi = msa->ax[s][i+1];
     resj = msa->ax[s][j+1];
 
-    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; cp[IDX(resi,resj,K)] += 1.0; }
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
 #if 0
-    else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) cp[IDX(resi,y,   K)] += 1./(double)K; }
-    else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) cp[IDX(x,   resj,K)] += 1./(double)K; }
+    else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
+    else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += 1./(double)K; }
     else { 
-    mi->nseff[i][j] ++; 
-    for (x = 0; x < K; x ++)
-      for (y = 0; y < K; y ++) 
-	  cp[IDX(x,y,K)] += 1./(double)(K*K);
-  }
+      mi->nseff[i][j] ++; 
+      for (x = 0; x < K; x ++)
+	for (y = 0; y < K; y ++) 
+	  pp[IDX(x,y,K)] += 1./(double)(K*K);
+    }
 #endif
   }
-  esl_vec_DCopy(cp, K*K, mi->cp[j][i]);  // symetrize counts
-
+  esl_vec_DCopy(pp, K2, mi->pp[j][i]);  // symetrize counts
+  
   /* the probabilities */
-  esl_vec_DCopy(cp, K*K, pp);            // get the counts
-  esl_vec_DNorm(pp, K*K);                // normalize
-  esl_vec_DCopy(pp, K*K, mi->pp[j][i]);  // symetrize
+  esl_vec_DNorm(pp, K2);                // normalize
+  esl_vec_DCopy(pp, K2, mi->pp[j][i]);  // symetrize
 
   return eslOK;
 }
