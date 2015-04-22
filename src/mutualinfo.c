@@ -25,10 +25,6 @@
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
-static int mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-static int mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
-
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, FILE *rocfp, int maxFP, int ishuffled,
@@ -118,19 +114,19 @@ Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mut
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   }
   
-  /* ps are the marginals */
+  /* pm are the marginals */
   for (i = 0; i < mi->alen; i ++) {
-    esl_vec_DSet(mi->ps[i], K, 0.0);
+    esl_vec_DSet(mi->pm[i], K, 0.0);
 
     for (j = 0; j < mi->alen; j ++)     
       for (x = 0; x < K; x ++) 
 	for (y = 0; y < K; y ++) 
-	  mi->ps[i][x] += mi->pp[i][j][IDX(x,y,K)];
-    esl_vec_DNorm(mi->ps[i], K);
-    status = esl_vec_DValidate(mi->ps[i], K, tol, errbuf);
+	  mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
+    esl_vec_DNorm(mi->pm[i], K);
+    status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
     if (status != eslOK) {
-      printf("ps[%d]\n", i);
-      esl_vec_DDump(stdout, mi->ps[i], K, "ACGU");
+      printf("pm[%d]\n", i);
+      esl_vec_DDump(stdout, mi->pm[i], K, "ACGU");
       goto ERROR;
     }
   }
@@ -148,10 +144,10 @@ Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mut
 	      printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
 	    }
 	  printf("\n");
-	  printf("ps*ps[%d][%d] = ", i, j);
+	  printf("pm*pm[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
-	      printf(" %f ", mi->ps[i][x]*mi->ps[j][y]);
+	      printf(" %f ", mi->pm[i][x]*mi->pm[j][y]);
 	    }
 	  printf("\n");
 	  printf("Cp[%d][%d] = ", i, j);
@@ -164,12 +160,12 @@ Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mut
 	  printf("Ex[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
-	      printf(" %f ", mi->nseff[i][j]*mi->ps[i][x]*mi->ps[j][y]);
+	      printf(" %f ", mi->nseff[i][j]*mi->pm[i][x]*mi->pm[j][y]);
 	    }
 	  printf("\n");
 	}
       }
-      if (i==5) esl_vec_DDump(stdout, mi->ps[i], K, NULL);
+      if (i==5) esl_vec_DDump(stdout, mi->pm[i], K, NULL);
     }
   }
   
@@ -199,13 +195,13 @@ Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
       }
     }
   
-  /* ps validation */
+  /* pm validation */
   for (i = 0; i < mi->alen; i ++) {
-    status = esl_vec_DValidate(mi->ps[i], K, tol, errbuf);
+    status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
     if (status != eslOK) {
-      printf("ps[%d]\n", i);
-      esl_vec_DDump(stdout, mi->ps[i], K, NULL);
-      ESL_XFAIL(eslFAIL, errbuf, "ps validation failed");
+      printf("pm[%d]\n", i);
+      esl_vec_DDump(stdout, mi->pm[i], K, NULL);
+      ESL_XFAIL(eslFAIL, errbuf, "pm validation failed");
     }
   }
   
@@ -228,7 +224,7 @@ Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf)
   for (i = 0; i < mi->alen; i++) {
     H = 0.0;
     for (x = 0; x < K; x ++)
-      H -= log(mi->ps[i][x]) * mi->ps[i][x];
+      H -= log(mi->pm[i][x]) * mi->pm[i][x];
     mi->H[i] = H;
   }
   
@@ -263,7 +259,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       chi  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
 	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  chi += (exp > 0.)? (obs-exp) * (obs-exp) / exp : 0.0 ;
 	}	  
@@ -321,7 +317,7 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int i
       omes  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
 	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / (double)mi->nseff[i][j] : 0.0;
 	}	  
@@ -380,7 +376,7 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       gt  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->ps[i][x] * mi->ps[j][y];
+	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
 	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  gt += (exp > 0.) ? obs * log (obs / exp) : 0.0;
 	}	  
@@ -435,7 +431,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
+	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i]  = mutinf;
@@ -482,7 +478,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int is
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
 	  HH -= mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]);
-	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->ps[i][x]) - log(mi->ps[j][y]) );
+	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
@@ -668,11 +664,11 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
 
   ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
   ESL_ALLOC(mi->nseff,        sizeof(int     *) * alen);
-  ESL_ALLOC(mi->ps,           sizeof(double  *) * alen);
+  ESL_ALLOC(mi->pm,           sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
     ESL_ALLOC(mi->pp[i],      sizeof(double  *) * alen);
     ESL_ALLOC(mi->nseff[i],   sizeof(int      ) * alen);
-    ESL_ALLOC(mi->ps[i],      sizeof(double   ) * K);
+    ESL_ALLOC(mi->pm[i],      sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
        ESL_ALLOC(mi->pp[i][j], sizeof(double   ) * K2);
     }
@@ -683,7 +679,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
  
   /* initialize for adding counts */
   for (i = 0; i < alen; i++) {
-    esl_vec_DSet(mi->ps[i], K, 0.0); 
+    esl_vec_DSet(mi->pm[i], K, 0.0); 
     mi->H[i]  = 0.0;
 
     for (j = 0; j < alen; j++) {
@@ -732,12 +728,12 @@ Mutual_Destroy(struct mutual_s *mi)
       }
       free(mi->nseff[i]);
       free(mi->pp[i]);
-      free(mi->ps[i]);
+      free(mi->pm[i]);
     }
     esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
     free(mi->pp);
-    free(mi->ps);
+    free(mi->pm);
     free(mi->H);
     free(mi);
   }
@@ -763,23 +759,6 @@ Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char 
   return status;
 }
 
-int 
-Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
-{
-  int64_t alen = msa->alen;
-  int     i;
-  int     status;
-
-  for (i = 0; i < alen; i ++) {
-    status = mutual_naive_psi(i, msa, mi, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
-  }
-
-  return eslOK;
-
- ERROR:
-  return status;
-}
 
 int 
 Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
@@ -818,50 +797,6 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
  ERROR:
   for (v = 0; v < nnodes; v++) {
-    if (CL[v]) esl_dmatrix_Destroy(CL[v]);
-    if (CR[v]) esl_dmatrix_Destroy(CR[v]);
-  }
-  if (CL) free(CL);
-  if (CR) free(CR);
-  return status;
-}
-
-int 
-Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, double tol, int verbose, char *errbuf)
-{
-  ESL_DMATRIX **CL = NULL;
-  ESL_DMATRIX **CR = NULL;
-  int64_t       alen = msa->alen;
-  int           nnodes;
-  int           v;
-  int           i;
-  int           status;
-
-  nnodes = (T->N > 1)? T->N - 1 : 1;
-  ESL_ALLOC(CL, sizeof(ESL_DMATRIX *) * nnodes);
-  ESL_ALLOC(CR, sizeof(ESL_DMATRIX *) * nnodes);
-  for (v = 0; v < nnodes; v++) {
-    CL[v] = ratematrix_ConditionalsFromRate(T->ld[v], ribosum->prnaQ, tol, errbuf, verbose);
-    if (CL[v] == NULL) goto ERROR;
-    CR[v] = ratematrix_ConditionalsFromRate(T->rd[v], ribosum->prnaQ, tol, errbuf, verbose);
-    if (CR[v] == NULL) goto ERROR;
-  }
- 
-  for (i = 0; i < alen; i ++) {
-    status = mutual_postorder_psi(i, msa, T, ribosum, mi, CL, CR, tol, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
-  }
-
-  for (v = 0; v < nnodes; v++) {
-    esl_dmatrix_Destroy(CL[v]);
-    esl_dmatrix_Destroy(CR[v]);
-  }
-  free(CL);
-  free(CR);
-  return eslOK;
-
- ERROR:
- for (v = 0; v < nnodes; v++) {
     if (CL[v]) esl_dmatrix_Destroy(CL[v]);
     if (CR[v]) esl_dmatrix_Destroy(CR[v]);
   }
@@ -1054,10 +989,6 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
   
   if (covtype) free(covtype); 
   return eslOK;
-
- ERROR:
-  if (covtype) free(covtype);
-  return status;
 }
 
 
@@ -1082,18 +1013,14 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
     resj = msa->ax[s][j+1];
 
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
-#if 1
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += 1./(double)K; }
-#endif
-#if 1
     else { 
       mi->nseff[i][j] ++; 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) 
 	  pp[IDX(x,y,K)] += 1./(double)(K*K);
     }
-#endif
   }
   
   /* the probabilities */
@@ -1107,28 +1034,6 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
 }
 
 
-
-static int    
-mutual_naive_psi(int i, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
-{
-  double *ps = mi->ps[i];
-  int     K = mi->abc->K;
-  int     s;
-  int     resi;
-  int     x;
-
-  esl_vec_DSet(ps, K, 1.0); // laplace prior
-
-  for (s = 0; s < msa->nseq; s ++) {
-    resi = msa->ax[s][i+1];
-    if (esl_abc_XIsCanonical(msa->abc, resi)) ps[resi] += 1.0;
-    else {             
-      for (x = 0; x < K; x ++) ps[x] += 1./(double)K;
-    }
-  }
-
-  return eslOK;
-}
 
 int 
 mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
@@ -1297,107 +1202,4 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   if (lk) free(lk);
   return status;
 }
-
-static int    
-mutual_postorder_psi(int i, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
-		     double tol, int verbose, char *errbuf)
-{
-  ESL_STACK     *vs = NULL;   /* node index stack */
-  double       **lk = NULL;
-  double        *lkl, *lkr;
-  ESL_DMATRIX   *cl, *cr;
-  double         sc;
-  int            dim;
-  int            K = mi->abc->K;
-  int            nnodes;
-  int            v;
-  int            idx;
-  int            which;
-  int            x;
-  int            yl, yr;
-  int            resi;
-  int            status;
-  
-  p7_FLogsumInit();    
-
-  /* allocate the single and pair probs for theinternal nodes */
-  nnodes = (T->N > 1)? T->N-1 : T->N;
-  dim    = nnodes + T->N;
-  ESL_ALLOC(lk, sizeof(double *) * dim);
-  for (v = 0; v < dim; v ++) lk[v] = NULL;
- 
-  /* PostOrder trasversal */
-  if ((vs = esl_stack_ICreate())   == NULL) { status = eslFAIL; goto ERROR; }
-  if (esl_stack_IPush(vs, nnodes-1) != eslOK) { status = eslFAIL; goto ERROR; }
-  while (esl_stack_IPop(vs, &v) == eslOK)
-    {
-      which = (T->left[v] <= 0)? -T->left[v] : T->left[v];
-      idx   = (T->left[v] <= 0)? nnodes + which : which;
-      if (T->left[v] <= 0) {
-	resi = msa->ax[which][i+1];
-	ESL_ALLOC(lk[idx], sizeof(double)*K);
-	esl_vec_DSet(lk[idx], K, -eslINFINITY);
-	if (esl_abc_XIsCanonical(msa->abc, resi)) {
-	  lk[idx][resi] = 0.0;
-	}
-	else {
-	  esl_vec_DSet(lk[idx], K, -log((double)K));
-	}
-
-      }
-      lkl = lk[idx];
-      
-      which = (T->right[v] <= 0)? -T->right[v] : T->right[v];
-      idx   = (T->right[v] <= 0)? nnodes + which : which;
-      if (T->right[v] <= 0) {
-	resi = msa->ax[which][i+1];
-	ESL_ALLOC(lk[idx], sizeof(double)*K);
-	esl_vec_DSet(lk[idx], K, -eslINFINITY);
-	if (esl_abc_XIsCanonical(msa->abc, resi)) {
-	  lk[idx][resi] = 0.0;
-	}
-	else {
-	  esl_vec_DSet(lk[idx], K, -log((double)K));
-	}
-      }
-      lkr = lk[idx];
-      
-      if (lkl != NULL && lkr != NULL) { /* ready to go: calculate lk at the parent node */
-	cl = CL[v];
-	cr = CR[v];
-
-	ESL_ALLOC(lk[v], sizeof(double)*K);
-	for (x = 0; x < K; x ++) {
-	  sc = -eslINFINITY;
-	  for (yl = 0; yl < K; yl ++)
-	    for (yr = 0; yr < K; yr ++)
-	      sc = p7_FLogsum(sc, lkl[yl] + log(cl->mx[x][yl]) + lkr[yr] + log(cr->mx[x][yr]));
-	}
-	
-	/* push node into stack unless already at the root */
-	if (v > 0 && esl_stack_IPush(vs, T->parent[v]) != eslOK) { status = eslFAIL; goto ERROR; }; 
-      }
-      else if (lkl == NULL) { /* not ready: push left child  into stack */	
-	if (esl_stack_IPush(vs, T->left[v])  != eslOK) { status = eslFAIL; goto ERROR; };
-      }
-      else if (lkr == NULL) { /* not ready: push right child into stack */	
-  	if (esl_stack_IPush(vs, T->right[v]) != eslOK) { status = eslFAIL; goto ERROR; }
-      }
-    }
-  if (v != 0) ESL_XFAIL(eslFAIL, errbuf, "lk did not transverse tree to the root");
-  for (x = 0; x < K; x ++) mi->ps[i][x] = exp(lk[v][x]) * ribosum->xrnaM[x];
-  esl_vec_DNorm(mi->ps[i], K);
-
-  for (v = 0; v < dim; v ++) free(lk[v]);
-  free(lk);
-  esl_stack_Destroy(vs);
-  return eslOK;
-
- ERROR:
-  if (vs) esl_stack_Destroy(vs);
-  for (v = 0; v < dim; v ++) if (lk[v]) free(lk[v]);
-  if (lk) free(lk);
-  return status;
-}
-
 

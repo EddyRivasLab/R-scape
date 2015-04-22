@@ -57,8 +57,8 @@ typedef enum{
 struct mutual_s {
   int64_t         alen;
   int64_t         nseq;
-  double       ***pp;    // joint  probabilities for two position [0,alen-1][0.alen-1][0..15]
-  double        **ps;    // single probabilities for  a  position [0,alen-1][0..3]
+  double       ***pp;    // joint probability of two position [0,alen-1][0.alen-1][0..15]
+  double        **pm;    // marginal probabilities [0,alen-1][0..3]
   int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
@@ -90,10 +90,7 @@ extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *
 extern int              Mutual_ReuseCOV(struct mutual_s *mi, COVTYPE mitype);
 extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_NaivePS(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					   double tol, int verbose, char *errbuf);
-extern int              Mutual_PostOrderPS(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ishuffled, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *errbuf);
