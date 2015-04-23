@@ -884,7 +884,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
   double       oneFPsen;
   double       oneFPppv;
   double       oneFPthresh;
-  int          fp, tf, t, f;
+  int          fp, tf, t, f, neg;
   int          oneFP_tf, oneFP_t, oneFP_f, oneFP_fp;
   int          best_tf, best_t, best_f, best_fp;
   int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
@@ -917,7 +917,8 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
     
-    fprintf(rocfp, "%.5f %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, sen, ppv, F);
+    neg = mi->alen * (mi->alen-1) / 2 - t;
+    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, neg, sen, ppv, F);
     
     if (fp < 1) {
       oneFPF      = F;
