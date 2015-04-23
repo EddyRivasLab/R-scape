@@ -114,6 +114,40 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, char *errbuf, int verbose)
+{
+  int     *useme = NULL;
+  double   gapfreq;
+  int      ngaps;
+  int      apos;
+  int      i;
+  int      status;
+  
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+ 
+  for (apos = 0; apos < (int)msa->alen; apos++) {
+    /* count the gaps in apos */
+    ngaps = 0;
+    for (i = 0; i < msa->nseq; i++) 
+      if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngaps ++;
+    
+    /* apply gapthresh */   
+    gapfreq = (double)ngaps / (double) msa->nseq;
+    useme[apos] = (gapthresh < gapfreq)? FALSE : TRUE; 
+  }
+  
+  if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
+  if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK) goto ERROR;
+  
+  free(useme);
+  return eslOK;
+  
+ ERROR:
+  if (useme != NULL) free(useme); 
+  return status;
+}
+
+ int
 msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
   ESL_MSA *omsa;
@@ -302,7 +336,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     esl_sprintf(&(new->acc), "random%d", nseq);
 
   /* write the submsa to file */
-  if (omsafile) esl_sprintf(&newfile, "%s.sto", omsafile);
+  if (msafile) esl_sprintf(&newfile, "%s.sto", omsafile);
   
   if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
   if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);

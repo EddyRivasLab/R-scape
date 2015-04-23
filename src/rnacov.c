@@ -43,10 +43,14 @@ struct cfg_s {
   ESL_ALPHABET    *abc;                /* the alphabet */
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
+  double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
 
   int              nmsa;
   char            *msafile;
   char            *filename;
+
+  FILE            *outmsafp;
+ 
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
   char            *msaheader;          /* header for all msa-specific output files */
@@ -85,20 +89,22 @@ struct cfg_s {
   { "--maxFP",        eslARG_INT,       "10",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
-  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
-  { "--phylo",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo MI calculations",                                                                     0 },
+  { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
+  { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo MI calculations",                                                                     0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
-  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },
+  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },  
+  { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "only keep columns with <= <x> fraction of gaps in them",                                    0 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      0 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      0 },
   /* Control of scoring system - ribosum */
-  { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                               0 },
+  { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
+  { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
   /* msa format */
   { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             0 },
@@ -155,6 +161,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.outheader = NULL;
   msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
   
+  cfg.msaheader = NULL;
+
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
@@ -174,6 +182,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   if ( esl_opt_IsOn(go, "-o") ) {
     if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
   } else cfg.outfp = stdout;
+
+   /*  outmsa file */
+  cfg.outmsafp = NULL;
+  if ( esl_opt_IsOn(go, "--outmsa") ) {
+    if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
+  } 
   
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s_random%d", cfg.outheader, cfg.submsa); }
@@ -187,8 +201,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* other options */
   cfg.domsa      = TRUE;
   cfg.doshuffle  = TRUE;
-  cfg.fragfrac   = esl_opt_IsOn(go, "-F")? esl_opt_GetReal(go, "-F") : -1.0;
-  cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
+  cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal(go, "-F")          : -1.0;
+  cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal(go, "-I")          : -1.0;
+  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal(go, "--gapthresh") : -1.0;
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
@@ -199,6 +214,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
+
   cfg.T  = NULL;
   cfg.ct = NULL;
 
@@ -259,26 +275,29 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
-   /* select submsa */
-    if (cfg.submsa) {
-       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
-    }
-    esl_msa_Hash(msa);
-    esl_msa_ConvertDegen2X(msa);
+   /* select submsa and then apply msa filters 
+    */
+    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)               != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)        != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
-    if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved);
-    
+     esl_msa_Hash(msa);
+    esl_msa_ConvertDegen2X(msa);
     if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
+
     /* given msa aveid and avematch */
     msamanip_XStats(msa, &cfg.mstat);
 
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
-
+ 
+    /* output the actual file used if requested */
+    if ( esl_opt_IsOn(go, "--outmsa") ) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);;
+ 
     /* print some info */
     if (cfg.voutput) {
-      fprintf(cfg.outfp, "Given alignment\n");
+      fprintf(cfg.outfp, "Used alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
@@ -305,7 +324,7 @@ main(int argc, char **argv)
     if (shmsa) esl_msa_Destroy(shmsa); shmsa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
-    free(cfg.msaheader); cfg.msaheader = NULL;
+    if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
   }
 
   /* cleanup */
@@ -366,7 +385,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   
   /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
-  if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+  if (status != eslOK)  { goto ERROR; }
 
   Mutual_Destroy(mi); mi = NULL;
   return eslOK;

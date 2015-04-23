@@ -434,7 +434,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, int maxFP, int ish
 	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
 	}	  
       
-      mi->COV->mx[i][j] = mi->COV->mx[j][i]  = mutinf;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
       if (mutinf < mi->minCOV) mi->minCOV = mutinf;
       if (mutinf > mi->maxCOV) mi->maxCOV = mutinf;
     }
@@ -891,14 +891,13 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
   int          nt = 0;
   int          nf = 0;
   int          i, j;
-  int          status;
 
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
 
   fprintf(rocfp, "\n# %s ", covtype);  
   if (ishuffled) fprintf(rocfp, " shuffled ");
 
-  fprintf(rocfp, "thresh fp tp true found sen ppv F\n"); 
+  fprintf(rocfp, "thresh fp tp true found negatives sen ppv F\n"); 
   
   inc = (max - min) / delta;
   for (thresh = max; thresh > min-inc; thresh -= inc) {
@@ -1005,15 +1004,16 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
   int          s;
   int          resi, resj;
   int          x, y;
-
+  
   esl_vec_DSet(pp, K2, 1.0/(double)K2); // laplace prior
   mi->nseff[i][j] = 1;
-
+  
   for (s = 0; s < msa->nseq; s ++) {
     resi = msa->ax[s][i+1];
     resj = msa->ax[s][j+1];
-
+    
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
+#if 0
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += 1./(double)K; }
     else { 
@@ -1022,8 +1022,9 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
 	for (y = 0; y < K; y ++) 
 	  pp[IDX(x,y,K)] += 1./(double)(K*K);
     }
+#endif
   }
-  
+
   /* the probabilities */
   esl_vec_DNorm(pp, K2);                // normalize
 
