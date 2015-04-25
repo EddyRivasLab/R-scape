@@ -78,6 +78,7 @@ struct cfg_s {
   char            *rocfile;
   FILE            *rocfp; 
   int              maxFP;
+  double           ratioFP;
 
   float            tol;
   int              verbose;
@@ -86,7 +87,8 @@ struct cfg_s {
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
-  { "--maxFP",        eslARG_INT,       "10",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
+  { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
+  { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,     "x=>0",   NULL,    NULL,  NULL,              "maximum ration of FP allowed",                                                              0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
@@ -201,14 +203,15 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* other options */
   cfg.domsa      = TRUE;
   cfg.doshuffle  = TRUE;
-  cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal(go, "-F")          : -1.0;
-  cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal(go, "-I")          : -1.0;
-  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal(go, "--gapthresh") : -1.0;
+  cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
+  cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
+  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
+  cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
+  cfg.ratioFP    = esl_opt_IsOn(go, "--ratioFP")?   esl_opt_GetReal   (go, "--ratioFP")   : -1.0;
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
-  cfg.maxFP      = esl_opt_GetInteger(go, "--maxFP");
-  
+
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
@@ -387,7 +390,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->maxFP, cfg->ratioFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   Mutual_Destroy(mi); mi = NULL;
