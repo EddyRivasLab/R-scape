@@ -925,63 +925,66 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
     fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, neg, sen, ppv, F);
-  }
-
-  if (ratioFP > 0.) {
-   if (ratio <= ratioFPthresh) {
-      ratioFPF      = F;
-      ratioFPsen    = sen;
-      ratioFPppv    = ppv;
-      ratioFP_tf    = tf;
-      ratioFP_f     = f;
-      ratioFP_t     = t;
-      ratioFP_fp    = fp;
-      ratioFPthresh = thresh;
+    
+    if (ratioFP >= 0.) {
+      if (ratio <= ratioFP) {
+	ratioFPF      = F;
+	ratioFPsen    = sen;
+	ratioFPppv    = ppv;
+	ratioFP_tf    = tf;
+	ratioFP_f     = f;
+	ratioFP_t     = t;
+	ratioFP_fp    = fp;
+	ratioFPthresh = thresh;
+      }
     }
-      printf("%s ratioFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, ratioFP, ratioFPthresh, min, max,
-	     ratioFP_fp, ratioFP_tf, ratioFP_t, ratioFP_f, ratioFPsen, ratioFPppv, ratioFPF);
-      for (i = 0; i < mi->alen-1; i++) 
-	for (j = i+1; j < mi->alen; j++) {
-	  if (mtx->mx[i][j] > ratioFPthresh) {
-	    if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, covtype, i, j, mtx->mx[i][j]); }
-	    else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, covtype, i, j, mtx->mx[i][j]); } 
-	  }
+    if (maxFP >= 0) {
+      if (fp < 1) {
+	oneFPF      = F;
+	oneFPsen    = sen;
+	oneFPppv    = ppv;
+	oneFP_tf    = tf;
+	oneFP_f     = f;
+	oneFP_t     = t;
+	oneFP_fp    = fp;
+	oneFPthresh = thresh;
+      }
+      if (fp <= maxFP) {
+	maxFPF      = F;
+	maxFPsen    = sen;
+	maxFPppv    = ppv;
+	maxFP_tf    = tf;
+	maxFP_f     = f;
+	maxFP_t     = t;
+	maxFP_fp    = fp;
+	maxFPthresh = thresh;
+      }
+      if (F > bestF) { 
+	bestF     = F; 
+	bestsen   = sen;
+	bestppv   = ppv;
+	best_tf   = tf;
+	best_t    = t;
+	best_f    = f;
+	best_fp   = fp;
+	besthresh = thresh; 
+      }  
+    }
+  }
+      
+  if (ratioFP >= 0.0) {
+    printf("%s ratioFP=%f %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, ratioFP, ratioFPthresh, min, max,
+	   ratioFP_fp, ratioFP_tf, ratioFP_t, ratioFP_f, ratioFPsen, ratioFPppv, ratioFPF);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (mtx->mx[i][j] > ratioFPthresh) {
+	  if (ct[i+1] == j+1) { nt ++; printf("*[%d] %s[%d][%d] = %f\n", nt, covtype, i, j, mtx->mx[i][j]); }
+	  else                { nf ++; printf("[%d]  %s[%d][%d] = %f\n", nf, covtype, i, j, mtx->mx[i][j]); } 
 	}
-
-  }
-
+      }
+  }    
+  
   if (maxFP >= 0) {
-    if (fp < 1) {
-      oneFPF      = F;
-      oneFPsen    = sen;
-      oneFPppv    = ppv;
-      oneFP_tf    = tf;
-      oneFP_f     = f;
-      oneFP_t     = t;
-      oneFP_fp    = fp;
-      oneFPthresh = thresh;
-    }
-    if (fp <= maxFP) {
-      maxFPF      = F;
-      maxFPsen    = sen;
-      maxFPppv    = ppv;
-      maxFP_tf    = tf;
-      maxFP_f     = f;
-      maxFP_t     = t;
-      maxFP_fp    = fp;
-      maxFPthresh = thresh;
-    }
-    if (F > bestF) { 
-      bestF     = F; 
-      bestsen   = sen;
-      bestppv   = ppv;
-      best_tf   = tf;
-      best_t    = t;
-      best_f    = f;
-      best_fp   = fp;
-      besthresh = thresh; 
-    }
-
     if (best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
 	printf("%s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, min, max,
@@ -1018,7 +1021,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, int m
 	}
     }
   }
-  
+
   if (covtype) free(covtype); 
   return eslOK;
 }

@@ -73,6 +73,7 @@ struct cfg_s {
   MSA_STAT         mstat;               /* statistics of the input alignment */
   float           *msafrq;
   int             *ct;
+  int              nbpairs;
 
   int              voutput;
   char            *rocfile;
@@ -88,7 +89,7 @@ struct cfg_s {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
   { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
-  { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,     "x=>0",   NULL,    NULL,  NULL,              "maximum ration of FP allowed",                                                              0 },
+  { "--ratioFP",      eslARG_REAL,      FALSE,   NULL, "0<=x<1.0",   NULL,    NULL,  NULL,              "maximum ration of FP allowed",                                                              0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
@@ -220,6 +221,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   cfg.T  = NULL;
   cfg.ct = NULL;
+  cfg.nbpairs = 0;
 
   /* the ribosum matrices */
   cfg.ribofile = NULL;
@@ -307,9 +309,8 @@ main(int argc, char **argv)
     }
     
     /* the ct vector */
-    ESL_ALLOC(cfg.ct, sizeof(int) * (msa->alen+1));
-    if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, cfg.ct);
-    else esl_fatal("no ss for msa\n");
+    status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
+    if (status != eslOK) esl_fatal("%s Failed to calculate ct vector");
     
     /* main function */
     if (cfg.domsa) {
@@ -342,9 +343,6 @@ main(int argc, char **argv)
   free(cfg.outheader);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
-  return 0;
-
- ERROR:
   return 0;
 }
 
@@ -387,6 +385,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* write MSA info to the rocfile */
+  fprintf(stdout,     "# MSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", cfg->outheader, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);  
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
  
   /* main function */

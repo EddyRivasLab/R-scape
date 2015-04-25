@@ -33,6 +33,31 @@ static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, in
 static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
 
+
+int 
+msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
+{
+  int *ct = NULL;
+  int  nbpairs = 0;
+  int  i, j;
+  int  status;
+  
+  ESL_ALLOC(ct, sizeof(int) * (msa->alen+1));
+  if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct);
+  else ESL_XFAIL(eslFAIL, errbuf, "no ss for msa");
+  
+  for (i = 0; i < msa->alen-1; i ++)
+    for (j = i+1; j < msa->alen; j ++)
+    	if (ct[i+1] == j+1) nbpairs ++;
+
+  *ret_ct      = ct;  
+  *ret_nbpairs = nbpairs;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)
 {
