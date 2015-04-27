@@ -22,6 +22,7 @@
 #include "esl_sq.h"
 #include "esl_sqio.h"
 #include "esl_vectorops.h"
+#include "esl_wuss.h"
 
 
 #include "e2_tree.h"
