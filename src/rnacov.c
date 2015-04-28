@@ -304,16 +304,16 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)               != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)        != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
-     esl_msa_Hash(msa);
+    esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
     if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
-
+    
     /* given msa aveid and avematch */
     msamanip_XStats(msa, &cfg.mstat);
-
+    
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
- 
+    
     /* output the actual file used if requested */
     if ( esl_opt_IsOn(go, "--outmsa") ) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);;
  
