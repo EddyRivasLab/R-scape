@@ -70,9 +70,11 @@ struct cfg_s {
   
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
-  MSA_STAT         mstat;               /* statistics of the input alignment */
+  MSA_STAT         omstat;              /* statistics of the original alignment */
+  MSA_STAT         mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
   int             *ct;
+  int              onbpairs;
   int              nbpairs;
 
   int              voutput;
@@ -297,6 +299,10 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
+    /* stats of the orignial alignment */
+    msamanip_XStats(msa, &cfg.omstat);
+    msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
+
    /* select submsa and then apply msa filters 
     */
     if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
@@ -405,8 +411,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* write MSA info to the rocfile */
-  fprintf(stdout,     "# MSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
-	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);  
+  fprintf(stdout,     "# MSA %s nseq %d alen %" PRId64 " avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   if (!ishuffled) 
     fprintf(cfg->sumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP); 
   else

@@ -51,8 +51,8 @@ msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf
     for (j = i+1; j < msa->alen; j ++)
     	if (ct[i+1] == j+1) nbpairs ++;
 
-  *ret_ct      = ct;  
-  *ret_nbpairs = nbpairs;
+  if (ret_ct)  *ret_ct      = ct;  
+  if (nbpairs) *ret_nbpairs = nbpairs;
   return eslOK;
 
  ERROR:
@@ -703,6 +703,7 @@ msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat)
   MSA_STAT mstat;
   
   if (msa == NULL) {
+    (*ret_mstat).alen    = 0.0;
     (*ret_mstat).avgid    = 0.0;
     (*ret_mstat).avgmatch = 0.0;
     (*ret_mstat).maxilen  = 0;
@@ -718,6 +719,7 @@ msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat)
     return eslOK;
    }
 
+  mstat.alen = msa->alen;
   esl_dst_XAverageId   (msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgid);    /* 10000 is max_comparisons, before sampling kicks in */
   esl_dst_XAverageMatch(msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
   mstat.avgid    *= 100;

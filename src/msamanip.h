@@ -16,22 +16,23 @@
 #include "e2_tree.h"
  
 typedef struct msa_stat_s {
-  double avgid;
-  double avgmatch;
+  int64_t alen;
+  double  avgid;
+  double  avgmatch;
 
-  int    totinum;
-  double avginum;
-  double stdinum;
+  int     totinum;
+  double  avginum;
+  double  stdinum;
  
-  int    maxilen;
-  int    totilen; 
-  double avgilen; 
-  double stdilen;
+  int     maxilen;
+  int     totilen; 
+  double  avgilen; 
+  double  stdilen;
 
-  double avgsqlen; 
-  double stdsqlen;
+  double  avgsqlen; 
+  double  stdsqlen;
 
-  int    anclen;
+  int     anclen;
 
 } MSA_STAT;
 
