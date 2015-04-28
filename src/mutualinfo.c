@@ -986,7 +986,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE 
 	}
       }
 
-    fprintf(sumfp, "%s\t%.2f\t", covtype, 100.*(double)ratioFP_tf/(double)ratioFP_t);
+    fprintf(sumfp, "%s\t%.2f\t", covtype, (ratioFP_t > 0)? 100.*(double)ratioFP_tf/(double)ratioFP_t : 0.0);
   }    
   
   if (maxFP >= 0) {

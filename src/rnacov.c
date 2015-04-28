@@ -233,7 +233,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.doshuffle) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.ratioFP%.1f.sh.sum", cfg.outheader, cfg.ratioFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.ratioFP%.1f.shsum", cfg.outheader, cfg.ratioFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
     printf("sh-sumfile %s\n", cfg.shsumfile);
   }
@@ -414,7 +414,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   if (!ishuffled) 
     fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
