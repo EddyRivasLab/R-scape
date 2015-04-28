@@ -225,7 +225,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.ratioFP%d.sum", cfg.outheader, cfg.ratioFP); 
+  esl_sprintf(&cfg.sumfile, "%s.ratioFP%.1f.sum", cfg.outheader, cfg.ratioFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   printf("sumfile %s\n", cfg.sumfile);
   
@@ -233,7 +233,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.doshuffle) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.ratioFF%d.sh.sum", cfg.outheader, cfg.ratioFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.ratioFP%.1f.sh.sum", cfg.outheader, cfg.ratioFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
     printf("sh-sumfile %s\n", cfg.shsumfile);
   }
@@ -365,7 +365,7 @@ main(int argc, char **argv)
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
-  if (cfg.shsumfp) fclose(cfg.sumfp);
+  if (cfg.shsumfp) fclose(cfg.shsumfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
@@ -409,12 +409,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 
   /* create the MI structure */
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
+
+  /* write MSA info to the sumfile */
+  if (!ishuffled) 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
+  else
+    fprintf(cfg->shsumfp, "%\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
-  if (!ishuffled) 
-    fprintf(cfg->sumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP); 
-  else
-    fprintf(cfg->shsumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP);  
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
  
   /* main function */
