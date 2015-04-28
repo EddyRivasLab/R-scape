@@ -251,7 +251,6 @@ msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int 
   int        i;
   int        status;
 
-  eslx_msafile_Write(stdout, *msa, eslMSAFILE_STOCKHOLM); 
   omsa = *msa;
 
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
@@ -276,16 +275,16 @@ msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
   if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
 
- /* replace msa */
+  /* replace msa */
   esl_msa_Destroy(omsa);
   *msa = new;
-
+  
   free(useme);
   free(nin);
   free(assignment);
-
- return eslOK;
-
+  
+  return eslOK;
+  
  ERROR:
   if (useme      != NULL) free(useme);
   if (assignment != NULL) free(assignment);
@@ -671,6 +670,8 @@ msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT *ret_mstat)
   MSA_STAT mstat;
 
   if (msa == NULL) {
+    (*ret_mstat).nseq     = 0;
+    (*ret_mstat).alen     = 0;
     (*ret_mstat).avgid    = 0.0;
     (*ret_mstat).avgmatch = 0.0;
     (*ret_mstat).maxilen  = 0;
@@ -685,7 +686,9 @@ msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT *ret_mstat)
     (*ret_mstat).anclen   = 0;
     return eslOK;
    }
-
+  
+  mstat.nseq = msa->nseq;
+  mstat.alen = msa->alen;
   esl_dst_CAverageId   (msa->aseq, msa->nseq, 10000, &mstat.avgid);    /* 10000 is max_comparisons, before sampling kicks in */
   esl_dst_CAverageMatch(msa->aseq, msa->nseq, 10000, &mstat.avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
   mstat.avgid    *= 100;
@@ -703,7 +706,8 @@ msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat)
   MSA_STAT mstat;
   
   if (msa == NULL) {
-    (*ret_mstat).alen    = 0.0;
+    (*ret_mstat).nseq     = 0;
+    (*ret_mstat).alen     = 0;
     (*ret_mstat).avgid    = 0.0;
     (*ret_mstat).avgmatch = 0.0;
     (*ret_mstat).maxilen  = 0;
@@ -719,6 +723,7 @@ msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat)
     return eslOK;
    }
 
+  mstat.nseq = msa->nseq;
   mstat.alen = msa->alen;
   esl_dst_XAverageId   (msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgid);    /* 10000 is max_comparisons, before sampling kicks in */
   esl_dst_XAverageMatch(msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
