@@ -56,6 +56,7 @@ msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf
   return eslOK;
 
  ERROR:
+  if (ct) free(ct);
   return status;
 }
 

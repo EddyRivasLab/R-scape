@@ -80,6 +80,8 @@ struct cfg_s {
   FILE            *rocfp; 
   char            *sumfile;
   FILE            *sumfp; 
+  char            *shsumfile;
+  FILE            *shsumfp; 
   int              maxFP;
   double           ratioFP;
 
@@ -203,11 +205,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
   printf("rocfile %s\n", cfg.rocfile);
   
-  /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
-  if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
-  printf("sumfile %s\n", cfg.sumfile);
-  
   /* other options */
   cfg.domsa      = TRUE;
   cfg.doshuffle  = TRUE;
@@ -225,7 +222,20 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
-
+  /*  summary file */
+  esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
+  if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
+  printf("sumfile %s\n", cfg.sumfile);
+  
+  cfg.shsumfile = NULL;
+  cfg.shsumfp = NULL;
+  if (cfg.doshuffle) {
+    /*  sh-summary file */
+    esl_sprintf(&cfg.shsumfile, "%s.shsum", cfg.outheader); 
+    if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
+    printf("shsumfile %s\n", cfg.shsumfile);
+  }
+  
   cfg.T  = NULL;
   cfg.ct = NULL;
   cfg.nbpairs = 0;
@@ -317,21 +327,22 @@ main(int argc, char **argv)
     
     /* the ct vector */
     status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
-    if (status != eslOK) esl_fatal("%s Failed to calculate ct vector");
+    if (status != eslOK) esl_fatal("%s. Failed to calculate ct vector", cfg.errbuf);
     
     /* main function */
     if (cfg.domsa) {
       status = run_rnacov(go, &cfg, msa, FALSE);
-      if (status != eslOK) esl_fatal("%s Failed to run rnacov");
+      if (status != eslOK) esl_fatal("Failed to run rnacov");
     }
 
     if (cfg.doshuffle) {
       msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
       status = run_rnacov(go, &cfg, shmsa, TRUE);
-      if (status != eslOK) esl_fatal("%s Failed to run rnacov shuffled");
+      if (status != eslOK) esl_fatal("%s. Failed to run rnacov shuffled", cfg.errbuf);
     }
 
     esl_msa_Destroy(msa); msa = NULL;
+    free(cfg.ct); cfg.ct = NULL;
     if (shmsa) esl_msa_Destroy(shmsa); shmsa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
@@ -343,11 +354,12 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  free(cfg.ct);
+  if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
+  if (cfg.shsumfp) fclose(cfg.sumfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
@@ -393,12 +405,17 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
   
   /* write MSA info to the rocfile */
-  fprintf(stdout,     "# MSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);  
-  fprintf(cfg->sumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP);  
+  fprintf(stdout,     "# MSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
+	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);  
+  if (!ishuffled) 
+    fprintf(cfg->sumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP); 
+  else
+    fprintf(cfg->shsumfp, "%s\t%d\t%.2f\t%.2f\t", (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid, cfg->ratioFP);  
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, cfg->sumfp, cfg->maxFP, cfg->ratioFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP,
+			    cfg->ratioFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   Mutual_Destroy(mi); mi = NULL;
