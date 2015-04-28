@@ -225,7 +225,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
+  esl_sprintf(&cfg.sumfile, "%s.ratioFP%d.sum", cfg.outheader, cfg.ratioFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   printf("sumfile %s\n", cfg.sumfile);
   
@@ -233,9 +233,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.doshuffle) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.shsum", cfg.outheader); 
+    esl_sprintf(&cfg.shsumfile, "%s.ratioFF%d.sh.sum", cfg.outheader, cfg.ratioFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
-    printf("shsumfile %s\n", cfg.shsumfile);
+    printf("sh-sumfile %s\n", cfg.shsumfile);
   }
   
   cfg.T  = NULL;
