@@ -332,7 +332,7 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int
       else 
 	omesp = 0.;
 
-      val = omes;
+      val = -omes;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = val;
       if (val < mi->minCOV) mi->minCOV = val;
       if (val > mi->maxCOV) mi->maxCOV = val;
@@ -514,6 +514,7 @@ Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *su
   double      *COVx = NULL;
   double       COVavg = 0.0;
   int          i, j;
+  int          m = 0;
   int          status = eslOK;
   
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
@@ -534,7 +535,8 @@ Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *su
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) 
       COVavg += COV->mx[i][j];
-  if (mi->alen > 1) COVavg /= (mi->alen * (mi->alen-1));
+  if (mi->alen > 1) COVavg /= (double)mi->alen * ((double)mi->alen-1.);
+  COVavg *= 2.;
 
   //COVx
   ESL_ALLOC(COVx, sizeof(double) * mi->alen);
@@ -543,7 +545,7 @@ Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *su
     for (j = 0; j < mi->alen; j++) {
       if (j != i) COVx[i] += COV->mx[i][j];
     }
-    if (mi->alen > 1) COVx[i] /= mi->alen -1;
+    if (mi->alen > 1) COVx[i] /= (double)mi->alen-1.;
   }
 
   //COVp
