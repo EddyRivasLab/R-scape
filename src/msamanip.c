@@ -334,7 +334,9 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     }
   }
 
-  if (msa) esl_sprintf(&newfile, "%s.sto", msa->name);
+  if     (msa->name) esl_sprintf(&newfile, "%s_random%d.sto", msa->name, nseq);
+  else if (msa->acc) esl_sprintf(&newfile, "%s_random%d.sto", msa->acc, nseq);
+  else               esl_sprintf(&newfile, "random%d.sto", nseq);
 
   /* otherwise, proceed */
   ESL_ALLOC(array, sizeof(int) * (msa->nseq+1));

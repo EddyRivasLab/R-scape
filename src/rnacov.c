@@ -201,12 +201,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s_random%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
-  
-  /*  rocplot file */
-  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
-  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
-  printf("rocfile %s\n", cfg.rocfile);
-  
+    
   /* other options */
   cfg.domsa      = TRUE;
   cfg.doshuffle  = TRUE;
@@ -224,8 +219,13 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
+ /*  rocplot file */
+  esl_sprintf(&cfg.rocfile, "%s.gapthresh%.1f.ratioFP%.1f.roc", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
+  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
+  printf("rocfile %s\n", cfg.rocfile);
+
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.ratioFP%.1f.sum", cfg.outheader, cfg.ratioFP); 
+  esl_sprintf(&cfg.sumfile, "%s.gapthresh%.1f.ratioFP%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   printf("sumfile %s\n", cfg.sumfile);
   
@@ -233,7 +233,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.doshuffle) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.ratioFP%.1f.shsum", cfg.outheader, cfg.ratioFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.gapthresh%.1f.ratioFP%.1f.shsum", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
     printf("sh-sumfile %s\n", cfg.shsumfile);
   }
@@ -305,10 +305,10 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)               != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)        != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
+    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.outheader, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)                    != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)                         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)                  != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
@@ -417,9 +417,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   else                       esl_sprintf(&name, "%s", cfg->outheader);
 
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
