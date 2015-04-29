@@ -421,12 +421,13 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP,
-			    cfg->ratioFP, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+			    cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   /* print to stdout */
   fprintf(stdout,     "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
 
   Mutual_Destroy(mi); mi = NULL;
   return eslOK;

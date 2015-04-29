@@ -28,7 +28,7 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int *ct, FILE *rocfp, FILE *sumfp, 
-		 int maxFP, double ratioFP, int ishuffled, double tol, int verbose, char *errbuf)
+		 int maxFP, double ratioFP, int nbpairs, int ishuffled, double tol, int verbose, char *errbuf)
 {
    int         status;
   
@@ -38,49 +38,49 @@ Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
   status = Mutual_CalculateH(mi, tol, FALSE, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateCHI (mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, TRUE, tol, verbose, errbuf);
+  status = Mutual_CalculateCHI (mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, APC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateCHI (mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, FALSE, tol, verbose, errbuf);
+  status = Mutual_CalculateCHI (mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, FALSE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, ASC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
 
-  status = Mutual_CalculateOMES (mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, TRUE, tol, verbose, errbuf);
+  status = Mutual_CalculateOMES (mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, APC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateOMES (mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, FALSE, tol, verbose, errbuf);
+  status = Mutual_CalculateOMES (mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, FALSE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, ASC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
   
-  status = Mutual_CalculateGT(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, TRUE, tol, verbose, errbuf);
+  status = Mutual_CalculateGT(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, APC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateGT(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, FALSE, tol, verbose, errbuf);
+  status = Mutual_CalculateGT(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, FALSE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, ASC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
 
-  status = Mutual_CalculateMI(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, TRUE, tol, verbose, errbuf);
+  status = Mutual_CalculateMI(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, APC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateMI(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, FALSE, tol, verbose, errbuf);
+  status = Mutual_CalculateMI(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, FALSE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, ASC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-  status = Mutual_CalculateMIr(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, TRUE, tol, verbose, errbuf);
+  status = Mutual_CalculateMIr(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, TRUE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, APC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, APC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR; 
-  status = Mutual_CalculateMIr(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, FALSE, tol, verbose, errbuf);
+  status = Mutual_CalculateMIr(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, FALSE, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, ASC, tol, verbose, errbuf);
+  status = Mutual_CalculateCOVCorrected(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, ASC, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   fprintf(sumfp, "\n");
@@ -240,7 +240,7 @@ Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 
 
 int                 
-Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
+Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
   double chi;
   double chip;
@@ -288,7 +288,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int 
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -298,7 +298,7 @@ Mutual_CalculateCHI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int 
 }
 
 int                 
-Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
+Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
   double omes;
   double omesp;
@@ -346,7 +346,7 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -357,7 +357,7 @@ Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int
 
 
 int                 
-Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
+Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
   double gt;
   double gtp;
@@ -406,7 +406,7 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int m
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -416,7 +416,7 @@ Mutual_CalculateGT(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int m
 }
 
 int                 
-Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
+Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
   double mutinf;
   int    i, j;
@@ -449,7 +449,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int m
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -461,7 +461,7 @@ Mutual_CalculateMI(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int m
 
 
 int                 
-Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
+Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int analyze, double tol, int verbose, char *errbuf)
 {
   double mutinf, HH;
   int    i, j;
@@ -495,7 +495,7 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int 
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -507,7 +507,8 @@ Mutual_CalculateMIr(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int 
 
 
 int                 
-Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, CORRTYPE corrtype, double tol, int verbose, char *errbuf)
+Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, CORRTYPE corrtype, 
+			     double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
   ESL_DMATRIX *COV  = NULL;
@@ -572,7 +573,7 @@ Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *su
       } 
   }
 
-  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, ishuffled, verbose, errbuf);
+  status = Mutual_SignificantPairs_Ranking(mi, ct, rocfp, sumfp, maxFP, ratioFP, nbpairs, ishuffled, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (covtype) free(covtype);
@@ -673,7 +674,7 @@ Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc)
     ESL_ALLOC(mi->nseff[i],   sizeof(int      ) * alen);
     ESL_ALLOC(mi->pm[i],      sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
-       ESL_ALLOC(mi->pp[i][j], sizeof(double   ) * K2);
+       ESL_ALLOC(mi->pp[i][j], sizeof(double  ) * K2);
     }
   }
    
@@ -863,7 +864,7 @@ Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *
 }
 
 int
-Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int ishuffled, int verbose, char *errbuf)
+Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *covtype = NULL;
@@ -927,7 +928,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE 
     F     = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
-    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, t, f, neg, sen, ppv, F);
+    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, nbpairs, f, neg, sen, ppv, F);
     
     if (ratioFP >= 0.) {
       if (ratio <= ratioFP) {
@@ -986,7 +987,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE 
 	}
       }
 
-    fprintf(sumfp, "%s\t%.2f\t", covtype, (ratioFP_t > 0)? 100.*(double)ratioFP_tf/(double)ratioFP_t : 0.0);
+    fprintf(sumfp, "%s\t%.2f\t", covtype, (ratioFP_t > 0)? 100.*(double)ratioFP_tf/(double)nbpairs : 0.0);
   }    
   
   if (maxFP >= 0) {
