@@ -893,6 +893,8 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE 
   double       oneFPsen;
   double       oneFPppv;
   double       oneFPthresh;
+  double       tf_frac_total; // fraction of covarying basepairs relative to the total number of basepairs
+  double       tf_frac_surv;  // fraction of covarying basepairs relative to the basepairs that survive the gapthresh
   int          fp, tf, t, f, neg;
   int          oneFP_tf, oneFP_t, oneFP_f, oneFP_fp;
   int          best_tf, best_t, best_f, best_fp;
@@ -987,7 +989,10 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE 
 	}
       }
 
-    fprintf(sumfp, "%s\t%.2f\t", covtype, (ratioFP_t > 0)? 100.*(double)ratioFP_tf/(double)nbpairs : 0.0);
+    tf_frac_total = (nbpairs   > 0)? 100.*(double)ratioFP_tf/(double)nbpairs   : 0.0;
+    tf_frac_surv  = (ratioFP_t > 0)? 100.*(double)ratioFP_tf/(double)ratioFP_t : 0.0;
+    
+    fprintf(sumfp, "%s\t%.2f\t%.2f\t", covtype, tf_frac_surv, tf_frac_total);
   }    
   
   if (maxFP >= 0) {
