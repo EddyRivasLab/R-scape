@@ -104,9 +104,9 @@ struct cfg_s {
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
-  { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
+  { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             0 },
   { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },  
-  { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "only keep columns with <= <x> fraction of gaps in them",                                    0 },
+  { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  0 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      0 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      0 },
   /* Control of scoring system - ribosum */
@@ -394,6 +394,7 @@ static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 {
   struct mutual_s *mi = NULL;
+  char            *name = NULL;
   int              nnodes;
   int              status;
 
@@ -411,10 +412,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
 
   /* write MSA info to the sumfile */
+  if (msa->acc && msa->name) esl_sprintf(&name, "%s_%s", msa->acc, msa->name);
+  else if (msa->acc)         esl_sprintf(&name, "%s", msa->acc);
+  else                       esl_sprintf(&name, "%s", cfg->outheader);
+
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
@@ -426,15 +431,17 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 
   /* print to stdout */
   fprintf(stdout,     "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  (msa->acc)? msa->acc : cfg->outheader, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+	  name, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
 
   Mutual_Destroy(mi); mi = NULL;
+  free(name);
   return eslOK;
 
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
   if (mi) Mutual_Destroy(mi);
+  if (name) free(name);
  return status;
 }
 

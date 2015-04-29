@@ -160,7 +160,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, char *errbuf, int verb
     
     /* apply gapthresh */   
     gapfreq = (double)ngaps / (double) msa->nseq;
-    useme[apos] = (gapthresh < gapfreq)? FALSE : TRUE; 
+    useme[apos] = (gapfreq < gapthresh)? TRUE : FALSE; 
   }
   
   if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
