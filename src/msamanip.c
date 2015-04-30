@@ -312,7 +312,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   int           s;
   int           status;
 
-  if (nseq == 0 || nseq >= msa->nseq) return eslOK;
+  if (nseq == 0 || nseq >= msa->nseq) {  esl_msa_Destroy(msa); *omsa = NULL; return eslOK; }
  
   /* the newfile file with submsa */
   if (msafile) {

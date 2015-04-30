@@ -85,6 +85,7 @@ struct cfg_s {
   char            *shsumfile;
   FILE            *shsumfp; 
   int              maxFP;
+  int              maxDecoy;
   double           ratioFP;
 
   float            tol;
@@ -94,8 +95,9 @@ struct cfg_s {
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
-  { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of FP allowed",                                                              0 },
-  { "--ratioFP",      eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of FP allowed",                                                              0 },
+  { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               0 },
+  { "--maxDecoy",     eslARG_INT,         "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
+  { "--ratioFP",      eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
@@ -209,6 +211,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
   cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
+  cfg.maxDecoy   = esl_opt_GetInteger(go, "--maxDecoy");
   cfg.ratioFP    = esl_opt_GetReal   (go, "--ratioFP");
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
@@ -308,6 +311,8 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)                    != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)                         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
     if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.outheader, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (msa == NULL) continue;
+
     if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)                  != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
     esl_msa_Hash(msa);
@@ -425,8 +430,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP,
-			    cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP, cfg->maxDecoy,
+			   cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   /* print to stdout */

@@ -74,23 +74,23 @@ struct mutual_s {
 
 
 extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					 METHOD method, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, 
+					 METHOD method, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, 
 					 int ishuffled, double tol, int verbose, char *errbuf);
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGT  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_CalculateGT  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
-						     CORRTYPE corrtype, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
+						     CORRTYPE corrtype, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc);
@@ -99,8 +99,10 @@ extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
-extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int ishuffled, 
+extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, 
 							int verbose, char *errbuf);
+extern int              Mutual_SignificantPairs(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double ratioFP, int nbpairs, int verbose, char *errbuf);
+extern int              Mutual_SignificantPairs_Shuffled(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxDecoy, double ratioFP, int nbpairs, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *errbuf);
 
 
