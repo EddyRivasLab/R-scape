@@ -317,7 +317,7 @@ main(int argc, char **argv)
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
     
-    //if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
+    if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
     
     /* given msa aveid and avematch */
     msamanip_XStats(msa, &cfg.mstat);
@@ -427,7 +427,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
     fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
-  fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f\n", msa->nseq, msa->alen, cfg->mstat.avgid);  
+  fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP, cfg->maxDecoy,

@@ -809,59 +809,6 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 }
 
 
-int
-Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *errbuf)
-{
-  double       avgi, avgj;
-  double       stdi, stdj;
-  double       zscorei, zscorej;
-  double       zscore;
-  int          i, j, k;
-  int          ipair;
-
-  for (i = 0; i < mi->alen; i ++) {
-    if (ct[i+1] > 0 && ct[i+1] > i+1) {
-      ipair = ct[i+1]-1;
-
-      avgi = 0.0;
-      stdi = 0.0;
-      
-      for (j = 0; j < mi->alen; j ++) {
-	if (j != ipair) {   
-	  if (j != i) {
-	    avgi += mi->COV->mx[i][j];
-	    stdi += mi->COV->mx[i][j] * mi->COV->mx[i][j];
-	  }
-	}
-	else {
-	  avgj = 0.0;
-	  stdj = 0.0;
-	  for (k = 0; k < mi->alen; k ++) {
-	    if (k != j && k != i) {       
-	      avgj += mi->COV->mx[j][k];
-	      stdj += mi->COV->mx[j][k] * mi->COV->mx[j][k];
-	    }
-	  }
-	  avgj /= (mi->alen-2);
-	  stdj /= (mi->alen-2);
-	  stdj -= avgj*avgj;
-	  stdj = sqrt(stdj);
-	}
-      }
-      avgi /= (mi->alen-2);
-      stdi /= (mi->alen-2);
-      stdi -= avgi*avgi;
-      stdi = sqrt(stdi);
-
-      zscorei = (mi->COV->mx[i][ipair] - avgi) / stdi;
-      zscorej = (mi->COV->mx[i][ipair] - avgj) / stdj;
-      zscore  = ESL_MIN(zscorej, zscorej);
-      printf("[%d][%d] %f | %f | %f %f | %f %f\n", i, ipair, zscore, mi->COV->mx[i][ipair], avgi, stdi, avgj, stdj);
-    }
-  }  
-  return eslOK;
-}
-
 
 int
 Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double ratioFP, int nbpairs, int ishuffled, int verbose, char *errbuf)
@@ -922,7 +869,7 @@ Mutual_SignificantPairs(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, 
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
 
   fprintf(rocfp, "\n# %s ", covtype);  
-  fprintf(rocfp, "thresh fp tp true found negatives sen ppv F\n"); 
+  fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
   
   inc = (max - min) / delta;
   for (thresh = max; thresh > min-inc; thresh -= inc) {
@@ -943,7 +890,7 @@ Mutual_SignificantPairs(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, 
     F     = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
-    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, nbpairs, f, neg, sen, ppv, F);
+    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
     
     if (ratioFP >= 0.) {
       if (ratio <= ratioFP) {
@@ -1106,7 +1053,7 @@ Mutual_SignificantPairs_Shuffled(struct mutual_s *mi, int *ct, FILE *rocfp, FILE
     F     = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
-    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, nbpairs, f, neg, sen, ppv, F);
+    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
     
     if (ratioFP >= 0.) {
       if (ratio <= ratioFP) {
@@ -1169,6 +1116,60 @@ Mutual_SignificantPairs_Shuffled(struct mutual_s *mi, int *ct, FILE *rocfp, FILE
   
 
   if (covtype) free(covtype); 
+  return eslOK;
+}
+
+
+int
+Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *ct, int verbose, char *errbuf)
+{
+  double       avgi, avgj;
+  double       stdi, stdj;
+  double       zscorei, zscorej;
+  double       zscore;
+  int          i, j, k;
+  int          ipair;
+
+  for (i = 0; i < mi->alen; i ++) {
+    if (ct[i+1] > 0 && ct[i+1] > i+1) {
+      ipair = ct[i+1]-1;
+
+      avgi = 0.0;
+      stdi = 0.0;
+      
+      for (j = 0; j < mi->alen; j ++) {
+	if (j != ipair) {   
+	  if (j != i) {
+	    avgi += mi->COV->mx[i][j];
+	    stdi += mi->COV->mx[i][j] * mi->COV->mx[i][j];
+	  }
+	}
+	else {
+	  avgj = 0.0;
+	  stdj = 0.0;
+	  for (k = 0; k < mi->alen; k ++) {
+	    if (k != j && k != i) {       
+	      avgj += mi->COV->mx[j][k];
+	      stdj += mi->COV->mx[j][k] * mi->COV->mx[j][k];
+	    }
+	  }
+	  avgj /= (mi->alen-2);
+	  stdj /= (mi->alen-2);
+	  stdj -= avgj*avgj;
+	  stdj = sqrt(stdj);
+	}
+      }
+      avgi /= (mi->alen-2);
+      stdi /= (mi->alen-2);
+      stdi -= avgi*avgi;
+      stdi = sqrt(stdi);
+
+      zscorei = (mi->COV->mx[i][ipair] - avgi) / stdi;
+      zscorej = (mi->COV->mx[i][ipair] - avgj) / stdj;
+      zscore  = ESL_MIN(zscorej, zscorej);
+      printf("[%d][%d] %f | %f | %f %f | %f %f\n", i, ipair, zscore, mi->COV->mx[i][ipair], avgi, stdi, avgj, stdj);
+    }
+  }  
   return eslOK;
 }
 

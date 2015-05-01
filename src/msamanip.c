@@ -351,7 +351,6 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   for (s = 1; s <= nseq; s ++) useme[array[s]] = 1;
   
   if ((status = esl_msa_SequenceSubset(msa, useme, &new)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create msa subset");
-
   esl_msa_MinimGaps(new, errbuf, "-_.~", TRUE);
 
   /* change the accession of the msa to reflect that it is a subset of the original */
@@ -364,11 +363,13 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     esl_sprintf(&(new->acc), "random%d", nseq);
 
   /* write the submsa to file */
-  if (msafile) esl_sprintf(&newfile, "%s.sto", omsafile);
-  
-  if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
-  if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
-  fclose(msafp);
+  if (msafile) {
+    esl_sprintf(&newfile, "%s.sto", omsafile);
+    
+    if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
+    if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
+    fclose(msafp);
+  }
 
   esl_msa_Destroy(msa);
   if (omsafile) free(omsafile);
