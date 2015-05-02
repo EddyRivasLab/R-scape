@@ -87,6 +87,7 @@ struct cfg_s {
   int              maxFP;
   int              maxDecoy;
   double           ratioFP;
+  double           expectFP;
 
   float            tol;
   int              verbose;
@@ -97,7 +98,8 @@ struct cfg_s {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
   { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               0 },
   { "--maxDecoy",     eslARG_INT,         "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
-  { "--ratioFP",      eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
+  { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
+  { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                         0 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
@@ -212,7 +214,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
   cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
   cfg.maxDecoy   = esl_opt_GetInteger(go, "--maxDecoy");
-  cfg.ratioFP    = esl_opt_GetReal   (go, "--ratioFP");
+  cfg.ratioFP    = esl_opt_IsOn(go, "--ratioFP")?   esl_opt_GetReal   (go, "--ratioFP")   : -1.0;
+  cfg.expectFP   = esl_opt_GetReal   (go, "--expectFP");
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
@@ -223,12 +226,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
  /*  rocplot file */
-  esl_sprintf(&cfg.rocfile, "%s.g%.1f.r%.1f.roc", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
+  esl_sprintf(&cfg.rocfile, "%s.g%.1f.e%.1f.roc", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
   printf("rocfile %s\n", cfg.rocfile);
 
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.g%.1f.r%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
+  esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   printf("sumfile %s\n", cfg.sumfile);
   
@@ -236,7 +239,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.doshuffle) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.g%.1f.r%.1f.shsum", cfg.outheader, cfg.gapthresh, cfg.ratioFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.1f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
     printf("sh-sumfile %s\n", cfg.shsumfile);
   }
@@ -422,16 +425,16 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   else                       esl_sprintf(&name, "%s", cfg->outheader);
 
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, name, msa->nseq, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->ratioFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, name, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP, cfg->maxDecoy,
-			   cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+			    cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   /* print to stdout */
