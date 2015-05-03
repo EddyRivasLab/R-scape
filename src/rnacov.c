@@ -57,7 +57,7 @@ struct cfg_s {
   int              infmt;
   
   int              domsa;
-  int              doshuffle;
+  int              nshuffle;
 
   METHOD           method;
   ESL_TREE        *T;
@@ -96,10 +96,11 @@ struct cfg_s {
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
-  { "--maxFP",        eslARG_INT,       FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               0 },
-  { "--maxDecoy",     eslARG_INT,         "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
+  { "--maxFP",         eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               0 },
+  { "--maxDecoy",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
   { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
-  { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                         0 },
+  { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        0 },
+  { "--nshuffle",      eslARG_INT,         "1",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              0 },   
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
   /* method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
@@ -208,7 +209,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     
   /* other options */
   cfg.domsa      = TRUE;
-  cfg.doshuffle  = TRUE;
+  cfg.nshuffle   = esl_opt_GetInteger(go, "--nshuffle");
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
@@ -237,7 +238,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
-  if (cfg.doshuffle) {
+  if (cfg.nshuffle > 0) {
     /*  sh-summary file */
     esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.1f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
@@ -289,6 +290,7 @@ main(int argc, char **argv)
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
+  int              s;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -348,11 +350,12 @@ main(int argc, char **argv)
       status = run_rnacov(go, &cfg, msa, FALSE);
       if (status != eslOK) esl_fatal("Failed to run rnacov");
     }
-
-    if (cfg.doshuffle) {
+    
+    for (s = 0; s < cfg.nshuffle; s ++) {
       msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
       status = run_rnacov(go, &cfg, shmsa, TRUE);
       if (status != eslOK) esl_fatal("%s. Failed to run rnacov shuffled", cfg.errbuf);
+      esl_msa_Destroy(shmsa); shmsa = NULL;
     }
 
     esl_msa_Destroy(msa); msa = NULL;
