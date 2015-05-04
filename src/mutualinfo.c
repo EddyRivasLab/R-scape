@@ -921,7 +921,7 @@ Mutual_SignificantPairs(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, 
       }
     }
     if (expectFP >= 0.) {
-      if (ratio <= expectFP) {
+      if (expect <= expectFP) {
 	expectFPF      = F;
 	expectFPsen    = sen;
 	expectFPppv    = ppv;
