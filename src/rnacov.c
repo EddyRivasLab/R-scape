@@ -48,6 +48,7 @@ struct cfg_s {
   int              nmsa;
   char            *msafile;
   char            *filename;
+  char            *msaname;
 
   FILE            *outmsafp;
  
@@ -184,6 +185,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   cfg.msafrq = NULL;
+  cfg.msaname = NULL;
 
   /* alphabet */
   cfg.abc = esl_alphabet_Create(eslRNA);
@@ -287,11 +289,15 @@ main(int argc, char **argv)
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
   ESL_MSA         *shmsa = NULL;          /* the shuffled alignment */
+  char            *type = NULL;
+  char            *tp;
+  char            *tok;
   int              nmsa_noss = 0;
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
   int              s;
+  int              t;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -319,6 +325,21 @@ main(int argc, char **argv)
       if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
       continue;
     }
+
+    /* write MSA info to the sumfile */
+    for (t = 0; t < msa->ngf; t++) {
+      if (!esl_strcmp(msa->gf_tag[t], "TP")) {
+	tp = msa->gf[t];	
+	while (*tp != '\0') {
+	  if (esl_strtok(&tp, " ", &tok) != eslOK) esl_fatal(msg);
+	  esl_strcat(&type, -1, tok, -1);
+	}
+      }
+    }
+    if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s_%s", msa->acc, msa->name, type);
+    else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
+    else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
+    else                                    esl_sprintf(&cfg.msaname, "%s", cfg.outheader);
 
    /* select submsa and then apply msa filters 
     */
@@ -373,6 +394,9 @@ main(int argc, char **argv)
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
+    if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
+    if (type) free(type); type = NULL;
+
   }
 
   if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
@@ -384,6 +408,8 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
+  if (cfg.msaname) free(cfg.msaname);
+  if (type) free(type);
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
@@ -416,9 +442,6 @@ static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 {
   struct mutual_s *mi   = NULL;
-  char            *name = NULL;
-  char            *type = NULL;
-  int              t;
   int              nnodes;
   int              status;
 
@@ -436,18 +459,10 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
 
   /* write MSA info to the sumfile */
-  for (t = 0; t < msa->ngf; t++) 
-    if (!esl_strcmp(msa->gf_tag[t], "TP")) 
-      esl_sprintf(&type, "%s", msa->gf[t]);
-  if      (msa->acc && msa->name && type) esl_sprintf(&name, "%s_%s_%s", msa->acc, msa->name, type);
-  else if (msa->acc && msa->name)         esl_sprintf(&name, "%s_%s", msa->acc, msa->name);
-  else if (msa->acc)                      esl_sprintf(&name, "%s", msa->acc);
-  else                                    esl_sprintf(&name, "%s", cfg->outheader);
-
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, name, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
@@ -459,19 +474,15 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 
   /* print to stdout */
   fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  name, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+	  cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
 
   Mutual_Destroy(mi); mi = NULL;
-  free(name);
-  if (type) free(type);
   return eslOK;
 
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
   if (mi) Mutual_Destroy(mi);
-  if (name) free(name);
-  if (type) free(type);
   return status;
 }
 
