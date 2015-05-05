@@ -51,8 +51,8 @@ msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf
     for (j = i+1; j < msa->alen; j ++)
     	if (ct[i+1] == j+1) nbpairs ++;
 
-  if (ret_ct)  *ret_ct      = ct;  
-  if (nbpairs) *ret_nbpairs = nbpairs;
+  if (ret_ct)      *ret_ct      = ct;  
+  if (ret_nbpairs) *ret_nbpairs = nbpairs;
   return eslOK;
 
  ERROR:

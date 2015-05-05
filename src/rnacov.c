@@ -312,10 +312,9 @@ main(int argc, char **argv)
     msamanip_XStats(msa, &cfg.omstat);
     msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
 
-    printf("%s %d\n", msa->name, cfg.onbpairs);
     if (cfg.onbpairs == 0) {
       nmsa_noss ++;
-      printf("msa: %s  has no secondary structure.\n", cfg.outheader);
+      printf("msa: %s_%s  has no secondary structure.\n", msa->acc, msa->name);
       esl_msa_Destroy(msa); msa = NULL;
       if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
       continue;
@@ -323,11 +322,11 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)                    != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)                         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose)           != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)               != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
     if (msa == NULL) continue;
-    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)                  != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)        != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
