@@ -285,8 +285,9 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
-  ESL_MSA         *msa = NULL;            /* the input alignment  */
-  ESL_MSA         *shmsa = NULL;          /* the shuffled alignment  */
+  ESL_MSA         *msa = NULL;            /* the input alignment    */
+  ESL_MSA         *shmsa = NULL;          /* the shuffled alignment */
+  int              nmsa_noss = 0;
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
@@ -310,6 +311,15 @@ main(int argc, char **argv)
     /* stats of the orignial alignment */
     msamanip_XStats(msa, &cfg.omstat);
     msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
+
+    printf("%s %d\n", msa->name, cfg.onbpairs);
+    if (cfg.onbpairs == 0) {
+      nmsa_noss ++;
+      printf("msa: %s  has no secondary structure.\n", cfg.outheader);
+      esl_msa_Destroy(msa); msa = NULL;
+      if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
+      continue;
+    }
 
    /* select submsa and then apply msa filters 
     */
@@ -365,6 +375,8 @@ main(int argc, char **argv)
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
   }
+
+  if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
 
   /* cleanup */
   esl_stopwatch_Destroy(cfg.w);
@@ -436,8 +448,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->maxFP, cfg->maxDecoy,
-			    cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
+			    cfg->maxFP, cfg->maxDecoy, cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
   /* print to stdout */

@@ -45,7 +45,7 @@ msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf
   
   ESL_ALLOC(ct, sizeof(int) * (msa->alen+1));
   if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct);
-  else ESL_XFAIL(eslFAIL, errbuf, "no ss for msa");
+  else ESL_XFAIL(eslFAIL, errbuf, "no con_ss for msa");
   
   for (i = 0; i < msa->alen-1; i ++)
     for (j = i+1; j < msa->alen; j ++)
