@@ -415,8 +415,10 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 {
-  struct mutual_s *mi = NULL;
+  struct mutual_s *mi   = NULL;
   char            *name = NULL;
+  char            *type = NULL;
+  int              t;
   int              nnodes;
   int              status;
 
@@ -434,9 +436,13 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
 
   /* write MSA info to the sumfile */
-  if (msa->acc && msa->name) esl_sprintf(&name, "%s_%s", msa->acc, msa->name);
-  else if (msa->acc)         esl_sprintf(&name, "%s", msa->acc);
-  else                       esl_sprintf(&name, "%s", cfg->outheader);
+  for (t = 0; t < msa->ngf; t++) 
+    if (!esl_strcmp(msa->gf_tag[t], "TP")) 
+      esl_sprintf(&type, "%s", msa->gf[t]);
+  if      (msa->acc && msa->name && type) esl_sprintf(&name, "%s_%s_%s", msa->acc, msa->name, type);
+  else if (msa->acc && msa->name)         esl_sprintf(&name, "%s_%s", msa->acc, msa->name);
+  else if (msa->acc)                      esl_sprintf(&name, "%s", msa->acc);
+  else                                    esl_sprintf(&name, "%s", cfg->outheader);
 
   if (!ishuffled) 
     fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, name, msa->nseq, cfg->mstat.avgid); 
@@ -452,18 +458,20 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   if (status != eslOK)  { goto ERROR; }
 
   /* print to stdout */
-  fprintf(stdout,     "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+  fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 	  name, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
 
   Mutual_Destroy(mi); mi = NULL;
   free(name);
+  if (type) free(type);
   return eslOK;
 
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
   if (mi) Mutual_Destroy(mi);
   if (name) free(name);
- return status;
+  if (type) free(type);
+  return status;
 }
 
