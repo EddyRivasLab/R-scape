@@ -92,8 +92,6 @@ struct cfg_s {
   char            *shsumfile;
   FILE            *shsumfp; 
   int              maxFP;
-  int              maxDecoy;
-  double           ratioFP;
   double           expectFP;
 
   float            tol;
@@ -104,8 +102,6 @@ struct cfg_s {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
   { "--maxFP",         eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               0 },
-  { "--maxDecoy",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
-  { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
   { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        0 },
   { "--nshuffle",      eslARG_INT,         "0",   NULL,    "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              0 },   
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
@@ -243,8 +239,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
   cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
-  cfg.maxDecoy   = esl_opt_GetInteger(go, "--maxDecoy");
-  cfg.ratioFP    = esl_opt_IsOn(go, "--ratioFP")?   esl_opt_GetReal   (go, "--ratioFP")   : -1.0;
   cfg.expectFP   = esl_opt_GetReal   (go, "--expectFP");
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
@@ -519,7 +513,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
-			    cfg->maxFP, cfg->maxDecoy, cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
+			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
  
