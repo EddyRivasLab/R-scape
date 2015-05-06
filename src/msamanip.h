@@ -40,7 +40,7 @@ typedef struct msa_stat_s {
 
 extern int msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf);
 extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf);
-extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, char *errbuf, int verbose);
+extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *errbuf, int verbose);
 extern int msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len);
 extern int msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved);
 extern int msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *errbuf, int verbose);

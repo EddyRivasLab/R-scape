@@ -141,16 +141,19 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *errbuf, int verbose)
 {
   int     *useme = NULL;
+  int     *map = NULL;
   double   gapfreq;
+  int      alen = msa->alen;
   int      ngaps;
   int      apos;
+  int      newpos = 0;
   int      i;
   int      status;
   
-  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  ESL_ALLOC(useme, sizeof(int) * alen);
  
   for (apos = 0; apos < (int)msa->alen; apos++) {
     /* count the gaps in apos */
@@ -165,12 +168,18 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, char *errbuf, int verb
   
   if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
   if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK) goto ERROR;
+
+  ESL_ALLOC(map, sizeof(int) * msa->alen);
+  for (apos = 0; apos < alen; apos++) 
+    if (useme[apos]) map[newpos++] = apos;
   
+  if (ret_map) *ret_map = map; else free(map);
   free(useme);
   return eslOK;
   
  ERROR:
-  if (useme != NULL) free(useme); 
+  if (useme) free(useme); 
+  if (map)   free(map); 
   return status;
 }
 

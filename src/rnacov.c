@@ -24,7 +24,7 @@
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--OMES,--OMESp,--OMESa,--ALL"              
-#define COVCLASSOPTS "--C16, C2"              
+#define COVCLASSOPTS "--C16,--C2"              
 
 /* Exclusive options for evolutionary model choice */
 
@@ -54,6 +54,7 @@ struct cfg_s {
   char            *msafile;
   char            *filename;
   char            *msaname;
+  int             *msamap;
 
   FILE            *outmsafp;
  
@@ -211,6 +212,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.nmsa = 0;
   cfg.msafrq = NULL;
   cfg.msaname = NULL;
+  cfg.msamap = NULL;
 
   /* alphabet */
   cfg.abc = esl_alphabet_Create(eslRNA);
@@ -266,7 +268,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--ALL"))   cfg.covtype = COVALL;
 
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
-  else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covtype  = C2;
+  else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
 
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
@@ -276,12 +278,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
  /*  rocplot file */
   esl_sprintf(&cfg.rocfile, "%s.g%.1f.e%.1f.roc", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
-  printf("rocfile %s\n", cfg.rocfile);
 
   /*  summary file */
   esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
-  printf("sumfile %s\n", cfg.sumfile);
   
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
@@ -388,11 +388,11 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)               != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)                != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)                     != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose)       != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
     if (msa == NULL) continue;
-    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, cfg.errbuf, cfg.verbose)        != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
  
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
@@ -491,7 +491,12 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   int              status;
 
   esl_stopwatch_Start(cfg->w);
-
+  
+  /* print to stdout */
+  fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	  cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+  
   /* produce a tree
    */
   if (cfg->method != NAIVE) {
@@ -513,15 +518,11 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
+  status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
 			    cfg->maxFP, cfg->maxDecoy, cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
-  /* print to stdout */
-  fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
-	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
-
+ 
   Mutual_Destroy(mi); mi = NULL;
   return eslOK;
 
