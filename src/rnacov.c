@@ -23,7 +23,7 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--OMES,-OMESp,--OMESa,-ALL"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16, C2"              
 
 /* Exclusive options for evolutionary model choice */
