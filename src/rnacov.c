@@ -21,8 +21,10 @@
 
 
 
-#define ALPHOPTS "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
-#define METHODOPTS "--naive,--phylo,--dca,--akmaev"              
+#define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
+#define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--OMES,-OMESp,--OMESa,-ALL"              
+#define COVCLASSOPTS "--C16, C2"              
 
 /* Exclusive options for evolutionary model choice */
 
@@ -44,6 +46,9 @@ struct cfg_s {
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
   double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
+
+  COVTYPE          covtype;
+  COVCLASS         covclass;
 
   int              nmsa;
   char            *msafile;
@@ -101,11 +106,31 @@ struct cfg_s {
   { "--maxDecoy",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying decoy bps allowed",                                             0 },
   { "--ratioFP",      eslARG_REAL,      FALSE,   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "maximum ration of (covarying non-bps)/bps allowed",                                         0 },
   { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        0 },
-  { "--nshuffle",      eslARG_INT,         "1",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              0 },   
+  { "--nshuffle",      eslARG_INT,         "0",   NULL,    "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              0 },   
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
-  /* method */
-  { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive MI calculations",                                                                     0 },
-  { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo MI calculations",                                                                     0 },
+  /* covariation metric */
+  { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
+  { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
+  { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  calculation",                                                                          0 },
+  { "--GTa",          eslARG_NONE,       TRUE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   ACS corrected calculation",                                                            0 },
+  { "--GTp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   APS corrected calculation",                                                            0 },
+  { "--GT",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   calculation",                                                                          0 },
+  { "--MIa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   ACS corrected calculation",                                                            0 },
+  { "--MIp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   APS corrected calculation",                                                            0 },
+  { "--MI",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   calculation",                                                                          0 },
+  { "--MIra",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  ACS corrected calculation",                                                            0 },
+  { "--MIrp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  APS corrected calculation",                                                            0 },
+  { "--MIr",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  calculation",                                                                          0 },
+  { "--OMESa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES ACS corrected calculation",                                                            0 },
+  { "--OMESp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES APS corrected calculation",                                                            0 },
+  { "--OMES",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES calculation",                                                                          0 },
+  { "--ALL",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "calculate all types",                                                                       0 },
+  /* covariation class */
+  { "--C16",         eslARG_NONE,       TRUE,   NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
+  { "--C2",          eslARG_NONE,      FALSE,   NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                0 },
+  /* phylogenetic method */
+  { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
+  { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
   /* options for input msa (if seqs are given as a reference msa) */
@@ -222,6 +247,26 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
   cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
+
+  if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
+  else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
+  else if (esl_opt_GetBoolean(go, "--CHI"))   cfg.covtype = CHI;
+  else if (esl_opt_GetBoolean(go, "--GTa"))   cfg.covtype = GTa;
+  else if (esl_opt_GetBoolean(go, "--GTp"))   cfg.covtype = GTp;
+  else if (esl_opt_GetBoolean(go, "--GT"))    cfg.covtype = GT;
+  else if (esl_opt_GetBoolean(go, "--MIa"))   cfg.covtype = MIa;
+  else if (esl_opt_GetBoolean(go, "--MIp"))   cfg.covtype = MIp;
+  else if (esl_opt_GetBoolean(go, "--MI"))    cfg.covtype = MI;
+  else if (esl_opt_GetBoolean(go, "--MIra"))  cfg.covtype = MIra;
+  else if (esl_opt_GetBoolean(go, "--MIrp"))  cfg.covtype = MIrp;
+  else if (esl_opt_GetBoolean(go, "--MIr"))   cfg.covtype = MIr;
+  else if (esl_opt_GetBoolean(go, "--OMESa")) cfg.covtype = OMESa;
+  else if (esl_opt_GetBoolean(go, "--OMESp")) cfg.covtype = OMESp;
+  else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;
+  else if (esl_opt_GetBoolean(go, "--ALL"))   cfg.covtype = COVALL;
+
+  if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
+  else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covtype  = C2;
 
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
@@ -468,7 +513,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
+  status = Mutual_Calculate(msa, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
 			    cfg->maxFP, cfg->maxDecoy, cfg->expectFP, cfg->ratioFP, cfg->onbpairs, ishuffled, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 

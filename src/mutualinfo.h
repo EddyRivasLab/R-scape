@@ -27,20 +27,26 @@ typedef enum {
   GTp   = 4,
   GTa   = 5,
 
-  OMES  = 6,
-  OMESp = 7,
-  OMESa = 8,
+  MI    = 6,
+  MIp   = 7,
+  MIa   = 8,
 
-  MI    = 9,
-  MIp   = 10,
-  MIa   = 11,
+  MIr   = 9,
+  MIrp  = 10,
+  MIra  = 11,
 
-  MIr   = 12,
-  MIrp  = 13,
-  MIra  = 14,
+  OMES  = 12,
+  OMESp = 13,
+  OMESa = 14,
 
-  COVNONE  = 15,
+  COVALL  = 15,
+  COVNONE = 16,
 } COVTYPE;
+
+typedef enum {
+  C16 = 0,
+  C2  = 1,
+} COVCLASS;
 
 typedef enum {
   APC = 0,
@@ -62,8 +68,8 @@ struct mutual_s {
   int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
+  COVCLASS        class;
   ESL_DMATRIX    *COV;    // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
-  double         *H;      // entropy per position
  
   double          besthreshCOV;
   double          minCOV;
@@ -73,28 +79,47 @@ struct mutual_s {
 };
 
 
-extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-					 METHOD method, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, 
+extern int              Mutual_Calculate(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass,
+					 int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, 
 					 int ishuffled, double tol, int verbose, char *errbuf);
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateH(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
-					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateOMES(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
-					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGT  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
-					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
-					     int analyze, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
-					     int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI_C16 (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI_C2  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateOMES_C16(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateOMES_C2 (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateGT_C16  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateGT_C2   (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI_C16  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI_C2   (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr_C16 (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr_C2  (struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
+						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, int maxDecoy, double expectFP, double ratioFP, int nbpairs, int ishuffled, 
 						     CORRTYPE corrtype, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
 extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc);
-extern int              Mutual_ReuseCOV(struct mutual_s *mi, COVTYPE mitype);
+extern int              Mutual_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
