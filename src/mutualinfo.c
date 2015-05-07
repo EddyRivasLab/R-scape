@@ -306,16 +306,16 @@ Mutual_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
   
   switch (covclass) {
   case C16:
-    status = Mutual_CalculateCHI_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateCHI_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case C2:
-    status = Mutual_CalculateCHI_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateCHI_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh)
-      status = Mutual_CalculateCHI_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateCHI_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     else
-      status = Mutual_CalculateCHI_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateCHI_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
 }
   
@@ -339,7 +339,7 @@ Mutual_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
 
 int                 
 Mutual_CalculateCHI_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			int analyze, double tol, int verbose, char *errbuf)
+			double tol, int verbose, char *errbuf)
 {
   double chi;
   double obs;
@@ -373,7 +373,7 @@ Mutual_CalculateCHI_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, 
 
 int                 
 Mutual_CalculateCHI_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		       int analyze, double tol, int verbose, char *errbuf)
+		       double tol, int verbose, char *errbuf)
 {
   double chi;
   double pij_wc, pij_nwc;
@@ -425,23 +425,23 @@ Mutual_CalculateCHI_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			 int analyze, double tol, int verbose, char *errbuf)
+		     int analyze, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status;
   
   switch (covclass) {
   case C16:
-    status = Mutual_CalculateOMES_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateOMES_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case C2:
-    status = Mutual_CalculateOMES_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateOMES_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh)
-      status = Mutual_CalculateOMES_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateOMES_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     else
-      status = Mutual_CalculateOMES_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateOMES_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   }
   
@@ -464,7 +464,7 @@ Mutual_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *c
 
 int                 
 Mutual_CalculateOMES_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			 int analyze, double tol, int verbose, char *errbuf)
+			 double tol, int verbose, char *errbuf)
 {
   double omes;
   double obs;
@@ -497,7 +497,7 @@ Mutual_CalculateOMES_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp,
 
 int                 
 Mutual_CalculateOMES_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			int analyze, double tol, int verbose, char *errbuf)
+			double tol, int verbose, char *errbuf)
 {
   double omes;
   double pij_wc, pij_nwc;
@@ -556,18 +556,18 @@ Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
   
   switch (covclass) {
   case C16:
-    status = Mutual_CalculateGT_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateGT_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case C2:
-    status = Mutual_CalculateGT_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateGT_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh) {
-       status = Mutual_CalculateGT_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateGT_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     }
     else {
-      status = Mutual_CalculateGT_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
-      }
+      status = Mutual_CalculateGT_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
+    }
     break;
   }
   
@@ -591,7 +591,7 @@ Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
 
 int                 
 Mutual_CalculateGT_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		       int analyze, double tol, int verbose, char *errbuf)
+		       double tol, int verbose, char *errbuf)
 {
   double gt;
   double obs;
@@ -625,7 +625,7 @@ Mutual_CalculateGT_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateGT_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		      int analyze, double tol, int verbose, char *errbuf)
+		      double tol, int verbose, char *errbuf)
 {
   double gt;
   double pij_wc, pij_nwc;
@@ -686,16 +686,16 @@ Mutual_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
   
   switch (covclass) {
   case C16:
-    status = Mutual_CalculateMI_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateMI_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case C2:
-    status = Mutual_CalculateMI_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateMI_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh)
-      status = Mutual_CalculateMI_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateMI_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     else
-      status = Mutual_CalculateMI_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateMI_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   }
   
@@ -718,7 +718,7 @@ Mutual_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
 
 int                 
 Mutual_CalculateMI_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		       int analyze, double tol, int verbose, char *errbuf)
+		       double tol, int verbose, char *errbuf)
 {
   double mutinf;
   int    i, j;
@@ -748,7 +748,7 @@ Mutual_CalculateMI_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateMI_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		      int analyze, double tol, int verbose, char *errbuf)
+		      double tol, int verbose, char *errbuf)
 {
   double mutinf;
   double pij_wc, pij_nwc;
@@ -800,16 +800,16 @@ Mutual_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
   
   switch (covclass) {
   case C16:
-    status = Mutual_CalculateMIr_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateMIr_C16  (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case C2:
-    status = Mutual_CalculateMIr_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+    status = Mutual_CalculateMIr_C2   (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh)
-      status = Mutual_CalculateMIr_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateMIr_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     else
-      status = Mutual_CalculateMIr_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+      status = Mutual_CalculateMIr_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, tol, verbose, errbuf);
     break;
   }
   
@@ -832,7 +832,7 @@ Mutual_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
 
 int                 
 Mutual_CalculateMIr_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs,
-			int analyze, double tol, int verbose, char *errbuf)
+			double tol, int verbose, char *errbuf)
 {
   double mutinf, HH;
   int    i, j;
@@ -863,7 +863,7 @@ Mutual_CalculateMIr_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, 
 
 int                 
 Mutual_CalculateMIr_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		       int analyze, double tol, int verbose, char *errbuf)
+		       double tol, int verbose, char *errbuf)
 {
   double mutinf, HH;
   double pij_wc, pij_nwc;

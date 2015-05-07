@@ -101,33 +101,33 @@ extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, in
 extern int              Mutual_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCHI_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCHI_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateOMES_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateOMES_C2 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateGT_C16  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateGT_C2   (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMI_C16  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMI_C2   (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMIr_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMIr_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 int analyze, double tol, int verbose, char *errbuf);
+						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						     CORRTYPE corrtype, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
