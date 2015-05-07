@@ -563,11 +563,9 @@ Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh) {
-      printf("select C2\n");
-      status = Mutual_CalculateGT_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
+       status = Mutual_CalculateGT_C2 (mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
     }
     else {
-      printf("select C16\n");
       status = Mutual_CalculateGT_C16(mi, msamap, ct, rocfp, sumfp, maxFP, expectFP, nbpairs, FALSE, tol, verbose, errbuf);
       }
     break;
@@ -903,8 +901,8 @@ Mutual_CalculateMIr_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
       mutinf += pij_nwc * ( log(pij_nwc) - log(qij_nwc) );
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
-      if (mutinf < mi->minCOV) mi->minCOV = mutinf;
-      if (mutinf > mi->maxCOV) mi->maxCOV = mutinf; 
+      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
+      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j]; 
     }
 
 
