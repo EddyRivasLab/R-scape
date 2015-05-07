@@ -50,6 +50,8 @@ struct cfg_s {
   COVTYPE          covtype;
   COVCLASS         covclass;
 
+  int              nseqthresh;
+
   int              nmsa;
   char            *msafile;
   char            *filename;
@@ -123,8 +125,9 @@ struct cfg_s {
   { "--OMES",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES calculation",                                                                          0 },
   { "--ALL",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "calculate all types",                                                                       0 },
   /* covariation class */
-  { "--C16",         eslARG_NONE,       TRUE,   NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
-  { "--C2",          eslARG_NONE,      FALSE,   NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                0 },
+  { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
+  { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 0 },
+  { "--nseqthresh",  eslARG_INT,         "6",    NULL,     "n>=0",    NULL,    NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
   /* phylogenetic method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
@@ -235,6 +238,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* other options */
   cfg.domsa      = TRUE;
   cfg.nshuffle   = esl_opt_GetInteger(go, "--nshuffle");
+  cfg.nseqthresh = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
@@ -261,8 +265,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;
   else if (esl_opt_GetBoolean(go, "--ALL"))   cfg.covtype = COVALL;
 
+ 
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
+  else                                        cfg.covclass = CSELECT;
 
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
@@ -400,7 +406,7 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
     
     /* output the actual file used if requested */
-    if ( esl_opt_IsOn(go, "--outmsa") ) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);;
+    if ( esl_opt_IsOn(go, "--outmsa") ) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
  
     /* print some info */
     if (cfg.voutput) {
@@ -500,7 +506,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   }
 
   /* create the MI structure */
-  mi = Mutual_Create(msa->alen, msa->nseq, cfg->abc);
+  mi = Mutual_Create(msa->alen, msa->nseq, cfg->nseqthresh, cfg->abc);
 
   /* write MSA info to the sumfile */
   if (!ishuffled) 

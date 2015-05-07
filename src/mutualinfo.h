@@ -44,8 +44,9 @@ typedef enum {
 } COVTYPE;
 
 typedef enum {
-  C16 = 0,
-  C2  = 1,
+  C16      = 0,
+  C2       = 1,
+  CSELECT  = 2,
 } COVCLASS;
 
 typedef enum {
@@ -74,6 +75,8 @@ struct mutual_s {
   double          besthreshCOV;
   double          minCOV;
   double          maxCOV;
+
+  int             nseqthresh; // if nseq <= nseqthresh use C2 method otherwise use C16
 
   ESL_ALPHABET   *abc;
 };
@@ -129,7 +132,7 @@ extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *m
 						     CORRTYPE corrtype, int analyze, double tol, int verbose, char *errbuf);
 extern int              Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
-extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, ESL_ALPHABET *abc);
+extern struct mutual_s *Mutual_Create(int64_t alen, int64_t nseq, int nseqthresh, ESL_ALPHABET *abc);
 extern int              Mutual_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
