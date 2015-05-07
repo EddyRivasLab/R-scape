@@ -78,6 +78,17 @@ struct mutual_s {
   ESL_ALPHABET   *abc;
 };
 
+typedef struct hit_s {
+  int64_t i;
+  int64_t j;
+  
+  double sc;
+  double exp;
+
+  int is_bpair;
+  int is_compatible;
+} HIT;
+
 
 extern int              Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass,
 					 int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
@@ -126,6 +137,7 @@ extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct rib
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, 
 							int nbpairs, int verbose, char *errbuf);
+extern int              Mutual_CreateHitList(double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
 #endif

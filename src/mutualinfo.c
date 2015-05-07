@@ -1317,54 +1317,25 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
   
   printf("# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
 	 expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) {
-      if (mtx->mx[i][j] > expectFPthresh) {
+  Mutual_CreateHitList(expectFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
 
-	for (n = 0; n < N; n ++) {
-	  if (mtx->mx[i][j] <= list_sc[n]) exp = list_exp[n];
-	  else break;
-	}
-	if (ct[i+1] == j+1) { nt ++; printf("* %d\t%d\t%.4f\t%.2f\n", msamap[i], msamap[j], exp, mtx->mx[i][j]); }
-	else                { nf ++; printf("  %d\t%d\t%.4f\t%.2f\n", msamap[i], msamap[j], exp, mtx->mx[i][j]); } 
-      }
-    }
-  
   if (maxFP >= 0) {
     if (best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
 	printf("# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, min, max,
 	       oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
-	for (i = 0; i < mi->alen-1; i++) 
-	  for (j = i+1; j < mi->alen; j++) {
-	    if (mtx->mx[i][j] > oneFPthresh) {
-	      if (ct[i+1] == j+1) { nt ++; printf("* %d\t%d\t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); }
-	      else                { nf ++; printf("  %d\t%d \t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); } 
-	    }
-	  }
+	Mutual_CreateHitList(oneFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
       }
       else {
 	printf("# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, min, max,
 	       best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
-	for (i = 0; i < mi->alen-1; i++) 
-	  for (j = i+1; j < mi->alen; j++) {
-	    if (mtx->mx[i][j] > besthresh) {
-	      if (ct[i+1] == j+1) { nt ++; printf("* %d\t%d\t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); }
-	      else                { nf ++; printf("  %d\t%d\t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); } 
-	    }
-	  }
+	Mutual_CreateHitList(besthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
       }
     }
     else {
       printf("# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, min, max,
 	     maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
-      for (i = 0; i < mi->alen-1; i++) 
-	for (j = i+1; j < mi->alen; j++) {
-	  if (mtx->mx[i][j] > maxFPthresh) {
-	      if (ct[i+1] == j+1) { nt ++; printf("* %d\t%d\t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); }
-	      else                { nf ++; printf("  %d\t%d\t%.2f\n", msamap[i], msamap[j], mtx->mx[i][j]); } 
-	  }
-	}
+	Mutual_CreateHitList(maxFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
     }
   }
 
@@ -1380,6 +1351,69 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
   return status;
 }
 
+int 
+Mutual_CreateHitList(double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf)
+{
+  HIT    *hit = NULL;
+  double  exp;
+  int     alloc_nhit = 5;
+  int     nhit;
+  int     h = 0;
+  int     nt = 0;
+  int     nf = 0;
+  int     i, j;
+  int     ih, jh;
+  int     n;
+  int     status;
+  
+  nhit = alloc_nhit;
+  ESL_ALLOC(hit, sizeof(HIT) * nhit);
+
+ for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) {
+      if (mi->COV->mx[i][j] > threshsc) {
+
+	if (h == nhit - 1) {
+	  nhit += alloc_nhit;
+	  ESL_REALLOC(hit, sizeof(HIT) * nhit);
+	}
+	for (n = 0; n < N; n ++) {
+	  if (mi->COV->mx[i][j] <= list_sc[n]) hit[h].exp = list_exp[n];
+	  else break;
+	}
+	hit[h].i = i;
+	hit[h].j = j;
+	hit[h].sc = mi->COV->mx[i][j];
+	if (ct[i+1] == j+1) { hit[h].is_bpair = TRUE;  }
+	else                { 
+	  hit[h].is_bpair = FALSE; 
+	  if (ct[i+1] == 0 && ct[j+1] == 0) hit[h].is_compatible = TRUE;
+	  else                              hit[h].is_compatible = FALSE;
+	} 
+ 
+	h ++;
+      }
+    }
+  
+ nhit = h;
+ //esl_vec_DSortIncreasing(hit, nhit);
+  
+  for (h = 0; h < nhit; h ++) {
+    ih = hit[h].i;
+    jh = hit[h].j;
+    if      (hit[h].is_bpair)      { printf("* %d\t%d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); }
+    else if (hit[h].is_compatible) { printf("~ %d\t%d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); }
+    else                           { printf("  %d\t%d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); } 
+    
+  }
+
+  free(hit);
+  return eslOK;
+
+ ERROR:
+  if (hit) free(hit);
+  return status;
+}
 
 int
 Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf)
