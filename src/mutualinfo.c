@@ -1494,7 +1494,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
       
   expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
   expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
-  fprintf(sumfp, "%s\t%.2f\t%.2f\t", covtype, expectTF_frac_surv, expectTF_frac_total);
+  fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
   
   Mutual_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
   
@@ -1574,9 +1574,9 @@ Mutual_CreateHitList(double threshsc, struct mutual_s *mi, int *msamap, int *ct,
 	h ++;
       }
     }
-  
  nhit = h;
- //esl_vec_DSortIncreasing(hit, nhit);
+
+ //sort by sc? should go here
   
   for (h = 0; h < nhit; h ++) {
     ih = hit[h].i;
