@@ -23,7 +23,7 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--OMES,--OMESp,--OMESa,--ALL"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"              
 
 /* Exclusive options for evolutionary model choice */
@@ -120,6 +120,9 @@ struct cfg_s {
   { "--MIra",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  ACS corrected calculation",                                                            1 },
   { "--MIrp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  APS corrected calculation",                                                            1 },
   { "--MIr",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  calculation",                                                                          1 },
+  { "--MIga",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  ACS corrected calculation",                                                            1 },
+  { "--MIgp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  APS corrected calculation",                                                            1 },
+  { "--MIg",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  calculation",                                                                          1 },
   { "--OMESa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES ACS corrected calculation",                                                            1 },
   { "--OMESp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES APS corrected calculation",                                                            1 },
   { "--OMES",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES calculation",                                                                          1 },
@@ -260,6 +263,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--MIra"))  cfg.covtype = MIra;
   else if (esl_opt_GetBoolean(go, "--MIrp"))  cfg.covtype = MIrp;
   else if (esl_opt_GetBoolean(go, "--MIr"))   cfg.covtype = MIr;
+  else if (esl_opt_GetBoolean(go, "--MIga"))  cfg.covtype = MIga;
+  else if (esl_opt_GetBoolean(go, "--MIgp"))  cfg.covtype = MIgp;
+  else if (esl_opt_GetBoolean(go, "--MIg"))   cfg.covtype = MIg;
   else if (esl_opt_GetBoolean(go, "--OMESa")) cfg.covtype = OMESa;
   else if (esl_opt_GetBoolean(go, "--OMESp")) cfg.covtype = OMESp;
   else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;

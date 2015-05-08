@@ -35,12 +35,16 @@ typedef enum {
   MIrp  = 10,
   MIra  = 11,
 
-  OMES  = 12,
-  OMESp = 13,
-  OMESa = 14,
+  MIg   = 12,
+  MIgp  = 13,
+  MIga  = 14,
 
-  COVALL  = 15,
-  COVNONE = 16,
+  OMES  = 15,
+  OMESp = 16,
+  OMESa = 17,
+
+  COVALL  = 18,
+  COVNONE = 19,
 } COVTYPE;
 
 typedef enum {
@@ -67,6 +71,7 @@ struct mutual_s {
   double       ***pp;    // joint probability of two position [0,alen-1][0.alen-1][0..15]
   double        **pm;    // marginal probabilities [0,alen-1][0..3]
   int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
+  int           **ngap;  // number of gaps  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
   COVCLASS        class;
@@ -127,6 +132,12 @@ extern int              Mutual_CalculateMIr     (COVCLASS covclass, struct mutua
 extern int              Mutual_CalculateMIr_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateMIr_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIg_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 double tol, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIg_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						     CORRTYPE corrtype, int analyze, double tol, int verbose, char *errbuf);
