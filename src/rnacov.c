@@ -235,7 +235,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   } 
   
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
-  if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s_random%d", cfg.outheader, cfg.submsa); }
+  if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
     
   /* other options */
@@ -415,7 +415,7 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
     
     /* output the actual file used if requested */
-    if ( esl_opt_IsOn(go, "--outmsa") ) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
+    if (cfg.outmsafp) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
  
     /* print some info */
     if (cfg.voutput) {
@@ -467,6 +467,7 @@ main(int argc, char **argv)
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
+  if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
   free(cfg.outheader);
   free(cfg.gnuplot);
