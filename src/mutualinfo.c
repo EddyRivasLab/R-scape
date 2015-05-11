@@ -1186,7 +1186,7 @@ Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "OMESp"))  type = OMESp;
   else if (!esl_strcmp(covtype, "MIp"))    type = MIp;
   else if (!esl_strcmp(covtype, "MIrp"))   type = MIrp;
-  else if (!esl_strcmp(covtype, "MIga"))   type = MIga;
+  else if (!esl_strcmp(covtype, "MIgp"))   type = MIgp;
   else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
   else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
   else if (!esl_strcmp(covtype, "OMESa"))  type = OMESa;
