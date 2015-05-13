@@ -146,7 +146,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   int     *useme = NULL;
   int     *map = NULL;
   double   gapfreq;
-  int      alen = msa->alen;
+  int      alen = (int)msa->alen;
   int      ngaps;
   int      apos;
   int      newpos = 0;
@@ -154,22 +154,25 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   int      status;
   
   ESL_ALLOC(useme, sizeof(int) * alen);
+  esl_vec_ISet(useme, alen, TRUE);
  
-  for (apos = 0; apos < (int)msa->alen; apos++) {
-    /* count the gaps in apos */
-    ngaps = 0;
-    for (i = 0; i < msa->nseq; i++) 
-      if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngaps ++;
+  if (gapthresh < 1.0) {
+    for (apos = 0; apos < alen; apos++) {
+      /* count the gaps in apos */
+      ngaps = 0;
+      for (i = 0; i < msa->nseq; i++) 
+	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngaps ++;
+      
+      /* apply gapthresh */   
+      gapfreq = (double)ngaps / (double) msa->nseq;
+      useme[apos] = (gapfreq < gapthresh)? TRUE : FALSE; 
+    }
     
-    /* apply gapthresh */   
-    gapfreq = (double)ngaps / (double) msa->nseq;
-    useme[apos] = (gapfreq < gapthresh)? TRUE : FALSE; 
+    if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
+    if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK) goto ERROR;
   }
   
-  if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
-  if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK) goto ERROR;
-
-  ESL_ALLOC(map, sizeof(int) * msa->alen);
+  ESL_ALLOC(map, sizeof(int) * alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
   

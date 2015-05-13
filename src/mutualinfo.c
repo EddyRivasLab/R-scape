@@ -1654,44 +1654,47 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   double pval = 0.0;
   double add, add_fixed;
   double factorial_total, factorial_BP, factorial_NBP;
-  double factorial_cNBP, factorial_ncNBP;
-  double factorial_cbp, factorial_ncbp;
-  double factorial_cov, factorial_non;
+  double factorial_cnbp,  factorial_ncnbp;
+  double factorial_cbp,   factorial_ncbp;
+  double factorial_cov,   factorial_non;
+  double tol = 1e-3;
   int    NBP;
   int    ncNBP;
   int    total;
   int    cov;
   int    non;
   int    cbp, ncbp;
-
+  int    cnbp, ncnbp;
+ 
   NBP   = alen * (alen - 1) / 2;
-  ncNBP = NBP  - cNBP;
-  total = BP + NBP;
+  total = BP    + NBP;
+  cov   = cBP   + cNBP;
+  non   = total - cov;
 
   esl_stats_LogGamma(total+1, &factorial_total);
   esl_stats_LogGamma(BP+1,    &factorial_BP);
   esl_stats_LogGamma(NBP+1,   &factorial_NBP);
-  esl_stats_LogGamma(cNBP+1,  &factorial_cNBP);
-  esl_stats_LogGamma(ncNBP+1, &factorial_ncNBP);
+  esl_stats_LogGamma(cov+1,   &factorial_cov);
+  esl_stats_LogGamma(non+1,   &factorial_non);
 
-  add_fixed  = factorial_BP + factorial_NBP - factorial_cNBP - factorial_ncNBP - factorial_total;
+  add_fixed  = factorial_BP + factorial_NBP + factorial_cov + factorial_non - factorial_total;
 
-  for (cbp = cBP; cbp <= BP; cbp ++) {
-    ncbp    = BP   - cbp;
-    cov     = cbp  + cNBP;
-    non     = ncbp + ncNBP;
+  for (cnbp = cNBP, cbp = cBP; cnbp >= 0, cbp <= BP; cnbp --, cbp ++) {
+    ncbp  = BP  - cbp;
+    ncnbp = non - ncbp;
     
-    esl_stats_LogGamma(cbp+1,  &factorial_cbp);
-    esl_stats_LogGamma(ncbp+1, &factorial_ncbp);
-    esl_stats_LogGamma(cov+1,  &factorial_cov);
-    esl_stats_LogGamma(non+1,  &factorial_non);
+    esl_stats_LogGamma(cbp+1,   &factorial_cbp);
+    esl_stats_LogGamma(ncbp+1,  &factorial_ncbp);
+    esl_stats_LogGamma(cnbp+1,  &factorial_cnbp);
+    esl_stats_LogGamma(ncnbp+1, &factorial_ncnbp);
 
-    add = add_fixed + factorial_cov + factorial_non - factorial_cbp - factorial_ncbp;
-     
+    add = add_fixed - factorial_cbp - factorial_ncbp - factorial_cnbp - factorial_ncnbp;
+
     pval += exp(add);
   }
+  if (pval > 1.0 && pval < 1.0 + tol) pval = 1.0;
 
-  *ret_pval = pval;
+  *ret_pval = log(pval);
 
   return eslOK;
 }

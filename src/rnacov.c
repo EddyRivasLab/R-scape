@@ -244,7 +244,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.nseqthresh = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
   cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
-  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") : -1.0;
+  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") :  1.0;
   cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
   cfg.expectFP   = esl_opt_GetReal   (go, "--expectFP");
   cfg.tol        = esl_opt_GetReal   (go, "--tol");
@@ -282,7 +282,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
  /*  rocplot file */
-  esl_sprintf(&cfg.rocfile, "%s.g%.1f.e%.1f.roc", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
+  esl_sprintf(&cfg.rocfile, "%s.g%.1f.roc", cfg.outheader, cfg.gapthresh); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
 
   /*  summary file */
@@ -401,7 +401,7 @@ main(int argc, char **argv)
       free(cfg.msaname); cfg.msaname = NULL;
       continue;
     }
-    if (esl_opt_IsOn(go, "--gapthresh") && msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n");        esl_fatal(msg); }
+    if (msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
  
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
