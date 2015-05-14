@@ -520,9 +520,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
 
   /* write MSA info to the sumfile */
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  

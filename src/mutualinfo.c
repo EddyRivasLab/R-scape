@@ -1659,7 +1659,6 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   double factorial_cov,   factorial_non;
   double tol = 1e-3;
   int    NBP;
-  int    ncNBP;
   int    total;
   int    cov;
   int    non;
@@ -1679,7 +1678,8 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
   add_fixed  = factorial_BP + factorial_NBP + factorial_cov + factorial_non - factorial_total;
 
-  for (cnbp = cNBP, cbp = cBP; cnbp >= 0, cbp <= BP; cnbp --, cbp ++) {
+  for (cnbp = cNBP; cnbp <= NBP; cnbp ++) {
+    cbp   = cov - cnbp; if (cbp < 0) break;
     ncbp  = BP  - cbp;
     ncnbp = non - ncbp;
     
@@ -1694,7 +1694,7 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   }
   if (pval > 1.0 && pval < 1.0 + tol) pval = 1.0;
 
-  *ret_pval = log(pval);
+  *ret_pval = pval;
 
   return eslOK;
 }
