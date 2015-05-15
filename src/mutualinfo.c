@@ -28,8 +28,8 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, FILE *rocfp, FILE *sumfp, 
-		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
+Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
+		 int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
    int  status;
 

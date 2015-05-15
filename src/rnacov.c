@@ -418,7 +418,7 @@ main(int argc, char **argv)
     if (cfg.outmsafp) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
  
     /* print some info */
-    if (cfg.voutput) {
+    if (1||cfg.voutput) {
       fprintf(cfg.outfp, "Used alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
