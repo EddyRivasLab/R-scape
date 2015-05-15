@@ -157,7 +157,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   esl_vec_ISet(useme, alen, TRUE);
  
   if (gapthresh < 1.0) {
-    for (apos = 0; apos < alen; apos++) {
+    for (apos = 1; apos <= alen; apos++) {
       /* count the gaps in apos */
       ngaps = 0;
       for (i = 0; i < msa->nseq; i++) 
@@ -165,7 +165,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
       
       /* apply gapthresh */   
       gapfreq = (double)ngaps / (double) msa->nseq;
-      useme[apos] = (gapfreq < gapthresh)? TRUE : FALSE; 
+      useme[apos-1] = (gapfreq < gapthresh)? TRUE : FALSE; 
     }
     
     if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;

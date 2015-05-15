@@ -1492,16 +1492,6 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
     }
   }
       
-  expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
-  expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
-  fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
-  
-  Mutual_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
-  
-  printf("# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
-	 expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
-  Mutual_CreateHitList(expectFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
-
   if (maxFP >= 0) {
     if (best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
@@ -1513,13 +1503,23 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
 	printf("# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, min, max,
 	       best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
 	Mutual_CreateHitList(besthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
-      }
+      } 
     }
-    else {
-      printf("# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, min, max,
-	     maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
-	Mutual_CreateHitList(maxFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
-    }
+    
+    printf("# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, min, max,
+	   maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
+    Mutual_CreateHitList(maxFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf);
+  }
+  else {
+    expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
+    expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
+    fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
+    
+    Mutual_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
+    
+    printf("# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
+	   expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
+    Mutual_CreateHitList(expectFPthresh, mi, msamap, ct, N, list_sc, list_exp, verbose, errbuf); 
   }
 
   free(list_sc);
