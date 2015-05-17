@@ -47,6 +47,8 @@ struct cfg_s {
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
   double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
 
+  double           minidthresh;	       /* fractional minimal identity threshold for selecting subset of sequences */
+
   COVTYPE          covtype;
   COVCLASS         covclass;
 
@@ -139,6 +141,7 @@ struct cfg_s {
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
+  { "-i",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have > <x> id",                                                             1 },
   { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },  
   { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
@@ -239,17 +242,18 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else                              { cfg.submsa = 0; }
     
   /* other options */
-  cfg.domsa      = TRUE;
-  cfg.nshuffle   = esl_opt_GetInteger(go, "--nshuffle");
-  cfg.nseqthresh = esl_opt_GetInteger(go, "--nseqthresh");
-  cfg.fragfrac   = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
-  cfg.idthresh   = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
-  cfg.gapthresh  = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") :  1.0;
-  cfg.maxFP      = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
-  cfg.expectFP   = esl_opt_GetReal   (go, "--expectFP");
-  cfg.tol        = esl_opt_GetReal   (go, "--tol");
-  cfg.verbose    = esl_opt_GetBoolean(go, "-v");
-  cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
+  cfg.domsa       = TRUE;
+  cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
+  cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
+  cfg.idthresh    = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
+  cfg.minidthresh = esl_opt_IsOn(go, "-i")?          esl_opt_GetReal   (go, "-i")          : -1.0;
+  cfg.gapthresh   = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") :  1.0;
+  cfg.maxFP       = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
+  cfg.expectFP    = esl_opt_GetReal   (go, "--expectFP");
+  cfg.tol         = esl_opt_GetReal   (go, "--tol");
+  cfg.verbose     = esl_opt_GetBoolean(go, "-v");
+  cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -393,9 +397,10 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)                != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetByID(cfg.r, &msa, cfg.idthresh, &nremoved)                     != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose)       != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-i")          && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
     if (msa == NULL) {
       free(type); type = NULL;
       free(cfg.msaname); cfg.msaname = NULL;

@@ -1493,7 +1493,7 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
   }
       
   if (maxFP >= 0) {
-    if (best_fp < maxFP_fp) {
+    if (0&&best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
 	printf("# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, min, max,
 	       oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);

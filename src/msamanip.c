@@ -250,7 +250,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 /* Extract subset with sequences no more than idthesh similar to each other
  */
 int
-msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
+msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
 {      
   ESL_MSA   *omsa  = NULL;
   ESL_MSA   *new  = NULL;
@@ -267,10 +267,10 @@ msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int 
   omsa = *msa;
 
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-   esl_vec_ISet(useme, omsa->nseq, 0);
-
+  esl_vec_ISet(useme, omsa->nseq, 0);
+  
   if ((status = esl_msacluster_SingleLinkage(omsa, idthresh, &assignment, &nin, &nc)) != eslOK) goto ERROR;
- 
+  
   for (c = 0; c < nc; c++)
     {
       nskip = esl_rnd_Roll(r, nin[c]); /* pick a random seq in this cluster to be the test. */
@@ -283,6 +283,62 @@ msamanip_SelectSubsetByID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int 
 	  } else nskip--; 
 	}
     }
+  *ret_nremoved = omsa->nseq - nused;
+
+  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
+  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+
+  /* replace msa */
+  esl_msa_Destroy(omsa);
+  *msa = new;
+  
+  free(useme);
+  free(nin);
+  free(assignment);
+  
+  return eslOK;
+  
+ ERROR:
+  if (useme      != NULL) free(useme);
+  if (assignment != NULL) free(assignment);
+  if (nin        != NULL) free(nin);
+  if (new        != NULL) esl_msa_Destroy(new);
+ return status;
+}
+
+/* Extract subset with sequences no lessthan idthesh similar to each other
+ */
+int
+msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
+{      
+  ESL_MSA   *omsa  = NULL;
+  ESL_MSA   *new  = NULL;
+  int       *assignment = NULL;
+  int       *nin        = NULL;
+  int       *useme      = NULL;
+  int        nused      = 0;
+  int        nc         = 0;
+  int        cmax;
+  int        i;
+  int        status;
+
+  omsa = *msa;
+
+  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
+  esl_vec_ISet(useme, omsa->nseq, 0);
+  
+  if ((status = esl_msacluster_SingleLinkage(omsa, idthresh, &assignment, &nin, &nc)) != eslOK) goto ERROR;
+  
+  /* get all the sequences from the maximal cluster */
+  cmax = esl_vec_IArgMax(nin, nc);
+
+  for (i = 0; i < omsa->nseq; i++) {
+    if (assignment[i] == cmax) {
+      nused ++;
+      useme[i] = 1;
+    }
+  }
+  
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
