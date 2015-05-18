@@ -313,29 +313,45 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 {      
   ESL_MSA   *omsa  = NULL;
   ESL_MSA   *new  = NULL;
+  double     pid;
   int       *assignment = NULL;
   int       *nin        = NULL;
   int       *useme      = NULL;
   int        nused      = 0;
   int        nc         = 0;
   int        cmax;
-  int        i;
+  int        i, j;
   int        status;
 
   omsa = *msa;
 
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  esl_vec_ISet(useme, omsa->nseq, 0);
+  esl_vec_ISet(useme, omsa->nseq, FALSE);
   
   if ((status = esl_msacluster_SingleLinkage(omsa, idthresh, &assignment, &nin, &nc)) != eslOK) goto ERROR;
   
   /* get all the sequences from the maximal cluster */
   cmax = esl_vec_IArgMax(nin, nc);
-
   for (i = 0; i < omsa->nseq; i++) {
     if (assignment[i] == cmax) {
       nused ++;
       useme[i] = 1;
+    }
+  }
+  
+  for (i = 0; i < omsa->nseq; i++) {
+    if (useme[i]) {
+      for (j = i+1; j < omsa->nseq; j++) /* traverse test seq stack without destroying/popping */
+	{
+	  if (useme[j]) {
+	    esl_dst_XPairId(omsa->abc, omsa->ax[i], omsa->ax[j], &pid, NULL, NULL);	
+	    if (pid >= idthresh) {
+	      nused ++;
+	    }
+	    else 
+	      useme[j] = FALSE;
+	  }
+	}  
     }
   }
   

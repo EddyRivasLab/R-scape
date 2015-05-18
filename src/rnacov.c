@@ -79,6 +79,7 @@ struct cfg_s {
 
   char            *gnuplot;
   
+  int              nseqmin;
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
   MSA_STAT         omstat;              /* statistics of the original alignment */
@@ -132,7 +133,7 @@ struct cfg_s {
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 0 },
-  { "--nseqthresh",  eslARG_INT,        "8",    NULL,      "n>=0",    NULL,    NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
+  { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,    NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
   /* phylogenetic method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
@@ -141,8 +142,9 @@ struct cfg_s {
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
-  { "-i",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have > <x> id",                                                             1 },
-  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },  
+  { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                             1 },
+  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
+  { "--nseqmin",      eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
   { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
@@ -245,15 +247,17 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.domsa       = TRUE;
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
-  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?          esl_opt_GetReal   (go, "-F")          : -1.0;
-  cfg.idthresh    = esl_opt_IsOn(go, "-I")?          esl_opt_GetReal   (go, "-I")          : -1.0;
-  cfg.minidthresh = esl_opt_IsOn(go, "-i")?          esl_opt_GetReal   (go, "-i")          : -1.0;
-  cfg.gapthresh   = esl_opt_IsOn(go, "--gapthresh")? esl_opt_GetReal   (go, "--gapthresh") :  1.0;
-  cfg.maxFP       = esl_opt_IsOn(go, "--maxFP")?     esl_opt_GetInteger(go, "--maxFP")     : -1;
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")           : -1.0;
+  cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")           : -1.0;
+  cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")           : -1.0;
+  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")    : -1;
+  cfg.gapthresh   = esl_opt_IsOn(go, "--gapthresh")?  esl_opt_GetReal   (go, "--gapthresh")  :  1.0;
+  cfg.maxFP       = esl_opt_IsOn(go, "--maxFP")?      esl_opt_GetInteger(go, "--maxFP")      : -1;
   cfg.expectFP    = esl_opt_GetReal   (go, "--expectFP");
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
+  if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -397,28 +401,38 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (esl_opt_IsOn(go, "-F")          && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I")          && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-i")          && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (cfg.submsa                      && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (cfg.submsa             && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
     if (msa == NULL) {
       free(type); type = NULL;
       free(cfg.msaname); cfg.msaname = NULL;
       continue;
     }
+    if (msa->nseq < cfg.nseqmin) {
+      esl_msa_Destroy(msa); msa = NULL;
+      free(type); type = NULL;
+      free(cfg.msaname); cfg.msaname = NULL;
+      continue;  
+    }
     if (msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
  
     esl_msa_Hash(msa);
     esl_msa_ConvertDegen2X(msa);
-    
     if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
     
     /* given msa aveid and avematch */
     msamanip_XStats(msa, &cfg.mstat);
     
-    if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
-    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
-    
+    if ((esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
+	(esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid"))   ) {
+      esl_msa_Destroy(msa); msa = NULL;
+      free(type); type = NULL;
+      free(cfg.msaname); cfg.msaname = NULL;
+      continue;  
+    }
+
     /* output the actual file used if requested */
     if (cfg.outmsafp) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
  
