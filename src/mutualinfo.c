@@ -1204,7 +1204,7 @@ Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
 }
 
 struct mutual_s *
-Mutual_Create(int64_t alen, int64_t nseq, int nseqthresh, ESL_ALPHABET *abc)
+Mutual_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHABET *abc)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1216,6 +1216,7 @@ Mutual_Create(int64_t alen, int64_t nseq, int nseqthresh, ESL_ALPHABET *abc)
   mi->alen       = alen;
   mi->nseq       = nseq;
   mi->nseqthresh = nseqthresh;
+  mi->ishuffled  = ishuffled;
   mi->abc        = abc;
 
   ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
@@ -1414,7 +1415,8 @@ Mutual_SignificantPairs_Ranking(struct mutual_s *mi, int *msamap, int *ct, FILE 
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
 
   fprintf(rocfp, "\n# %s ", covtype);  
-  fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
+  if (mi->ishuffled) fprintf(rocfp, "shuffled thresh fp tf found true negatives sen ppv F\n"); 
+  else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
   
   inc = (max - min) / delta;
   N = (int)delta;

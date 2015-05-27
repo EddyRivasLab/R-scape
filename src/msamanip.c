@@ -36,7 +36,7 @@ static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
 
 
 int 
-msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
+msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
 {
   int *ct = NULL;
   int  nbpairs = 0;
@@ -57,6 +57,50 @@ msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf
 
  ERROR:
   if (ct) free(ct);
+  return status;
+}
+
+int 
+msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, double **ret_fnbp, char *errbuf)
+{
+  double *ft = NULL;
+  double *fbp = NULL;
+  double *fnbp = NULL;
+  int     K = msa->abc->K;
+  int     idx;
+  int     i;
+  int     status;
+  
+  ESL_ALLOC(ft, sizeof(double) * K);
+  esl_vec_DSet(ft, K, 0.0);
+  
+  for (i = 0; i < msa->alen; i ++) 
+    for (idx = 0; idx < msa->nseq; idx++)     
+      if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][i])) ft[msa->ax[idx][i]] ++;
+  esl_vec_DNorm(ft, K);
+  
+  if (ct) {
+    ESL_ALLOC(fbp,  sizeof(double) * K);
+    ESL_ALLOC(fnbp, sizeof(double) * K);
+    esl_vec_DSet(fbp,  K, 0.0);
+    esl_vec_DSet(fnbp, K, 0.0);
+    
+    for (i = 0; i < msa->alen; i ++) 
+      for (idx = 0; idx < msa->nseq; idx++) 
+	if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][i])) (ct[i+1] > 0)? fbp[msa->ax[idx][i]] ++ :  fnbp[msa->ax[idx][i]] ++;
+    esl_vec_DNorm(fbp, K);
+    esl_vec_DNorm(fnbp, K);
+  }
+  
+  if (ret_ft)               *ret_ft   = ft;   else free(ft);
+  if (fbp)  { if (ret_fbp)  *ret_fbp  = fbp;  else free(fbp);  }  
+  if (fnbp) { if (ret_fnbp) *ret_fnbp = fnbp; else free(fnbp); }  
+  return eslOK;
+  
+ ERROR:
+  if (ft)   free(ft);
+  if (fbp)  free(fbp);
+  if (fnbp) free(fnbp);
   return status;
 }
 
@@ -339,6 +383,7 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
     }
   }
   
+#if 0
   for (i = 0; i < omsa->nseq; i++) {
     if (useme[i]) {
       for (j = i+1; j < omsa->nseq; j++) /* traverse test seq stack without destroying/popping */
@@ -354,7 +399,8 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 	}  
     }
   }
-  
+#endif
+
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
