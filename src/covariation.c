@@ -12,6 +12,7 @@
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
 #include "esl_msa.h"
+#include "esl_msafile.h"
 #include "esl_stack.h"
 #include "esl_stats.h"
 #include "esl_tree.h"
@@ -29,10 +30,10 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-		 int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
+		 int *ct, FILE *rocfp, FILE *sumfp, FILE *R2Rfp, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
-  HIT  *hitlist = NULL;
-  int   status;
+  HITLIST  *hitlist = NULL;
+  int       status;
 
   status = Mutual_Probs(msa, T, ribosum, mi, method, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -195,7 +196,7 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_FormatR2R(msa, hitlist, verbose, errbuf);
+   status = Mutual_R2R(R2Rfp, msa, msamap, hitlist, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
    free(hitlist);
@@ -330,7 +331,7 @@ Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -456,7 +457,7 @@ Mutual_CalculateCHI_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		     int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		     int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status;
@@ -580,7 +581,7 @@ Mutual_CalculateOMES_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, 
 
 int                 
 Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		   int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -709,7 +710,7 @@ Mutual_CalculateGT_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FI
 
 int                 
 Mutual_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		   int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -823,7 +824,7 @@ Mutual_CalculateMI_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FI
 
 int                 
 Mutual_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -941,7 +942,7 @@ Mutual_CalculateMIr_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -1060,7 +1061,7 @@ Mutual_CalculateMIg_C2(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, F
 
 int                 
 Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			     CORRTYPE corrtype, int analyze, HIT **ret_hitlist, double tol, int verbose, char *errbuf)
+			     CORRTYPE corrtype, int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
   ESL_DMATRIX *COV  = NULL;
@@ -1373,14 +1374,14 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
 
 int
-Mutual_SignificantPairs_Ranking(HIT **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
+Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
 				int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *covtype = NULL;
   double      *list_exp = NULL;
   double      *list_sc = NULL;
-  HIT         *hitlist = NULL;
+  HITLIST     *hitlist = NULL;
   double       pval;
   double       delta = 200.;
   double       inc;
@@ -1533,7 +1534,7 @@ Mutual_SignificantPairs_Ranking(HIT **ret_hitlist, struct mutual_s *mi, int *msa
 
   
 
-  if (ret_hitlist) *ret_hitlist = hitlist; else free(hitlist);
+  if (ret_hitlist) *ret_hitlist = hitlist; else Mutual_FreeHitList(hitlist);
   free(list_sc);
   free(list_exp);
   if (covtype) free(covtype); 
@@ -1548,19 +1549,21 @@ Mutual_SignificantPairs_Ranking(HIT **ret_hitlist, struct mutual_s *mi, int *msa
 }
 
 int 
-Mutual_CreateHitList(HIT **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf)
+Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf)
 {
-  HIT    *hit = NULL;
-  int     alloc_nhit = 5;
-  int     nhit;
-  int     h = 0;
-  int     i, j;
-  int     ih, jh;
-  int     n;
-  int     status;
+  HITLIST *hitlist = NULL;
+  int      alloc_nhit = 5;
+  int      nhit;
+  int      h = 0;
+  int      i, j;
+  int      ih, jh;
+  int      n;
+  int      status;
   
+  ESL_ALLOC(hitlist, sizeof(HITLIST));
+
   nhit = alloc_nhit;
-  ESL_ALLOC(hit, sizeof(HIT) * nhit);
+  ESL_ALLOC(hitlist->hit, sizeof(HIT) * nhit);
 
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
@@ -1568,46 +1571,53 @@ Mutual_CreateHitList(HIT **ret_hitlist, double threshsc, struct mutual_s *mi, in
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
-	  ESL_REALLOC(hit, sizeof(HIT) * nhit);
+	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
 	}
 	for (n = 0; n < N; n ++) {
-	  if (mi->COV->mx[i][j] <= list_sc[n]) hit[h].exp = list_exp[n];
+	  if (mi->COV->mx[i][j] <= list_sc[n]) hitlist->hit[h].exp = list_exp[n];
 	  else break;
 	}
-	hit[h].i = i;
-	hit[h].j = j;
-	hit[h].sc = mi->COV->mx[i][j];
-	if (ct[i+1] == j+1) { hit[h].is_bpair = TRUE;  }
+	hitlist->hit[h].i = i;
+	hitlist->hit[h].j = j;
+	hitlist->hit[h].sc = mi->COV->mx[i][j];
+	if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	else                { 
-	  hit[h].is_bpair = FALSE; 
-	  if (ct[i+1] == 0 && ct[j+1] == 0) hit[h].is_compatible = TRUE;
-	  else                              hit[h].is_compatible = FALSE;
+	  hitlist->hit[h].is_bpair = FALSE; 
+	  if (ct[i+1] == 0 && ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
+	  else                              hitlist->hit[h].is_compatible = FALSE;
 	} 
  
 	h ++;
       }
     }
  nhit = h;
+ hitlist->nhit = nhit;
 
  //sort by sc? should go here
   
   for (h = 0; h < nhit; h ++) {
-    ih = hit[h].i;
-    jh = hit[h].j;
-    if      (hit[h].is_bpair)      { printf("* %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); }
-    else if (hit[h].is_compatible) { printf("~ %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); }
-    else                           { printf("  %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hit[h].exp, hit[h].sc); } 
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    if      (hitlist->hit[h].is_bpair)      { printf("* %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].exp, hitlist->hit[h].sc); }
+    else if (hitlist->hit[h].is_compatible) { printf("~ %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].exp, hitlist->hit[h].sc); }
+    else                                    { printf("  %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].exp, hitlist->hit[h].sc); } 
     
   }
 
-  if (ret_hitlist) *ret_hitlist = hit; else free(hit);
+  if (ret_hitlist) *ret_hitlist = hitlist; else Mutual_FreeHitList(hitlist);
   return eslOK;
 
  ERROR:
-  if (hit) free(hit);
+  if (hitlist) Mutual_FreeHitList(hitlist);
   return status;
 }
 
+void
+Mutual_FreeHitList(HITLIST *hitlist)
+{
+  free(hitlist->hit);
+  free(hitlist);
+}
 
 int
 Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf)
@@ -1713,12 +1723,94 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   return eslOK;
 }
 
-
 int
-Mutual_FormatR2R(ESL_MSA *msa, HIT *hitlist, int verbose, char *errbuf)
-{
+Mutual_R2R(FILE *r2rfp, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+ {
+  ESLX_MSAFILE *afp = NULL;
+  FILE         *fp = NULL;
+  char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
+  char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char          r2rversion[10] = "R2R-1.0.4";
+  char          tag[12] = "cov_SS_cons";
+  char         *args = NULL;
+  char         *s = NULL;
+  char         *value = NULL;
+  char         *tok;
+  int           found;
+  int           i;
+  int           h;
+  int           ih, jh;
+  int           tagidx;
+  int           status;
+  
+  /* R2R input and output in STOCKHOLM format */
+  if ((status = esl_tmpfile_named(tmpinfile,  &fp))                           != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
+  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write STOCKHOLM file\n");
+  fclose(fp);
+  
+  /* run R2R */
+  if ("R2RDIR" == NULL)               return eslENOTFOUND;
+  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ((status = esl_tmpfile_named(tmpoutfile, &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
+  esl_sprintf(&args, "%s/%s/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, r2rversion, tmpinfile, tmpoutfile);
+  system(args);
+  fclose(fp);
+  
+  /* convert output to msa */
+  if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  afp->format = eslMSAFILE_STOCKHOLM;
+  if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
+  eslx_msafile_Close(afp);
+  
+  /* modify the cov_cons_ss line acording to our hitlist */
+  for (i = 1; i <= msa->alen; i ++) {
+    found = FALSE;
+    for (h = 0; h < hitlist->nhit; h ++) {
+      ih = msamap[hitlist->hit[h].i]+1;
+      jh = msamap[hitlist->hit[h].j]+1;
 
+      if ((i == ih || i == jh) && hitlist->hit[h].is_bpair) { 
+	esl_sprintf(&tok, "2"); 
+	found = TRUE; 
+      }
+      
+      if (found) break;
+    }
+    if (!found) esl_sprintf(&tok, ".");  
+
+    if (i == 1) esl_sprintf(&value, "%s", tok);
+    else        esl_sprintf(&value, "%s%s", value, tok);
+  }
+ 
+  /* replace the r2r tcov_SS_cons GC line with our own */
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
+  if (tagidx == msa->ngc) {
+    ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
+    ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
+    msa->gc[msa->ngc] = NULL;
+    msa->ngc++;
+  }
+  if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  esl_sprintf(&(msa->gc[tagidx]), "%s", value);
+
+  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+  if (fp)  eslx_msafile_Write(r2rfp, msa, eslMSAFILE_STOCKHOLM);
+
+  remove(tmpinfile);
+  remove(tmpoutfile);
+  
+  if (args) free(args);
+  if (value) free(value);
   return eslOK;
+
+ ERROR:
+  remove(tmpinfile);
+  remove(tmpoutfile);
+  
+  if (args) free(args);
+  if (value) free(value);
+  return status;
 }
 
 

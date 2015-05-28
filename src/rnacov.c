@@ -66,6 +66,9 @@ struct cfg_s {
   char            *outheader;          /* header for all output files */
   char            *msaheader;          /* header for all msa-specific output files */
   int              infmt;
+ 
+  char            *R2Rfile;
+  FILE            *R2Rfp;
   
   int              domsa;
   int              nshuffle;
@@ -243,6 +246,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
   } 
   
+  /* R2R annotated sto file */
+  esl_sprintf(&cfg.R2Rfile, "%s%s", cfg.outheader, ".R2R.sto");
+  if ((cfg.R2Rfp = fopen(cfg.R2Rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.R2Rfile);
+ 
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
@@ -496,7 +503,9 @@ main(int argc, char **argv)
   fclose(cfg.sumfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
+  if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
+  free(cfg.R2Rfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.ft)   free(cfg.ft);
@@ -559,7 +568,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
-			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
+			    cfg->R2Rfp, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
  
