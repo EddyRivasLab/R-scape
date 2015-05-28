@@ -21,15 +21,17 @@
 #include "covariation.h"
 #include "cykcov.h"
 
+static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
+
 int
-CYKCOV(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
+CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, char *errbuf, int verbose) 
 {
   int status;
   /* Fill the cyk matrix */
   if ((status = CYKCOV_Fill(mi, ret_cyk, ret_sc, errbuf, verbose)) != eslOK) goto ERROR;
   
   /* Report a traceback */
-  if ((status = CYK_Traceback(*ret_cyk, errbuf, verbose))          != eslOK) goto ERROR;
+  if ((status = CYK_Traceback(*ret_cyk, ret_ct, errbuf, verbose))  != eslOK) goto ERROR;
   
   return eslOK;
   
@@ -51,43 +53,45 @@ CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
-	if (d == 0) { cyk->dp[j][d] = 0.; continue; }
-	if (d == 1) { cyk->dp[j][d] = 0.; continue; }
-	
-	sc = -eslINFINITY;
-	ESL_MAX(sc, cyk->dp[j-1][d-1]);
-	for (d1 = minloop; d1 <= d; d1++)
-	  ESL_MAX(sc, cyk->dp[j-d+d1-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[j-d][j-d+d1]);
-	cyk->dp[j][d] = sc;
-      } 
+	status = dp_recursion(mi, cyk, minloop, j, d, &(cyk->dp[j][d]), errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
+     } 
   sc = cyk->dp[L][L];
   
   if (ret_cyk) *ret_cyk = cyk;
   if (ret_sc)  *ret_sc  = sc;
   
   return eslOK;
+
+ ERROR:
+  return status;
 }
 
+
 int
-CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, char *errbuf, int verbose) 
+CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, char *errbuf, int verbose) 
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
   ESL_RANDOMNESS *rng = NULL;            /* random numbers for stochastic traceback */
+  int            *ct = NULL;             /* the ct vector with who is paired to whom */
   SCVAL           bestsc;                /* max score over possible rules for nonterminal w  */
   int             nequiv;                /* number of equivalent alternatives for a traceback */
   int             x;                     /* a random choice from nequiv */
+  int             r;                     /* index of a rule */
+  int             d1,d2;                 /* optimum values of d1, d2 iterators */
+  int             i,j,d;                 /* seq coords */
   float           tol = 0.001;
   int             status;
 
   L = cyk->L;
 
- /* We're going to do a simple traceback that only
+  /* We're going to do a simple traceback that only
    * remembers who was a base pair, and keeps a ct[]
    * array. 
    */
-  bpt = bpt_CreateFromGrammar(G, L+2);
-
+  ESL_ALLOC(ct, sizeof(int *) * (L+1));
+  
   /* is sq score is -infty, nothing to traceback */
   if (cyk->dp[L][L] == -eslINFINITY) {
     if (verbose) printf("no traceback.\n");
@@ -124,14 +128,15 @@ CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, char *errbuf, int verbose)
 		  j-d+1, j, d, bestsc, cyk->dp[j][d]); 
       
       /* Now we know one or more equiv solutions, and they're in
-       * the stack <alts>, which keeps 2 numbers (d1, d2) for each
+       * the stack <alts>, which keeps 3 numbers (r, d1, d2) for each
        * solution. Choose one of them at random.
        */
-      nequiv = esl_stack_ObjectCount(alts) / 2; /* how many solutions? */
+      nequiv = esl_stack_ObjectCount(alts) / 3; /* how many solutions? */
       x = esl_rnd_Roll(rng, nequiv);            /* uniformly, 0.nequiv-1 */
-      esl_stack_DiscardTopN(alts, x*2);         /* dig down to choice */
+      esl_stack_DiscardTopN(alts, x*3);         /* dig down to choice */
       esl_stack_IPop(alts, &d2);                /* pop it off, in rev order */
       esl_stack_IPop(alts, &d1);
+      esl_stack_IPop(alts, &r);
 
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
@@ -146,14 +151,18 @@ CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, char *errbuf, int verbose)
   
   }
 
+  *ret_ct = ct;
+
   esl_stack_Destroy(ns);
   esl_stack_Destroy(alts);
   esl_randomness_Destroy(rng);
   return eslOK;
   
-  if (ns   != NULL) esl_stack_Destroy(ns);
-  if (alts != NULL) esl_stack_Destroy(alts);
-  if (rng  != NULL) esl_randomness_Destroy(rng);
+ ERROR:
+  if (ns)   esl_stack_Destroy(ns);
+  if (alts) esl_stack_Destroy(alts);
+  if (rng)  esl_randomness_Destroy(rng);
+  if (ct)   free(ct);
   return status;
 }
 }
@@ -210,3 +219,20 @@ GMX_Dump(FILE *fp, GMX *gmx)
   fputc('\n', fp);
 }
 
+
+static int
+dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose)
+{
+  SCVAL sc = -eslINFINITY;
+  int   d1;
+
+  if (d == 0) { cyk->dp[j][d] = 0.; continue; }
+  if (d == 1) { cyk->dp[j][d] = 0.; continue; }
+  
+  ESL_MAX(sc, cyk->dp[j-1][d-1]);
+  for (d1 = minloop; d1 <= d; d1++)
+    ESL_MAX(sc, cyk->dp[j-d+d1-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[j-d][j-d+d1]);
+
+  *ret_sc = sc;
+  return eslOK;
+}
