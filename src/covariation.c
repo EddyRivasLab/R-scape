@@ -30,7 +30,7 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-		 int *ct, FILE *rocfp, FILE *sumfp, FILE *R2Rfp, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
+		 int *ct, FILE *rocfp, FILE *sumfp, char *r2rfile, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
   HITLIST  *hitlist = NULL;
   int       status;
@@ -196,7 +196,7 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(R2Rfp, msa, msamap, hitlist, verbose, errbuf);
+   status = Mutual_R2R(r2rfile, msa, msamap, hitlist, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
    free(hitlist);
@@ -1724,10 +1724,11 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_R2R(FILE *r2rfp, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
+  char         *r2rpdf = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char          r2rversion[10] = "R2R-1.0.4";
@@ -1794,12 +1795,21 @@ Mutual_R2R(FILE *r2rfp, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose
   if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
   esl_sprintf(&(msa->gc[tagidx]), "%s", value);
 
+  /* write the R2R annotated to stokholm file */
   if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
-  if (fp)  eslx_msafile_Write(r2rfp, msa, eslMSAFILE_STOCKHOLM);
-
+  if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
+  eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM);
+  fclose(fp);
+  
+  /* produce the R2R pdf */
+  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
+  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  system(args);
+  
   remove(tmpinfile);
   remove(tmpoutfile);
   
+  if (r2rpdf) free(r2rpdf);
   if (args) free(args);
   if (value) free(value);
   return eslOK;
@@ -1808,6 +1818,7 @@ Mutual_R2R(FILE *r2rfp, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose
   remove(tmpinfile);
   remove(tmpoutfile);
   
+  if (r2rpdf) free(r2rpdf);
   if (args) free(args);
   if (value) free(value);
   return status;

@@ -246,10 +246,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
   } 
   
-  /* R2R annotated sto file */
-  esl_sprintf(&cfg.R2Rfile, "%s%s", cfg.outheader, ".R2R.sto");
-  if ((cfg.R2Rfp = fopen(cfg.R2Rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.R2Rfile);
- 
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
@@ -308,6 +304,11 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   
+  /* R2R annotated sto file */
+  esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.1f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
+  cfg.R2Rfp = NULL;
+ 
+
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
   if (cfg.nshuffle > 0) {
@@ -568,7 +569,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
  
   /* main function */
   status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
-			    cfg->R2Rfp, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
+			    cfg->R2Rfile, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
  
