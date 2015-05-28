@@ -11,11 +11,22 @@
 
 
 #include "easel.h"
-#include "esl_alphabet.h"
-#include "esl_dmatrix.h"
-#include "esl_msa.h"
 
-extern int CYKCOV_Fill();
+#include "covariation.h"
+
+typedef float SCVAL;
+
+typedef struct {
+  int       L;    /* msa length */
+  SCVAL  **dp;   /* L * L triangular DP matrix */
+} GMX;
+
+extern int   CYKCOV(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int verbose);
+extern int   CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int verbose);
+extern int   CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, char *errbuf, int verbose);
+extern GMX  *GMX_Create(int L);
+extern void  GMX_Destroy(GMX *gmx);
+extern void  GMX_Dump(FILE *fp, GMX *gmx);
 
 
 #endif

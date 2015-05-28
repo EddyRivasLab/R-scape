@@ -112,6 +112,8 @@ HEADERS  = src/e2_config.h\
            src/e2fhmmer_generic_optacc.h\
            src/e2tracealign.h\
            src/branchinference.h\
+	   src/covariation.h\
+	   src/cykcov.h\
            src/evohmmer.h\
            src/evotracealign.h\
            src/fastsp.h\
@@ -125,7 +127,6 @@ HEADERS  = src/e2_config.h\
            src/msamanip.h\
            src/muscle.h\
 	   src/modelconfig.h\
-	   src/mutualinfo.h\
            src/ncbiblast.h\
            src/orthologs.h\
            src/phmmer.h\
@@ -172,6 +173,8 @@ OBJS     = src/e1_bg.o\
            src/e2fhmmer_generic_optacc.o\
            src/e2tracealign.o\
            src/branchinference.o\
+	   src/covariation.o\
+	   src/cykcov.o\
            src/evohmmer.o\
 	   src/evotracealign.o\
            src/fastsp.o\
@@ -186,7 +189,6 @@ OBJS     = src/e1_bg.o\
            src/msamanip.o\
            src/muscle.o\
 	   src/modelconfig.o\
-	   src/mutualinfo.o\
            src/ncbiblast.o\
            src/orthologs.o\
            src/phmmer.o\

@@ -18,7 +18,7 @@
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
-#include "mutualinfo.h"
+#include "covariation.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 

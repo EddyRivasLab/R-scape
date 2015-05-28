@@ -16,7 +16,7 @@
  
 #include "msamanip.h"
 #include "msatree.h"
-#include "mutualinfo.h"
+#include "covariation.h"
 #include "ribosum_matrix.h"
 
 
