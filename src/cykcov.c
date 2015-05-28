@@ -122,12 +122,12 @@ CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, char *errbuf, int verbose)
 		  j-d+1, j, d, bestsc, cyk->dp[j][d]); 
       
       /* Now we know one or more equiv solutions, and they're in
-       * the stack <alts>, which keeps 3 numbers (r, d1, d2) for each
+       * the stack <alts>, which keeps 2 numbers (d1, d2) for each
        * solution. Choose one of them at random.
        */
-      nequiv = esl_stack_ObjectCount(alts) / 3; /* how many solutions? */
+      nequiv = esl_stack_ObjectCount(alts) / 2; /* how many solutions? */
       x = esl_rnd_Roll(rng, nequiv);            /* uniformly, 0.nequiv-1 */
-      esl_stack_DiscardTopN(alts, x*3);         /* dig down to choice */
+      esl_stack_DiscardTopN(alts, x*2);         /* dig down to choice */
       esl_stack_IPop(alts, &d2);                /* pop it off, in rev order */
       esl_stack_IPop(alts, &d1);
 
