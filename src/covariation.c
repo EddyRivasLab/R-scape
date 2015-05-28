@@ -1756,13 +1756,14 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   esl_sprintf(&args, "%s/%s/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, r2rversion, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
-  
+ 
   /* convert output to msa */
   if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_STOCKHOLM;
   if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
   eslx_msafile_Close(afp);
-  
+  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+
   /* modify the cov_cons_ss line acording to our hitlist */
   for (i = 1; i <= msa->alen; i ++) {
     found = FALSE;
@@ -1807,7 +1808,7 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   system(args);
   
   remove(tmpinfile);
-  remove(tmpoutfile);
+  //remove(tmpoutfile);
   
   if (r2rpdf) free(r2rpdf);
   if (args) free(args);
