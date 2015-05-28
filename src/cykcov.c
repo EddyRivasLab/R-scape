@@ -42,20 +42,22 @@ CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int
 {
   GMX   *cyk;           /* CYK DP matrix: M x (L x L triangular)     */
   SCVAL  sc;
+  int    minloop = 5;
   int    L = mi->alen;
-  int    j, d;
+  int    j, d, d1;
   int    status;
   
-  /* nussinov grammar: S --> S a | a S a' | e */
+  /* nussinov grammar: S --> S a | a S a' S | e */
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
-	if (d == 0) { cyk->dp[j][d] = -eslINFINITY; continue; }
-	if (d == 1) { cyk->dp[j][d] = 0.;           continue; }
+	if (d == 0) { cyk->dp[j][d] = 0.; continue; }
+	if (d == 1) { cyk->dp[j][d] = 0.; continue; }
 	
 	sc = -eslINFINITY;
 	ESL_MAX(sc, cyk->dp[j-1][d-1]);
-	ESL_MAX(sc, cyk->dp[j-1][d-2] + mi->COV->mx[j-d][j]);
+	for (d1 = minloop; d1 <= d; d1++)
+	  ESL_MAX(sc, cyk->dp[j-d+d1-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[j-d][j-d+d1]);
 	cyk->dp[j][d] = sc;
       } 
   sc = cyk->dp[L][L];
