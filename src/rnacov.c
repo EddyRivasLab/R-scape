@@ -452,8 +452,8 @@ main(int argc, char **argv)
     status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
     if (status != eslOK) esl_fatal("%s. Failed to calculate ct vector", cfg.errbuf);
     msamanip_CalculateBC(msa, cfg.ct, &cfg.ft, &cfg.fbp, &cfg.fnbp, cfg.errbuf);
-    esl_vec_DDump(stdout, cfg.ft, cfg.abc->K,  "total BC");
-    esl_vec_DDump(stdout, cfg.fbp, cfg.abc->K, "basepairs BC");
+    esl_vec_DDump(stdout, cfg.ft,   cfg.abc->K, "total BC");
+    esl_vec_DDump(stdout, cfg.fbp,  cfg.abc->K, "basepairs BC");
     esl_vec_DDump(stdout, cfg.fnbp, cfg.abc->K, "nonbasepairs BC");
     
     /* main function */

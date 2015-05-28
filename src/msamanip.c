@@ -74,9 +74,9 @@ msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, d
   ESL_ALLOC(ft, sizeof(double) * K);
   esl_vec_DSet(ft, K, 0.0);
   
-  for (i = 0; i < msa->alen; i ++) 
+  for (i = 1; i <= msa->alen; i ++) 
     for (idx = 0; idx < msa->nseq; idx++)     
-      if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][i])) ft[msa->ax[idx][i]] ++;
+      if (esl_abc_XIsCanonical(msa->abc, msa->ax[idx][i])) ft[msa->ax[idx][i]] ++;
   esl_vec_DNorm(ft, K);
   
   if (ct) {
@@ -85,10 +85,10 @@ msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, d
     esl_vec_DSet(fbp,  K, 0.0);
     esl_vec_DSet(fnbp, K, 0.0);
     
-    for (i = 0; i < msa->alen; i ++) 
+    for (i = 1; i <= msa->alen; i ++) 
       for (idx = 0; idx < msa->nseq; idx++) 
-	if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][i])) (ct[i+1] > 0)? fbp[msa->ax[idx][i]] ++ :  fnbp[msa->ax[idx][i]] ++;
-    esl_vec_DNorm(fbp, K);
+	if (esl_abc_XIsCanonical(msa->abc, msa->ax[idx][i])) (ct[i] > 0)? fbp[msa->ax[idx][i]] ++ :  fnbp[msa->ax[idx][i]] ++;
+    esl_vec_DNorm(fbp,  K);
     esl_vec_DNorm(fnbp, K);
   }
   
@@ -103,6 +103,7 @@ msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, d
   if (fnbp) free(fnbp);
   return status;
 }
+
 
 int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)

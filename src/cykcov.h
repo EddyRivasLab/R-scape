@@ -21,9 +21,9 @@ typedef struct {
   SCVAL  **dp;   /* L * L triangular DP matrix */
 } GMX;
 
-extern int   CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, char *errbuf, int verbose);
-extern int   CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int verbose);
-extern int   CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, char *errbuf, int verbose);
+extern int   CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, int minloop, char *errbuf, int verbose);
+extern int   CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, int minloop, char *errbuf, int verbose);
+extern int   CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, int minloop, char *errbuf, int verbose);
 extern GMX  *GMX_Create(int L);
 extern void  GMX_Destroy(GMX *gmx);
 extern void  GMX_Dump(FILE *fp, GMX *gmx);

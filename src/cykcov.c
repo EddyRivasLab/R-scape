@@ -24,14 +24,15 @@
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
 
 int
-CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, char *errbuf, int verbose) 
+CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, int minloop, char *errbuf, int verbose) 
 {
   int status;
+
   /* Fill the cyk matrix */
-  if ((status = CYKCOV_Fill(mi, ret_cyk, ret_sc, errbuf, verbose)) != eslOK) goto ERROR;
+  if ((status = CYKCOV_Fill(mi, ret_cyk, ret_sc, minloop, errbuf, verbose)) != eslOK) goto ERROR;
   
   /* Report a traceback */
-  if ((status = CYK_Traceback(*ret_cyk, ret_ct, errbuf, verbose))  != eslOK) goto ERROR;
+  if ((status = CYKCOV_Traceback(mi, *ret_cyk, ret_ct, minloop, errbuf, verbose))  != eslOK) goto ERROR;
   
   return eslOK;
   
@@ -40,11 +41,10 @@ CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, char *er
 }
 
 int
-CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
+CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, int minloop, char *errbuf, int verbose) 
 {
   GMX   *cyk;           /* CYK DP matrix: M x (L x L triangular)     */
   SCVAL  sc;
-  int    minloop = 5;
   int    L = mi->alen;
   int    j, d, d1;
   int    status;
@@ -69,13 +69,14 @@ CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, char *errbuf, int
 
 
 int
-CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, char *errbuf, int verbose) 
+CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, int minloop, char *errbuf, int verbose) 
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
   ESL_RANDOMNESS *rng = NULL;            /* random numbers for stochastic traceback */
   int            *ct = NULL;             /* the ct vector with who is paired to whom */
-  SCVAL           bestsc;                /* max score over possible rules for nonterminal w  */
+  SCVAL           bestsc;                /* max score over possible rules */
+  int             L = mi->alen;
   int             nequiv;                /* number of equivalent alternatives for a traceback */
   int             x;                     /* a random choice from nequiv */
   int             r;                     /* index of a rule */
@@ -84,9 +85,7 @@ CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, char *errbuf, int 
   float           tol = 0.001;
   int             status;
 
-  L = cyk->L;
-
-  /* We're going to do a simple traceback that only
+   /* We're going to do a simple traceback that only
    * remembers who was a base pair, and keeps a ct[]
    * array. 
    */
@@ -165,10 +164,9 @@ CYKCOV_Traceback(struct mutual_s *mi, GMX *cyk, int **ret_ct, char *errbuf, int 
   if (ct)   free(ct);
   return status;
 }
-}
 
-GMX  
-*GMX_Create(int L)
+GMX *
+GMX_Create(int L)
 {
   GMX *gmx = NULL;
   int  pos = 1;
@@ -226,8 +224,8 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *re
   SCVAL sc = -eslINFINITY;
   int   d1;
 
-  if (d == 0) { cyk->dp[j][d] = 0.; continue; }
-  if (d == 1) { cyk->dp[j][d] = 0.; continue; }
+  if (d == 0) { cyk->dp[j][d] = 0.; return eslOK; }
+  if (d == 1) { cyk->dp[j][d] = 0.; return eslOK; }
   
   ESL_MAX(sc, cyk->dp[j-1][d-1]);
   for (d1 = minloop; d1 <= d; d1++)
