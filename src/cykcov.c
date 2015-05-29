@@ -24,19 +24,22 @@
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
 
 int
-CYKCOV(struct mutual_s *mi, GMX **ret_cyk, int **ret_ct, SCVAL *ret_sc, int minloop, char *errbuf, int verbose) 
+CYKCOV(struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, char *errbuf, int verbose) 
 {
-  int status;
+  GMX *cyk = NULL;
+  int  status;
 
   /* Fill the cyk matrix */
-  if ((status = CYKCOV_Fill(mi, ret_cyk, ret_sc, minloop, errbuf, verbose)) != eslOK) goto ERROR;
+  if ((status = CYKCOV_Fill(mi, &cyk, ret_sc, minloop, errbuf, verbose)) != eslOK) goto ERROR;
   
   /* Report a traceback */
-  if ((status = CYKCOV_Traceback(mi, *ret_cyk, ret_ct, minloop, errbuf, verbose))  != eslOK) goto ERROR;
+  if ((status = CYKCOV_Traceback(mi, cyk, ret_ct, minloop, errbuf, verbose))  != eslOK) goto ERROR;
   
+  GMX_Destroy(cyk);
   return eslOK;
   
  ERROR:
+  if (cyk) GMX_Destroy(cyk);
   return status;
 }
 

@@ -157,9 +157,12 @@ extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct rib
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, 
 							int nbpairs, int verbose, char *errbuf);
-extern int              Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf);
+extern int              Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, 
+					     int verbose, char *errbuf);
 extern void             Mutual_FreeHitList(HITLIST *hitlist);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
+extern int              Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, 
+					char *errbuf, int verbose);
 extern int              Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
 #endif

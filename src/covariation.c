@@ -20,6 +20,7 @@
 #include "esl_wuss.h"
 
 #include "covariation.h"
+#include "cykcov.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
@@ -1721,6 +1722,44 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   *ret_pval = pval;
 
   return eslOK;
+}
+
+int
+Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
+{
+  HITLIST *hitlist = NULL;
+  int     *cykct = NULL;
+  char    *ss = NULL;
+  SCVAL    sc;
+  int      status;
+  
+  /* calculate the cykcov ct vector */
+  status = CYKCOV(mi, &cykct, &sc, minloop, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  /* impose the ct on the msa GC line 'cons_ss' */
+   esl_ct2wuss(cykct, msa->alen+1, ss);
+
+  /* redoe the hitlist since the ct has now changed */
+  status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  /* R2R */
+  status = Mutual_R2R(R2Rcykfile, msa, msamap, hitlist, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  if (verbose) printf("cykcov score = %f\n", sc);
+  
+  Mutual_FreeHitList(hitlist);
+  free(cykct);
+  free(ss);
+  return eslOK;
+  
+ ERROR:
+  if (hitlist) Mutual_FreeHitList(hitlist);
+  if (cykct)   free(cykct);
+  if (ss)      free(ss);
+  return status;
 }
 
 int

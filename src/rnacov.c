@@ -69,6 +69,10 @@ struct cfg_s {
  
   char            *R2Rfile;
   FILE            *R2Rfp;
+
+  char            *R2Rcykfile;
+  FILE            *R2Rcykfp;
+  int              minloop;
   
   int              domsa;
   int              nshuffle;
@@ -115,7 +119,8 @@ struct cfg_s {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--maxFP",         eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               1 },
   { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        1 },
-  { "--nshuffle",      eslARG_INT,         "0",   NULL,    "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--nshuffle",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--cykcov",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* covariation metric */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
@@ -162,8 +167,9 @@ struct cfg_s {
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* msa format */
-  { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             1 },
-  /* other options */
+  { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                "specify format",                                                                            1 },
+  /* other options */  
+  { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -264,6 +270,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
+  cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
+  
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
@@ -308,6 +316,11 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.1f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
   cfg.R2Rfp = NULL;
  
+  cfg.R2Rcykfile = NULL;
+  if (esl_opt_IsOn(go, "--cykcov")) {
+    esl_sprintf(&cfg.R2Rcykfile, "%s.g%.1f.e%.1f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.R2R.sto");
+    cfg.R2Rcykfp = NULL;
+  }
 
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
@@ -573,6 +586,12 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   if (status != eslOK)  { goto ERROR; }
 
  
+  /* find the cykcov structure, and do the cov analysis on it */
+  if (cfg->R2Rcykfile) {
+    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+    if (status != eslOK)  { goto ERROR; }
+  }
+
   Mutual_Destroy(mi); mi = NULL;
   return eslOK;
 
