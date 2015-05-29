@@ -1729,18 +1729,32 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap
 {
   HITLIST *hitlist = NULL;
   int     *cykct = NULL;
-  char    *ss = NULL;
+  char    *ss = NULL;				
+  char     sstag[10] = "SS_cons";
   SCVAL    sc;
+  int      tagidx;
   int      status;
   
   /* calculate the cykcov ct vector */
   status = CYKCOV(mi, &cykct, &sc, minloop, errbuf, verbose);
   if (status != eslOK) goto ERROR;
+  if (verbose) printf("cykcov score = %f\n", sc);
 
   /* impose the ct on the msa GC line 'cons_ss' */
-   esl_ct2wuss(cykct, msa->alen+1, ss);
-
-  /* redoe the hitlist since the ct has now changed */
+  esl_ct2wuss(cykct, msa->alen+1, ss);
+  /* replace the 'SS_cons' GC line with the new ss */
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], "SS_cons") == 0) break;
+  if (tagidx == msa->ngc) {
+    ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
+    ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
+    msa->gc[msa->ngc] = NULL;
+    msa->ngc++;
+  }
+  if ((status = esl_strdup(sstag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  esl_sprintf(&(msa->gc[tagidx]), "%s", ss);
+  
+  /* redo the hitlist since the ct has now changed */
   status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
@@ -1748,8 +1762,6 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap
   status = Mutual_R2R(R2Rcykfile, msa, msamap, hitlist, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-  if (verbose) printf("cykcov score = %f\n", sc);
-  
   Mutual_FreeHitList(hitlist);
   free(cykct);
   free(ss);
