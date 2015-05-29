@@ -199,11 +199,11 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    status = Mutual_R2R(r2rfile, msa, msamap, hitlist, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
-   free(hitlist);
-  return eslOK;
-  
+   Mutual_FreeHitList(hitlist);
+   return eslOK;
+   
  ERROR:
-  if (hitlist) free(hitlist);
+   if (hitlist) Mutual_FreeHitList(hitlist);
   return status;
 }
 
@@ -1744,22 +1744,22 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   int           tagidx;
   int           status;
   
-  /* R2R input and output in STOCKHOLM format */
-  if ((status = esl_tmpfile_named(tmpinfile,  &fp))                           != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write STOCKHOLM file\n");
+  /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
+  if ((status = esl_tmpfile_named(tmpinfile,  &fp))                      != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
+  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
   fclose(fp);
   
   /* run R2R */
   if ("R2RDIR" == NULL)               return eslENOTFOUND;
   if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
-  if ((status = esl_tmpfile_named(tmpoutfile, &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
+  if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
   esl_sprintf(&args, "%s/%s/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, r2rversion, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
  
   /* convert output to msa */
-  if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
-  afp->format = eslMSAFILE_STOCKHOLM;
+  if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  afp->format = eslMSAFILE_PFAM;
   if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
   eslx_msafile_Close(afp);
   if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
@@ -1784,7 +1784,7 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
     else        esl_sprintf(&value, "%s%s", value, tok);
   }
  
-  /* replace the r2r tcov_SS_cons GC line with our own */
+  /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
     if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
   if (tagidx == msa->ngc) {
@@ -1796,10 +1796,10 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
   esl_sprintf(&(msa->gc[tagidx]), "%s", value);
 
-  /* write the R2R annotated to stokholm file */
-  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+  /* write the R2R annotated to PFAM format */
+  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
-  eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM);
+  eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
   fclose(fp);
   
   /* produce the R2R pdf */
@@ -1808,7 +1808,7 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   system(args);
   
   remove(tmpinfile);
-  //remove(tmpoutfile);
+  remove(tmpoutfile);
   
   if (r2rpdf) free(r2rpdf);
   if (args) free(args);
