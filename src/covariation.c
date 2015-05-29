@@ -1725,7 +1725,7 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
+Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
 {
   HITLIST *hitlist = NULL;
   int     *cykct = NULL;
@@ -1736,7 +1736,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap
   int      status;
   
   /* calculate the cykcov ct vector */
-  status = CYKCOV(mi, &cykct, &sc, minloop, errbuf, verbose);
+  status = CYKCOV(r, mi, &cykct, &sc, minloop, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (verbose) printf("cykcov score = %f\n", sc);
 

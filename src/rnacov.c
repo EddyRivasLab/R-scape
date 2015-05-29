@@ -588,7 +588,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->r, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
 
