@@ -197,7 +197,7 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, msa, msamap, hitlist, verbose, errbuf);
+   status = Mutual_R2R(r2rfile, msa, ct, msamap, hitlist, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
    Mutual_FreeHitList(hitlist);
@@ -1741,25 +1741,17 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap
   if (verbose) printf("cykcov score = %f\n", sc);
 
   /* impose the ct on the msa GC line 'cons_ss' */
-  esl_ct2wuss(cykct, msa->alen+1, ss);
+  ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
+  esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (strcmp(msa->gc_tag[tagidx], "SS_cons") == 0) break;
-  if (tagidx == msa->ngc) {
-    ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
-    ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
-    msa->gc[msa->ngc] = NULL;
-    msa->ngc++;
-  }
-  if ((status = esl_strdup(sstag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-  esl_sprintf(&(msa->gc[tagidx]), "%s", ss);
+  esl_sprintf(&(msa->ss_cons), "%s", ss);  
   
   /* redo the hitlist since the ct has now changed */
   status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = Mutual_R2R(R2Rcykfile, msa, msamap, hitlist, verbose, errbuf);
+  status = Mutual_R2R(R2Rcykfile, msa, cykct, msamap, hitlist, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   Mutual_FreeHitList(hitlist);
@@ -1775,7 +1767,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_MSA *msa, struct mutual_s *mi, int *msamap
 }
 
 int
-Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
@@ -1783,10 +1775,12 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char          r2rversion[10] = "R2R-1.0.4";
-  char          tag[12] = "cov_SS_cons";
+  char          sstag[8]  = "SS_cons";
+  char          covtag[12] = "cov_SS_cons";
   char         *args = NULL;
   char         *s = NULL;
-  char         *value = NULL;
+  char         *ssstr = NULL;
+  char         *covstr = NULL;
   char         *tok;
   int           found;
   int           i;
@@ -1794,6 +1788,14 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   int           ih, jh;
   int           tagidx;
   int           status;
+ 
+  /* first modify the ss to a simple <> format. R2R cannot deail with fullwuss 
+   */
+  ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
+  esl_ct2simplewuss(ct, msa->alen, ssstr);
+  
+  /* replace the 'SS_cons' GC line with the new ss */
+  esl_sprintf(&(msa->ss_cons), "%s", ssstr);  
   
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                      != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
@@ -1813,7 +1815,6 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   afp->format = eslMSAFILE_PFAM;
   if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
   eslx_msafile_Close(afp);
-  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
 
   /* modify the cov_cons_ss line acording to our hitlist */
   for (i = 1; i <= msa->alen; i ++) {
@@ -1831,21 +1832,31 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
     }
     if (!found) esl_sprintf(&tok, ".");  
 
-    if (i == 1) esl_sprintf(&value, "%s", tok);
-    else        esl_sprintf(&value, "%s%s", value, tok);
+    if (i == 1) esl_sprintf(&covstr, "%s", tok);
+    else        esl_sprintf(&covstr, "%s%s", covstr, tok);
   }
  
+  /* add line #=GF R2R keep allpairs 
+   * so that it does not truncate ss.
+   * cannot use the standard esl_msa_addGF:
+   *             esl_msa_AddGF(msa, "R2R", -1, " keep allpairs", -1);
+   * since it does not parse with r2r
+   *
+   * turns out the above solution can only deal with the  <> annotation
+   */
+  esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
+
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
+    if (strcmp(msa->gc_tag[tagidx], covtag) == 0) break;
   if (tagidx == msa->ngc) {
     ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
     ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
     msa->gc[msa->ngc] = NULL;
     msa->ngc++;
   }
-  if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-  esl_sprintf(&(msa->gc[tagidx]), "%s", value);
+  if ((status = esl_strdup(covtag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  esl_sprintf(&(msa->gc[tagidx]), "%s", covstr);
 
   /* write the R2R annotated to PFAM format */
   if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
@@ -1863,7 +1874,8 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   
   if (r2rpdf) free(r2rpdf);
   if (args) free(args);
-  if (value) free(value);
+  if (ssstr)  free(ssstr);
+  if (covstr) free(covstr);
   return eslOK;
 
  ERROR:
@@ -1872,7 +1884,8 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *msamap, HITLIST *hitlist, int verbo
   
   if (r2rpdf) free(r2rpdf);
   if (args) free(args);
-  if (value) free(value);
+  if (ssstr)  free(ssstr);
+  if (covstr) free(covstr);
   return status;
 }
 
