@@ -1423,10 +1423,12 @@ Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int 
 
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
 
-  fprintf(rocfp, "\n# %s ", covtype);  
-  if (mi->ishuffled) fprintf(rocfp, "shuffled thresh fp tf found true negatives sen ppv F\n"); 
-  else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
-  
+  if (rocfp) {
+    fprintf(rocfp, "\n# %s ", covtype);  
+    if (mi->ishuffled) fprintf(rocfp, "shuffled thresh fp tf found true negatives sen ppv F\n"); 
+    else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
+  }
+
   inc = (max - min) / delta;
   N = (int)delta;
   ESL_ALLOC(list_sc,  sizeof(double *) * N);
@@ -1450,7 +1452,7 @@ Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int 
     expect = (mi->alen > 0)? (double)fp/(double)mi->alen : 0.0;
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
-    fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
+    if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
      
     if (n < N) {
       list_exp[n] = expect;
@@ -1524,7 +1526,7 @@ Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int 
   else {
     expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
     expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
-    fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
+    if (sumfp) fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
     
     Mutual_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
     
@@ -1745,6 +1747,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual
   esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
+  printf("%s\n", ss);
   
   /* redo the hitlist since the ct has now changed */
   status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
@@ -1844,7 +1847,7 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
    *
    * turns out the above solution can only deal with the  <> annotation
    */
-  esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
+  esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
 
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)

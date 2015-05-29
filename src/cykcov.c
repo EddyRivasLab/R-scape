@@ -54,7 +54,7 @@ CYKCOV_Fill(struct mutual_s *mi, GMX **ret_cyk, SCVAL *ret_sc, int minloop, char
   int    j, d;
   int    status;
   
-  /* nussinov grammar: S --> S a | a S a' S | e */
+  /* nussinov grammar: S --> a S | a S a' S | e */
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
@@ -96,6 +96,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
    * array. 
    */
   ESL_ALLOC(ct, sizeof(int) * (L+1));
+  esl_vec_ISet(ct, L+1, 0);
   
   /* is sq score is -infty, nothing to traceback */
   if (cyk->dp[L][L] == -eslINFINITY) {
@@ -149,7 +150,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
        */
       if (1||verbose) {
         printf("-----------------------------------\n"); 
-        printf("j=%d d=%d d1=%d\n", j, d, d1);
+        printf("i=%d j=%d d=%d d1=%d\n", j-d+1, j, d, d1);
 	printf("tracing %f\n", bestsc);
         printf("   rule(%d)\n", r+1);
       }
@@ -158,19 +159,18 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
       k = i + d1 -1;
 
       if (r == 0) {
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j);
       }
       else if (r == 1) {
-	esl_stack_IPush(ns, i);
-	esl_stack_IPush(ns, j-1);
-      }
-      else if (r == 2) {
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, k-1);
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	ct[i] = k;
 	ct[k] = i;
-
+      }
+      else if (r == 2) {
       }
       else 	
 	ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is 2", r);
@@ -243,7 +243,7 @@ GMX_Dump(FILE *fp, GMX *gmx)
 
 
 static int
-dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts, char *errbuf, int verbose)
+dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *ret_bestsc,  ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;
   SCVAL sc;
@@ -252,11 +252,11 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *re
   
   if (alts) esl_stack_Reuse(alts);
    
-  /* rule1: S a */
+  /* rule1: a S */
   r  = 0;
   d1 = 0;
   if (d > 0) {
-    bestsc = (d > 1)? cyk->dp[j-1][d-1] : 0;
+    bestsc = (d > 1)? cyk->dp[j][d-1] : 0.;
     if (alts) {
       esl_stack_IPush(alts, r);
       esl_stack_IPush(alts, d1);
@@ -298,6 +298,6 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, int j, int d, SCVAL *re
     }
   }
 
-  *ret_sc = sc;
+  *ret_bestsc = bestsc;
   return eslOK;
 }
