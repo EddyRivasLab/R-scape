@@ -181,7 +181,7 @@ static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - statistical test for covatiation in RNA alignments";
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled);
+static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, int ishuffled);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -485,13 +485,13 @@ main(int argc, char **argv)
     
     /* main function */
     if (cfg.domsa) {
-      status = run_rnacov(go, &cfg, msa, FALSE);
+      status = run_rnacov(go, &cfg, &msa, FALSE);
       if (status != eslOK) esl_fatal("Failed to run rnacov");
     }
     
     for (s = 0; s < cfg.nshuffle; s ++) {
       msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
-      status = run_rnacov(go, &cfg, shmsa, TRUE);
+      status = run_rnacov(go, &cfg, &shmsa, TRUE);
       if (status != eslOK) esl_fatal("%s. Failed to run rnacov shuffled", cfg.errbuf);
       esl_msa_Destroy(shmsa); shmsa = NULL;
     }
@@ -554,9 +554,10 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
+run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, int ishuffled)
 {
   struct mutual_s *mi   = NULL;
+  ESL_MSA         *msa = *omsa;
   int              nnodes;
   int              status;
 
@@ -588,19 +589,19 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, 
+  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, 
 			    (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
-
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
+    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, &msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
 			     cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
 
+  *omsa = msa;
   Mutual_Destroy(mi); mi = NULL;
   return eslOK;
 

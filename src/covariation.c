@@ -30,10 +30,11 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 
 int                 
-Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
+Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
 		 int *ct, FILE *rocfp, FILE *sumfp, char *r2rfile, char *r2rversion, int r2rall, 
 		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
+  ESL_MSA  *msa = *omsa;
   HITLIST  *hitlist = NULL;
   int       status;
 
@@ -198,9 +199,10 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, r2rversion, r2rall, msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
+   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
+   *omsa = msa;
    Mutual_FreeHitList(hitlist);
    return eslOK;
    
@@ -1728,9 +1730,10 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, 
+Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, int *msamap, int minloop, 
 		int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
 {
+  ESL_MSA *msa = *omsa;
   HITLIST *hitlist = NULL;
   int     *cykct = NULL;
   char    *ss = NULL;	
@@ -1756,16 +1759,19 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = Mutual_R2R(R2Rcykfile, R2Rversion, R2Rall, msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
+  status = Mutual_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
-  status = Mutual_ExpandCT(msa, cykct, verbose, errbuf);
-   if (status != eslOK) goto ERROR;
+  status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  printf("\npaso? %s\n", R2Rcykfile);
 
   /* R2Rpdf */
   status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
+
+  *omsa = msa;
 
   Mutual_FreeHitList(hitlist);
   free(cykct);
@@ -1780,10 +1786,12 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
 }
 
 int
-Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int verbose, char *errbuf)
+Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
+  ESL_MSA      *msa = *ret_msa;
+  ESL_MSA      *r2rmsa = NULL;
   char         *r2rpdf = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
@@ -1822,13 +1830,14 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, i
   system(args);
   fclose(fp);
  
-  /* convert output to msa */
+  /* convert output to r2rmsa */
   if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_PFAM;
-  if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
+  if (eslx_msafile_Read(afp, &r2rmsa) != eslOK) eslx_msafile_ReadFailure(afp, status);
   eslx_msafile_Close(afp);
 
   /* modify the cov_cons_ss line acording to our hitlist */
+  if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment\n");
   for (i = 1; i <= msa->alen; i ++) {
     found = FALSE;
     for (h = 0; h < hitlist->nhit; h ++) {
@@ -1856,38 +1865,44 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, i
    *
    * turns out the above solution can only deal with the  <> annotation
    */
-  if (r2rall) 
-    esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
-  else
-    esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
-  
-  /* replace the r2r 'cov_SS_cons' GC line with our own */
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (strcmp(msa->gc_tag[tagidx], covtag) == 0) break;
-  if (tagidx == msa->ngc) {
-    ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
-    ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
-    msa->gc[msa->ngc] = NULL;
-    msa->ngc++;
+  if (r2rfile) {
+    if (r2rall) 
+      esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
+    else
+      esl_msa_AddGF(r2rmsa, "R2R keep allpairs", -1, "", -1);
   }
-  if ((status = esl_strdup(covtag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-  esl_sprintf(&(msa->gc[tagidx]), "%s", covstr);
+
+  /* replace the r2r 'cov_SS_cons' GC line with our own */
+  for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
+    if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
+  if (tagidx == r2rmsa->ngc) {
+    ESL_REALLOC(r2rmsa->gc_tag, (r2rmsa->ngc+1) * sizeof(char **));
+    ESL_REALLOC(r2rmsa->gc,     (r2rmsa->ngc+1) * sizeof(char **));
+    r2rmsa->gc[r2rmsa->ngc] = NULL;
+    r2rmsa->ngc++;
+  }
+  if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
 
   /* write the R2R annotated to PFAM format */
-  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
-  if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
-  eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
-  fclose(fp);
-  
-  /* produce the R2R pdf */
-  if (makepdf) {
-    status = Mutual_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
-    if (status != eslOK) goto ERROR;
+  if (1||verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
+  if (r2rfile) {
+    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
+    eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
+    fclose(fp);
+    
+    /* produce the R2R pdf */
+    if (makepdf) {
+      status = Mutual_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
+      if (status != eslOK) goto ERROR;
+    }
   }
-
+  
   remove(tmpinfile);
   remove(tmpoutfile);
   
+  *ret_msa = r2rmsa;
+  esl_msa_Destroy(msa);
   if (r2rpdf) free(r2rpdf);
   if (args) free(args);
   if (ssstr)  free(ssstr);
@@ -1898,8 +1913,10 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, i
   remove(tmpinfile);
   remove(tmpoutfile);
   
+  if (msa)    esl_msa_Destroy(msa);
+  if (r2rmsa) esl_msa_Destroy(r2rmsa);
   if (r2rpdf) free(r2rpdf);
-  if (args) free(args);
+  if (args)   free(args);
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
   return status;
@@ -1916,7 +1933,8 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   if ("R2RDIR" == NULL)               return eslENOTFOUND;
   if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  //esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rpdf);
   system(args);
   
   free(args);
@@ -1926,11 +1944,29 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
 }
 
 int
-Mutual_ExpandCT(ESL_MSA *msa, int *ct, int verbose, char *errbuf)
+Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int verbose, char *errbuf)
 {
-  int status;
+  FILE *fp = NULL;
+  char  tag[10] = "cons";
+  int   tagidx;
+  int   status;
+  
   // get the line #=GC cons
-
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
+  if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
+  printf("%s\n", msa->gc[tagidx]);
+  
+  if (r2rall) 
+    esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
+  else
+    esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
+  
+  if (r2rfile) {
+    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
+    eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
+    fclose(fp);
+  }   
   return eslOK;
 
  ERROR:
