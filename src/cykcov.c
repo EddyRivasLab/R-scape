@@ -274,9 +274,11 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j
   SCVAL sc;
   int   d1;
   int   r;
+  int   i, k;
   
   if (alts) esl_stack_Reuse(alts);
    
+  i = j - d + 1;
   /* rule1: a S */
   r  = 0;
   d1 = 0;
@@ -291,7 +293,8 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j
   /* rule2: a S a' S  */
   r = 1;
   for (d1 = minloop; d1 <= d; d1++) {
-    sc = (mi->COV->mx[j-d][j-d+d1] >= covthresh)? cyk->dp[j-d+d1-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[j-d][j-d+d1] : -eslINFINITY;
+    k = i + d1 - 1;
+    sc = (mi->COV->mx[i-1][k-1] >= covthresh)? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
