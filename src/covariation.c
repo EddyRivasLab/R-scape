@@ -1738,9 +1738,9 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual
   int      status;
   
   /* calculate the cykcov ct vector */
-  status = CYKCOV(r, mi, &cykct, &sc, minloop, errbuf, verbose);
+  status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, 10*expectFP, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) printf("cykcov score = %f\n", sc);
+  if (1||verbose) printf("cykcov score = %f\n", sc);
 
   /* impose the ct on the msa GC line 'cons_ss' */
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
@@ -1823,8 +1823,8 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
   for (i = 1; i <= msa->alen; i ++) {
     found = FALSE;
     for (h = 0; h < hitlist->nhit; h ++) {
-      ih = msamap[hitlist->hit[h].i]+1;
-      jh = msamap[hitlist->hit[h].j]+1;
+      ih = hitlist->hit[h].i+1;
+      jh = hitlist->hit[h].j+1;
 
       if ((i == ih || i == jh) && hitlist->hit[h].is_bpair) { 
 	esl_sprintf(&tok, "2"); 
@@ -1848,7 +1848,7 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
    * turns out the above solution can only deal with the  <> annotation
    */
   esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
-
+  
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
     if (strcmp(msa->gc_tag[tagidx], covtag) == 0) break;
