@@ -1,6 +1,6 @@
 /* rnacov -- statistical test for covariation in an RNA structural alignment
  */
- #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -67,6 +67,8 @@ struct cfg_s {
   char            *msaheader;          /* header for all msa-specific output files */
   int              infmt;
  
+  char            *R2Rversion;
+  int              R2Rall;
   char            *R2Rfile;
   FILE            *R2Rfp;
 
@@ -121,6 +123,7 @@ struct cfg_s {
   { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        1 },
   { "--nshuffle",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--cykcov",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
+  { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                             1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* covariation metric */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
@@ -272,6 +275,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   
+  esl_sprintf(&cfg.R2Rversion, "R2R-1.0.4");			
+  cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
+
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
@@ -520,6 +526,7 @@ main(int argc, char **argv)
   if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
   free(cfg.R2Rfile);
+  free(cfg.R2Rversion);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.ft)   free(cfg.ft);
@@ -581,14 +588,16 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, (!ishuffled)?cfg->sumfp:cfg->shsumfp, 
-			    cfg->R2Rfile, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = Mutual_Calculate(msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, 
+			    (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
+			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
 
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->r, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
+			     cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
 

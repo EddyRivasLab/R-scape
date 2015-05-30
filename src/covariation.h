@@ -104,9 +104,9 @@ typedef struct hitlist_s{
 
 }  HITLIST;
 
-extern int              Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass,
-					 int *ct, FILE *rocfp, FILE *sumfp, char *R2Rfile, int maxFP, double expectFP, int nbpairs, 
-					 double tol, int verbose, char *errbuf);
+extern int              Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, 
+					 COVCLASS covclass, int *ct, FILE *rocfp, FILE *sumfp, char *R2Rfile, char *r2rversion, int r2rall, int maxFP, double expectFP, 
+					 int nbpairs, double tol, int verbose, char *errbuf);
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
@@ -162,7 +162,9 @@ extern int              Mutual_CreateHitList(HITLIST **ret_hitlist, double thres
 extern void             Mutual_FreeHitList(HITLIST *hitlist);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, 
-					char *errbuf, int verbose);
-extern int              Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
+extern int              Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, 
+					int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose);
+extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
+				   int verbose, char *errbuf);
+extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 #endif

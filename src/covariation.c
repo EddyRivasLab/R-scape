@@ -31,7 +31,8 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 
 int                 
 Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-		 int *ct, FILE *rocfp, FILE *sumfp, char *r2rfile, int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
+		 int *ct, FILE *rocfp, FILE *sumfp, char *r2rfile, char *r2rversion, int r2rall, 
+		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
   HITLIST  *hitlist = NULL;
   int       status;
@@ -197,7 +198,7 @@ Mutual_Calculate(ESL_MSA *msa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ri
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, msa, ct, msamap, hitlist, verbose, errbuf);
+   status = Mutual_R2R(r2rfile, r2rversion, r2rall, msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
    Mutual_FreeHitList(hitlist);
@@ -1727,11 +1728,12 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
+Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int *msamap, int minloop, 
+		int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
 {
   HITLIST *hitlist = NULL;
   int     *cykct = NULL;
-  char    *ss = NULL;				
+  char    *ss = NULL;	
   char     sstag[10] = "SS_cons";
   SCVAL    sc;
   int      tagidx;
@@ -1754,7 +1756,14 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = Mutual_R2R(R2Rcykfile, msa, cykct, msamap, hitlist, verbose, errbuf);
+  status = Mutual_R2R(R2Rcykfile, R2Rversion, R2Rall, msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  /* expand the CT with compatible A:U C:G G:U pairs */
+
+
+  /* R2Rpdf */
+  status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   Mutual_FreeHitList(hitlist);
@@ -1770,14 +1779,13 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual
 }
 
 int
-Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
   char         *r2rpdf = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char          r2rversion[10] = "R2R-1.0.4";
   char          sstag[8]  = "SS_cons";
   char          covtag[12] = "cov_SS_cons";
   char         *args = NULL;
@@ -1847,7 +1855,10 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
    *
    * turns out the above solution can only deal with the  <> annotation
    */
-  esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
+  if (r2rall) 
+    esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
+  else
+    esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
   
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
@@ -1868,10 +1879,11 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
   fclose(fp);
   
   /* produce the R2R pdf */
-  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
-  system(args);
-  
+  if (makepdf) {
+    status = Mutual_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+
   remove(tmpinfile);
   remove(tmpoutfile);
   
@@ -1890,6 +1902,26 @@ Mutual_R2R(char *r2rfile, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, 
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
   return status;
+}
+
+int
+Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+{
+  char *r2rpdf = NULL;
+  char *args = NULL;
+  char *s = NULL;
+  
+  /* produce the R2R pdf */
+  if ("R2RDIR" == NULL)               return eslENOTFOUND;
+  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
+  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  system(args);
+  
+  free(args);
+  free(r2rpdf);
+  
+  return eslOK;
 }
 
 
