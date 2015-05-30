@@ -1765,7 +1765,6 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  printf("\npaso? %s\n", R2Rcykfile);
 
   /* R2Rpdf */
   status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
@@ -1956,13 +1955,15 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int verbose, c
     if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
   if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
   printf("%s\n", msa->gc[tagidx]);
-  
-  if (r2rall) 
-    esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
-  else
-    esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
-  
+    
   if (r2rfile) {
+    if (r2rall) 
+      esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
+    else
+      esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
+
+    if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
+    
     if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
     eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
     fclose(fp);
