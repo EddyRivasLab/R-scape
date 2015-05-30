@@ -1759,8 +1759,9 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   status = Mutual_R2R(R2Rcykfile, R2Rversion, R2Rall, msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-  /* expand the CT with compatible A:U C:G G:U pairs */
-
+  /* expand the CT with compatible/stacked A:U C:G G:U pairs */
+  status = Mutual_ExpandCT(msa, cykct, verbose, errbuf);
+   if (status != eslOK) goto ERROR;
 
   /* R2Rpdf */
   status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
@@ -1922,6 +1923,18 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   free(r2rpdf);
   
   return eslOK;
+}
+
+int
+Mutual_ExpandCT(ESL_MSA *msa, int *ct, int verbose, char *errbuf)
+{
+  int status;
+  // get the line #=GC cons
+
+  return eslOK;
+
+ ERROR:
+  return status;
 }
 
 
