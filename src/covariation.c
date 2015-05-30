@@ -24,6 +24,8 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
+static int is_stacked_pair(int i, int j, int L, int *ct);
+static int is_cannonical_pair(char nti, char ntj);
 static int is_wc(int x, int y);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
@@ -199,7 +201,7 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
+   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, (1||verbose), errbuf);
    if  (status != eslOK) goto ERROR;
 
    *omsa = msa;
@@ -1737,9 +1739,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   HITLIST *hitlist = NULL;
   int     *cykct = NULL;
   char    *ss = NULL;	
-  char     sstag[10] = "SS_cons";
   SCVAL    sc;
-  int      tagidx;
   int      status;
   
   /* calculate the cykcov ct vector */
@@ -1762,10 +1762,14 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   status = Mutual_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
+#if 1
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
-  status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, verbose, errbuf);
+  status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, minloop, verbose, errbuf);
   if (status != eslOK) goto ERROR;
+#endif
 
+  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
+  
   /* R2Rpdf */
   status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -1794,7 +1798,6 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *
   char         *r2rpdf = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char          sstag[8]  = "SS_cons";
   char          covtag[12] = "cov_SS_cons";
   char         *args = NULL;
   char         *s = NULL;
@@ -1808,7 +1811,7 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *
   int           tagidx;
   int           status;
  
-  /* first modify the ss to a simple <> format. R2R cannot deail with fullwuss 
+  /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
    */
   ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
   esl_ct2simplewuss(ct, msa->alen, ssstr);
@@ -1864,13 +1867,11 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *
    *
    * turns out the above solution can only deal with the  <> annotation
    */
-  if (r2rfile) {
-    if (r2rall) 
-      esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
-    else
-      esl_msa_AddGF(r2rmsa, "R2R keep allpairs", -1, "", -1);
-  }
-
+  if (r2rall) 
+    esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
+  else
+    esl_msa_AddGF(r2rmsa, "R2R keep allpairs", -1, "", -1);
+  
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
     if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
@@ -1883,8 +1884,9 @@ Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *
   if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
   esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
 
+  if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
+  
   /* write the R2R annotated to PFAM format */
-  if (1||verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   if (r2rfile) {
     if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
     eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
@@ -1927,13 +1929,13 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   char *r2rpdf = NULL;
   char *args = NULL;
   char *s = NULL;
-  
+
   /* produce the R2R pdf */
   if ("R2RDIR" == NULL)               return eslENOTFOUND;
   if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  //esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rpdf);
+  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  //esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rpdf);
   system(args);
   
   free(args);
@@ -1943,39 +1945,98 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
 }
 
 int
-Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int verbose, char *errbuf)
+Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf)
 {
   FILE *fp = NULL;
   char  tag[10] = "cons";
+  char *cons;
+  char *ss = NULL;
   int   tagidx;
+  int   L = msa->alen;
+  int   i, j, d;
   int   status;
   
-  // get the line #=GC cons
+  /* replace any R2R line with a new one not tab delimited 
+   * R2R chockes on tab delimited lines
+   */
+  for (tagidx = 0; tagidx < msa->ngf; tagidx++) 
+    if (strcmp(msa->gf_tag[tagidx], "R2R") == 0) {
+      esl_sprintf(&(msa->gf_tag[tagidx]), "R2R %s", msa->gf[tagidx]);
+      esl_sprintf(&(msa->gf[tagidx]), "");
+  }
+
+  /* get the line #=GC cons */
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
     if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
   if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
-  printf("%s\n", msa->gc[tagidx]);
-    
-  if (r2rfile) {
-    if (r2rall) 
-      esl_msa_AddGF(msa, "R2R keep all", -1, "", -1);
-    else
-      esl_msa_AddGF(msa, "R2R keep allpairs", -1, "", -1);
+  cons =  msa->gc[tagidx];
+  
+  for (j = 0; j < L; j++)
+    for (d = 0; d <= j; d++)
+      {
+	i = j-d+1;
 
-    if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
-    
-    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
-    eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
-    fclose(fp);
-  }   
+	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
+	  { // add this pair
+	    printf("^^ %c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
+	    ct[i+1] = j+1;
+	    ct[j+1] = i+1;
+	  }
+	
+      }
+ 
+  /* replace the 'SS_cons' GC line with the new ss */
+  ESL_ALLOC(ss, sizeof(char) * (L+1));
+  esl_ct2simplewuss(ct, L, ss);
+  esl_sprintf(&(msa->ss_cons), "%s", ss);  
+
+  if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open output file %s", r2rfile);
+  eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
+  fclose(fp);
+  
+  free(ss);
   return eslOK;
 
  ERROR:
+  if (ss) free(ss);
   return status;
 }
 
 
 /*---------------- internal functions --------------------- */
+
+static int
+is_stacked_pair(int i, int j, int L, int *ct) 
+{
+  int is_stacked = FALSE;
+
+  if (ct[i] > 0 || ct[j] > 0) return FALSE; // both have to be unpaired
+
+  if (ct[i+1] == j-1 && ct[j-1] == i+1                  ) is_stacked = TRUE;
+  if (ct[i-1] == j+1 && ct[j+1] == i-1 && i > 0 && j < L) is_stacked = TRUE;
+	
+  return is_stacked;
+}
+
+static int
+is_cannonical_pair(char nti, char ntj) 
+{
+  int is_cannonical = FALSE;
+
+  if (nti == 'A' && ntj == 'U') is_cannonical = TRUE;
+  if (nti == 'C' && ntj == 'G') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'C') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'U') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'Y') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'A') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'G') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'R') is_cannonical = TRUE;
+  if (nti == 'R' && ntj == 'Y') is_cannonical = TRUE;
+  if (nti == 'Y' && ntj == 'R') is_cannonical = TRUE;
+
+  return is_cannonical;
+}
+
 
 static int
 is_wc(int x, int y) 

@@ -167,5 +167,5 @@ extern int              Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int 
 extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
 				   int verbose, char *errbuf);
 extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
-extern int              Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int verbose, char *errbuf);
+extern int              Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 #endif
