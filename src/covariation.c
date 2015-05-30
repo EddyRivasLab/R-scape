@@ -1738,7 +1738,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual
   int      status;
   
   /* calculate the cykcov ct vector */
-  status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, 10*expectFP, errbuf, verbose);
+  status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, expectFP, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (1||verbose) printf("cykcov score = %f\n", sc);
 
