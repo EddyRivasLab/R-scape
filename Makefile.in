@@ -112,6 +112,7 @@ HEADERS  = src/e2_config.h\
            src/e2fhmmer_generic_optacc.h\
            src/e2tracealign.h\
            src/branchinference.h\
+	   src/covgrammars.h\
 	   src/covariation.h\
 	   src/cykcov.h\
            src/evohmmer.h\
@@ -173,6 +174,7 @@ OBJS     = src/e1_bg.o\
            src/e2fhmmer_generic_optacc.o\
            src/e2tracealign.o\
            src/branchinference.o\
+	   src/covgrammars.o\
 	   src/covariation.o\
 	   src/cykcov.o\
            src/evohmmer.o\

@@ -19,6 +19,7 @@
 #include "esl_wuss.h"
 
 #include "covariation.h"
+#include "covgrammars.h"
 #include "cykcov.h"
 
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts, char *errbuf, int verbose);
@@ -214,57 +215,6 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
   return status;
 }
 
-GMX *
-GMX_Create(int L)
-{
-  GMX *gmx = NULL;
-  int  pos = 1;
-  int  j, d;
-  int  status;
-
-  ESL_ALLOC(gmx, sizeof(GMX));
-  gmx->L = L;
-  
-  ESL_ALLOC(gmx->dp,    sizeof(SCVAL *) * (L+1));
-  ESL_ALLOC(gmx->dp[0], sizeof(SCVAL  ) * ((L+2)*(L+1))/2);
-
-  for (j = 1; j <= gmx->L; j++)
-    {
-      gmx->dp[j] = gmx->dp[0] + pos;
-      pos += j+1;
-    }
-  
-  /* initialize */
-  for (j = 0; j <= gmx->L; j++)
-    for (d = 0; d <= j; d++)
-      gmx->dp[j][d] = -eslINFINITY;
- 
-  return gmx;
- ERROR:
-  return NULL;
-}
-
-void 
-GMX_Destroy(GMX *gmx)
-{
-  if (gmx == NULL) return;
-  if (gmx->dp) free(gmx->dp);
-  free(gmx);
-}
-
-void
-GMX_Dump(FILE *fp, GMX *gmx)
-{
-  int j, d;
-
-  for (j = 0; j <= gmx->L; j++)
-    {
-      for (d = 0; d <= j; d++)
-        fprintf(fp, "%f ", gmx->dp[j][d]);
-      fputc('\n', fp);
-    }
-  fputc('\n', fp);
-}
 
 
 static int
