@@ -17,6 +17,7 @@
 #include "msamanip.h"
 #include "msatree.h"
 #include "covariation.h"
+#include "covgrammars.h"
 #include "ribosum_matrix.h"
 
 
@@ -24,7 +25,7 @@
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
-#define COVCLASSOPTS "--C16,--C2"              
+#define COVCLASSOPTS "--C16,--C2"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -75,6 +76,7 @@ struct cfg_s {
   char            *R2Rcykfile;
   FILE            *R2Rcykfp;
   int              minloop;
+  enum grammar_e   grammar;
   
   int              domsa;
   int              nshuffle;
@@ -173,6 +175,7 @@ struct cfg_s {
   { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                "specify format",                                                                            1 },
   /* other options */  
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
+  { "--grammar",    eslARG_STRING,     "G6S",    NULL,       NULL,   NULL, "--cyk", NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -274,6 +277,13 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
+  
+  if ( esl_opt_IsOn(go, "--grammar") ) {
+    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "BGR") == 0) cfg.grammar = BGR;
+    else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
+  }
   
   esl_sprintf(&cfg.R2Rversion, "R2R-1.0.4");			
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
@@ -596,7 +606,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, int ishuffled)
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, &msa, mi, cfg->msamap, cfg->minloop, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
+    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
 			     cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }

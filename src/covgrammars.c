@@ -50,6 +50,44 @@ GMX_Create(int L)
   return NULL;
 }
 
+G6_MX *
+G6MX_Create(int L)
+{
+  G6_MX *g6mx = NULL;
+  int    status;
+
+  ESL_ALLOC(g6mx, sizeof(G6_MX));
+
+  g6mx->S = GMX_Create(L);
+  g6mx->L = GMX_Create(L);
+  g6mx->F = GMX_Create(L);
+
+  return g6mx;
+ ERROR:
+  return NULL;
+}
+
+BGR_MX *
+BGRMX_Create(int L)
+{
+  BGR_MX *bgrmx = NULL;
+  int     status;
+
+  ESL_ALLOC(bgrmx, sizeof(BGR_MX));
+
+  bgrmx->S  = GMX_Create(L);
+  bgrmx->F0 = GMX_Create(L);
+  bgrmx->F5 = GMX_Create(L);
+  bgrmx->P  = GMX_Create(L);
+  bgrmx->M  = GMX_Create(L);
+  bgrmx->R  = GMX_Create(L);
+  bgrmx->M1 = GMX_Create(L);
+
+  return bgrmx;
+ ERROR:
+  return NULL;
+}
+
 void 
 GMX_Destroy(GMX *gmx)
 {
@@ -57,6 +95,30 @@ GMX_Destroy(GMX *gmx)
   if (gmx->dp) free(gmx->dp);
   free(gmx);
 }
+
+void 
+G6MX_Destroy(G6_MX *gmx)
+{
+  if (gmx == NULL) return;
+  if (gmx->S) GMX_Destroy(gmx->S);
+  if (gmx->L) GMX_Destroy(gmx->L);
+  if (gmx->F) GMX_Destroy(gmx->F);
+  free(gmx);
+}
+void 
+BGRMX_Destroy(BGR_MX *gmx)
+{
+  if (gmx == NULL) return;
+  if (gmx->S)  GMX_Destroy(gmx->S);
+  if (gmx->F0) GMX_Destroy(gmx->F0);
+  if (gmx->F5) GMX_Destroy(gmx->F5);
+  if (gmx->P)  GMX_Destroy(gmx->P);
+  if (gmx->M)  GMX_Destroy(gmx->M);
+  if (gmx->R)  GMX_Destroy(gmx->R);
+  if (gmx->M1) GMX_Destroy(gmx->M1);
+  free(gmx);
+}
+
 
 void
 GMX_Dump(FILE *fp, GMX *gmx)

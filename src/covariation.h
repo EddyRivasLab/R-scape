@@ -1,4 +1,4 @@
-/* mutualinfo.h
+/* covariation.h
  *
  *   
 */
@@ -16,6 +16,9 @@
 #include "esl_msa.h"
 #include "esl_tree.h"
 #include "ribosum_matrix.h"
+
+#include "covgrammars.h"
+
 
 #define NCOVTYPE = 5;
 typedef enum {
@@ -162,10 +165,14 @@ extern int              Mutual_CreateHitList(HITLIST **ret_hitlist, double thres
 extern void             Mutual_FreeHitList(HITLIST *hitlist);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, 
+extern int              Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
 					int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose);
 extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
 				   int verbose, char *errbuf);
 extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
-extern int              Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
+extern int              Mutual_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
+extern int              Mutual_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
+extern int              Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, enum grammar_e G, int verbose, char *errbuf);
+  
+
 #endif

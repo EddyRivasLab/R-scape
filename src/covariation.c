@@ -1,4 +1,4 @@
-/* mutualinfo.c */
+/* covariation.c */
 
 #include "p7_config.h"
 
@@ -13,13 +13,16 @@
 #include "esl_dmatrix.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+#include "esl_sqio.h"
 #include "esl_stack.h"
 #include "esl_stats.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
+#include "cococyk.h"
 #include "covariation.h"
+#include "covgrammars.h"
 #include "cykcov.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
@@ -1733,7 +1736,7 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, int *msamap, int minloop, 
+Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
 		int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA *msa = *omsa;
@@ -1753,7 +1756,6 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
-  printf("%s\n", ss);
   
   /* redo the hitlist since the ct has now changed */
   status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
@@ -1764,7 +1766,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   if (status != eslOK) goto ERROR;
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
-  status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, minloop, verbose, errbuf);
+  status = Mutual_ExpandCT(R2Rcykfile, R2Rall, r, msa, cykct, minloop, G, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
@@ -1941,10 +1943,10 @@ Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   free(r2rpdf);
   
   return eslOK;
-}
+ }
 
 int
-Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf)
+Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, int minloop, enum grammar_e G, int verbose, char *errbuf)
 {
   FILE *fp = NULL;
   char  tag[10] = "cons";
@@ -1964,26 +1966,10 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, i
       esl_sprintf(&(msa->gf[tagidx]), "");
   }
 
-  /* get the line #=GC cons */
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
-  if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
-  cons =  msa->gc[tagidx];
-
-#if 1
-  for (j = 0; j < L; j++)
-    for (d = 0; d <= j; d++)
-      {
-	i = j-d+1;
-
-	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
-	  { // add this pair
-	    //printf("%c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
-	    ct[i+1] = j+1;
-	    ct[j+1] = i+1;
-	  }
-	
-      }
+#if 0 // naive method
+  status = Mutual_ExpandCT_Naive(msa, ct, minloop, verbose, errbuf);
+#else // covariance-constrain CYK using a probabilistic grammar
+  status = Mutual_ExpandCT_CCCYK(r, msa, ct, G, verbose, errbuf);
 #endif
  
   /* replace the 'SS_cons' GC line with the new ss */
@@ -2000,6 +1986,65 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, i
 
  ERROR:
   if (ss) free(ss);
+  return status;
+}
+
+int
+Mutual_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf)
+{
+  char  tag[10] = "cons";
+  char *cons;
+  int   tagidx;
+  int   L = msa->alen;
+  int   i, j, d;
+  
+  /* get the line #=GC cons */
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
+  if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
+  cons =  msa->gc[tagidx];
+
+  for (j = 0; j < L; j++)
+    for (d = 0; d <= j; d++)
+      {
+	i = j-d+1;
+
+	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
+	  { // add this pair
+	    //printf("%c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
+	    ct[i+1] = j+1;
+	    ct[j+1] = i+1;
+	  }	
+      }
+
+return eslOK;
+}
+
+int
+Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, enum grammar_e G, int verbose, char *errbuf)
+{
+  ESL_SQ  *sq = NULL;
+  int     *ccct = NULL;
+  SCVAL    sc;
+  int      L = msa->alen;
+  int      i, j, d;
+  int      status;
+ 
+  /* get the line #=GC FP */
+  sq = esl_sq_CreateFrom(msa->name, msa->rf, msa->desc, msa->acc, msa->ss_cons);
+  printf("sq: %s\n",sq->seq);
+
+ /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
+  status = COCOCYK(r, G, sq, ct, &ccct, &sc, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+  if (1||verbose) printf("coco-cyk score = %f\n", sc);
+
+  esl_sq_Destroy(sq);
+  return eslOK;
+
+ ERROR:
+  if (sq) esl_sq_Destroy(sq);
+  if (ccct) free(ccct);
   return status;
 }
 
