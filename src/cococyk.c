@@ -22,6 +22,10 @@
 #include "cococyk.h"
 
 
+static int dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
+static int dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
+static int dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
+
 int
 COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct, SCVAL *ret_sc, char *errbuf, int verbose) 
 {
@@ -123,40 +127,155 @@ COCOCYK_BGR(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, int **ret_cct,
 
 
 int
-COCOCYK_G6_Fill(G6param  *p, ESL_SQ *sq, int *ct, G6_MX *gmx, SCVAL *ret_sc, char *errbuf, int verbose) 
+COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
+{
+  SCVAL sc = -eslINFINITY;
+  int   L = sq->n;
+  int   j, d;
+  int   status;
+
+ /* G6 grammar
+  */
+  for (j = 0; j <= L; j++)
+    for (d = 0; d <= j; d++)
+      {
+	status = dp_recursion_g6(p, sq, ct, cyk, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (verbose) printf("\nG6 cocoCYK %f j=%d d=%d L=%d\n", cyk->S->dp[j][d], j, d, L); 
+     } 
+  sc = cyk->S->dp[L][L];
+  if (verbose) printf("G6 cocoCYKscore = %f\n", sc);
+
+  *ret_sc = sc;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+COCOCYK_G6S_Fill(G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
+{
+  SCVAL sc = -eslINFINITY;
+  int   L = sq->n;
+  int   j, d;
+  int   status;
+
+ /* G6S grammar
+  */
+  for (j = 0; j <= L; j++)
+    for (d = 0; d <= j; d++)
+      {
+	status = dp_recursion_g6s(p, sq, ct, cyk, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (verbose) printf("\nG6S cocoCYK %f j=%d d=%d L=%d\n", cyk->S->dp[j][d], j, d, L); 
+     } 
+  sc = cyk->S->dp[L][L];
+  if (verbose) printf("G6S cocoCYKscore = %f\n", sc);
+
+  *ret_sc = sc;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
+{
+  SCVAL sc = -eslINFINITY;
+  int   L = sq->n;
+  int   j, d;
+  int   status;
+
+ /* BGR grammar
+  */
+  for (j = 0; j <= L; j++)
+    for (d = 0; d <= j; d++)
+      {
+	status = dp_recursion_bgr(p, sq, ct, cyk, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (verbose) printf("\nBGR cocoCYK %f j=%d d=%d L=%d\n", cyk->S->dp[j][d], j, d, L); 
+     } 
+  sc = cyk->S->dp[L][L];
+  if (verbose) printf("BGR cocoCYKscore = %f\n", sc);
+
+  *ret_sc = sc;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+COCOCYK_G6_Traceback(ESL_RANDOMNESS *r, G6param  *p, ESL_SQ *sq, int *ct, G6_MX *cyk, int **ret_cct, char *errbuf, int verbose) 
+{
+  int *cct = NULL;
+  int  L = sq->n;
+  int  status;
+
+  ESL_ALLOC(cct, sizeof(int) * (L+1));
+  esl_vec_ISet(cct, L+1, 0);
+       
+  *ret_cct = cct;
+  return eslOK;
+
+ ERROR:
+  if (cct) free(cct);
+  return status;
+}
+
+int
+COCOCYK_G6S_Traceback(ESL_RANDOMNESS *r, G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *cyk, int **ret_cct, char *errbuf, int verbose) 
+{
+   int *cct = NULL;
+  int  L = sq->n;
+  int  status;
+
+  ESL_ALLOC(cct, sizeof(int) * (L+1));
+  esl_vec_ISet(cct, L+1, 0);
+       
+  *ret_cct = cct;
+  return eslOK;
+
+ ERROR:
+  if (cct) free(cct);
+  return status;
+}
+
+int
+COCOCYK_BGR_Traceback(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int **ret_cct, char *errbuf, int verbose) 
+{
+  int *cct = NULL;
+  int  L = sq->n;
+  int  status;
+
+  ESL_ALLOC(cct, sizeof(int) * (L+1));
+  esl_vec_ISet(cct, L+1, 0);
+       
+  *ret_cct = cct;
+  return eslOK;
+
+ ERROR:
+  if (cct) free(cct);
+  return status;
+}
+
+
+static int 
+dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   return eslOK;
 }
 
-int
-COCOCYK_G6S_Fill(G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *gmx, SCVAL *ret_sc, char *errbuf, int verbose) 
+static int 
+dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   return eslOK;
 }
 
-int
-COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *gmx, SCVAL *ret_sc, char *errbuf, int verbose) 
+static int 
+dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   return eslOK;
-}
-
-int
-COCOCYK_G6_Traceback(ESL_RANDOMNESS *r, G6param  *p, ESL_SQ *sq, int *ct, G6_MX *gmx, int **ret_cct, char *errbuf, int verbose) 
-{
-  return eslOK;
-
-}
-
-int
-COCOCYK_G6S_Traceback(ESL_RANDOMNESS *r, G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *gmx, int **ret_cct, char *errbuf, int verbose) 
-{
-  return eslOK;
-
-}
-
-int
-COCOCYK_BGR_Traceback(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *gmx, int **ret_cct, char *errbuf, int verbose) 
-{
-  return eslOK;
-
 }
