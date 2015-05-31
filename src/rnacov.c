@@ -315,16 +315,16 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
 
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.1f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
+  esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.2f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   
   /* R2R annotated sto file */
-  esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.1f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
+  esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
   cfg.R2Rfp = NULL;
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
-    esl_sprintf(&cfg.R2Rcykfile, "%s.g%.1f.e%.1f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.R2R.sto");
+    esl_sprintf(&cfg.R2Rcykfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
   }
 
@@ -332,7 +332,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.shsumfp = NULL;
   if (cfg.nshuffle > 0) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.1f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.2f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
     printf("sh-sumfile %s\n", cfg.shsumfile);
   }

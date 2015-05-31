@@ -1557,7 +1557,8 @@ Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int 
 }
 
 int 
-Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, int verbose, char *errbuf)
+Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, 
+		     int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   int      alloc_nhit = 5;
@@ -1741,7 +1742,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   char    *ss = NULL;	
   SCVAL    sc;
   int      status;
-  
+            
   /* calculate the cykcov ct vector */
   status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, expectFP, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -1762,13 +1763,11 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   status = Mutual_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-#if 1
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = Mutual_ExpandCT(R2Rcykfile, R2Rall, msa, cykct, minloop, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-#endif
 
-  if (1||verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
+  if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
   
   /* R2Rpdf */
   status = Mutual_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
@@ -1970,7 +1969,8 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, i
     if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
   if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
   cons =  msa->gc[tagidx];
-  
+
+#if 1
   for (j = 0; j < L; j++)
     for (d = 0; d <= j; d++)
       {
@@ -1978,12 +1978,13 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, int minloop, i
 
 	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
 	  { // add this pair
-	    printf("^^ %c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
+	    //printf("%c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
 	    ct[i+1] = j+1;
 	    ct[j+1] = i+1;
 	  }
 	
       }
+#endif
  
   /* replace the 'SS_cons' GC line with the new ss */
   ESL_ALLOC(ss, sizeof(char) * (L+1));
@@ -2013,7 +2014,7 @@ is_stacked_pair(int i, int j, int L, int *ct)
   if (ct[i] > 0 || ct[j] > 0) return FALSE; // both have to be unpaired
 
   if (ct[i+1] == j-1 && ct[j-1] == i+1                  ) is_stacked = TRUE;
-  if (ct[i-1] == j+1 && ct[j+1] == i-1 && i > 0 && j < L) is_stacked = TRUE;
+  if (ct[i-1] == j+1 && ct[j+1] == i-1 && i > 1 && j < L) is_stacked = TRUE;
 	
   return is_stacked;
 }
