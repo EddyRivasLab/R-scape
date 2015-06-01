@@ -23,18 +23,15 @@
 /* Grammar parameters taken from training the grammars on TrainATrainBTrainB from TORNADO.
  * See tornado/notebook/23-10-train
  */
-static const G6param G6_PRELOADS_TrATrBTrB = {
+const G6param G6_PRELOADS_TrATrBTrB = {
   { -0.157808, -1.924245}, // t1 S -> LS   | L
   { -2.141199, -0.125012}, // t2 L -> aFa' | a
   { -0.293165, -1.370024}, // t3 F -> aFa' | LS
   { -1.013848, -1.753817, -1.518912, -1.406016}, // e_single
   { -6.806743, -6.992375, -6.455039, -1.876469, -6.625799, -7.651289, -1.317139, -7.048656, -6.562339, -1.265317, -6.906609, -2.820901, -1.797403, -7.022681, -2.807708, -6.423563 } // e_pair
-  };
+};
 
-
- 
-
-static const G6Sparam G6S_PRELOADS_TrATrBTrB = {
+const G6Sparam G6S_PRELOADS_TrATrBTrB = {
   { -0.157808, -1.924245}, // t1 S -> LS   | L
   { -2.141199, -0.125012}, // t2 L -> aFa' | a
   { -0.293165, -1.370024}, // t3 F -> aFa' | LS
@@ -60,7 +57,7 @@ static const G6Sparam G6S_PRELOADS_TrATrBTrB = {
   }
 };
 
-static const BGRparam BGR_PRELOADS_TrATrBTrB = {
+const BGRparam BGR_PRELOADS_TrATrBTrB = {
   { -0.223274, -2.139489, -2.496295},                       // tS
   { -0.136271, -2.060474},                                  // tF0
   { -0.353167, -1.212207},                                  // tF5

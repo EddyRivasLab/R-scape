@@ -1764,6 +1764,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   /* R2R */
   status = Mutual_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
+  esl_msa_Digitize(mi->abc, msa, errbuf);
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = Mutual_ExpandCT(R2Rcykfile, R2Rall, r, msa, cykct, minloop, G, verbose, errbuf);
@@ -1949,12 +1950,9 @@ int
 Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, int minloop, enum grammar_e G, int verbose, char *errbuf)
 {
   FILE *fp = NULL;
-  char  tag[10] = "cons";
-  char *cons;
   char *ss = NULL;
   int   tagidx;
   int   L = msa->alen;
-  int   i, j, d;
   int   status;
   
   /* replace any R2R line with a new one not tab delimited 
@@ -2026,13 +2024,12 @@ Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, enum grammar_e 
   ESL_SQ  *sq = NULL;
   int     *ccct = NULL;
   SCVAL    sc;
-  int      L = msa->alen;
-  int      i, j, d;
   int      status;
  
   /* get the line #=GC FP */
   sq = esl_sq_CreateFrom(msa->name, msa->rf, msa->desc, msa->acc, msa->ss_cons);
   printf("sq: %s\n",sq->seq);
+   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
 
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &ccct, &sc, errbuf, verbose);
