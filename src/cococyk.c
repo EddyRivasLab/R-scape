@@ -39,23 +39,20 @@ COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct,
   case G6:
     /* Transfer scores from static built-in storage */
     status = COCOVYK_G6_GetParam(&g6p, errbuf, verbose);
-    if (status != eslOK) goto ERROR;
-    
+    if (status != eslOK) goto ERROR;    
     status = COCOCYK_G6(r, g6p, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case G6S:
     status = COCOVYK_G6S_GetParam(&g6sp, errbuf, verbose);
-   if (status != eslOK) goto ERROR;
- 
+    if (status != eslOK) goto ERROR; 
     status = COCOCYK_G6S(r, g6sp, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case BGR:
     status = COCOVYK_BGR_GetParam(&bgrp, errbuf, verbose);
-   if (status != eslOK) goto ERROR;
- 
-   status = COCOCYK_BGR(r, bgrp, sq, ct, ret_cct, ret_sc, errbuf, verbose);
+    if (status != eslOK) goto ERROR; 
+    status = COCOCYK_BGR(r, bgrp, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -251,7 +248,6 @@ COCOCYK_BGR(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, int **ret_cct,
 
 }
 
-
 int
 COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char *errbuf, int verbose) 
 {
@@ -391,17 +387,146 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, BGR_
 static int 
 dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
+  SCVAL bestsc = -eslINFINITY;
+  SCVAL sc;
+  int   d1;
+  int   r;
+  int   i, k;
+  
+  if (alts) esl_stack_Reuse(alts);
+   
+  i = j - d + 1;
+
+  /* rule0: S -> LS */
+  r++;
+
+  /* rule1: S -> L */
+  r++;
+
+  /* rule2: L -> a F a' */
+  r++;
+
+  /* rule3: L -> a */
+  r++;
+
+  /* rule4: F -> a F a' */
+  r++;
+
+  /* rule5: F -> LS */
+  r++;
+
+  *ret_sc = bestsc;
+ 
   return eslOK;
 }
 
 static int 
 dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
+  SCVAL bestsc = -eslINFINITY;
+  SCVAL sc;
+  int   d1;
+  int   r;
+  int   i, k;
+  
+  if (alts) esl_stack_Reuse(alts);
+   
+  i = j - d + 1;
+
+  /* rule0: S -> LS */
+  r++;
+
+  /* rule1: S -> L */
+  r++;
+
+  /* rule2: L -> a F^{bb'} a' */
+  r++;
+
+  /* rule3: L -> a */
+  r++;
+
+  /* rule4: F -> a F a' */
+  r++;
+
+  /* rule4: F -> LS */
+  r++;
+
+  *ret_sc = bestsc;
+
   return eslOK;
 }
 
 static int 
 dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
 {
+  SCVAL bestsc = -eslINFINITY;
+  SCVAL sc;
+  int   d1;
+  int   r;
+  int   i, k;
+  
+  if (alts) esl_stack_Reuse(alts);
+   
+  i = j - d + 1;
+
+  /* rule0: S -> a S */
+  r++;
+
+  /* rule1: S -> L */
+  r++;
+
+  /* rule2: S -> epsilon */
+  r++;
+
+  /* rule3: F0 -> a F5 a' */
+  r++;
+
+  /* rule4: F0 -> a P a' */
+  r++;
+
+  /* rule5: F5 -> a F5^{bb'} a' */
+  r++;
+
+  /* rule6: F5 -> a P^{bb'} a' */
+  r++;
+
+  /* rule7: P -> m..m */
+  r++;
+
+  /* rule8: P -> m..m F0 */
+  r++;
+
+  /* rule9: P -> F0 m..m */
+  r++;
+
+  /* rule10: P -> m..m F0 m..m */
+  r++;
+
+  /* rule11: P -> M1 M */
+  r++;
+
+  /* rule12: M -> M M1 */
+  r++;
+
+  /* rule13: M -> R */
+  r++;
+
+  /* rule14: R -> R a */
+  r++;
+
+  /* rule15: R -> M1 */
+  r++;
+
+  /* rule16: M1 -> a M1 */
+  r++;
+
+  /* rule17: M1 -> F0 */
+  r++;
+
+
+ 
+ 
+  *ret_sc = bestsc;
+
   return eslOK;
 }
