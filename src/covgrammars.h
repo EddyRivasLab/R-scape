@@ -14,9 +14,9 @@
 #include "esl_random.h"
 
 
-#define MAXLOOP_H 100  // maximum loop length
-#define MAXLOOP_B 50   // maximum loop length
-#define MAXLOOP_I 100  // maximum loop length
+#define MAXLOOP_H 30   // maximum loop length
+#define MAXLOOP_B 30   // maximum loop length
+#define MAXLOOP_I 30   // maximum loop length
 #define MINHAIRPIN 5   // minumum length of a hairping (including the 2 closing pairs)
 
 enum grammar_e {
@@ -28,29 +28,25 @@ enum grammar_e {
 typedef float SCVAL;
 
 typedef struct {
+  SCVAL  t1[2];  // S -> LS     | L
+  SCVAL  t2[2];  // L -> a F a' | a
+  SCVAL  t3[2];  // F -> a F a' | LS
+
   SCVAL e_sing[4];
   SCVAL e_pair[16];
-
-  SCVAL  t1;  // S -> LS
-  SCVAL  t2;  // L -> a F a'
-  SCVAL  t3;  // F -> a F a'
 } G6param;
 
 typedef struct {
-  SCVAL e_sing[4];
-  SCVAL e_pair[16];
-  SCVAL e_stck[16][16];
-
   SCVAL  t1[2];  // S -> LS     | L
   SCVAL  t2[2];  // L -> a F a' | a
   SCVAL  t3[2];  // F -> a F a' | Ls
-} G6Sparam;
 
-typedef struct {
   SCVAL e_sing[4];
   SCVAL e_pair[16];
   SCVAL e_stck[16][16];
+} G6Sparam;
 
+typedef struct {
   SCVAL tS[3];     // S  -> a s | F0 S | epsilon
   SCVAL tF0[2];    // F0 -> a F5 a' | a P a'
   SCVAL tF5[2];    // F5 -> a F5 a' | a P a'
@@ -59,8 +55,19 @@ typedef struct {
   SCVAL tR[2];     // R  ->  R a | M1
   SCVAL tM1[2];    // M1 -> a M1 | F0
 
+  SCVAL e_sing[4];
+  SCVAL e_pair1[16];
+  SCVAL e_pair2[16];
+  SCVAL e_stck1[16][16];
+  SCVAL e_stck2[16][16];
+
+  SCVAL e_single_l1[4];
   SCVAL l1[MAXLOOP_H]; // hairpin  loops
+  
+  SCVAL e_single_l2[4];
   SCVAL l2[MAXLOOP_B]; // bulge    loops
+  
+  SCVAL e_single_l3[4];
   SCVAL l3[MAXLOOP_I]; // internal loops
 } BGRparam;
 
