@@ -19,6 +19,9 @@
 #define MAXLOOP_I 30   // maximum loop length
 #define MINHAIRPIN 5   // minumum length of a hairping (including the 2 closing pairs)
 
+#define NB 4
+#define NP 16
+
 enum grammar_e {
   G6,
   G6S,
@@ -32,8 +35,8 @@ typedef struct {
   SCVAL  t2[2];  // L -> a F a' | a
   SCVAL  t3[2];  // F -> a F a' | LS
 
-  SCVAL e_sing[4];
-  SCVAL e_pair[16];
+  SCVAL e_sing[NB];
+  SCVAL e_pair[NP];
 } G6param;
 
 typedef struct {
@@ -41,9 +44,9 @@ typedef struct {
   SCVAL  t2[2];  // L -> a F a' | a
   SCVAL  t3[2];  // F -> a F a' | Ls
 
-  SCVAL e_sing[4];
-  SCVAL e_pair[16];
-  SCVAL e_stck[16][16];
+  SCVAL e_sing[NB];
+  SCVAL e_pair[NP];
+  SCVAL e_stck[NP][NP];
 } G6Sparam;
 
 typedef struct {
@@ -55,19 +58,19 @@ typedef struct {
   SCVAL tR[2];     // R  ->  R a | M1
   SCVAL tM1[2];    // M1 -> a M1 | F0
 
-  SCVAL e_sing[4];
-  SCVAL e_pair1[16];
-  SCVAL e_pair2[16];
-  SCVAL e_stck1[16][16];
-  SCVAL e_stck2[16][16];
+  SCVAL e_sing[NB];
+  SCVAL e_pair1[NP];
+  SCVAL e_pair2[NP];
+  SCVAL e_stck1[NP][NP];
+  SCVAL e_stck2[NP][NP];
 
-  SCVAL e_sing_l1[4];
+  SCVAL e_sing_l1[NB];
   SCVAL l1[MAXLOOP_H]; // hairpin  loops
   
-  SCVAL e_sing_l2[4];
+  SCVAL e_sing_l2[NB];
   SCVAL l2[MAXLOOP_B]; // bulge    loops
   
-  SCVAL e_sing_l3[4];
+  SCVAL e_sing_l3[NB];
   SCVAL l3[MAXLOOP_I]; // internal loops
 } BGRparam;
 

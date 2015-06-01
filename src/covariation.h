@@ -172,7 +172,7 @@ extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, 
 extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              Mutual_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              Mutual_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
-extern int              Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, enum grammar_e G, int verbose, char *errbuf);
+extern int              Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int verbose, char *errbuf);
   
 
 #endif

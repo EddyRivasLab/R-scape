@@ -1967,13 +1967,14 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
 #if 0 // naive method
   status = Mutual_ExpandCT_Naive(msa, ct, minloop, verbose, errbuf);
 #else // covariance-constrain CYK using a probabilistic grammar
-  status = Mutual_ExpandCT_CCCYK(r, msa, ct, G, verbose, errbuf);
+  status = Mutual_ExpandCT_CCCYK(r, msa, &ct, G, verbose, errbuf);
 #endif
  
   /* replace the 'SS_cons' GC line with the new ss */
   ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_ct2simplewuss(ct, L, ss);
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
+  printf("ss:%s\n", msa->ss_cons);
 
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open output file %s", r2rfile);
   eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
@@ -2019,29 +2020,32 @@ return eslOK;
 }
 
 int
-Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int *ct, enum grammar_e G, int verbose, char *errbuf)
+Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar_e G, int verbose, char *errbuf)
 {
   ESL_SQ  *sq = NULL;
-  int     *ccct = NULL;
+  int     *ct = *ret_ct;
+  int     *cct = NULL;
   SCVAL    sc;
   int      status;
  
   /* get the line #=GC FP */
   sq = esl_sq_CreateFrom(msa->name, msa->rf, msa->desc, msa->acc, msa->ss_cons);
   printf("sq: %s\n",sq->seq);
-   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
-
+  esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
+  
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
-  status = COCOCYK(r, G, sq, ct, &ccct, &sc, errbuf, verbose);
+  status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (1||verbose) printf("coco-cyk score = %f\n", sc);
 
+  free(ct);
+  *ret_ct = cct;
   esl_sq_Destroy(sq);
   return eslOK;
 
  ERROR:
   if (sq) esl_sq_Destroy(sq);
-  if (ccct) free(ccct);
+  if (cct) free(cct);
   return status;
 }
 
