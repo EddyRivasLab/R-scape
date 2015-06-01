@@ -61,13 +61,13 @@ typedef struct {
   SCVAL e_stck1[16][16];
   SCVAL e_stck2[16][16];
 
-  SCVAL e_single_l1[4];
+  SCVAL e_sing_l1[4];
   SCVAL l1[MAXLOOP_H]; // hairpin  loops
   
-  SCVAL e_single_l2[4];
+  SCVAL e_sing_l2[4];
   SCVAL l2[MAXLOOP_B]; // bulge    loops
   
-  SCVAL e_single_l3[4];
+  SCVAL e_sing_l3[4];
   SCVAL l3[MAXLOOP_I]; // internal loops
 } BGRparam;
 
@@ -94,6 +94,10 @@ typedef struct {
   GMX *M1;
 
 } BGR_MX;
+
+extern const G6param  G6_PRELOADS_TrATrBTrB;
+extern const G6Sparam G6S_PRELOADS_TrATrBTrB;
+extern const BGRparam BGR_PRELOADS_TrATrBTrB;
 
 extern GMX    *GMX_Create   (int L);
 extern G6_MX  *G6MX_Create  (int L);

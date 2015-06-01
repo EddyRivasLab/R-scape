@@ -32,20 +32,29 @@ COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct,
   G6param  *g6p  = NULL;
   G6Sparam *g6sp = NULL;
   BGRparam *bgrp = NULL;
-
   int status;
 
   /* get the grammar parameters and run the corresponding CYK */
   switch(G) {
   case G6:
+    /* Transfer scores from static built-in storage */
+    status = COCOVYK_G6_GetParam(&g6p, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+    
     status = COCOCYK_G6(r, g6p, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case G6S:
+    status = COCOVYK_G6S_GetParam(&g6sp, errbuf, verbose);
+   if (status != eslOK) goto ERROR;
+ 
     status = COCOCYK_G6S(r, g6sp, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case BGR:
+    status = COCOVYK_BGR_GetParam(&bgrp, errbuf, verbose);
+   if (status != eslOK) goto ERROR;
+ 
    status = COCOCYK_BGR(r, bgrp, sq, ct, ret_cct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
@@ -60,6 +69,123 @@ COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct,
   return status;
 }
 
+int
+COCOVYK_G6_GetParam(G6param **ret_p, char *errbuf, int verbose)
+{
+  G6param *p = NULL;
+  int      x;
+  int      status;
+
+  p->t1[0] = G6_PRELOADS_TrATrBTrB.t1[0];
+  p->t1[1] = G6_PRELOADS_TrATrBTrB.t1[1];
+  p->t2[0] = G6_PRELOADS_TrATrBTrB.t2[0];
+  p->t2[1] = G6_PRELOADS_TrATrBTrB.t2[1];
+  p->t3[0] = G6_PRELOADS_TrATrBTrB.t3[0];
+  p->t3[1] = G6_PRELOADS_TrATrBTrB.t3[1];
+
+  for (x = 0; x < 4;  x ++) p->e_sing[x] = G6_PRELOADS_TrATrBTrB.e_sing[x];
+  for (x = 0; x < 16; x ++) p->e_pair[x] = G6_PRELOADS_TrATrBTrB.e_pair[x];
+
+  *ret_p = p;
+  return eslOK;
+
+ ERROR:
+  if (p) free(p);
+  return status;
+}
+
+int
+COCOVYK_G6S_GetParam(G6Sparam **ret_p, char *errbuf, int verbose)
+{
+ G6Sparam *p = NULL;
+ int       x, y;
+ int       status;
+
+  p->t1[0] = G6S_PRELOADS_TrATrBTrB.t1[0];
+  p->t1[1] = G6S_PRELOADS_TrATrBTrB.t1[1];
+  p->t2[0] = G6S_PRELOADS_TrATrBTrB.t2[0];
+  p->t2[1] = G6S_PRELOADS_TrATrBTrB.t2[1];
+  p->t3[0] = G6S_PRELOADS_TrATrBTrB.t3[0];
+  p->t3[1] = G6S_PRELOADS_TrATrBTrB.t3[1];
+
+  for (x = 0; x < 4;  x ++)   p->e_sing[x]    = G6S_PRELOADS_TrATrBTrB.e_sing[x];
+  for (x = 0; x < 16; x ++)   p->e_pair[x]    = G6S_PRELOADS_TrATrBTrB.e_pair[x];
+  for (x = 0; x < 16; x ++) 
+    for (y = 0; y < 16; y ++) p->e_stck[x][y] = G6S_PRELOADS_TrATrBTrB.e_stck[x][y];
+
+  *ret_p = p;
+  return eslOK;
+
+ ERROR:
+  if (p) free(p);
+  return status;
+
+  return eslOK;
+}
+
+int
+COCOVYK_BGR_GetParam(BGRparam **ret_p, char *errbuf, int verbose)
+{
+ BGRparam *p = NULL;
+ int       x, y;
+ int       l;
+ int       status;
+
+  p->tS[0] = BGR_PRELOADS_TrATrBTrB.tS[0];
+  p->tS[1] = BGR_PRELOADS_TrATrBTrB.tS[1];
+  p->tS[2] = BGR_PRELOADS_TrATrBTrB.tS[2];
+
+  p->tF0[0] = BGR_PRELOADS_TrATrBTrB.tF0[0];
+  p->tF0[1] = BGR_PRELOADS_TrATrBTrB.tF0[1];
+
+  p->tF5[0] = BGR_PRELOADS_TrATrBTrB.tF5[0];
+  p->tF5[1] = BGR_PRELOADS_TrATrBTrB.tF5[1];
+
+  p->tP[0] = BGR_PRELOADS_TrATrBTrB.tP[0];
+  p->tP[1] = BGR_PRELOADS_TrATrBTrB.tP[1];
+  p->tP[2] = BGR_PRELOADS_TrATrBTrB.tP[2];
+  p->tP[3] = BGR_PRELOADS_TrATrBTrB.tP[3];
+  p->tP[4] = BGR_PRELOADS_TrATrBTrB.tP[4];
+
+  p->tM[0]  = BGR_PRELOADS_TrATrBTrB.tM[0];
+  p->tM[1]  = BGR_PRELOADS_TrATrBTrB.tM[1];
+
+  p->tR[0]  = BGR_PRELOADS_TrATrBTrB.tR[0];
+  p->tR[1]  = BGR_PRELOADS_TrATrBTrB.tR[1];
+
+  p->tM1[0] = BGR_PRELOADS_TrATrBTrB.tM1[0];
+  p->tM1[1] = BGR_PRELOADS_TrATrBTrB.tM1[1];
+  
+  for (x = 0; x < 4;  x ++) {
+    p->e_sing[x]    = BGR_PRELOADS_TrATrBTrB.e_sing[x];
+    p->e_sing_l1[x] = BGR_PRELOADS_TrATrBTrB.e_sing_l1[x];
+    p->e_sing_l2[x] = BGR_PRELOADS_TrATrBTrB.e_sing_l2[x];
+    p->e_sing_l3[x] = BGR_PRELOADS_TrATrBTrB.e_sing_l3[x];
+  }
+  
+  for (x = 0; x < 16; x ++) {
+    p->e_pair1[x] = BGR_PRELOADS_TrATrBTrB.e_pair1[x];
+    p->e_pair2[x] = BGR_PRELOADS_TrATrBTrB.e_pair2[x];
+    
+    for (y = 0; y < 16; y ++) {
+      p->e_stck1[x][y] = BGR_PRELOADS_TrATrBTrB.e_stck1[x][y];
+      p->e_stck2[x][y] = BGR_PRELOADS_TrATrBTrB.e_stck2[x][y];
+    }
+  }
+
+  for (l = 0; l < MAXLOOP_H; l ++) p->l1[l] = BGR_PRELOADS_TrATrBTrB.l1[l];
+  for (l = 0; l < MAXLOOP_B; l ++) p->l2[l] = BGR_PRELOADS_TrATrBTrB.l2[l];
+  for (l = 0; l < MAXLOOP_I; l ++) p->l3[l] = BGR_PRELOADS_TrATrBTrB.l3[l];
+
+  *ret_p = p;
+  return eslOK;
+
+ ERROR:
+  if (p) free(p);
+  return status;
+
+  return eslOK;
+}
 
 int
 COCOCYK_G6(ESL_RANDOMNESS *r, G6param  *p, ESL_SQ *sq, int *ct, int **ret_cct, SCVAL *ret_sc, char *errbuf, int verbose) 
