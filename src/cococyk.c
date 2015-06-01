@@ -27,9 +27,9 @@ static int   dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int
 static int   dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
 static int   allow_single(int i, int *ct) ;
 static int   allow_bpair(int i, int j, int *ct);
-static SCVAL emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL **e_stck);
-static SCVAL emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL  *e_pair);
-static SCVAL emitsc_sing(int i,        ESL_DSQ *dsq, SCVAL  *e_sing);
+static SCVAL emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL *e_pair, SCVAL **e_stck);
+static SCVAL emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL *e_pair);
+static SCVAL emitsc_sing(int i,        ESL_DSQ *dsq, SCVAL *e_sing);
 
 int
 COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct, SCVAL *ret_sc, char *errbuf, int verbose) 
@@ -599,7 +599,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
 
   /* rule4: F -> a F a' */
   d1 = 0;
-  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stck(i+1, j+1, dsq, &(&p->e_stck[0][0])) : -eslINFINITY;
+  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stck(i+1, j+1, dsq, &p->e_pair[0], (SCVAL **)p->e_stck) : -eslINFINITY;
 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -738,7 +738,7 @@ allow_bpair(int i, int j, int *ct)
 
 
 static SCVAL
-emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL **e_stck)
+emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL *e_pair, SCVAL **e_stck)
 {
   SCVAL sc;
   int   idx;
@@ -748,7 +748,10 @@ emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL **e_stck)
   int   jp = j+1;
 
   /* no stcking on gaps of any kind */
-  if (dsq[ip] >= 4 || dsq[jp] >= 4) { return -eslINFINITY; }
+  if (dsq[ip] >= 4 || dsq[jp] >= 4) { 
+    return emitsc_pair(i, j, dsq, e_pair); 
+  }
+
   cdx = dsq[ip]*4 + dsq[jp];
 
   if (dsq[i] >= 4 && dsq[j] >= 4) { // ignore double gaps
@@ -770,6 +773,7 @@ emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL **e_stck)
   }
   else {
     idx = dsq[i]*4  + dsq[j];
+    printf("cdx %d idx %d\n", cdx, idx);
     sc = e_stck[cdx][idx];
   }
 
