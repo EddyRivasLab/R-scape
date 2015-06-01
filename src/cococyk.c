@@ -707,7 +707,7 @@ dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
   
   /* rule2: L -> a F a' */
   d1 = 0;
-  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i+1, j+1, dsq, &p->e_pair[0]) : -eslINFINITY;
+  sc = (allow_bpair(i, j, ct))?  cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, &p->e_pair[0]) : -eslINFINITY;
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
@@ -722,7 +722,7 @@ dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
 
   /* rule3: L -> a */
   d1 = 0;
-  sc = (allow_single(i+1, ct))? p->t2[1] + emitsc_sing(i+1, dsq, p->e_sing) : -eslINFINITY;
+  sc = (allow_single(i, ct))? p->t2[1] + emitsc_sing(i+1, dsq, p->e_sing) : -eslINFINITY;
   
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -738,7 +738,7 @@ dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
 
   /* rule4: F -> a F a' */
   d1 = 0;
-  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pair(i+1, j+1, dsq, &p->e_pair[0]) : -eslINFINITY;
+  sc = (allow_bpair(i, j, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pair(i, j, dsq, &p->e_pair[0]) : -eslINFINITY;
 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -828,7 +828,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
   
   /* rule2: L -> a F a' */
   d1 = 0;
-  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i+1, j+1, dsq, &p->e_pair[0]) : -eslINFINITY;
+  sc = (allow_bpair(i, j, ct))?  cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, &p->e_pair[0]) : -eslINFINITY;
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
@@ -843,7 +843,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
 
   /* rule3: L -> a */
   d1 = 0;
-  sc = (allow_single(i+1, ct))? p->t2[1] + emitsc_sing(i+1, dsq, p->e_sing) : -eslINFINITY;
+  sc = (allow_single(i, ct))? p->t2[1] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
   
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -859,7 +859,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int j, int d, SC
 
   /* rule4: F -> a F a' */
   d1 = 0;
-  sc = (allow_bpair(i+1, j+1, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stck(i+1, j+1, dsq, &p->e_pair[0], p->e_stck) : -eslINFINITY;
+  sc = (allow_bpair(i, j, ct))?  cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stck(i, j, dsq, &p->e_pair[0], p->e_stck) : -eslINFINITY;
 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
