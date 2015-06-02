@@ -27,8 +27,9 @@ static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covth
 int
 CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, int maxFP, double target_eval, char *errbuf, int verbose) 
 {
-  GMX    *cyk = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
-  int    *ct = NULL;
+  GMX    *cyk   = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
+  int    *ctest = NULL;
+  int    *ct    = NULL;
   double  covthresh;
   double  covinc;  
   double  covmin = mi->minCOV;
@@ -47,29 +48,36 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
     /* Fill the cyk matrix */
     if ((status = CYKCOV_Fill(mi, cyk, ret_sc, minloop, covthresh, errbuf, verbose)) != eslOK) goto ERROR;    
     /* Report a traceback */
-    if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
+    if ((status = CYKCOV_Traceback(r, mi, cyk, &ctest, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
 
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
 	if (mi->COV->mx[i][j] > covthresh)   f  ++;
-	if (ct[i+1] == j+1) {                t  ++;
+	if (ctest[i+1] == j+1) {             t  ++;
 	  if (mi->COV->mx[i][j] > covthresh) tf ++;
 	}
       }
     fp = f - tf;  
     eval = (double)fp/(double)mi->alen;
-    if (1||verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, eval); 
-    if (eval >= target_eval) break;
-  }
+ 
+    free(ctest); ctest = NULL;
+    if (eval <= target_eval) { // report the traceback to ct
+      if (1||verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, eval); 
+      if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
+    }
+    else break;
+ }
   
   *ret_ct = ct;
+  if (ctest) free(ctest);
   GMX_Destroy(cyk);
   return eslOK;
   
  ERROR:
-  if (ct) free(ct);
-  if (cyk) GMX_Destroy(cyk);
+  if (ct)    free(ct);
+  if (ctest) free(ctest);
+  if (cyk)   GMX_Destroy(cyk);
   return status;
 }
 
@@ -178,11 +186,11 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d\n", j-d+1, j, d, d1);
 	printf("tracing %f\n", bestsc);
-        printf("   rule(%d)\n", r+1);
+        printf("   rule(%d)\n", r);
       }
 
       i = j - d  + 1;
-      k = i + d1 -1;
+      k = i + d1 - 1;
 
       if (r == 0) {
 	esl_stack_IPush(ns, i+1);
@@ -244,7 +252,7 @@ dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j
   r = 1;
   for (d1 = minloop; d1 <= d; d1++) {
     k = i + d1 - 1;
-    sc = (mi->COV->mx[i-1][k-1] >= covthresh)? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
+    sc = (mi->COV->mx[i-1][k-1] > covthresh)? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
