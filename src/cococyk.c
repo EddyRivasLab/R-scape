@@ -279,7 +279,7 @@ COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
-	if (1||verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
+	if (verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
   if (1||verbose) printf("G6 cocoCYKscore = %f\n", sc);
@@ -310,7 +310,7 @@ COCOCYK_G6S_Fill(G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, c
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
 	status = dp_recursion_g6s(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
-	if (1||verbose) printf("\nG6S cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
+	if (verbose) printf("\nG6S cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
      } 
   sc = cyk->S->dp[L][L];
   if (verbose) printf("G6S cocoCYKscore = %f\n", sc);
@@ -428,7 +428,6 @@ COCOCYK_G6_Traceback(ESL_RANDOMNESS *rng, G6param *p, ESL_SQ *sq, int *ct, G6_MX
       
       /* Some assertions.
        */
-      printf("best %f fill %f\n", bestsc, fillsc);
       if (fabs(bestsc - fillsc) > tol) 
 	ESL_XFAIL(eslFAIL, errbuf, "COCOCYK_G6_Traceback(): that can't happen either. i=%d j=%d d=%d bestsc %f cyk %f", 
 		  j-d+1, j, d, bestsc, fillsc); 
@@ -446,7 +445,7 @@ COCOCYK_G6_Traceback(ESL_RANDOMNESS *rng, G6param *p, ESL_SQ *sq, int *ct, G6_MX
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
        */
-      if (1||verbose) {
+      if (verbose) {
         printf("-----------------------------------\n"); 
         printf("w=%d i=%d j=%d d=%d d1=%d\n", w, j-d+1, j, d, d1);
 	printf("tracing %f\n", bestsc);
@@ -705,7 +704,7 @@ dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int w, int j, in
    
   i = j - d + 1;
 
-  if (d == 0) { *ret_sc = -eslINFINITY; return eslOK; }
+  if (d == 0) { *ret_sc = (w == G6_S)? 0.0 : -eslINFINITY; return eslOK; }
 
   switch(w) {
   case G6_S:
@@ -770,7 +769,7 @@ dp_recursion_g6 (G6param  *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int w, int j, in
 
     /* rule3: L -> a */
     d1 = 0;
-    sc = (allow_single(i, ct))? p->t2[1] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+    sc = (allow_single(i, ct) && d == 1)? p->t2[1] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -852,7 +851,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int w, int j, in
    
   i = j - d + 1;
 
-  if (d == 0) { *ret_sc = -eslINFINITY; return eslOK; }
+  if (d == 0) { *ret_sc = (w == G6_S)? 0.0 : -eslINFINITY; return eslOK; }
 
   switch(w) {
   case G6_S:
@@ -917,7 +916,7 @@ dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, int *ct, G6_MX  *cyk, int w, int j, in
     }
     /* rule3: L -> a */
     d1 = 0;
-    sc = (allow_single(i, ct))? p->t2[1] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+    sc = (allow_single(i, ct) && d==1)? p->t2[1] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
