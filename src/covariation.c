@@ -1766,6 +1766,9 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   if (status != eslOK) goto ERROR;
   esl_msa_Digitize(mi->abc, msa, errbuf);
 
+  esl_ct2simplewuss(cykct, msa->alen, ss);
+  printf("ss:%s\n", ss);
+  
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = Mutual_ExpandCT(R2Rcykfile, R2Rall, r, msa, cykct, minloop, G, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -1779,7 +1782,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   *omsa = msa;
 
   Mutual_FreeHitList(hitlist);
-  free(cykct);
+  if (cykct) free(cykct);
   free(ss);
   return eslOK;
   

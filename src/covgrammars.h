@@ -28,6 +28,51 @@ enum grammar_e {
   BGR
 };
 
+/* G6 nonterminals */
+#define G6_S  0
+#define G6_L  1
+#define G6_F  2
+#define G6_NT 3
+/* G6 rules */
+#define G6_S_1  0
+#define G6_S_2  1
+#define G6_L_1  2
+#define G6_L_2  3
+#define G6_F_1  4
+#define G6_F_2  5
+#define G6_NR   6
+
+/* BGR nonterminals */
+#define BGR_S  0
+#define BGR_F0 1
+#define BGR_F5 2
+#define BGR_P  3
+#define BGR_M  4
+#define BGR_R  5
+#define BGR_M1 6
+#define BGR_NT 7
+
+/* BGR rules */
+#define BGR_S_1  0
+#define BGR_S_2  1
+#define BGR_S_3  2
+#define BGR_F0_1 3
+#define BGR_F0_2 4
+#define BGR_F5_1 5
+#define BGR_F5_2 6
+#define BGR_P_1  7
+#define BGR_P_2  8
+#define BGR_P_3  9
+#define BGR_P_4  10
+#define BGR_P_5  11
+#define BGR_M_1  12
+#define BGR_M_2  13
+#define BGR_R_1  14
+#define BGR_R_2  15
+#define BGR_M1_1 16
+#define BGR_M1_2 17
+#define BGR_NR   18
+
 typedef float SCVAL;
 
 typedef struct {
