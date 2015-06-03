@@ -116,7 +116,7 @@ typedef struct {
   SCVAL l2[MAXLOOP_B]; // bulge    loops
   
   SCVAL e_sing_l3[NB];
-  SCVAL l3[MAXLOOP_I]; // internal loops
+  SCVAL l3[MAXLOOP_I][MAXLOOP_I]; // internal loops
 } BGRparam;
 
 

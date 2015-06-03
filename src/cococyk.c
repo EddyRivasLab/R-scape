@@ -135,7 +135,7 @@ COCOVYK_BGR_GetParam(BGRparam **ret_p, char *errbuf, int verbose)
 {
  BGRparam *p = NULL;
  int       x, y;
- int       l;
+ int       l, l1, l2;
  int       status;
 
  ESL_ALLOC(p, sizeof(BGRparam));
@@ -184,7 +184,9 @@ COCOVYK_BGR_GetParam(BGRparam **ret_p, char *errbuf, int verbose)
 
   for (l = 0; l < MAXLOOP_H; l ++) p->l1[l] = BGR_PRELOADS_TrATrBTrB.l1[l];
   for (l = 0; l < MAXLOOP_B; l ++) p->l2[l] = BGR_PRELOADS_TrATrBTrB.l2[l];
-  for (l = 0; l < MAXLOOP_I; l ++) p->l3[l] = BGR_PRELOADS_TrATrBTrB.l3[l];
+  for (l1 = 0; l1 < MAXLOOP_I; l1 ++) 
+    for (l2 = 0; l2 < MAXLOOP_I; l2 ++) 
+      p->l3[l1][l2] = BGR_PRELOADS_TrATrBTrB.l3[l1][l2];
 
   *ret_p = p;
   return eslOK;
@@ -1228,7 +1230,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
   switch(w) {
   case BGR_S:
     /* rule0: S -> a S */
-    d1 = 0;
+    d1 = d2 = 0;
     sc = (allow_single(i, ct) && d > 0)? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
     
     if (sc >= bestsc) {
@@ -1239,11 +1241,12 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_S_1);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
  
     /* rule1: S -> F0 S */
-    d1 = 0;
+    d2 = 0;
     for (d1 = 0; d1 <= d; d1++) {
       
       k = i + d1 - 1;
@@ -1257,10 +1260,12 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_S_2);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
     /* rule2: S -> epsilon */
+    d1 = d2 = 0;
     if (d == 0) {
       sc = 0;
       if (sc >= bestsc) {
@@ -1272,6 +1277,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_S_3);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
@@ -1279,13 +1285,14 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 
   case BGR_F0:
     /* rule3: F0 -> a F5 a' */
-    d1 = 0;
+    d1 = d2 = 0;
     if (force_bpair(i, j, ct)) {
       bestsc = cyk->F5->dp[j-1][d-2] + p->tF0[0] + emitsc_pair(i, j, dsq, p->e_pair1);     
       if (alts) {
 	esl_stack_Reuse(alts);
 	esl_stack_IPush(alts, BGR_F0_1);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     else {
@@ -1299,18 +1306,20 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_F0_1);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
 
     /* rule4: F0 -> a P a' */
-    d1 = 0;
+    d1 = d2 = 0;
     if (force_bpair(i, j, ct)) {
       bestsc = cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair(i, j, dsq, p->e_pair2);     
       if (alts) {
 	esl_stack_Reuse(alts);
 	esl_stack_IPush(alts, BGR_F0_2);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     else {
@@ -1324,20 +1333,22 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_F0_2);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
-
     break;
+
   case BGR_F5:
     /* rule5: F5 -> a F5^{bb'} a' */
-    d1 = 0;
+    d1 = d2 = 0;
     if (force_bpair(i, j, ct)) {
       bestsc = cyk->F5->dp[j-1][d-2] + p->tF5[0] + emitsc_stck(i, j, dsq, p->e_pair1, p->e_stck1) ;     
       if (alts) {
 	esl_stack_Reuse(alts);
 	esl_stack_IPush(alts, BGR_F5_1);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     else {
@@ -1351,18 +1362,20 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_F5_1);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
 
     /* rule6: F5 -> a P^{bb'} a' */
-    d1 = 0;
+    d1 = d2 = 0;
     if (force_bpair(i, j, ct)) {
       bestsc = cyk->P->dp[j-1][d-2] + p->tF5[1] + emitsc_stck(i, j, dsq, p->e_pair2, p->e_stck2) ;     
       if (alts) {
 	esl_stack_Reuse(alts);
 	esl_stack_IPush(alts, BGR_F5_2);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     else {
@@ -1376,6 +1389,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_F5_2);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
@@ -1383,7 +1397,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     
   case BGR_P:
     /* rule7: P -> m..m */
-    d1 = 0;
+    d1 = d2 = 0;
     if (d > MAXLOOP_H) sc = -eslINFINITY;
     else {
       sc = p->tP[0] + p->l1[d1-1];
@@ -1401,16 +1415,18 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_P_1);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
 
     /* rule8: P -> m..m F0 */
+    d2 = 0;
     for (d1 = 1; d1 <= MAXLOOP_B; d1++) {
       
       k = i + d1 - 1;
       
-      sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1-1];
+      sc = (d>=d1)? cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1-1] : -eslINFINITY;
       for (x = i; x <= k; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1425,17 +1441,19 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_P_2);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
 	
       }
     }
     
     /* rule9: P -> F0 m..m */
+    d1 = 0;
     for (d2 = 1; d2 <= MAXLOOP_B; d2++) {
       
       l = j - d2 + 1;
       
-      sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2-1];
+      sc = (d >= d2)? cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2-1] : -eslINFINITY;
       for (x = l; x <= j; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1449,6 +1467,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_P_3);
+	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
       }
@@ -1456,14 +1475,14 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 
     /* rule10: P -> m..m F0 m..m */
     for (d1 = 1; d1 <= MAXLOOP_I; d1++) {
-      for (d2 = d-d1; d2 <= MAXLOOP_I; d2++) {
+      for (d2 = ESL_MAX(1,d-d1); d2 <= MAXLOOP_I; d2++) {
 	
 	if (d1 + d2 > MAXLOOP_I) break;
 
 	k = i + d1 - 1;
 	l = j - d2 + 1;
 	     
-	sc = cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1+d2-1];
+	sc = (l > 0 && d >= d1+d2)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1-1][d2-1] : -eslINFINITY;
 	for (x = i; x <= k; x ++) {
 	  if (allow_single(x, ct)) 
 	    sc += emitsc_sing(x, dsq, p->e_sing_l3);
@@ -1485,13 +1504,15 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	  }     
 	  if (alts) {
 	    esl_stack_IPush(alts, BGR_P_4);
-	    esl_stack_IPush(alts, d1+d2);
+	    esl_stack_IPush(alts, d1);
+	    esl_stack_IPush(alts, d2);
 	  }
 	}
       }
     }
 
     /* rule11: P -> M1 M */
+    d2 = 0;
     for (d1 = 0; d1 <= d; d1++) {
       k = i + d1 - 1;
       
@@ -1505,12 +1526,14 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_P_5);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
     break;
     
   case BGR_M:
+    d2 = 0;
     /* rule12: M -> M M1 */
     for (d1 = 0; d1 <= d; d1++) {
       k = i + d1 - 1;
@@ -1525,13 +1548,14 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	if (alts) {
 	  esl_stack_IPush(alts, BGR_M_1);
 	  esl_stack_IPush(alts, d1);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
   
     /* rule13: M -> R */
-    d1 = 0;
-    sc = cyk->R->dp[j][d] + p->tM[0];
+    d1 = d2 = 0;
+    sc = cyk->R->dp[j][d] + p->tM[1];
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -1540,13 +1564,14 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_M_2);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     break;
     
   case BGR_R:
     /* rule14: R -> R a */
-    d1 = 0;
+    d1 = d2 = 0;
     sc = (allow_single(j, ct) && d > 0)? cyk->R->dp[j-1][d-1] + p->tR[0] + emitsc_sing(j, dsq, p->e_sing) : -eslINFINITY;
     
     if (sc >= bestsc) {
@@ -1557,11 +1582,12 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_R_1);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
 
     /* rule15: R -> M1 */
-    d1 = 0;
+    d1 = d2 = 0;
     sc = cyk->M1->dp[j][d] + p->tR[1];
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1571,6 +1597,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_R_2);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
 
@@ -1578,7 +1605,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     
   case BGR_M1:
     /* rule16: M1 -> a M1 */
-    d1 = 0;
+    d1 = d2 = 0;
     sc = (allow_single(i, ct) && d > 0)? cyk->M1->dp[j][d-1] + p->tM1[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
     
     if (sc >= bestsc) {
@@ -1589,11 +1616,12 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_M1_1);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
  
     /* rule17: M1 -> F0 */
-    d1 = 0;
+    d1 = d2 = 0;
     sc = cyk->F0->dp[j][d] + p->tM1[1];
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1603,6 +1631,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       if (alts) {
 	esl_stack_IPush(alts, BGR_M1_2);
 	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
   
