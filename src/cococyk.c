@@ -337,21 +337,23 @@ COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, 
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
+	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_P,  j, d, &(cyk->P->dp[j][d]),NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR P cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M1, j, d, &(cyk->M1->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M1 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_R,  j, d, &(cyk->R->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR R cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M,  j, d, &(cyk->M->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M cocoCYK failed");
-	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_P,  j, d, &(cyk->P->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR P cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F5, j, d, &(cyk->F5->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F5 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F0, j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F0 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_S,  j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR S cocoCYK failed");
-	if (verbose) printf("\nBGR cocoCYK %f j=%d d=%d L=%d\n", cyk->S->dp[j][d], j, d, L); 
+	if (1||verbose) printf("\nBGR cocoCYK P=%f M=%f M1=%f R=%f F5=%f F0=%f S=%f j=%d d=%d L=%d\n", 
+			       cyk->P->dp[j][d], cyk->M->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],
+			       cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j, d, L); 
      } 
   sc = cyk->S->dp[L][L];
   if (verbose) printf("BGR cocoCYKscore = %f\n", sc);
@@ -791,7 +793,7 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
 	esl_stack_IPush(ns, BGR_F0);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, k);
-	esl_stack_IPush(ns, G6_S);
+	esl_stack_IPush(ns, BGR_S);
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
@@ -1475,13 +1477,13 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 
     /* rule10: P -> m..m F0 m..m */
     for (d1 = 1; d1 <= MAXLOOP_I; d1++) {
-      for (d2 = ESL_MAX(1,d-d1); d2 <= MAXLOOP_I; d2++) {
+      for (d2 = (d<d1)? 1:d-d1; d2 <= MAXLOOP_I; d2++) {
 	
 	if (d1 + d2 > MAXLOOP_I) break;
 
 	k = i + d1 - 1;
 	l = j - d2 + 1;
-	     
+
 	sc = (l > 0 && d >= d1+d2)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1-1][d2-1] : -eslINFINITY;
 	for (x = i; x <= k; x ++) {
 	  if (allow_single(x, ct)) 
