@@ -274,11 +274,11 @@ COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char
     for (d = 0; d <= j; d++)
       {
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_F, j, d, &(cyk->F->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 F cocoCYK failed");
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_L, j, d, &(cyk->L->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 L cocoCYK failed");
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 S cocoCYK failed");
 	if (verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
@@ -305,11 +305,11 @@ COCOCYK_G6S_Fill(G6Sparam  *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, c
     for (d = 0; d <= j; d++)
       {
 	status = dp_recursion_g6s(p, sq, ct, cyk, G6_F, j, d, &(cyk->F->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 F cocoCYK failed");
 	status = dp_recursion_g6s(p, sq, ct, cyk, G6_L, j, d, &(cyk->L->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 L cocoCYK failed");
 	status = dp_recursion_g6s(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 S cocoCYK failed");
 	if (verbose) printf("\nG6S cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
      } 
   sc = cyk->S->dp[L][L];
@@ -336,19 +336,19 @@ COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, 
     for (d = 0; d <= j; d++)
       {
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M1, j, d, &(cyk->M1->dp[j][d]), NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M1 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_R,  j, d, &(cyk->R->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR R cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M,  j, d, &(cyk->M->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_P,  j, d, &(cyk->P->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR P cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F5, j, d, &(cyk->F5->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F5 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F0, j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
-	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_S,  j, d, &(cyk->S->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR cocoCYK failed");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F0 cocoCYK failed");
+	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_S,  j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR S cocoCYK failed");
 	if (verbose) printf("\nBGR cocoCYK %f j=%d d=%d L=%d\n", cyk->S->dp[j][d], j, d, L); 
      } 
   sc = cyk->S->dp[L][L];
@@ -459,7 +459,7 @@ COCOCYK_G6_Traceback(ESL_RANDOMNESS *rng, G6param *p, ESL_SQ *sq, int *ct, G6_MX
       k = i + d1 - 1;
       
       switch(r) {
-      case 0: // S -> LS
+      case G6_S_1: // S -> LS
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, k);
@@ -468,28 +468,28 @@ COCOCYK_G6_Traceback(ESL_RANDOMNESS *rng, G6param *p, ESL_SQ *sq, int *ct, G6_MX
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      case 1: // S -> L
+      case G6_S_2: // S -> L
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
 	break;
-      case 2: // L -> a F a'
+      case G6_L_1: // L -> a F a'
 	esl_stack_IPush(ns, G6_F);
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, j-1);
 	cct[i] = j;
 	cct[j] = i;
 	break;
-      case 3: // L -> a
+      case G6_L_2: // L -> a
 	break;
-      case 4: // F -> a F a'
+      case G6_F_1: // F -> a F a'
 	esl_stack_IPush(ns, G6_F);
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, j-1);
 	cct[i] = j;
 	cct[j] = i;
 	break;
-      case 5: // F -> LS
+      case G6_F_2: // F -> LS
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, k);
@@ -498,7 +498,7 @@ COCOCYK_G6_Traceback(ESL_RANDOMNESS *rng, G6param *p, ESL_SQ *sq, int *ct, G6_MX
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      default: ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is 6", r);
+      default: ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is %d", r, G6_NR);
       }
     }
 
@@ -604,7 +604,7 @@ COCOCYK_G6S_Traceback(ESL_RANDOMNESS *rng, G6Sparam  *p, ESL_SQ *sq, int *ct, G6
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
        */
-      if (i<=6||verbose) {
+      if (verbose) {
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d\n", j-d+1, j, d, d1);
 	printf("tracing %f\n", bestsc);
@@ -615,7 +615,7 @@ COCOCYK_G6S_Traceback(ESL_RANDOMNESS *rng, G6Sparam  *p, ESL_SQ *sq, int *ct, G6
       k = i + d1 -1;
       
       switch(r) {
-      case 0: // S -> LS
+      case G6_S_1: // S -> LS
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, k);
@@ -624,28 +624,28 @@ COCOCYK_G6S_Traceback(ESL_RANDOMNESS *rng, G6Sparam  *p, ESL_SQ *sq, int *ct, G6
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      case 1: // S -> L
+      case G6_S_2: // S -> L
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
 	break;
-      case 2: // L -> a F a'
+      case G6_L_1: // L -> a F a'
 	esl_stack_IPush(ns, G6_F);
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, j-1);
 	cct[i] = j;
 	cct[j] = i;
 	break;
-      case 3: // L -> a
+      case G6_L_2: // L -> a
 	break;
-      case 4: // F -> a F a'
+      case G6_F_1: // F -> a F a'
 	esl_stack_IPush(ns, G6_F);
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, j-1);
 	cct[i] = j;
 	cct[j] = i;
 	break;
-      case 5: // F -> LS
+      case G6_F_2: // F -> LS
 	esl_stack_IPush(ns, G6_L);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, k);
@@ -654,7 +654,7 @@ COCOCYK_G6S_Traceback(ESL_RANDOMNESS *rng, G6Sparam  *p, ESL_SQ *sq, int *ct, G6
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      default: ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is 6", r);
+      default: ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is %d", r, G6_NR);
       }
     }
 
@@ -672,20 +672,237 @@ COCOCYK_G6S_Traceback(ESL_RANDOMNESS *rng, G6Sparam  *p, ESL_SQ *sq, int *ct, G6
 }
 
 int
-COCOCYK_BGR_Traceback(ESL_RANDOMNESS *r, BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int **ret_cct, char *errbuf, int verbose) 
+COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int **ret_cct, char *errbuf, int verbose) 
 {
-  int *cct = NULL;
-  int  L = sq->n;
-  int  status;
+  ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
+  ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
+  int            *cct = NULL;            /* the ct vector with who is paired to whom */
+  SCVAL           bestsc;                /* max score over possible rules */
+  SCVAL           fillsc;                /* max score in fill */
+  int             L = sq->n;
+  int             nequiv;                /* number of equivalent alternatives for a traceback */
+  int             x;                     /* a random choice from nequiv */
+  int             w;                     /* index of a non terminal S (w=0) L (w=1) F (w=2) */
+  int             r;                     /* index of a rule */
+  int             d, d1, d2;             /* optimum values of d1 iterator */
+  int             i,j,k,l;               /* seq coords */
+  float           tol = 0.001;
+  int             status;
 
+   /* We're going to do a simple traceback that only
+   * remembers who was a base pair, and keeps a ct[]
+   * array. 
+   */
   ESL_ALLOC(cct, sizeof(int) * (L+1));
   esl_vec_ISet(cct, L+1, 0);
-       
-  *ret_cct = cct;
-  return eslOK;
+  
+  /* is sq score is -infty, nothing to traceback */
+  if (cyk->S->dp[L][L] == -eslINFINITY) {
+    if (verbose) printf("no traceback.\n");
+    return eslOK;
+  }
 
+  /* We implement a "stochastic" traceback, which chooses randomly
+   * amongst equal-scoring alternative parse trees. This is particularly
+   * essential for working with ambiguous grammars, for which 
+   * choosing an arbitrary optimal parse tree by order of evaluation
+   * can easily result in infinite loops. To do this, we will keep
+   * a stack of the alternate solutions.
+   */
+  alts = esl_stack_ICreate();
+
+  /* Start an integer stack for traversing the traceback.
+   * push w,i,j = G->ntS_idx,1,L to init. 
+   */
+  w = BGR_S;
+  ns = esl_stack_ICreate();
+  esl_stack_IPush(ns, w);
+  esl_stack_IPush(ns, 1);
+  esl_stack_IPush(ns, L);
+  
+  while (esl_stack_ObjectCount(ns) != 0)
+    {
+      esl_stack_IPop(ns, &j);
+      esl_stack_IPop(ns, &i);
+      esl_stack_IPop(ns, &w);
+      d = j-i+1;
+     
+      status = dp_recursion_bgr(p, sq, ct, cyk, w, j, d, &bestsc, alts, errbuf, verbose);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
+      
+      /* Some assertions.
+       */
+      switch(w) {
+      case BGR_S:  fillsc = cyk->S->dp[j][d];  break;
+      case BGR_F0: fillsc = cyk->F0->dp[j][d]; break;
+      case BGR_F5: fillsc = cyk->F5->dp[j][d]; break;
+      case BGR_P:  fillsc = cyk->P->dp[j][d];  break;
+      case BGR_M:  fillsc = cyk->M->dp[j][d];  break;
+      case BGR_R:  fillsc = cyk->R->dp[j][d];  break;
+      case BGR_M1: fillsc = cyk->M1->dp[j][d]; break;
+      }
+      if (fabs(bestsc - fillsc) > tol) 
+	ESL_XFAIL(eslFAIL, errbuf, "COCOCYK_BGR_Traceback(): that can't happen either. i=%d j=%d d=%d bestsc %f cyk %f", 
+		  j-d+1, j, d, bestsc, fillsc); 
+      
+      /* Now we know one or more equiv solutions, and they're in
+       * the stack <alts>, which keeps 2 numbers (r, d1) for each
+       * solution. Choose one of them at random.
+       */
+      nequiv = esl_stack_ObjectCount(alts) / 2; /* how many solutions? */
+      x = esl_rnd_Roll(rng, nequiv);            /* uniformly, 0.nequiv-1 */
+      esl_stack_DiscardTopN(alts, x*2);         /* dig down to choice */
+      esl_stack_IPop(alts, &d2);
+      esl_stack_IPop(alts, &d1);
+      esl_stack_IPop(alts, &r);
+      
+      if (w == BGR_S  && r != BGR_S_1  && r != BGR_S_2 && r != BGR_S_3)  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with S",  r);
+      if (w == BGR_F0 && r != BGR_F0_1 && r != BGR_F0_2)                 ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with F0", r);
+      if (w == BGR_F5 && r != BGR_F5_1 && r != BGR_F5_2)                 ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with F5", r);
+      if (w == BGR_M  && r != BGR_M_1  && r != BGR_M_2)                  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with M",  r);
+      if (w == BGR_R  && r != BGR_R_1  && r != BGR_R_2)                  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with R",  r);
+      if (w == BGR_M1 && r != BGR_M1_1 && r != BGR_M1_2)                 ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with M1", r);
+      if (w == BGR_P  && r != BGR_P_1  && r != BGR_P_2 && r != BGR_P_3 && r != BGR_P_4 && r != BGR_P_5)               
+	ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with P", r);
+       
+      /* Now we know a best rule; figure out where we came from,
+       * and push that info onto the <ns> stack.
+       */
+      if (verbose) {
+        printf("-----------------------------------\n"); 
+        printf("i=%d j=%d d=%d d1=%d D2 %d\n", j-d+1, j, d, d1, d2);
+	printf("tracing %f\n", bestsc);
+        printf("   w= %d rule(%d)\n", w, r);
+      }
+      
+      i = j - d  + 1;
+      k = i + d1 - 1;
+      l = j - d2 + 1;
+      
+      switch(r) {
+      case BGR_S_1: // S -> a S
+	esl_stack_IPush(ns, G6_S);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case BGR_S_2: // S -> F0 S
+	esl_stack_IPush(ns, BGR_F0);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, k);
+	esl_stack_IPush(ns, G6_S);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case BGR_S_3: // S -> epsilon
+	break;
+
+      case BGR_F0_1: // F0 -> a F5 a'
+	esl_stack_IPush(ns, BGR_F5);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j-1);
+	cct[i] = j;
+	cct[j] = i;
+	break;
+      case BGR_F0_2: // F0 -> a P a'
+	esl_stack_IPush(ns, BGR_P);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j-1);
+	cct[i] = j;
+	cct[j] = i;
+	break;
+ 
+      case BGR_F5_1: // F5 -> a F5 a'
+	esl_stack_IPush(ns, BGR_F5);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j-1);
+	cct[i] = j;
+	cct[j] = i;
+	break;
+      case BGR_F5_2: // F5 -> a P a'
+	esl_stack_IPush(ns, BGR_P);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j-1);
+	cct[i] = j;
+	cct[j] = i;
+	break;
+
+      case BGR_P_1: // P -> m..m
+	break;
+      case BGR_P_2: // P -> m..m F0
+	esl_stack_IPush(ns, BGR_F0);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case BGR_P_3: // P -> F0 m..m
+	esl_stack_IPush(ns, BGR_F0);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, l-1);
+	break;
+      case BGR_P_4: // P -> m..m F0 m..m
+	esl_stack_IPush(ns, BGR_F0);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, l-1);
+	break;
+      case BGR_P_5: // P -> M1 M
+	esl_stack_IPush(ns, BGR_M1);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, k);
+	esl_stack_IPush(ns, BGR_M);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	
+      case BGR_M_1: // M -> M M1
+	esl_stack_IPush(ns, BGR_M);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, k);
+	esl_stack_IPush(ns, BGR_M1);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case BGR_M_2: // M -> R
+	esl_stack_IPush(ns, BGR_R);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, j);
+	break;
+
+      case BGR_R_1: // R -> R a
+	esl_stack_IPush(ns, BGR_R);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, j-1);
+	break;
+      case BGR_R_2: // R -> M1
+	esl_stack_IPush(ns, BGR_M1);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, j);
+	break;
+ 
+     case BGR_M1_1: // M1 -> a M1
+	esl_stack_IPush(ns, BGR_M1);
+	esl_stack_IPush(ns, i+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case BGR_M1_2: // M1 -> F0
+	esl_stack_IPush(ns, BGR_F0);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, j);
+	break;
+ 
+	break;
+
+     default: ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is %d", r, BGR_NR);
+      }
+    }
+
+  *ret_cct = cct;
+  
+  esl_stack_Destroy(ns);
+  esl_stack_Destroy(alts);
+  return eslOK;
+  
  ERROR:
-  if (cct) free(cct);
+  if (ns)   esl_stack_Destroy(ns); ns = NULL;
+  if (alts) esl_stack_Destroy(alts); alts = NULL;
+  if (cct)  free(cct); cct = NULL;
   return status;
 }
 
@@ -992,8 +1209,8 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
   ESL_DSQ *dsq = sq->dsq;
   SCVAL    bestsc = -eslINFINITY;
   SCVAL    sc;
-  int      d1;
-  int      i, k;
+  int      d1, d2;
+  int      i, k, l;
   int      x;
   int      status;
   
@@ -1165,7 +1382,6 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     break;
     
   case BGR_P:
-    
     /* rule7: P -> m..m */
     d1 = 0;
     if (d > MAXLOOP_H) sc = -eslINFINITY;
@@ -1190,61 +1406,91 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     }
 
     /* rule8: P -> m..m F0 */
-    for (d1 = 0; d1 <= d; d1++) {
+    for (d1 = 1; d1 <= MAXLOOP_B; d1++) {
       
       k = i + d1 - 1;
       
-      if (d1 > MAXLOOP_B) sc = -eslINFINITY;
-      else {
-	sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1-1];
-	for (x = i; x <= k; x ++) {
-	  if (allow_single(x, ct)) 
-	    sc += emitsc_sing(x, dsq, p->e_sing_l2);
-	  else { sc = -eslINFINITY; break; }
+      sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1-1];
+      for (x = i; x <= k; x ++) {
+	if (allow_single(x, ct)) 
+	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
+	else { sc = -eslINFINITY; break; }
+      }
+      
+      if (sc >= bestsc) {
+	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	  if (alts) esl_stack_Reuse(alts);
+	  bestsc = sc;
+	}     
+	if (alts) {
+	  esl_stack_IPush(alts, BGR_P_2);
+	  esl_stack_IPush(alts, d1);
 	}
 	
-	if (sc >= bestsc) {
-	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
-	    if (alts) esl_stack_Reuse(alts);
-	    bestsc = sc;
-	  }     
-	  if (alts) {
-	    esl_stack_IPush(alts, BGR_P_2);
-	    esl_stack_IPush(alts, d1);
-	  }
-	}
       }
     }
     
     /* rule9: P -> F0 m..m */
-    for (d1 = 0; d1 <= d; d1++) {
+    for (d2 = 1; d2 <= MAXLOOP_B; d2++) {
       
-      k = i + d1 - 1;
+      l = j - d2 + 1;
       
-      if (d-d1 > MAXLOOP_B) sc = -eslINFINITY;
-      else {
-	sc = cyk->F0->dp[k][d1] + p->tP[2] + p->l2[d1-1];
-	for (x = k+1; x <= j; x ++) {
-	  if (allow_single(x, ct)) 
-	    sc += emitsc_sing(x, dsq, p->e_sing_l2);
-	  else { sc = -eslINFINITY; break; }
-	}
-	
-	if (sc >= bestsc) {
-	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
-	    if (alts) esl_stack_Reuse(alts);
-	    bestsc = sc;
-	  }     
-	  if (alts) {
-	    esl_stack_IPush(alts, BGR_P_3);
-	    esl_stack_IPush(alts, d1);
-	  }
+      sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2-1];
+      for (x = l; x <= j; x ++) {
+	if (allow_single(x, ct)) 
+	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
+	else { sc = -eslINFINITY; break; }
+      }
+      
+      if (sc >= bestsc) {
+	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	  if (alts) esl_stack_Reuse(alts);
+	  bestsc = sc;
+	}     
+	if (alts) {
+	  esl_stack_IPush(alts, BGR_P_3);
+	  esl_stack_IPush(alts, d2);
 	}
       }
     }
 
     /* rule10: P -> m..m F0 m..m */
-    
+    for (d1 = 1; d1 <= MAXLOOP_I; d1++) {
+      for (d2 = d-d1; d2 <= MAXLOOP_I; d2++) {
+	
+	if (d1 + d2 > MAXLOOP_I) break;
+
+	k = i + d1 - 1;
+	l = j - d2 + 1;
+	     
+	sc = cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1+d2-1];
+	for (x = i; x <= k; x ++) {
+	  if (allow_single(x, ct)) 
+	    sc += emitsc_sing(x, dsq, p->e_sing_l3);
+	  else { sc = -eslINFINITY; break; }
+	}
+	if (x < k+1) break;
+
+	for (x = l; x <= j; x ++) {
+	  if (allow_single(x, ct)) 
+	    sc += emitsc_sing(x, dsq, p->e_sing_l3);
+	  else { sc = -eslINFINITY; break; }
+	}
+	if (x < j+1) break;
+
+	if (sc >= bestsc) {
+	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	    if (alts) esl_stack_Reuse(alts);
+	    bestsc = sc;
+	  }     
+	  if (alts) {
+	    esl_stack_IPush(alts, BGR_P_4);
+	    esl_stack_IPush(alts, d1+d2);
+	  }
+	}
+      }
+    }
+
     /* rule11: P -> M1 M */
     for (d1 = 0; d1 <= d; d1++) {
       k = i + d1 - 1;
