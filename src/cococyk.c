@@ -31,6 +31,7 @@ static int   force_bpair(int i, int j, int *ct);
 static SCVAL emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
 static SCVAL emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP]);
 static SCVAL emitsc_sing(int i,        ESL_DSQ *dsq, SCVAL e_sing[NB]);
+static int   segment_remove_gaps(int i, int j, ESL_DSQ *dsq);
 
 int
 COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct, SCVAL *ret_sc, char *errbuf, int verbose) 
@@ -333,21 +334,22 @@ COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, 
   int   status;
 
  /* BGR grammar
+  * order: (F0 before M1) AND (M1 before R) AND (S last)
   */
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_P,  j, d, &(cyk->P->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR P cocoCYK failed");
+	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F5, j, d, &(cyk->F5->dp[j][d]),NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F5 cocoCYK failed");
+	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F0, j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M1, j, d, &(cyk->M1->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M1 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_R,  j, d, &(cyk->R->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR R cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_M,  j, d, &(cyk->M->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR M cocoCYK failed");
-	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F5, j, d, &(cyk->F5->dp[j][d]),NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F5 cocoCYK failed");
-	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_F0, j, d, &(cyk->F0->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR F0 cocoCYK failed");
 	status = dp_recursion_bgr(p, sq, ct, cyk, BGR_S,  j, d, &(cyk->S->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "BGR S cocoCYK failed");
@@ -1376,12 +1378,11 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     d1 = d2 = 0;
     if (d > MAXLOOP_H) sc = -eslINFINITY;
     else {
-      sc = p->tP[0] + p->l1[d-1];
+      sc = p->tP[0] + p->l1[segment_remove_gaps(i,j,dsq)-1];
       for (x = i; x <= j; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l1);
 	else { sc = -eslINFINITY; break; }
-
       }
       
       if (sc >= bestsc) {
@@ -1399,11 +1400,11 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 
     /* rule8: P -> m..m F0 */
     d2 = 0;
-    for (d1 = 1; d1 <= MAXLOOP_B; d1++) {
+    for (d1 = 1; d1 <= ESL_MIN(d,MAXLOOP_B); d1++) {
       
       k = i + d1 - 1;
       
-      sc = (d>=d1)? cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1-1] : -eslINFINITY;
+      sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[segment_remove_gaps(i,k,dsq)-1];
       for (x = i; x <= k; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1419,18 +1420,17 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	  esl_stack_IPush(alts, BGR_P_2);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
-	}
-	
+	}	
       }
     }
     
     /* rule9: P -> F0 m..m */
     d1 = 0;
-    for (d2 = 1; d2 <= MAXLOOP_B; d2++) {
+    for (d2 = 1; d2 <= ESL_MIN(d,MAXLOOP_B); d2++) {
       
       l = j - d2 + 1;
       
-      sc = (d >= d2)? cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2-1] : -eslINFINITY;
+      sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[segment_remove_gaps(l,j,dsq)-1];
       for (x = l; x <= j; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1451,28 +1451,29 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     }
 
     /* rule10: P -> m..m F0 m..m */
-    for (d1 = 1; d1 <= MAXLOOP_I; d1++) {
-      for (d2 = (d<d1)? 1:d-d1; d2 <= MAXLOOP_I; d2++) {
+    for (d1 = 1; d1 <= ESL_MIN(d,MAXLOOP_I); d1++) {
+      for (d2 = 1; d2 <= ESL_MIN(d-d1,MAXLOOP_I); d2++) {
 	
 	if (d1 + d2 > MAXLOOP_I) break;
 
 	k = i + d1 - 1;
 	l = j - d2 + 1;
 
-	sc = (l > 0 && d >= d1+d2)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1-1][d2-1] : -eslINFINITY;
+	sc = (l > 0)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[segment_remove_gaps(i,k,dsq)-1][segment_remove_gaps(l,j,dsq)-1] : -eslINFINITY;
+
 	for (x = i; x <= k; x ++) {
 	  if (allow_single(x, ct)) 
 	    sc += emitsc_sing(x, dsq, p->e_sing_l3);
 	  else { sc = -eslINFINITY; break; }
 	}
-	if (x < k+1) break;
+	if (x < k+1) continue;
 
 	for (x = l; x <= j; x ++) {
 	  if (allow_single(x, ct)) 
 	    sc += emitsc_sing(x, dsq, p->e_sing_l3);
 	  else { sc = -eslINFINITY; break; }
 	}
-	if (x < j+1) break;
+	if (x < j+1) continue;
 
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1741,4 +1742,16 @@ emitsc_sing(int i, ESL_DSQ *dsq, SCVAL e_sing[NB])
   else             sc = 0.0;
 
   return sc;
+}
+
+static int
+segment_remove_gaps(int i, int j, ESL_DSQ *dsq)
+{
+  int newlen = 0;
+  int x;
+
+  for (x = i; x <= j; x ++) 
+    if (dsq[x] < NB) newlen ++;
+
+  return newlen;
 }
