@@ -14,6 +14,10 @@
 #include "esl_random.h"
 
 
+#define FITLOOP_H 30   // fitted loop length
+#define FITLOOP_B 30   // fitted loop length
+#define FITLOOP_I 30   // fitted loop length
+
 #define MAXLOOP_H 30   // maximum loop length
 #define MAXLOOP_B 30   // maximum loop length
 #define MAXLOOP_I 30   // maximum loop length

@@ -282,7 +282,8 @@ COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 L cocoCYK failed");
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 S cocoCYK failed");
-	if (verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
+	if ((j-d+1==665&&j==676) 
+||verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
   if (verbose) printf("G6 cocoCYKscore = %f\n", sc);
