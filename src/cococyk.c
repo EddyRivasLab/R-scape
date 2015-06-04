@@ -1222,6 +1222,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
   SCVAL    sc;
   int      d1, d2;
   int      i, k, l;
+  int      d_ng, d1_ng, d2_ng;
   int      x;
   int      status;
   
@@ -1378,7 +1379,9 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
     d1 = d2 = 0;
     if (d > MAXLOOP_H) sc = -eslINFINITY;
     else {
-      sc = p->tP[0] + p->l1[segment_remove_gaps(i,j,dsq)-1];
+      d_ng = segment_remove_gaps(i,j,dsq); if (d_ng == 0) d_ng = d;
+	
+      sc = p->tP[0] + p->l1[d_ng-1];
       for (x = i; x <= j; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l1);
@@ -1404,7 +1407,9 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       
       k = i + d1 - 1;
       
-      sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[segment_remove_gaps(i,k,dsq)-1];
+      d1_ng = segment_remove_gaps(i,k,dsq); if (d1_ng == 0) d1_ng = d1;
+	
+      sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1_ng-1];
       for (x = i; x <= k; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1430,7 +1435,9 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
       
       l = j - d2 + 1;
       
-      sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[segment_remove_gaps(l,j,dsq)-1];
+      d2_ng = segment_remove_gaps(l,j,dsq); if (d2_ng == 0) d2_ng = d2;
+
+      sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2_ng-1];
       for (x = l; x <= j; x ++) {
 	if (allow_single(x, ct)) 
 	  sc += emitsc_sing(x, dsq, p->e_sing_l2);
@@ -1459,7 +1466,10 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
 	k = i + d1 - 1;
 	l = j - d2 + 1;
 
-	sc = (l > 0)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[segment_remove_gaps(i,k,dsq)-1][segment_remove_gaps(l,j,dsq)-1] : -eslINFINITY;
+	d1_ng = segment_remove_gaps(i,k,dsq); if (d1_ng == 0) d1_ng = d1;
+	d2_ng = segment_remove_gaps(l,j,dsq); if (d2_ng == 0) d2_ng = d2;
+
+	sc = (l > 0)? cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1_ng-1][d2_ng-1] : -eslINFINITY;
 
 	for (x = i; x <= k; x ++) {
 	  if (allow_single(x, ct)) 
