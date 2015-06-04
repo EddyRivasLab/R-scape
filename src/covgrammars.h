@@ -17,6 +17,7 @@
 #define MAXLOOP_H 30   // maximum loop length
 #define MAXLOOP_B 30   // maximum loop length
 #define MAXLOOP_I 30   // maximum loop length
+
 #define MINHAIRPIN 5   // minumum length of a hairping (including the 2 closing pairs)
 
 #define NB 4
@@ -95,13 +96,13 @@ typedef struct {
 } G6Sparam;
 
 typedef struct {
+  SCVAL tP[5];     // P  -> m..m | m..m F0 | F0 m..m | d..d F0 d..d | M1 M
   SCVAL tS[3];     // S  -> a s | F0 S | epsilon
   SCVAL tF0[2];    // F0 -> a F5 a' | a P a'
   SCVAL tF5[2];    // F5 -> a F5 a' | a P a'
-  SCVAL tP[5];     // P  -> m..m | m..m F0 | F0 m..m | d..d F0 d..d | M1 M
   SCVAL tM[2];     // M  -> M M1 | R
-  SCVAL tR[2];     // R  ->  R a | M1
   SCVAL tM1[2];    // M1 -> a M1 | F0
+  SCVAL tR[2];     // R  ->  R a | M1
 
   SCVAL e_sing[NB];
   SCVAL e_pair1[NP];
