@@ -33,7 +33,7 @@ static int is_wc(int x, int y);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
-static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct);
+static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
 Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
@@ -1971,7 +1971,7 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
 #if 0 // naive method
   status = Mutual_ExpandCT_Naive(msa, *ret_ct, minloop, verbose, errbuf);
 #else // covariance-constrain CYK using a probabilistic grammar
-  status = Mutual_ExpandCT_CCCYK(r, msa, ret_ct, G, verbose, errbuf);
+  status = Mutual_ExpandCT_CCCYK(r, msa, ret_ct, G, minloop, verbose, errbuf);
 #endif
   if (status != eslOK) goto ERROR;
 
@@ -2025,7 +2025,7 @@ return eslOK;
 }
 
 int
-Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar_e G, int verbose, char *errbuf)
+Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar_e G, int minloop, int verbose, char *errbuf)
 {
   char  tag[10] = "RF_cons";
   char    *rfline = NULL;
@@ -2045,7 +2045,7 @@ Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum gram
   printf("sq:%s\n", sq->seq);
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
  
-  cykcov_remove_inconsistencies(sq, ct);
+  cykcov_remove_inconsistencies(sq, ct, minloop);
  
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
@@ -2324,15 +2324,35 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 }
 
 static int
-cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct)
+cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop)
 {
   int L = sq->n;
+  int n;
   int ipair;
   int i;
+  int x;
 
+  /* remove covariation that correspond to gap-gap in
+   * the RF sequence */
   for (i = 1; i <= L; i++) {
     ipair = ct[i];
     if (ipair > 0 && sq->dsq[i] >= NB && sq->dsq[ipair] >= NB) { // remove this covariation
+      ct[i]     = 0;
+      ct[ipair] = 0;
+    }
+  }
+
+  /* remove covariation that are closer than minloop in RF 
+   */
+  for (i = 1; i <= L; i++) {
+    ipair = ct[i];
+    if (ipair == 0 || ipair < i) continue;
+
+    n = 0;
+    for (x = i+1; x < ipair; x ++) 
+      if (sq->dsq[x] < NB) n ++;
+
+    if (n < minloop-2) { // remove this covariation
       ct[i]     = 0;
       ct[ipair] = 0;
     }
