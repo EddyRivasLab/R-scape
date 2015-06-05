@@ -177,7 +177,7 @@ struct cfg_s {
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "G6S",    NULL,       NULL,   NULL, "--cyk", NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -496,13 +496,13 @@ main(int argc, char **argv)
     /* main function */
     if (cfg.domsa) {
       status = run_rnacov(go, &cfg, &msa, FALSE);
-      if (status != eslOK) esl_fatal("Failed to run rnacov");
+      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
     
     for (s = 0; s < cfg.nshuffle; s ++) {
       msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
       status = run_rnacov(go, &cfg, &shmsa, TRUE);
-      if (status != eslOK) esl_fatal("%s. Failed to run rnacov shuffled", cfg.errbuf);
+      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov shuffled", cfg.errbuf);
       esl_msa_Destroy(shmsa); shmsa = NULL;
     }
 

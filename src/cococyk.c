@@ -282,8 +282,7 @@ COCOCYK_G6_Fill(G6param *p, ESL_SQ *sq, int *ct, G6_MX *cyk, SCVAL *ret_sc, char
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 L cocoCYK failed");
 	status = dp_recursion_g6(p, sq, ct, cyk, G6_S, j, d, &(cyk->S->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6 S cocoCYK failed");
-	if ((j-d+1==665&&j==676) 
-||verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
+	if (verbose) printf("\nG6 cocoCYK S=%f L=%f F=%f j=%d d=%d L=%d\n", cyk->S->dp[j][d], cyk->L->dp[j][d], cyk->F->dp[j][d], j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
   if (verbose) printf("G6 cocoCYKscore = %f\n", sc);
@@ -360,7 +359,7 @@ COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, 
 		 cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j-d+1, j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
-  if (verbose) printf("BGR cocoCYKscore = %f\n", sc);
+  if (1||verbose) printf("BGR cocoCYKscore = %f\n", sc);
 
   *ret_sc = sc;
   return eslOK;
@@ -755,12 +754,12 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
 		  j-d+1, j, d, bestsc, fillsc); 
       
       /* Now we know one or more equiv solutions, and they're in
-       * the stack <alts>, which keeps 2 numbers (r, d1) for each
+       * the stack <alts>, which keeps 3 numbers (r, d1, d2) for each
        * solution. Choose one of them at random.
        */
-      nequiv = esl_stack_ObjectCount(alts) / 2; /* how many solutions? */
+      nequiv = esl_stack_ObjectCount(alts) / 3; /* how many solutions? */
       x = esl_rnd_Roll(rng, nequiv);            /* uniformly, 0.nequiv-1 */
-      esl_stack_DiscardTopN(alts, x*2);         /* dig down to choice */
+      esl_stack_DiscardTopN(alts, x*3);         /* dig down to choice */
       esl_stack_IPop(alts, &d2);
       esl_stack_IPop(alts, &d1);
       esl_stack_IPop(alts, &r);
@@ -777,7 +776,7 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
        */
-      if (verbose) {
+      if (1||verbose) {
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d d2=%d\n", j-d+1, j, d, d1, d2);
 	printf("tracing %f\n", bestsc);
