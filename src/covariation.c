@@ -33,6 +33,7 @@ static int is_wc(int x, int y);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
+static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct);
 
 int                 
 Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
@@ -2032,17 +2033,20 @@ Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum gram
   int     *ct = *ret_ct;
   int     *cct = NULL;
   SCVAL    sc;
+  float    idthresh = 0.3;
   int      tagidx;
   int      status;
   
   /* create an RF sequence */
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
-  esl_msa_ReasonableRF(msa, 0.3, TRUE, rfline);
+  esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
   sq = esl_sq_CreateFrom(msa->name,  rfline, msa->desc, msa->acc, msa->ss_cons); 
   
   printf("sq:%s\n", sq->seq);
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
-  
+ 
+  cykcov_remove_inconsistencies(sq, ct);
+ 
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -2319,3 +2323,20 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   return status;
 }
 
+static int
+cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct)
+{
+  int L = sq->n;
+  int ipair;
+  int i;
+
+  for (i = 1; i <= L; i++) {
+    ipair = ct[i];
+    if (ipair > 0 && sq->dsq[i] >= NB && sq->dsq[ipair] >= NB) { // remove this covariation
+      ct[i]     = 0;
+      ct[ipair] = 0;
+    }
+  }
+
+  return eslOK;
+}
