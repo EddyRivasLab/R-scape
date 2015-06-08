@@ -382,7 +382,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 int
 main(int argc, char **argv)
 { 
-  char            *msg = "e2msa failed";
+  char            *msg = "rnacov failed";
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
@@ -442,10 +442,10 @@ main(int argc, char **argv)
 
    /* select submsa and then apply msa filters 
     */
-    if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (cfg.submsa             && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);          esl_fatal(msg); }
+    if (cfg.fragfrac > 0.      && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+    if (cfg.submsa             && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);              esl_fatal(msg); }
     if (msa == NULL) {
       free(type); type = NULL;
       free(cfg.msaname); cfg.msaname = NULL;

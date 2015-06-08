@@ -776,7 +776,7 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
        */
-      if (1||verbose) {
+      if (verbose) {
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d d2=%d\n", j-d+1, j, d, d1, d2);
 	printf("tracing %f\n", bestsc);
