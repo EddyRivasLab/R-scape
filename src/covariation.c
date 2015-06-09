@@ -205,7 +205,7 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, (1||verbose), errbuf);
+   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, (verbose), errbuf);
    if  (status != eslOK) goto ERROR;
 
    *omsa = msa;
@@ -1750,7 +1750,7 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   /* calculate the cykcov ct vector */
   status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, expectFP, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (1||verbose) printf("cykcov score = %f\n", sc);
+  if (verbose) printf("cykcov score = %f\n", sc);
 
   /* impose the ct on the msa GC line 'cons_ss' */
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
@@ -1979,7 +1979,7 @@ Mutual_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
   ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_ct2simplewuss(*ret_ct, L, ss);
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
-  printf("ss:%s\n", msa->ss_cons);
+  //printf("ss:%s\n", msa->ss_cons);
 
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open output file %s", r2rfile);
   eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
@@ -2050,7 +2050,7 @@ Mutual_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum gram
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (1||verbose) printf("coco-cyk score = %f\n", sc);
+  if (verbose) printf("coco-cyk score = %f\n", sc);
 
   if (cct) {
     free(ct); ct == NULL;

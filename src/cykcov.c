@@ -63,7 +63,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
  
     free(ctest); ctest = NULL;
     if (eval <= target_eval) { // report the traceback to ct
-      if (1||verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, eval); 
+      if (verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, eval); 
       if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
     }
     else break;

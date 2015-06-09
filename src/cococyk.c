@@ -359,7 +359,7 @@ COCOCYK_BGR_Fill(BGRparam  *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, SCVAL *ret_sc, 
 		 cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j-d+1, j, d, L); 
       } 
   sc = cyk->S->dp[L][L];
-  if (1||verbose) printf("BGR cocoCYKscore = %f\n", sc);
+  if (verbose) printf("BGR cocoCYKscore = %f\n", sc);
 
   *ret_sc = sc;
   return eslOK;

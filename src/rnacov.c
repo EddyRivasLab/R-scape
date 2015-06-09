@@ -175,7 +175,7 @@ struct cfg_s {
   { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                "specify format",                                                                            1 },
   /* other options */  
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "G6S",    NULL,       NULL,   NULL, "--cyk", NULL,                "grammar used for cococyk calculation",                                                      0 },   
+  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL, "--cyk", NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -351,6 +351,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.ct = NULL;
   cfg.nbpairs = 0;
 
+  cfg.ft   = NULL;
+  cfg.fbp  = NULL;
+  cfg.fnbp = NULL;
+
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
@@ -488,10 +492,12 @@ main(int argc, char **argv)
     /* the ct vector */
     status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
     if (status != eslOK) esl_fatal("%s. Failed to calculate ct vector", cfg.errbuf);
+#if 0
     msamanip_CalculateBC(msa, cfg.ct, &cfg.ft, &cfg.fbp, &cfg.fnbp, cfg.errbuf);
     esl_vec_DDump(stdout, cfg.ft,   cfg.abc->K, "total BC");
     esl_vec_DDump(stdout, cfg.fbp,  cfg.abc->K, "basepairs BC");
     esl_vec_DDump(stdout, cfg.fnbp, cfg.abc->K, "nonbasepairs BC");
+#endif
     
     /* main function */
     if (cfg.domsa) {
