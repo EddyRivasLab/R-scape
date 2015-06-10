@@ -51,6 +51,13 @@ typedef enum {
 } COVTYPE;
 
 typedef enum {
+  NullNONE = 0,
+  Null1    = 1,
+  Null2    = 2,
+  Null3    = 3,
+} NULLTYPE;
+
+typedef enum {
   C16      = 0,
   C2       = 1,
   CSELECT  = 2,
@@ -90,12 +97,27 @@ struct mutual_s {
   ESL_ALPHABET   *abc;
 };
 
+typedef struct ranklist_s {
+  int     N;
+  double *sc;
+  int    *covBP;
+  int    *covNBP;
+
+} RANKLIST;
+
 typedef struct hit_s {
   int64_t i;
   int64_t j;
   
   double sc;
-  double exp;
+  double expcovNBP;
+
+  double covBP_avg_null1;
+  double covBP_avg_null2;
+  double covBP_avg_null3;
+  double covBP_std_null1;
+  double covBP_std_null2;
+  double covBP_std_null3;
 
   int is_bpair;
   int is_compatible;
@@ -108,47 +130,35 @@ typedef struct hitlist_s{
 }  HITLIST;
 
 extern int              Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-					 int *ct, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, int maxFP, double expectFP, 
+					 int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, int maxFP, double expectFP, 
 					 int nbpairs, double tol, int verbose, char *errbuf);
 extern int              Mutual_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCHI_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateCHI_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateCHI_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateOMES_C16(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateOMES_C2 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateOMES_C2 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGT_C16  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateGT_C2   (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateGT_C16  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateGT_C2   (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI_C16  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMI_C2   (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateMI_C16  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMI_C2   (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIr_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateMIr_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIr_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						 int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIg_C16 (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateMIg_C2  (struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-						 double tol, int verbose, char *errbuf);
-extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+extern int              Mutual_CalculateMIg_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateMIg_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
 						     CORRTYPE corrtype, int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
 extern int              Mutual_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              Mutual_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
@@ -158,17 +168,19 @@ extern void             Mutual_Destroy(struct mutual_s *mi);
 extern int              Mutual_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					   double tol, int verbose, char *errbuf);
-extern int              Mutual_SignificantPairs_Ranking(HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, 
+extern int              Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
 							int nbpairs, int verbose, char *errbuf);
-extern int              Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, double *list_sc, double *list_exp, 
+extern RANKLIST        *Mutual_CreateRankList();
+extern int              Mutual_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, RANKLIST *ranklist, 
 					     int verbose, char *errbuf);
+extern void             Mutual_FreeRankList(RANKLIST *ranklist);
 extern void             Mutual_FreeHitList(HITLIST *hitlist);
 extern int              Mutual_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              Mutual_CYKCOVCT(char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
+extern int              Mutual_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
 					ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
 					int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose);
-extern int              Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
+extern int              Mutual_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
 extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
 				   int verbose, char *errbuf);
 extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);

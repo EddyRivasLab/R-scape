@@ -12,8 +12,7 @@
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
- #include "esl_wuss.h"
- 
+#include "esl_wuss.h"
 #include "msamanip.h"
 #include "msatree.h"
 #include "covariation.h"
@@ -26,6 +25,7 @@
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"                                          
+#define NULLOPTS     "--null1,--null2,--null3"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -63,10 +63,10 @@ struct cfg_s {
 
   FILE            *outmsafp;
  
+  char            *outfile;
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
-  char            *msaheader;          /* header for all msa-specific output files */
-  int              infmt;
+   int              infmt;
  
   char            *R2Rversion;
   int              R2Rall;
@@ -79,6 +79,7 @@ struct cfg_s {
   enum grammar_e   grammar;
   
   char            *dplotfile;
+  char            *cykdplotfile;
 
   int              domsa;
   int              nshuffle;
@@ -91,6 +92,8 @@ struct cfg_s {
   ESL_TREE        *T;
   double           treeavgt;
  
+  NULLTYPE         nulltype;
+
   char                *ribofile;
   struct ribomatrix_s *ribosum;
 
@@ -125,9 +128,10 @@ struct cfg_s {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--maxFP",         eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "maximum number of covarying non-bps allowed",                                               1 },
   { "--expectFP",     eslARG_REAL,      "0.2",   NULL,   "x>=0.0",   NULL,    NULL,  NULL,               "expected number of covarying non-bps per positions",                                        1 },
-  { "--nshuffle",      eslARG_INT,        "0",   NULL,     "n>=0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--nshuffle",      eslARG_INT,       "10",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--cykcov",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
-  { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                             1 },
+  { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
+  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* covariation metric */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
@@ -152,7 +156,11 @@ struct cfg_s {
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 0 },
-  { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,    NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                           0 },   
+  { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
+  /* null hypothesis */
+  { "--null1",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1: shuffle alignment columns",                                                           0 },
+  { "--null2",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2: shuffle residues within a column",                                                    0 },
+  { "--null3",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3: ",                                                                                    0 },
   /* phylogenetic method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
@@ -187,6 +195,7 @@ static char banner[] = "rnacov - statistical test for covatiation in RNA alignme
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, int ishuffled);
+static int null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -230,8 +239,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.outheader = NULL;
   msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
   
-  cfg.msaheader = NULL;
-
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
@@ -251,18 +258,15 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   
   esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
 
-  /* output file */
-  if ( esl_opt_IsOn(go, "-o") ) {
-    if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
-  } else cfg.outfp = stdout;
-
    /* outmsa file */
   cfg.outmsafp = NULL;
-  if ( esl_opt_IsOn(go, "--outmsa") ) {
+  if (esl_opt_IsOn(go, "--outmsa")) {
     if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
   } 
   
-  esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);  
+  esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);
+  if ( esl_opt_IsOn(go, "--outdir") ) esl_sprintf( &cfg.outheader, "%s/%s", esl_opt_GetString(go, "--outdir"), cfg.outheader);
+  
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
     
@@ -324,7 +328,17 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
- /*  rocplot file */
+  /* output file */
+  cfg.outfile = NULL;
+  if ( esl_opt_IsOn(go, "-o") ) {
+    if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
+  } 
+  else {
+    esl_sprintf(&cfg.outfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "out");
+    if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+  }
+ 
+  /*  rocplot file */
   esl_sprintf(&cfg.rocfile, "%s.g%.1f.roc", cfg.outheader, cfg.gapthresh); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
 
@@ -337,7 +351,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.R2Rfp = NULL;
 
   /* dotplot file */
-  esl_sprintf(&cfg.dplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "dplot.ps");
+  esl_sprintf(&cfg.dplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "dplot.svg");
+  /* dotplot file */
+  esl_sprintf(&cfg.cykdplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.dplot.svg");
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
@@ -345,9 +361,15 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     cfg.R2Rcykfp = NULL;
   }
 
+  cfg.nulltype = NullNONE;
+  if      (esl_opt_GetBoolean(go, "--null1")) cfg.nulltype = Null1;
+  else if (esl_opt_GetBoolean(go, "--null2")) cfg.nulltype = Null2;
+  else if (esl_opt_GetBoolean(go, "--null3")) cfg.nulltype = Null3;
+
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
-  if (cfg.nshuffle > 0) {
+
+  if (cfg.nulltype != NullNONE) {
     /*  sh-summary file */
     esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.2f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
@@ -398,7 +420,6 @@ main(int argc, char **argv)
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
-  ESL_MSA         *shmsa = NULL;          /* the shuffled alignment */
   char            *type = NULL;
   char            *tp;
   char            *tok;
@@ -406,7 +427,6 @@ main(int argc, char **argv)
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
-  int              s;
   int              t;
   int              status = eslOK;
   int              hstatus = eslOK;
@@ -432,7 +452,6 @@ main(int argc, char **argv)
       nmsa_noss ++;
       printf("msa: %s_%s  has no secondary structure.\n", msa->acc, msa->name);
       esl_msa_Destroy(msa); msa = NULL;
-      if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
       continue;
     }
 
@@ -512,19 +531,16 @@ main(int argc, char **argv)
       if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
     
-    for (s = 0; s < cfg.nshuffle; s ++) {
-      msamanip_ShuffleColums(cfg.r, msa, &shmsa, cfg.errbuf, cfg.verbose);
-      status = run_rnacov(go, &cfg, &shmsa, TRUE);
-      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov shuffled", cfg.errbuf);
-      esl_msa_Destroy(shmsa); shmsa = NULL;
-    }
 
+    if (cfg.nulltype == Null1) {
+      status = null1_rnacov(go, &cfg, msa);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+    }
+ 
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     free(cfg.ct); cfg.ct = NULL;
-    if (shmsa) esl_msa_Destroy(shmsa); shmsa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
-    if (cfg.msaheader) free(cfg.msaheader); cfg.msaheader = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (type) free(type); type = NULL;
 
@@ -541,6 +557,7 @@ main(int argc, char **argv)
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
   if (type) free(type);
+  if (cfg.outfile) free(cfg.outfile);
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
@@ -549,6 +566,7 @@ main(int argc, char **argv)
   if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
   free(cfg.dplotfile);
+  free(cfg.cykdplotfile);
   free(cfg.R2Rfile);
   free(cfg.R2Rversion);
   free(cfg.gnuplot);
@@ -613,14 +631,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, int ishuffled)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, 
+  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->outfp, cfg->rocfp, 
 			    (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->gnuplot, cfg->dplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
+    status = Mutual_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
 			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
@@ -635,3 +653,23 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, int ishuffled)
   return status;
 }
 
+static int
+null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+{
+  ESL_MSA *shmsa = NULL;
+  int      s;
+  int      status;
+
+   for (s = 0; s < cfg->nshuffle; s ++) {
+      msamanip_ShuffleColums(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
+      status = run_rnacov(go, cfg, &shmsa, TRUE);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+      esl_msa_Destroy(shmsa); shmsa = NULL;
+    }
+
+   return eslOK;
+
+ ERROR:
+   if (shmsa) esl_msa_Destroy(shmsa);
+   return status;
+}
