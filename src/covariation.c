@@ -1593,6 +1593,10 @@ Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi
 	  if (mi->COV->mx[i][j] <= list_sc[n]) hitlist->hit[h].exp = list_exp[n];
 	  else break;
 	}
+	/* initialize */
+	 hitlist->hit[h].is_bpair = FALSE;
+	 hitlist->hit[h].is_compatible = FALSE;
+
 	hitlist->hit[h].i = i;
 	hitlist->hit[h].j = j;
 	hitlist->hit[h].sc = mi->COV->mx[i][j];
@@ -1600,7 +1604,6 @@ Mutual_CreateHitList(HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi
 	else                { 
 	  hitlist->hit[h].is_bpair = FALSE; 
 	  if (ct[i+1] == 0 && ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
-	  else                              hitlist->hit[h].is_compatible = FALSE;
 	} 
  
 	h ++;
@@ -1820,33 +1823,39 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitl
   fprintf(pipe, "set ylabel 'position'\n");
   fprintf(pipe, "set xlabel 'position'\n");
 
-  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 5 lw 2 ps 0.5\n");
-  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 50 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 50 lw 2 ps 0.5\n");
 
   fprintf(pipe, "set yrange [1:%d]\n", L);
   fprintf(pipe, "set xrange [1:%d]\n", L);
 
   fprintf(pipe, "set multiplot\n");
 
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "fun(x)=x\n");
+  fprintf(pipe, "plot fun(x) with lines ls 7\n");
+
   // the covarying basepairs
-#if 1
   //fprintf(pipe, "plot '-' u 1:2:3 with image \n");
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");  
-  fprintf(pipe, "plot '-' u 1:2:3 with points ls 1 pt 5 ps variable lt 1 \n");
+  fprintf(pipe, "plot '-' u 1:2 with points ls 4 \n");
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
-    if (hitlist->hit[h].is_bpair) fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);	
+    if (hitlist->hit[h].is_bpair) {
+      fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);
+      fprintf(pipe, "%d %d %f\n", msamap[jh]+1, msamap[ih]+1, hitlist->hit[h].sc);
+    }	
   } 
   fprintf(pipe, "e\n");
-#endif
-  
+
   // covarying pairs compatible with the given structure
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");  
@@ -1854,7 +1863,10 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitl
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
-    if (hitlist->hit[h].is_compatible) fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+    if (hitlist->hit[h].is_compatible) {
+      fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+      fprintf(pipe, "%d %d\n", msamap[jh]+1, msamap[ih]+1);	
+    }
   } 
   fprintf(pipe, "e\n");
   
@@ -1865,7 +1877,10 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitl
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
-    if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+    if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) {
+      fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+      fprintf(pipe, "%d %d\n", msamap[jh]+1, msamap[ih]+1);	
+    }
   } 
   fprintf(pipe, "e\n");
   
