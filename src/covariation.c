@@ -36,167 +36,168 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
-Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
+Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST **ret_ranklist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
 		 int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
-  ESL_MSA  *msa = *omsa;
-  HITLIST  *hitlist = NULL;
-  int       status;
+  ESL_MSA   *msa = *omsa;
+  RANKLIST  *ranklist = NULL;
+  HITLIST   *hitlist = NULL;
+  int        status;
 
   status = Mutual_Probs(msa, T, ribosum, mi, method, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
  
    switch(covtype) {
    case CHIa: 
-     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case CHIp:
-     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case CHI: 
-     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;     
      break;
    case GTa: 
-     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE, &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
       break;
    case GTp: 
-     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC,  TRUE, &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC,  TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case GT: 
-     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,       TRUE, &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,       TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIa: 
-     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIp: 
-     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MI: 
-     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIra: 
-     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(         mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(         mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIrp:
-     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIr: 
-     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE, &hitlist,  tol, verbose, errbuf);
+     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE, &ranklist, &hitlist,  tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIga: 
-     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIgp:
-     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIg: 
-     status = Mutual_CalculateMIg          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,     TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateMIg          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,     TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case OMESa: 
-     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMESp: 
-     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMES: 
-     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
       break;
    case COVALL: 
-     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     
+     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     status = Mutual_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, FALSE,    tol, verbose, errbuf);
+     status = Mutual_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &hitlist, tol, verbose, errbuf);
+     status = Mutual_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    default:
@@ -205,18 +206,22 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, verbose, errbuf);
-   if  (status != eslOK) goto ERROR;
-
-  status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
-   if  (status != eslOK) goto ERROR;
+   if (ret_ranklist == NULL) { // do the plots only if not using the null mo del
+     status = Mutual_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, verbose, errbuf);
+     if  (status != eslOK) goto ERROR;
+     
+     status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
+     if  (status != eslOK) goto ERROR;
+   }
 
    *omsa = msa;
+   if (ret_ranklist) *ret_ranklist = ranklist; else Mutual_FreeRankList(ranklist);
    Mutual_FreeHitList(hitlist);
    return eslOK;
    
  ERROR:
-   if (hitlist) Mutual_FreeHitList(hitlist);
+   if (ranklist) Mutual_FreeRankList(ranklist);
+   if (hitlist)  Mutual_FreeHitList(hitlist);
   return status;
 }
 
@@ -344,7 +349,7 @@ Mutual_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -468,7 +473,7 @@ Mutual_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		     int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		     int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status;
@@ -590,7 +595,7 @@ Mutual_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -717,7 +722,7 @@ Mutual_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -829,7 +834,7 @@ Mutual_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -945,7 +950,7 @@ Mutual_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -1062,7 +1067,7 @@ Mutual_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 int                 
 Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			     CORRTYPE corrtype, int analyze, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+			     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
   ESL_DMATRIX *COV  = NULL;
@@ -1832,8 +1837,8 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mut
   FILE   *pipe;
   char   *filename = NULL;
   double  pointsize;
-  double  ps_max = 0.80;
-  double  ps_min = 0.001;
+  double  ps_max = 0.080;
+  double  ps_min = 0.0001;
   int     L = msamap[msa->alen-1]+1;
   int     h;           /* index for hitlist */
   int     i, ipair;
