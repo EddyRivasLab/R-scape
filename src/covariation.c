@@ -205,7 +205,7 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_DotPlot(gnuplot, dplotfile, msamap, hitlist, verbose, errbuf);
+   status = Mutual_DotPlot(gnuplot, dplotfile, mi->alen, msamap, hitlist, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
@@ -1766,7 +1766,7 @@ Mutual_CYKCOVCT(char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversi
   if (status != eslOK) goto ERROR;
 
   /* DotPlot */
-  status = Mutual_DotPlot(gnuplot, dplotfile, msamap, hitlist, verbose, errbuf);
+  status = Mutual_DotPlot(gnuplot, dplotfile, mi->alen, msamap, hitlist, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
@@ -1802,7 +1802,7 @@ Mutual_CYKCOVCT(char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversi
 }
 
 int              
-Mutual_DotPlot(char *gnuplot, char *dplotfile, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
 {
   FILE   *pipe;
   int     h;           /* index for hitlist */
@@ -1828,19 +1828,29 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, int *msamap, HITLIST *hitlist, in
   fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 5 lw 2 ps 0.5\n");
   fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 5 lw 2 ps 0.5\n");
 
+  fprintf(pipe, "set yrange [1:%d]\n", L);
+  fprintf(pipe, "set xrange [1:%d]\n", L);
+
   fprintf(pipe, "set multiplot\n");
 
   // the covarying basepairs
-  fprintf(pipe, "plot '-' u 1:2:3 with image \n");
+#if 1
+  //fprintf(pipe, "plot '-' u 1:2:3 with image \n");
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2:3 with points ls 1 pt 5 ps variable lt 1 \n");
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
     if (hitlist->hit[h].is_bpair) fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);	
   } 
   fprintf(pipe, "e\n");
+#endif
   
   // covarying pairs compatible with the given structure
-  fprintf(pipe, "plot '-' u 1:2 with dots ls 1\n");
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 1\n");
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
@@ -1849,7 +1859,9 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, int *msamap, HITLIST *hitlist, in
   fprintf(pipe, "e\n");
   
   // covarying pairs incompatible with the given structure
-  fprintf(pipe, "plot '-' u 1:2 with dots ls 7\n");
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 7\n");
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;

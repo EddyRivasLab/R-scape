@@ -168,7 +168,7 @@ extern int              Mutual_FisherExactTest(double *ret_pval, int cBP, int cN
 extern int              Mutual_CYKCOVCT(char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
 					ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
 					int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose);
-extern int              Mutual_DotPlot(char *gnuplot, char *dplotfile, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
+extern int              Mutual_DotPlot(char *gnuplot, char *dplotfile, int L, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
 extern int              Mutual_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
 				   int verbose, char *errbuf);
 extern int              Mutual_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
