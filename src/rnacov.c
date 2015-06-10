@@ -185,7 +185,7 @@ struct cfg_s {
   { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                "specify format",                                                                            1 },
   /* other options */  
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL, "--cyk", NULL,                "grammar used for cococyk calculation",                                                      0 },   
+  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cykcov", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -353,7 +353,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* dotplot file */
   esl_sprintf(&cfg.dplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "dplot.svg");
   /* dotplot file */
-  esl_sprintf(&cfg.cykdplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.dplot.svg");
+  cfg.cykdplotfile = NULL;
+  if (esl_opt_IsOn(go, "--cykcov")) 
+    esl_sprintf(&cfg.cykdplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.dplot.svg");
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
@@ -567,7 +569,7 @@ main(int argc, char **argv)
   if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
   free(cfg.dplotfile);
-  free(cfg.cykdplotfile);
+  if (cfg.cykdplotfile) free(cfg.cykdplotfile);
   free(cfg.R2Rfile);
   free(cfg.R2Rversion);
   free(cfg.gnuplot);
@@ -605,7 +607,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   ESL_MSA         *msa = *omsa;
   int              nnodes;
   int              status;
-  int              ishuffled = (ranklist_null)? FALSE:TRUE;
+  int              ishuffled = (ret_ranklist)? TRUE:FALSE;
 
   esl_stopwatch_Start(cfg->w);
   
@@ -644,7 +646,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (status != eslOK)  { goto ERROR; }
   
   /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->R2Rcykfile && !ishuffled) {
+ if (cfg->R2Rcykfile && !ishuffled) {
     status = Mutual_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
 			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }

@@ -1837,8 +1837,8 @@ Mutual_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mut
   FILE   *pipe;
   char   *filename = NULL;
   double  pointsize;
-  double  ps_max = 0.080;
-  double  ps_min = 0.0001;
+  double  ps_max = 0.40;
+  double  ps_min = 0.0003;
   int     L = msamap[msa->alen-1]+1;
   int     h;           /* index for hitlist */
   int     i, ipair;
