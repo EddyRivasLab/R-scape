@@ -37,7 +37,7 @@ static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
 Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-		 int *ct, FILE *rocfp, FILE *sumfp, char *r2rfile, char *r2rversion, int r2rall, 
+		 int *ct, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
   ESL_MSA  *msa = *omsa;
@@ -205,7 +205,10 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
    fprintf(sumfp, "\n");   
       
-   status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, (verbose), errbuf);
+   status = Mutual_DotPlot(gnuplot, dplotfile, msamap, hitlist, verbose, errbuf);
+   if  (status != eslOK) goto ERROR;
+
+  status = Mutual_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
    if  (status != eslOK) goto ERROR;
 
    *omsa = msa;
@@ -1737,8 +1740,8 @@ Mutual_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
-		int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
+Mutual_CYKCOVCT(char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
+		int *msamap, int minloop, enum grammar_e G, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA *msa = *omsa;
   HITLIST *hitlist = NULL;
@@ -1760,6 +1763,10 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   
   /* redo the hitlist since the ct has now changed */
   status = Mutual_SignificantPairs_Ranking(&hitlist, mi, msamap, cykct, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  /* DotPlot */
+  status = Mutual_DotPlot(gnuplot, dplotfile, msamap, hitlist, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
@@ -1792,6 +1799,67 @@ Mutual_CYKCOVCT(char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS 
   if (cykct)   free(cykct);
   if (ss)      free(ss);
   return status;
+}
+
+int              
+Mutual_DotPlot(char *gnuplot, char *dplotfile, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+{
+  FILE   *pipe;
+  int     h;           /* index for hitlist */
+  int     ih, jh;
+  
+  pipe = popen(gnuplot, "w");
+  
+  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set output '%s'\n", dplotfile);
+  /* matlab's 'jet' colormap scale */
+  fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
+
+  fprintf(pipe, "unset key\n");
+  fprintf(pipe, "set title '%s' \n", dplotfile);
+  fprintf(pipe, "set ylabel 'position'\n");
+  fprintf(pipe, "set xlabel 'position'\n");
+
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 5 lw 2 ps 0.5\n");
+
+  fprintf(pipe, "set multiplot\n");
+
+  // the covarying basepairs
+  fprintf(pipe, "plot '-' u 1:2:3 with image \n");
+  for (h = 0; h < hitlist->nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    if (hitlist->hit[h].is_bpair) fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);	
+  } 
+  fprintf(pipe, "e\n");
+  
+  // covarying pairs compatible with the given structure
+  fprintf(pipe, "plot '-' u 1:2 with dots ls 1\n");
+  for (h = 0; h < hitlist->nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    if (hitlist->hit[h].is_compatible) fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+  } 
+  fprintf(pipe, "e\n");
+  
+  // covarying pairs incompatible with the given structure
+  fprintf(pipe, "plot '-' u 1:2 with dots ls 7\n");
+  for (h = 0; h < hitlist->nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) fprintf(pipe, "%d %d\n", msamap[ih]+1, msamap[jh]+1);	
+  } 
+  fprintf(pipe, "e\n");
+  
+  pclose(pipe);
+  
+  return eslOK;
 }
 
 int

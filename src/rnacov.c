@@ -78,6 +78,8 @@ struct cfg_s {
   int              minloop;
   enum grammar_e   grammar;
   
+  char            *dplotfile;
+
   int              domsa;
   int              nshuffle;
 
@@ -158,7 +160,7 @@ struct cfg_s {
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
-  { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
+  { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
   { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
@@ -247,12 +249,14 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   cfg.w = esl_stopwatch_Create(); 
   
-  /*  output file */
+  esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
+
+  /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
   } else cfg.outfp = stdout;
 
-   /*  outmsa file */
+   /* outmsa file */
   cfg.outmsafp = NULL;
   if ( esl_opt_IsOn(go, "--outmsa") ) {
     if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
@@ -331,6 +335,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* R2R annotated sto file */
   esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
   cfg.R2Rfp = NULL;
+
+  /* dotplot file */
+  esl_sprintf(&cfg.dplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "dplot.ps");
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
@@ -541,6 +548,7 @@ main(int argc, char **argv)
   if (cfg.shsumfp) fclose(cfg.shsumfp);
   if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
+  free(cfg.dplotfile);
   free(cfg.R2Rfile);
   free(cfg.R2Rversion);
   free(cfg.gnuplot);
@@ -606,14 +614,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, int ishuffled)
  
   /* main function */
   status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->rocfp, 
-			    (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
+			    (!ishuffled)?cfg->sumfp:cfg->shsumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile) {
-    status = Mutual_CYKCOVCT(cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, 
-			     cfg->errbuf, cfg->verbose);
+    status = Mutual_CYKCOVCT(cfg->gnuplot, cfg->dplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
+			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
 
