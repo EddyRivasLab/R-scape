@@ -375,7 +375,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     /*  sh-summary file */
     esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.2f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
-    printf("sh-sumfile %s\n", cfg.shsumfile);
   }
   
   cfg.T  = NULL;
@@ -612,9 +611,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   esl_stopwatch_Start(cfg->w);
   
   /* print to stdout */
-  fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
-	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+  if (1||cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+			   cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+			   cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   fprintf(cfg->outfp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 	  cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	  cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
@@ -670,6 +669,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       s;
+  int       n;
   int       status;
 
    for (s = 0; s < cfg->nshuffle; s ++) {
@@ -677,9 +677,15 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
       if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
       esl_msa_Destroy(shmsa); shmsa = NULL;
-      Mutual_FreeRankList(ranklist); ranklist = NULL;
+ 
+      if (cumranklist == NULL) cumranklist = Mutual_CreateRankList(ranklist->N);
 
       /* add ranklist to cumranklist */
+      for (n = 0; n < ranklist->N; n ++)
+	printf("sc %f cBP %d cNBP %d\n", ranklist->sc[n], ranklist->covBP[n], ranklist->covNBP[n]); 
+      
+      Mutual_FreeRankList(ranklist); ranklist = NULL;
+
     }
 
    *ret_cumranklist = cumranklist;
