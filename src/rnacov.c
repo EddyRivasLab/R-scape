@@ -133,6 +133,7 @@ struct cfg_s {
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  /* different ways to assess significance */
   /* covariation metric */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
@@ -329,37 +330,37 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
   /* output file */
-  cfg.outfile = NULL;
   if ( esl_opt_IsOn(go, "-o") ) {
-    if ((cfg.outfp = fopen(esl_opt_GetString(go, "-o"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "-o"));
+    esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
+    if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
   } 
   else {
-    esl_sprintf(&cfg.outfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "out");
+    esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
     if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
   }
  
   /*  rocplot file */
-  esl_sprintf(&cfg.rocfile, "%s.g%.1f.roc", cfg.outheader, cfg.gapthresh); 
+  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
 
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.g%.1f.e%.2f.sum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
+  esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
   
   /* R2R annotated sto file */
-  esl_sprintf(&cfg.R2Rfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "R2R.sto");
+  esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.outheader);
   cfg.R2Rfp = NULL;
 
   /* dotplot file */
-  esl_sprintf(&cfg.dplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "dplot.svg");
+  esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot.svg");
   /* dotplot file */
   cfg.cykdplotfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-    esl_sprintf(&cfg.cykdplotfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.dplot.svg");
+    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot.svg");
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
-    esl_sprintf(&cfg.R2Rcykfile, "%s.g%.1f.e%.2f.%s", cfg.outheader, cfg.gapthresh, cfg.expectFP, "cyk.R2R.sto");
+    esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
   }
 
@@ -373,7 +374,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   if (cfg.nulltype != NullNONE) {
     /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.g%.1f.e%.2f.shsum", cfg.outheader, cfg.gapthresh, cfg.expectFP); 
+    esl_sprintf(&cfg.shsumfile, "%s.shsum", cfg.outheader); 
     if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
   }
   
@@ -403,7 +404,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
   esl_usage(stdout, banner, usage);
-  if (puts("\nwhere options are:")                                                 < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (puts("\nwhere options are:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
   exit(1);  
@@ -612,7 +613,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   esl_stopwatch_Start(cfg->w);
   
   /* print to stdout */
-  if (1||cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+  if (cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 			   cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 			   cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   fprintf(cfg->outfp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
