@@ -26,7 +26,7 @@
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"                                          
 #define NULLOPTS     "--null1,--null2,--null3"                                          
-#define THRESHOPTS   "--covNPP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf"                                          
+#define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -120,9 +120,6 @@ struct cfg_s {
 
   THRESH           thresh;
 
-  int              maxFP;
-  double           expectFP;
-
   float            tol;
   int              verbose;
 };
@@ -138,20 +135,20 @@ struct cfg_s {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
-  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
-  { "--nseqmin",      eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
-  { "--gapthresh",    eslARG_REAL,      FALSE,   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
-  { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
-  { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
+  { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
+  { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
+  { "--gapthresh",    eslARG_REAL,      NULL,    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
+  { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
+  { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
    /* different ways to assess significance */
-  { "--covNBP",      eslARG_REAL,      FALSE,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs:    max total        (covNPB)      allowed",                                     1 },
-  { "--covNBPu",     eslARG_REAL,       TRUE,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max per_position (covNBP/alen) allowed",                                     1 },
-  { "--covNBPf",     eslARG_REAL,      FALSE,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max fraction     (covNBP/NBP)  allowed",                                     1 },
-  { "--covRBP",      eslARG_REAL,      FALSE,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs: max total        (covRPB)      allowed",                                     1 },
-  { "--covRBPu",     eslARG_REAL,      FALSE,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max per_position (covRBP/alen) allowed",                                     1 },
-  { "--covRBPf",     eslARG_REAL,      FALSE,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max fraction     (covRBP/RBP)  allowed",                                     1 },
+  { "--covNBP",      eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs:    max total        (covNPB)      allowed",                                     1 },
+  { "--covNBPu",     eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max per_position (covNBP/alen) allowed",                                     1 },
+  { "--covNBPf",     eslARG_REAL,       NULL,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max fraction     (covNBP/NBP)  allowed",                                     1 },
+  { "--covRBP",      eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs: max total        (covRPB)      allowed",                                     1 },
+  { "--covRBPu",     eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max per_position (covRBP/alen) allowed",                                     1 },
+  { "--covRBPf",     eslARG_REAL,       NULL,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max fraction     (covRBP/RBP)  allowed",                                     1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       "20",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1: shuffle alignment columns",                                                          0 },
@@ -288,8 +285,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")           : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")    : -1;
   cfg.gapthresh   = esl_opt_IsOn(go, "--gapthresh")?  esl_opt_GetReal   (go, "--gapthresh")  :  1.0;
-  cfg.maxFP       = esl_opt_IsOn(go, "--maxFP")?      esl_opt_GetInteger(go, "--maxFP")      : -1;
-  cfg.expectFP    = esl_opt_GetReal   (go, "--expectFP");
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
@@ -307,12 +302,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
-  if      (esl_opt_GetReal(go, "--covNBP") )  { cfg.thresh.type = covNBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covNBP");  }
-  else if (esl_opt_GetReal(go, "--covNBPu"))  { cfg.thresh.type = covNBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPu"); }
-  else if (esl_opt_GetReal(go, "--covNBPf"))  { cfg.thresh.type = covNBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPf"); }
-  else if (esl_opt_GetReal(go, "--covRBP") )  { cfg.thresh.type = covRBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covRBP");  }
-  else if (esl_opt_GetReal(go, "--covRBPu"))  { cfg.thresh.type = covRBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPu"); }
-  else if (esl_opt_GetReal(go, "--covRBPf"))  { cfg.thresh.type = covRBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPf"); }
+  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh.type = covNBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covNBP");  }
+  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh.type = covNBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPu"); }
+  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh.type = covNBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPf"); }
+  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh.type = covRBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covRBP");  }
+  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh.type = covRBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPu"); }
+  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh.type = covRBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPf"); }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -648,9 +643,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* write MSA info to the sumfile */
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.sc, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->expectFP, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.sc, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
