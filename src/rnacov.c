@@ -302,12 +302,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
-  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh.type = covNBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covNBP");  }
-  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh.type = covNBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPu"); }
-  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh.type = covNBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covNBPf"); }
-  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh.type = covRBP;  cfg.thresh.sc = esl_opt_GetReal(go, "--covRBP");  }
-  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh.type = covRBPu; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPu"); }
-  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh.type = covRBPf; cfg.thresh.sc = esl_opt_GetReal(go, "--covRBPf"); }
+  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh.type = covNBP;  cfg.thresh.val = esl_opt_GetReal(go, "--covNBP");  }
+  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh.type = covNBPu; cfg.thresh.val = esl_opt_GetReal(go, "--covNBPu"); }
+  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh.type = covNBPf; cfg.thresh.val = esl_opt_GetReal(go, "--covNBPf"); }
+  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh.type = covRBP;  cfg.thresh.val = esl_opt_GetReal(go, "--covRBP");  }
+  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh.type = covRBPu; cfg.thresh.val = esl_opt_GetReal(go, "--covRBPu"); }
+  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh.type = covRBPf; cfg.thresh.val = esl_opt_GetReal(go, "--covRBPf"); }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -643,13 +643,13 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* write MSA info to the sumfile */
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.sc, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.sc, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
- 
+  
   /* main function */
   status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ret_ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
 			 (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
@@ -658,22 +658,21 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (status != eslOK)  { goto ERROR; }
   
   /* find the cykcov structure, and do the cov analysis on it */
- if (cfg->R2Rcykfile && !ishuffled) {
+  if (cfg->R2Rcykfile && !ishuffled) {
     status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
  
- 
- *omsa = msa;
- COV_Destroy(mi); mi = NULL;
- 
- return eslOK;
- 
+  *omsa = msa;
+  COV_Destroy(mi); mi = NULL;
+  
+  return eslOK;
+  
  ERROR:
- if (cfg->T) esl_tree_Destroy(cfg->T);
- if (mi) COV_Destroy(mi);
- return status;
+  if (cfg->T) esl_tree_Destroy(cfg->T);
+  if (mi) COV_Destroy(mi);
+  return status;
 }
 
 static int

@@ -148,7 +148,9 @@ typedef enum {
 
 typedef struct thresh_s {
   THRESHTYPE type;
-  double     sc;
+  double     val;  // the actual thershold value
+  double     cov;  // the cov value at that threshold
+
 } THRESH;
 
 

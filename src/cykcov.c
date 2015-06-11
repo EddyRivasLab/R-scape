@@ -27,66 +27,24 @@ static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covth
 int
 CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, THRESH thresh, char *errbuf, int verbose) 
 {
-  GMX    *cyk   = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
-  int    *ctest = NULL;
-  int    *ct    = NULL;
-  double  covthresh;
-  double  covinc;  
-  double  covmin = mi->minCOV;
-  double  covmax = mi->maxCOV;
-  double  delta = 200.;
-  double  val;
-  int     tf, f, t, fp;
-  int     i, j;
-  int     status;
-
+  GMX   *cyk   = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
+  int   *ct    = NULL;
+  int    status;
+  
   cyk = GMX_Create(mi->alen);
 
-  covinc = (covmax - covmin) / delta;
-
-  for (covthresh = covmax; covthresh > ESL_MAX(0,covmin-covinc); covthresh -= covinc) {
-    /* Fill the cyk matrix */
-    if ((status = CYKCOV_Fill(mi, cyk, ret_sc, minloop, covthresh, errbuf, verbose)) != eslOK) goto ERROR;    
-    /* Report a traceback */
-    if ((status = CYKCOV_Traceback(r, mi, cyk, &ctest, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
-
-    f = t = tf = 0;
-    for (i = 0; i < mi->alen-1; i ++) 
-      for (j = i+1; j < mi->alen; j ++) {
-	if (mi->COV->mx[i][j] > covthresh)   f  ++;
-	if (ctest[i+1] == j+1) {             t  ++;
-	  if (mi->COV->mx[i][j] > covthresh) tf ++;
-	}
-      }
-    fp = f - tf;  
-    val = (double)fp/(double)mi->alen;
- 
-    switch(thresh.type) {
-    case covNBP:  val = (double)fp;                  break;
-    case covNBPu: val = (double)fp/(double)mi->alen; break;
-    case covNBPf: val = (double)fp/(double)mi->alen; break;
-    case covRBP:  val = -eslINFINITY; break;
-    case covRBPu: val = -eslINFINITY; break;
-    case covRBPf: val = -eslINFINITY; break;
-    }
-
-    free(ctest); ctest = NULL;
-    if (val <= thresh.sc) { // convert the traceback to ct
-      if (verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, val); 
-      if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
-    }
-    else break;
- }
-  
+  /* Fill the cyk matrix */
+  if ((status = CYKCOV_Fill(mi, cyk, ret_sc, minloop, thresh.cov, errbuf, verbose)) != eslOK) goto ERROR;    
+  /* Report a traceback */
+  if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, thresh.cov, errbuf, verbose))  != eslOK) goto ERROR;
+    
   *ret_ct = ct;
-  if (ctest) free(ctest);
   GMX_Destroy(cyk);
   return eslOK;
   
  ERROR:
   if (ct)    free(ct);
-  if (ctest) free(ctest);
-  if (cyk)   GMX_Destroy(cyk);
+   if (cyk)   GMX_Destroy(cyk);
   return status;
 }
 

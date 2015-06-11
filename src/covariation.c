@@ -1424,7 +1424,6 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       thresh_F;
   double       thresh_sen;
   double       thresh_ppv;
-  double       thresh_cov;
   int          fp, tf, t, f, neg;
   int          thresh_tf, thresh_t, thresh_f, thresh_fp;
   int          i, j;
@@ -1490,7 +1489,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPf: threshval = cvRBPf; break;
     } 
     
-    if (threshval <= thresh.sc) {
+    if (threshval <= thresh.val) {
       thresh_F   = F;
       thresh_sen = sen;
       thresh_ppv = ppv;
@@ -1498,14 +1497,14 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       thresh_f   = f;
       thresh_t   = t;
       thresh_fp  = fp;
-      thresh_cov = cov;
+      thresh.cov = cov;
     }
   }
 
   if (outfp) {
-    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.sc, thresh_cov, ranklist->scmin, ranklist->scmax,
+    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.val, thresh.cov, ranklist->scmin, ranklist->scmax,
 	    thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
-    status = COV_CreateHitList(outfp, &hitlist, thresh_cov, mi, msamap, ct, ranklist, ranklist_null, verbose, errbuf);
+    status = COV_CreateHitList(outfp, &hitlist, thresh.cov, mi, msamap, ct, ranklist, ranklist_null, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
 
