@@ -115,6 +115,7 @@ HEADERS  = src/e2_config.h\
 	   src/cococyk.h\
 	   src/covgrammars.h\
 	   src/covariation.h\
+	   src/covmeasures.h\
 	   src/cykcov.h\
            src/evohmmer.h\
            src/evotracealign.h\
@@ -178,6 +179,7 @@ OBJS     = src/e1_bg.o\
 	   src/cococyk.o\
 	   src/covgrammars.o\
 	   src/covariation.o\
+	   src/covmeasures.o\
 	   src/cykcov.o\
            src/evohmmer.o\
 	   src/evotracealign.o\
