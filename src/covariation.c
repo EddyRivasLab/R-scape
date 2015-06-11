@@ -1445,7 +1445,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   ranklist->scmax = mi->maxCOV;
   if (ranklist->bmax < ranklist->scmax) ESL_XFAIL(eslFAIL, errbuf, "bmax < scmax");
 
-  for (sc = ranklist->bmax; sc > ranklist->bmin-ranklist->w; sc -= ranklist->w) {
+  for (sc = ranklist->scmax; sc > ranklist->scmin-ranklist->w; sc -= ranklist->w) {
 
     x = (int)((sc-ranklist->bmin)/ranklist->w);
     
@@ -1480,7 +1480,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
       cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 0.0;
     }
-
+    
     switch(thresh.type) {
     case covNBP:  threshval = cvNBP;  break;
     case covNBPu: threshval = cvNBPu; break;
@@ -1488,9 +1488,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBP:  threshval = cvRBP;  break;
     case covRBPu: threshval = cvRBPu; break;
     case covRBPf: threshval = cvRBPf; break;
-    }
- 
-   
+    } 
+    
     if (threshval <= thresh.sc) {
       thresh_F   = F;
       thresh_sen = sen;
@@ -1500,16 +1499,16 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       thresh_t   = t;
       thresh_fp  = fp;
       thresh_sc  = sc;
-     }
-    
-    if (outfp) {
-      fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.sc, ranklist->scmin, ranklist->scmax,
-	      thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
-      status = COV_CreateHitList(outfp, &hitlist, thresh.sc, mi, msamap, ct, ranklist, verbose, errbuf);
-      if (status != eslOK) goto ERROR;
-    }    
+    }
   }
-  
+
+  if (outfp) {
+    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.sc, thresh_sc, ranklist->scmin, ranklist->scmax,
+	    thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
+    status = COV_CreateHitList(outfp, &hitlist, thresh.sc, mi, msamap, ct, ranklist, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }    
+
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) COV_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  COV_FreeHitList(hitlist);
  
@@ -1518,8 +1517,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   return eslOK;
 
  ERROR:
-  if (ranklist)  COV_FreeRankList(ranklist);
-  if (hitlist)   COV_FreeHitList(hitlist);
+  if (ranklist)   COV_FreeRankList(ranklist);
+  if (hitlist)    COV_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
   return status;
@@ -1588,48 +1587,45 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
 	 hitlist->hit[h].covNBPf       = 0.0;
 	 hitlist->hit[h].is_bpair      = FALSE;
 	 hitlist->hit[h].is_compatible = FALSE;
-
-	for (x = ranklist->nb-1; x >= 0; x --) {
-	  if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) {
-	    hitlist->hit[h].covNBP  = ranklist->covNBP[x];
-	    hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
-	    hitlist->hit[h].covNBPf = ranklist->covNBP[x]/(double)NBP;
-	  }
-	  else break;
-	}
-	hitlist->hit[h].i = i;
-	hitlist->hit[h].j = j;
-	hitlist->hit[h].sc = mi->COV->mx[i][j];
-	if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
-	else                { 
-	  hitlist->hit[h].is_bpair = FALSE; 
-	  if (ct[i+1] == 0 && ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
-	} 
- 
-	h ++;
+	 
+	 for (x = ranklist->nb-1; x >= 0; x --) {
+	   if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) {
+	     hitlist->hit[h].covNBP  = ranklist->covNBP[x];
+	     hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
+	     hitlist->hit[h].covNBPf = ranklist->covNBP[x]/(double)NBP;
+	   }
+	   else break;
+	 }
+	 hitlist->hit[h].i = i;
+	 hitlist->hit[h].j = j;
+	 hitlist->hit[h].sc = mi->COV->mx[i][j];
+	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
+	 else                { 
+	   hitlist->hit[h].is_bpair = FALSE; 
+	   if (ct[i+1] == 0 && ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
+	 } 	 
+	 h ++;
       }
     }
  nhit = h;
  hitlist->nhit = nhit;
-
- //sort by sc? should go here
-  
-  for (h = 0; h < nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-    if (outfp) {
-      if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
-      else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
-      else                                    { fprintf(outfp, "  %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); } 
-    }
-  }
-
-  if (ret_hitlist) *ret_hitlist = hitlist; else COV_FreeHitList(hitlist);
-  return eslOK;
-
+ 
+ for (h = 0; h < nhit; h ++) {
+   ih = hitlist->hit[h].i;
+   jh = hitlist->hit[h].j;
+   if (outfp) {
+     if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
+     else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
+     else                                    { fprintf(outfp, "  %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); } 
+   }
+ }
+ 
+ if (ret_hitlist) *ret_hitlist = hitlist; else COV_FreeHitList(hitlist);
+ return eslOK;
+ 
  ERROR:
-  if (hitlist) COV_FreeHitList(hitlist);
-  return status;
+ if (hitlist) COV_FreeHitList(hitlist);
+ return status;
 }
 
 void
