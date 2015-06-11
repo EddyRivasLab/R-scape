@@ -218,7 +218,7 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
 
    *omsa = msa;
    if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) COV_FreeRankList(ranklist);
-   COV_FreeHitList(hitlist);
+   if (hitlist) COV_FreeHitList(hitlist);
    return eslOK;
    
  ERROR:
@@ -1539,39 +1539,41 @@ COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, str
     }
   }
       
-  if (maxFP >= 0) {
-    if (best_fp < maxFP_fp) {
-      if (best_fp == 0 && oneFP_tf > best_tf) {
-	if (outfp) fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
-			   oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
-	status = COV_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
+  if (outfp) {
+    if (maxFP >= 0) {
+      if (best_fp < maxFP_fp) {
+	if (best_fp == 0 && oneFP_tf > best_tf) {
+	  fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
+		  oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
+	  status = COV_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
+	}
+	else {
+	  fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
+		  best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
+	  status = COV_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, ranklist, verbose, errbuf);
+	} 
       }
-      else {
-	if (outfp) fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
-			   best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
-	status = COV_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, ranklist, verbose, errbuf);
-      } 
+      
+      fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
+	      maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
+      status = COV_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
     }
-    
-    if (outfp) fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
-		       maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
-    status = COV_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
+    else {
+      expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
+      expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
+      if (sumfp) fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
+      
+      status = COV_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
+      
+      fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
+	      expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
+      status = COV_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, ranklist, verbose, errbuf); 
+    }
+    if (status != eslOK) goto ERROR;
   }
-  else {
-    expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
-    expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
-    if (sumfp) fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
-    
-    status = COV_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
-    
-    if (outfp) fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
-		       expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
-    status = COV_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, ranklist, verbose, errbuf); 
-  }
-  if (status != eslOK) goto ERROR;
-
-  if (ret_ranklist) *ret_ranklist = ranklist; else COV_FreeRankList(ranklist);
-  if (ret_hitlist)  *ret_hitlist  = hitlist;  else COV_FreeHitList(hitlist);
+  
+  if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) COV_FreeRankList(ranklist);
+  if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  COV_FreeHitList(hitlist);
  
   if (covtype) free(covtype); 
   return eslOK;
@@ -1636,13 +1638,15 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
 	  nhit += alloc_nhit;
 	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
 	}
-	for (x = 0; x < ranklist->nb; x ++) {
+	/* initialize */
+	 hitlist->hit[h].expcovNBP     = 0.0;
+	 hitlist->hit[h].is_bpair      = FALSE;
+	 hitlist->hit[h].is_compatible = FALSE;
+
+	for (x = ranklist->nb-1; x >= 0; x --) {
 	  if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) hitlist->hit[h].expcovNBP = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
 	  else break;
 	}
-	/* initialize */
-	 hitlist->hit[h].is_bpair      = FALSE;
-	 hitlist->hit[h].is_compatible = FALSE;
 
 	hitlist->hit[h].i = i;
 	hitlist->hit[h].j = j;

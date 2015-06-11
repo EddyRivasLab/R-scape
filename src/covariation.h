@@ -130,6 +130,15 @@ typedef struct hitlist_s{
 
 }  HITLIST;
 
+typedef enum {
+  covNBP  = 0, // cov NonBPs:    max total        (covNPB)      allowed
+  covNBPu = 1, // cov NonBPs;    max per_position (covNBP/alen) allowed
+  covNBPf = 2, // cov NonBPs;    max fraction     (covNBP/NBP)  allowed
+  covRBP  = 3, // cov RandomBPs: max total        (covRPB)      allowed
+  covRBPu = 4, // cov RandomBPs; max per_position (covRBP/alen) allowed
+  covRBPf = 5, // cov RandomBPs; max fraction     (covRBP/RBP)  allowed
+} THRESHTYPE;
+
 extern int              COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST  **ret_ranklist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
 				      int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, int maxFP, double expectFP, 
 				      int nbpairs, double tol, int verbose, char *errbuf);
