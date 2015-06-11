@@ -1470,7 +1470,7 @@ COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, str
   ranklist->scmax = mi->maxCOV;
   if (ranklist->bmax < ranklist->scmax) ESL_XFAIL(eslFAIL, errbuf, "bmax < scmax");
 
-  for (thresh = ranklist->scmax; thresh > ranklist->scmin-ranklist->w; thresh -= ranklist->w) {
+  for (thresh = ranklist->bmax; thresh > ranklist->bmin-ranklist->w; thresh -= ranklist->w) {
 
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1489,8 +1489,7 @@ COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, str
     
     neg = mi->alen * (mi->alen-1) / 2 - t;
     if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
-    printf("%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
-     
+      
     x = (int)((thresh-ranklist->bmin)/ranklist->w);
     ranklist->covBP[x]  = (double)tf;
     ranklist->covNBP[x] = (double)(f - tf);
