@@ -640,7 +640,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, &ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->outfp, cfg->rocfp, 
+  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, &ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
+			    (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
 			    (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }

@@ -1509,19 +1509,19 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
   if (maxFP >= 0) {
     if (best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
-	fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
-	       oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
+	if (outfp) fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
+			   oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
 	status = Mutual_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
       }
       else {
-	fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
-	       best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
+	if (outfp) fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
+			   best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
 	status = Mutual_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, ranklist, verbose, errbuf);
       } 
     }
     
-    fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
-	   maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
+    if (outfp) fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
+		       maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
     status = Mutual_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
   }
   else {
@@ -1531,8 +1531,8 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
     
     status = Mutual_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
     
-    fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
-	   expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
+    if (outfp) fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
+		       expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
     status = Mutual_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, ranklist, verbose, errbuf); 
   }
   if (status != eslOK) goto ERROR;
@@ -1631,10 +1631,11 @@ Mutual_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
-    if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
-    else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
-    else                                    { fprintf(outfp, "  %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); } 
-    
+    if (outfp) {
+      if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
+      else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
+      else                                    { fprintf(outfp, "  %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); } 
+    }
   }
 
   if (ret_hitlist) *ret_hitlist = hitlist; else Mutual_FreeHitList(hitlist);
