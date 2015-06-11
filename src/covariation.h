@@ -123,6 +123,10 @@ typedef struct hit_s {
   double covNBPu;
   double covNBPf;
 
+  double covRBP;
+  double covRBPu;
+  double covRBPf;
+
   int is_bpair;
   int is_compatible;
 } HIT;
@@ -191,7 +195,7 @@ extern int              COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct riboma
 extern int              COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh,
 						     int nbpairs, int verbose, char *errbuf);
 extern RANKLIST        *COV_CreateRankList(int L, double bmax, double bmin, double w);
-extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
+extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null,  
 					  int verbose, char *errbuf);
 extern void             COV_FreeRankList(RANKLIST *ranklist);
 extern void             COV_FreeHitList(HITLIST *hitlist);
