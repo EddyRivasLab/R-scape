@@ -19,6 +19,9 @@
 
 #include "covgrammars.h"
 
+#define W     0.1     // COV with
+#define BMAX  2.0     // max COV score per position
+#define BMIN -2.0     // min COV score per position
 
 #define NCOVTYPE = 5;
 typedef enum {
@@ -98,10 +101,13 @@ struct mutual_s {
 };
 
 typedef struct ranklist_s {
-  int     N;
-  double *sc;
-  int    *covBP;
-  int    *covNBP;
+  int       nb;            /* number of bins                                  */
+  double    w;	    	   /* fixed width of each bin                         */
+  double    bmin, bmax;	   /* sc bounds: all sc satisfy bmin < sc <= bmax     */
+  double    scmin, scmax;  /* smallest, largest sample value sc observed      */
+ 
+  double   *covBP;
+  double   *covNBP;
 
 } RANKLIST;
 
@@ -111,13 +117,6 @@ typedef struct hit_s {
   
   double sc;
   double expcovNBP;
-
-  double covBP_avg_null1;
-  double covBP_avg_null2;
-  double covBP_avg_null3;
-  double covBP_std_null1;
-  double covBP_std_null2;
-  double covBP_std_null3;
 
   int is_bpair;
   int is_compatible;
@@ -170,8 +169,8 @@ extern int              Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct rib
 					   double tol, int verbose, char *errbuf);
 extern int              Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
 							int nbpairs, int verbose, char *errbuf);
-extern RANKLIST        *Mutual_CreateRankList();
-extern int              Mutual_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, RANKLIST *ranklist, 
+extern RANKLIST        *Mutual_CreateRankList(int L, double bmax, double bmin, double w);
+extern int              Mutual_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
 					     int verbose, char *errbuf);
 extern void             Mutual_FreeRankList(RANKLIST *ranklist);
 extern void             Mutual_FreeHitList(HITLIST *hitlist);

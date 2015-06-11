@@ -604,6 +604,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 {
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
+  RANKLIST        *ranklist = NULL;
   int              nnodes;
   int              status;
   int              ishuffled = (ret_ranklist)? TRUE:FALSE;
@@ -639,8 +640,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ret_ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->outfp, cfg->rocfp, 
-			    (ranklist_null)?cfg->sumfp:cfg->shsumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
+  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, &ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, cfg->outfp, cfg->rocfp, 
+			    (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
   
@@ -650,16 +651,19 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
-  
-  *omsa = msa;
-  Mutual_Destroy(mi); mi = NULL;
-  
-  return eslOK;
-  
+ 
+ if (ret_ranklist) *ret_ranklist = ranklist;
+ 
+ *omsa = msa;
+ Mutual_Destroy(mi); mi = NULL;
+ 
+ return eslOK;
+ 
  ERROR:
-  if (cfg->T) esl_tree_Destroy(cfg->T);
-  if (mi) Mutual_Destroy(mi);
-  return status;
+ if (cfg->T) esl_tree_Destroy(cfg->T);
+ if (mi) Mutual_Destroy(mi);
+ if (ranklist) Mutual_FreeRankList(ranklist);
+ return status;
 }
 
 static int
@@ -669,7 +673,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       s;
-  int       n;
+  int       x;
   int       status;
 
    for (s = 0; s < cfg->nshuffle; s ++) {
@@ -678,15 +682,21 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
       esl_msa_Destroy(shmsa); shmsa = NULL;
  
-      if (cumranklist == NULL) cumranklist = Mutual_CreateRankList(ranklist->N);
-
-      /* add ranklist to cumranklist */
-      for (n = 0; n < ranklist->N; n ++)
-	printf("sc %f cBP %d cNBP %d\n", ranklist->sc[n], ranklist->covBP[n], ranklist->covNBP[n]); 
-      
+      if (cumranklist == NULL) cumranklist = Mutual_CreateRankList(msa->alen, BMAX, BMIN, W);
+ 
+      for (x = ranklist->nb-1; x >= 0; x --) {
+	cumranklist->covBP[x]  += ranklist->covBP[x];
+ 	cumranklist->covNBP[x] += ranklist->covNBP[x];
+      }
+          
       Mutual_FreeRankList(ranklist); ranklist = NULL;
-
     }
+
+   for (x = cumranklist->nb-1; x >= 0; x --) {
+     cumranklist->covBP[x]  /= (double)cfg->nshuffle;
+     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
+     printf("sc %f cBP %f cNBP %f\n", cumranklist->bmin+cumranklist->w*(double)x, cumranklist->covBP[x], cumranklist->covNBP[x]); 
+   }
 
    *ret_cumranklist = cumranklist;
    return eslOK;

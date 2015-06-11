@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#include <float.h>
+#include <limits.h>
 
 #include "hmmer.h"
 
@@ -36,8 +39,9 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
-Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST **ret_ranklist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-		 int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
+Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST **ret_ranklist, 
+		 METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
+		 FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
 {
   ESL_MSA   *msa = *omsa;
@@ -215,7 +219,7 @@ Mutual_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *
    }
 
    *omsa = msa;
-   if (ret_ranklist) *ret_ranklist = ranklist; else Mutual_FreeRankList(ranklist);
+   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) Mutual_FreeRankList(ranklist);
    Mutual_FreeHitList(hitlist);
    return eslOK;
    
@@ -377,7 +381,7 @@ Mutual_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
       } 
   }
 
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -501,7 +505,7 @@ Mutual_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *c
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -625,7 +629,7 @@ Mutual_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -750,7 +754,7 @@ Mutual_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct,
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -862,7 +866,7 @@ Mutual_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -978,7 +982,7 @@ Mutual_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct
       } 
   }
   
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -1131,7 +1135,7 @@ Mutual_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *ou
       } 
   }
 
-  if (analyze) status = Mutual_SignificantPairs_Ranking(NULL, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = Mutual_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (covtype) free(covtype);
@@ -1380,18 +1384,14 @@ Mutual_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, stru
 
 
 int
-Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
-				int nbpairs, int verbose, char *errbuf)
+Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, 
+				int maxFP, double expectFP, int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *covtype = NULL;
   RANKLIST    *ranklist = NULL;
   HITLIST     *hitlist = NULL;
   double       pval;
-  double       delta = 200.;
-  double       inc;
-  double       min = mi->minCOV;
-  double       max = mi->maxCOV;
   double       sen;
   double       ppv;
   double       F;
@@ -1420,9 +1420,8 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
   int          best_tf, best_t, best_f, best_fp;
   int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
   int          expectFP_tf, expectFP_t, expectFP_f, expectFP_fp;
-  int          N;
-  int          n = 0;
   int          i, j;
+  int          x;
   int          status;
 
   Mutual_COVTYPEString(&covtype, mi->type, errbuf);
@@ -1433,11 +1432,12 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
     else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
   }
 
-  inc = (max - min) / delta;
-  N = (int)delta;
-  ranklist = Mutual_CreateRankList(N);
-  
-  for (thresh = max; thresh > min-inc; thresh -= inc) {
+  ranklist = Mutual_CreateRankList(mi->alen, BMAX, BMIN, W);
+  ranklist->scmin = ESL_MAX(ranklist->bmin,mi->minCOV);
+  ranklist->scmax = mi->maxCOV;
+  if (ranklist->bmax < ranklist->scmax) ESL_XFAIL(eslFAIL, errbuf, "bmax < scmax");
+
+  for (thresh = ranklist->scmax; thresh > ranklist->scmin-ranklist->w; thresh -= ranklist->w) {
 
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1457,13 +1457,9 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
     neg = mi->alen * (mi->alen-1) / 2 - t;
     if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
      
-    if (n < N) {
-      ranklist->sc[n]     = thresh;
-      ranklist->covBP[n]  = tf;
-      ranklist->covNBP[n] = f - tf;
-      
-      n++;
-    }
+    x = (int)((thresh-ranklist->bmin)/ranklist->w);
+    ranklist->covBP[x]  = (double)tf;
+    ranklist->covNBP[x] = (double)(f - tf);
     
     if (expect <= expectFP) {
       expectFPF      = F;
@@ -1513,20 +1509,20 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
   if (maxFP >= 0) {
     if (best_fp < maxFP_fp) {
       if (best_fp == 0 && oneFP_tf > best_tf) {
-	fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, min, max,
+	fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
 	       oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
-	status = Mutual_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, N, ranklist, verbose, errbuf);
+	status = Mutual_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
       }
       else {
-	fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, min, max,
+	fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
 	       best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
-	status = Mutual_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, N, ranklist, verbose, errbuf);
+	status = Mutual_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, ranklist, verbose, errbuf);
       } 
     }
     
-    fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, min, max,
+    fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
 	   maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
-    status = Mutual_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, N, ranklist, verbose, errbuf);
+    status = Mutual_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
   }
   else {
     expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
@@ -1537,9 +1533,8 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
     
     fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
 	   expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
-    status = Mutual_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, N, ranklist, verbose, errbuf); 
+    status = Mutual_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, ranklist, verbose, errbuf); 
   }
-  
   if (status != eslOK) goto ERROR;
 
   if (ret_ranklist) *ret_ranklist = ranklist; else Mutual_FreeRankList(ranklist);
@@ -1556,22 +1551,26 @@ Mutual_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
 }
 
 RANKLIST *
-Mutual_CreateRankList(int N)
+Mutual_CreateRankList(int L, double bmax, double bmin, double w)
 {
   RANKLIST *ranklist = NULL;
   int       status;
   
   ESL_ALLOC(ranklist, sizeof(RANKLIST));
 
-  ranklist->N = N;
+  ranklist->bmax = bmax * (double)L;
+  ranklist->bmin = bmin * (double)L;
+  ranklist->w    = w;
+  ranklist->nb   = (int)((ranklist->bmax-ranklist->bmin) / w);
 
-  ESL_ALLOC(ranklist->sc,     sizeof(double) * N);
-  ESL_ALLOC(ranklist->covBP,  sizeof(int)    * N);
-  ESL_ALLOC(ranklist->covNBP, sizeof(int)    * N);
+  ranklist->scmin =  DBL_MAX;
+  ranklist->scmax = -DBL_MIN;
+  
+  ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->nb);
+  ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->nb);
  
-  esl_vec_DSet(ranklist->sc,     N, -eslINFINITY);
-  esl_vec_ISet(ranklist->covBP,  N, 0);
-  esl_vec_ISet(ranklist->covNBP, N, 0);
+  esl_vec_DSet(ranklist->covBP,  ranklist->nb, 0.);
+  esl_vec_DSet(ranklist->covNBP, ranklist->nb, 0.);
 
   return ranklist;
 
@@ -1580,7 +1579,7 @@ Mutual_CreateRankList(int N)
 }
 
 int 
-Mutual_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, int N, RANKLIST *ranklist, int verbose, char *errbuf)
+Mutual_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   int      alloc_nhit = 5;
@@ -1588,7 +1587,7 @@ Mutual_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct
   int      h = 0;
   int      i, j;
   int      ih, jh;
-  int      n;
+  int      x;
   int      status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
@@ -1604,8 +1603,8 @@ Mutual_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct
 	  nhit += alloc_nhit;
 	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
 	}
-	for (n = 0; n < N; n ++) {
-	  if (mi->COV->mx[i][j] <= ranklist->sc[n]) hitlist->hit[h].expcovNBP = (mi->alen > 0)? ranklist->covNBP[n]/(double)mi->alen:0.;
+	for (x = 0; x < ranklist->nb; x ++) {
+	  if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) hitlist->hit[h].expcovNBP = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
 	  else break;
 	}
 	/* initialize */
@@ -1651,7 +1650,6 @@ Mutual_FreeRankList(RANKLIST *ranklist)
 {
   if (ranklist == NULL) return;
 
-  if (ranklist->sc)     free(ranklist->sc);
   if (ranklist->covBP)  free(ranklist->covBP);
   if (ranklist->covNBP) free(ranklist->covNBP);
 
