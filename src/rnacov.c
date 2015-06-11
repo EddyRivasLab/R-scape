@@ -546,7 +546,7 @@ main(int argc, char **argv)
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (type) free(type); type = NULL;
-    Mutual_FreeRankList(ranklist_null); ranklist_null = NULL;
+    COV_FreeRankList(ranklist_null); ranklist_null = NULL;
   }
 
   if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
@@ -577,7 +577,7 @@ main(int argc, char **argv)
   if (cfg.ft)   free(cfg.ft);
   if (cfg.fbp)  free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
-  if (ranklist_null) Mutual_FreeRankList(ranklist_null);
+  if (ranklist_null) COV_FreeRankList(ranklist_null);
 
   return 0;
 }
@@ -629,7 +629,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
   
   /* create the MI structure */
-  mi = Mutual_Create(msa->alen, msa->nseq, ishuffled, cfg->nseqthresh, cfg->abc);
+  mi = COV_Create(msa->alen, msa->nseq, ishuffled, cfg->nseqthresh, cfg->abc);
   
   /* write MSA info to the sumfile */
   if (!ishuffled) 
@@ -641,15 +641,15 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
  
   /* main function */
-  status = Mutual_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, &ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
-			    (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
-			    (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
-			    cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
+  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, &ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
+			 (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
+			 (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
+			 cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK)  { goto ERROR; }
   
   /* find the cykcov structure, and do the cov analysis on it */
  if (cfg->R2Rcykfile && !ishuffled) {
-    status = Mutual_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
+    status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
 			     &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->maxFP, cfg->expectFP, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
@@ -657,14 +657,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
  if (ret_ranklist) *ret_ranklist = ranklist;
  
  *omsa = msa;
- Mutual_Destroy(mi); mi = NULL;
+ COV_Destroy(mi); mi = NULL;
  
  return eslOK;
  
  ERROR:
  if (cfg->T) esl_tree_Destroy(cfg->T);
- if (mi) Mutual_Destroy(mi);
- if (ranklist) Mutual_FreeRankList(ranklist);
+ if (mi) COV_Destroy(mi);
+ if (ranklist) COV_FreeRankList(ranklist);
  return status;
 }
 
@@ -684,14 +684,14 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
       esl_msa_Destroy(shmsa); shmsa = NULL;
  
-      if (cumranklist == NULL) cumranklist = Mutual_CreateRankList(msa->alen, BMAX, BMIN, W);
+      if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
  
       for (x = ranklist->nb-1; x >= 0; x --) {
 	cumranklist->covBP[x]  += ranklist->covBP[x];
  	cumranklist->covNBP[x] += ranklist->covNBP[x];
       }
           
-      Mutual_FreeRankList(ranklist); ranklist = NULL;
+      COV_FreeRankList(ranklist); ranklist = NULL;
     }
 
    for (x = cumranklist->nb-1; x >= 0; x --) {
@@ -705,7 +705,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
  ERROR:
    if (shmsa) esl_msa_Destroy(shmsa);
-   if (ranklist) Mutual_FreeRankList(ranklist);
-   if (cumranklist) Mutual_FreeRankList(cumranklist);
+   if (ranklist) COV_FreeRankList(ranklist);
+   if (cumranklist) COV_FreeRankList(cumranklist);
    return status;
 }

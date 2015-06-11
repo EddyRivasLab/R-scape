@@ -3,12 +3,11 @@
  *   
 */
 #ifndef COVARIATION_INCLUDED
-#define COVARIARITION_INCLUDED
+#define COVARIATION_INCLUDED
 
 #include "p7_config.h"
 
 #include <stdio.h>		/* FILE */
-
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -18,13 +17,82 @@
 #include "ribosum_matrix.h"
 
 #include "covgrammars.h"
-#include "covmeasures.h"
 
 #define W     0.1     // COV with
 #define BMAX  2.0     // max COV score per position
 #define BMIN -2.0     // min COV score per position
 
+#define NCOVTYPE = 5;
 
+typedef enum {
+  CHI   = 0,
+  CHIp  = 1,
+  CHIa  = 2,
+
+  GT    = 3,
+  GTp   = 4,
+  GTa   = 5,
+
+  MI    = 6,
+  MIp   = 7,
+  MIa   = 8,
+
+  MIr   = 9,
+  MIrp  = 10,
+  MIra  = 11,
+
+  MIg   = 12,
+  MIgp  = 13,
+  MIga  = 14,
+
+  OMES  = 15,
+  OMESp = 16,
+  OMESa = 17,
+
+  COVALL  = 18,
+  COVNONE = 19,
+} COVTYPE;
+
+
+typedef enum {
+  C16      = 0,
+  C2       = 1,
+  CSELECT  = 2,
+} COVCLASS;
+
+typedef enum {
+  APC = 0,
+  ASC = 1,
+} CORRTYPE;
+
+typedef enum{
+  NAIVE  = 0,
+  PHYLO  = 1,
+  DCA    = 2,
+  AKMAEV = 3,
+} METHOD;
+
+struct mutual_s {
+  int64_t         alen;
+  int64_t         nseq;
+  double       ***pp;    // joint probability of two position [0,alen-1][0.alen-1][0..15]
+  double        **pm;    // marginal probabilities [0,alen-1][0..3]
+  int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
+  int           **ngap;  // number of gaps  [0,alen-1][0,alen-1]
+
+  COVTYPE         type;
+  COVCLASS        class;
+  ESL_DMATRIX    *COV;    // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
+ 
+  double          besthreshCOV;
+  double          minCOV;
+  double          maxCOV;
+
+  int             ishuffled;
+  int             nseqthresh; // if nseq <= nseqthresh use C2 method otherwise use C16
+
+  ESL_ALPHABET   *abc;
+};
 
 typedef enum {
   NullNONE = 0,
@@ -62,11 +130,52 @@ typedef struct hitlist_s{
 
 }  HITLIST;
 
+extern int              COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST  **ret_ranklist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
+				      int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, int maxFP, double expectFP, 
+				      int nbpairs, double tol, int verbose, char *errbuf);
+extern int              COV_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
+extern int              COV_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateCHI_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateCHI_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateOMES_C2 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateGT_C16  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateGT_C2   (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateMI_C16  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMI_C2   (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateMIr_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMIr_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_CalculateMIg_C16 (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateMIg_C2  (struct mutual_s *mi, int verbose, char *errbuf);
+extern int              COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
+						     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf);
+extern int              COV_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
+extern int              COV_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
+extern struct mutual_s *COV_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, ESL_ALPHABET *abc);
+extern int              COV_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
+extern void             COV_Destroy(struct mutual_s *mi);
+extern int              COV_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
+					   double tol, int verbose, char *errbuf);
+extern int              COV_IsStackedPair(int i, int j, int L, int *ct);
+extern int              COV_IsCannonicalPair(char nti, char ntj);
 extern int              COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP,
-							int nbpairs, int verbose, char *errbuf);
+						     int nbpairs, int verbose, char *errbuf);
 extern RANKLIST        *COV_CreateRankList(int L, double bmax, double bmin, double w);
 extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
-					     int verbose, char *errbuf);
+					  int verbose, char *errbuf);
 extern void             COV_FreeRankList(RANKLIST *ranklist);
 extern void             COV_FreeHitList(HITLIST *hitlist);
 extern int              COV_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
