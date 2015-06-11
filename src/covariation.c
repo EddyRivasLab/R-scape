@@ -31,16 +31,18 @@
 #include "ribosum_matrix.h"
 
 static int is_wc(int x, int y);
+static int is_stacked_pair(int i, int j, int L, int *ct);
+static int number_pairs(int L, int *ct);
+static int is_cannonical_pair(char nti, char ntj);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
-COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST **ret_ranklist, 
-		 METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
-		 FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
-		 int maxFP, double expectFP, int nbpairs, double tol, int verbose, char *errbuf)
+COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST **ret_ranklist,  METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
+	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
+	      THRESH thresh, int nbpairs, double tol, int verbose, char *errbuf)
 {
   ESL_MSA   *msa = *omsa;
   RANKLIST  *ranklist = NULL;
@@ -49,157 +51,156 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
 
   status = COV_Probs(msa, T, ribosum, mi, method, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
- 
-   switch(covtype) {
+  switch(covtype) {
    case CHIa: 
-     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case CHIp:
-     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case CHI: 
-     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;     
      break;
    case GTa: 
-     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
       break;
    case GTp: 
-     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC,  TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case GT: 
-     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,       TRUE, &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,       TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIa: 
-     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIp: 
-     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MI: 
-     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIra: 
-     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(         mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC,  TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(         mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC,  TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIrp:
-     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIr: 
-     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE, &ranklist, &hitlist,  tol, verbose, errbuf);
+     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE, &ranklist, &hitlist,  ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIga: 
-     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIgp:
-     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIg: 
-     status = COV_CalculateMIg          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,     TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateMIg          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,     TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case OMESa: 
-     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMESp: 
-     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMES: 
-     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
       break;
    case COVALL: 
-     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     
+     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     status = COV_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      TRUE,  NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, APC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs,      FALSE, NULL,      NULL,     tol, verbose, errbuf);
+     status = COV_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, ASC, TRUE,  &ranklist, &hitlist, tol, verbose, errbuf);
+     status = COV_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    default:
@@ -208,7 +209,7 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
    }
    fprintf(sumfp, "\n");   
       
-   if (ret_ranklist == NULL) { // do the plots only if not using the null mo del
+   if (ret_ranklist == NULL) { // do the plots only if not using the null model
      status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
      
@@ -349,8 +350,8 @@ COV_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -378,7 +379,7 @@ COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
 
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -473,8 +474,8 @@ COV_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		     int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		     int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status;
@@ -502,7 +503,7 @@ COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, 
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -595,8 +596,8 @@ COV_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -626,7 +627,7 @@ COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -722,8 +723,8 @@ COV_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -751,7 +752,7 @@ COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -834,8 +835,8 @@ COV_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -863,7 +864,7 @@ COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -950,8 +951,8 @@ COV_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status = eslOK;
@@ -979,7 +980,7 @@ COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -1067,8 +1068,8 @@ COV_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, int maxFP, double expectFP, int nbpairs, 
-			     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double tol, int verbose, char *errbuf)
+COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+			     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
   ESL_DMATRIX *COV  = NULL;
@@ -1132,7 +1133,7 @@ COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp
       } 
   }
 
-  if (analyze) status = COV_SignificantPairs_Ranking(ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, maxFP, expectFP, nbpairs, verbose, errbuf);
+  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (covtype) free(covtype);
@@ -1147,6 +1148,26 @@ COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp
   return status;
 }
 
+int 
+COV_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
+{
+  int status;
+
+  switch(type) {
+  case covNBP:   esl_sprintf(ret_threshtype, "covNBP");  break;
+  case covNBPu:  esl_sprintf(ret_threshtype, "covNBPu"); break;
+  case covNBPf:  esl_sprintf(ret_threshtype, "covNBPf"); break;
+  case covRBP:   esl_sprintf(ret_threshtype, "covRBP");  break;
+  case covRBPu:  esl_sprintf(ret_threshtype, "covRBPu"); break;
+  case covRBPf:  esl_sprintf(ret_threshtype, "covRBPu"); break;
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong THRESHTYPE");
+  }
+
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
 int 
 COV_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
 {
@@ -1380,84 +1401,38 @@ COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct 
 }
 
 
-
-
-
 int
-COV_IsStackedPair(int i, int j, int L, int *ct) 
-{
-  int is_stacked = FALSE;
-
-  if (ct[i] > 0 || ct[j] > 0) return FALSE; // both have to be unpaired
-
-  if (ct[i+1] == j-1 && ct[j-1] == i+1                  ) is_stacked = TRUE;
-  if (ct[i-1] == j+1 && ct[j+1] == i-1 && i > 1 && j < L) is_stacked = TRUE;
-	
-  return is_stacked;
-}
-
-int
-COV_IsCannonicalPair(char nti, char ntj) 
-{
-  int is_cannonical = FALSE;
-
-  if (nti == 'A' && ntj == 'U') is_cannonical = TRUE;
-  if (nti == 'C' && ntj == 'G') is_cannonical = TRUE;
-  if (nti == 'G' && ntj == 'C') is_cannonical = TRUE;
-  if (nti == 'G' && ntj == 'U') is_cannonical = TRUE;
-  if (nti == 'G' && ntj == 'Y') is_cannonical = TRUE;
-  if (nti == 'U' && ntj == 'A') is_cannonical = TRUE;
-  if (nti == 'U' && ntj == 'G') is_cannonical = TRUE;
-  if (nti == 'U' && ntj == 'R') is_cannonical = TRUE;
-  if (nti == 'R' && ntj == 'Y') is_cannonical = TRUE;
-  if (nti == 'Y' && ntj == 'R') is_cannonical = TRUE;
-
-  return is_cannonical;
-}
-
-
-int
-COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, 
-			     int maxFP, double expectFP, int nbpairs, int verbose, char *errbuf)
+COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, 
+			     THRESH thresh, int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
+  char        *threshtype = NULL;
   char        *covtype = NULL;
   RANKLIST    *ranklist = NULL;
   HITLIST     *hitlist = NULL;
-  double       pval;
   double       sen;
   double       ppv;
   double       F;
-  double       expect;
+  double       cvBP, cvNBP, cvNBPu, cvNBPf;
+  double       cvRBP, cvRBPu, cvRBPf;
   double       bestF = 0.0;
   double       bestsen;
   double       bestppv;
-  double       thresh;
+  double       sc;
+  double       threshval;
   double       besthresh = mi->besthreshCOV;
-  double       maxFPF;
-  double       maxFPsen;
-  double       maxFPppv;
-  double       maxFPthresh;
-  double       expectFPF;
-  double       expectFPsen;
-  double       expectFPppv;
-  double       expectFPthresh;
-  double       oneFPF;
-  double       oneFPsen;
-  double       oneFPppv;
-  double       oneFPthresh;
-  double       expectTF_frac_total;   // fraction of covarying basepairs relative to the total number of basepairs
-  double       expectTF_frac_surv;    // fraction of covarying basepairs relative to the basepairs that survive the gapthresh
+  double       thresh_F;
+  double       thresh_sen;
+  double       thresh_ppv;
+  double       thresh_sc;
   int          fp, tf, t, f, neg;
-  int          oneFP_tf, oneFP_t, oneFP_f, oneFP_fp;
-  int          best_tf, best_t, best_f, best_fp;
-  int          maxFP_tf, maxFP_t, maxFP_f, maxFP_fp;
-  int          expectFP_tf, expectFP_t, expectFP_f, expectFP_fp;
+  int          thresh_tf, thresh_t, thresh_f, thresh_fp;
   int          i, j;
   int          x;
   int          status;
 
   COV_COVTYPEString(&covtype, mi->type, errbuf);
+  COV_THRESHTYPEString(&threshtype, thresh.type, NULL);
 
   if (rocfp) {
     fprintf(rocfp, "\n# %s ", covtype);  
@@ -1470,118 +1445,83 @@ COV_SignificantPairs_Ranking(RANKLIST **ret_ranklist, HITLIST **ret_hitlist, str
   ranklist->scmax = mi->maxCOV;
   if (ranklist->bmax < ranklist->scmax) ESL_XFAIL(eslFAIL, errbuf, "bmax < scmax");
 
-  for (thresh = ranklist->bmax; thresh > ranklist->bmin-ranklist->w; thresh -= ranklist->w) {
+  for (sc = ranklist->bmax; sc > ranklist->bmin-ranklist->w; sc -= ranklist->w) {
 
+    x = (int)((sc-ranklist->bmin)/ranklist->w);
+    
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
-	if (mtx->mx[i][j] > thresh)   f  ++;
-	if (ct[i+1] == j+1) {         t  ++;
-	  if (mtx->mx[i][j] > thresh) tf ++;
+	if (mtx->mx[i][j] > sc)   f  ++;
+	if (ct[i+1] == j+1) {     t  ++;
+	  if (mtx->mx[i][j] > sc) tf ++;
 	}
       }
     
-    fp     = f - tf;
-    sen    = (t > 0)? 100. * (double)tf / (double)t : 0.0;
-    ppv    = (f > 0)? 100. * (double)tf / (double)f : 0.0;
-    F      = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;
-    expect = (mi->alen > 0)? (double)fp/(double)mi->alen : 0.0;
-    
+    fp  = f - tf;
+    sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
+    ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
+    F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg = mi->alen * (mi->alen-1) / 2 - t;
-    if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", thresh, fp, tf, f, t, neg, sen, ppv, F);
-      
-    x = (int)((thresh-ranklist->bmin)/ranklist->w);
-    ranklist->covBP[x]  = (double)tf;
-    ranklist->covNBP[x] = (double)(f - tf);
+   if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", sc, fp, tf, f, t, neg, sen, ppv, F);
+
+    cvBP   = (double)tf;
+    cvNBP  = (double)fp;
+    cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
+    cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
+    ranklist->covBP[x]  = cvBP;
+    ranklist->covNBP[x] = cvNBP;
     
-    if (expect <= expectFP) {
-      expectFPF      = F;
-      expectFPsen    = sen;
-      expectFPppv    = ppv;
-      expectFP_tf    = tf;
-      expectFP_f     = f;
-      expectFP_t     = t;
-      expectFP_fp    = fp;
-      expectFPthresh = thresh;
+    cvRBP  = 0.;
+    cvRBPu = 0.;
+    cvRBPf = 0.;
+    if (ranklist_null) {
+      cvRBP = ranklist_null->covBP[x];
+      cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
+      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 0.0;
+    }
+
+    switch(thresh.type) {
+    case covNBP:  threshval = cvNBP;  break;
+    case covNBPu: threshval = cvNBPu; break;
+    case covNBPf: threshval = cvNBPf; break;
+    case covRBP:  threshval = cvRBP;  break;
+    case covRBPu: threshval = cvRBPu; break;
+    case covRBPf: threshval = cvRBPf; break;
+    }
+ 
+   
+    if (threshval <= thresh.sc) {
+      thresh_F   = F;
+      thresh_sen = sen;
+      thresh_ppv = ppv;
+      thresh_tf  = tf;
+      thresh_f   = f;
+      thresh_t   = t;
+      thresh_fp  = fp;
+      thresh_sc  = sc;
      }
     
-    if (maxFP >= 0) {
-      if (fp < 1) {
-	oneFPF      = F;
-	oneFPsen    = sen;
-	oneFPppv    = ppv;
-	oneFP_tf    = tf;
-	oneFP_f     = f;
-	oneFP_t     = t;
-	oneFP_fp    = fp;
-	oneFPthresh = thresh;
-      }
-      if (fp <= maxFP) {
-	maxFPF      = F;
-	maxFPsen    = sen;
-	maxFPppv    = ppv;
-	maxFP_tf    = tf;
-	maxFP_f     = f;
-	maxFP_t     = t;
-	maxFP_fp    = fp;
-	maxFPthresh = thresh;
-      }
-      if (F > bestF) { 
-	bestF     = F; 
-	bestsen   = sen;
-	bestppv   = ppv;
-	best_tf   = tf;
-	best_t    = t;
-	best_f    = f;
-	best_fp   = fp;
-	besthresh = thresh; 
-      }  
-    }
-  }
-      
-  if (outfp) {
-    if (maxFP >= 0) {
-      if (best_fp < maxFP_fp) {
-	if (best_fp == 0 && oneFP_tf > best_tf) {
-	  fprintf(outfp, "# %s before 1FP %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, oneFPthresh, ranklist->scmin, ranklist->scmax,
-		  oneFP_fp, oneFP_tf, oneFP_t, oneFP_f, oneFPsen, oneFPppv, oneFPF);
-	  status = COV_CreateHitList(outfp, &hitlist, oneFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
-	}
-	else {
-	  fprintf(outfp, "# %s optimalF %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, besthresh, ranklist->scmin, ranklist->scmax,
-		  best_fp, best_tf, best_t, best_f, bestsen, bestppv, bestF);
-	  status = COV_CreateHitList(outfp, &hitlist, besthresh, mi, msamap, ct, ranklist, verbose, errbuf);
-	} 
-      }
-      
-      fprintf(outfp, "# %s maxFP=%d %f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, maxFP, maxFPthresh, ranklist->scmin, ranklist->scmax,
-	      maxFP_fp, maxFP_tf, maxFP_t, maxFP_f, maxFPsen, maxFPppv, maxFPF);
-      status = COV_CreateHitList(outfp, &hitlist, maxFPthresh, mi, msamap, ct, ranklist, verbose, errbuf);
-    }
-    else {
-      expectTF_frac_total = (nbpairs    > 0)? 100.*(double)expectFP_tf/(double)nbpairs    : 0.0;
-      expectTF_frac_surv  = (expectFP_t > 0)? 100.*(double)expectFP_tf/(double)expectFP_t : 0.0;
-      if (sumfp) fprintf(sumfp, "%s\t%d\t%d\t%d\t%.2f\t%.2f\t", covtype, expectFP_tf, expectFP_t, nbpairs, expectTF_frac_surv, expectTF_frac_total);
-      
-      status = COV_FisherExactTest(&pval, expectFP_tf, expectFP_fp, expectFP_t, mi->alen);
-      
-      fprintf(outfp, "# %s expectFP=%f (%d cov nonBPs) pval = %f | cov_BP %d/%d covariations %d | sen %f ppv %f F %f] \n", covtype, expectFP, expectFP_fp, pval,
-	      expectFP_tf, expectFP_t, expectFP_f, expectFPsen, expectFPppv, expectFPF);
-      status = COV_CreateHitList(outfp, &hitlist, expectFPthresh, mi, msamap, ct, ranklist, verbose, errbuf); 
-    }
-    if (status != eslOK) goto ERROR;
+    if (outfp) {
+      fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.sc, ranklist->scmin, ranklist->scmax,
+	      thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
+      status = COV_CreateHitList(outfp, &hitlist, thresh.sc, mi, msamap, ct, ranklist, verbose, errbuf);
+      if (status != eslOK) goto ERROR;
+    }    
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) COV_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  COV_FreeHitList(hitlist);
  
-  if (covtype) free(covtype); 
+  if (threshtype) free(threshtype); 
+  if (covtype)    free(covtype); 
   return eslOK;
 
  ERROR:
   if (ranklist)  COV_FreeRankList(ranklist);
   if (hitlist)   COV_FreeHitList(hitlist);
-  if (covtype)   free(covtype); 
+  if (threshtype) free(threshtype); 
+  if (covtype)    free(covtype); 
   return status;
 }
 
@@ -1617,6 +1557,7 @@ int
 COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
+  int      NBP;
   int      alloc_nhit = 5;
   int      nhit;
   int      h = 0;
@@ -1630,6 +1571,8 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
   nhit = alloc_nhit;
   ESL_ALLOC(hitlist->hit, sizeof(HIT) * nhit);
 
+  NBP = mi->alen * (mi->alen-1) / 2 - number_pairs(mi->alen, ct);
+
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       if (mi->COV->mx[i][j] > threshsc) {
@@ -1639,15 +1582,21 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
 	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
 	}
 	/* initialize */
-	 hitlist->hit[h].expcovNBP     = 0.0;
+	 hitlist->hit[h].sc            = -eslINFINITY;
+	 hitlist->hit[h].covNBP        = 0.0;
+	 hitlist->hit[h].covNBPu       = 0.0;
+	 hitlist->hit[h].covNBPf       = 0.0;
 	 hitlist->hit[h].is_bpair      = FALSE;
 	 hitlist->hit[h].is_compatible = FALSE;
 
 	for (x = ranklist->nb-1; x >= 0; x --) {
-	  if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) hitlist->hit[h].expcovNBP = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
+	  if (mi->COV->mx[i][j] <= ranklist->bmin+(double)x*ranklist->w) {
+	    hitlist->hit[h].covNBP  = ranklist->covNBP[x];
+	    hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[x]/(double)mi->alen:0.;
+	    hitlist->hit[h].covNBPf = ranklist->covNBP[x]/(double)NBP;
+	  }
 	  else break;
 	}
-
 	hitlist->hit[h].i = i;
 	hitlist->hit[h].j = j;
 	hitlist->hit[h].sc = mi->COV->mx[i][j];
@@ -1669,9 +1618,9 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
     if (outfp) {
-      if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
-      else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); }
-      else                                    { fprintf(outfp, "  %d %d\t%.4f\t%.2f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].expcovNBP); } 
+      if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
+      else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); }
+      else                                    { fprintf(outfp, "  %d %d\t%.2f\t%.0f\t%.4f\t%.4f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf); } 
     }
   }
 
@@ -1807,7 +1756,7 @@ COV_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
 int
 COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-		int *msamap, int minloop, enum grammar_e G, int maxFP, double expectFP, int nbpairs, char *errbuf, int verbose)
+		int *msamap, int minloop, enum grammar_e G, THRESH thresh, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA *msa = *omsa;
   HITLIST *hitlist = NULL;
@@ -1817,7 +1766,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   int      status;
             
   /* calculate the cykcov ct vector */
-  status = CYKCOV(r, mi, &cykct, &sc, minloop, maxFP, expectFP, errbuf, verbose);
+  status = CYKCOV(r, mi, &cykct, &sc, minloop, thresh, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (verbose) printf("cykcov score = %f\n", sc);
 
@@ -1828,7 +1777,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
   
   /* redo the hitlist since the ct has now changed */
-  status = COV_SignificantPairs_Ranking(NULL, &hitlist, mi, msamap, cykct, outfp, NULL, NULL, maxFP, expectFP, nbpairs, verbose, errbuf);
+  status = COV_SignificantPairs_Ranking(NULL, NULL, &hitlist, mi, msamap, cykct, outfp, NULL, NULL, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
@@ -2200,7 +2149,7 @@ COV_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf
       {
 	i = j-d+1;
 
-	if ( d >= minloop && COV_IsStackedPair(i+1, j+1, L, ct) && COV_IsCannonicalPair(cons[i], cons[j]) )
+	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
 	  { // add this pair
 	    //printf("%c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
 	    ct[i+1] = j+1;
@@ -2266,6 +2215,52 @@ is_wc(int x, int y)
   
   return FALSE;
 }
+
+
+static int
+is_stacked_pair(int i, int j, int L, int *ct) 
+{
+  int is_stacked = FALSE;
+
+  if (ct[i] > 0 || ct[j] > 0) return FALSE; // both have to be unpaired
+
+  if (ct[i+1] == j-1 && ct[j-1] == i+1                  ) is_stacked = TRUE;
+  if (ct[i-1] == j+1 && ct[j+1] == i-1 && i > 1 && j < L) is_stacked = TRUE;
+	
+  return is_stacked;
+}
+
+static int
+number_pairs(int L, int *ct) 
+{
+  int nbp = 0;
+  int i;
+
+  for (i = 1; i <= L; i ++) 
+    if (ct[i] > 0 && i < ct[i]) nbp ++;
+ 	
+  return nbp;
+}
+
+static int
+is_cannonical_pair(char nti, char ntj) 
+{
+  int is_cannonical = FALSE;
+
+  if (nti == 'A' && ntj == 'U') is_cannonical = TRUE;
+  if (nti == 'C' && ntj == 'G') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'C') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'U') is_cannonical = TRUE;
+  if (nti == 'G' && ntj == 'Y') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'A') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'G') is_cannonical = TRUE;
+  if (nti == 'U' && ntj == 'R') is_cannonical = TRUE;
+  if (nti == 'R' && ntj == 'Y') is_cannonical = TRUE;
+  if (nti == 'Y' && ntj == 'R') is_cannonical = TRUE;
+
+  return is_cannonical;
+}
+
 
 static int    
 mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)

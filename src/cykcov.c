@@ -25,7 +25,7 @@
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts, char *errbuf, int verbose);
 
 int
-CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, int maxFP, double target_eval, char *errbuf, int verbose) 
+CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, THRESH thresh, char *errbuf, int verbose) 
 {
   GMX    *cyk   = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
   int    *ctest = NULL;
@@ -35,7 +35,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   double  covmin = mi->minCOV;
   double  covmax = mi->maxCOV;
   double  delta = 200.;
-  double  eval;
+  double  val;
   int     tf, f, t, fp;
   int     i, j;
   int     status;
@@ -59,11 +59,20 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
 	}
       }
     fp = f - tf;  
-    eval = (double)fp/(double)mi->alen;
+    val = (double)fp/(double)mi->alen;
  
+    switch(thresh.type) {
+    case covNBP:  val = (double)fp;                  break;
+    case covNBPu: val = (double)fp/(double)mi->alen; break;
+    case covNBPf: val = (double)fp/(double)mi->alen; break;
+    case covRBP:  val = -eslINFINITY; break;
+    case covRBPu: val = -eslINFINITY; break;
+    case covRBPf: val = -eslINFINITY; break;
+    }
+
     free(ctest); ctest = NULL;
-    if (eval <= target_eval) { // report the traceback to ct
-      if (verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, eval); 
+    if (val <= thresh.sc) { // convert the traceback to ct
+      if (verbose) printf("CYKscore = %f at covthresh %.2f Eval %.2f\n", *ret_sc, covthresh, val); 
       if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
     }
     else break;
