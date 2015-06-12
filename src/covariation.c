@@ -1415,9 +1415,10 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       F;
   double       cvBP, cvNBP, cvNBPu, cvNBPf;
   double       cvRBP, cvRBPu, cvRBPf;
-   double       cov;
+  double       cov;
   double       threshval;
-   int          fp, tf, t, f, neg;
+  double       bmax, bmin;
+  int          fp, tf, t, f, neg;
   int          i, j;
   int          x;
   int          status;
@@ -1431,11 +1432,12 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
   }
 
-  ranklist = COV_CreateRankList(mi->alen, BMAX, BMIN, W);
-  ranklist->scmin = ESL_MAX(ranklist->bmin,mi->minCOV);
-  ranklist->scmax = mi->maxCOV;
-  if (ranklist->bmax < ranklist->scmax) ESL_XFAIL(eslFAIL, errbuf, "bmax < scmax");
-
+  bmax = mi->maxCOV;
+  bmin = mi->minCOV;
+  ranklist = COV_CreateRankList(bmax, bmin, W);
+  ranklist->scmin = bmax;
+  ranklist->scmax = bmin;
+  
   for (cov = ranklist->scmax; cov > ranklist->scmin-ranklist->w; cov -= ranklist->w) {
 
     x = (int)((cov-ranklist->bmin)/ranklist->w);
@@ -1504,15 +1506,15 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   }
 
 RANKLIST *
-COV_CreateRankList(int L, double bmax, double bmin, double w)
+COV_CreateRankList(double bmax, double bmin, double w)
 {
   RANKLIST *ranklist = NULL;
   int       status;
   
   ESL_ALLOC(ranklist, sizeof(RANKLIST));
 
-  ranklist->bmax = bmax * (double)L;
-  ranklist->bmin = bmin * (double)L;
+  ranklist->bmax = bmax;
+  ranklist->bmin = bmin;
   ranklist->w    = w;
   ranklist->nb   = (int)((ranklist->bmax-ranklist->bmin) / w);
 
@@ -1529,6 +1531,34 @@ COV_CreateRankList(int L, double bmax, double bmin, double w)
 
  ERROR:
   return NULL;
+}
+
+int
+COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
+{
+  RANKLIST *ranklist = *oranklist;
+  RANKLIST *new = NULL;
+  int       x, newx;
+  int       status;
+
+  if (ranklist->bmax >= bmax && ranklist->bmin <= bmin) return eslOK;
+  
+  new = COV_CreateRankList(bmax, bmin, ranklist->w);
+
+  for (x = 0; x < ranklist->nb; x ++) {
+    newx = (int)((x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
+    new->covBP[newx]  = ranklist->covBP[x];
+    new->covNBP[newx] = ranklist->covNBP[x];
+  }
+
+    
+  COV_FreeRankList(*oranklist);
+  *oranklist = new;
+  return eslOK;;
+
+ ERROR:
+  if (new) COV_FreeRankList(*oranklist);
+  return status;
 }
 
 int 

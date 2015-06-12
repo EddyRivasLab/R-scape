@@ -19,8 +19,6 @@
 #include "covgrammars.h"
 
 #define W     0.1     // COV with
-#define BMAX  5.0     // max COV score per position
-#define BMIN -2.0     // min COV score per position
 
 #define NCOVTYPE = 5;
 
@@ -197,7 +195,8 @@ extern int              COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct riboma
 					   double tol, int verbose, char *errbuf);
 extern int              COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh,
 						     int nbpairs, int verbose, char *errbuf);
-extern RANKLIST        *COV_CreateRankList(int L, double bmax, double bmin, double w);
+extern RANKLIST        *COV_CreateRankList(double bmax, double bmin, double w);
+extern int              COV_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null,  
 					  char *covtype, char *threshtype, int verbose, char *errbuf);
 extern void             COV_FreeRankList(RANKLIST *ranklist);

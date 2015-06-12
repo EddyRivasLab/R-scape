@@ -725,7 +725,8 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run rnacov shuffled");
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
     
     for (x = ranklist->nb-1; x >= 0; x --) {
       cumranklist->covBP[x]  += ranklist->covBP[x];
@@ -779,8 +780,9 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     if (status != eslOK) goto ERROR;
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
-    
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
+
     for (x = ranklist->nb-1; x >= 0; x --) {
       cumranklist->covBP[x]  += ranklist->covBP[x];
       cumranklist->covNBP[x] += ranklist->covNBP[x];
@@ -827,7 +829,8 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
      esl_msa_Destroy(shmsa); shmsa = NULL;
      
-     if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+     if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+     else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
      
      for (x = ranklist->nb-1; x >= 0; x --) {
        cumranklist->covBP[x]  += ranklist->covBP[x];
@@ -880,7 +883,8 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
     
     for (x = ranklist->nb-1; x >= 0; x --) {
       cumranklist->covBP[x]  += ranklist->covBP[x];
