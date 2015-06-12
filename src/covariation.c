@@ -1415,16 +1415,9 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       F;
   double       cvBP, cvNBP, cvNBPu, cvNBPf;
   double       cvRBP, cvRBPu, cvRBPf;
-  double       bestF = 0.0;
-  double       bestsen;
-  double       bestppv;
-  double       cov;
+   double       cov;
   double       threshval;
-  double       thresh_F;
-  double       thresh_sen;
-  double       thresh_ppv;
-  int          fp, tf, t, f, neg;
-  int          thresh_tf, thresh_t, thresh_f, thresh_fp;
+   int          fp, tf, t, f, neg;
   int          i, j;
   int          x;
   int          status;
@@ -1486,36 +1479,12 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBP:  threshval = cvRBP;  break;
     case covRBPu: threshval = cvRBPu; break;
     case covRBPf: threshval = cvRBPf; break;
-    } 
-    
-    if (threshval <= thresh->val) {
-      thresh_F    = F;
-      thresh_sen  = sen;
-      thresh_ppv  = ppv;
-      thresh_tf   = tf;
-      thresh_f    = f;
-      thresh_t    = t;
-      thresh_fp   = fp;
-      thresh->cov = cov;
-      thresh->covset = TRUE;
-    }
-    if (threshval == eslINFINITY && thresh->covset) {
-      if (cov >= thresh->cov) {
-	thresh_F    = F;
-	thresh_sen  = sen;
-	thresh_ppv  = ppv;
-	thresh_tf   = tf;
-	thresh_f    = f;
-	thresh_t    = t;
-	thresh_fp   = fp;
-      }
-    }
+    }     
+   if (threshval <= thresh->val) thresh->cov = cov;
   }
 
   if (outfp) {
-    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax,
-	    thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
-    status = COV_CreateHitList(outfp, &hitlist, thresh->cov, mi, msamap, ct, ranklist, ranklist_null, verbose, errbuf);
+    status = COV_CreateHitList(outfp, &hitlist, thresh, mi, msamap, ct, ranklist, ranklist_null, covtype, threshtype, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
 
@@ -1563,12 +1532,16 @@ COV_CreateRankList(int L, double bmax, double bmin, double w)
 }
 
 int 
-COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
-		  int verbose, char *errbuf)
+COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
+		  char *covtype, char *threshtype, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
-  int      BP, NBP;
+  double   sen, ppv, F;
   int      alloc_nhit = 5;
+  int      tf = 0;
+  int      f  = 0;
+  int      t, fp;
+  int      BP, NBP;
   int      nhit;
   int      h = 0;
   int      i, j;
@@ -1586,7 +1559,7 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
 
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-      if (mi->COV->mx[i][j] > threshsc) {
+      if (mi->COV->mx[i][j] > thresh->cov) {
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1635,7 +1608,18 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
     }
  nhit = h;
  hitlist->nhit = nhit;
+
+ t = BP;
+ for (h = 0; h < nhit; h ++) {
+   f ++;
+   if (hitlist->hit[h].is_bpair) tf ++;
+ } 
+ fp = f - tf;
+ sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
+ ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
+ F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
+ if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax, fp, tf, t, f, sen, ppv, F);
  for (h = 0; h < nhit; h ++) {
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;

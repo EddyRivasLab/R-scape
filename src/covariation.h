@@ -150,9 +150,6 @@ typedef struct thresh_s {
   THRESHTYPE type;
   double     val;  // the actual thershold value
   double     cov;  // the cov value at that threshold
-
-  int        covset; // TRUE if we have already determined the cov value at threshold
-
 } THRESH;
 
 
@@ -199,8 +196,8 @@ extern int              COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct riboma
 extern int              COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh,
 						     int nbpairs, int verbose, char *errbuf);
 extern RANKLIST        *COV_CreateRankList(int L, double bmax, double bmin, double w);
-extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null,  
-					  int verbose, char *errbuf);
+extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null,  
+					  char *covtype, char *threshtype, int verbose, char *errbuf);
 extern void             COV_FreeRankList(RANKLIST *ranklist);
 extern void             COV_FreeHitList(HITLIST *hitlist);
 extern int              COV_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
