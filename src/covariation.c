@@ -1811,7 +1811,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_msa_Digitize(mi->abc, msa, errbuf);
 
   esl_ct2simplewuss(cykct, msa->alen, ss);
-  printf("ss:%s\n", ss);
+  //printf("ss:%s\n", ss);
   
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = COV_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
@@ -2203,7 +2203,7 @@ COV_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
   sq = esl_sq_CreateFrom(msa->name,  rfline, msa->desc, msa->acc, msa->ss_cons); 
   
-  printf("sq:%s\n", sq->seq);
+  //printf("sq:%s\n", sq->seq);
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
  
   cykcov_remove_inconsistencies(sq, ct, minloop);

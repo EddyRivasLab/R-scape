@@ -692,7 +692,7 @@ msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idt
 }
 
 int
-msamanip_ShuffleColums(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
 {
   ESL_MSA *shmsa = NULL;
   int     *perm = NULL;
@@ -726,6 +726,65 @@ msamanip_ShuffleColums(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, ch
       for (i = 0; i < msa->nseq; i++) {
 	for (n = 1; n <= msa->alen; n++) 
 	  shmsa->ax[i][n] = msa->ax[i][perm[n-1]+1];
+      }
+    }
+#endif
+
+  if (verbose) {
+    eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+ }
+
+  *ret_shmsa = shmsa;
+
+  free(perm);
+  return status;
+
+ ERROR:
+  if (perm) free(perm);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
+}
+
+int
+msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+{
+  ESL_MSA *shmsa = NULL;
+  int     *perm = NULL;
+  int      i;
+  int      n;
+  int      status = eslOK;
+
+  /* copy the original alignemt */
+  shmsa = esl_msa_Clone(msa);
+  if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+
+  /* within column permutation */
+  ESL_ALLOC(perm, sizeof(int) * (msa->nseq));
+  for (i = 0; i < msa->nseq; i ++) perm[i] = i;
+  
+  /* aseq[0..nseq-1][0..alen-1] strings, or
+   * ax[0..nseq-1][(0) 1..alen (alen+1)] digital seqs 
+   */
+  if (! (msa->flags & eslMSA_DIGITAL))
+    {
+      for (n = 0; n < msa->alen; n++) {
+	if ((status = esl_vec_IShuffle(r, perm, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	for (i = 0; i < msa->nseq; i++) {
+	  shmsa->aseq[i][n] = msa->aseq[perm[i]][n];
+	}
+      }
+    }
+#ifdef eslAUGMENT_ALPHABET
+  else
+    {
+      for (n = 1; n <= msa->alen; n++) {
+	if ((status = esl_vec_IShuffle(r, perm, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	for (i = 0; i < msa->nseq; i++) {
+	  shmsa->ax[i][n] = msa->ax[perm[i]][n];
+	}
       }
     }
 #endif
