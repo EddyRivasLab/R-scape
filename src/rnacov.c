@@ -25,7 +25,7 @@
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"                                          
-#define NULLOPTS     "--null1,--null2,--null3"                                          
+#define NULLOPTS     "--null1,--null1b,--null2,--null3,--null4"                                          
 #define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf"                                          
 
 /* Exclusive options for evolutionary model choice */
@@ -151,9 +151,11 @@ struct cfg_s {
   { "--covRBPf",     eslARG_REAL,       NULL,   NULL,   "0<=x<=1",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max fraction     (covRBP/RBP)  allowed",                                     1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       "20",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
-  { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1: shuffle alignment columns",                                                          0 },
-  { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2: shuffle residues within a column",                                                   0 },
-  { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3: ",                                                                                   0 },
+  { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
+  { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bpaired_columns and nonbpaired_columns independently",                      0 },
+  { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle residues within a column",                                                  0 },
+  { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
+  { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
@@ -201,9 +203,11 @@ static char banner[] = "rnacov - statistical test for covatiation in RNA alignme
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, RANKLIST *ranklist_null, RANKLIST **ret_ranklist);
-static int null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null1_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null2_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null3_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null4_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -305,17 +309,19 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   cfg.nulltype = NullNONE;
-  if      (esl_opt_GetBoolean(go, "--null1")) cfg.nulltype = Null1;
-  else if (esl_opt_GetBoolean(go, "--null2")) cfg.nulltype = Null2;
-  else if (esl_opt_GetBoolean(go, "--null3")) cfg.nulltype = Null3;
+  if      (esl_opt_GetBoolean(go, "--null1"))  cfg.nulltype = Null1;
+  else if (esl_opt_GetBoolean(go, "--null1b")) cfg.nulltype = Null1b;
+  else if (esl_opt_GetBoolean(go, "--null2"))  cfg.nulltype = Null2;
+  else if (esl_opt_GetBoolean(go, "--null3"))  cfg.nulltype = Null3;
+  else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
 
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
   if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh->type = covNBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covNBP");  }
   else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh->type = covNBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPu"); }
   else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh->type = covNBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPf"); }
-  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
-  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
-  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
+  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  if (cfg.nulltype == NullNONE) cfg.nulltype = Null3; }
+  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null3; }
+  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null3; }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -547,12 +553,20 @@ main(int argc, char **argv)
       status = null1_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
+    if (cfg.nulltype == Null1b) {
+      status = null1b_rnacov(go, &cfg, msa, &ranklist_null);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+    }
     if (cfg.nulltype == Null2) {
       status = null2_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
     if (cfg.nulltype == Null3) {
       status = null3_rnacov(go, &cfg, msa, &ranklist_null);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+    }
+    if (cfg.nulltype == Null4) {
+      status = null4_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
  
@@ -688,46 +702,110 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   return status;
 }
 
-/* shuffle the alignment columns, leave the ss intact */
+/* shuffle all the alignment columns, leave the ss intact */
 static int
 null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
-  int       s;
-  int       x;
-  int       status;
+  int       *useme = NULL;
+  int        n;                   // index for alignment positions
+  int        s;                   // index for shuffles
+  int        x;                   // index for ranked list
+  int        status;
 
-   for (s = 0; s < cfg->nshuffle; s ++) {
-      msamanip_ShuffleColumns(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
-      status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
-      esl_msa_Destroy(shmsa); shmsa = NULL;
- 
-      if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
- 
-      for (x = ranklist->nb-1; x >= 0; x --) {
-	cumranklist->covBP[x]  += ranklist->covBP[x];
- 	cumranklist->covNBP[x] += ranklist->covNBP[x];
-      }
-          
-      COV_FreeRankList(ranklist); ranklist = NULL;
+  /* shuffle all the columns */
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  for (n = 0; n < msa->alen; n ++) useme[n] = TRUE;
+
+  for (s = 0; s < cfg->nshuffle; s ++) {
+    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
+    status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+    
+    for (x = ranklist->nb-1; x >= 0; x --) {
+      cumranklist->covBP[x]  += ranklist->covBP[x];
+      cumranklist->covNBP[x] += ranklist->covNBP[x];
     }
-
-   for (x = cumranklist->nb-1; x >= 0; x --) {
-     cumranklist->covBP[x]  /= (double)cfg->nshuffle;
-     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
-   }
-
-   *ret_cumranklist = cumranklist;
-   return eslOK;
-
+    
+    COV_FreeRankList(ranklist); ranklist = NULL;
+  }
+  
+  for (x = cumranklist->nb-1; x >= 0; x --) {
+    cumranklist->covBP[x]  /= (double)cfg->nshuffle;
+    cumranklist->covNBP[x] /= (double)cfg->nshuffle;
+  }
+  
+  *ret_cumranklist = cumranklist;
+  free(useme);
+  return eslOK;
+  
  ERROR:
-   if (shmsa) esl_msa_Destroy(shmsa);
-   if (ranklist) COV_FreeRankList(ranklist);
-   if (cumranklist) COV_FreeRankList(cumranklist);
-   return status;
+  if (useme) free(useme);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  if (ranklist) COV_FreeRankList(ranklist);
+  if (cumranklist) COV_FreeRankList(cumranklist);
+  return status;
+}
+
+/* shuffle the paired alignment columns and the unpaired columns independently, leave the ss intact */
+static int
+null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+{
+  ESL_MSA   *shmsa = NULL;
+  RANKLIST  *cumranklist = NULL;
+  RANKLIST  *ranklist = NULL;
+  int       *useme1 = NULL;
+  int       *useme2 = NULL;
+  int        n;                   // index for alignment positions
+  int        s;                   // index for shuffles
+  int        x;                   // index for ranked list
+  int        status;
+
+  /* shuffle all the columns */
+  ESL_ALLOC(useme1, sizeof(int) * msa->alen);
+  ESL_ALLOC(useme2, sizeof(int) * msa->alen);
+  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
+  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
+
+  for (s = 0; s < cfg->nshuffle; s ++) {
+    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme1, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
+    status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+    
+    for (x = ranklist->nb-1; x >= 0; x --) {
+      cumranklist->covBP[x]  += ranklist->covBP[x];
+      cumranklist->covNBP[x] += ranklist->covNBP[x];
+    }
+    
+    COV_FreeRankList(ranklist); ranklist = NULL;
+  }
+  
+  for (x = cumranklist->nb-1; x >= 0; x --) {
+    cumranklist->covBP[x]  /= (double)cfg->nshuffle;
+    cumranklist->covNBP[x] /= (double)cfg->nshuffle;
+  }
+  
+  *ret_cumranklist = cumranklist;
+  free(useme1);
+  free(useme2);
+  return eslOK;
+  
+ ERROR:
+  if (useme1) free(useme1);
+  if (useme2) free(useme2);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  if (ranklist) COV_FreeRankList(ranklist);
+  if (cumranklist) COV_FreeRankList(cumranklist);
+  return status;
 }
 
 
@@ -744,21 +822,21 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
    for (s = 0; s < cfg->nshuffle; s ++) {
 
-      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
-      status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
-      esl_msa_Destroy(shmsa); shmsa = NULL;
- 
-      if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
- 
-      for (x = ranklist->nb-1; x >= 0; x --) {
-	cumranklist->covBP[x]  += ranklist->covBP[x];
- 	cumranklist->covNBP[x] += ranklist->covNBP[x];
-      }
-          
-      COV_FreeRankList(ranklist); ranklist = NULL;
-    }
-
+     msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
+     status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
+     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+     esl_msa_Destroy(shmsa); shmsa = NULL;
+     
+     if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+     
+     for (x = ranklist->nb-1; x >= 0; x --) {
+       cumranklist->covBP[x]  += ranklist->covBP[x];
+       cumranklist->covNBP[x] += ranklist->covNBP[x];
+     }
+     
+     COV_FreeRankList(ranklist); ranklist = NULL;
+   }
+   
    for (x = cumranklist->nb-1; x >= 0; x --) {
      cumranklist->covBP[x]  /= (double)cfg->nshuffle;
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
@@ -774,13 +852,70 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
    return status;
 }
 
-
-/* use a tree to generate residues independently for each alignment column */
+/* mull1(b) + null2 */
 static int
 null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
+  ESL_MSA   *shmsa = NULL;
+  RANKLIST  *cumranklist = NULL;
+  RANKLIST  *ranklist = NULL;
+  int       *useme1 = NULL;
+  int       *useme2 = NULL;
+  int        n;                   // index for alignment positions
+  int        s;                   // index for shuffles
+  int        x;                   // index for ranked list
+  int        status;
+
+  /* shuffle all the columns */
+  ESL_ALLOC(useme1, sizeof(int) * msa->alen);
+  ESL_ALLOC(useme2, sizeof(int) * msa->alen);
+  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
+  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
+
+  for (s = 0; s < cfg->nshuffle; s ++) {
+    msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme1, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
+    status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    
+    if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
+    
+    for (x = ranklist->nb-1; x >= 0; x --) {
+      cumranklist->covBP[x]  += ranklist->covBP[x];
+      cumranklist->covNBP[x] += ranklist->covNBP[x];
+    }
+    
+    COV_FreeRankList(ranklist); ranklist = NULL;
+  }
   
-  printf("null3 not implemented yet\n");
+  for (x = cumranklist->nb-1; x >= 0; x --) {
+    cumranklist->covBP[x]  /= (double)cfg->nshuffle;
+    cumranklist->covNBP[x] /= (double)cfg->nshuffle;
+  }
+  
+  *ret_cumranklist = cumranklist;
+  free(useme1);
+  free(useme2);
+  return eslOK;
+  
+ ERROR:
+  if (useme1) free(useme1);
+  if (useme2) free(useme2);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  if (ranklist) COV_FreeRankList(ranklist);
+  if (cumranklist) COV_FreeRankList(cumranklist);
+  return status;
+}
+
+
+/* use a tree to generate residues independently for each alignment column */
+static int
+null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+{
+  
+  printf("null4 not implemented yet\n");
   exit(1);
   return eslOK;
   

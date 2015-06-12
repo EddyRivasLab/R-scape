@@ -97,8 +97,10 @@ struct mutual_s {
 typedef enum {
   NullNONE = 0,
   Null1    = 1,
-  Null2    = 2,
-  Null3    = 3,
+  Null1b   = 2,
+  Null2    = 3,
+  Null3    = 4,
+  Null4    = 5,
 } NULLTYPE;
 
 
