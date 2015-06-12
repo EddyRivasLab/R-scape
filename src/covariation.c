@@ -1461,8 +1461,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg = mi->alen * (mi->alen-1) / 2 - t;
-   if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", cov, fp, tf, f, t, neg, sen, ppv, F);
-
+    if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", cov, fp, tf, f, t, neg, sen, ppv, F);
+    
     cvBP   = (double)tf;
     cvNBP  = (double)fp;
     cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
@@ -1497,6 +1497,18 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       thresh_t    = t;
       thresh_fp   = fp;
       thresh->cov = cov;
+      thresh->covset = TRUE;
+    }
+    if (threshval == eslINFINITY && thresh->covset) {
+      if (cov >= thresh->cov) {
+	thresh_F    = F;
+	thresh_sen  = sen;
+	thresh_ppv  = ppv;
+	thresh_tf   = tf;
+	thresh_f    = f;
+	thresh_t    = t;
+	thresh_fp   = fp;
+      }
     }
   }
 
@@ -1520,7 +1532,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
   return status;
-}
+  }
 
 RANKLIST *
 COV_CreateRankList(int L, double bmax, double bmin, double w)
@@ -1551,7 +1563,8 @@ COV_CreateRankList(int L, double bmax, double bmin, double w)
 }
 
 int 
-COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int verbose, char *errbuf)
+COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
+		  int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   int      BP, NBP;
@@ -1599,17 +1612,16 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
 	   else break;
 	 }
 	 if (ranklist_null) {
-	 for (x = ranklist_null->nb-1; x >= 0; x --) {
-	   if (mi->COV->mx[i][j] <= ranklist_null->bmin+(double)x*ranklist_null->w) {
-	     hitlist->hit[h].covRBP  = ranklist_null->covBP[x];
-	     hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[x]/(double)mi->alen:0.;
-	     hitlist->hit[h].covRBPf = ranklist_null->covNBP[x]/(double)BP;
+	   for (x = ranklist_null->nb-1; x >= 0; x --) {
+	     if (mi->COV->mx[i][j] <= ranklist_null->bmin+(double)x*ranklist_null->w) {
+	       hitlist->hit[h].covRBP  = ranklist_null->covBP[x];
+	       hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[x]/(double)mi->alen:0.;
+	       hitlist->hit[h].covRBPf = ranklist_null->covNBP[x]/(double)BP;
+	     }
+	     else break;
 	   }
-	   else break;
 	 }
-	 }
-
-
+	 
 	 hitlist->hit[h].i = i;
 	 hitlist->hit[h].j = j;
 	 hitlist->hit[h].sc = mi->COV->mx[i][j];

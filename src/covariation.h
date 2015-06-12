@@ -151,6 +151,8 @@ typedef struct thresh_s {
   double     val;  // the actual thershold value
   double     cov;  // the cov value at that threshold
 
+  int        covset; // TRUE if we have already determined the cov value at threshold
+
 } THRESH;
 
 
