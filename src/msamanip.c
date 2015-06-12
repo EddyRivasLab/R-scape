@@ -696,6 +696,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 {
   ESL_MSA *shmsa = NULL;
   int     *perm = NULL;
+  int     *col = NULL;
   int      ncol = msa->alen;
   int      i;
   int      n;
@@ -710,7 +711,11 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
   for (n = 0; n < msa->alen; n ++) if (useme[n] == FALSE) ncol --;
   if (ncol == 0) { return eslOK;}
 
-  ESL_ALLOC(perm, sizeof(int) * ncol);
+  ESL_ALLOC(col, sizeof(int) * ncol);
+  c = 0;
+  for (n = 0;  n < msa->alen; n++) if (useme[n] == TRUE) { col[c] = n; c++; }
+
+  ESL_ALLOC(perm,  sizeof(int) * ncol);
   for (c = 0; c < ncol; c ++) perm[c] = c;
   if ((status = esl_vec_IShuffle(r, perm, ncol)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
   
@@ -723,7 +728,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	c = 0;
 	for (n = 0; n < msa->alen; n++) 
 	  if (useme[n] == TRUE) {
-	    shmsa->aseq[i][n] = msa->aseq[i][perm[c]];
+	    shmsa->aseq[i][n] = msa->aseq[i][col[perm[c]]];
 	    c ++;
 	  }
       }
@@ -735,7 +740,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	c = 0;
 	for (n = 1; n <= msa->alen; n++) 
 	  if (useme[n-1] == TRUE) {
-	    shmsa->ax[i][n] = msa->ax[i][perm[c]+1];
+	    shmsa->ax[i][n] = msa->ax[i][col[perm[c]]+1];
 	    c++;
 	  }
       }
@@ -749,10 +754,12 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 
   *ret_shmsa = shmsa;
 
+  free(col);
   free(perm);
   return status;
 
  ERROR:
+  if (col)  free(col);
   if (perm) free(perm);
   if (shmsa) esl_msa_Destroy(shmsa);
   return status;

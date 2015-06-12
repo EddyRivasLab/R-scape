@@ -722,7 +722,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
     status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run rnacov shuffled");
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);
@@ -773,10 +773,10 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
 
   for (s = 0; s < cfg->nshuffle; s ++) {
-    //msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
-    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
     status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
+    if (status != eslOK) goto ERROR;
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) cumranklist = COV_CreateRankList(msa->alen, BMAX, BMIN, W);

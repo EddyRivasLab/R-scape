@@ -19,7 +19,7 @@
 #include "covgrammars.h"
 
 #define W     0.1     // COV with
-#define BMAX  2.0     // max COV score per position
+#define BMAX  5.0     // max COV score per position
 #define BMIN -2.0     // min COV score per position
 
 #define NCOVTYPE = 5;
