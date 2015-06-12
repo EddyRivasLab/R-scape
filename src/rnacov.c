@@ -118,7 +118,7 @@ struct cfg_s {
   char            *shsumfile;
   FILE            *shsumfp; 
 
-  THRESH           thresh;
+  THRESH          *thresh;
 
   float            tol;
   int              verbose;
@@ -302,12 +302,18 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
-  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh.type = covNBP;  cfg.thresh.val = esl_opt_GetReal(go, "--covNBP");  }
-  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh.type = covNBPu; cfg.thresh.val = esl_opt_GetReal(go, "--covNBPu"); }
-  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh.type = covNBPf; cfg.thresh.val = esl_opt_GetReal(go, "--covNBPf"); }
-  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh.type = covRBP;  cfg.thresh.val = esl_opt_GetReal(go, "--covRBP");  }
-  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh.type = covRBPu; cfg.thresh.val = esl_opt_GetReal(go, "--covRBPu"); }
-  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh.type = covRBPf; cfg.thresh.val = esl_opt_GetReal(go, "--covRBPf"); }
+  cfg.nulltype = NullNONE;
+  if      (esl_opt_GetBoolean(go, "--null1")) cfg.nulltype = Null1;
+  else if (esl_opt_GetBoolean(go, "--null2")) cfg.nulltype = Null2;
+  else if (esl_opt_GetBoolean(go, "--null3")) cfg.nulltype = Null3;
+
+  ESL_ALLOC(cfg.thresh, sizeof(THRESH));
+  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh->type = covNBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covNBP");  }
+  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh->type = covNBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPu"); }
+  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh->type = covNBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPf"); }
+  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
+  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
+  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -374,10 +380,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     cfg.R2Rcykfp = NULL;
   }
 
-  cfg.nulltype = NullNONE;
-  if      (esl_opt_GetBoolean(go, "--null1")) cfg.nulltype = Null1;
-  else if (esl_opt_GetBoolean(go, "--null2")) cfg.nulltype = Null2;
-  else if (esl_opt_GetBoolean(go, "--null3")) cfg.nulltype = Null3;
 
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
@@ -408,7 +410,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
   }
 
-  *ret_go = go;
+  *ret_go  = go;
   *ret_cfg = cfg;
   return eslOK;
   
@@ -587,6 +589,7 @@ main(int argc, char **argv)
   if (cfg.ft)   free(cfg.ft);
   if (cfg.fbp)  free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
+  if (cfg.thresh) free(cfg.thresh);
   if (ranklist_null) COV_FreeRankList(ranklist_null);
 
   return 0;
@@ -643,9 +646,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* write MSA info to the sumfile */
   if (!ishuffled) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh.val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  

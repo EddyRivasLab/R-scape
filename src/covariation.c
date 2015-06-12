@@ -42,7 +42,7 @@ static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 int                 
 COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST **ret_ranklist,  METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
 	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
-	      THRESH thresh, int nbpairs, double tol, int verbose, char *errbuf)
+	      THRESH *thresh, int nbpairs, double tol, int verbose, char *errbuf)
 {
   ESL_MSA   *msa = *omsa;
   RANKLIST  *ranklist = NULL;
@@ -350,7 +350,7 @@ COV_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -474,7 +474,7 @@ COV_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		     int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -596,7 +596,7 @@ COV_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -723,7 +723,7 @@ COV_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -835,7 +835,7 @@ COV_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -951,7 +951,7 @@ COV_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -1068,7 +1068,7 @@ COV_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH thresh, int nbpairs, 
+COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, 
 			     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
@@ -1403,7 +1403,7 @@ COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct 
 
 int
 COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, 
-			     THRESH thresh, int nbpairs, int verbose, char *errbuf)
+			     THRESH *thresh, int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *threshtype = NULL;
@@ -1420,7 +1420,6 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       bestppv;
   double       cov;
   double       threshval;
-  double       besthresh = mi->besthreshCOV;
   double       thresh_F;
   double       thresh_sen;
   double       thresh_ppv;
@@ -1431,7 +1430,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   int          status;
 
   COV_COVTYPEString(&covtype, mi->type, errbuf);
-  COV_THRESHTYPEString(&threshtype, thresh.type, NULL);
+  COV_THRESHTYPEString(&threshtype, thresh->type, NULL);
 
   if (rocfp) {
     fprintf(rocfp, "\n# %s ", covtype);  
@@ -1452,7 +1451,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
 	if (mtx->mx[i][j] > cov)   f  ++;
-	if (ct[i+1] == j+1) {     t  ++;
+	if (ct[i+1] == j+1) {      t  ++;
 	  if (mtx->mx[i][j] > cov) tf ++;
 	}
       }
@@ -1471,16 +1470,16 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     ranklist->covBP[x]  = cvBP;
     ranklist->covNBP[x] = cvNBP;
     
-    cvRBP  = 0.;
-    cvRBPu = 0.;
-    cvRBPf = 0.;
+    cvRBP  = eslINFINITY;
+    cvRBPu = eslINFINITY;
+    cvRBPf = 1.;
     if (ranklist_null) {
       cvRBP = ranklist_null->covBP[x];
-      cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
-      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 0.0;
+      cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : eslINFINITY;
+      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 1.0;
     }
     
-    switch(thresh.type) {
+    switch(thresh->type) {
     case covNBP:  threshval = cvNBP;  break;
     case covNBPu: threshval = cvNBPu; break;
     case covNBPf: threshval = cvNBPf; break;
@@ -1489,22 +1488,22 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPf: threshval = cvRBPf; break;
     } 
     
-    if (threshval <= thresh.val) {
-      thresh_F   = F;
-      thresh_sen = sen;
-      thresh_ppv = ppv;
-      thresh_tf  = tf;
-      thresh_f   = f;
-      thresh_t   = t;
-      thresh_fp  = fp;
-      thresh.cov = cov;
+    if (threshval <= thresh->val) {
+      thresh_F    = F;
+      thresh_sen  = sen;
+      thresh_ppv  = ppv;
+      thresh_tf   = tf;
+      thresh_f    = f;
+      thresh_t    = t;
+      thresh_fp   = fp;
+      thresh->cov = cov;
     }
   }
 
   if (outfp) {
-    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh.val, thresh.cov, ranklist->scmin, ranklist->scmax,
+    fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax,
 	    thresh_fp, thresh_tf, thresh_t, thresh_f, thresh_sen, thresh_ppv, thresh_F);
-    status = COV_CreateHitList(outfp, &hitlist, thresh.cov, mi, msamap, ct, ranklist, ranklist_null, verbose, errbuf);
+    status = COV_CreateHitList(outfp, &hitlist, thresh->cov, mi, msamap, ct, ranklist, ranklist_null, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
 
@@ -1629,11 +1628,11 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, double threshsc, struct mu
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;
    if (outfp) {
-     if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %d %d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
+     if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
 						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); }
-     else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %d %d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
+     else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
 						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); }
-     else                                    { fprintf(outfp, "  %d %d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
+     else                                    { fprintf(outfp, "  %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
 						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); } 
    }
  }
@@ -1770,7 +1769,7 @@ COV_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
 int
 COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-		int *msamap, int minloop, enum grammar_e G, THRESH thresh, int nbpairs, char *errbuf, int verbose)
+		int *msamap, int minloop, enum grammar_e G, THRESH *thresh, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA *msa = *omsa;
   HITLIST *hitlist = NULL;
