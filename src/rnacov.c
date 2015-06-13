@@ -713,6 +713,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
   int        x;                   // index for ranked list
+  int        cumx;
   int        status;
 
   /* shuffle all the columns */
@@ -726,17 +727,18 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
+    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
     
-    for (x = ranklist->nb-1; x >= 0; x --) {
-      cumranklist->covBP[x]  += ranklist->covBP[x];
-      cumranklist->covNBP[x] += ranklist->covNBP[x];
+    for (x = 0; x < ranklist->nb; x ++) {
+      cumx = (int)((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+      cumranklist->covBP[cumx]  += ranklist->covBP[x];
+      cumranklist->covNBP[cumx] += ranklist->covNBP[x];
     }
     
     COV_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (x = cumranklist->nb-1; x >= 0; x --) {
+  for (x = 0; x < cumranklist->nb; x ++) {
     cumranklist->covBP[x]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
@@ -765,6 +767,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
   int        x;                   // index for ranked list
+  int        cumx;
   int        status;
 
   /* shuffle all the columns */
@@ -781,17 +784,18 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
+    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
 
-    for (x = ranklist->nb-1; x >= 0; x --) {
-      cumranklist->covBP[x]  += ranklist->covBP[x];
-      cumranklist->covNBP[x] += ranklist->covNBP[x];
+    for (x = 0; x < ranklist->nb; x ++) {
+      cumx = (int)((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+      cumranklist->covBP[cumx]  += ranklist->covBP[x];
+      cumranklist->covNBP[cumx] += ranklist->covNBP[x];
     }
     
     COV_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (x = cumranklist->nb-1; x >= 0; x --) {
+  for (x = 0; x < cumranklist->nb; x ++) {
     cumranklist->covBP[x]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
@@ -820,6 +824,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   RANKLIST  *ranklist = NULL;
   int       s;
   int       x;
+  int       cumx;
   int       status;
 
    for (s = 0; s < cfg->nshuffle; s ++) {
@@ -830,17 +835,18 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      esl_msa_Destroy(shmsa); shmsa = NULL;
      
      if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-     else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
+     else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
      
-     for (x = ranklist->nb-1; x >= 0; x --) {
-       cumranklist->covBP[x]  += ranklist->covBP[x];
-       cumranklist->covNBP[x] += ranklist->covNBP[x];
+     for (x = 0; x < ranklist->nb; x ++) {
+       cumx = (int)((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+       cumranklist->covBP[cumx]  += ranklist->covBP[x];
+       cumranklist->covNBP[cumx] += ranklist->covNBP[x];
      }
      
      COV_FreeRankList(ranklist); ranklist = NULL;
    }
    
-   for (x = cumranklist->nb-1; x >= 0; x --) {
+   for (x = 0; x < cumranklist->nb; x ++) {
      cumranklist->covBP[x]  /= (double)cfg->nshuffle;
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
@@ -867,6 +873,7 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
   int        x;                   // index for ranked list
+  int        cumx;
   int        status;
 
   /* shuffle all the columns */
@@ -884,17 +891,18 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(cumranklist, ranklist->bmax, ranklist->bmin);
+    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
     
-    for (x = ranklist->nb-1; x >= 0; x --) {
-      cumranklist->covBP[x]  += ranklist->covBP[x];
-      cumranklist->covNBP[x] += ranklist->covNBP[x];
+    for (x = 0; x < ranklist->nb; x ++) {
+      cumx = (int)((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w); 
+      cumranklist->covBP[cumx]  += ranklist->covBP[x];
+      cumranklist->covNBP[cumx] += ranklist->covNBP[x];
     }
     
     COV_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (x = cumranklist->nb-1; x >= 0; x --) {
+  for (x = 0; x < cumranklist->nb; x ++) {
     cumranklist->covBP[x]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }

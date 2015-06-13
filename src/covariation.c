@@ -1402,8 +1402,8 @@ COV_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct 
 
 
 int
-COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, 
-			     THRESH *thresh, int nbpairs, int verbose, char *errbuf)
+COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, 
+			     FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
   char        *threshtype = NULL;
@@ -1435,8 +1435,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   bmax = mi->maxCOV;
   bmin = mi->minCOV;
   ranklist = COV_CreateRankList(bmax, bmin, W);
-  ranklist->scmin = bmax;
-  ranklist->scmax = bmin;
+  ranklist->scmax = bmax;
+  ranklist->scmin = bmin;
   
   for (cov = ranklist->scmax; cov > ranklist->scmin-ranklist->w; cov -= ranklist->w) {
 
@@ -1482,7 +1482,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPu: threshval = cvRBPu; break;
     case covRBPf: threshval = cvRBPf; break;
     }     
-   if (threshval <= thresh->val) thresh->cov = cov;
+    if (threshval <= thresh->val) thresh->cov = cov;
   }
 
   if (outfp) {
@@ -1542,19 +1542,18 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   int       status;
 
   if (ranklist->bmax >= bmax && ranklist->bmin <= bmin) return eslOK;
-  
-  new = COV_CreateRankList(bmax, bmin, ranklist->w);
+ 
+  new = COV_CreateRankList(ESL_MAX(bmax, ranklist->bmax), ESL_MIN(bmin, ranklist->bmin), ranklist->w);
 
   for (x = 0; x < ranklist->nb; x ++) {
     newx = (int)((x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
     new->covBP[newx]  = ranklist->covBP[x];
     new->covNBP[newx] = ranklist->covNBP[x];
   }
-
     
   COV_FreeRankList(*oranklist);
   *oranklist = new;
-  return eslOK;;
+  return eslOK;
 
  ERROR:
   if (new) COV_FreeRankList(*oranklist);
