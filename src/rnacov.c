@@ -316,9 +316,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
 
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
-  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh->type = covNBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covNBP");  }
-  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh->type = covNBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPu"); }
-  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh->type = covNBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPf"); }
+  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh->type = covNBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covNBP");  if (cfg.nulltype != NullNONE) cfg.nulltype = NullNONE; }
+  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh->type = covNBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPu"); if (cfg.nulltype != NullNONE) cfg.nulltype = NullNONE; }
+  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh->type = covNBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPf"); if (cfg.nulltype != NullNONE) cfg.nulltype = NullNONE; }
   else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
   else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }
   else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null1; }

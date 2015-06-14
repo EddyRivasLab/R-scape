@@ -1424,7 +1424,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       cvBP, cvNBP, cvNBPu, cvNBPf;
   double       cvRBP, cvRBPu, cvRBPf;
   double       cov;
-  double       threshval;
+  double       val;
   double       bmax, bmin;
   int          fp, tf, t, f, neg;
   int          i, j;
@@ -1487,15 +1487,15 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     }
     
     switch(thresh->type) {
-    case covNBP:  threshval = cvNBP;  break;
-    case covNBPu: threshval = cvNBPu; break;
-    case covNBPf: threshval = cvNBPf; break;
-    case covRBP:  threshval = cvRBP;  break;
-    case covRBPu: threshval = cvRBPu; break;
-    case covRBPf: threshval = cvRBPf; break;
+    case covNBP:  val = cvNBP;  break;
+    case covNBPu: val = cvNBPu; break;
+    case covNBPf: val = cvNBPf; break;
+    case covRBP:  val = cvRBP;  break;
+    case covRBPu: val = cvRBPu; break;
+    case covRBPf: val = cvRBPf; break;
     }     
     
-    if (threshval <= thresh->val) thresh->cov = cov;
+    if (val > thresh->val) { thresh->cov = cov + ranklist->w; break; }
   }
 
   if (outfp) {
