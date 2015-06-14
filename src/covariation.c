@@ -40,7 +40,8 @@ static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
-COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST **ret_ranklist,  METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
+COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST **ret_ranklist, 
+	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
 	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 	      THRESH *thresh, int nbpairs, double tol, int verbose, char *errbuf)
 {
@@ -379,7 +380,8 @@ COV_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
 
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -503,7 +505,8 @@ COV_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, 
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -627,7 +630,8 @@ COV_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -752,7 +756,8 @@ COV_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -864,7 +869,8 @@ COV_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -980,7 +986,8 @@ COV_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
       } 
   }
   
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -1133,7 +1140,8 @@ COV_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp
       } 
   }
 
-  if (analyze) status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
+  if (analyze) 
+    status = COV_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (covtype) free(covtype);
@@ -1420,7 +1428,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       bmax, bmin;
   int          fp, tf, t, f, neg;
   int          i, j;
-  int          x;
+  int          x, nullx;
   int          status;
 
   COV_COVTYPEString(&covtype, mi->type, errbuf);
@@ -1437,10 +1445,10 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   ranklist = COV_CreateRankList(bmax, bmin, W);
   ranklist->scmax = bmax;
   ranklist->scmin = bmin;
-  
-  for (cov = ranklist->scmax; cov > ranklist->scmin-ranklist->w; cov -= ranklist->w) {
 
-    x = (int)((cov-ranklist->bmin)/ranklist->w);
+  for (x = ranklist->nb-1; x >= 0; x --) {
+
+    cov = (double)x*ranklist->w + ranklist->bmin;
     
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1469,9 +1477,13 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     cvRBPu = eslINFINITY;
     cvRBPf = 1.;
     if (ranklist_null) {
-      cvRBP = ranklist_null->covBP[x];
-      cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : eslINFINITY;
-      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 1.0;
+      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+ 
+      if (nullx >= 0) {
+	cvRBP = ranklist_null->covBP[nullx];
+	cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : eslINFINITY;
+	cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 1.0;
+      }
     }
     
     switch(thresh->type) {
@@ -1482,6 +1494,7 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPu: threshval = cvRBPu; break;
     case covRBPf: threshval = cvRBPf; break;
     }     
+    
     if (threshval <= thresh->val) thresh->cov = cov;
   }
 
@@ -1516,7 +1529,7 @@ COV_CreateRankList(double bmax, double bmin, double w)
   ranklist->bmax = bmax;
   ranklist->bmin = bmin;
   ranklist->w    = w;
-  ranklist->nb   = (int)((ranklist->bmax-ranklist->bmin) / w);
+  ranklist->nb   = round((ranklist->bmax-ranklist->bmin) / w);
 
   ranklist->scmin =  DBL_MAX;
   ranklist->scmax = -DBL_MIN;
@@ -1544,15 +1557,17 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   if (ranklist->bmax >= bmax && ranklist->bmin <= bmin) return eslOK;
  
   new = COV_CreateRankList(ESL_MAX(bmax, ranklist->bmax), ESL_MIN(bmin, ranklist->bmin), ranklist->w);
+  if (new == NULL) goto ERROR;
 
   for (x = 0; x < ranklist->nb; x ++) {
-    newx = (int)((x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
+    newx = round(((double)x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
     new->covBP[newx]  = ranklist->covBP[x];
     new->covNBP[newx] = ranklist->covNBP[x];
   }
     
   COV_FreeRankList(*oranklist);
   *oranklist = new;
+
   return eslOK;
 
  ERROR:
@@ -1648,17 +1663,30 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
- if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax, fp, tf, t, f, sen, ppv, F);
+ if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+		    covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax, fp, tf, t, f, sen, ppv, F);
  for (h = 0; h < nhit; h ++) {
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;
    if (outfp) {
-     if      (hitlist->hit[h].is_bpair)      { fprintf(outfp, "* %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
-						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); }
-     else if (hitlist->hit[h].is_compatible) { fprintf(outfp, "~ %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
-						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); }
-     else                                    { fprintf(outfp, "  %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
-						       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); } 
+     if (hitlist->hit[h].is_bpair)      { 
+       fprintf(outfp, "* %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
+	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
+	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
+     }
+     else if (hitlist->hit[h].is_compatible) { 
+       fprintf(outfp, "~ %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
+	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
+	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
+     }
+     else { 
+       fprintf(outfp, "  %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
+	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
+	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
+     } 
    }
  }
  
