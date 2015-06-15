@@ -108,6 +108,8 @@ typedef struct ranklist_s {
   double    bmin, bmax;	   /* sc bounds: all sc satisfy bmin < sc <= bmax     */
   double    scmin, scmax;  /* smallest, largest sample value sc observed      */
  
+  double    scthresh;
+
   double   *covBP;
   double   *covNBP;
 
@@ -132,9 +134,10 @@ typedef struct hit_s {
 } HIT;
 
 typedef struct hitlist_s{
-  int  nhit;
-  HIT *hit;
+  int     nhit;
+  HIT    *hit;
 
+  double  covthresh;
 }  HITLIST;
 
 typedef enum {
@@ -149,11 +152,11 @@ typedef enum {
 typedef struct thresh_s {
   THRESHTYPE type;
   double     val;  // the actual thershold value
-  double     cov;  // the cov value at that threshold
 } THRESH;
 
 
-extern int              COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST  **ret_ranklist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
+extern int              COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
+				      RANKLIST *ranklist_null, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
 				      int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, THRESH *thresh, 
 				      int nbpairs, double tol, int verbose, char *errbuf);
 extern int              COV_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
@@ -205,17 +208,17 @@ extern void             COV_FreeHitList(HITLIST *hitlist);
 extern int              COV_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              COV_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
 extern int              COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
-					ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
-					THRESH *thresh, int nbpairs, char *errbuf, int verbose);
+				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, THRESH *thresh,
+				     double covthresh, int nbpairs, char *errbuf, int verbose);
 extern int              COV_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);
 extern int              COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
-				   int verbose, char *errbuf);
+				int verbose, char *errbuf);
 extern int              COV_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              COV_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              COV_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              COV_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 extern int              COV_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
-  
+
 
 #endif

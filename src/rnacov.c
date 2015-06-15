@@ -35,8 +35,7 @@
  * This structure is passed to routines within main.c, as a means of semi-encapsulation
  * of shared data amongst different parallel processes (threads or MPI processes).
  */
-struct cfg_s {
-  /* Shared configuration in masters & workers */
+struct cfg_s { /* Shared configuration in masters & workers */
   int              argc;
   char           **argv;
   
@@ -376,11 +375,11 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.R2Rfp = NULL;
 
   /* dotplot file */
-  esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot.svg");
+  esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
   /* dotplot file */
   cfg.cykdplotfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot.svg");
+    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
  
   cfg.R2Rcykfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) {
@@ -642,6 +641,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 {
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
+  HITLIST         *hitlist = NULL;
   int              nnodes;
   int              status;
   int              ishuffled = (ret_ranklist)? TRUE:FALSE;
@@ -678,7 +678,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
-  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ret_ranklist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
+  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ret_ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
 			 (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
 			 (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
@@ -687,11 +687,13 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile && !ishuffled) {
     status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, hitlist->covthresh, 
+			  cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  { goto ERROR; }
   }
  
   *omsa = msa;
+  if (hitlist) COV_FreeHitList(hitlist);
   COV_Destroy(mi); mi = NULL;
   
   return eslOK;
@@ -699,6 +701,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
   if (mi) COV_Destroy(mi);
+  if (hitlist)   COV_FreeHitList(hitlist);
   return status;
 }
 
@@ -743,7 +746,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
   
-  if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+  if (1||cfg->verbose) COV_DumpRankList(stdout, cumranklist);
 
   *ret_cumranklist = cumranklist;
   free(useme);
@@ -852,6 +855,8 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
 
+   if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+   
    *ret_cumranklist = cumranklist;
    return eslOK;
 

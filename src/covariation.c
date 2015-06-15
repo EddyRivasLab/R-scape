@@ -35,12 +35,12 @@ static int is_stacked_pair(int i, int j, int L, int *ct);
 static int number_pairs(int L, int *ct);
 static int is_cannonical_pair(char nti, char ntj);
 static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
-static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				 ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
+static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 
 int                 
-COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, RANKLIST *ranklist_null, RANKLIST **ret_ranklist, 
+COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
+	      RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist,
 	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
 	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 	      THRESH *thresh, int nbpairs, double tol, int verbose, char *errbuf)
@@ -213,6 +213,8 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
    if (ret_ranklist == NULL) { // do the plots only if not using the null model
      status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
+     status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, FALSE, verbose, errbuf);
+     if  (status != eslOK) goto ERROR;
      
      status = COV_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
@@ -220,7 +222,7 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
 
    *omsa = msa;
    if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) COV_FreeRankList(ranklist);
-   if (hitlist) COV_FreeHitList(hitlist);
+   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  COV_FreeHitList(hitlist);
    return eslOK;
    
  ERROR:
@@ -1494,11 +1496,11 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPu: val = cvRBPu; break;
     case covRBPf: val = cvRBPf; break;
     }     
-
-    if (ranklist_null && val > thresh->val) { thresh->cov = cov + ranklist->w; break; }
+    if (val > thresh->val) { ranklist->scthresh = cov + ranklist->w; break; }
   }
 
   if (outfp) {
+    printf("RANK %f\n", ranklist->scthresh);
     status = COV_CreateHitList(outfp, &hitlist, thresh, mi, msamap, ct, ranklist, ranklist_null, covtype, threshtype, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
@@ -1609,13 +1611,14 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 
   nhit = alloc_nhit;
   ESL_ALLOC(hitlist->hit, sizeof(HIT) * nhit);
+  hitlist->covthresh = ranklist->scthresh;
 
   BP  = number_pairs(mi->alen, ct);
   NBP = mi->alen * (mi->alen-1) / 2 - BP;
 
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-      if (mi->COV->mx[i][j] > thresh->cov) {
+      if (mi->COV->mx[i][j] > ranklist->scthresh) {
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1676,7 +1679,7 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
  if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-		    covtype, threshtype, thresh->val, thresh->cov, ranklist->scmin, ranklist->scmax, fp, tf, t, f, sen, ppv, F);
+		    covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->scmin, ranklist->scmax, fp, tf, t, f, sen, ppv, F);
  for (h = 0; h < nhit; h ++) {
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;
@@ -1834,7 +1837,7 @@ COV_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
 int
 COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-		int *msamap, int minloop, enum grammar_e G, THRESH *thresh, int nbpairs, char *errbuf, int verbose)
+	     int *msamap, int minloop, enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA *msa = *omsa;
   HITLIST *hitlist = NULL;
@@ -1844,7 +1847,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   int      status;
             
   /* calculate the cykcov ct vector */
-  status = CYKCOV(r, mi, &cykct, &sc, minloop, thresh, errbuf, verbose);
+  status = CYKCOV(r, mi, &cykct, &sc, minloop, covthresh, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (verbose) printf("cykcov score = %f\n", sc);
 
@@ -1880,8 +1883,10 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   status = COV_R2Rsvg(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
-  /* DotPlot */
+  /* DotPlots (pdf,svg) */
   status = COV_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  status = COV_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   *omsa = msa;
@@ -1901,28 +1906,33 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 int              
 COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
 {
-  FILE   *pipe;
-  char   *filename = NULL;
-  double  pointsize;
-  double  ps_max = 0.40;
-  double  ps_min = 0.0003;
-  int     L = msamap[msa->alen-1]+1;
-  int     h;           /* index for hitlist */
-  int     i, ipair;
-  int     ih, jh;
+  FILE    *pipe;
+  char    *filename = NULL;
+  char    *outplot = NULL;
+  double   pointsize;
+  double   ps_max = 0.40;
+  double   ps_min = 0.0003;
+  int      L = msamap[msa->alen-1]+1;
+  int      h;           /* index for hitlist */
+  int      i, ipair;
+  int      ih, jh;
   
   pointsize = (mi->maxCOV > 0.)? ps_max/mi->maxCOV : ps_min;
 
-  esl_FileTail(dplotfile, TRUE, &filename);
+  esl_FileTail(dplotfile, FALSE, &filename);
 
   pipe = popen(gnuplot, "w");
   
-  if (dosvg) 
+  if (dosvg) {
+    esl_sprintf(&outplot, "%s.svg", dplotfile);
     fprintf(pipe, "set terminal svg size 350,262 fname 'Verdana' fsize 10 \n");
-  else 
+  }
+  else {
+    esl_sprintf(&outplot, "%s.pdf", dplotfile);
     fprintf(pipe, "set terminal postscript color 14 \n");
-  
-  fprintf(pipe, "set output '%s'\n", dplotfile);
+  }
+  fprintf(pipe, "set output '%s'\n", outplot);
+
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
 
@@ -2011,6 +2021,7 @@ COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   
   pclose(pipe);
   
+  free(outplot);
   free(filename);
   return eslOK;
 }

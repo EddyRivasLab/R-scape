@@ -824,7 +824,7 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
       for (n = 1; n <= msa->alen; n++) {
 	
 	/* suffle only positions with residues */
-	esl_vec_ISet(useme, msa->nseq, TRUE);
+	esl_vec_ISet(useme, msa->nseq, FALSE);
 	for (i = 0; i < msa->nseq; i ++) if (esl_abc_XIsResidue(msa->abc, msa->ax[i][n])) useme[i] = TRUE;
 
 	/* within colums permutation */

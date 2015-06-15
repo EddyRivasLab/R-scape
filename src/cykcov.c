@@ -25,13 +25,13 @@
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts, char *errbuf, int verbose);
 
 int
-CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, double covthresh, char *errbuf, int verbose) 
 {
-  GMX   *cyk   = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
-  int   *ct    = NULL;
+  GMX   *cyk = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
+  int   *ct  = NULL;
   int    status;
   
-  if (thresh->cov > mi->maxCOV) {
+  if (covthresh > mi->maxCOV) {
     ESL_ALLOC(ct, sizeof(int) * (mi->alen+1));
     esl_vec_ISet(ct, mi->alen+1, 0);
     *ret_ct = ct;
@@ -41,11 +41,11 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   cyk = GMX_Create(mi->alen);
 
   /* Fill the cyk matrix */
-  if ((status = CYKCOV_Fill(mi, cyk, ret_sc, minloop, thresh->cov, errbuf, verbose)) != eslOK) goto ERROR;    
+  if ((status = CYKCOV_Fill(mi, cyk, ret_sc, minloop, covthresh, errbuf, verbose)) != eslOK) goto ERROR;    
   /* Report a traceback */
-  if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, thresh->cov, errbuf, verbose))  != eslOK) goto ERROR;
+  if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
   
-  if (1||verbose) printf("CYKscore = %f at covthres %f thresval %f\n", *ret_sc, thresh->cov, thresh->val);
+  if (1||verbose) printf("CYKscore = %f at covthres %f\n", *ret_sc, covthresh);
 
   *ret_ct = ct;
   GMX_Destroy(cyk);
