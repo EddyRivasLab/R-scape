@@ -743,6 +743,8 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
   
+  if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+
   *ret_cumranklist = cumranklist;
   free(useme);
   return eslOK;
@@ -828,7 +830,6 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int       status;
 
    for (s = 0; s < cfg->nshuffle; s ++) {
-
      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
      status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);

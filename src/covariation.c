@@ -211,10 +211,10 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
    fprintf(sumfp, "\n");   
       
    if (ret_ranklist == NULL) { // do the plots only if not using the null model
-     status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, verbose, errbuf);
+     status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
      
-     status = COV_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, verbose, errbuf);
+     status = COV_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
    }
 
@@ -1494,8 +1494,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     case covRBPu: val = cvRBPu; break;
     case covRBPf: val = cvRBPf; break;
     }     
-    
-    if (val > thresh->val) { thresh->cov = cov + ranklist->w; break; }
+
+    if (ranklist_null && val > thresh->val) { thresh->cov = cov + ranklist->w; break; }
   }
 
   if (outfp) {
@@ -1573,6 +1573,18 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
  ERROR:
   if (new) COV_FreeRankList(*oranklist);
   return status;
+}
+
+int              
+COV_DumpRankList(FILE *fp, RANKLIST *ranklist)
+{
+  int x;
+
+  printf("covmin %f covmax %f\n", ranklist->scmin, ranklist->scmax);
+  for (x = 0; x < ranklist->nb; x ++) 
+    printf("val %f covBP %f covNBP %f\n", (double)x*ranklist->w + ranklist->bmin, ranklist->covBP[x],ranklist->covNBP[x]); 
+  
+  return eslOK;
 }
 
 int 
@@ -1847,7 +1859,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = COV_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, verbose, errbuf);
+  status = COV_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   esl_msa_Digitize(mi->abc, msa, errbuf);
 
@@ -1863,9 +1875,13 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   /* R2Rpdf */
   status = COV_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-
+  
+  /* R2Rsvg */
+  status = COV_R2Rsvg(R2Rcykfile, R2Rversion, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  
   /* DotPlot */
-  status = COV_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, verbose, errbuf);
+  status = COV_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   *omsa = msa;
@@ -1883,7 +1899,7 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 }
 
 int              
-COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int verbose, char *errbuf)
+COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
 {
   FILE   *pipe;
   char   *filename = NULL;
@@ -1901,8 +1917,11 @@ COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   pipe = popen(gnuplot, "w");
   
-  //fprintf(pipe, "set terminal postscript color 14 \n");
-  fprintf(pipe, "set terminal svg size 350,262 fname 'Verdana' fsize 10 \n");
+  if (dosvg) 
+    fprintf(pipe, "set terminal svg size 350,262 fname 'Verdana' fsize 10 \n");
+  else 
+    fprintf(pipe, "set terminal postscript color 14 \n");
+  
   fprintf(pipe, "set output '%s'\n", dplotfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -1997,13 +2016,12 @@ COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int verbose, char *errbuf)
+COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
   ESL_MSA      *msa = *ret_msa;
   ESL_MSA      *r2rmsa = NULL;
-  char         *r2rpdf = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char          covtag[12] = "cov_SS_cons";
@@ -2105,6 +2123,10 @@ COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
       status = COV_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
       if (status != eslOK) goto ERROR;
     }
+    if (makesvg) {
+      status = COV_R2Rsvg(r2rfile, r2rversion, verbose, errbuf);
+      if (status != eslOK) goto ERROR;
+    }
   }
   
   remove(tmpinfile);
@@ -2112,7 +2134,6 @@ COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   
   *ret_msa = r2rmsa;
   esl_msa_Destroy(msa);
-  if (r2rpdf) free(r2rpdf);
   if (args) free(args);
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
@@ -2124,7 +2145,6 @@ COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   
   if (msa)    esl_msa_Destroy(msa);
   if (r2rmsa) esl_msa_Destroy(r2rmsa);
-  if (r2rpdf) free(r2rpdf);
   if (args)   free(args);
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
@@ -2148,6 +2168,27 @@ COV_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   
   free(args);
   free(r2rpdf);
+  
+  return eslOK;
+ }
+
+int
+COV_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+{
+  char *r2rsvg = NULL;
+  char *args = NULL;
+  char *s = NULL;
+
+  /* produce the R2R svg */
+  if ("R2RDIR" == NULL)               return eslENOTFOUND;
+  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  esl_sprintf(&r2rsvg, "%s.svg", r2rfile);
+  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rsvg);
+  //esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rsvg);
+  system(args);
+  
+  free(args);
+  free(r2rsvg);
   
   return eslOK;
  }

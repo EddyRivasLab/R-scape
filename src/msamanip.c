@@ -696,7 +696,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 {
   ESL_MSA *shmsa = NULL;
   int     *perm = NULL;
-  int     *col = NULL;
+  int     *colidx = NULL;
   int      ncol = msa->alen;
   int      i;
   int      n;
@@ -711,9 +711,9 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
   for (n = 0; n < msa->alen; n ++) if (useme[n] == FALSE) ncol --;
   if (ncol == 0) { return eslOK;}
 
-  ESL_ALLOC(col, sizeof(int) * ncol);
+  ESL_ALLOC(colidx, sizeof(int) * ncol);
   c = 0;
-  for (n = 0;  n < msa->alen; n++) if (useme[n] == TRUE) { col[c] = n; c++; }
+  for (n = 0;  n < msa->alen; n++) if (useme[n] == TRUE) { colidx[c] = n; c++; }
 
   ESL_ALLOC(perm,  sizeof(int) * ncol);
   for (c = 0; c < ncol; c ++) perm[c] = c;
@@ -728,7 +728,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	c = 0;
 	for (n = 0; n < msa->alen; n++) 
 	  if (useme[n] == TRUE) {
-	    shmsa->aseq[i][n] = msa->aseq[i][col[perm[c]]];
+	    shmsa->aseq[i][n] = msa->aseq[i][colidx[perm[c]]];
 	    c ++;
 	  }
       }
@@ -740,7 +740,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	c = 0;
 	for (n = 1; n <= msa->alen; n++) 
 	  if (useme[n-1] == TRUE) {
-	    shmsa->ax[i][n] = msa->ax[i][col[perm[c]]+1];
+	    shmsa->ax[i][n] = msa->ax[i][colidx[perm[c]]+1];
 	    c++;
 	  }
       }
@@ -754,12 +754,12 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 
   *ret_shmsa = shmsa;
 
-  free(col);
+  free(colidx);
   free(perm);
   return status;
 
  ERROR:
-  if (col)  free(col);
+  if (colidx)  free(colidx);
   if (perm) free(perm);
   if (shmsa) esl_msa_Destroy(shmsa);
   return status;
@@ -768,58 +768,105 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 int
 msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
 {
-  ESL_MSA *shmsa = NULL;
-  int     *perm = NULL;
+  ESL_MSA *shmsa  = NULL;
+  int     *useme  = NULL;
+  int     *seqidx = NULL;
+  int     *perm   = NULL;
+  int      nseq;
   int      i;
   int      n;
+  int      s;
   int      status = eslOK;
 
   /* copy the original alignemt */
   shmsa = esl_msa_Clone(msa);
   if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
 
-  /* within column permutation */
-  ESL_ALLOC(perm, sizeof(int) * (msa->nseq));
-  for (i = 0; i < msa->nseq; i ++) perm[i] = i;
-  
+  /* vector to mark residues in a column */
+   ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+
   /* aseq[0..nseq-1][0..alen-1] strings, or
    * ax[0..nseq-1][(0) 1..alen (alen+1)] digital seqs 
    */
   if (! (msa->flags & eslMSA_DIGITAL))
     {
       for (n = 0; n < msa->alen; n++) {
-	if ((status = esl_vec_IShuffle(r, perm, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
 
+	/* suffle only positions with residues */
+	esl_vec_ISet(useme, msa->nseq, FALSE);
+	for (i = 0; i < msa->nseq; i ++) if (esl_abc_CIsResidue(msa->abc,msa->aseq[i][n])) useme[i] = TRUE;
+
+	/* within colums permutation */
+	nseq = msa->nseq;
+	for (i = 0; i < msa->nseq; i ++) if (useme[i] == FALSE) nseq --;
+	if (nseq == 0) continue;
+	ESL_ALLOC(seqidx, sizeof(int) * nseq);
+	s = 0;
+	for (i = 0;  i < msa->nseq; i++) if (useme[i] == TRUE) { seqidx[s] = i; s++; }
+	ESL_ALLOC(perm,  sizeof(int) * nseq);
+	for (s = 0; s < nseq; s ++) perm[s] = s;
+ 	if ((status = esl_vec_IShuffle(r, perm, nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	s = 0;
 	for (i = 0; i < msa->nseq; i++) {
-	  shmsa->aseq[i][n] = msa->aseq[perm[i]][n];
+	  if (useme[i] == TRUE) {
+	    shmsa->aseq[i][n] = msa->aseq[seqidx[perm[s]]][n];
+	    s ++;
+	  }
 	}
+	free(perm); perm = NULL;
+	free(seqidx); seqidx = NULL;
       }
     }
 #ifdef eslAUGMENT_ALPHABET
   else
     {
       for (n = 1; n <= msa->alen; n++) {
-	if ((status = esl_vec_IShuffle(r, perm, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+	
+	/* suffle only positions with residues */
+	esl_vec_ISet(useme, msa->nseq, TRUE);
+	for (i = 0; i < msa->nseq; i ++) if (esl_abc_XIsResidue(msa->abc, msa->ax[i][n])) useme[i] = TRUE;
 
+	/* within colums permutation */
+	nseq = msa->nseq;
+	for (i = 0; i < msa->nseq; i ++) if (useme[i] == FALSE) nseq --;
+	if (nseq == 0) continue;
+	ESL_ALLOC(seqidx, sizeof(int) * nseq);
+	s = 0;
+	for (i = 0;  i < msa->nseq; i++) if (useme[i] == TRUE) { seqidx[s] = i; s++; }
+	ESL_ALLOC(perm,  sizeof(int) * nseq);
+	for (s = 0; s < nseq; s ++) perm[s] = s;
+ 	if ((status = esl_vec_IShuffle(r, perm, nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	s = 0;
 	for (i = 0; i < msa->nseq; i++) {
-	  shmsa->ax[i][n] = msa->ax[perm[i]][n];
+	  if (useme[i] == TRUE) {
+	    shmsa->ax[i][n] = msa->ax[seqidx[perm[s]]][n];
+	    s ++;
+	  }
 	}
+	free(perm); perm = NULL;
+	free(seqidx); seqidx = NULL;
       }
     }
 #endif
 
-  if (verbose) {
+  if (1||verbose) {
     eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
     eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
  }
 
   *ret_shmsa = shmsa;
 
-  free(perm);
+  free(useme);
+  if (perm) free(perm);
+  if (seqidx) free(seqidx);
   return status;
 
  ERROR:
-  if (perm) free(perm);
+  if (useme)  free(useme);
+  if (perm)   free(perm);
+  if (seqidx) free(seqidx);
   if (shmsa) esl_msa_Destroy(shmsa);
   return status;
 }

@@ -197,6 +197,7 @@ extern int              COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RA
 						     int nbpairs, int verbose, char *errbuf);
 extern RANKLIST        *COV_CreateRankList(double bmax, double bmin, double w);
 extern int              COV_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
+extern int              COV_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              COV_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null,  
 					  char *covtype, char *threshtype, int verbose, char *errbuf);
 extern void             COV_FreeRankList(RANKLIST *ranklist);
@@ -206,10 +207,12 @@ extern int              COV_FisherExactTest(double *ret_pval, int cBP, int cNBP,
 extern int              COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
 					ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, 
 					THRESH *thresh, int nbpairs, char *errbuf, int verbose);
-extern int              COV_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int verbose, char *errbuf);
-extern int              COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, 
+extern int              COV_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
+				    int dosvg, int verbose, char *errbuf);
+extern int              COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
 				   int verbose, char *errbuf);
 extern int              COV_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
+extern int              COV_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              COV_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              COV_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 extern int              COV_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);

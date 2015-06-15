@@ -31,6 +31,13 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   int   *ct    = NULL;
   int    status;
   
+  if (thresh->cov > mi->maxCOV) {
+    ESL_ALLOC(ct, sizeof(int) * (mi->alen+1));
+    esl_vec_ISet(ct, mi->alen+1, 0);
+    *ret_ct = ct;
+    return eslOK;
+  }
+  
   cyk = GMX_Create(mi->alen);
 
   /* Fill the cyk matrix */
