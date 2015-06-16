@@ -1919,21 +1919,25 @@ COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      i, ipair;
   int      ih, jh;
   
-  pointsize = (mi->maxCOV > 0.)? ps_max/mi->maxCOV : ps_min;
 
   esl_FileTail(dplotfile, FALSE, &filename);
 
   pipe = popen(gnuplot, "w");
   
   if (dosvg) {
+    ps_max = 0.40;
+    ps_min = 0.0003;
     esl_sprintf(&outplot, "%s.svg", dplotfile);
     fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
   }
   else {
-    esl_sprintf(&outplot, "%s.pdf", dplotfile);
+    ps_max = 1.40;
+    ps_min = 0.30;
+    esl_sprintf(&outplot, "%s.ps", dplotfile);
     fprintf(pipe, "set terminal postscript color 14\n");
   }
   fprintf(pipe, "set output '%s'\n", outplot);
+  pointsize = (mi->maxCOV > 0.)? ps_max/mi->maxCOV : ps_min;
 
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
