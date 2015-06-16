@@ -851,7 +851,7 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
     }
 #endif
 
-  if (1||verbose) {
+  if (verbose) {
     eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
     eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
  }

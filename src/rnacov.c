@@ -118,6 +118,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *shsumfp; 
 
   THRESH          *thresh;
+  MODE             mode;
 
   float            tol;
   int              verbose;
@@ -548,6 +549,7 @@ main(int argc, char **argv)
 #endif
     
     /* the null model first */
+    cfg.mode = RANSS;
     if (cfg.nulltype == Null1) {
       status = null1_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
@@ -571,6 +573,7 @@ main(int argc, char **argv)
  
     /* main function */
     if (cfg.domsa) {
+      cfg.mode = GIVSS;
       status = run_rnacov(go, &cfg, &msa, ranklist_null, NULL);
       if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
@@ -644,7 +647,6 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   HITLIST         *hitlist = NULL;
   int              nnodes;
   int              status;
-  int              ishuffled = (ret_ranklist)? TRUE:FALSE;
 
   esl_stopwatch_Start(cfg->w);
   
@@ -652,7 +654,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 			   cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 			   cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
-  if (!ishuffled) 
+  if (cfg->mode != RANSS) 
     fprintf(cfg->outfp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
@@ -666,10 +668,10 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
   
   /* create the MI structure */
-  mi = COV_Create(msa->alen, msa->nseq, ishuffled, cfg->nseqthresh, cfg->abc);
+  mi = COV_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)?TRUE:FALSE, cfg->nseqthresh, cfg->abc);
   
   /* write MSA info to the sumfile */
-  if (!ishuffled) 
+  if (cfg->mode != RANSS) 
     fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   else
     fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
@@ -679,17 +681,17 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* main function */
   status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ret_ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
-			 (ret_ranklist)?NULL:cfg->outfp, cfg->rocfp, 
-			 (ret_ranklist)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
-			 cfg->thresh, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
-  if (status != eslOK)  { goto ERROR; }
+			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
+			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
+			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
+  if (status != eslOK) goto ERROR; 
   
   /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->R2Rcykfile && !ishuffled) {
+  if (cfg->R2Rcykfile && cfg->mode != RANSS) {
     status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, hitlist->covthresh, 
+			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, cfg->thresh->sc,
 			  cfg->onbpairs, cfg->errbuf, cfg->verbose);
-    if (status != eslOK)  { goto ERROR; }
+    if (status != eslOK) goto ERROR;
   }
  
   *omsa = msa;
@@ -729,8 +731,18 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run rnacov shuffled");
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+    if (cumranklist == NULL) {
+      cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+      cumranklist->scmax    = ranklist->scmax;
+      cumranklist->scmin    = ranklist->scmin;
+      cumranklist->scthresh = ranklist->scthresh;
+    }
+     else {                    
+       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cumranklist->scmax    = ESL_MAX(cumranklist->scmax, ranklist->scmax);
+       cumranklist->scmin    = ESL_MIN(cumranklist->scmin, ranklist->scmin);
+       cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+     }
     
     for (x = 0; x < ranklist->nb; x ++) {
       cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
@@ -746,7 +758,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
   
-  if (1||cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+  if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
 
   *ret_cumranklist = cumranklist;
   free(useme);
@@ -788,9 +800,19 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     if (status != eslOK) goto ERROR;
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
-
+    if (cumranklist == NULL) {
+       cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist->scmax    = ranklist->scmax;
+       cumranklist->scmin    = ranklist->scmin;
+       cumranklist->scthresh = ranklist->scthresh;
+     }
+     else {                    
+       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cumranklist->scmax    = ESL_MAX(cumranklist->scmax, ranklist->scmax);
+       cumranklist->scmin    = ESL_MIN(cumranklist->scmin, ranklist->scmin);
+       cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+     }
+  
     for (x = 0; x < ranklist->nb; x ++) {
       cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
       cumranklist->covBP[cumx]  += ranklist->covBP[x];
@@ -838,8 +860,18 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
      esl_msa_Destroy(shmsa); shmsa = NULL;
      
-     if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-     else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+     if (cumranklist == NULL) {
+       cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist->scmax    = ranklist->scmax;
+       cumranklist->scmin    = ranklist->scmin;
+       cumranklist->scthresh = ranklist->scthresh;
+     }
+     else {                    
+       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cumranklist->scmax    = ESL_MAX(cumranklist->scmax, ranklist->scmax);
+       cumranklist->scmin    = ESL_MIN(cumranklist->scmin, ranklist->scmin);
+       cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+     }
      
      for (x = 0; x < ranklist->nb; x ++) {
        cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
@@ -855,7 +887,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
 
-   if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+   if (1||cfg->verbose) COV_DumpRankList(stdout, cumranklist);
    
    *ret_cumranklist = cumranklist;
    return eslOK;
@@ -896,8 +928,18 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
-    if (cumranklist == NULL) cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-    else                     COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+    if (cumranklist == NULL) {
+      cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+      cumranklist->scmax    = ranklist->scmax;
+      cumranklist->scmin    = ranklist->scmin;
+      cumranklist->scthresh = ranklist->scthresh;
+    }
+     else {                    
+       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cumranklist->scmax    = ESL_MAX(cumranklist->scmax, ranklist->scmax);
+       cumranklist->scmin    = ESL_MIN(cumranklist->scmin, ranklist->scmin);
+       cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+     }
     
     for (x = 0; x < ranklist->nb; x ++) {
       cumx = round(((double)x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w); 
