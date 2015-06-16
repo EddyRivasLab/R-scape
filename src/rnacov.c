@@ -887,7 +887,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
 
-   if (1||cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+   if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
    
    *ret_cumranklist = cumranklist;
    return eslOK;

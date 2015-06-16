@@ -1497,7 +1497,6 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
       }
-      printf("!!cov %f cvNBP %f cvNBPu %f\n", cov, cvNBP, cvNBPu);
       if (val > thresh->val) { ranklist->scthresh = cov + ranklist->w; thresh->sc = ranklist->scthresh; break; }
     }
     if (mode == CYKSS) {
@@ -1928,11 +1927,11 @@ COV_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", dplotfile);
-    fprintf(pipe, "set terminal svg size 350,262 fname 'Verdana' fsize 10 \n");
+    fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
   }
   else {
     esl_sprintf(&outplot, "%s.pdf", dplotfile);
-    fprintf(pipe, "set terminal postscript color 14 \n");
+    fprintf(pipe, "set terminal postscript color 14\n");
   }
   fprintf(pipe, "set output '%s'\n", outplot);
 
