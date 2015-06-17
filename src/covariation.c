@@ -1696,13 +1696,13 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
      }
      else if (hitlist->hit[h].is_compatible) { 
-       fprintf(outfp, "~ %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
+       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
 	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
 	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
 	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
      }
      else { 
-       fprintf(outfp, "  %10d %10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
+       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
 	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
 	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
 	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
@@ -1940,7 +1940,7 @@ COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   } 
   fclose(fp);
 
-  if (gnuplot) COV_PlotNullCov(gnuplot, nullcovfile, 2.*BP, 0.2, 0.2, dosvg);
+  if (gnuplot) COV_PlotNullCov(gnuplot, nullcovfile, 2.*(double)BP, 0.2, 0.2*(double)BP, dosvg);
   return eslOK;
 
  ERROR:
