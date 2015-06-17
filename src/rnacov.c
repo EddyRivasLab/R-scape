@@ -691,7 +691,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
   
-  status = COV_PlotNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE);
+  status = COV_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
 
   /* find the cykcov structure, and do the cov analysis on it */
@@ -743,21 +743,20 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     
     if (cumranklist == NULL) {
       cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-      cumranklist->scmax    = ranklist->scmax;
-      cumranklist->scmin    = ranklist->scmin;
       cumranklist->scthresh = ranklist->scthresh;
     }
      else {                    
-       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
-       cumranklist->scmax    = ESL_MAX(cumranklist->scmax, ranklist->scmax);
-       cumranklist->scmin    = ESL_MIN(cumranklist->scmin, ranklist->scmin);
+       status = COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       if (status != eslOK) goto ERROR;
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
     
     for (x = 0; x < ranklist->nb; x ++) {
       cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
-      cumranklist->covBP[cumx]  += ranklist->covBP[x];
-      cumranklist->covNBP[cumx] += ranklist->covNBP[x];
+      if (cumx >= 0 && cumx < cumranklist->nb) {
+	cumranklist->covBP[cumx]  += ranklist->covBP[x];
+	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
+      }
     }
     
     COV_FreeRankList(ranklist); ranklist = NULL;
@@ -768,7 +767,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
   
-  if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+  if (1||cfg->verbose) COV_DumpRankList(stdout, cumranklist);
 
   *ret_cumranklist = cumranklist;
   free(useme);
