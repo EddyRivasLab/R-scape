@@ -1477,7 +1477,6 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     ranklist->covNBP[x] = cvNBP;
     
     if (mode == GIVSS) {
-      cvRBP = 0.;
       if (ranklist_null) {
 	if      (cov > ranklist_null->bmax) cvRBP = ranklist_null->covBP[ranklist_null->nb-1];
 	else if (cov < ranklist_null->bmin) cvRBP = ranklist_null->covBP[0];
@@ -1497,7 +1496,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
       }
-      if (val > thresh->val) { ranklist->scthresh = cov + ranklist->w; thresh->sc = ranklist->scthresh; break; }
+      //if (val > thresh->val) { ranklist->scthresh = cov + ranklist->w; thresh->sc = ranklist->scthresh; break; }
+      if (val <= thresh->val) { ranklist->scthresh = cov + ranklist->w; thresh->sc = ranklist->scthresh;  }
     }
     if (mode == CYKSS) {
       if (cov < thresh->sc) { ranklist->scthresh = cov + ranklist->w; break; }
@@ -1903,6 +1903,145 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   if (cykct)   free(cykct);
   if (ss)      free(ss);
   return status;
+}
+
+int 
+COV_PlotNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg)
+{
+  FILE    *pipe;
+  char    *filename = NULL;
+  char    *outplot = NULL;
+  double   cov;
+  double   covRBP;
+  int      nullx;
+  int      BP;
+  int      x;
+
+  if (ranklist_null == NULL) return eslOK;
+
+  BP = number_pairs(L, ct); 
+  if (BP <= 0.) return eslOK;
+
+  esl_FileTail(nullcovfile, FALSE, &filename);
+
+  pipe = popen(gnuplot, "w");
+
+  if (dosvg) {
+    esl_sprintf(&outplot, "%s.svg", nullcovfile);
+    fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
+  }
+  else {
+    esl_sprintf(&outplot, "%s.ps", nullcovfile);
+    fprintf(pipe, "set terminal postscript color 14\n");
+  }
+
+  fprintf(pipe, "set output '%s'\n", outplot);
+  fprintf(pipe, "unset key\n");
+  //fprintf(pipe, "set size ratio -1\n");
+  //fprintf(pipe, "set pointsize %f\n", pointsize);
+  fprintf(pipe, "set title '%s' \n", filename);
+
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps variable\n");
+
+  // covarying bpairs / null convarying bpairs 
+  fprintf(pipe, "set ylabel '# covarying pairs'\n");
+  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
+  fprintf(pipe, "set yrange [0:%d]\n", 2*BP);
+  fprintf(pipe, "set xrange [0:0.2]\n");
+  
+  fprintf(pipe, "set multiplot\n");
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 8\n");
+  
+  for (cov = ranklist->scmax; cov >= ranklist->scmin; cov -= ranklist->w) {
+    x =  round((cov-ranklist->bmin)/ranklist->w);
+    
+    if      (cov > ranklist_null->bmax) covRBP = ranklist_null->covBP[ranklist_null->nb-1];
+    else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
+    else {
+      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+      covRBP = ranklist_null->covBP[nullx];
+    }
+    fprintf(pipe, "%f %f\n", covRBP, ranklist->covBP[x]);	
+  } 
+  fprintf(pipe, "e\n");
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 7\n");
+  for (cov = ranklist->scmax; cov >= ranklist->scmin; cov -= ranklist->w) {
+    x =  round((cov-ranklist->bmin)/ranklist->w);
+    
+    if      (cov > ranklist_null->bmax) covRBP = ranklist_null->covBP[ranklist_null->nb-1];
+    else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
+    else {
+      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+      covRBP = ranklist_null->covBP[nullx];
+    }
+    fprintf(pipe, "%f %f\n", covRBP, ranklist->covNBP[x]);	
+  } 
+  fprintf(pipe, "e\n");
+  fprintf(pipe, "unset multiplot\n");
+  
+  // % covarying bpairs / # null convarying bpairs 
+  fprintf(pipe, "set ylabel '%% covarying basepairs'\n");
+  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
+  fprintf(pipe, "set yrange [0:100]\n");
+  fprintf(pipe, "set xrange [0:0.2]\n");
+ 
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 8\n");
+  
+  for (cov = ranklist->scmax; cov >= ranklist->scmin; cov -= ranklist->w) {
+    x =  round((cov-ranklist->bmin)/ranklist->w);
+
+    if      (cov > ranklist_null->bmax) covRBP = ranklist_null->covBP[ranklist_null->nb-1];
+    else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
+    else {
+      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+      covRBP = ranklist_null->covBP[nullx];
+    }
+    fprintf(pipe, "%f %f\n", covRBP, 100.*ranklist->covBP[x]/BP);	
+  } 
+  fprintf(pipe, "e\n");
+
+  // % covarying bpairs / % null convarying bpairs 
+  fprintf(pipe, "set ylabel '%% covarying basepairs'\n");
+  fprintf(pipe, "set xlabel '%% null covarying basepairs'\n");
+  fprintf(pipe, "set yrange [0:100]\n");
+  fprintf(pipe, "set xrange [0:1]\n");
+ 
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");  
+  fprintf(pipe, "plot '-' u 1:2 with points ls 8\n");
+  for (cov = ranklist->scmax; cov >= ranklist->scmin; cov -= ranklist->w) {
+    x =  round((cov-ranklist->bmin)/ranklist->w);
+
+    if      (cov > ranklist_null->bmax) covRBP = ranklist_null->covBP[ranklist_null->nb-1];
+    else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
+    else {
+      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+      covRBP = ranklist_null->covBP[nullx];
+    }
+    fprintf(pipe, "%f %f\n", 100.*covRBP/(double)BP, 100.*ranklist->covBP[x]/(double)BP);	
+  } 
+  fprintf(pipe, "e\n");
+ 
+  pclose(pipe);
+  
+  free(outplot);
+  free(filename);
+
+  return eslOK;
 }
 
 int              

@@ -78,6 +78,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              minloop;
   enum grammar_e   grammar;
   
+  char            *nullcovfile;
   char            *dplotfile;
   char            *cykdplotfile;
 
@@ -375,6 +376,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.outheader);
   cfg.R2Rfp = NULL;
 
+  /* nullcovplot file */
+  esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
   /* dotplot file */
   esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
   /* dotplot file */
@@ -606,6 +609,7 @@ main(int argc, char **argv)
   if (cfg.shsumfp) fclose(cfg.shsumfp);
   if (cfg.R2Rfp) fclose(cfg.R2Rfp);
   free(cfg.outheader);
+  free(cfg.nullcovfile);
   free(cfg.dplotfile);
   if (cfg.cykdplotfile) free(cfg.cykdplotfile);
   free(cfg.R2Rfile);
@@ -644,6 +648,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 {
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
+  RANKLIST        *ranklist = NULL;
   HITLIST         *hitlist = NULL;
   int              nnodes;
   int              status;
@@ -680,12 +685,15 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
-  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ret_ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
+  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, &ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
 			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
   
+  status = COV_PlotNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE);
+  if (status != eslOK) goto ERROR; 
+
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile && cfg->mode != RANSS) {
     status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
@@ -695,6 +703,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
  
   *omsa = msa;
+  if (ret_ranklist) *ret_ranklist = ranklist; else COV_FreeRankList(ranklist);
   if (hitlist) COV_FreeHitList(hitlist);
   COV_Destroy(mi); mi = NULL;
   
@@ -703,6 +712,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
   if (mi) COV_Destroy(mi);
+  if (ranklist)  COV_FreeRankList(ranklist);
   if (hitlist)   COV_FreeHitList(hitlist);
   return status;
 }
@@ -921,9 +931,10 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
 
   for (s = 0; s < cfg->nshuffle; s ++) {
-    msamanip_ShuffleWithinColumn(cfg->r, msa,   &shmsa,         cfg->errbuf, cfg->verbose);
-    msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme1, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleColumns     (cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
+
     status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
     esl_msa_Destroy(shmsa); shmsa = NULL;
@@ -980,3 +991,5 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   return eslOK;
   
 }
+
+

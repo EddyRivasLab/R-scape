@@ -217,6 +217,7 @@ extern int              COV_FisherExactTest(double *ret_pval, int cBP, int cNBP,
 extern int              COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
 				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, THRESH *thresh,
 				     double covthresh, int nbpairs, char *errbuf, int verbose);
+extern int              COV_PlotNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg);
 extern int              COV_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);
 extern int              COV_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
