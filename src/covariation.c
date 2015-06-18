@@ -211,7 +211,7 @@ COV_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
    }
    fprintf(sumfp, "\n");   
       
-   if (ret_ranklist == NULL) { // do the plots only if not using the null model
+   if (mode == GIVSS || mode == CYKSS) { // do the plots only GIVSS or CYKSS
      status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
      status = COV_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, FALSE, verbose, errbuf);
@@ -1915,7 +1915,9 @@ COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
 {
   FILE    *fp = NULL;
   double   cov;
-  double   covRBP;
+  double   covBP, covBP_prv;
+  double   covNBP, covNBP_prv;
+  double   covRBP, covRBP_prv;
   int      nullx;
   int      BP;
   int      x;
@@ -1927,16 +1929,28 @@ COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   
   if ((fp = fopen(nullcovfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", nullcovfile);
 
-  for (cov = ranklist->scmax; cov >= ranklist->scmin; cov -= ranklist->w) {
+  covRBP_prv = 0.0;
+  covBP_prv  = 0.0;
+  covNBP_prv = 0.0;
+  for (cov = ranklist->bmax; cov >= ranklist->bmin; cov -= ranklist->w) {
     x =  round((cov-ranklist->bmin)/ranklist->w);
     
+   covBP  = ranklist->covBP[x];
+   covNBP = ranklist->covNBP[x];
+ 
     if      (cov > ranklist_null->bmax) covRBP = ranklist_null->covBP[ranklist_null->nb-1];
     else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
     else {
       nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
       covRBP = ranklist_null->covBP[nullx];
     }
-    fprintf(fp, "%f %f %f %f %f %f\n", cov, covRBP, 100.*covRBP/(double)BP, ranklist->covBP[x], 100.0*ranklist->covBP[x]/(double)BP, ranklist->covNBP[x]);	
+    if (covRBP > covRBP_prv) {
+      fprintf(fp, "%f %f %f %f %f %f\n", cov, covRBP_prv, 100.*covRBP_prv/(double)BP, covBP_prv, 100.0*covBP_prv/(double)BP, covNBP_prv);
+    }
+
+    covBP_prv  = covBP;
+    covNBP_prv = covNBP;
+    covRBP_prv = covRBP;
   } 
   fclose(fp);
 
@@ -1969,7 +1983,6 @@ COV_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovRBP
 
   fprintf(pipe, "set output '%s'\n", outplot);
   fprintf(pipe, "unset key\n");
-  //fprintf(pipe, "set size ratio -1\n");
   //fprintf(pipe, "set pointsize %f\n", pointsize);
   fprintf(pipe, "set title '%s' \n", filename);
 
@@ -1988,24 +2001,16 @@ COV_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovRBP
   fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
   fprintf(pipe, "set yrange [0:%f]\n", maxBP);
   fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
-  fprintf(pipe, "plot '%s' u 2:4 with points ls 8, ", nullcovfile);
-  fprintf(pipe, "'%s' u 2:6 with points ls 7\n", nullcovfile);
+  fprintf(pipe, "plot '%s' u 2:4 with lines ls 8, ", nullcovfile);
+  fprintf(pipe, "'%s' u 2:6 with lines ls 7\n", nullcovfile);
   
-
-  // % covarying bpairs (covBPf) / # null convarying bpairs (covRBP)
-  fprintf(pipe, "set ylabel '%% covarying basepairs'\n");
-  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
-  fprintf(pipe, "set yrange [0:100]\n");
-  fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
-  fprintf(pipe, "plot '%s' u 2:5 with points ls 8\n", nullcovfile);
-   
-
   // % covarying bpairs (covBPf) / % null convarying bpairs (covRBPf)
+  fprintf(pipe, "set size ratio -1\n");
   fprintf(pipe, "set ylabel '%% covarying basepairs'\n");
   fprintf(pipe, "set xlabel '%% null covarying basepairs'\n");
   fprintf(pipe, "set yrange [0:100]\n");
-  fprintf(pipe, "set xrange [0:%f]\n", maxcovRBPf);
-  fprintf(pipe, "plot '%s' u 3:5 with points ls 8\n", nullcovfile);
+  fprintf(pipe, "set xrange [0:100]\n");
+  fprintf(pipe, "plot '%s' u 3:5 with lines ls 8\n", nullcovfile);
   
   pclose(pipe);
   
