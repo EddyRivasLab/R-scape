@@ -1631,6 +1631,7 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	}
 	/* initialize */
 	 hitlist->hit[h].sc            = -eslINFINITY;
+	 hitlist->hit[h].Eval          = 1000.;
 	 hitlist->hit[h].covNBP        = 0.0;
 	 hitlist->hit[h].covNBPu       = 0.0;
 	 hitlist->hit[h].covNBPf       = 0.0;
@@ -1690,23 +1691,17 @@ COV_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
    jh = hitlist->hit[h].j;
    if (outfp) {
      if (hitlist->hit[h].is_bpair)      { 
-       fprintf(outfp, "*\t%10d\t%10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
-	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
-	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
+       fprintf(outfp, "*\t%10d\t%10d\t%.2f\t%.4f\n", 
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
      }
      else if (hitlist->hit[h].is_compatible) { 
-       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n", 
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
-	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
-	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
-     }
+       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%.4f\n", 
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
      else { 
-       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%.0f\t%.4f\t%.4f\t%.0f\t%.4f\t%.4f\n",
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, 
-	       hitlist->hit[h].covNBP, hitlist->hit[h].covNBPu, hitlist->hit[h].covNBPf, 
-	       hitlist->hit[h].covRBP, hitlist->hit[h].covRBPu, hitlist->hit[h].covRBPf); 
-     } 
+       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%.4f\n",
+	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    } 
    }
  }
  
@@ -1944,6 +1939,7 @@ COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
       nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
       covRBP = ranklist_null->covBP[nullx];
     }
+   
     if (covRBP > covRBP_prv) {
       fprintf(fp, "%f %f %f %f %f %f\n", cov, covRBP_prv, 100.*covRBP_prv/(double)BP, covBP_prv, 100.0*covBP_prv/(double)BP, covNBP_prv);
     }
@@ -2001,8 +1997,8 @@ COV_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovRBP
   fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
   fprintf(pipe, "set yrange [0:%f]\n", maxBP);
   fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
-  fprintf(pipe, "plot '%s' u 2:4 with lines ls 8, ", nullcovfile);
-  fprintf(pipe, "'%s' u 2:6 with lines ls 7\n", nullcovfile);
+  fprintf(pipe, "plot '%s' u 2:4 with points ls 8, ", nullcovfile);
+  fprintf(pipe, "'%s' u 2:6 with points ls 7\n", nullcovfile);
   
   // % covarying bpairs (covBPf) / % null convarying bpairs (covRBPf)
   fprintf(pipe, "set size ratio -1\n");

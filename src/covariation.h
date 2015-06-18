@@ -120,6 +120,7 @@ typedef struct hit_s {
   int64_t j;
   
   double sc;
+  double Eval;
 
   double covNBP;
   double covNBPu;
