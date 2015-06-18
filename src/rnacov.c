@@ -40,7 +40,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char           **argv;
   
   ESL_STOPWATCH   *w;
-
   char             errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS  *r;	               /* random numbers for stochastic sampling (grm-emit) */
   ESL_ALPHABET    *abc;                /* the alphabet */
@@ -690,7 +689,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
-  
+  if (cfg->mode == GIVSS && (cfg->verbose)) COV_DumpRankList(stdout, ranklist);
+    
   status = COV_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
 

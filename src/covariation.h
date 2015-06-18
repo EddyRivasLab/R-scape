@@ -18,7 +18,7 @@
 
 #include "covgrammars.h"
 
-#define W     0.5     // COV with
+#define W     0.1     // COV with
 
 #define NCOVTYPE = 5;
 
