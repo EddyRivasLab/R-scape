@@ -12,6 +12,7 @@
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
+#include "esl_histogram.h"
 #include "esl_msa.h"
 #include "esl_tree.h"
 #include "ribosum_matrix.h"
@@ -103,15 +104,16 @@ typedef enum {
 
 
 typedef struct ranklist_s {
-  int       nb;            /* number of bins                                  */
-  double    w;	    	   /* fixed width of each bin                         */
-  double    bmin, bmax;	   /* sc bounds: all sc satisfy bmin < sc <= bmax     */
-  double    scmin, scmax;  /* smallest, largest sample value sc observed      */
+  int            nb;            /* number of bins                                  */
+  double         w;	    	/* fixed width of each bin                         */
+  double         bmin, bmax;	/* sc bounds: all sc satisfy bmin < sc <= bmax     */
+  double         scmin, scmax;  /* smallest, largest sample value sc observed      */
  
-  double    scthresh;
+  double         scthresh;
 
-  double   *covBP;
-  double   *covNBP;
+  double        *covBP;
+  double        *covNBP;
+  ESL_HISTOGRAM *h;             /* histogram of scores */
 
 } RANKLIST;
 
@@ -218,6 +220,8 @@ extern int              COV_FisherExactTest(double *ret_pval, int cBP, int cNBP,
 extern int              COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
 				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, int minloop, enum grammar_e G, THRESH *thresh,
 				     double covthresh, int nbpairs, char *errbuf, int verbose);
+extern int              COV_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf);
+extern int              COV_PlotHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, int dosvg);
 extern int              COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf);
 extern int              COV_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
 extern int              COV_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 

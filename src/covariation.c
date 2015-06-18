@@ -14,6 +14,7 @@
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
+#include "esl_histogram.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
 #include "esl_sqio.h"
@@ -1460,6 +1461,12 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
 	if (ct[i+1] == j+1) {      t  ++;
 	  if (mtx->mx[i][j] > cov) tf ++;
 	}
+	
+	/* add to the histogram if not a real basepair */
+	if ((mode == GIVSS || mode == CYKSS ) && ct[i+1] != j+1) 
+	   esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
+	else if (mode == RANSS)  
+	  esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
       }
     
     fp  = f - tf;
@@ -1536,8 +1543,9 @@ COV_CreateRankList(double bmax, double bmin, double w)
   ranklist->scmax = bmax;
   ranklist->scmin = bmin;
   ranklist->w     = w;
-  ranklist->nb    = round((ranklist->bmax-ranklist->bmin) / w);
-  
+  ranklist->nb    = round((bmax-bmin) / w);
+  ranklist->h     = esl_histogram_Create(bmin, bmax, w);
+ 
   ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->nb);
   ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->nb);
  
@@ -1560,7 +1568,7 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   int       status;
 
   /* for the low bound bmin, we stay at the highest value, not need
-     to take them all */
+   * to take them all */
   new = COV_CreateRankList(ESL_MAX(bmax, ranklist->bmax), ESL_MAX(bmin, ranklist->bmin), ranklist->w);
   if (new == NULL) goto ERROR;
 
@@ -1569,6 +1577,7 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
     if (newx >= 0 && newx < new->nb) {
       new->covBP[newx]  = ranklist->covBP[x];
       new->covNBP[newx] = ranklist->covNBP[x];
+      new->h->obs[newx] = ranklist->h->obs[x];
     }
   }
     
@@ -1718,9 +1727,9 @@ COV_FreeRankList(RANKLIST *ranklist)
 {
   if (ranklist == NULL) return;
 
+  if (ranklist->h)      esl_histogram_Destroy(ranklist->h);
   if (ranklist->covBP)  free(ranklist->covBP);
   if (ranklist->covNBP) free(ranklist->covNBP);
-
   free(ranklist);
 }
 
@@ -1906,6 +1915,82 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 }
 
 int 
+COV_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
+{
+  char    *covhisfilesh = NULL;
+  FILE    *fp = NULL;
+  int      status;
+
+  if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", covhisfile);
+  esl_histogram_PlotSurvival(fp, ranklist->h);
+  fclose(fp);
+  if (ranklist_null) {
+    if ((fp = fopen(nullcovhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", nullcovhisfile);
+    esl_histogram_PlotSurvival(fp, ranklist_null->h);
+    fclose(fp);
+  }
+
+  //if (gnuplot) COV_PlotHistogram(gnuplot, covhisfile, nullcovhisfile, dosvg);
+
+  return eslOK;
+
+ ERROR:
+  return status;
+
+}
+
+int 
+COV_PlotHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, int dosvg)
+{
+  FILE    *pipe;
+  char    *filename = NULL;
+  char    *outplot = NULL;
+ 
+  esl_FileTail(covhisfile, FALSE, &filename);
+
+  pipe = popen(gnuplot, "w");
+
+  if (dosvg) {
+    esl_sprintf(&outplot, "%s.svg", covhisfile);
+    fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
+  }
+  else {
+    esl_sprintf(&outplot, "%s.ps", covhisfile);
+    fprintf(pipe, "set terminal postscript color 14\n");
+  }
+
+  fprintf(pipe, "set output '%s'\n", outplot);
+  fprintf(pipe, "unset key\n");
+  //fprintf(pipe, "set pointsize %f\n", pointsize);
+  fprintf(pipe, "set title '%s' \n", filename);
+
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps variable\n");
+
+  // covarying BP and covaryingNBPs (covBP & covNBP) / null convarying bpairs (covRBP)
+  fprintf(pipe, "set ylabel '# covarying pairs'\n");
+  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
+  //fprintf(pipe, "set yrange [0:%f]\n", maxBP);
+  //fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
+  fprintf(pipe, "plot '%s' u 1:2 with linespoints ls 8, ", covhisfile);
+  fprintf(pipe, "'%s' u 1:2 with linespoints ls 7\n", nullcovhisfile);
+  
+  pclose(pipe);
+  
+  free(outplot);
+  free(filename);
+
+  return eslOK;
+}
+
+int 
 COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
 {
   FILE    *fp = NULL;
@@ -1950,7 +2035,7 @@ COV_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   } 
   fclose(fp);
 
-  if (gnuplot) COV_PlotNullCov(gnuplot, nullcovfile, 2.*(double)BP, 1.0, 1.0*(double)BP, dosvg);
+  if (gnuplot) COV_PlotNullCov(gnuplot, nullcovfile, 2.*(double)BP, 0.2, 0.2*(double)BP, dosvg);
   return eslOK;
 
  ERROR:
