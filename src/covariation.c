@@ -1450,8 +1450,16 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   ranklist->scmax = bmax;
   ranklist->scmin = bmin;
 
+  for (i = 0; i < mi->alen-1; i ++) 
+    for (j = i+1; j < mi->alen; j ++) {
+      /* add to the histogram if not a real basepair */
+      if (mode == GIVSS && ct[i+1] != j+1) 
+	esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
+      else if (mode == RANSS) 
+	esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
+    }
+  
   for (x = ranklist->nb-1; x >= 0; x --) {
-
     cov = (double)x*ranklist->w + ranklist->bmin;
      
     f = t = tf = 0;
@@ -1460,14 +1468,8 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
 	if (mtx->mx[i][j] > cov)   f  ++;
 	if (ct[i+1] == j+1) {      t  ++;
 	  if (mtx->mx[i][j] > cov) tf ++;
-	}
-	
-	/* add to the histogram if not a real basepair */
-	if ((mode == GIVSS || mode == CYKSS ) && ct[i+1] != j+1) 
-	   esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
-	else if (mode == RANSS)  
-	  esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
-      }
+	}	
+     }
     
     fp  = f - tf;
     sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
@@ -1571,6 +1573,12 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
    * to take them all */
   new = COV_CreateRankList(ESL_MAX(bmax, ranklist->bmax), ESL_MAX(bmin, ranklist->bmin), ranklist->w);
   if (new == NULL) goto ERROR;
+  new->h->bmin = new->bmin;
+  new->h->bmax = new->bmax;
+  new->h->xmin = ranklist->h->xmin;
+  new->h->xmax = ranklist->h->xmax;
+  new->h->imin = ranklist->h->imin;
+  new->h->imax = ranklist->h->imax;
 
   for (x = 0; x < ranklist->nb; x ++) {
     newx = round(((double)x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
@@ -1917,7 +1925,6 @@ COV_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 int 
 COV_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
 {
-  char    *covhisfilesh = NULL;
   FILE    *fp = NULL;
   int      status;
 

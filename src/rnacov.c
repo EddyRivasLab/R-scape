@@ -700,8 +700,12 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) COV_DumpRankList(stdout, ranklist);
     
-  status = COV_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
-  if (status != eslOK) goto ERROR; 
+  if (cfg->mode == GIVSS) {
+    printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax,ranklist->h->xmin);
+    esl_histogram_Write(stdout, ranklist->h);
+    status = COV_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
+    if (status != eslOK) goto ERROR; 
+  }
   status = COV_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
 
@@ -879,9 +883,15 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
      esl_msa_Destroy(shmsa); shmsa = NULL;
-     
+
+        printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax,ranklist->h->xmin);
+     esl_histogram_Write(stdout, ranklist->h);
      if (cumranklist == NULL) {
        cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist->h->xmin = ranklist->h->xmin;
+       cumranklist->h->xmax = ranklist->h->xmax;
+       cumranklist->h->imin = ranklist->h->imin;
+       cumranklist->h->imax = ranklist->h->imax;
        cumranklist->scthresh = ranklist->scthresh;
      }
      else {                    
@@ -905,7 +915,9 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covBP[x]  /= (double)cfg->nshuffle;
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
-
+   printf("imin %d imax %d xmax %f xmin %f\n", cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax,cumranklist->h->xmin);
+      esl_histogram_Write(stdout, cumranklist->h);
+ 
    if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
    
    *ret_cumranklist = cumranklist;
