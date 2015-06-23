@@ -592,7 +592,7 @@ main(int argc, char **argv)
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (type) free(type); type = NULL;
-    COV_FreeRankList(ranklist_null); ranklist_null = NULL;
+    cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   }
 
   if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
@@ -627,7 +627,7 @@ main(int argc, char **argv)
   if (cfg.fbp)  free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
-  if (ranklist_null) COV_FreeRankList(ranklist_null);
+  if (ranklist_null) cov_FreeRankList(ranklist_null);
 
   return 0;
 }
@@ -680,7 +680,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
   
   /* create the MI structure */
-  mi = COV_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)?TRUE:FALSE, cfg->nseqthresh, cfg->abc);
+  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)?TRUE:FALSE, cfg->nseqthresh, cfg->abc);
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
@@ -692,42 +692,42 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
-  status = COV_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, &ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
+  status = cov_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, &ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
 			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
-  if (cfg->mode == GIVSS && (cfg->verbose)) COV_DumpRankList(stdout, ranklist);
+  if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
   if (cfg->mode == GIVSS) {
     printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax,ranklist->h->xmin);
     esl_histogram_Write(stdout, ranklist->h);
-    status = COV_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
-  status = COV_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
+  status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
 
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile && cfg->mode != RANSS) {
-    status = COV_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
+    status = cov_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
 			  &msa, mi, cfg->msamap, cfg->minloop, cfg->grammar, cfg->thresh, cfg->thresh->sc,
 			  cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
   }
  
   *omsa = msa;
-  if (ret_ranklist) *ret_ranklist = ranklist; else COV_FreeRankList(ranklist);
-  if (hitlist) COV_FreeHitList(hitlist);
-  COV_Destroy(mi); mi = NULL;
+  if (ret_ranklist) *ret_ranklist = ranklist; else cov_FreeRankList(ranklist);
+  if (hitlist) cov_FreeHitList(hitlist);
+  cov_Destroy(mi); mi = NULL;
   
   return eslOK;
   
  ERROR:
   if (cfg->T) esl_tree_Destroy(cfg->T);
-  if (mi) COV_Destroy(mi);
-  if (ranklist)  COV_FreeRankList(ranklist);
-  if (hitlist)   COV_FreeHitList(hitlist);
+  if (mi) cov_Destroy(mi);
+  if (ranklist)  cov_FreeRankList(ranklist);
+  if (hitlist)   cov_FreeHitList(hitlist);
   return status;
 }
 
@@ -756,11 +756,11 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) {
-      cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+      cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
       cumranklist->scthresh = ranklist->scthresh;
     }
      else {                    
-       status = COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       status = cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
        if (status != eslOK) goto ERROR;
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
@@ -774,7 +774,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       }
     }
     
-    COV_FreeRankList(ranklist); ranklist = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
   for (x = 0; x < cumranklist->nb; x ++) {
@@ -782,7 +782,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[x] /= (double)cfg->nshuffle;
   }
   
-  if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
 
   *ret_cumranklist = cumranklist;
   free(useme);
@@ -791,8 +791,8 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
  ERROR:
   if (useme) free(useme);
   if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) COV_FreeRankList(ranklist);
-  if (cumranklist) COV_FreeRankList(cumranklist);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
   return status;
 }
 
@@ -825,11 +825,11 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) {
-       cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
        cumranklist->scthresh = ranklist->scthresh;
      }
      else {                    
-       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
   
@@ -842,7 +842,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
        }
     }
     
-    COV_FreeRankList(ranklist); ranklist = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
   for (x = 0; x < cumranklist->nb; x ++) {
@@ -859,8 +859,8 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   if (useme1) free(useme1);
   if (useme2) free(useme2);
   if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) COV_FreeRankList(ranklist);
-  if (cumranklist) COV_FreeRankList(cumranklist);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
   return status;
 }
 
@@ -884,7 +884,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      esl_msa_Destroy(shmsa); shmsa = NULL;
      
      if (cumranklist == NULL) {
-       cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
        cumranklist->h->xmin  = ranklist->h->xmin;
        cumranklist->h->xmax  = ranklist->h->xmax;
        cumranklist->h->imin  = ranklist->h->imin;
@@ -892,10 +892,10 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
        cumranklist->scthresh = ranklist->scthresh;
      }
      else {                    
-       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
-     
+     printf("cum Nc %d rank Nc %d\n", cumranklist->h->Nc, ranklist->h->Nc);
      for (x = 0; x < ranklist->nb; x ++) {
        cumx = round(((double)x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
        if (cumx >= 0 && cumx < cumranklist->nb) {
@@ -905,11 +905,14 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 	   cumranklist->h->obs[cumx] += ranklist->h->obs[x];
 	   cumranklist->h->Nc        += ranklist->h->obs[x];
 	   cumranklist->h->No        += ranklist->h->obs[x];
+	   printf(" ++^^cum Nc %d cumx %d x %d rank obs %d\n", cumranklist->h->Nc, cumx, x, ranklist->h->obs[x]);
+
 	 }
        }
      }
+     printf("^^cum Nc %d rank Nc %d\n", cumranklist->h->Nc, ranklist->h->Nc);
      
-     COV_FreeRankList(ranklist); ranklist = NULL;
+     cov_FreeRankList(ranklist); ranklist = NULL;
    }
    
    for (x = 0; x < cumranklist->nb; x ++) {
@@ -919,15 +922,15 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
    printf("imin %d imax %d xmax %f xmin %f\n", cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax,cumranklist->h->xmin);
       esl_histogram_PlotSurvival(stdout, cumranklist->h);
  
-   if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
+   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
    
    *ret_cumranklist = cumranklist;
    return eslOK;
 
  ERROR:
    if (shmsa) esl_msa_Destroy(shmsa);
-   if (ranklist) COV_FreeRankList(ranklist);
-   if (cumranklist) COV_FreeRankList(cumranklist);
+   if (ranklist) cov_FreeRankList(ranklist);
+   if (cumranklist) cov_FreeRankList(cumranklist);
    return status;
 }
 
@@ -962,11 +965,11 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     esl_msa_Destroy(shmsa); shmsa = NULL;
     
     if (cumranklist == NULL) {
-      cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+      cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
       cumranklist->scthresh = ranklist->scthresh;
     }
      else {                    
-       COV_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
+       cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
     
@@ -979,7 +982,7 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
        }
     }
     
-    COV_FreeRankList(ranklist); ranklist = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
   for (x = 0; x < cumranklist->nb; x ++) {
@@ -996,8 +999,8 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   if (useme1) free(useme1);
   if (useme2) free(useme2);
   if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) COV_FreeRankList(ranklist);
-  if (cumranklist) COV_FreeRankList(cumranklist);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
   return status;
 }
 
