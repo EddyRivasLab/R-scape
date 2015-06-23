@@ -216,8 +216,7 @@ static int null4_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKL
  * Take argc, argv, and options; parse the command line;
  * display help/usage info.
  */
-static int
-process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *ret_cfg)
+static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *ret_cfg)
 {
   ESL_GETOPTS *go = esl_getopts_Create(options);
   struct cfg_s cfg;
@@ -883,15 +882,13 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rnacov shuffled", cfg->errbuf);
      esl_msa_Destroy(shmsa); shmsa = NULL;
-
-        printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax,ranklist->h->xmin);
-     esl_histogram_Write(stdout, ranklist->h);
+     
      if (cumranklist == NULL) {
        cumranklist = COV_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-       cumranklist->h->xmin = ranklist->h->xmin;
-       cumranklist->h->xmax = ranklist->h->xmax;
-       cumranklist->h->imin = ranklist->h->imin;
-       cumranklist->h->imax = ranklist->h->imax;
+       cumranklist->h->xmin  = ranklist->h->xmin;
+       cumranklist->h->xmax  = ranklist->h->xmax;
+       cumranklist->h->imin  = ranklist->h->imin;
+       cumranklist->h->imax  = ranklist->h->imax;
        cumranklist->scthresh = ranklist->scthresh;
      }
      else {                    
@@ -900,11 +897,15 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      }
      
      for (x = 0; x < ranklist->nb; x ++) {
-       cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+       cumx = round(((double)x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
        if (cumx >= 0 && cumx < cumranklist->nb) {
 	 cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	 cumranklist->covNBP[cumx] += ranklist->covNBP[x];
-	 cumranklist->h->obs[cumx] += ranklist->h->obs[x];
+	 if (ranklist->h->obs[x] > 0) {
+	   cumranklist->h->obs[cumx] += ranklist->h->obs[x];
+	   cumranklist->h->Nc        += ranklist->h->obs[x];
+	   cumranklist->h->No        += ranklist->h->obs[x];
+	 }
        }
      }
      
@@ -916,7 +917,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
    printf("imin %d imax %d xmax %f xmin %f\n", cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax,cumranklist->h->xmin);
-      esl_histogram_Write(stdout, cumranklist->h);
+      esl_histogram_PlotSurvival(stdout, cumranklist->h);
  
    if (cfg->verbose) COV_DumpRankList(stdout, cumranklist);
    

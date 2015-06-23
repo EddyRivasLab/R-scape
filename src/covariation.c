@@ -1444,11 +1444,11 @@ COV_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
   }
 
-  bmax = mi->maxCOV;
-  bmin = mi->minCOV;
+  bmax = mi->maxCOV+W;
+  bmin = mi->minCOV-W;
   ranklist = COV_CreateRankList(bmax, bmin, W);
-  ranklist->scmax = bmax;
-  ranklist->scmin = bmin;
+  ranklist->scmax = bmax-W;
+  ranklist->scmin = bmin+W;
 
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
@@ -1542,8 +1542,8 @@ COV_CreateRankList(double bmax, double bmin, double w)
 
   ranklist->bmax  = bmax;
   ranklist->bmin  = bmin;
-  ranklist->scmax = bmax;
-  ranklist->scmin = bmin;
+  ranklist->scmax = bmax-w;
+  ranklist->scmin = bmin+w;
   ranklist->w     = w;
   ranklist->nb    = round((bmax-bmin) / w);
   ranklist->h     = esl_histogram_Create(bmin, bmax, w);
@@ -1579,13 +1579,15 @@ COV_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   new->h->xmax = ranklist->h->xmax;
   new->h->imin = ranklist->h->imin;
   new->h->imax = ranklist->h->imax;
+  new->h->Nc   = ranklist->h->Nc;
+  new->h->No   = ranklist->h->No;
 
   for (x = 0; x < ranklist->nb; x ++) {
     newx = round(((double)x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
     if (newx >= 0 && newx < new->nb) {
-      new->covBP[newx]  = ranklist->covBP[x];
-      new->covNBP[newx] = ranklist->covNBP[x];
-      new->h->obs[newx] = ranklist->h->obs[x];
+      new->covBP[newx]   = ranklist->covBP[x];
+      new->covNBP[newx]  = ranklist->covNBP[x];
+      new->h->obs[newx]  = ranklist->h->obs[x];
     }
   }
     
