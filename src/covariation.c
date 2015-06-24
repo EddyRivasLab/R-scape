@@ -1460,7 +1460,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     }
   
   for (x = ranklist->nb-1; x >= 0; x --) {
-    cov = (double)x*ranklist->w + ranklist->bmin;
+    cov = cov_ranklist_Bin2Mid(ranklist,x);
      
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1490,7 +1490,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
 	if      (cov > ranklist_null->bmax) cvRBP = ranklist_null->covBP[ranklist_null->nb-1];
 	else if (cov < ranklist_null->bmin) cvRBP = ranklist_null->covBP[0];
 	else {
-	  nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+	  cov_ranklist_Score2Bin(ranklist_null, cov, &nullx);
 	  cvRBP = ranklist_null->covBP[nullx];
 	}
       }
@@ -1545,7 +1545,7 @@ cov_CreateRankList(double bmax, double bmin, double w)
   ranklist->scmax = bmax-w;
   ranklist->scmin = bmin+w;
   ranklist->w     = w;
-  ranklist->nb    = round((bmax-bmin) / w);
+  ranklist->nb    = (int)((bmax-bmin)/w);
   ranklist->h     = esl_histogram_Create(bmin, bmax, w);
  
   ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->nb);
@@ -1583,7 +1583,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   new->h->No   = ranklist->h->No;
 
   for (x = 0; x < ranklist->nb; x ++) {
-    newx = round(((double)x*ranklist->w + ranklist->bmin - new->bmin)/new->w);
+    cov_ranklist_Score2Bin(new, cov_ranklist_Bin2Mid(ranklist,x), &newx);
     if (newx >= 0 && newx < new->nb) {
       new->covBP[newx]   = ranklist->covBP[x];
       new->covNBP[newx]  = ranklist->covNBP[x];
@@ -2022,15 +2022,14 @@ cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   covBP_prv  = 0.0;
   covNBP_prv = 0.0;
   for (x = ranklist->nb-1; x >= 0; x--) {
-    cov = (double)x * ranklist->w + ranklist->bmin;
-    
+    cov = cov_ranklist_Bin2Mid(ranklist,x);
     covBP  = ranklist->covBP[x];
     covNBP = ranklist->covNBP[x];
     
     if      (cov > ranklist_null->bmax) covRBP = 0;
     else if (cov < ranklist_null->bmin) covRBP = ranklist_null->covBP[0];
     else {
-      nullx =  round((cov-ranklist_null->bmin)/ranklist_null->w);
+      cov_ranklist_Score2Bin(ranklist_null, cov, &nullx);
       covRBP = ranklist_null->covBP[nullx];
     }
     

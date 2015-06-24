@@ -38,7 +38,6 @@
 struct cfg_s { /* Shared configuration in masters & workers */
   int              argc;
   char           **argv;
-  
   ESL_STOPWATCH   *w;
   char             errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS  *r;	               /* random numbers for stochastic sampling (grm-emit) */
@@ -766,7 +765,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      }
     
     for (x = 0; x < ranklist->nb; x ++) {
-      cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
@@ -834,7 +833,8 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      }
   
     for (x = 0; x < ranklist->nb; x ++) {
-      cumx = round((x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
@@ -895,9 +895,9 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
        cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
-     printf("cum Nc %d rank Nc %d\n", cumranklist->h->Nc, ranklist->h->Nc);
-     for (x = 0; x < ranklist->nb; x ++) {
-       cumx = round(((double)x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w);
+    for (x = 0; x < ranklist->nb; x ++) {
+       cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+
        if (cumx >= 0 && cumx < cumranklist->nb) {
 	 cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	 cumranklist->covNBP[cumx] += ranklist->covNBP[x];
@@ -905,13 +905,11 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 	   cumranklist->h->obs[cumx] += ranklist->h->obs[x];
 	   cumranklist->h->Nc        += ranklist->h->obs[x];
 	   cumranklist->h->No        += ranklist->h->obs[x];
-	   printf(" ++^^cum Nc %d cumx %d x %d rank obs %d\n", cumranklist->h->Nc, cumx, x, ranklist->h->obs[x]);
-
+	   //printf(" ++^^cum Nc %d cumx %d x %d rank obs %d cum obs %d\n", cumranklist->h->Nc, cumx, x, ranklist->h->obs[x], cumranklist->h->obs[cumx]);
 	 }
        }
      }
-     printf("^^cum Nc %d rank Nc %d\n", cumranklist->h->Nc, ranklist->h->Nc);
-     
+    
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
    
@@ -974,7 +972,8 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      }
     
     for (x = 0; x < ranklist->nb; x ++) {
-      cumx = round(((double)x*ranklist->w + ranklist->bmin - cumranklist->bmin)/cumranklist->w); 
+      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+      
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];

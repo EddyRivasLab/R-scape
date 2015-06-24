@@ -166,6 +166,7 @@ typedef enum {
 
 #define cov_ranklist_Bin2LBound(rk,b)  ((rk)->w*(b) + (rk)->bmin)
 #define cov_ranklist_Bin2UBound(rk,b)  ((rk)->w*((b)+1) + (rk)->bmin)
+#define cov_ranklist_Bin2Mid(rk,b)     ((rk)->w*((b)+0.5) + (rk)->bmin)
 
 extern int              cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				      RANKLIST *ranklist_null, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
