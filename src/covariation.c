@@ -2011,53 +2011,6 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   return status;
 }
 
-static int
-cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int style1, int style2)
-{
-  int      i;
-  uint64_t c = 0;
-  double   esum;
-  double   ai;
- 
-  /* The observed binned counts:
-   */
-  fprintf(pipe, "set size 1,1\n");
-  fprintf(pipe, "set origin 0,0\n");
-  fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style1);
-  if (h->obs[h->imax] > 1) 
-    if (fprintf(pipe, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
-  for (i = h->imax; i >= h->imin; i--)
-    {
-      if (h->obs[i] > 0) {
-	c   += h->obs[i];
-	ai = esl_histogram_Bin2LBound(h, i);
-	if (fprintf(pipe, "%f\t%g\n", ai, (double) c / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
-      }
-    }
-  fprintf(pipe, "e\n");
-
-  /* The expected binned counts:
-   */
-  if (h->expect != NULL) 
-    {
-      fprintf(pipe, "set size 1,1\n");
-      fprintf(pipe, "set origin 0,0\n");
-      fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style2);
-      
-      esum = 0.;
-      for (i = h->nb-1; i >= 0; i--)
-	{
-	  if (h->expect[i] > 0.) { 
-	    esum += h->expect[i];        /* some worry about 1+eps=1 problem here */
-	    ai = esl_histogram_Bin2LBound(h, i);
-	    if (fprintf(pipe, "%f\t%g\n", ai, esum / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
-	  }
-	}
-      fprintf(pipe, "e\n"); 
-    }
-
-  return eslOK;
-}
 
 int 
 cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
@@ -2919,6 +2872,54 @@ cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop)
       ct[ipair] = 0;
     }
   }
+
+  return eslOK;
+}
+
+static int
+cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int style1, int style2)
+{
+  int      i;
+  uint64_t c = 0;
+  double   esum;
+  double   ai;
+ 
+  /* The observed binned counts:
+   */
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");
+  fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style1);
+  if (h->obs[h->imax] > 1) 
+    if (fprintf(pipe, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+  for (i = h->imax; i >= h->imin; i--)
+    {
+      if (h->obs[i] > 0) {
+	c   += h->obs[i];
+	ai = esl_histogram_Bin2LBound(h, i);
+	if (fprintf(pipe, "%f\t%g\n", ai, (double) c / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+      }
+    }
+  fprintf(pipe, "e\n");
+
+  /* The expected binned counts:
+   */
+  if (h->expect != NULL) 
+    {
+      fprintf(pipe, "set size 1,1\n");
+      fprintf(pipe, "set origin 0,0\n");
+      fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style2);
+      
+      esum = 0.;
+      for (i = h->nb-1; i >= 0; i--)
+	{
+	  if (h->expect[i] > 0.) { 
+	    esum += h->expect[i];        /* some worry about 1+eps=1 problem here */
+	    ai = esl_histogram_Bin2LBound(h, i);
+	    if (fprintf(pipe, "%f\t%g\n", ai, esum / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+	  }
+	}
+      fprintf(pipe, "e\n"); 
+    }
 
   return eslOK;
 }
