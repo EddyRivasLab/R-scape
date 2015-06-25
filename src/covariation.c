@@ -39,6 +39,7 @@ static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, do
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
 				 double tol, int verbose, char *errbuf);
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
+static int cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int style1, int style2);
 
 int                 
 cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
@@ -1939,8 +1940,8 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  //if (gnuplot) cov_PlotHistogram(gnuplot, covhisfile, nullcovhisfile, dosvg);
-
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, dosvg, errbuf);
+  if (status != eslOK) goto ERROR;
   return eslOK;
 
  ERROR:
@@ -1949,12 +1950,15 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
 }
 
 int 
-cov_PlotHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, int dosvg)
+cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
- 
+  int      status;
+
+  if (!gnuplot) return eslOK;
+
   esl_FileTail(covhisfile, FALSE, &filename);
 
   pipe = popen(gnuplot, "w");
@@ -1973,28 +1977,84 @@ cov_PlotHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, int dos
   //fprintf(pipe, "set pointsize %f\n", pointsize);
   fprintf(pipe, "set title '%s' \n", filename);
 
-  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps variable\n");
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps 0.5\n");
 
-  // covarying BP and covaryingNBPs (covBP & covNBP) / null convarying bpairs (covRBP)
-  fprintf(pipe, "set ylabel '# covarying pairs'\n");
-  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
-  //fprintf(pipe, "set yrange [0:%f]\n", maxBP);
-  //fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
-  fprintf(pipe, "plot '%s' u 1:2 with linespoints ls 8, ", covhisfile);
-  fprintf(pipe, "'%s' u 1:2 with linespoints ls 7\n", nullcovhisfile);
-  
+  fprintf(pipe, "set multiplot\n");
+
+  // survival plot for ranklist and ranklist_null
+  fprintf(pipe, "set ylabel 'P(x > score)'\n");
+  fprintf(pipe, "set xlabel 'covariation score'\n");
+  fprintf(pipe, "set yrange [0:1.0]\n");
+  fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist->h->xmin,ranklist_null->h->xmin), ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
+
+  status = cov_histogram_plotsurvival(pipe, ranklist->h,      4, 2);
+  if (status != eslOK) goto ERROR;
+  status = cov_histogram_plotsurvival(pipe, ranklist_null->h, 1, 7);
+  if (status != eslOK) goto ERROR;
+
   pclose(pipe);
   
   free(outplot);
   free(filename);
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+static int
+cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int style1, int style2)
+{
+  int      i;
+  uint64_t c = 0;
+  double   esum;
+  double   ai;
+ 
+  /* The observed binned counts:
+   */
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");
+  fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style1);
+  if (h->obs[h->imax] > 1) 
+    if (fprintf(pipe, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+  for (i = h->imax; i >= h->imin; i--)
+    {
+      if (h->obs[i] > 0) {
+	c   += h->obs[i];
+	ai = esl_histogram_Bin2LBound(h, i);
+	if (fprintf(pipe, "%f\t%g\n", ai, (double) c / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+      }
+    }
+  fprintf(pipe, "e\n");
+
+  /* The expected binned counts:
+   */
+  if (h->expect != NULL) 
+    {
+      fprintf(pipe, "set size 1,1\n");
+      fprintf(pipe, "set origin 0,0\n");
+      fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style2);
+      
+      esum = 0.;
+      for (i = h->nb-1; i >= 0; i--)
+	{
+	  if (h->expect[i] > 0.) { 
+	    esum += h->expect[i];        /* some worry about 1+eps=1 problem here */
+	    ai = esl_histogram_Bin2LBound(h, i);
+	    if (fprintf(pipe, "%f\t%g\n", ai, esum / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+	  }
+	}
+      fprintf(pipe, "e\n"); 
+    }
 
   return eslOK;
 }
