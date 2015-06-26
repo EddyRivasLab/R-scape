@@ -701,7 +701,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
       printf("score distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax,ranklist->h->xmin);
+      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
       esl_histogram_Write(stdout, ranklist->h);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
@@ -759,7 +759,12 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     
     if (cumranklist == NULL) {
       cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-      cumranklist->scthresh = ranklist->scthresh;
+       cumranklist->h->xmin  = ranklist->h->xmin;
+       cumranklist->h->xmax  = ranklist->h->xmax;
+       cumranklist->h->imin  = ranklist->h->imin;
+       cumranklist->h->imax  = ranklist->h->imax;
+       cumranklist->scthresh = ranklist->scthresh;
+       cumranklist->scthresh = ranklist->scthresh;
     }
      else {                    
        status = cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
@@ -773,6 +778,8 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
 	cumranklist->h->obs[cumx] += ranklist->h->obs[x];
+	cumranklist->h->Nc        += ranklist->h->obs[x];
+	cumranklist->h->No        += ranklist->h->obs[x];
       }
     }
     
@@ -828,6 +835,11 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     
     if (cumranklist == NULL) {
        cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
+       cumranklist->h->xmin  = ranklist->h->xmin;
+       cumranklist->h->xmax  = ranklist->h->xmax;
+       cumranklist->h->imin  = ranklist->h->imin;
+       cumranklist->h->imax  = ranklist->h->imax;
+       cumranklist->scthresh = ranklist->scthresh;
        cumranklist->scthresh = ranklist->scthresh;
      }
      else {                    
@@ -842,6 +854,8 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
 	cumranklist->h->obs[cumx] += ranklist->h->obs[x];
+	cumranklist->h->Nc        += ranklist->h->obs[x];
+	cumranklist->h->No        += ranklist->h->obs[x];
        }
     }
     
@@ -920,7 +934,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covNBP[x] /= (double)cfg->nshuffle;
    }
    if (cfg->verbose) {
-     printf("null distribution - cummulative");
+     printf("null2 distribution - cummulative");
      printf("imin %d imax %d xmax %f xmin %f\n", cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax,cumranklist->h->xmin);
      esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }
@@ -969,7 +983,12 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     
     if (cumranklist == NULL) {
       cumranklist = cov_CreateRankList(ranklist->bmax, ranklist->bmin, ranklist->w);
-      cumranklist->scthresh = ranklist->scthresh;
+       cumranklist->h->xmin  = ranklist->h->xmin;
+       cumranklist->h->xmax  = ranklist->h->xmax;
+       cumranklist->h->imin  = ranklist->h->imin;
+       cumranklist->h->imax  = ranklist->h->imax;
+       cumranklist->scthresh = ranklist->scthresh;
+       cumranklist->scthresh = ranklist->scthresh;
     }
      else {                    
        cov_GrowRankList(&cumranklist, ranklist->bmax, ranklist->bmin);
@@ -983,6 +1002,8 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
 	cumranklist->h->obs[cumx] += ranklist->h->obs[x];
+	   cumranklist->h->Nc        += ranklist->h->obs[x];
+	   cumranklist->h->No        += ranklist->h->obs[x];
        }
     }
     
