@@ -1461,8 +1461,8 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     }
   
   for (x = ranklist->nb-1; x >= 0; x --) {
-    cov = cov_ranklist_Bin2Mid(ranklist,x);
-     
+    cov = cov_ranklist_Bin2LBound(ranklist,x);
+
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
@@ -1584,7 +1584,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   new->h->No   = ranklist->h->No;
 
   for (x = 0; x < ranklist->nb; x ++) {
-    cov_ranklist_Score2Bin(new, cov_ranklist_Bin2Mid(ranklist,x), &newx);
+    cov_ranklist_Bin2Bin(x, ranklist, new, &newx);
     if (newx >= 0 && newx < new->nb) {
       new->covBP[newx]   = ranklist->covBP[x];
       new->covNBP[newx]  = ranklist->covNBP[x];
@@ -2007,9 +2007,9 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist->h->xmin,ranklist_null->h->xmin), ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
+    fprintf(pipe, "set xrange [%f:%f]\n", 0.0, ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
   else 
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->xmin, ranklist->h->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", 0.0, ranklist->h->xmax);
   fprintf(pipe, "set ylabel 'logP(x > score)'\n");
   fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->h->No), log(0.01));
     status = cov_histogram_plotsurvival  (pipe, ranklist->h,      TRUE, 4, 2);
@@ -2054,7 +2054,7 @@ cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   covBP_prv  = 0.0;
   covNBP_prv = 0.0;
   for (x = ranklist->nb-1; x >= 0; x--) {
-    cov = cov_ranklist_Bin2Mid(ranklist,x);
+    cov = cov_ranklist_Bin2LBound(ranklist,x);
     covBP  = ranklist->covBP[x];
     covNBP = ranklist->covNBP[x];
     
@@ -2585,10 +2585,38 @@ cov_ranklist_Score2Bin(RANKLIST *ranklist, double x, int *ret_b)
   return eslOK;
 
  ERROR:
-  *ret_b = 0;
+  *ret_b = -1;
   return status;
 }
 
+int
+cov_ranklist_Bin2Bin(int b, RANKLIST *ranklist, RANKLIST *newranklist, int *ret_newb)
+{
+  double x;
+  int    newb;
+  int    status;
+  
+  x = cov_ranklist_Bin2UBound(ranklist, b);
+  if (! isfinite(x)) ESL_XEXCEPTION(eslERANGE, "value added to histogram is not finite");
+
+  x = ceil( ((x - newranklist->bmin) / newranklist->w) - 1.); 
+
+  /* x is now the bin number as a double, which we will convert to
+   * int. Because x is a double (64-bit), we know all ints are exactly
+   * represented.  Check for under/overflow before conversion.
+   */
+  if (x < (double) INT_MIN || x > (double) INT_MAX) 
+    ESL_XEXCEPTION(eslERANGE, "value %f isn't going to fit in histogram", x);
+  
+  *ret_newb = (int) x;
+
+  printf("x %d newx %d\n", b, *ret_newb);
+  return eslOK;
+
+ ERROR:
+  *ret_newb = -1;
+  return status;
+}
 
 
 /*---------------- internal functions --------------------- */

@@ -773,7 +773,8 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      }
     
     for (x = 0; x < ranklist->nb; x ++) {
-      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+      cov_ranklist_Bin2Bin(x, ranklist, cumranklist, &cumx);
+
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
@@ -848,7 +849,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      }
   
     for (x = 0; x < ranklist->nb; x ++) {
-      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+      cov_ranklist_Bin2Bin(x, ranklist, cumranklist, &cumx);
 
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
@@ -913,7 +914,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
        cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
      }
     for (x = 0; x < ranklist->nb; x ++) {
-       cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
+       cov_ranklist_Bin2Bin(x, ranklist, cumranklist, &cumx);
 
        if (cumx >= 0 && cumx < cumranklist->nb) {
 	 cumranklist->covBP[cumx]  += ranklist->covBP[x];
@@ -996,14 +997,14 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      }
     
     for (x = 0; x < ranklist->nb; x ++) {
-      cov_ranklist_Score2Bin(cumranklist, cov_ranklist_Bin2Mid(ranklist,x), &cumx);
-      
+      cov_ranklist_Bin2Bin(x, ranklist, cumranklist, &cumx);
+ 
       if (cumx >= 0 && cumx < cumranklist->nb) {
 	cumranklist->covBP[cumx]  += ranklist->covBP[x];
 	cumranklist->covNBP[cumx] += ranklist->covNBP[x];
 	cumranklist->h->obs[cumx] += ranklist->h->obs[x];
-	   cumranklist->h->Nc        += ranklist->h->obs[x];
-	   cumranklist->h->No        += ranklist->h->obs[x];
+	cumranklist->h->Nc        += ranklist->h->obs[x];
+	cumranklist->h->No        += ranklist->h->obs[x];
        }
     }
     
