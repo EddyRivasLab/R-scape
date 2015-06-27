@@ -104,17 +104,10 @@ typedef enum {
 
 
 typedef struct ranklist_s {
-  int            nb;            /* number of bins                                  */
-  double         w;	    	/* fixed width of each bin                         */
-  double         bmin, bmax;	/* sc bounds: all sc satisfy bmin < sc <= bmax     */
-  double         scmin, scmax;  /* smallest, largest sample value sc observed      */
- 
-  double         scthresh;
-
+  ESL_HISTOGRAM *h;             /* histogram of scores */
   double        *covBP;
   double        *covNBP;
-  ESL_HISTOGRAM *h;             /* histogram of scores */
-
+  double         scthresh;
 } RANKLIST;
 
 typedef struct hit_s {
@@ -163,9 +156,6 @@ typedef enum {
   CYKSS = 1,
   RANSS = 2,
 } MODE;
-
-#define cov_ranklist_Bin2LBound(rk,b)  ((rk)->w*(b) + (rk)->bmin)
-#define cov_ranklist_Bin2UBound(rk,b)  ((rk)->w*((b)+1) + (rk)->bmin)
 
 extern int              cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				      RANKLIST *ranklist_null, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
@@ -236,6 +226,5 @@ extern int              cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose,
 extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
-extern int              cov_ranklist_Score2Bin(RANKLIST *ranklist, double x, int *ret_b);
 extern int              cov_ranklist_Bin2Bin(int b, RANKLIST *ranklist, RANKLIST *newranklist, int *ret_newb);
 #endif
