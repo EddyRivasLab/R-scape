@@ -44,7 +44,7 @@ static int cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int logscale
 int                 
 cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 	      RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist,
-	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, 
+	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, double bmin, double w,
 	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
 	      THRESH *thresh, MODE mode, int nbpairs, double tol, int verbose, char *errbuf)
 {
@@ -57,154 +57,154 @@ cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
   if (status != eslOK) goto ERROR;
   switch(covtype) {
    case CHIa: 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case CHIp:
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case CHI: 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;     
      break;
    case GTa: 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
       break;
    case GTp: 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC,  TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case GT: 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,       TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,       TRUE, &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIa: 
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIp: 
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MI: 
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIra: 
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(         mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC,  TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(         mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC,  TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIrp:
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIr: 
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE, &ranklist, &hitlist,  ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE, &ranklist, &hitlist,  ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case MIga: 
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case MIgp:
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIg: 
-     status = cov_CalculateMIg          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,     TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIg          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,     TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    case OMESa: 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMESp: 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMES: 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
       break;
    case COVALL: 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      break;
    default:
@@ -356,7 +356,7 @@ cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -386,7 +386,7 @@ cov_CalculateCHI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
   }
 
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -481,7 +481,7 @@ cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		     int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -511,7 +511,7 @@ cov_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, 
   }
   
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   return status;
@@ -604,7 +604,7 @@ cov_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -636,7 +636,7 @@ cov_CalculateGT(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
   }
   
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -732,7 +732,7 @@ cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		   int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -762,7 +762,7 @@ cov_CalculateMI(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FI
   }
   
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -845,7 +845,7 @@ cov_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -875,7 +875,7 @@ cov_CalculateMIr(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
   }
   
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -962,7 +962,7 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 		    int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   int i,j;
@@ -992,7 +992,7 @@ cov_CalculateMIg(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, F
   }
   
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   return status;
@@ -1080,7 +1080,7 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 			     CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf)
 {
   char        *covtype = NULL;
@@ -1146,7 +1146,7 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp
   }
 
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
+    status = cov_SignificantPairs_Ranking(ranklist_null, ret_ranklist, ret_hitlist, mi, msamap, ct, bmin, w, outfp, rocfp, sumfp, thresh, mode, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   if (covtype) free(covtype);
@@ -1416,6 +1416,7 @@ cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct 
 
 int
 cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, int *ct, 
+			     double bmin, double w,
 			     FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, int verbose, char *errbuf)
 {
   ESL_DMATRIX *mtx = mi->COV;
@@ -1430,7 +1431,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       cvRBP, cvRBPu, cvRBPf;
   double       cov;
   double       val;
-  double       bmax, bmin;
+  double       bmax;
   int          fp, tf, t, f, neg;
   int          i, j;
   int          x, nullx;
@@ -1446,8 +1447,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   }
 
   bmax = mi->maxCOV+W;
-  bmin = mi->minCOV-W;
-  ranklist = cov_CreateRankList(bmax, bmin, W);
+  ranklist = cov_CreateRankList(bmax, bmin, w);
   ranklist->h->xmax = mi->maxCOV;
   ranklist->h->xmin = mi->minCOV;
 
@@ -1874,7 +1874,7 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
   
   /* redo the hitlist since the ct has now changed */
-  status = cov_SignificantPairs_Ranking(NULL, NULL, &hitlist, mi, msamap, cykct, outfp, NULL, NULL, thresh, CYKSS, nbpairs, verbose, errbuf);
+  status = cov_SignificantPairs_Ranking(NULL, NULL, &hitlist, mi, msamap, cykct, 0.0, 0.0, outfp, NULL, NULL, thresh, CYKSS, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */

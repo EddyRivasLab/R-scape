@@ -159,35 +159,35 @@ typedef enum {
 
 extern int              cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				      RANKLIST *ranklist_null, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, COVTYPE covtype, COVCLASS covclass, 
-				      int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *R2Rfile, char *r2rversion, int r2rall, 
-				      THRESH *thresh, MODE mode, int nbpairs, double tol, int verbose, char *errbuf);
+				      int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, 
+				      char *R2Rfile, char *r2rversion, int r2rall, THRESH *thresh, MODE mode, int nbpairs, double tol, int verbose, char *errbuf);
 extern int              cov_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              cov_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateCHI_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateCHI_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateOMES_C2 (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateGT_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateGT_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateMI_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMI_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateMIr_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIr_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						 int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateMIg_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIg_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
+extern int              cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
 						  CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, double tol, int verbose, char *errbuf);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
@@ -199,7 +199,7 @@ extern int              cov_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double to
 extern int              cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);
 extern int              cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, struct mutual_s *mi, int *msamap, 
-						     int *ct, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode,
+						     int *ct, double bmin, double w, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode,
 						     int nbpairs, int verbose, char *errbuf);
 extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);

@@ -38,9 +38,9 @@
 struct cfg_s { /* Shared configuration in masters & workers */
   int              argc;
   char           **argv;
-  ESL_STOPWATCH   *w;
+  ESL_STOPWATCH   *watch;
   char             errbuf[eslERRBUFSIZE];
-  ESL_RANDOMNESS  *r;	               /* random numbers for stochastic sampling (grm-emit) */
+  ESL_RANDOMNESS  *r;	               /* random numbers */
   ESL_ALPHABET    *abc;                /* the alphabet */
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
@@ -118,6 +118,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *sumfp; 
   char            *shsumfile;
   FILE            *shsumfp; 
+
+  double           bmin;    /* score histograms */
+  double           w;
 
   THRESH          *thresh;
   MODE             mode;
@@ -267,7 +270,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_alphabet_SetEquiv(cfg.abc, '=', '-');     /* allow = as a gap character too */
   esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
 
-  cfg.w = esl_stopwatch_Create(); 
+  cfg.watch = esl_stopwatch_Create(); 
   
   esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
 
@@ -354,6 +357,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
+  cfg.bmin = -300.0; /* a guess for lowest cov score */
+  cfg.w    = W;      /* histogram step */
+
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
@@ -597,7 +603,7 @@ main(int argc, char **argv)
   if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
 
   /* cleanup */
-  esl_stopwatch_Destroy(cfg.w);
+  esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
@@ -659,7 +665,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   int              nnodes;
   int              status;
 
-  esl_stopwatch_Start(cfg->w);
+  esl_stopwatch_Start(cfg->watch);
   
   /* print to stdout */
   if (cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
@@ -692,7 +698,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* main function */
   status = cov_Calculate(&msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, &ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
-			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
+			 cfg->bmin, cfg->w, (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->mode, cfg->onbpairs, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
