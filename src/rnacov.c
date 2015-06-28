@@ -121,6 +121,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   double           bmin;    /* score histograms */
   double           w;
+  double           pmass;
 
   THRESH          *thresh;
   MODE             mode;
@@ -201,6 +202,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cykcov", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
+  { "--pmass",        eslARG_REAL,    "0.10",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -357,8 +359,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
-  cfg.bmin = -300.0; /* a guess for lowest cov score */
-  cfg.w    = W;      /* histogram step */
+  cfg.bmin  = -300.0; /* a guess for lowest cov score */
+  cfg.w     = W;      /* histogram step */
+  cfg.pmass = esl_opt_GetReal   (go, "--pmass");
 
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
@@ -710,7 +713,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
       //esl_histogram_Plot(stdout, ranklist->h);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
   status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
@@ -935,8 +938,8 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     
    if (cfg->verbose) {
      printf("null2 distribution \n");
-     printf("imin %d imax %d bmin %f bmax %f xmax %f xmin %f\n", 
-	    ranklist->h->imin, ranklist->h->imax, ranklist->h->bmin, ranklist->h->bmax, ranklist->h->xmax, ranklist->h->xmin);
+     printf("imin %d imax %d xmax %f xmin %f\n", 
+	    ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
      //esl_histogram_Plot(stdout, ranklist->h);
      //esl_histogram_PlotSurvival(stdout, ranklist->h);
    }
@@ -950,8 +953,8 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
    }
    if (1||cfg->verbose) {
      printf("null2 distribution - cummulative\n");
-     printf("imin %d imax %d bmin %f bmax %f xmax %f xmin %f\n", 
-	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->bmin, cumranklist->h->bmax, cumranklist->h->xmax, cumranklist->h->xmin);
+     printf("imin %d imax %d xmax %f xmin %f\n", 
+	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax, cumranklist->h->xmin);
      //esl_histogram_Plot(stdout, cumranklist->h);
      //esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }

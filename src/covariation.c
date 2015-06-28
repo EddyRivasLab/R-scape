@@ -1600,7 +1600,7 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 {
   int b;
 
-  printf("imin %f imax %f covmin %f covmax %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmin, ranklist->h->xmax);
+  printf("imin %d imax %d covmin %f covmax %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmin, ranklist->h->xmax);
   for (b = ranklist->h->imax; b >= ranklist->h->imin; b --) 
     printf("cov %f covBP %f covNBP %f\n",  esl_histogram_Bin2LBound(ranklist->h,b), ranklist->covBP[b], ranklist->covNBP[b]); 
   
@@ -1919,7 +1919,7 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 }
 
 int 
-cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
+cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, char *errbuf)
 {
   FILE    *fp = NULL;
   int      status;
@@ -1933,7 +1933,7 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, dosvg, errbuf);
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, pmass, dosvg, errbuf);
   if (status != eslOK) goto ERROR;
   return eslOK;
 
@@ -1943,19 +1943,23 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
 }
 
 int 
-cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
+cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
+  double   newmass;
   int      status;
 
   if (!gnuplot) return eslOK;
 
   esl_FileTail(covhisfile, FALSE, &filename);
 
-  pipe = popen(gnuplot, "w");
+  /* set the tail by mass */
+  esl_histogram_SetTailByMass(ranklist->h, pmass, &newmass);
 
+  /* do the plotting */
+  pipe = popen(gnuplot, "w");
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", covhisfile);
     fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
@@ -2001,11 +2005,11 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", 0.0, ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->phi, ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
   else 
-    fprintf(pipe, "set xrange [%f:%f]\n", 0.0, ranklist->h->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->phi, ranklist->h->xmax);
   fprintf(pipe, "set ylabel 'logP(x > score)'\n");
-  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->h->No), log(0.01));
+  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->h->Nc), log(newmass));
     status = cov_histogram_plotsurvival  (pipe, ranklist->h,      TRUE, 4, 2);
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
