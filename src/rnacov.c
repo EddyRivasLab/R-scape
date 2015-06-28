@@ -705,10 +705,10 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
   if (cfg->mode == GIVSS) {
-    if (cfg->verbose) {
+    if (1||cfg->verbose) {
       printf("score distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
-      esl_histogram_Write(stdout, ranklist->h);
+      //esl_histogram_Plot(stdout, ranklist->h);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, FALSE, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
@@ -933,7 +933,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
        }
      }
     
-   if (1||cfg->verbose) {
+   if (cfg->verbose) {
      printf("null2 distribution \n");
      printf("imin %d imax %d bmin %f bmax %f xmax %f xmin %f\n", 
 	    ranklist->h->imin, ranklist->h->imax, ranklist->h->bmin, ranklist->h->bmax, ranklist->h->xmax, ranklist->h->xmin);
@@ -952,7 +952,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      printf("null2 distribution - cummulative\n");
      printf("imin %d imax %d bmin %f bmax %f xmax %f xmin %f\n", 
 	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->bmin, cumranklist->h->bmax, cumranklist->h->xmax, cumranklist->h->xmin);
-     esl_histogram_Plot(stdout, cumranklist->h);
+     //esl_histogram_Plot(stdout, cumranklist->h);
      //esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }
    

@@ -1448,9 +1448,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
 
   bmax = mi->maxCOV+W;
   ranklist = cov_CreateRankList(bmax, bmin, w);
-  ranklist->h->xmax = mi->maxCOV;
-  ranklist->h->xmin = mi->minCOV;
-
+ 
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
       /* add to the histogram if not a real basepair */
@@ -1570,6 +1568,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   if (bmin < ranklist->h->bmin) new_bmin -= bmin * 2 * ranklist->h->w;
   new = cov_CreateRankList(ESL_MAX(bmax, ranklist->h->bmax), new_bmin, ranklist->h->w);
   if (new == NULL) goto ERROR;
+
   new->h->xmin = ranklist->h->xmin;
   new->h->xmax = ranklist->h->xmax;
   new->h->imin = ranklist->h->imin;
@@ -1985,7 +1984,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist->h->xmin,ranklist_null->h->xmin), ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->xmin,ranklist->h->xmax);
   else 
     fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->xmin, ranklist->h->xmax);
   fprintf(pipe, "set ylabel 'P(x > score)'\n");
@@ -2000,6 +1999,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   // log survival plot for ranklist and ranklist_null
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
+
   if (ranklist_null)
     fprintf(pipe, "set xrange [%f:%f]\n", 0.0, ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
   else 
