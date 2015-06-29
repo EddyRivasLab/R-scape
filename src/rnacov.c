@@ -716,7 +716,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
   status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
@@ -765,7 +765,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
     status = run_rnacov(go, cfg, &shmsa, NULL, &ranklist);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run rnacov shuffled");
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run null1_rnacov");
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
      if (status != eslOK) goto ERROR;

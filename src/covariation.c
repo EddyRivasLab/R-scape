@@ -14,6 +14,7 @@
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
+#include "esl_exponential.h"
 #include "esl_histogram.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
@@ -1451,6 +1452,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
  
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
+
       /* add to the ha histogram  */
       esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
 
@@ -1936,9 +1938,12 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 }
 
 int 
-cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, char *errbuf)
+cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, int verbose, char *errbuf)
 {
   FILE    *fp = NULL;
+  double   newmass;
+  double   mu;
+  double   lambda;
   int      status;
 
   if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", covhisfile);
@@ -1950,7 +1955,11 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, pmass, dosvg, errbuf);
+  /* censor the histogram and do a exponential fit to the tail */
+  status = cov_ExpFitHistogram(ranklist->ht, pmass, &newmass, &mu, &lambda, verbose, errbuf);
+  printf("newmass %f phi %f mu %f lambda %f loglambda %f\n", newmass, ranklist->ht->phi, mu, lambda, log(lambda));
+
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, newmass, mu, lambda, dosvg, errbuf);
   if (status != eslOK) goto ERROR;
   return eslOK;
 
@@ -1960,20 +1969,45 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
 }
 
 int 
-cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, char *errbuf)
+cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf)
+{
+  double ep[2];  	/* estimated mu, lambda  */
+  double newmass;
+  int    status;
+
+  /* set the tail by mass */
+  status = esl_histogram_SetTailByMass(h, pmass, &newmass);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set TailByMass");
+
+  /* exponential fit to tail */
+  status = esl_exp_FitCompleteBinned(h, &ep[0], &ep[1]);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do exponential fit");
+
+  /* add the expected data to the histogram */
+  status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_exp_generic_cdf, ep);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set expeted tail");
+
+  *ret_mu      = ep[0];
+  *ret_lambda  = ep[1];
+  *ret_newmass = newmass;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+
+int 
+cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double newmass, double mu, double lambda, int dosvg, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
-  double   newmass;
   int      status;
 
   if (!gnuplot) return eslOK;
 
   esl_FileTail(covhisfile, FALSE, &filename);
-
-  /* set the tail by mass */
-  esl_histogram_SetTailByMass(ranklist->ht, pmass, &newmass);
 
   /* do the plotting */
   pipe = popen(gnuplot, "w");
@@ -2001,24 +2035,6 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps 0.5\n");
   fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps 0.5\n");
 
-  // survival plot for ranklist and ranklist_null
-  fprintf(pipe, "set multiplot\n");
-  fprintf(pipe, "set xlabel 'covariation score'\n");
-  if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist_null->ha->xmin, ranklist->ha->xmin), 
-	    ESL_MAX(ranklist_null->ha->xmax, ranklist->ha->xmax));
-  else 
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ha->xmin,ranklist->ha->xmax);
-  fprintf(pipe, "set ylabel 'P(x > score)'\n");
-  fprintf(pipe, "set yrange [0:1.0]\n");
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ha,      FALSE, 9, 2);
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ht,      FALSE, 4, 2);
-  if (status != eslOK) goto ERROR;
-  if (ranklist_null) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, FALSE, 1, 7);
-    if (status != eslOK) goto ERROR;
-  }
-
   // log survival plot for ranklist and ranklist_null
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
@@ -2034,6 +2050,24 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
     status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, TRUE, 1, 7);
+    if (status != eslOK) goto ERROR;
+  }
+
+  // survival plot for ranklist and ranklist_null
+  fprintf(pipe, "set multiplot\n");
+  fprintf(pipe, "set xlabel 'covariation score'\n");
+  if (ranklist_null)
+    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist_null->ha->xmin, ranklist->ha->xmin), 
+	    ESL_MAX(ranklist_null->ha->xmax, ranklist->ha->xmax));
+  else 
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ha->xmin,ranklist->ha->xmax);
+  fprintf(pipe, "set ylabel 'P(x > score)'\n");
+  fprintf(pipe, "set yrange [0:1.0]\n");
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ha,      FALSE, 9, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ht,      FALSE, 4, 2);
+  if (status != eslOK) goto ERROR;
+  if (ranklist_null) {
+    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, FALSE, 1, 7);
     if (status != eslOK) goto ERROR;
   }
 
