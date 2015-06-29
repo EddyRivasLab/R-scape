@@ -2003,12 +2003,18 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
+  double   minphi;
+  double   minmass = 0.10;
   int      status;
 
   if (!gnuplot) return eslOK;
 
   esl_FileTail(covhisfile, FALSE, &filename);
 
+  /* for plotting */
+  esl_histogram_SetTailByMass(ranklist->ha, minmass, NULL);
+  minphi = ranklist->ha->phi; 
+ 
   /* do the plotting */
   pipe = popen(gnuplot, "w");
   if (dosvg) {
@@ -2040,11 +2046,11 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ht->phi, ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax));
+    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(minphi,ranklist->ht->phi), ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax));
   else 
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ht->phi, ranklist->ha->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(minphi,ranklist->ht->phi), ranklist->ha->xmax);
   fprintf(pipe, "set ylabel 'logP(x > score)'\n");
-  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->ht->Nc), log(newmass));
+  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->ht->Nc), log(ESL_MAX(minmass,newmass)));
   status = cov_histogram_plotsurvival  (pipe, ranklist->ha,      TRUE, 9, 2);
   status = cov_histogram_plotsurvival  (pipe, ranklist->ht,      TRUE, 4, 2);
   if (status != eslOK) goto ERROR;
@@ -2982,7 +2988,7 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, int logscale, int style
     {
       fprintf(pipe, "set size 1,1\n");
       fprintf(pipe, "set origin 0,0\n");
-      fprintf(pipe, "plot '-' using 1:2 with points ls %d\n", style2);
+      fprintf(pipe, "plot '-' using 1:2 with lines ls %d\n", style2);
       
       esum = 0.;
       for (i = h->nb-1; i >= 0; i--)
