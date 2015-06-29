@@ -104,7 +104,8 @@ typedef enum {
 
 
 typedef struct ranklist_s {
-  ESL_HISTOGRAM *h;             /* histogram of scores */
+  ESL_HISTOGRAM *ha;             /* histogram of scores (all pairs) */
+  ESL_HISTOGRAM *ht;             /* histogram of scores (truncated pairs == no ss pairs) */
   double        *covBP;
   double        *covNBP;
   double         scthresh;
@@ -226,5 +227,5 @@ extern int              cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose,
 extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
-extern int              cov_ranklist_Bin2Bin(int b, RANKLIST *ranklist, RANKLIST *newranklist, int *ret_newb);
+extern int              cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb);
 #endif

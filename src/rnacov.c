@@ -710,9 +710,11 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     
   if (cfg->mode == GIVSS) {
     if (1||cfg->verbose) {
-      printf("score distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
-      //esl_histogram_Plot(stdout, ranklist->h);
+      printf("score total distribution\n");
+      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
+      printf("score truncated distribution\n");
+      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
+      //esl_histogram_Plot(stdout, ranklist->ht);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
@@ -772,7 +774,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (b = cumranklist->h->imin; b <= cumranklist->h->imax; b ++) {
+  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
@@ -780,7 +782,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
    if (1||cfg->verbose) {
      printf("null1 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax, cumranklist->h->xmin);
+	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
      //esl_histogram_Plot(stdout, cumranklist->h);
      //esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }
@@ -832,7 +834,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (b = cumranklist->h->imin; b <= cumranklist->h->imax; b ++) {
+  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
@@ -840,7 +842,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   if (1||cfg->verbose) {
     printf("null1b distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
-	   cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax, cumranklist->h->xmin);
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
     //esl_histogram_Plot(stdout, cumranklist->h);
     //esl_histogram_PlotSurvival(stdout, cumranklist->h);
   }
@@ -883,14 +885,14 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
    
-   for (b = cumranklist->h->imin; b <= cumranklist->h->imax; b ++) {
+   for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
      cumranklist->covBP[b]  /= (double)cfg->nshuffle;
      cumranklist->covNBP[b] /= (double)cfg->nshuffle;
    }
    if (1||cfg->verbose) {
      printf("null2 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax, cumranklist->h->xmin);
+	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
      //esl_histogram_Plot(stdout, cumranklist->h);
      //esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }
@@ -942,7 +944,7 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (b = cumranklist->h->imin; b <= cumranklist->h->imax; b ++) {
+  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
@@ -950,7 +952,7 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
    if (1||cfg->verbose) {
      printf("null3 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->h->imin, cumranklist->h->imax, cumranklist->h->xmax, cumranklist->h->xmin);
+	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
      //esl_histogram_Plot(stdout, cumranklist->h);
      //esl_histogram_PlotSurvival(stdout, cumranklist->h);
    }
@@ -989,27 +991,27 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   int       cumb;
   
   if (cumranklist == NULL) {
-    cumranklist = cov_CreateRankList(ranklist->h->bmax, ranklist->h->bmin, ranklist->h->w);
-    cumranklist->h->xmin  = ranklist->h->xmin;
-    cumranklist->h->xmax  = ranklist->h->xmax;
-       cumranklist->h->imin  = ranklist->h->imin;
-       cumranklist->h->imax  = ranklist->h->imax;
+    cumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
+    cumranklist->ha->xmin  = ranklist->ha->xmin;
+    cumranklist->ha->xmax  = ranklist->ha->xmax;
+       cumranklist->ha->imin  = ranklist->ha->imin;
+       cumranklist->ha->imax  = ranklist->ha->imax;
        cumranklist->scthresh = ranklist->scthresh;
   }
   else {                    
-    cov_GrowRankList(&cumranklist, ranklist->h->bmax, ranklist->h->bmin);
+    cov_GrowRankList(&cumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
     cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
   }
-  for (b = ranklist->h->imin; b <= ranklist->h->imax; b ++) {
-    cov_ranklist_Bin2Bin(b, ranklist, cumranklist, &cumb);
+  for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
+    cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
     
-    if (cumb >= cumranklist->h->imin && cumb <= cumranklist->h->imax) {
+    if (cumb >= cumranklist->ha->imin && cumb <= cumranklist->ha->imax) {
       cumranklist->covBP[cumb]  += ranklist->covBP[b];
       cumranklist->covNBP[cumb] += ranklist->covNBP[b];
-      if (b >= ranklist->h->imin && b <= ranklist->h->imax) {
-	cumranklist->h->obs[cumb] += ranklist->h->obs[b];
-	cumranklist->h->Nc        += ranklist->h->obs[b];
-	cumranklist->h->No        += ranklist->h->obs[b];
+      if (b >= ranklist->ha->imin && b <= ranklist->ha->imax) {
+	cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
+	cumranklist->ha->Nc        += ranklist->ha->obs[b];
+	cumranklist->ha->No        += ranklist->ha->obs[b];
       }
     }
   }
@@ -1017,7 +1019,7 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   if (verbose) {
     printf("null distribution \n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
-	   ranklist->h->imin, ranklist->h->imax, ranklist->h->xmax, ranklist->h->xmin);
+	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
     //esl_histogram_Plot(stdout, ranklist->h);
     //esl_histogram_PlotSurvival(stdout, ranklist->h);
   }

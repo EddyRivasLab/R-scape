@@ -1451,15 +1451,17 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
  
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
-      /* add to the histogram if not a real basepair */
-      if (mode == GIVSS && ct[i+1] != j+1) 
-	esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
-      else if (mode == RANSS) 
-	esl_histogram_Add(ranklist->h, mtx->mx[i][j]);
+      /* add to the ha histogram  */
+      esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
+
+      /* add to the ht histogram if not a real basepair */
+      if (ct[i+1] != j+1) 
+  	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
     }
   
-  for (x = ranklist->h->imax; x >= ranklist->h->imin; x --) {
-    cov = esl_histogram_Bin2LBound(ranklist->h, x);
+  /* use the ha histogram in what follows */
+  for (x = ranklist->ha->imax; x >= ranklist->ha->imin; x --) {
+    cov = esl_histogram_Bin2LBound(ranklist->ha, x);
 
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1486,10 +1488,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     
     if (mode == GIVSS) {
       if (ranklist_null) {
-	if      (cov > ranklist_null->h->bmax) cvRBP = ranklist_null->covBP[ranklist_null->h->nb-1];
-	else if (cov < ranklist_null->h->bmin) cvRBP = ranklist_null->covBP[0];
+	if      (cov > ranklist_null->ha->bmax) cvRBP = ranklist_null->covBP[ranklist_null->ha->nb-1];
+	else if (cov < ranklist_null->ha->bmin) cvRBP = ranklist_null->covBP[0];
 	else {
-	  esl_histogram_Score2Bin(ranklist_null->h, cov, &nullx);
+	  esl_histogram_Score2Bin(ranklist_null->ha, cov, &nullx);
 	  cvRBP = ranklist_null->covBP[nullx];
 	}
       }
@@ -1504,10 +1506,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
       }
-      if (val <= thresh->val) { ranklist->scthresh = cov + ranklist->h->w; thresh->sc = ranklist->scthresh; }
+      if (val <= thresh->val) { ranklist->scthresh = cov + ranklist->ha->w; thresh->sc = ranklist->scthresh; }
     }
     if (mode == CYKSS) {
-      if (cov < thresh->sc) { ranklist->scthresh = cov + ranklist->h->w; break; }
+      if (cov < thresh->sc) { ranklist->scthresh = cov + ranklist->ha->w; break; }
     }
   }
   
@@ -1539,15 +1541,16 @@ cov_CreateRankList(double bmax, double bmin, double w)
   
   ESL_ALLOC(ranklist, sizeof(RANKLIST));
 
-  ranklist->h = esl_histogram_Create(bmin, bmax, w);
+  ranklist->ha = esl_histogram_Create(bmin, bmax, w);
+  ranklist->ht = esl_histogram_Create(bmin, bmax, w);
  
-  ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->h->nb);
-  ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->h->nb);
+  ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->ha->nb);
+  ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->ha->nb);
  
-  esl_vec_DSet(ranklist->covBP,  ranklist->h->nb, 0.);
-  esl_vec_DSet(ranklist->covNBP, ranklist->h->nb, 0.);
+  esl_vec_DSet(ranklist->covBP,  ranklist->ha->nb, 0.);
+  esl_vec_DSet(ranklist->covNBP, ranklist->ha->nb, 0.);
 
-  ranklist->scthresh = ranklist->h->xmax;
+  ranklist->scthresh = ranklist->ha->xmax;
   return ranklist;
 
  ERROR:
@@ -1564,27 +1567,40 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   int       status;
 
   /* bmin has to be a w-multiple of ranklist->bin */
-  new_bmin = ranklist->h->bmin;
-  if (bmin < ranklist->h->bmin) new_bmin -= bmin * 2 * ranklist->h->w;
-  new = cov_CreateRankList(ESL_MAX(bmax, ranklist->h->bmax), new_bmin, ranklist->h->w);
+  new_bmin = ranklist->ha->bmin;
+  if (bmin < ranklist->ha->bmin) new_bmin -= bmin * 2 * ranklist->ha->w;
+  new = cov_CreateRankList(ESL_MAX(bmax, ranklist->ha->bmax), new_bmin, ranklist->ha->w);
   if (new == NULL) goto ERROR;
 
-  new->h->xmin = ranklist->h->xmin;
-  new->h->xmax = ranklist->h->xmax;
-  new->h->imin = ranklist->h->imin;
-  new->h->imax = ranklist->h->imax;
-  new->h->Nc   = ranklist->h->Nc;
-  new->h->No   = ranklist->h->No;
+  new->ha->xmin = ranklist->ha->xmin;
+  new->ha->xmax = ranklist->ha->xmax;
+  new->ha->imin = ranklist->ha->imin;
+  new->ha->imax = ranklist->ha->imax;
+  new->ha->Nc   = ranklist->ha->Nc;
+  new->ha->No   = ranklist->ha->No;
 
-  for (b = ranklist->h->imin; b <= ranklist->h->imax; b ++) {
-    cov_ranklist_Bin2Bin(b, ranklist, new, &newb);
-    if (newb >= new->h->imin && newb <= new->h->imax) {
-      new->covBP[newb]  = ranklist->covBP[b];
-      new->covNBP[newb] = ranklist->covNBP[b];
-      new->h->obs[newb] = ranklist->h->obs[b];
+  new->ht->xmin = ranklist->ht->xmin;
+  new->ht->xmax = ranklist->ht->xmax;
+  new->ht->imin = ranklist->ht->imin;
+  new->ht->imax = ranklist->ht->imax;
+  new->ht->Nc   = ranklist->ht->Nc;
+  new->ht->No   = ranklist->ht->No;
+
+  for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
+    cov_ranklist_Bin2Bin(b, ranklist->ha, new->ha, &newb);
+    if (newb >= new->ha->imin && newb <= new->ha->imax) {
+      new->covBP[newb]   = ranklist->covBP[b];
+      new->covNBP[newb]  = ranklist->covNBP[b];
+      new->ha->obs[newb] = ranklist->ha->obs[b];
     }
   }
     
+  for (b = ranklist->ht->imin; b <= ranklist->ht->imax; b ++) {
+    cov_ranklist_Bin2Bin(b, ranklist->ht, new->ht, &newb);
+    if (newb >= new->ht->imin && newb <= new->ht->imax) {
+    }
+  }
+
   cov_FreeRankList(*oranklist);
   *oranklist = new;
 
@@ -1600,9 +1616,9 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 {
   int b;
 
-  printf("imin %d imax %d covmin %f covmax %f\n", ranklist->h->imin, ranklist->h->imax, ranklist->h->xmin, ranklist->h->xmax);
-  for (b = ranklist->h->imax; b >= ranklist->h->imin; b --) 
-    printf("cov %f covBP %f covNBP %f\n",  esl_histogram_Bin2LBound(ranklist->h,b), ranklist->covBP[b], ranklist->covNBP[b]); 
+  printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
+  for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) 
+    printf("cov %f covBP %f covNBP %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->covBP[b], ranklist->covNBP[b]); 
   
   return eslOK;
 }
@@ -1654,8 +1670,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].is_bpair      = FALSE;
 	 hitlist->hit[h].is_compatible = FALSE;
 	 
-	 for (b = ranklist->h->imax; b >= ranklist->h->imin; b --) {
-	   if (mi->COV->mx[i][j] <= ranklist->h->bmin+(double)b*ranklist->h->w) {
+	 for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
+	   if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)b*ranklist->ha->w) {
 	     hitlist->hit[h].covNBP  = ranklist->covNBP[b];
 	     hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
 	     hitlist->hit[h].covNBPf = ranklist->covNBP[b]/(double)NBP;
@@ -1663,8 +1679,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	   else break;
 	 }
 	 if (ranklist_null) {
-	   for (b = ranklist_null->h->imax; b >= ranklist->h->imin; b --) {
-	     if (mi->COV->mx[i][j] <= ranklist_null->h->bmin+(double)b*ranklist_null->h->w) {
+	   for (b = ranklist_null->ha->imax; b >= ranklist->ha->imin; b --) {
+	     if (mi->COV->mx[i][j] <= ranklist_null->ha->bmin+(double)b*ranklist_null->ha->w) {
 	       hitlist->hit[h].covRBP  = ranklist_null->covBP[b];
 	       hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[b]/(double)mi->alen:0.;
 	       hitlist->hit[h].covRBPf = ranklist_null->covNBP[b]/(double)BP;
@@ -1698,7 +1714,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
  if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-		    covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->h->xmin, ranklist->h->xmax, fp, tf, t, f, sen, ppv, F);
+		    covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
  for (h = 0; h < nhit; h ++) {
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;
@@ -1731,7 +1747,8 @@ cov_FreeRankList(RANKLIST *ranklist)
 {
   if (ranklist == NULL) return;
 
-  if (ranklist->h)      esl_histogram_Destroy(ranklist->h);
+  if (ranklist->ha)     esl_histogram_Destroy(ranklist->ha);
+  if (ranklist->ht)     esl_histogram_Destroy(ranklist->ht);
   if (ranklist->covBP)  free(ranklist->covBP);
   if (ranklist->covNBP) free(ranklist->covNBP);
   free(ranklist);
@@ -1925,11 +1942,11 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
   int      status;
 
   if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", covhisfile);
-  esl_histogram_PlotSurvival(fp, ranklist->h);
+  esl_histogram_PlotSurvival(fp, ranklist->ht);
   fclose(fp);
   if (ranklist_null) {
     if ((fp = fopen(nullcovhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", nullcovhisfile);
-    esl_histogram_PlotSurvival(fp, ranklist_null->h);
+    esl_histogram_PlotSurvival(fp, ranklist_null->ha);
     fclose(fp);
   }
 
@@ -1956,7 +1973,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   esl_FileTail(covhisfile, FALSE, &filename);
 
   /* set the tail by mass */
-  esl_histogram_SetTailByMass(ranklist->h, pmass, &newmass);
+  esl_histogram_SetTailByMass(ranklist->ht, pmass, &newmass);
 
   /* do the plotting */
   pipe = popen(gnuplot, "w");
@@ -1988,15 +2005,17 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->xmin,ranklist->h->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", ESL_MIN(ranklist_null->ha->xmin, ranklist->ha->xmin), 
+	    ESL_MAX(ranklist_null->ha->xmax, ranklist->ha->xmax));
   else 
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->xmin, ranklist->h->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ha->xmin,ranklist->ha->xmax);
   fprintf(pipe, "set ylabel 'P(x > score)'\n");
   fprintf(pipe, "set yrange [0:1.0]\n");
-     status = cov_histogram_plotsurvival  (pipe, ranklist->h,      FALSE, 4, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ha,      FALSE, 9, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ht,      FALSE, 4, 2);
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_null->h, FALSE, 1, 7);
+    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, FALSE, 1, 7);
     if (status != eslOK) goto ERROR;
   }
 
@@ -2005,15 +2024,16 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
   if (ranklist_null)
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->phi, ESL_MAX(ranklist->h->xmax,ranklist_null->h->xmax));
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ht->phi, ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax));
   else 
-    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->h->phi, ranklist->h->xmax);
+    fprintf(pipe, "set xrange [%f:%f]\n", ranklist->ht->phi, ranklist->ha->xmax);
   fprintf(pipe, "set ylabel 'logP(x > score)'\n");
-  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->h->Nc), log(newmass));
-    status = cov_histogram_plotsurvival  (pipe, ranklist->h,      TRUE, 4, 2);
+  fprintf(pipe, "set yrange [%f:%f]\n", -log(ranklist->ht->Nc), log(newmass));
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ha,      TRUE, 9, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ht,      TRUE, 4, 2);
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_null->h, TRUE, 1, 7);
+    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, TRUE, 1, 7);
     if (status != eslOK) goto ERROR;
   }
 
@@ -2051,15 +2071,15 @@ cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ra
   covRBP_prv = -1.0;
   covBP_prv  = 0.0;
   covNBP_prv = 0.0;
-  for (b = ranklist->h->imax; b >= ranklist->h->imin; b--) {
-    cov = esl_histogram_Bin2LBound(ranklist->h,b);
+  for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b--) {
+    cov = esl_histogram_Bin2LBound(ranklist->ha,b);
     covBP  = ranklist->covBP[b];
     covNBP = ranklist->covNBP[b];
     
-    if      (cov > ranklist_null->h->bmax) covRBP = 0;
-    else if (cov < ranklist_null->h->bmin) covRBP = ranklist_null->covBP[0];
+    if      (cov > ranklist_null->ha->bmax) covRBP = 0;
+    else if (cov < ranklist_null->ha->bmin) covRBP = ranklist_null->covBP[0];
     else {
-      esl_histogram_Score2Bin(ranklist_null->h, cov, &nullb);
+      esl_histogram_Score2Bin(ranklist_null->ha, cov, &nullb);
       covRBP = ranklist_null->covBP[nullb];
     }
     
@@ -2564,15 +2584,15 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar
 }
 
 int
-cov_ranklist_Bin2Bin(int b, RANKLIST *ranklist, RANKLIST *newranklist, int *ret_newb)
+cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
 {
   double x;
   int    status;
   
-  x = esl_histogram_Bin2UBound(ranklist->h, b);
+  x = esl_histogram_Bin2UBound(h, b);
   if (! isfinite(x)) ESL_XEXCEPTION(eslERANGE, "value added to histogram is not finite");
 
-  x = round( ((x - newranklist->h->bmin) / newranklist->h->w) - 1.); 
+  x = round( ((x - new->bmin) / new->w) - 1.); 
 
   /* x is now the bin number as a double, which we will convert to
    * int. Because x is a double (64-bit), we know all ints are exactly
