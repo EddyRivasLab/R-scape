@@ -1465,6 +1465,8 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       if (ct[i+1] != j+1) 
   	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
     }
+  /* initialize to something impossible*/
+  ranklist->scthresh = ranklist->ha->xmin - ranklist->ha->w;
   
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
@@ -1519,9 +1521,13 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBP:  val = cvRBP;  break;
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
-      case Eval:    val = neg * esl_exp_surv(cov, mu, lambda); break;
+      case Eval:    val = esl_exp_surv(cov, mu, lambda); break;
       }
-      if (val <= thresh->val) { ranklist->scthresh = cov + ranklist->ha->w; thresh->sc = ranklist->scthresh; }
+      if (val <= thresh->val) { 
+	printf("exp %f eval %f cov %f\n", ranklist->ht->expect[x], val, cov);
+	ranklist->scthresh = cov; 
+	thresh->sc = ranklist->scthresh; 
+      }
     }
     if (mode == CYKSS) {
       if (cov < thresh->sc) { ranklist->scthresh = cov + ranklist->ha->w; break; }
@@ -1667,7 +1673,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-     if (mi->COV->mx[i][j] <= hitlist->covthresh) {
+     if (mi->COV->mx[i][j] >= hitlist->covthresh) {
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1707,7 +1713,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 hitlist->hit[h].Eval = (double) NBP * esl_exp_surv(mi->COV->mx[i][j], mu, lambda);
+	 hitlist->hit[h].Eval = esl_exp_surv(mi->COV->mx[i][j], mu, lambda);
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 
@@ -1736,15 +1742,15 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
    jh = hitlist->hit[h].j;
    if (outfp) {
      if (hitlist->hit[h].is_bpair)      { 
-       fprintf(outfp, "*\t%10d\t%10d\t%.2f\t%.4f\n", 
+       fprintf(outfp, "*\t%10d\t%10d\t%.2f\t%g\n", 
 	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
      }
      else if (hitlist->hit[h].is_compatible) { 
-       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%.4f\n", 
+       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%g\n", 
 	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
      else { 
-       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%.4f\n",
+       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%g\n",
 	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     } 
    }
