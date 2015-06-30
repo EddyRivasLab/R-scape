@@ -1466,7 +1466,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
     }
   /* initialize to something impossible*/
-  ranklist->scthresh = ranklist->ha->xmin - ranklist->ha->w;
+  ranklist->scthresh = ranklist->ha->xmax + ranklist->ha->w;
   
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
@@ -1523,8 +1523,8 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPf: val = cvRBPf; break;
       case Eval:    val = esl_exp_surv(cov, mu, lambda); break;
       }
+      printf("exp %f obs %d eval %f cov %f\n", ranklist->ht->expect[x], ranklist->ht->obs[x], val, cov);
       if (val <= thresh->val) { 
-	printf("exp %f eval %f cov %f\n", ranklist->ht->expect[x], val, cov);
 	ranklist->scthresh = cov; 
 	thresh->sc = ranklist->scthresh; 
       }

@@ -79,6 +79,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *covhisfile;
   char            *nullcovhisfile;
 
+  char            *cykcovhisfile;
+  char            *cyknullcovhisfile;
+
   char            *nullcovfile;
   char            *dplotfile;
   char            *cykdplotfile;
@@ -390,8 +393,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* covhis file */
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
+  if (esl_opt_IsOn(go, "--cykcov")) 
+  esl_sprintf(&cfg.cykcovhisfile, "cyk.%s.%s", cfg.outheader, "his");
+
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
+  if (esl_opt_IsOn(go, "--cykcov")) 
+  esl_sprintf(&cfg.cyknullcovhisfile, "cyk.%s.%s", cfg.outheader, "nullhis");
+
   /* nullcovplot file */
   esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
   /* dotplot file */
@@ -627,6 +636,8 @@ main(int argc, char **argv)
   free(cfg.outheader);
   free(cfg.covhisfile);
   free(cfg.nullcovhisfile);
+  free(cfg.cykcovhisfile);
+  free(cfg.cyknullcovhisfile);
   free(cfg.nullcovfile);
   free(cfg.dplotfile);
   if (cfg.cykdplotfile) free(cfg.cykdplotfile);
@@ -719,6 +730,15 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR; 
+  }
+  if (cfg->mode == CYKSS) {
+   if (1||cfg->verbose) {
+      printf("score cyk truncated distribution\n");
+      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
+      //esl_histogram_Plot(stdout, ranklist->ht);
+    }
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
 
