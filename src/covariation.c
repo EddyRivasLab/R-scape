@@ -1523,7 +1523,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPf: val = cvRBPf; break;
       case Eval:    val = esl_exp_surv(cov, mu, lambda); break;
       }
-      printf("exp %f obs %d eval %f cov %f\n", ranklist->ht->expect[x], ranklist->ht->obs[x], val, cov);
+      printf("exp %f eval %f cov %f\n", ranklist->ht->expect[x], val, cov);
       if (val <= thresh->val) { 
 	ranklist->scthresh = cov; 
 	thresh->sc = ranklist->scthresh; 
@@ -1891,14 +1891,15 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
 int
 cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-	     int *msamap, double bmin, double w, double pmass, int minloop, enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
+	     int *msamap, RANKLIST *ranklist_null, RANKLIST **ret_ranklist, double bmin, double w, double pmass, int minloop, enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
 {
-  ESL_MSA *msa = *omsa;
-  HITLIST *hitlist = NULL;
-  int     *cykct = NULL;
-  char    *ss = NULL;	
-  SCVAL    sc;
-  int      status;
+  ESL_MSA  *msa = *omsa;
+  RANKLIST *ranklist = NULL;
+  HITLIST  *hitlist = NULL;
+  int      *cykct = NULL;
+  char     *ss = NULL;	
+  SCVAL     sc;
+  int       status;
             
   /* calculate the cykcov ct vector */
   status = CYKCOV(r, mi, &cykct, &sc, minloop, covthresh, errbuf, verbose);
@@ -1912,7 +1913,7 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
   
   /* redo the hitlist since the ct has now changed */
-  status = cov_SignificantPairs_Ranking(NULL, NULL, &hitlist, mi, msamap, cykct, bmin, w, pmass, outfp, NULL, NULL, thresh, CYKSS, nbpairs, verbose, errbuf);
+  status = cov_SignificantPairs_Ranking(ranklist_null, &ranklist, &hitlist, mi, msamap, cykct, bmin, w, pmass, outfp, NULL, NULL, thresh, CYKSS, nbpairs, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
@@ -1943,6 +1944,7 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   if (status != eslOK) goto ERROR;
 
   *omsa = msa;
+  *ret_ranklist = ranklist;
 
   cov_FreeHitList(hitlist);
   free(cykct);

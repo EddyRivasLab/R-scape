@@ -393,13 +393,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* covhis file */
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
+  cfg.cykcovhisfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-  esl_sprintf(&cfg.cykcovhisfile, "cyk.%s.%s", cfg.outheader, "his");
+  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk%s", cfg.outheader, "his");
 
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
+  cfg.cyknullcovhisfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-  esl_sprintf(&cfg.cyknullcovhisfile, "cyk.%s.%s", cfg.outheader, "nullhis");
+  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk%s", cfg.outheader, "nullhis");
 
   /* nullcovplot file */
   esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
@@ -415,7 +417,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
   }
-
 
   cfg.shsumfile = NULL;
   cfg.shsumfp = NULL;
@@ -636,8 +637,8 @@ main(int argc, char **argv)
   free(cfg.outheader);
   free(cfg.covhisfile);
   free(cfg.nullcovhisfile);
-  free(cfg.cykcovhisfile);
-  free(cfg.cyknullcovhisfile);
+  if (cfg.cykcovhisfile) free(cfg.cykcovhisfile);
+  if (cfg.cyknullcovhisfile) free(cfg.cyknullcovhisfile);
   free(cfg.nullcovfile);
   free(cfg.dplotfile);
   if (cfg.cykdplotfile) free(cfg.cykdplotfile);
@@ -678,6 +679,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
   RANKLIST        *ranklist = NULL;
+  RANKLIST        *cykranklist = NULL;
   HITLIST         *hitlist = NULL;
   int              nnodes;
   int              status;
@@ -732,15 +734,6 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
-  if (cfg->mode == CYKSS) {
-   if (1||cfg->verbose) {
-      printf("score cyk truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
-      //esl_histogram_Plot(stdout, ranklist->ht);
-    }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
-    if (status != eslOK) goto ERROR; 
-  }
 
   status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
@@ -748,23 +741,33 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->R2Rcykfile && cfg->mode != RANSS) {
     status = cov_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			  &msa, mi, cfg->msamap, cfg->bmin, cfg->w, cfg->pmass, cfg->minloop, cfg->grammar, cfg->thresh, cfg->thresh->sc,
+			  &msa, mi, cfg->msamap, ranklist_null, &cykranklist, cfg->bmin, cfg->w, cfg->pmass, cfg->minloop, cfg->grammar, cfg->thresh, cfg->thresh->sc,
 			  cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
+    
+    if (1||cfg->verbose) {
+      printf("score cyk truncated distribution\n");
+      printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
+      //esl_histogram_Plot(stdout, ranklist->ht);
+    }
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR; 
   }
  
   *omsa = msa;
   if (ret_ranklist) *ret_ranklist = ranklist; else cov_FreeRankList(ranklist);
+  if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist);
   cov_Destroy(mi); mi = NULL;
   
   return eslOK;
   
  ERROR:
-  if (cfg->T) esl_tree_Destroy(cfg->T);
-  if (mi) cov_Destroy(mi);
-  if (ranklist)  cov_FreeRankList(ranklist);
-  if (hitlist)   cov_FreeHitList(hitlist);
+  if (cfg->T)      esl_tree_Destroy(cfg->T);
+  if (mi)          cov_Destroy(mi);
+  if (ranklist)    cov_FreeRankList(ranklist);
+  if (cykranklist) cov_FreeRankList(cykranklist);
+  if (hitlist)     cov_FreeHitList(hitlist);
   return status;
 }
 

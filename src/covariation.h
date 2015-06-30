@@ -214,8 +214,8 @@ extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
 extern int              cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
-				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, double bmin, double w, double pmass, int minloop, enum grammar_e G, THRESH *thresh,
-				     double covthresh, int nbpairs, char *errbuf, int verbose);
+				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, RANKLIST *ranklist_null, RANKLIST **ret_ranklist, double bmin, double w, double pmass, 
+				     int minloop, enum grammar_e G, THRESH *thresh,  double covthresh, int nbpairs, char *errbuf, int verbose);
 extern int              cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
 extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, 
 					   int dosvg, int verbose, char *errbuf);
