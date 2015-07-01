@@ -1523,7 +1523,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPf: val = cvRBPf; break;
       case Eval:    val = ranklist->ht->expect[b]; break;
       }
-      //if (val > 0.) printf("eval %f cov %f\n", val, cov);
+      if (val > 0.) printf("eval %f cov %f covBp %f\n", val, cov, cvBP);
       if (val > 0.0 && val <= thresh->val) { 
 	ranklist->scthresh = cov; 
 	thresh->sc = ranklist->scthresh; 
@@ -2224,7 +2224,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   double   pointsize;
   double   ps_max = 0.40;
   double   ps_min = 0.0003;
-  int      L = msamap[msa->alen-1]+1;
+  int      ileft, iright;
   int      h;           /* index for hitlist */
   int      i, ipair;
   int      ih, jh;
@@ -2269,8 +2269,17 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps variable\n");
   fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps variable\n");
 
-  fprintf(pipe, "set yrange [1:%d]\n", L);
-  fprintf(pipe, "set xrange [1:%d]\n", L);
+  ileft  = msa->alen;
+  iright = 1;
+  for (i = 1; i <= msa->alen; i ++) {
+    if (ct[i] > i && i < ileft)  ileft  = i;
+    if (ct[i] < i && i > iright) iright = i;
+  }
+
+  ileft  = ESL_MIN(ileft,  hitlist->hit[0].i);
+  iright = ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j);
+  fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
+  fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
 
   fprintf(pipe, "set multiplot\n");
 

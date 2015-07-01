@@ -395,13 +395,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
   cfg.cykcovhisfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk%s", cfg.outheader, "his");
+  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
 
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
   cfg.cyknullcovhisfile = NULL;
   if (esl_opt_IsOn(go, "--cykcov")) 
-  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk%s", cfg.outheader, "nullhis");
+  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
 
   /* nullcovplot file */
   esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
