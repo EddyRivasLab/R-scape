@@ -1502,7 +1502,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     ranklist->covBP[b]  = cvBP;
     ranklist->covNBP[b] = cvNBP;
     
-    if (mode == GIVSS) {
+    if (mode == GIVSS || mode == CYKSS) {
       if (ranklist_null) {
 	if      (cov > ranklist_null->ha->bmax) cvRBP = ranklist_null->covBP[ranklist_null->ha->nb-1];
 	else if (cov < ranklist_null->ha->bmin) cvRBP = ranklist_null->covBP[0];
@@ -1523,14 +1523,11 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPf: val = cvRBPf; break;
       case Eval:    val = ranklist->ht->expect[b]; break;
       }
-      if (val > 0.) printf("eval %f cov %f\n", val, cov);
+      //if (val > 0.) printf("eval %f cov %f\n", val, cov);
       if (val > 0.0 && val <= thresh->val) { 
 	ranklist->scthresh = cov; 
 	thresh->sc = ranklist->scthresh; 
       }
-    }
-    if (mode == CYKSS) {
-      if (cov < thresh->sc) { ranklist->scthresh = cov + ranklist->ha->w; break; }
     }
   }
   
