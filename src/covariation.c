@@ -1440,7 +1440,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       bmax;
   int          fp, tf, t, f, neg;
   int          i, j;
-  int          x, nullx;
+  int          b, nullb;
   int          status;
 
   cov_COVTYPEString(&covtype, mi->type, errbuf);
@@ -1476,8 +1476,8 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   }
 
   /* use the ha histogram in what follows */
-  for (x = ranklist->ha->imax; x >= ranklist->ha->imin; x --) {
-    cov = esl_histogram_Bin2LBound(ranklist->ha, x);
+  for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
+    cov = esl_histogram_Bin2LBound(ranklist->ha, b);
 
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
@@ -1499,16 +1499,16 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     cvNBP  = (double)fp;
     cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
     cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
-    ranklist->covBP[x]  = cvBP;
-    ranklist->covNBP[x] = cvNBP;
+    ranklist->covBP[b]  = cvBP;
+    ranklist->covNBP[b] = cvNBP;
     
     if (mode == GIVSS) {
       if (ranklist_null) {
 	if      (cov > ranklist_null->ha->bmax) cvRBP = ranklist_null->covBP[ranklist_null->ha->nb-1];
 	else if (cov < ranklist_null->ha->bmin) cvRBP = ranklist_null->covBP[0];
 	else {
-	  esl_histogram_Score2Bin(ranklist_null->ha, cov, &nullx);
-	  cvRBP = ranklist_null->covBP[nullx];
+	  esl_histogram_Score2Bin(ranklist_null->ha, cov, &nullb);
+	  cvRBP = ranklist_null->covBP[nullb];
 	}
       }
       cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
@@ -1521,10 +1521,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBP:  val = cvRBP;  break;
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
-      case Eval:    val = esl_exp_surv(cov, mu, lambda); break;
+      case Eval:    val = ranklist->ht->expect[b]; break;
       }
-      printf("exp %f eval %f cov %f\n", ranklist->ht->expect[x], val, cov);
-      if (val <= thresh->val) { 
+      if (val > 0.) printf("eval %f cov %f\n", val, cov);
+      if (val > 0.0 && val <= thresh->val) { 
 	ranklist->scthresh = cov; 
 	thresh->sc = ranklist->scthresh; 
       }
@@ -1651,6 +1651,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
   int      alloc_nhit = 5;
+  int      bin;
   int      tf = 0;
   int      f  = 0;
   int      t, fp;
@@ -1674,6 +1675,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
      if (mi->COV->mx[i][j] >= hitlist->covthresh) {
+       
+       esl_histogram_Score2Bin(ranklist->ht, mi->COV->mx[i][j], &bin);
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1713,7 +1716,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 hitlist->hit[h].Eval = esl_exp_surv(mi->COV->mx[i][j], mu, lambda);
+	 hitlist->hit[h].Eval = ranklist->ht->expect[bin];
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 
