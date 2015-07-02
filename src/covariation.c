@@ -1427,6 +1427,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   char        *covtype = NULL;
   RANKLIST    *ranklist = NULL;
   HITLIST     *hitlist = NULL;
+  THRESH      *effthresh = NULL;
   double       newmass;
   double       mu;
   double       lambda;
@@ -1438,6 +1439,9 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       cov;
   double       val;
   double       bmax;
+  double       cvBP_prv;
+  double       Eval_jump;
+  double       cov_jump;
   int          fp, tf, t, f, neg;
   int          i, j;
   int          b, nullb;
@@ -1523,16 +1527,31 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPf: val = cvRBPf; break;
       case Eval:    val = ranklist->ht->expect[b]; break;
       }
-      if (val > 0.) printf("eval %f cov %f covBp %f\n", val, cov, cvBP);
       if (val > 0.0 && val <= thresh->val) { 
+	//printf("eval %g cov %f covBp %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, Eval_jump, cov_jump);
 	ranklist->scthresh = cov; 
-	thresh->sc = ranklist->scthresh; 
+	thresh->sc         = cov; 
+	if (thresh->type == Eval) {
+	  if (cvBP > cvBP_prv) { Eval_jump = val; cov_jump = cov; }
+	}
       }
     }
+    cvBP_prv = cvBP;
   }
-  
+
+  ESL_ALLOC(effthresh, sizeof(THRESH));
+  effthresh->type = thresh->type;
+  effthresh->val  = thresh->val;
+  effthresh->sc   = thresh->sc;
+  if (thresh->type == Eval) {
+    effthresh->type = thresh->type;
+    effthresh->val  = Eval_jump;
+    effthresh->sc   = cov_jump;
+    ranklist->scthresh = cov_jump;
+  }
+
   if (mode == GIVSS || mode == CYKSS) {
-    status = cov_CreateHitList(outfp, &hitlist, thresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, covtype, threshtype, verbose, errbuf);
+    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, covtype, threshtype, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
   
@@ -1541,6 +1560,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
+  free(effthresh);
   return eslOK;
   
  ERROR:
@@ -1548,6 +1568,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   if (hitlist)    cov_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
+  if (effthresh)  free(effthresh);
   return status;
 }
 
