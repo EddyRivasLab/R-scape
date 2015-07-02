@@ -724,7 +724,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
   if (cfg->mode == GIVSS) {
-   if (1||cfg->verbose) {
+   if (cfg->verbose) {
       printf("score total distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
       printf("score truncated distribution\n");
@@ -732,6 +732,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, FALSE, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR; 
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, cfg->pmass, TRUE, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
 
@@ -745,7 +747,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 			  cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     
-    if (1||cfg->verbose) {
+    if (cfg->verbose) {
       printf("score cyk truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
@@ -805,7 +807,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
   
-   if (1||cfg->verbose) {
+   if (cfg->verbose) {
      printf("null1 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
 	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
@@ -915,7 +917,7 @@ null2_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cumranklist->covBP[b]  /= (double)cfg->nshuffle;
      cumranklist->covNBP[b] /= (double)cfg->nshuffle;
    }
-   if (1||cfg->verbose) {
+   if (cfg->verbose) {
      printf("null2 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
 	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);

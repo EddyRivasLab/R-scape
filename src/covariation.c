@@ -1439,12 +1439,15 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   double       cov;
   double       val;
   double       bmax;
+  double       cvBP_thresh = 0.;
+  double       cvNBP_thresh = 0.;
   double       cvBP_prv;
   double       Eval_jump;
   double       cov_jump;
   int          fp, tf, t, f, neg;
   int          i, j;
   int          b, nullb;
+  int          newb;
   int          status;
 
   cov_COVTYPEString(&covtype, mi->type, errbuf);
@@ -1476,10 +1479,14 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   if (mode == GIVSS || mode == CYKSS) {
     /* censor the histogram and do an exponential fit to the tail */
     status = cov_ExpFitHistogram(ranklist->ht, pmass, &newmass, &mu, &lambda, verbose, errbuf);
-    printf("newmass %f phi %f mu %f lambda %f loglambda %f\n", newmass, ranklist->ht->phi, mu, lambda, log(lambda));
+    if (verbose) printf("newmass %f phi %f mu %f lambda %f \n", newmass, ranklist->ht->phi, mu, lambda);
+
+    /* initialize */
+    cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax) + ranklist->ha->w;
+    Eval_jump = ranklist->ht->expect[ranklist->ht->imax];
   }
 
-  /* use the ha histogram in what follows */
+  /* ranklist from histogram ha */
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
     cov = esl_histogram_Bin2LBound(ranklist->ha, b);
 
@@ -1525,15 +1532,24 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBP:  val = cvRBP;  break;
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
-      case Eval:    val = ranklist->ht->expect[b]; break;
-      }
+      case Eval:    
+	cov_ranklist_Bin2Bin(b, ranklist->ha,ranklist->ht, &newb);
+	val = ranklist->ht->expect[newb]; break;
+      } 
+
+      //printf("eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
-	//printf("eval %g cov %f covBp %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, Eval_jump, cov_jump);
+	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
-	if (thresh->type == Eval) {
-	  if (cvBP > cvBP_prv) { Eval_jump = val; cov_jump = cov; }
-	}
+	cvBP_thresh        = cvBP;
+	cvNBP_thresh       = cvNBP;
+	if (thresh->type == Eval && cvBP > cvBP_prv) { Eval_jump = val; cov_jump = cov; }
+      }
+
+      if (thresh->type == Eval && val > thresh->val && cvNBP <= cvNBP_thresh) {
+	    if (cvBP > cvBP_prv) { Eval_jump = val; cov_jump = cov; }
+	    //printf("^^eval %g cov %f covBP %f covNBP %fEval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       }
     }
     cvBP_prv = cvBP;
