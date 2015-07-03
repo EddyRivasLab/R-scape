@@ -1948,6 +1948,11 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
+  esl_msa_Digitize(mi->abc, msa, errbuf);
+
+  /* expand the CT with compatible/stacked A:U C:G G:U pairs */
+  status = cov_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
   
   /* redo the hitlist since the ct has now changed */
   status = cov_SignificantPairs_Ranking(ranklist_null, &ranklist, &hitlist, mi, msamap, cykct, bmin, w, pmass, outfp, NULL, NULL, thresh, CYKSS, nbpairs, verbose, errbuf);
@@ -1956,26 +1961,18 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   /* R2R */
   status = cov_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  esl_msa_Digitize(mi->abc, msa, errbuf);
-
-  esl_ct2simplewuss(cykct, msa->alen, ss);
-  
-  /* expand the CT with compatible/stacked A:U C:G G:U pairs */
-  status = cov_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
 
   if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
   
   /* R2Rpdf */
   status = cov_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
-  
   /* R2Rsvg */
   status = cov_R2Rsvg(R2Rcykfile, R2Rversion, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   /* DotPlots (pdf,svg) */
-  status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE, verbose, errbuf);
+  status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE,  verbose, errbuf);
   if (status != eslOK) goto ERROR;
   status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, FALSE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -2656,7 +2653,7 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar
   /* create an RF sequence */
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
-  sq = esl_sq_CreateFrom(msa->name,  rfline, msa->desc, msa->acc, msa->ss_cons); 
+  sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
   
   //printf("sq:%s\n", sq->seq);
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);

@@ -45,7 +45,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   /* Report a traceback */
   if ((status = CYKCOV_Traceback(r, mi, cyk, &ct, minloop, covthresh, errbuf, verbose))  != eslOK) goto ERROR;
   
-  if (1||verbose) printf("CYKscore = %f at covthres %f\n", *ret_sc, covthresh);
+  if (verbose) printf("CYKscore = %f at covthres %f\n", *ret_sc, covthresh);
 
   *ret_ct = ct;
   GMX_Destroy(cyk);

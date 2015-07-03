@@ -26,7 +26,7 @@
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null3,--null4"                                          
-#define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf,--Eval"                                          
+#define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf,-E"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -137,7 +137,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
-  { "--cykcov",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
+  { "--cyk",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
  /* options for input msa (if seqs are given as a reference msa) */
@@ -152,7 +152,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
    /* different ways to assess significance */
-  { "--Eval",        eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                              1 },
+  { "-E",            eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                              1 },
   { "--covNBP",      eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs:    max total        (covNPB)      allowed",                                     1 },
   { "--covNBPu",     eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max per_position (covNBP/alen) allowed",                                     1 },
   { "--covNBPf",     eslARG_REAL,       NULL,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max fraction     (covNBP/NBP)  allowed",                                     1 },
@@ -203,7 +203,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cykcov", NULL,              "grammar used for cococyk calculation",                                                      0 },   
+  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   { "--pmass",        eslARG_REAL,   "0.005",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -333,7 +333,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  if (cfg.nulltype == NullNONE) cfg.nulltype = Null2; }
   else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null2; }
   else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null2; }
-  else if (esl_opt_IsOn(go, "--Eval"))     { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "--Eval"); }
+  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -394,13 +394,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* covhis file */
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
   cfg.cykcovhisfile = NULL;
-  if (esl_opt_IsOn(go, "--cykcov")) 
+  if (esl_opt_IsOn(go, "--cyk")) 
   esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
 
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
   cfg.cyknullcovhisfile = NULL;
-  if (esl_opt_IsOn(go, "--cykcov")) 
+  if (esl_opt_IsOn(go, "--cyk")) 
   esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
 
   /* nullcovplot file */
@@ -409,11 +409,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
   /* dotplot file */
   cfg.cykdplotfile = NULL;
-  if (esl_opt_IsOn(go, "--cykcov")) 
+  if (esl_opt_IsOn(go, "--cyk")) 
     esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
  
   cfg.R2Rcykfile = NULL;
-  if (esl_opt_IsOn(go, "--cykcov")) {
+  if (esl_opt_IsOn(go, "--cyk")) {
     esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
   }
