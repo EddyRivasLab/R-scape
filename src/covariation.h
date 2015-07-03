@@ -218,7 +218,7 @@ extern int              cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile
 				     int minloop, enum grammar_e G, THRESH *thresh,  double covthresh, int nbpairs, char *errbuf, int verbose);
 extern int              cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
 extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, 
-					   int dosvg, int verbose, char *errbuf);
+					   int verbose, char *errbuf);
 extern int              cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, int dosvg, char *errbuf);
 extern int              cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);

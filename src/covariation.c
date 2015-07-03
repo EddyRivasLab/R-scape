@@ -1994,7 +1994,7 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 
 int 
 cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass,
-		   int dosvg, int verbose, char *errbuf)
+		   int verbose, char *errbuf)
 {
   FILE    *fp = NULL;
   int      status;
@@ -2008,7 +2008,8 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, pmass, dosvg, errbuf);
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, pmass, FALSE, errbuf);
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, pmass, TRUE,  errbuf);
   if (status != eslOK) goto ERROR;
 
   return eslOK;
@@ -2269,8 +2270,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   pipe = popen(gnuplot, "w");
   
   if (dosvg) {
-    ps_max = 0.40;
-    ps_min = 0.0003;
+    ps_max = 1.40;
+    ps_min = 0.3;
     esl_sprintf(&outplot, "%s.svg", dplotfile);
     fprintf(pipe, "set terminal svg fname 'Verdana' fsize 10 \n");
   }
