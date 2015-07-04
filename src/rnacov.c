@@ -1,4 +1,4 @@
-/* rnacov -- statistical test for covariation in an RNA structural alignment
+/* rnacov -- significan covarying pairs in an RNA structural alignment
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,7 +86,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *dplotfile;
   char            *cykdplotfile;
 
-  int              domsa;
   int              nshuffle;
 
   double          *ft;
@@ -210,7 +209,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
-static char banner[] = "rnacov - statistical test for covatiation in RNA alignments";
+static char banner[] = "rnacov - significan covarying pairs in RNA alignments";
 
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, RANKLIST *ranklist_null, RANKLIST **ret_ranklist);
@@ -294,7 +293,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else                              { cfg.submsa = 0; }
     
   /* other options */
-  cfg.domsa       = TRUE;
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")           : -1.0;
@@ -475,7 +473,6 @@ main(int argc, char **argv)
   char            *tp;
   char            *tok;
   RANKLIST        *ranklist_null = NULL;
-  int              nmsa_noss = 0;
   int              seq_cons_len = 0;
   int              nfrags = 0;	  	  /* # of fragments removed */
   int              nremoved = 0;	  /* # of identical sequences removed */
@@ -499,14 +496,7 @@ main(int argc, char **argv)
     /* stats of the orignial alignment */
     msamanip_XStats(msa, &cfg.omstat);
     msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
-
-    if (cfg.onbpairs == 0) {
-      nmsa_noss ++;
-      printf("msa: %s_%s  has no secondary structure.\n", msa->acc, msa->name);
-      esl_msa_Destroy(msa); msa = NULL;
-      continue;
-    }
-
+    
     /* write MSA info to the sumfile */
     for (t = 0; t < msa->ngf; t++) {
       if (!esl_strcmp(msa->gf_tag[t], "TP")) {
@@ -599,13 +589,11 @@ main(int argc, char **argv)
       status = null4_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
     }
- 
+    
     /* main function */
-    if (cfg.domsa) {
-      cfg.mode = GIVSS;
-      status = run_rnacov(go, &cfg, &msa, ranklist_null, NULL);
-      if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
-    }
+    cfg.mode = GIVSS;
+    status = run_rnacov(go, &cfg, &msa, ranklist_null, NULL);
+    if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
 
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     free(cfg.ct); cfg.ct = NULL;
@@ -615,8 +603,6 @@ main(int argc, char **argv)
     if (type) free(type); type = NULL;
     cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   }
-
-  if (nmsa_noss > 0) printf("%d msa's without any secondary structure\n", nmsa_noss);
 
   /* cleanup */
   esl_stopwatch_Destroy(cfg.watch);

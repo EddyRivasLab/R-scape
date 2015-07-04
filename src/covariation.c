@@ -214,7 +214,7 @@ cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
    }
    fprintf(sumfp, "\n");   
       
-   if (mode == GIVSS || mode == CYKSS) { // do the plots only GIVSS or CYKSS
+   if (mode == GIVSS) { // do the plots only for GIVSS
      status = cov_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, TRUE, verbose, errbuf);
      if  (status != eslOK) goto ERROR;
      status = cov_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, FALSE, verbose, errbuf);
@@ -1567,7 +1567,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
   }
 
   if (mode == GIVSS || mode == CYKSS) {
-    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, covtype, threshtype, verbose, errbuf);
+    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, covtype, threshtype, mode, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
   
@@ -1680,7 +1680,7 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 
 int 
 cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
-		  double mu, double lambda, char *covtype, char *threshtype, int verbose, char *errbuf)
+		  double mu, double lambda, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
@@ -1772,8 +1772,13 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
- if (outfp) fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-		    covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+ if (outfp) {
+   if (t > 0) {
+     if (mode == CYKSS) fprintf(outfp, "# cyk-cov structure\n");
+     fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+   }
+ }
  for (h = 0; h < nhit; h ++) {
    ih = hitlist->hit[h].i;
    jh = hitlist->hit[h].j;
@@ -1947,8 +1952,8 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
   esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
-  esl_sprintf(&(msa->ss_cons), "%s", ss);  
-  esl_msa_Digitize(mi->abc, msa, errbuf);
+  esl_sprintf(&(msa->ss_cons), "%s", ss);
+  if (!msa->ax) esl_msa_Digitize(mi->abc, msa, errbuf);
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = cov_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
