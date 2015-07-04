@@ -391,30 +391,21 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* covhis file */
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
-  cfg.cykcovhisfile = NULL;
-  if (cfg.docyk) 
-    esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
+  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
   
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
-  cfg.cyknullcovhisfile = NULL;
-  if (cfg.docyk) 
-    esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
+  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
   
   /* nullcovplot file */
   esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
   /* dotplot file */
   esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
-  /* dotplot file */
-  cfg.cykdplotfile = NULL;
-  if (cfg.docyk) 
-    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
+  esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
   
   cfg.R2Rcykfile = NULL;
-  if (cfg.docyk) {
-    esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
-    cfg.R2Rcykfp = NULL;
-  }
+  esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
+  cfg.R2Rcykfp = NULL;
   
   cfg.shsumfile = NULL;
   cfg.shsumfp   = NULL;
