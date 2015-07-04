@@ -19,8 +19,6 @@
 #include "covgrammars.h"
 #include "ribosum_matrix.h"
 
-
-
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
@@ -71,6 +69,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *R2Rfile;
   FILE            *R2Rfp;
 
+  int              docyk;
   char            *R2Rcykfile;
   FILE            *R2Rcykfp;
   int              minloop;
@@ -136,7 +135,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
-  { "--cyk",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
+  { "--cyk",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
  /* options for input msa (if seqs are given as a reference msa) */
@@ -242,7 +241,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
       esl_banner(stdout, cfg.argv[0], banner);
-      esl_usage(stdout, cfg.argv[0], usage);
+      esl_usage(stdout,  cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
      exit(0);
@@ -283,7 +282,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
    /* outmsa file */
   cfg.outmsafp = NULL;
   if (esl_opt_IsOn(go, "--outmsa")) {
-    if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open output file %s", esl_opt_GetString(go, "--outmsa"));
+    if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open outmsa file %s", esl_opt_GetString(go, "--outmsa"));
   } 
   
   esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);
@@ -304,7 +303,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
-  
+  cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
+
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
@@ -379,11 +379,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
  
   /*  rocplot file */
   esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
-  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.rocfile);
+  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
 
   /*  summary file */
   esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
-  if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.sumfile);
+  if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
   /* R2R annotated sto file */
   esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.outheader);
@@ -392,37 +392,37 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* covhis file */
   esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
   cfg.cykcovhisfile = NULL;
-  if (esl_opt_IsOn(go, "--cyk")) 
-  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
-
+  if (cfg.docyk) 
+    esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
+  
   /* nullcovhis file */
   esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
   cfg.cyknullcovhisfile = NULL;
-  if (esl_opt_IsOn(go, "--cyk")) 
-  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
-
+  if (cfg.docyk) 
+    esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
+  
   /* nullcovplot file */
   esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
   /* dotplot file */
   esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
   /* dotplot file */
   cfg.cykdplotfile = NULL;
-  if (esl_opt_IsOn(go, "--cyk")) 
+  if (cfg.docyk) 
     esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
- 
+  
   cfg.R2Rcykfile = NULL;
-  if (esl_opt_IsOn(go, "--cyk")) {
+  if (cfg.docyk) {
     esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
   }
-
+  
   cfg.shsumfile = NULL;
-  cfg.shsumfp = NULL;
-
+  cfg.shsumfp   = NULL;
+  
   if (cfg.nulltype != NullNONE) {
     /*  sh-summary file */
     esl_sprintf(&cfg.shsumfile, "%s.shsum", cfg.outheader); 
-    if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.shsumfile);
+    if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open shsumfile %s", cfg.shsumfile);
   }
   
   cfg.T  = NULL;
@@ -493,10 +493,10 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
-    /* stats of the orignial alignment */
+    /* stats of the original alignment */
     msamanip_XStats(msa, &cfg.omstat);
     msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
-    
+
     /* write MSA info to the sumfile */
     for (t = 0; t < msa->ngf; t++) {
       if (!esl_strcmp(msa->gf_tag[t], "TP")) {
@@ -566,7 +566,8 @@ main(int argc, char **argv)
     esl_vec_DDump(stdout, cfg.fbp,  cfg.abc->K, "basepairs BC");
     esl_vec_DDump(stdout, cfg.fnbp, cfg.abc->K, "nonbasepairs BC");
 #endif
-    
+    if (cfg.nbpairs == 0) cfg.docyk = TRUE; // calculate the cyk-cov structure if no given one
+
     /* the null model first */
     cfg.mode = RANSS;
     if (cfg.nulltype == Null1) {
@@ -725,7 +726,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (status != eslOK) goto ERROR; 
 
   /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->R2Rcykfile && cfg->mode != RANSS) {
+  if (cfg->docyk && cfg->mode != RANSS) {
     status = cov_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
 			  &msa, mi, cfg->msamap, ranklist_null, &cykranklist, cfg->bmin, cfg->w, cfg->pmass, cfg->minloop, cfg->grammar, cfg->thresh, cfg->thresh->sc,
 			  cfg->onbpairs, cfg->errbuf, cfg->verbose);

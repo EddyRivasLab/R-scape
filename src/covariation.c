@@ -1537,7 +1537,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
 	val = ranklist->ht->expect[newb]; break;
       } 
 
-      //printf("eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      if (val > 0.) printf("eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
 	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
 	ranklist->scthresh = cov; 
@@ -2494,7 +2494,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   
   /* write the R2R annotated to PFAM format */
   if (r2rfile) {
-    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open output file %s", r2rfile);
+    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
     eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
     fclose(fp);
     
@@ -2604,7 +2604,7 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
   //printf("ss:%s\n", msa->ss_cons);
 
-  if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open output file %s", r2rfile);
+  if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
   eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
   fclose(fp);
   
