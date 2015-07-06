@@ -36,25 +36,28 @@ static int is_wc(int x, int y);
 static int is_stacked_pair(int i, int j, int L, int *ct);
 static int number_pairs(int L, int *ct);
 static int is_cannonical_pair(char nti, char ntj);
-static int mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+static int mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);
+static int shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
 				 double tol, int verbose, char *errbuf);
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static int cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logscale, int style1, int style2);
 
 int                 
-cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
+cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 	      RANKLIST *ranklist_null, RANKLIST **ret_ranklist, HITLIST **ret_hitlist,
 	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, double bmin, double w, double pmass,
 	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
-	      THRESH *thresh, MODE mode, int nbpairs, double tol, int verbose, char *errbuf)
+	      THRESH *thresh, MODE mode, int nbpairs, int donull2b, double tol, int verbose, char *errbuf)
 {
   ESL_MSA   *msa = *omsa;
   RANKLIST  *ranklist = NULL;
   HITLIST   *hitlist = NULL;
   int        status;
 
-  status = cov_Probs(msa, T, ribosum, mi, method, tol, verbose, errbuf);
+  /* Calculate the covariation matrix */
+  status = cov_Probs(r, msa, T, ribosum, mi, method, donull2b, tol, verbose, errbuf);
+
   if (status != eslOK) goto ERROR;
   switch(covtype) {
    case CHIa: 
@@ -236,7 +239,7 @@ cov_Calculate(ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *rib
 }
 
 int                 
-cov_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, double tol, int verbose, char *errbuf)
+cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int donull2b, double tol, int verbose, char *errbuf)
 {
   int i, j;
   int x, y;
@@ -245,7 +248,7 @@ cov_Probs(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual
 
   switch(method) {
   case NAIVE:
-    status = cov_NaivePP(msa, mi, tol, verbose, errbuf);
+    status = cov_NaivePP(r, msa, mi, donull2b, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
     break;
   case PHYLO:
@@ -1352,7 +1355,7 @@ cov_Destroy(struct mutual_s *mi)
 
 
 int 
-cov_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
   int     i, j;
@@ -1360,7 +1363,7 @@ cov_NaivePP(ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *er
 
   for (i = 0; i < alen-1; i ++)
     for (j = i+1; j < alen; j ++) {
-      status = mutual_naive_ppij(i, j, msa, mi, tol, verbose, errbuf);
+      status = mutual_naive_ppij(r, i, j, msa, mi, donull2b, tol, verbose, errbuf);
       if (status != eslOK) goto ERROR;
     }
   
@@ -2805,21 +2808,41 @@ is_cannonical_pair(char nti, char ntj)
 
 
 static int    
-mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf)
 {
   double *pp = mi->pp[i][j];
-  int          K = mi->abc->K;
-  int          K2 = K*K;
-  int          s;
-  int          resi, resj;
-  int          x, y;
-  
+  int    *coli = NULL;
+  int    *colj = NULL;
+  int    *shcoli = NULL;
+  int    *shcolj = NULL;
+  int     K = mi->abc->K;
+  int     K2 = K*K;
+  int     s;
+  int     resi, resj;
+  int     x, y;
+  int     status;
+
   esl_vec_DSet(pp, K2, 1.0/(double)K2); // laplace prior
   mi->nseff[i][j] = 1;
   
+  ESL_ALLOC(coli, sizeof(int)*msa->nseq);
+  ESL_ALLOC(colj, sizeof(int)*msa->nseq);
   for (s = 0; s < msa->nseq; s ++) {
-    resi = msa->ax[s][i+1];
-    resj = msa->ax[s][j+1];
+    coli[s] = msa->ax[s][i+1];
+    colj[s] = msa->ax[s][j+1];
+  }
+
+  /* shuffle in each column residues that appear to be canonical (i,j) pairs */
+  if (donull2b) {
+    status = shuffle_null2b_col(r, msa->abc, msa->nseq, coli, colj, &shcoli, errbuf);
+    if (status != eslOK) goto ERROR;
+    status = shuffle_null2b_col(r, msa->abc, msa->nseq, colj, coli, &shcolj, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+
+  for (s = 0; s < msa->nseq; s ++) {
+    resi = (donull2b)? shcoli[s] : coli[s];
+    resj = (donull2b)? shcolj[s] : colj[s];
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; mi->ngap[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
@@ -2841,10 +2864,77 @@ mutual_naive_ppij(int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, i
   esl_vec_DCopy(pp, K2, mi->pp[j][i]);
   mi->nseff[j][i] = mi->nseff[i][j];
 
+  free(coli);
+  free(colj);
+  if (shcoli) free(shcoli);
+  if (shcolj) free(shcolj);
   return eslOK;
+
+ ERROR:
+  if (coli)   free(coli);
+  if (colj)   free(colj);
+  if (shcoli) free(shcoli);
+  if (shcolj) free(shcolj);
+
+  return status;
 }
 
+int 
+shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf)
+{
+  int *shcol  = NULL;
+  int *useme  = NULL;
+  int *seqidx = NULL;
+  int *perm   = NULL;
+  int  nuse;
+  int  s;
+  int  u;
+  int  status;
+  
+  /* allocation */
+  ESL_ALLOC(shcol, sizeof(int) * nseq);
+  ESL_ALLOC(useme, sizeof(int) * nseq); // vecto to mark residues in the column
+ 
+  esl_vec_ICopy(col, nseq, shcol);
+ 
+  /* suffle only positions with residues and with canonical pair in the other column */
+  esl_vec_ISet(useme, nseq, FALSE);
+  for (s = 0; s < nseq; s ++) 
+    if ( esl_abc_XIsResidue(abc, col[s]) && is_wc(col[s], paircol[s]) ) useme[s] = TRUE;
+ 
+  /* within colum permutation */
+  nuse = nseq;
+  for (s = 0; s < nseq; s ++) if (useme[s] == FALSE) nuse --;
+  if (nuse == 0) return eslOK;
 
+  ESL_ALLOC(seqidx, sizeof(int) * nuse);
+  u = 0;
+  for (s = 0; s < nseq; s++) if (useme[s] == TRUE) { seqidx[u] = s; u++; }
+  ESL_ALLOC(perm,  sizeof(int) * nuse);
+  for (u = 0; u < nuse; u ++) perm[u] = u;
+  if ((status = esl_vec_IShuffle(r, perm, nuse)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+  u = 0;
+  for (s = 0; s < nseq; s++) {
+    if (useme[s] == TRUE) {
+      shcol[s] = col[perm[u]];
+      u ++;
+    }
+  }
+
+  *ret_shcol = shcol;
+
+  free(useme);
+  free(perm);
+  free(seqidx);
+  return eslOK;
+
+ ERROR:
+  if (shcol)  free(shcol);
+  if (useme)  free(useme);
+  if (perm)   free(perm);
+  if (seqidx) free(seqidx);
+}
 
 int 
 mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
