@@ -2900,12 +2900,16 @@ shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int
   /* suffle only positions with residues and with canonical pair in the other column */
   esl_vec_ISet(useme, nseq, FALSE);
   for (s = 0; s < nseq; s ++) 
-    if ( esl_abc_XIsResidue(abc, col[s]) && is_wc(col[s], paircol[s]) ) useme[s] = TRUE;
+    if (is_wc(col[s], paircol[s])) useme[s] = TRUE;
  
   /* within colum permutation */
   nuse = nseq;
   for (s = 0; s < nseq; s ++) if (useme[s] == FALSE) nuse --;
-  if (nuse == 0) return eslOK;
+  if (nuse == 0) {
+    *ret_shcol = shcol;
+    free(useme);
+    return eslOK;
+  }
 
   ESL_ALLOC(seqidx, sizeof(int) * nuse);
   u = 0;
