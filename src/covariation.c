@@ -38,6 +38,7 @@ static int number_pairs(int L, int *ct);
 static int is_cannonical_pair(char nti, char ntj);
 static int mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);
 static int shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
+static int shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
 static int mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
 				 double tol, int verbose, char *errbuf);
 static int cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
@@ -2882,32 +2883,54 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
 int 
 shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf)
 {
+  int *useme = NULL;
+  int *shcol = NULL;
+  int  s;
+  int  status;
+  
+  /* allocation */
+  ESL_ALLOC(useme, sizeof(int) * nseq); // vecto to mark residues in the column
+ 
+  /* shuffle only positions with residues and with canonical pair in the other column */
+  esl_vec_ISet(useme, nseq, FALSE);
+  for (s = 0; s < nseq; s ++) 
+    if ( esl_abc_XIsResidue(abc,col[s]) && is_wc(col[s], paircol[s]) ) useme[s] = TRUE;
+ 
+  /* within colum permutation */
+  status = shuffle_col(r, nseq, useme, col, &shcol, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  *ret_shcol = shcol;
+
+  free(useme);
+  return eslOK;
+  
+ ERROR:
+  if (shcol)  free(shcol);
+  if (useme)  free(useme);
+}
+
+int 
+shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf)
+{
   int *shcol  = NULL;
-  int *useme  = NULL;
   int *seqidx = NULL;
   int *perm   = NULL;
   int  nuse;
   int  s;
   int  u;
   int  status;
-  
+ 
   /* allocation */
   ESL_ALLOC(shcol, sizeof(int) * nseq);
-  ESL_ALLOC(useme, sizeof(int) * nseq); // vecto to mark residues in the column
- 
   esl_vec_ICopy(col, nseq, shcol);
  
-  /* suffle only positions with residues and with canonical pair in the other column */
-  esl_vec_ISet(useme, nseq, FALSE);
-  for (s = 0; s < nseq; s ++) 
-    if (is_wc(col[s], paircol[s])) useme[s] = TRUE;
- 
-  /* within colum permutation */
+ /* within colum permutation */
   nuse = nseq;
   for (s = 0; s < nseq; s ++) if (useme[s] == FALSE) nuse --;
+  printf("NUSE %d\n", nuse);
   if (nuse == 0) {
     *ret_shcol = shcol;
-    free(useme);
     return eslOK;
   }
 
@@ -2921,23 +2944,22 @@ shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int
   u = 0;
   for (s = 0; s < nseq; s++) {
     if (useme[s] == TRUE) {
-      shcol[s] = col[perm[u]];
+      shcol[s] = col[seqidx[perm[u]]];
       u ++;
     }
   }
 
   *ret_shcol = shcol;
 
-  free(useme);
   free(perm);
   free(seqidx);
   return eslOK;
 
  ERROR:
   if (shcol)  free(shcol);
-  if (useme)  free(useme);
   if (perm)   free(perm);
   if (seqidx) free(seqidx);
+  return status;
 }
 
 int 

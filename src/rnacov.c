@@ -566,27 +566,27 @@ main(int argc, char **argv)
     cfg.mode = RANSS;
     if (cfg.nulltype == Null1) {
       status = null1_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null1 rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null1b) {
       status = null1b_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null1b rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null2) {
       status = null2_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null2 rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null2b) {
       status = null2b_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null2b rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null3) {
       status = null3_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null3 rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null4) {
       status = null4_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+     if (status != eslOK) esl_fatal("%s.\nFailed to run null4 rnacov", cfg.errbuf);
     }
     
     /* main function */
@@ -702,7 +702,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
-  donull2b = (cfg->nulltype == Null2b)? TRUE:FALSE;
+  donull2b = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE:FALSE;
   status = cov_Calculate(cfg->r, &msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, &ranklist, &hitlist, cfg->method, cfg->covtype, cfg->covclass, cfg->ct, 
 			 cfg->bmin, cfg->w, cfg->pmass, (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
