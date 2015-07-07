@@ -2928,7 +2928,6 @@ shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, 
  /* within colum permutation */
   nuse = nseq;
   for (s = 0; s < nseq; s ++) if (useme[s] == FALSE) nuse --;
-  printf("NUSE %d\n", nuse);
   if (nuse == 0) {
     *ret_shcol = shcol;
     return eslOK;
