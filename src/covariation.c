@@ -2304,7 +2304,9 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      h;           /* index for hitlist */
   int      i, ipair;
   int      ih, jh;
+  int      status;
   
+  if (hitlist->nhit == 0) return eslOK;
 
   esl_FileTail(dplotfile, FALSE, &filename);
 
@@ -2351,9 +2353,11 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     if (ct[i] > i && i < ileft)  ileft  = i;
     if (ct[i] < i && i > iright) iright = i;
   }
+  if (ileft > iright) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
 
   ileft  = ESL_MIN(ileft,  hitlist->hit[0].i);
   iright = ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j);
+
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
 
@@ -2425,6 +2429,11 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   free(outplot);
   free(filename);
   return eslOK;
+
+ ERROR:
+  if (outplot) free(outplot);
+  if (filename) free(filename);
+  return status;
 }
 
 int
