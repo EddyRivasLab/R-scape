@@ -1478,13 +1478,16 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
     }
   /* initialize to something impossible*/
   ranklist->scthresh = ranklist->ha->xmax + ranklist->ha->w;
-  
+
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
     /* censor the histogram and do an exponential fit to the tail */
     status = cov_ExpFitHistogram(ranklist->ht, pmass, &newmass, &mu, &lambda, verbose, errbuf);
-    if (verbose) printf("newmass %f phi %f mu %f lambda %f \n", newmass, ranklist->ht->phi, mu, lambda);
-
+    if (verbose) {
+      printf("newmass %f phi %f mu %f lambda %f \n", newmass, ranklist->ht->phi, mu, lambda);
+      cov_DumpHistogram(stdout, ranklist->ht);
+    }
+    
     /* initialize */
     cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax) + ranklist->ha->w;
     Eval_jump = ranklist->ht->expect[ranklist->ht->imax];
@@ -1537,13 +1540,13 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
       case Eval:    
-	cov_ranklist_Bin2Bin(b, ranklist->ha,ranklist->ht, &newb);
+	cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist->ht, &newb);
 	val = ranklist->ht->expect[newb]; break;
       } 
 
-      if (mode==CYKSS&&val > 0.) printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      //if (val > 0.) printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
-	if (mode==CYKSS) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+	//if (mode==CYKSS) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
 	cvBP_thresh        = cvBP;
@@ -1554,7 +1557,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST **ret_ranklist, H
       if (thresh->type == Eval && val > thresh->val && cvNBP <= cvNBP_thresh) {
 	    if (cvBP > cvBP_prv) { 
 	      Eval_jump = val; cov_jump = cov; 
-	      if (mode==CYKSS) printf("^^eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+	      //if (mode==CYKSS) printf("^^eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
 	    }
       }
     }
@@ -1680,6 +1683,27 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
   printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) 
     printf("cov %f covBP %f covNBP %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->covBP[b], ranklist->covNBP[b]); 
+  
+  return eslOK;
+}
+int              
+cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
+{
+  double nobs = 0.;
+  double cum_obs = 0.;
+  double cum_exp = 0.;
+  int    b;
+
+  for (b = h->imax; b >= h->imin; b --) nobs += (double)h->obs[b];
+
+  printf("imin %d imax %d covmin %f covmax %f nobs %f\n", h->imin, h->imax, h->xmin, h->xmax, nobs);
+  for (b = h->imax; b >= h->imin; b --) {
+    cum_obs += (double)h->obs[b];
+    if (h->expect) cum_exp += (double)h->expect[b];
+    if (h->expect) printf("b %d val %f obs %f cum_obs %f expect %f cum_exp %f\n", 
+			  b, esl_histogram_Bin2LBound(h, b), (double)h->obs[b], cum_obs, h->expect[b], cum_exp); 
+    else           printf("b %d val %f obs %f cum_obs %f\n", b, esl_histogram_Bin2LBound(h, b), (double)h->obs[b], cum_obs); 
+  }
   
   return eslOK;
 }
@@ -1952,7 +1976,6 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   /* calculate the cykcov ct vector */
   status = CYKCOV(r, mi, &cykct, &sc, minloop, covthresh, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) printf("cykcov score = %f\n", sc);
 
   /* impose the ct on the msa GC line 'cons_ss' */
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
@@ -1960,6 +1983,10 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);
   if (!msa->ax) esl_msa_Digitize(mi->abc, msa, errbuf);
+  if (verbose) {
+    printf("cykcov score = %f minloop %d covthresh %f\n", sc, minloop, covthresh);
+    printf("ss:%s\n", ss);
+  }
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = cov_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
@@ -2306,8 +2333,6 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      ih, jh;
   int      status;
   
-  if (hitlist->nhit == 0) return eslOK;
-
   esl_FileTail(dplotfile, FALSE, &filename);
 
   pipe = popen(gnuplot, "w");
@@ -2355,8 +2380,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   }
   if (ileft > iright) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
 
-  ileft  = ESL_MIN(ileft,  hitlist->hit[0].i);
-  iright = ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j);
+  ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i) : ileft;
+  iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j) : iright;
 
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
