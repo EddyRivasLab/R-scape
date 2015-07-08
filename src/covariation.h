@@ -27,29 +27,35 @@ typedef enum {
   CHI   = 0,
   CHIp  = 1,
   CHIa  = 2,
+  CHIs  = 3,
 
-  GT    = 3,
-  GTp   = 4,
-  GTa   = 5,
+  GT    = 4,
+  GTp   = 5,
+  GTa   = 6,
+  GTs   = 7,
 
-  MI    = 6,
-  MIp   = 7,
-  MIa   = 8,
+  MI    = 8,
+  MIp   = 9,
+  MIa   = 10,
+  MIs   = 11,
 
-  MIr   = 9,
-  MIrp  = 10,
-  MIra  = 11,
+  MIr   = 12,
+  MIrp  = 13,
+  MIra  = 14,
+  MIrs  = 15,
 
-  MIg   = 12,
-  MIgp  = 13,
-  MIga  = 14,
+  MIg   = 16,
+  MIgp  = 17,
+  MIga  = 18,
+  MIgs  = 19,
 
-  OMES  = 15,
-  OMESp = 16,
-  OMESa = 17,
+  OMES  = 20,
+  OMESp = 21,
+  OMESa = 22,
+  OMESs = 23,
 
-  COVALL  = 18,
-  COVNONE = 19,
+  COVALL  = 24,
+  COVNONE = 25,
 } COVTYPE;
 
 
@@ -62,6 +68,7 @@ typedef enum {
 typedef enum {
   APC = 0,
   ASC = 1,
+  SCA = 2, //spearman correction of attenuation
 } CORRTYPE;
 
 typedef enum{

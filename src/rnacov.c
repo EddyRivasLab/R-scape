@@ -21,7 +21,7 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIp,--MIa,--MIr,--MIrp,--MIra,--MIg,--MIgp,--MIga,--OMES,--OMESp,--OMESa,--ALL"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--CHIs,--GT,--GTa,--GTp,--GTs,--MI,--MIp,--MIa,--MIs,--MIr,--MIrp,--MIra,--MIrs,--MIg,--MIgp,--MIga,--MIga,--OMES,--OMESp,--OMESa,--OMESa,--ALL"              
 #define COVCLASSOPTS "--C16,--C2"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf,-E"                                          
@@ -168,21 +168,27 @@ struct cfg_s { /* Shared configuration in masters & workers */
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
+  { "--CHIs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  SCA corrected calculation",                                                            0 },
   { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  calculation",                                                                          0 },
   { "--GTa",          eslARG_NONE,       TRUE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   ACS corrected calculation",                                                            0 },
   { "--GTp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   APS corrected calculation",                                                            0 },
+  { "--GTs",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   SCA corrected calculation",                                                            0 },
   { "--GT",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   calculation",                                                                          0 },
   { "--MIa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   ACS corrected calculation",                                                            0 },
   { "--MIp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   APS corrected calculation",                                                            0 },
+  { "--MIs",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   SCA corrected calculation",                                                            0 },
   { "--MI",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   calculation",                                                                          0 },
   { "--MIra",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  ACS corrected calculation",                                                            0 },
   { "--MIrp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  APS corrected calculation",                                                            0 },
+  { "--MIrs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  SCA corrected calculation",                                                            0 },
   { "--MIr",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  calculation",                                                                          0 },
   { "--MIga",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  ACS corrected calculation",                                                            0 },
   { "--MIgp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  APS corrected calculation",                                                            0 },
+  { "--MIgs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  SCA corrected calculation",                                                            0 },
   { "--MIg",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  calculation",                                                                          0 },
   { "--OMESa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES ACS corrected calculation",                                                            0 },
   { "--OMESp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES APS corrected calculation",                                                            0 },
+  { "--OMESs",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES SCA corrected calculation",                                                            0 },
   { "--OMES",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES calculation",                                                                          0 },
   { "--ALL",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "calculate all types",                                                                       0 },
   /* covariation class */
@@ -338,21 +344,27 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
+  else if (esl_opt_GetBoolean(go, "--CHIs"))  cfg.covtype = CHIs;
   else if (esl_opt_GetBoolean(go, "--CHI"))   cfg.covtype = CHI;
   else if (esl_opt_GetBoolean(go, "--GTa"))   cfg.covtype = GTa;
   else if (esl_opt_GetBoolean(go, "--GTp"))   cfg.covtype = GTp;
+  else if (esl_opt_GetBoolean(go, "--GTs"))   cfg.covtype = GTs;
   else if (esl_opt_GetBoolean(go, "--GT"))    cfg.covtype = GT;
   else if (esl_opt_GetBoolean(go, "--MIa"))   cfg.covtype = MIa;
   else if (esl_opt_GetBoolean(go, "--MIp"))   cfg.covtype = MIp;
+  else if (esl_opt_GetBoolean(go, "--MIs"))   cfg.covtype = MIs;
   else if (esl_opt_GetBoolean(go, "--MI"))    cfg.covtype = MI;
   else if (esl_opt_GetBoolean(go, "--MIra"))  cfg.covtype = MIra;
   else if (esl_opt_GetBoolean(go, "--MIrp"))  cfg.covtype = MIrp;
+  else if (esl_opt_GetBoolean(go, "--MIrs"))  cfg.covtype = MIrs;
   else if (esl_opt_GetBoolean(go, "--MIr"))   cfg.covtype = MIr;
   else if (esl_opt_GetBoolean(go, "--MIga"))  cfg.covtype = MIga;
   else if (esl_opt_GetBoolean(go, "--MIgp"))  cfg.covtype = MIgp;
+  else if (esl_opt_GetBoolean(go, "--MIgs"))  cfg.covtype = MIgs;
   else if (esl_opt_GetBoolean(go, "--MIg"))   cfg.covtype = MIg;
   else if (esl_opt_GetBoolean(go, "--OMESa")) cfg.covtype = OMESa;
   else if (esl_opt_GetBoolean(go, "--OMESp")) cfg.covtype = OMESp;
+  else if (esl_opt_GetBoolean(go, "--OMESs")) cfg.covtype = OMESs;
   else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;
   else if (esl_opt_GetBoolean(go, "--ALL"))   cfg.covtype = COVALL;
 

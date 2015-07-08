@@ -73,6 +73,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
+   case CHIs:
+     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;  
+     break;
    case CHI: 
      status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;     
@@ -87,6 +93,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC,  TRUE, &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     break;
+   case GTs: 
+     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA,  TRUE, &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case GT: 
@@ -105,6 +117,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
+   case MIs: 
+     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     break;
    case MI: 
      status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
@@ -119,6 +137,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;  
+     break;
+   case MIrs:
+     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
    case MIr: 
@@ -137,6 +161,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;  
      break;
+   case MIgs:
+     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;  
+     break;
    case MIg: 
      status = cov_CalculateMIg          (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,     TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
@@ -151,6 +181,12 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
      status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR; 
+     break;
+   case OMESs: 
+     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
+     if (status != eslOK) goto ERROR;
+     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR; 
      break;
    case OMES: 
@@ -1117,6 +1153,7 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
   switch(corrtype) {
   case APC: esl_sprintf(&covtype, "%sp", covtype); break;
   case ASC: esl_sprintf(&covtype, "%sa", covtype); break;
+  case SCA: esl_sprintf(&covtype, "%ss", covtype); break;
   default:  
     ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
     break;
@@ -1151,6 +1188,11 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
 	mi->COV->mx[i][j] = (COVavg != 0.0)? COV->mx[i][j] - COVx[i] * COVx[j] / COVavg : 0.0;
       else if (corrtype == ASC) 
 	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
+      else if (corrtype == SCA) {
+	mi->COV->mx[i][j]  = COV->mx[i][j] * COVavg; 
+	mi->COV->mx[i][j] /= sqrt(COVx[i]); 
+	mi->COV->mx[i][j] /= sqrt(COVx[j]);
+      } 
       else 
 	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
 
@@ -1232,6 +1274,13 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIra:  esl_sprintf(ret_covtype, "MIra");  break; 
   case MIga:  esl_sprintf(ret_covtype, "MIga");  break; 
 
+  case CHIs:  esl_sprintf(ret_covtype, "CHIs");  break;
+  case GTs:   esl_sprintf(ret_covtype, "GTs");   break;
+  case OMESs: esl_sprintf(ret_covtype, "OMESs"); break;
+  case MIs:   esl_sprintf(ret_covtype, "MIs");   break;
+  case MIrs:  esl_sprintf(ret_covtype, "MIrs");  break; 
+  case MIgs:  esl_sprintf(ret_covtype, "MIgs");  break; 
+
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE");
   }
 
@@ -1253,18 +1302,27 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MI"))     type = MI;
   else if (!esl_strcmp(covtype, "MIr"))    type = MIr;
   else if (!esl_strcmp(covtype, "MIg"))    type = MIg;
+
   else if (!esl_strcmp(covtype, "CHIp"))   type = CHIp;
   else if (!esl_strcmp(covtype, "GTp"))    type = GTp;
   else if (!esl_strcmp(covtype, "OMESp"))  type = OMESp;
   else if (!esl_strcmp(covtype, "MIp"))    type = MIp;
   else if (!esl_strcmp(covtype, "MIrp"))   type = MIrp;
   else if (!esl_strcmp(covtype, "MIgp"))   type = MIgp;
+
   else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
   else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
   else if (!esl_strcmp(covtype, "OMESa"))  type = OMESa;
   else if (!esl_strcmp(covtype, "MIa"))    type = MIa;
   else if (!esl_strcmp(covtype, "MIra"))   type = MIra;
   else if (!esl_strcmp(covtype, "MIga"))   type = MIga;
+
+  else if (!esl_strcmp(covtype, "CHIs"))   type = CHIs;
+  else if (!esl_strcmp(covtype, "GTs"))    type = GTs;
+  else if (!esl_strcmp(covtype, "OMESs"))  type = OMESs;
+  else if (!esl_strcmp(covtype, "MIs"))    type = MIs;
+  else if (!esl_strcmp(covtype, "MIrs"))   type = MIrs;
+  else if (!esl_strcmp(covtype, "MIgs"))   type = MIgs;
   else
     ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE %s", covtype);
 
@@ -2972,6 +3030,7 @@ shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int
  ERROR:
   if (shcol)  free(shcol);
   if (useme)  free(useme);
+  return status;
 }
 
 int 
