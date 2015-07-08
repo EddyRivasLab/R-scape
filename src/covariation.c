@@ -3267,7 +3267,7 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx,
       fprintf(pipe, "set origin 0,0\n");
       fprintf(pipe, "set key default\n");
 
-      fprintf(pipe, "plot '-' using 1:2 with lines ls %d title 'expected'\n", style2);
+      fprintf(pipe, "plot '-' using 1:2 with lines ls %d title 'exponential fit'\n", style2);
       
       esum = 0.;
       for (i = h->nb-1; i >= 0; i--)
