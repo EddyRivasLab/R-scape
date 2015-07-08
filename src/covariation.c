@@ -1212,11 +1212,8 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
 	mi->COV->mx[i][j] = (COVavg != 0.0)? COV->mx[i][j] - COVx[i] * COVx[j] / COVavg : 0.0;
       else if (corrtype == ASC) 
 	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
-      else if (corrtype == SCA) {
-	mi->COV->mx[i][j]  = COV->mx[i][j] * COVavg; 
-	mi->COV->mx[i][j] /= sqrt(COVx[i]); 
-	mi->COV->mx[i][j] /= sqrt(COVx[j]);
-      } 
+      else if (corrtype == SCA) 
+	mi->COV->mx[i][j]  = COV->mx[i][j] * COVavg / sqrt(COVx[i] * COVx[j]);
       else 
 	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
 
