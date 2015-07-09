@@ -59,6 +59,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   FILE            *outmsafp;
  
+  char            *outdir;
   char            *outfile;
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
@@ -211,7 +212,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--pmass",        eslARG_REAL,   "0.005",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,   "0.002",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -293,8 +294,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open outmsa file %s", esl_opt_GetString(go, "--outmsa"));
   } 
   
-  esl_FileTail(cfg.msafile, TRUE, &cfg.outheader);
-  if ( esl_opt_IsOn(go, "--outdir") ) esl_sprintf( &cfg.outheader, "%s/%s", esl_opt_GetString(go, "--outdir"), cfg.outheader);
+  cfg.outdir = NULL;
+  if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
+ 
+ esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
+  if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
   else                              { cfg.submsa = 0; }
@@ -508,7 +512,7 @@ main(int argc, char **argv)
       if (!esl_strcmp(msa->gf_tag[t], "TP")) {
 	tp = msa->gf[t];	
 	while (*tp != '\0') {
-	  if (esl_strtok(&tp, " ", &tok) != eslOK) esl_fatal(msg);
+	  if (esl_strtok(&tp, ";", &tok) != eslOK) esl_fatal(msg);
 	  esl_strcat(&type, -1, tok, -1);
 	}
       }
@@ -516,29 +520,29 @@ main(int argc, char **argv)
     if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s_%s", msa->acc, msa->name, type);
     else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
     else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
-    else                                    esl_sprintf(&cfg.msaname, "%s.%d", cfg.outheader, cfg.nmsa);
+    else                                    esl_sprintf(&cfg.msaname, "%s_%d", cfg.filename, cfg.nmsa);
 
     /* allocate the output files */
     /* R2R annotated sto file */
-    esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.msaname);
+    esl_sprintf(&cfg.R2Rfile, "%s/%s.R2R.sto", cfg.outdir, cfg.msaname);
     cfg.R2Rfp = NULL;
     
     /* covhis file */
-    esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.msaname, "his");
-    esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.msaname, "his");
+    esl_sprintf(&cfg.covhisfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "his");
+    esl_sprintf(&cfg.cykcovhisfile, "%s/%s.cyk.%s", cfg.outdir, cfg.msaname, "his");
     
     /* nullcovhis file */
-    esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.msaname, "nullhis");
-    esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.msaname, "nullhis");
+    esl_sprintf(&cfg.nullcovhisfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "nullhis");
+    esl_sprintf(&cfg.cyknullcovhisfile, "%s/%s.cyk.%s", cfg.outdir, cfg.msaname, "nullhis");
     
     /* nullcovplot file */
-    esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.msaname, "nullcov");
+    esl_sprintf(&cfg.nullcovfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "nullcov");
     /* dotplot file */
-    esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.msaname, "dplot");
-    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.msaname, "cyk.dplot");
+    esl_sprintf(&cfg.dplotfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "dplot");
+    esl_sprintf(&cfg.cykdplotfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "cyk.dplot");
     
     cfg.R2Rcykfile = NULL;
-    esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.msaname, "cyk.R2R.sto");
+    esl_sprintf(&cfg.R2Rcykfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "cyk.R2R.sto");
     cfg.R2Rcykfp = NULL;
 
    /* select submsa and then apply msa filters 
@@ -584,6 +588,11 @@ main(int argc, char **argv)
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
+    }
+    if (1||cfg.verbose) {
+      fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	      cfg.msaname, msa->nseq, cfg.omstat.nseq, msa->alen, cfg.omstat.alen, 
+	      cfg.mstat.avgid, cfg.omstat.avgid, cfg.nbpairs, cfg.onbpairs);  
     }
     
     /* the ct vector */
@@ -653,6 +662,7 @@ main(int argc, char **argv)
   if (cfg.msaname) free(cfg.msaname);
   if (type) free(type);
   if (cfg.outfile) free(cfg.outfile);
+  if (cfg.outdir) free(cfg.outdir);
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
