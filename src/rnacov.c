@@ -512,12 +512,15 @@ main(int argc, char **argv)
       if (!esl_strcmp(msa->gf_tag[t], "TP")) {
 	tp = msa->gf[t];	
 	while (*tp != '\0') {
-	  if (esl_strtok(&tp, ";", &tok) != eslOK) esl_fatal(msg);
+	  if (esl_strtok(&tp,  ";", &tok) != eslOK) esl_fatal(msg);
+	  if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
+	  esl_sprintf(&tok, "_%s", tok);
 	  esl_strcat(&type, -1, tok, -1);
+    
 	}
       }
     }
-    if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s_%s", msa->acc, msa->name, type);
+    if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s%s", msa->acc, msa->name, type);
     else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
     else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
     else                                    esl_sprintf(&cfg.msaname, "%s_%d", cfg.filename, cfg.nmsa);
