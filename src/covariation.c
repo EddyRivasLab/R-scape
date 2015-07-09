@@ -2778,7 +2778,6 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_ct2simplewuss(*ret_ct, L, ss);
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
-  //printf("ss:%s\n", msa->ss_cons);
 
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
   eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
@@ -2840,16 +2839,14 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
   sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
-  
-  //printf("sq:%s\n", sq->seq);
-  esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
+   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
  
   cykcov_remove_inconsistencies(sq, ct, minloop);
- 
+
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) printf("coco-cyk score = %f\n", sc);
+  if (1||verbose) printf("coco-cyk score = %f\n", sc);
 
   if (cct) {
     free(ct); ct = NULL;

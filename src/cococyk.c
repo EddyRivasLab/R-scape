@@ -858,6 +858,7 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
 	esl_stack_IPush(ns, BGR_M);
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
+	break;
 	
       case BGR_M_1: // M -> M1 M
 	esl_stack_IPush(ns, BGR_M1);
@@ -893,8 +894,6 @@ COCOCYK_BGR_Traceback(ESL_RANDOMNESS *rng, BGRparam  *p, ESL_SQ *sq, int *ct, BG
 	esl_stack_IPush(ns, BGR_F0);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
-	break;
- 
 	break;
 
      default: 
