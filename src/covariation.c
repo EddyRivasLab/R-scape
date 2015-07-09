@@ -2487,10 +2487,11 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     if (ct[i] > i && i < ileft)  ileft  = i;
     if (ct[i] < i && i > iright) iright = i;
   }
-  if (ileft > iright) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
+  if (ileft > iright)     ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
+  if (iright > msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
 
-  ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i) : ileft;
-  iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j) : iright;
+  ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i+1) : ileft;
+  iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j+1) : iright;
 
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
