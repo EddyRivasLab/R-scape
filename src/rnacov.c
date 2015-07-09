@@ -516,7 +516,6 @@ main(int argc, char **argv)
 	  if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
 	  esl_sprintf(&tok, "_%s", tok);
 	  esl_strcat(&type, -1, tok, -1);
-    
 	}
       }
     }
