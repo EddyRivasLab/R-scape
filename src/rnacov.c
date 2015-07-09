@@ -400,27 +400,26 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
-  /* R2R annotated sto file */
-  esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.outheader);
-  cfg.R2Rfp = NULL;
+  /* msa-specifig files */
+  cfg.R2Rfile = NULL;
+  cfg.R2Rfp   = NULL;
 
   /* covhis file */
-  esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.outheader, "his");
-  esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.outheader, "his");
+  cfg.covhisfile    = NULL;
+  cfg.cykcovhisfile = NULL;
   
   /* nullcovhis file */
-  esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.outheader, "nullhis");
-  esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.outheader, "nullhis");
+  cfg.nullcovhisfile    = NULL;
+  cfg.cyknullcovhisfile = NULL;
   
   /* nullcovplot file */
-  esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.outheader, "nullcov");
+  cfg.nullcovfile = NULL;
   /* dotplot file */
-  esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.outheader, "dplot");
-  esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.outheader, "cyk.dplot");
+  cfg.dplotfile    = NULL;
+  cfg.cykdplotfile = NULL;
   
   cfg.R2Rcykfile = NULL;
-  esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.outheader, "cyk.R2R.sto");
-  cfg.R2Rcykfp = NULL;
+  cfg.R2Rcykfp   = NULL;
   
   cfg.shsumfile = NULL;
   cfg.shsumfp   = NULL;
@@ -517,7 +516,30 @@ main(int argc, char **argv)
     if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s_%s", msa->acc, msa->name, type);
     else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
     else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
-    else                                    esl_sprintf(&cfg.msaname, "%s", cfg.outheader);
+    else                                    esl_sprintf(&cfg.msaname, "%s.%d", cfg.outheader, cfg.nmsa);
+
+    /* allocate the output files */
+    /* R2R annotated sto file */
+    esl_sprintf(&cfg.R2Rfile, "%s.R2R.sto", cfg.msaname);
+    cfg.R2Rfp = NULL;
+    
+    /* covhis file */
+    esl_sprintf(&cfg.covhisfile, "%s.%s", cfg.msaname, "his");
+    esl_sprintf(&cfg.cykcovhisfile, "%s.cyk.%s", cfg.msaname, "his");
+    
+    /* nullcovhis file */
+    esl_sprintf(&cfg.nullcovhisfile, "%s.%s", cfg.msaname, "nullhis");
+    esl_sprintf(&cfg.cyknullcovhisfile, "%s.cyk.%s", cfg.msaname, "nullhis");
+    
+    /* nullcovplot file */
+    esl_sprintf(&cfg.nullcovfile, "%s.%s", cfg.msaname, "nullcov");
+    /* dotplot file */
+    esl_sprintf(&cfg.dplotfile, "%s.%s", cfg.msaname, "dplot");
+    esl_sprintf(&cfg.cykdplotfile, "%s.%s", cfg.msaname, "cyk.dplot");
+    
+    cfg.R2Rcykfile = NULL;
+    esl_sprintf(&cfg.R2Rcykfile, "%s.%s", cfg.msaname, "cyk.R2R.sto");
+    cfg.R2Rcykfp = NULL;
 
    /* select submsa and then apply msa filters 
     */
