@@ -2846,7 +2846,7 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar
  /* calculate the convariance-constrain CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (1||verbose) printf("coco-cyk score = %f\n", sc);
+  if (verbose) printf("coco-cyk score = %f\n", sc);
 
   if (cct) {
     free(ct); ct = NULL;
