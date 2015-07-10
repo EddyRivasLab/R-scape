@@ -2128,8 +2128,8 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
 }
 
 int 
-cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,double pmass,
-		   int verbose, char *errbuf)
+cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
+		   char *title, double pmass, int verbose, char *errbuf)
 {
   FILE    *fp = NULL;
   int      status;
@@ -2143,8 +2143,8 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, pmass, FALSE, errbuf);
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, pmass, TRUE,  errbuf);
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, title, pmass, FALSE, errbuf);
+  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, title, pmass, TRUE,  errbuf);
   if (status != eslOK) goto ERROR;
 
   return eslOK;
@@ -2184,7 +2184,8 @@ cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double 
 
 
 int 
-cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, double pmass, int dosvg, char *errbuf)
+cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, char *title, 
+			  double pmass, int dosvg, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
@@ -2229,7 +2230,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   }
 
   fprintf(pipe, "set output '%s'\n", outplot);
-  fprintf(pipe, "set title '%s' \n", filename);
+  fprintf(pipe, "set title '%s' \n", title);
 
   fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps %f\n", pointsize);
   fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 1 ps %f\n", pointsize);

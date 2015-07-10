@@ -591,11 +591,6 @@ main(int argc, char **argv)
       if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
     }
-    if (1||cfg.verbose) {
-      fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	      cfg.msaname, msa->nseq, cfg.omstat.nseq, msa->alen, cfg.omstat.alen, 
-	      cfg.mstat.avgid, cfg.omstat.avgid, cfg.nbpairs, cfg.onbpairs);  
-    }
     
     /* the ct vector */
     status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
@@ -608,6 +603,12 @@ main(int argc, char **argv)
 #endif
     if (cfg.nbpairs == 0) cfg.docyk = TRUE; // calculate the cyk-cov structure if no given one
 
+    if (1||cfg.verbose) {
+      fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	      cfg.msaname, msa->nseq, cfg.omstat.nseq, msa->alen, cfg.omstat.alen, 
+	      cfg.mstat.avgid, cfg.omstat.avgid, cfg.nbpairs, cfg.onbpairs);  
+    }
+    
     /* the null model first */
     cfg.mode = RANSS;
     if (cfg.nulltype == Null1) {
@@ -714,6 +715,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist)
 {
+  char            *title = NULL;
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
   RANKLIST        *ranklist = NULL;
@@ -734,6 +736,9 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
+  esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %.2f bpairs %d)", 
+	      cfg->msaname, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);
+
   /* produce a tree
    */
   if (cfg->method != NAIVE) {
@@ -765,17 +770,17 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
   if (cfg->mode == GIVSS) {
-   if (cfg->verbose) {
+    if (cfg->verbose) {
       printf("score total distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, cfg->pmass, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, title, cfg->pmass, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
- }
-
+  }
+  
   status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
   if (status != eslOK) goto ERROR; 
 
@@ -791,7 +796,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, cfg->pmass, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, title, cfg->pmass, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
  
@@ -799,6 +804,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (ret_ranklist) *ret_ranklist = ranklist; else cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist);
+  if (title) free(title);
   cov_Destroy(mi); mi = NULL;
   
   return eslOK;
@@ -809,6 +815,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
+  if (title)       free(title);
   return status;
 }
 
