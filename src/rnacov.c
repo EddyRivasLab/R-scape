@@ -736,8 +736,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
-  esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %.2f bpairs %d)", 
-	      cfg->msaname, msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs);
+  esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
+	      cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
 
   /* produce a tree
    */
