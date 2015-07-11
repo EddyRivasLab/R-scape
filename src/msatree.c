@@ -33,6 +33,11 @@
 
 #include "msatree.h"
 
+static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, char *verbose);
+static int     tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc);
+static int     tree_fitch_downwards(int dim, int xa, int *Sd);
+static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S);
+
 /*****************************************************************
  * 1. Miscellaneous functions for msatree
  *****************************************************************/ 
@@ -106,6 +111,40 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   remove(tmpmsafile);
   if (args != NULL) free(args);
   return status;  
+}
+
+int
+Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, char *errbuf, char verbose)
+{
+  ESL_MSA *allmsa = NULL;
+  int      nnodes = (T->N > 1)? T->N-1 : T->N;
+  int      sc = 0;
+  int      c;
+  int      status;
+
+  /* allmsa include the ancestral sequences
+   * allmsa->ax[0,N-1] = msa->ax[0,N-1]
+   * allmsa->ax[N+n] = ancestral sequence at node 0 <= n < N-1 (n=0 is the root)
+   */
+  allmsa = esl_msa_Clone(msa);
+  if (allmsa == NULL) { status = eslFAIL; goto ERROR; }
+  allmsa->alen = -1; // so we can expand the nseq in the alignment
+  esl_msa_Expand(allmsa);
+  allmsa->nseq += nnodes;
+  allmsa->alen  = msa->alen;
+
+  for (c = 0; c < allmsa->alen; c ++) {
+    status = tree_fitch_column(c, r, T, allmsa, &sc, errbuf, verbose); 
+    if (status != eslOK) goto ERROR;
+  }
+  
+  *ret_sc = sc;
+  *ret_allmsa = allmsa;
+  return eslOK;
+
+ ERROR:
+  if (allmsa) esl_msa_Destroy(allmsa);
+  return status;
 }
 
 
@@ -1435,6 +1474,150 @@ esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE **ret_T, double tol, ch
 }
 
 /*---- internal functions ---*/
+
+static int
+tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, char *verbose) 
+{
+  ESL_STACK  *vs = NULL;
+  int       **S  = NULL;
+  int         K = allmsa->abc->K;
+  int         dim = K+2;
+  ESL_DSQ     ax;
+  int         nnodes = (T->N > 1)? T->N-1 : T->N;
+  int         sc = *ret_sc;
+  int         n;
+  int         idx, idxl, idxr;
+  int         v;
+  int         status;
+
+
+ /* create a stack, and put root in the stack */
+  if (( vs = esl_stack_ICreate()) == NULL) { status = eslEMEM; goto ERROR; };
+
+  /* S[v][0,..K-1] for residues
+   * S[v][K]       for gaps
+   * S[v][K+1]     flag to mark that S has been set for that node
+   */
+  ESL_ALLOC(S,    sizeof(int *) * allmsa->nseq);
+  ESL_ALLOC(S[0], sizeof(int)   * allmsa->nseq * dim);
+  for (n = 1; n < allmsa->nseq; n++) S[v] = S[0] + n * dim;
+
+  /* Set S for the leaves */
+  for (n = 0; n < T->N; n++) {
+    ax = allmsa->ax[n][c];
+    if (esl_abc_XIsCanonical(allmsa->abc, ax) || esl_abc_XIsGap(allmsa->abc, ax)) S[n][ax] = TRUE;
+    S[n][dim-1] = TRUE;
+  }
+  /* Mark as unset for the nodes */
+  for (n = T->N; n < allmsa->nseq; n ++)
+    esl_vec_ISet(S[n], dim, FALSE);
+ 
+  /* go up the tree */
+  if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
+  while (esl_stack_IPop(vs, &v) == eslOK) 
+    { 
+      if (T->left[v]  > 0 && S[T->left[v]][dim-1]  == FALSE) { esl_stack_IPush(vs, T->left[v]);  continue; }
+      if (T->right[v] > 0 && S[T->right[v]][dim-1] == FALSE) { esl_stack_IPush(vs, T->right[v]); continue; }
+      
+      idx  = T->N + v;
+      idxl = (T->left[v]  < 0)? -T->left[v]  : T->N + T->left[v];
+      idxr = (T->right[v] < 0)? -T->right[v] : T->N + T->right[v];
+      
+      status = tree_fitch_upwards(dim, S[idxl], S[idxr], S[idx], &sc); 
+      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm upwards failed");
+    }
+  printf("fitch score %d\n", sc);
+
+  /* set arbitrary characted at the root */
+  allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
+
+  /* go down the tree */
+  if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
+  while (esl_stack_IPop(vs, &v) == eslOK) 
+    { 
+      idx = T->N + v;
+      ax = allmsa->ax[idx][c];
+
+      if (T->left[v]  < 0) {
+	idxl = T->N + T->left[v];
+	status = tree_fitch_downwards(dim, (int)ax, S[idxl]); 
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm downwards failed");
+
+	/* now Sl is just a character, assign to the msa sequence */
+	allmsa->ax[idxl][c] = tree_fitch_choose(r, dim, S[idxl]);
+      }
+      
+      if (T->right[v]  < 0) {
+	idxr = T->N + T->right[v];
+	status = tree_fitch_downwards(dim, (int)ax, S[idxr]); 
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm downwards failed");
+
+	/* now Sr is just a character, assign to the msa sequence */
+	allmsa->ax[idxr][c] = tree_fitch_choose(r, dim, S[idxr]);
+      }
+ 
+      if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);
+      if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); 
+    }
+  
+  *ret_sc = sc;
+  
+  esl_stack_Destroy(vs);
+  return eslOK;
+  
+ ERROR:
+   if (vs) esl_stack_Destroy(vs);
+  return status;
+}
+
+static ESL_DSQ
+tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S)
+{
+  int  x = (int)esl_random(r)*(dim-1);
+
+  while (S[x] == FALSE) 
+    x = (int)esl_random(r)*(dim-1);
+
+  return (ESL_DSQ) x;
+}
+
+static int
+tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc)
+{
+  int status;
+  int i;
+
+  if (Sl[dim-1] == FALSE || Sr[dim-1] == FALSE || S[dim-1] == TRUE) { status = eslFAIL; goto ERROR; }
+
+  /* if they intersect, report the intersection */
+  for (i = 0; i < dim-1; i ++) 
+    if (Sl[i] == TRUE && Sr[i] == TRUE) S[i] = TRUE;
+ 
+  for (i = 0; i < dim-1; i ++) if (S[i] == TRUE) break;
+
+  if (i == dim-1) { // no intersection, report the union
+    *ret_sc ++;
+    for (i = 0; i < dim-1; i ++)  if (Sl[i] == TRUE || Sr[i] == TRUE) S[i] = TRUE;
+  }
+
+  S[dim-1] = TRUE; // array done
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+static int
+tree_fitch_downwards(int dim, int ax, int *S)
+{
+  int i;
+  if (S[ax] == TRUE)  {
+    for (i = 0; i < dim-1; i ++) if (i != ax) S[i] = FALSE; 
+  }
+
+  return eslOK;
+}
 
 /*****************************************************************
  * 2. Unit tests

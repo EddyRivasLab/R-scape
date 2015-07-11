@@ -404,9 +404,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
-  /* msa-specifig files */
-  cfg.R2Rfile = NULL;
-  cfg.R2Rfp   = NULL;
+  /* msa-specific files */
+  cfg.R2Rfile    = NULL;
+  cfg.R2Rfp      = NULL;
+  cfg.R2Rcykfile = NULL;
+  cfg.R2Rcykfp   = NULL;
 
   /* covhis file */
   cfg.covhisfile    = NULL;
@@ -418,12 +420,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* nullcovplot file */
   cfg.nullcovfile = NULL;
+
   /* dotplot file */
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
-  
-  cfg.R2Rcykfile = NULL;
-  cfg.R2Rcykfp   = NULL;
   
   cfg.shsumfile = NULL;
   cfg.shsumfp   = NULL;
@@ -524,31 +524,27 @@ main(int argc, char **argv)
     else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
     else                                    esl_sprintf(&cfg.msaname, "%s_%d", cfg.filename, cfg.nmsa);
 
-    /* allocate the output files */
     /* R2R annotated sto file */
-    esl_sprintf(&cfg.R2Rfile, "%s/%s.R2R.sto", cfg.outdir, cfg.msaname);
-    cfg.R2Rfp = NULL;
+    esl_sprintf(&cfg.R2Rfile,    "%s/%s.R2R.sto",     cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg.outdir, cfg.msaname);
     
     /* covhis file */
-    esl_sprintf(&cfg.covhisfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "his");
-    esl_sprintf(&cfg.cykcovhisfile, "%s/%s.cyk.%s", cfg.outdir, cfg.msaname, "his");
+    esl_sprintf(&cfg.covhisfile,    "%s/%s.his",     cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.cykcovhisfile, "%s/%s.cyk.his", cfg.outdir, cfg.msaname);
     
     /* nullcovhis file */
-    esl_sprintf(&cfg.nullcovhisfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "nullhis");
-    esl_sprintf(&cfg.cyknullcovhisfile, "%s/%s.cyk.%s", cfg.outdir, cfg.msaname, "nullhis");
+    esl_sprintf(&cfg.nullcovhisfile,    "%s/%s.nullhis",    cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg.outdir, cfg.msaname);
     
     /* nullcovplot file */
-    esl_sprintf(&cfg.nullcovfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "nullcov");
-    /* dotplot file */
-    esl_sprintf(&cfg.dplotfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "dplot");
-    esl_sprintf(&cfg.cykdplotfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "cyk.dplot");
+    esl_sprintf(&cfg.nullcovfile, "%s/%s.nullcov", cfg.outdir, cfg.msaname);
     
-    cfg.R2Rcykfile = NULL;
-    esl_sprintf(&cfg.R2Rcykfile, "%s/%s.%s", cfg.outdir, cfg.msaname, "cyk.R2R.sto");
-    cfg.R2Rcykfp = NULL;
-
-   /* select submsa and then apply msa filters 
-    */
+    /* dotplot file */
+    esl_sprintf(&cfg.dplotfile,    "%s/%s.dplot",    cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.cykdplotfile, "%s/%s.cykdplot", cfg.outdir, cfg.msaname);
+    
+    /* select submsa and then apply msa filters 
+     */
     if (cfg.fragfrac > 0.      && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
     if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
@@ -585,7 +581,7 @@ main(int argc, char **argv)
     if (cfg.outmsafp) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
  
     /* print some info */
-    if (cfg.voutput) {
+    if (cfg.verbose) {
       fprintf(cfg.outfp, "Used alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
@@ -666,30 +662,30 @@ main(int argc, char **argv)
   if (type) free(type);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outdir) free(cfg.outdir);
+  free(cfg.outheader);
   fclose(cfg.outfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
+  free(cfg.gnuplot);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
-  if (cfg.R2Rfp) fclose(cfg.R2Rfp);
-  free(cfg.outheader);
-  free(cfg.covhisfile);
-  free(cfg.nullcovhisfile);
+  if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
+  if (cfg.R2Rfile) free(cfg.R2Rfile); 
+  if (cfg.R2Rversion) free(cfg.R2Rversion); 
+  if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
+  if (cfg.covhisfile) free(cfg.covhisfile); 
+  if (cfg.nullcovhisfile) free(cfg.nullcovhisfile);
   if (cfg.cykcovhisfile) free(cfg.cykcovhisfile);
   if (cfg.cyknullcovhisfile) free(cfg.cyknullcovhisfile);
-  free(cfg.nullcovfile);
-  free(cfg.dplotfile);
+  if (cfg.nullcovfile) free(cfg.nullcovfile);
+  if (cfg.dplotfile) free(cfg.dplotfile);
   if (cfg.cykdplotfile) free(cfg.cykdplotfile);
-  free(cfg.R2Rfile);
-  free(cfg.R2Rversion);
-  free(cfg.gnuplot);
-  if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
-  if (cfg.ft)   free(cfg.ft);
-  if (cfg.fbp)  free(cfg.fbp);
+  if (cfg.ft) free(cfg.ft);
+  if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
   if (ranklist_null) cov_FreeRankList(ranklist_null);
-  if (ranklist_aux)  cov_FreeRankList(ranklist_aux);
+  if (ranklist_aux) cov_FreeRankList(ranklist_aux);
 
   return 0;
 }
@@ -703,10 +699,8 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the TREE */
   status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
   if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-
-  if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
-  
-  cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
+  cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
+  if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   
   return eslOK;
 }
@@ -1104,11 +1098,60 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 static int
 null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
+  ESL_MSA   *allmsa = NULL;
+  ESL_MSA   *shmsa = NULL;
+  RANKLIST  *cumranklist = NULL;
+  RANKLIST  *ranklist = NULL;
+  int       sc;
+  int       s;
+  int       b;
+  int       status;
   
-  printf("null4 not implemented yet\n");
-  exit(1);
+  status = create_tree(go, cfg, msa);
+  if (status != eslOK) goto ERROR;
+  
+  status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) goto ERROR;
+  if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+
+  for (s = 0; s < cfg->nshuffle; s ++) {
+    //msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
+
+    status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
+    
+    status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR;
+    
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
+  }
+  
+  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
+    cumranklist->covBP[b]  /= (double)cfg->nshuffle;
+    cumranklist->covNBP[b] /= (double)cfg->nshuffle;
+  }
+  if (cfg->verbose) {
+    printf("null4 distribution - cummulative\n");
+    printf("imin %d imax %d xmax %f xmin %f\n", 
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, cumranklist->h);
+    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
+  }
+  
+  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
+  
+  *ret_cumranklist = cumranklist;
+
+  esl_msa_Destroy(allmsa);
   return eslOK;
   
+ ERROR:
+  if (allmsa) esl_msa_Destroy(allmsa);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
+  return status;
 }
 
 static int
