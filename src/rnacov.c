@@ -699,8 +699,10 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the TREE */
   status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
   if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-  cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-  if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+  if (cfg->T) {
+    cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
+    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+  }
   
   return eslOK;
 }
@@ -1109,7 +1111,8 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   
   status = create_tree(go, cfg, msa);
   if (status != eslOK) goto ERROR;
-  
+  if (cfg->T == NULL) return eslOK;
+
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 

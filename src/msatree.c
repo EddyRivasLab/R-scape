@@ -51,6 +51,8 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
   ESL_TREE *T = NULL;
   int       status;
 
+  if (msa->nseq == 1) { *ret_T = NULL; return eslOK; }
+
   if ((status = esl_tmpfile_named(tmptreefile, &treefp))               != eslOK) ESL_XFAIL(status, errbuf, "failed to create treefile");
   fclose(treefp);
 
