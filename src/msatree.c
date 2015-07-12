@@ -1507,13 +1507,11 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
     if (esl_abc_XIsCanonical(allmsa->abc, ax) || esl_abc_XIsGap(allmsa->abc, ax)) S[n][ax] = TRUE;
     S[n][dim-1] = TRUE;
   }
-  printf("allmsa nseq %d leaves %d\n", allmsa->nseq, T->N);
 
   /* go up the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
   while (esl_stack_IPop(vs, &v) == eslOK) 
     { 
-      printf("## v %d\n", v);
       idxl = (T->left[v]  <= 0)? -T->left[v]  : T->N + T->left[v];
       idxr = (T->right[v] <= 0)? -T->right[v] : T->N + T->right[v];
 
@@ -1534,7 +1532,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
   printf("fitch score %d\n", sc);
 
   /* set arbitrary characted at the root */
-  printf("%d %d %d %d %d\n", S[T->N][0], S[T->N][1], S[T->N][2], S[T->N][3], S[T->N][4]);
+  printf("%d %d %d %d %d %d\n", S[T->N][0], S[T->N][1], S[T->N][2], S[T->N][3], S[T->N][4], S[T->N][5]);
 
   allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
   printf("v %d ax  %d\n", 0, ax);
@@ -1582,12 +1580,14 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 static ESL_DSQ
 tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S)
 {
-  int x = (int)esl_random(r)*(dim-1);
+  int    i;
 
-  while (S[x] == FALSE) 
-    x = (int)esl_random(r)*(dim-1);
-
-  return (ESL_DSQ) x;
+  i = (int)(esl_random(r) * (dim-1));
+  
+  while (S[i] == FALSE)
+    i = (int)(esl_random(r) * (dim-1));
+  
+  return (ESL_DSQ)i;
 }
 
 static int
