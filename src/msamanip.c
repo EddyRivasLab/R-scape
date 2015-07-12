@@ -871,6 +871,41 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
   return status;
 }
 
+int 
+msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+{
+  ESL_MSA *shmsa  = NULL;
+  int     *useme  = NULL;
+  int     *seqidx = NULL;
+  int     *perm   = NULL;
+  int      nseq;
+  int      i;
+  int      n;
+  int      s;
+  int      status = eslOK;
+
+  /* copy the original alignemt */
+  shmsa = esl_msa_Clone(msa);
+  if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+
+  /* vector to mark residues in a column */
+  ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+  
+  *ret_shmsa = shmsa;
+  
+  free(useme);
+  if (perm) free(perm);
+  if (seqidx) free(seqidx);
+  return status;
+
+ ERROR:
+  if (useme)  free(useme);
+  if (perm)   free(perm);
+  if (seqidx) free(seqidx);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
+}
+
 int
 msamanip_OutfileHeader(char *acc, char **ret_outheader)
 {      

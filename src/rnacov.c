@@ -725,14 +725,14 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 			   cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 			   cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
-  if (cfg->mode != RANSS) 
+  if (cfg->mode != RANSS) {
     fprintf(cfg->outfp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
 	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+    esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
+		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
+  }
   
-  esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
-	      cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
-
   /* produce a tree
    */
   if (cfg->method != NAIVE) {
@@ -1115,7 +1115,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
 
   for (s = 0; s < cfg->nshuffle; s ++) {
-    //msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
+    msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);

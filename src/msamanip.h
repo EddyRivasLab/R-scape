@@ -50,6 +50,7 @@ extern int msamanip_SelectRandomSet(ESL_RANDOMNESS *r, ESL_MSA **msa, ESL_MSA **
 extern int msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idthresh2);
 extern int msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, int *useme, char *errbuf, int verbose);
 extern int msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose);
+extern int msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, ESL_MSA **ret_shmsa, char *errbuf, int verbose);
 extern int msamanip_OutfileHeader(char *acc, char **ret_outheader);
 extern int msamanip_MSALeaves(ESL_MSA **msa, int incnode);
 extern int msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT mstat);
@@ -59,7 +60,6 @@ extern int msamanip_CBaseComp(const ESL_ALPHABET *abc, ESL_MSA *msa, float *prio
 extern int msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_msafreq);
 extern int msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc, 
 			      float treeavgt, float time, int lcu_r, int lcu_e, char *errbuf, int verbose);
-
 #endif /*MSAMANIP_INCLUDED*/
 
 /************************************************************

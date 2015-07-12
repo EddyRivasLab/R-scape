@@ -129,6 +129,7 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
    */
   allmsa = esl_msa_CreateDigital(msa->abc, msa->nseq+nnodes, msa->alen);
   if (allmsa == NULL) { status = eslFAIL; goto ERROR; }
+  allmsa->alen = msa->alen;
 
   /* copy the msa sequences into allmsa */
   for (i = 0; i < msa->nseq; i++) {
