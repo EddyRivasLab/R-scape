@@ -33,7 +33,7 @@
 
 #include "msatree.h"
 
-static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, char *verbose);
+static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, int verbose);
 static int     tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc);
 static int     tree_fitch_downwards(int dim, int xa, int *Sd);
 static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S);
@@ -119,6 +119,7 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
   ESL_MSA *allmsa = NULL;
   int      nnodes = (T->N > 1)? T->N-1 : T->N;
   int      sc = 0;
+  int      i;
   int      c;
   int      status;
 
@@ -126,12 +127,17 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
    * allmsa->ax[0,N-1] = msa->ax[0,N-1]
    * allmsa->ax[N+n] = ancestral sequence at node 0 <= n < N-1 (n=0 is the root)
    */
-  allmsa = esl_msa_Clone(msa);
+  allmsa = esl_msa_CreateDigital(msa->abc, msa->nseq+nnodes, msa->alen);
   if (allmsa == NULL) { status = eslFAIL; goto ERROR; }
-  allmsa->alen = -1; // so we can expand the nseq in the alignment
-  esl_msa_Expand(allmsa);
-  allmsa->nseq += nnodes;
-  allmsa->alen  = msa->alen;
+
+  /* copy the msa sequences into allmsa */
+  for (i = 0; i < msa->nseq; i++) {
+    esl_strdup(msa->sqname[i], -1, &(allmsa->sqname[i]));
+    memcpy(allmsa->ax[i], msa->ax[i], (msa->alen+2) * sizeof(ESL_DSQ));
+  }
+  for (i = msa->nseq; i < allmsa->nseq; i++) {
+    esl_sprintf(&(allmsa->sqname[i]), "node_%d", i-msa->nseq);
+  }
 
   for (c = 1; c <= allmsa->alen; c ++) {
     status = tree_fitch_column(c, r, T, allmsa, &sc, errbuf, verbose); 
@@ -1476,7 +1482,7 @@ esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE **ret_T, double tol, ch
 /*---- internal functions ---*/
 
 static int
-tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, char *verbose) 
+tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, int verbose) 
 {
   ESL_STACK  *vs = NULL;
   int       **S  = NULL;
@@ -1532,10 +1538,9 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
   printf("fitch score %d\n", sc);
 
   /* set arbitrary characted at the root */
-  printf("%d %d %d %d %d %d\n", S[T->N][0], S[T->N][1], S[T->N][2], S[T->N][3], S[T->N][4], S[T->N][5]);
+  printf("c=%d %d %d %d %d %d %d\n", c, S[T->N][0], S[T->N][1], S[T->N][2], S[T->N][3], S[T->N][4], S[T->N][5]);
 
   allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
-  printf("v %d ax  %d\n", 0, ax);
 
   /* go down the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
