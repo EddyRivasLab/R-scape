@@ -739,7 +739,7 @@ cov_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
 	for (y = 0; y < K; y ++) {
 	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
 	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
-	  gt += (exp > 0.) ? obs * log (obs / exp) : 0.0;
+	  gt += (exp > 0. && obs > 0.) ? obs * log (obs / exp) : 0.0;
 	}	  
       gt *= 2.0;
 
@@ -790,8 +790,8 @@ cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
       obs_wc  = (double)mi->nseff[i][j] * pij_wc;
       obs_nwc = (double)mi->nseff[i][j] * pij_nwc;
       
-      gt += (exp_wc  > 0.) ? obs_wc  * log (obs_wc  / exp_wc)  : 0.0;
-      gt += (exp_nwc > 0.) ? obs_nwc * log (obs_nwc / exp_nwc) : 0.0;
+      gt += (exp_wc  > 0. && obs_wc  > 0.) ? obs_wc  * log (obs_wc  / exp_wc)  : 0.0;
+      gt += (exp_nwc > 0. && obs_nwc > 0.) ? obs_nwc * log (obs_nwc / exp_nwc) : 0.0;
       gt *= 2.0;
 
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = gt;
@@ -863,7 +863,7 @@ cov_CalculateMI_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
@@ -907,8 +907,8 @@ cov_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}
       
-      mutinf += pij_wc  * ( log(pij_wc)  - log(qij_wc)  );
-      mutinf += pij_nwc * ( log(pij_nwc) - log(qij_nwc) );
+      mutinf += (pij_wc  > 0.)? pij_wc  * ( log(pij_wc)  - log(qij_wc)  ) : 0.0;
+      mutinf += (pij_nwc > 0.)? pij_nwc * ( log(pij_nwc) - log(qij_nwc) ) : 0.0;
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
       if (mutinf < mi->minCOV) mi->minCOV = mutinf;
@@ -980,8 +980,8 @@ cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  HH -= mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]);
-	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
+	  HH -= (mi->pp[i][j][IDX(x,y,K)])? mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]) : 0.0;
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
@@ -1024,11 +1024,11 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}
       
-      HH -= pij_wc  * log(pij_wc);
-      HH -= pij_nwc * log(pij_nwc);
+      HH -= (pij_wc  > 0.)? pij_wc  * log(pij_wc)  : 0.0;
+      HH -= (pij_nwc > 0.)? pij_nwc * log(pij_nwc) : 0.0;
 
-      mutinf += pij_wc  * ( log(pij_wc)  - log(qij_wc)  );
-      mutinf += pij_nwc * ( log(pij_nwc) - log(qij_nwc) );
+      mutinf += (pij_wc  > 0. && qij_wc  > 0.0)? pij_wc  * ( log(pij_wc)  - log(qij_wc)  ) : 0.0;
+      mutinf += (pij_nwc > 0. && qij_nwc > 0.0)? pij_nwc * ( log(pij_nwc) - log(qij_nwc) ) : 0.0;
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
@@ -1099,7 +1099,7 @@ cov_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) );
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}
 	  
       /* the negative correction of gaps */
@@ -1145,8 +1145,8 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}
       
-      mutinf += pij_wc  * ( log(pij_wc)  - log(qij_wc)  );
-      mutinf += pij_nwc * ( log(pij_nwc) - log(qij_nwc) );
+      mutinf += (pij_wc  > 0.0)? pij_wc  * ( log(pij_wc)  - log(qij_wc)  ) : 0.0;
+      mutinf += (pij_nwc > 0.0)? pij_nwc * ( log(pij_nwc) - log(qij_nwc) ) : 0.0;
       
       /* the negative correction of gaps */
       mutinf -= (mi->nseff[i][j] > 0)? (double)mi->ngap[i][j] / (double)mi->nseff[i][j] : 0.0;
@@ -1221,11 +1221,11 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
     }
 
-  if (verbose) {
+  if (1||verbose) {
     printf("%s-[%f,%f] \n", covtype,  mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("%s-[%d][%d] = %f | MI %f | COVx %f COVy %f | COVavg %f\n", 
+	if ((i==0&&j==44)||(i==2&&j==43)||(i==7&&j==34)||(i==9&&j==32)) printf("%s-[%d][%d] = %f | COV %f | COVx %f COVy %f | COVavg %f\n", 
 				 covtype, i, j, mi->COV->mx[i][j], COV->mx[i][j], COVx[i], COVx[j], COVavg);
       } 
   }
@@ -1564,10 +1564,9 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
  
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
-
+ 
       /* add to the ha histogram  */
       esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
-
       /* add to the ht histogram if not a real basepair */
       if (ct[i+1] != j+1) 
   	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
@@ -1640,9 +1639,9 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	val = ranklist->ht->expect[newb]; break;
       } 
 
-      //if (val > 0.) printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
-	//if (mode==CYKSS) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
+	//if (1) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
 	cvBP_thresh        = cvBP;
@@ -2965,8 +2964,8 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     x, y;
   int     status;
 
-  esl_vec_DSet(pp, K2, 1.0/(double)K2); // laplace prior
-  mi->nseff[i][j] = 1;
+  esl_vec_DSet(pp, K2, 0.0); 
+  mi->nseff[i][j] = 0;
   
   ESL_ALLOC(coli, sizeof(int)*msa->nseq);
   ESL_ALLOC(colj, sizeof(int)*msa->nseq);

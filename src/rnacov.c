@@ -1001,7 +1001,7 @@ null2b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      shmsa = esl_msa_Clone(msa);
      status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2b rnacov", cfg->errbuf);
-     
+
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
      if (status != eslOK) goto ERROR;
 
@@ -1119,6 +1119,8 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
+    if (1||cfg->verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
+   if (1||cfg->verbose) eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);

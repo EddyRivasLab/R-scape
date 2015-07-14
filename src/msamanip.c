@@ -923,7 +923,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *a
   int        status;
   
   for (n = 1; n <= L; n++) {
-    if (axa[n] != axd[n]) {
+    if (esl_abc_XIsCanonical(allmsa->abc, axa[n]) && esl_abc_XIsCanonical(allmsa->abc, axd[n]) && axa[n] != axd[n]) {
       oldc = axa[n];
       newc = axd[n];
       
@@ -964,7 +964,7 @@ shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ 
   for (n = 1; n <= L; n++) {
     if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
   }
-  printf("col %d/%d ncol %d node %d oldc %d\n", col, L, ncol, node, oldc);
+  printf("node %d col %d/%d ncol %d oldc %d newc %d\n", node, col, L, ncol, oldc, newc);
   ESL_ALLOC(colidx, sizeof(int) * ncol);
   ESL_ALLOC(perm,   sizeof(int) * ncol);
   c = 0;
@@ -975,15 +975,13 @@ shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ 
   /* impose the mutation to all sequences  under this node */
   c = 0;
   for (n = 1; n <= L; n++) {
-    if (useme[n] == TRUE) {
-      
+    if (useme[n] == TRUE) {      
       if (esl_stack_IPush(vs, node) != eslOK) { status = eslEMEM; goto ERROR; };
       while (esl_stack_IPop(vs, &v) == eslOK) 
 	{ 
-	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  else shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc;
- 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); else shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc;
+	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  else { shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc; printf("cladel %d\n", -T->left[v]); }
+ 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); else { shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc; printf("clader %d\n", -T->right[v]); }
  	}
-
       c ++;
     }
   }
