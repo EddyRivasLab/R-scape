@@ -1588,7 +1588,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
   return eslOK;
   
  ERROR:
-   if (vs) esl_stack_Destroy(vs);
+  if (vs) esl_stack_Destroy(vs);
   return status;
 }
 

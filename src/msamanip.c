@@ -21,6 +21,8 @@
 #include "esl_msacluster.h"
 #include "esl_sq.h"
 #include "esl_sqio.h"
+#include "esl_stack.h"
+#include "esl_tree.h"
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
@@ -30,10 +32,14 @@
 #include "msamanip.h"
 
 
-static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
-static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
+static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen,
+			    double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
+static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, 
+			    double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
-
+static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_TREE *T, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf);
+static int shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ oldc, ESL_DSQ newc, ESL_DSQ *ax, ESL_TREE *T, 
+					     ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf);
 
 int 
 msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
@@ -356,16 +362,15 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 int
 msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
 {      
-  ESL_MSA   *omsa  = NULL;
+  ESL_MSA   *omsa = NULL;
   ESL_MSA   *new  = NULL;
-  double     pid;
   int       *assignment = NULL;
   int       *nin        = NULL;
   int       *useme      = NULL;
   int        nused      = 0;
   int        nc         = 0;
   int        cmax;
-  int        i, j;
+  int        i;
   int        status;
 
   omsa = *msa;
@@ -874,37 +879,131 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
 int 
 msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
 {
-  ESL_MSA *shmsa  = NULL;
-  int     *useme  = NULL;
-  int     *seqidx = NULL;
-  int     *perm   = NULL;
-  int      nseq;
-  int      i;
-  int      n;
-  int      s;
-  int      status = eslOK;
+  ESL_MSA    *shmsa  = NULL;
+  ESL_DSQ    *ax, * axl, *axr;
+  int         v;
+  int         idx, idxl, idxr;
+  int         status = eslOK;
 
   /* copy the original alignemt */
   shmsa = esl_msa_Clone(msa);
   if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+  
+  for (v = 0; v < T->N-1; v++) {
+    idx  = T->N + v;
+    idxl = (T->left[v]  <= 0)? -T->left[v]  : T->N + T->left[v];
+    idxr = (T->right[v] <= 0)? -T->right[v] : T->N + T->right[v];
 
-  /* vector to mark residues in a column */
-  ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+    ax  = allmsa->ax[idx];
+    axl = allmsa->ax[idxl];
+    axr = allmsa->ax[idxr];
+    
+    printf("^^ v %d idxl %d idxr %d\n", v, idxl, idxr);
+    status = shuffle_tree_substitutions(r, T->left[v],  ax, axl, T, allmsa, shmsa, errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in ShuffleTreeSubstitutions - left descendant");
+    status = shuffle_tree_substitutions(r, T->right[v], ax, axr, T, allmsa, shmsa, errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in ShuffleTreeSubstitutions - right descendant");
+  }
+
+  *ret_shmsa = shmsa;  
+  return status;
+
+ ERROR:
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
+}
+
+
+static int
+shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_TREE *T, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf)
+{
+  int        L = shmsa->alen;
+  int        n;
+  ESL_DSQ    oldc, newc;
+  int        status;
   
-  *ret_shmsa = shmsa;
+  for (n = 1; n <= L; n++) {
+    if (axa[n] != axd[n]) {
+      oldc = axa[n];
+      newc = axd[n];
+      
+      /* apply this substitution to any other oldc position in axd */
+      status = shuffle_tree_substitutions_column(r, node, n, oldc, newc, axd, T, allmsa, shmsa, errbuf);
+      if (status != eslOK) goto ERROR;
+    }
+  }
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+static int
+shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ oldc, ESL_DSQ newc, ESL_DSQ *ax, ESL_TREE *T, 
+				  ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf)
+{
+  ESL_STACK *vs     = NULL;
+  int       *useme  = NULL;
+  int       *colidx = NULL;
+  int       *perm   = NULL;
+  int        L = shmsa->alen;
+  int        ncol = 0;
+  int        n;
+  int        c;
+  int        v;
+  int        status;
   
+  /* create a stack */
+  if (( vs = esl_stack_ICreate()) == NULL) { status = eslEMEM; goto ERROR; };
+  
+  /* find all other positions with oldc in ax */
+  ESL_ALLOC(useme, sizeof(int)*(L+1));
+  esl_vec_ISet(useme, L+1, FALSE);
+  ncol = 0;
+  for (n = 1; n <= L; n++) {
+    if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
+  }
+  printf("col %d/%d ncol %d node %d oldc %d\n", col, L, ncol, node, oldc);
+  ESL_ALLOC(colidx, sizeof(int) * ncol);
+  ESL_ALLOC(perm,   sizeof(int) * ncol);
+  c = 0;
+  for (n = 1; n <= L; n++) if (useme[n] == TRUE) { colidx[c] = n; c++; }
+  for (c = 0; c < ncol; c ++) perm[c] = c;
+  if ((status = esl_vec_IShuffle(r, perm, ncol)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+  
+  /* impose the mutation to all sequences  under this node */
+  c = 0;
+  for (n = 1; n <= L; n++) {
+    if (useme[n] == TRUE) {
+      
+      if (esl_stack_IPush(vs, node) != eslOK) { status = eslEMEM; goto ERROR; };
+      while (esl_stack_IPop(vs, &v) == eslOK) 
+	{ 
+	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  else shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc;
+ 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); else shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc;
+ 	}
+
+      c ++;
+    }
+  }
+
   free(useme);
   if (perm) free(perm);
-  if (seqidx) free(seqidx);
-  return status;
+  if (colidx) free(colidx);
+  esl_stack_Destroy(vs);
+  return eslOK;
 
  ERROR:
   if (useme)  free(useme);
   if (perm)   free(perm);
-  if (seqidx) free(seqidx);
-  if (shmsa) esl_msa_Destroy(shmsa);
+  if (colidx) free(colidx);
+  if (vs)     esl_stack_Destroy(vs);
   return status;
 }
+
+
+
 
 int
 msamanip_OutfileHeader(char *acc, char **ret_outheader)
