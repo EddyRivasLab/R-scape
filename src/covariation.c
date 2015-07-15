@@ -2999,7 +2999,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   }
 
   /* the probabilities */
-  esl_vec_DNorm(pp, K2);                // normalize
+  esl_vec_DNorm(pp, K2);  // normalize
 
   /* symmetrize */
   for (x = 0; x < K; x ++)

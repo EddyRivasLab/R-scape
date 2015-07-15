@@ -979,8 +979,16 @@ shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ 
       if (esl_stack_IPush(vs, node) != eslOK) { status = eslEMEM; goto ERROR; };
       while (esl_stack_IPop(vs, &v) == eslOK) 
 	{ 
-	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  else { shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc; printf("cladel %d\n", -T->left[v]); }
- 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); else { shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc; printf("clader %d\n", -T->right[v]); }
+	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  
+	  else if (esl_abc_XIsResidue(shmsa->abc, shmsa->ax[-T->left[v]] [colidx[perm[c]]])) { 
+	    shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc; 
+	    printf("cladel %d\n", -T->left[v]); 
+	  }
+ 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); 
+	  else if (esl_abc_XIsResidue(shmsa->abc, shmsa->ax[-T->right[v]] [colidx[perm[c]]])) {
+	    shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc; 
+	    printf("clader %d\n", -T->right[v]); 
+	  }
  	}
       c ++;
     }
