@@ -321,8 +321,7 @@ cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   case AKMAEV:
     break;
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
-  }
-  
+  } 
   /* pm are the marginals */
   for (i = 0; i < mi->alen; i ++) {
     esl_vec_DSet(mi->pm[i], K, 0.0);
@@ -346,7 +345,7 @@ cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   if (verbose) {
     for (i = 0; i < mi->alen-1; i ++) {
       for (j = i+1; j < mi->alen; j ++) {
-	if (i==5&&j==118) {
+	if ((i==5&&j==118)||verbose) {
 	  printf("pp[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
@@ -1221,7 +1220,7 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
     }
 
-  if (1||verbose) {
+  if (verbose) {
     printf("%s-[%f,%f] \n", covtype,  mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
@@ -1639,7 +1638,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	val = ranklist->ht->expect[newb]; break;
       } 
 
-      printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
 	//if (1) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
@@ -3003,7 +3002,9 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   esl_vec_DNorm(pp, K2);                // normalize
 
   /* symmetrize */
-  esl_vec_DCopy(pp, K2, mi->pp[j][i]);
+  for (x = 0; x < K; x ++)
+    for (y = 0; y < K; y ++) 
+      mi->pp[j][i][IDX(y,x,K)] = mi->pp[i][j][IDX(x,y,K)];
   mi->nseff[j][i] = mi->nseff[i][j];
 
   free(coli);
