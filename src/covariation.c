@@ -2483,8 +2483,14 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   ileft  = msa->alen;
   iright = 1;
   for (i = 1; i <= msa->alen; i ++) {
-    if (ct[i] > i && i < ileft)  ileft  = i;
-    if (ct[i] < i && i > iright) iright = i;
+    if (ct[i] > 0) {
+      if (ct[i] > i && i < ileft)  ileft  = i;
+      if (ct[i] < i && i > iright) iright = i;
+    }
+  }
+  if (ileft == msa->alen && iright == 1) {//no structure
+    ileft = 1;
+    iright = msa->alen;
   }
   if (ileft > iright)     ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
   if (iright > msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
