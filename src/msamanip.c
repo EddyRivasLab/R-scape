@@ -963,6 +963,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *a
       oldc = x/K;
       newc = x%K;
       status = shuffle_tree_substitute(r, oldc, newc, L, new, errbuf);
+      if (status != eslOK) goto ERROR;
       nsub[x] --;
       nsubs --;
     }
@@ -1003,6 +1004,8 @@ shuffle_tree_substitute(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ES
   for (n = 1; n <= L; n++) {
     if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
   }
+  if (ncol == 0) ESL_XFAIL(eslFAIL, errbuf, "cannot make random substitution");
+
   ESL_ALLOC(colidx, sizeof(int) * ncol);
   ESL_ALLOC(perm,   sizeof(int) * ncol);
   c = 0;
