@@ -37,9 +37,8 @@ static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, in
 static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, 
 			    double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
-static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_TREE *T, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf);
-static int shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ oldc, ESL_DSQ newc, ESL_DSQ *ax, ESL_TREE *T, 
-					     ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf);
+static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf, int verbose);
+static int shuffle_tree_substitute(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf);
 
 int 
 msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
@@ -898,10 +897,12 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
     axl = allmsa->ax[idxl];
     axr = allmsa->ax[idxr];
     
-    printf("^^ v %d idxl %d idxr %d\n", v, idxl, idxr);
-    status = shuffle_tree_substitutions(r, T->left[v],  ax, axl, T, allmsa, shmsa, errbuf);
+    printf("\nnode_%d -> node_%d\n", v, T->left[v]);
+    status = shuffle_tree_substitutions(r, T->left[v],  ax, axl, allmsa, shmsa, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in ShuffleTreeSubstitutions - left descendant");
-    status = shuffle_tree_substitutions(r, T->right[v], ax, axr, T, allmsa, shmsa, errbuf);
+    
+    printf("\nnode_%d -> node_%d\n", v, T->right[v]);
+    status = shuffle_tree_substitutions(r, T->right[v], ax, axr, allmsa, shmsa, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in ShuffleTreeSubstitutions - right descendant");
   }
 
@@ -915,56 +916,93 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
 
 
 static int
-shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_TREE *T, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf)
+shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf, int verbose)
 {
-  int        L = shmsa->alen;
-  int        n;
+  ESL_DSQ   *new = NULL;
   ESL_DSQ    oldc, newc;
+  int        K = shmsa->abc->K;
+  int        K2 = K*K;
+  int        L = shmsa->alen;
+  int        x;
+  int        n;
+  int        nsubs = 0;
+  int       *nsub = NULL;
   int        status;
   
+  /* calculate the substitutions for this branch */
+  ESL_ALLOC(nsub, sizeof(int) * K2);
+  esl_vec_ISet(nsub, K2, 0);
+  
   for (n = 1; n <= L; n++) {
-    if (esl_abc_XIsCanonical(allmsa->abc, axa[n]) && esl_abc_XIsCanonical(allmsa->abc, axd[n]) && axa[n] != axd[n]) {
-      oldc = axa[n];
-      newc = axd[n];
-      
-      /* apply this substitution to any other oldc position in axd */
-      status = shuffle_tree_substitutions_column(r, node, n, oldc, newc, axd, T, allmsa, shmsa, errbuf);
-      if (status != eslOK) goto ERROR;
+    if (esl_abc_XIsCanonical(allmsa->abc, axa[n]) && esl_abc_XIsCanonical(allmsa->abc, axd[n]) && axa[n] != axd[n])
+      {
+	nsub[axa[n]*K+axd[n]] ++;
+	nsubs ++;
+      }
+  }
+
+#if 1
+  if (1||verbose) {
+    printf("nsub %d\n", nsubs);
+    for (x = 0; x < K; x ++)
+      printf("%d %d %d %d\n", nsub[x*K+0], nsub[x*K+1], nsub[x*K+2], nsub[x*K+3]);
+  }
+#endif
+
+  /* apply those substitutions one at a time randomly along the branch */
+  ESL_ALLOC(new, sizeof(ESL_DSQ) * (L+1));
+  for (n = 1; n <= L; n++) { // copy the ancestral seq but preserve the gap structure of the descendent sequence
+    new[n] = axa[n];
+    if (esl_abc_XIsGap(allmsa->abc, axd[n])) new[n] = axd[n];
+    if (esl_abc_XIsGap(allmsa->abc, axa[n])) new[n] = axd[n];
+  }
+
+  while (nsubs > 0) {
+    x = (int)(esl_random(r) * K2);
+    if (nsub[x] > 0) {
+      oldc = x%K;
+      newc = x/K;
+      status = shuffle_tree_substitute(r, oldc, newc, L, new, errbuf);
+      nsub[x] --;
+      nsubs --;
+    }
+  }
+  
+  /* apply new to shmsa */
+  if (node < 0) {
+    for (n = 1; n <= L; n++) {
+      shmsa->ax[-node][n] = new[n];
     }
   }
 
+  free(nsub);
   return eslOK;
 
  ERROR:
+  if (nsub) free(nsub);
   return status;
 }
 
 static int
-shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ oldc, ESL_DSQ newc, ESL_DSQ *ax, ESL_TREE *T, 
-				  ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf)
+shuffle_tree_substitute(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf)
 {
-  ESL_STACK *vs     = NULL;
   int       *useme  = NULL;
   int       *colidx = NULL;
   int       *perm   = NULL;
-  int        L = shmsa->alen;
   int        ncol = 0;
+  int        which;
   int        n;
   int        c;
   int        v;
   int        status;
   
-  /* create a stack */
-  if (( vs = esl_stack_ICreate()) == NULL) { status = eslEMEM; goto ERROR; };
-  
-  /* find all other positions with oldc in ax */
+ /* find all other positions with oldc in ax */
   ESL_ALLOC(useme, sizeof(int)*(L+1));
   esl_vec_ISet(useme, L+1, FALSE);
   ncol = 0;
   for (n = 1; n <= L; n++) {
     if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
   }
-  printf("node %d col %d/%d ncol %d oldc %d newc %d\n", node, col, L, ncol, oldc, newc);
   ESL_ALLOC(colidx, sizeof(int) * ncol);
   ESL_ALLOC(perm,   sizeof(int) * ncol);
   c = 0;
@@ -972,44 +1010,30 @@ shuffle_tree_substitutions_column(ESL_RANDOMNESS *r, int node, int col, ESL_DSQ 
   for (c = 0; c < ncol; c ++) perm[c] = c;
   if ((status = esl_vec_IShuffle(r, perm, ncol)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
   
-  /* impose the mutation to all sequences  under this node */
-  c = 0;
+  /* pick a random place for oldc to impose the mutation  */
+  which = (int)(esl_random(r)*ncol);
+  ax[colidx[perm[which]]] = newc;
+  
+#if 1
+  printf("old %d new %d | colidx %d\n", oldc, newc, colidx[perm[which]]);
   for (n = 1; n <= L; n++) {
-    if (useme[n] == TRUE) {      
-      if (esl_stack_IPush(vs, node) != eslOK) { status = eslEMEM; goto ERROR; };
-      while (esl_stack_IPop(vs, &v) == eslOK) 
-	{ 
-	  if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);  
-	  else if (esl_abc_XIsResidue(shmsa->abc, shmsa->ax[-T->left[v]] [colidx[perm[c]]])) { 
-	    shmsa->ax[-T->left[v]] [colidx[perm[c]]] = newc; 
-	    printf("cladel %d\n", -T->left[v]); 
-	  }
- 	  if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); 
-	  else if (esl_abc_XIsResidue(shmsa->abc, shmsa->ax[-T->right[v]] [colidx[perm[c]]])) {
-	    shmsa->ax[-T->right[v]][colidx[perm[c]]] = newc; 
-	    printf("clader %d\n", -T->right[v]); 
-	  }
- 	}
-      c ++;
-    }
+    if (n==colidx[perm[which]]) printf("*%d*", ax[n]); 
+    else                        printf("%d", ax[n]); 
   }
+  printf("\n");
+#endif
 
   free(useme);
   if (perm) free(perm);
   if (colidx) free(colidx);
-  esl_stack_Destroy(vs);
   return eslOK;
 
  ERROR:
   if (useme)  free(useme);
   if (perm)   free(perm);
   if (colidx) free(colidx);
-  if (vs)     esl_stack_Destroy(vs);
   return status;
 }
-
-
-
 
 int
 msamanip_OutfileHeader(char *acc, char **ret_outheader)

@@ -540,8 +540,8 @@ main(int argc, char **argv)
     esl_sprintf(&cfg.nullcovfile, "%s/%s.nullcov", cfg.outdir, cfg.msaname);
     
     /* dotplot file */
-    esl_sprintf(&cfg.dplotfile,    "%s/%s.dplot",    cfg.outdir, cfg.msaname);
-    esl_sprintf(&cfg.cykdplotfile, "%s/%s.cykdplot", cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.dplotfile,    "%s/%s.dplot",     cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.cykdplotfile, "%s/%s.cyk.dplot", cfg.outdir, cfg.msaname);
     
     /* select submsa and then apply msa filters 
      */
@@ -701,7 +701,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
   
   return eslOK;
@@ -1120,7 +1120,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
     if (1||cfg->verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
-   if (1||cfg->verbose) eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+    if (1||cfg->verbose) eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
