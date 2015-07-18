@@ -344,7 +344,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  }
   else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); }
   else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); }
-  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); }
+  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -771,7 +771,6 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
-      //esl_histogram_Plot(stdout, ranklist->ht);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, title, cfg->pmass, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 

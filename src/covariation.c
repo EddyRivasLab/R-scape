@@ -2207,8 +2207,8 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
   esl_sprintf(&key1, "all-pairs distribution");
   esl_sprintf(&key2, "not_SS-pairs distribution (with exponential fit)");
-  esl_sprintf(&key3, "WC-null distribution");
-  if (ranklist_aux) esl_sprintf(&key4, "null distribution");
+  esl_sprintf(&key3, "null distribution");
+  if (ranklist_aux) esl_sprintf(&key4, "null-null distribution");
 
   /* for plotting */
   esl_histogram_SetTailByMass(ranklist->ha, minmass, NULL);
