@@ -1033,14 +1033,15 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
       s = nsub[oldc*K+newc];
       while (s > 0) {
 #if 1
-	printf("old %d new %d | ncol %d s %d ns %d colidx %d\n", oldc, newc, ncol, s, ns, colidx[perm[ns]]);
+	printf("old %d new %d | ncol %d s %d ns %d\n", oldc, newc, ncol, s, ns);
+	printf("old %d new %d | ncol %d s %d ns %d colidx %d\n", oldc, newc, ncol, s, ns, colidx[perm[ns-1]]);
 	for (n = 1; n <= L; n++) {
-	  if (n==colidx[perm[ns]]) printf("*%d*", ax[n]); 
-	  else                     printf("%d",   ax[n]); 
+	  if (n==colidx[perm[ns-1]]) printf("*%d*", ax[n]); 
+	  else                       printf("%d",   ax[n]); 
 	}
 	printf("\n");
 #endif
-	ax[colidx[perm[ns]]] = newc; 
+	ax[colidx[perm[ns-1]]] = newc; 
 	s --;
 	ns --;
       }
