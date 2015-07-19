@@ -147,7 +147,6 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
     status = tree_fitch_column(c, r, T, allmsa, &sc, errbuf, verbose); 
     if (status != eslOK) goto ERROR;
   }
-  printf("fitch score %d\n", sc);
   
   *ret_sc = sc;
   *ret_allmsa = allmsa;

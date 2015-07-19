@@ -1543,6 +1543,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       cvBP_prv;
   double       Eval_jump;
   double       cov_jump;
+  int          usenull = TRUE;
   int          fp, tf, t, f, neg;
   int          i, j;
   int          b, nullb;
@@ -1576,15 +1577,18 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
     /* censor the histogram and do an exponential fit to the tail */
-    status = cov_ExpFitHistogram(ranklist->ht, pmass, &newmass, &mu, &lambda, verbose, errbuf);
+    if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
+    else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
     if (verbose) {
-      printf("newmass %f phi %f mu %f lambda %f \n", newmass, ranklist->ht->phi, mu, lambda);
-      cov_DumpHistogram(stdout, ranklist->ht);
+      if (!usenull) printf("pmass %f newmass %f phi %f mu %f lambda %f \n", pmass, newmass, ranklist->ht->phi,      mu, lambda);
+      else          printf("pmass %f newmass %f phi %f mu %f lambda %f \n", pmass, newmass, ranklist_null->ha->phi, mu, lambda);
     }
     
     /* initialize */
     cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax) + ranklist->ha->w;
-    Eval_jump = ranklist->ht->expect[ranklist->ht->imax];
+    if (!usenull) Eval_jump = ranklist->ht->expect[ranklist->ht->imax];
+    else          Eval_jump = ranklist_null->ha->expect[ranklist_null->ha->imax];
   }
 
   /* ranklist from histogram ha */
@@ -1633,9 +1637,15 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       case covRBP:  val = cvRBP;  break;
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
-      case Eval:    
-	cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist->ht, &newb);
-	val = ranklist->ht->expect[newb]; break;
+      case Eval:
+	if (!usenull) {
+	  cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist->ht, &newb);
+	  val = ranklist->ht->expect[newb]; break;
+	}
+	else {
+	  cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist_null->ha, &newb);
+	  val = ranklist_null->ha->expect[newb]; break;
+	}
       } 
 
       //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
@@ -1670,7 +1680,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   }
 
   if (mode == GIVSS || mode == CYKSS) {
-    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, covtype, threshtype, mode, verbose, errbuf);
+    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null, mu, lambda, usenull, covtype, threshtype, mode, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
   
@@ -1730,6 +1740,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   new = cov_CreateRankList(ESL_MAX(bmax, ranklist->ha->bmax), new_bmin, ranklist->ha->w);
   if (new == NULL) goto ERROR;
 
+  new->ha->n    = ranklist->ha->n;
   new->ha->xmin = ranklist->ha->xmin;
   new->ha->xmax = ranklist->ha->xmax;
   new->ha->imin = ranklist->ha->imin;
@@ -1737,6 +1748,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   new->ha->Nc   = ranklist->ha->Nc;
   new->ha->No   = ranklist->ha->No;
 
+  new->ht->n    = ranklist->ht->n;
   new->ht->xmin = ranklist->ht->xmin;
   new->ht->xmax = ranklist->ht->xmax;
   new->ht->imin = ranklist->ht->imin;
@@ -1753,12 +1765,6 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
     }
   }
     
-  for (b = ranklist->ht->imin; b <= ranklist->ht->imax; b ++) {
-    cov_ranklist_Bin2Bin(b, ranklist->ht, new->ht, &newb);
-    if (newb >= new->ht->imin && newb <= new->ht->imax) {
-    }
-  }
-
   cov_FreeRankList(*oranklist);
   *oranklist = new;
 
@@ -1804,7 +1810,7 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 
 int 
 cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
-		  double mu, double lambda, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf)
+		  double mu, double lambda, int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
@@ -1834,7 +1840,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
     for (j = i+1; j < mi->alen; j++) {
      if (mi->COV->mx[i][j] >= hitlist->covthresh) {
        
-       esl_histogram_Score2Bin(ranklist->ht, mi->COV->mx[i][j], &bin);
+       if (!usenull) esl_histogram_Score2Bin(ranklist->ht, mi->COV->mx[i][j], &bin);
+       else          esl_histogram_Score2Bin(ranklist_null->ha, mi->COV->mx[i][j], &bin);
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1874,7 +1881,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 hitlist->hit[h].Eval = ranklist->ht->expect[bin];
+	 hitlist->hit[h].Eval = (!usenull)? ranklist->ht->expect[bin] : ranklist_null->ha->expect[bin] ;
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 

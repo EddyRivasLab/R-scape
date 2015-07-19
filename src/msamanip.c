@@ -38,7 +38,8 @@ static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, in
 			    double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
 static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *allmsa, ESL_MSA *shmsa, char *errbuf, int verbose);
-static int shuffle_tree_substitute(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf);
+static int shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, char *errbuf);
+static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf);
 
 int 
 msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
@@ -941,7 +942,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *a
       }
   }
 
-#if 0
+#if 1
   if (1||verbose) {
     printf("nsub %d\n", nsubs);
     for (x = 0; x < K; x ++)
@@ -957,17 +958,22 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *a
     if (esl_abc_XIsGap(allmsa->abc, axa[n])) new[n] = axd[n];
   }
 
+#if 0
   while (nsubs > 0) {
     x = (int)(esl_random(r) * K2);
     if (nsub[x] > 0) {
       oldc = x/K;
       newc = x%K;
-      status = shuffle_tree_substitute(r, oldc, newc, L, new, errbuf);
+      status = shuffle_tree_substitute_one(r, oldc, newc, L, new, errbuf);
       if (status != eslOK) goto ERROR;
       nsub[x] --;
       nsubs --;
     }
   }
+#else
+  status = shuffle_tree_substitute_all(r, K, nsub, L, new, errbuf);
+  if (status != eslOK) goto ERROR;
+#endif
   
   /* apply new to shmsa */
   if (node < 0) {
@@ -985,7 +991,79 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int node, ESL_DSQ *axa, ESL_DSQ *a
 }
 
 static int
-shuffle_tree_substitute(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf)
+shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, char *errbuf)
+{
+  int       *useme  = NULL;
+  int       *colidx = NULL;
+  int       *perm   = NULL;
+  int        ncol = 0;
+  int        ns;
+  int        n;
+  int        c;
+  int        s;
+  int        oldc, newc;
+  int        status;
+  
+  /* allocate for all columns */
+  ESL_ALLOC(useme, sizeof(int)*(L+1));
+  
+  for (oldc = 0; oldc < K; oldc ++) {
+    
+    ns = 0;
+    for (newc = 0; newc < K; newc++) 
+      ns += nsub[oldc*K+newc];
+    
+    /* find all other positions with oldc in ax */
+    esl_vec_ISet(useme, L+1, FALSE);
+    ncol = 0;
+    for (n = 1; n <= L; n++) {
+      if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
+    }
+    if (ncol == 0) ESL_XFAIL(eslFAIL, errbuf, "cannot make random substitution");
+    
+    ESL_ALLOC(colidx, sizeof(int) * ncol);
+    ESL_ALLOC(perm,   sizeof(int) * ncol);
+    c = 0;
+    for (n = 1; n <= L; n++) if (useme[n] == TRUE) { colidx[c] = n; c++; }
+    for (c = 0; c < ncol; c ++) perm[c] = c;
+    if ((status = esl_vec_IShuffle(r, perm, ncol)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+    
+    /* pick ns position to change */
+    for (newc = 0; newc < K; newc++) {
+      s = nsub[oldc*K+newc];
+      while (s > 0) {
+#if 1
+	printf("old %d new %d | ncol %d s %d ns %d colidx %d\n", oldc, newc, ncol, s, ns, colidx[perm[ns]]);
+	for (n = 1; n <= L; n++) {
+	  if (n==colidx[perm[ns]]) printf("*%d*", ax[n]); 
+	  else                     printf("%d",   ax[n]); 
+	}
+	printf("\n");
+#endif
+	ax[colidx[perm[ns]]] = newc; 
+	s --;
+	ns --;
+      }
+    }
+    
+    free(perm); perm = NULL;
+    free(colidx); colidx = NULL;
+  }
+
+  free(useme);
+  if (perm) free(perm);
+  if (colidx) free(colidx);
+  return eslOK;
+
+ ERROR:
+  if (useme)  free(useme);
+  if (perm)   free(perm);
+  if (colidx) free(colidx);
+  return status;
+}
+
+static int
+shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf)
 {
   int       *useme  = NULL;
   int       *colidx = NULL;

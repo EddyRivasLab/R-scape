@@ -1101,6 +1101,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 {
   ESL_MSA   *allmsa = NULL;
   ESL_MSA   *shmsa = NULL;
+  MSA_STAT   shmstat;
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       sc;
@@ -1119,7 +1120,11 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
     if (1||cfg->verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
-    if (1||cfg->verbose) eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+    if (1||cfg->verbose) {
+      msamanip_XStats(shmsa, &shmstat);
+      msamanip_DumpStats(stdout, shmsa, shmstat);
+      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+    }
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
@@ -1167,15 +1172,18 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   
   if (cumranklist == NULL) {
     cumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
+    cumranklist->ha->n     = ranklist->ha->n;
+
     cumranklist->ha->xmin  = ranklist->ha->xmin;
     cumranklist->ha->xmax  = ranklist->ha->xmax;
        cumranklist->ha->imin  = ranklist->ha->imin;
        cumranklist->ha->imax  = ranklist->ha->imax;
-       cumranklist->scthresh = ranklist->scthresh;
+       cumranklist->scthresh  = ranklist->scthresh;
   }
   else {                    
     cov_GrowRankList(&cumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
     cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+    cumranklist->ha->n    += ranklist->ha->n;
   }
   for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
