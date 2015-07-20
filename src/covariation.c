@@ -1543,7 +1543,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       cvBP_prv;
   double       Eval_jump;
   double       cov_jump;
-  int          usenull = TRUE;
+  int          usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int          fp, tf, t, f, neg;
   int          i, j;
   int          b, nullb;
@@ -1640,15 +1640,16 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       case Eval:
 	if (!usenull) {
 	  cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist->ht, &newb);
-	  val = ranklist->ht->expect[newb]; break;
+	  val = ranklist->ht->expect[newb]; 
 	}
 	else {
 	  cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist_null->ha, &newb);
-	  val = ranklist_null->ha->expect[newb]; break;
+	  val = ranklist_null->ha->expect[newb]; 
+	  printf("b %d newb %d\n", b, newb);
 	}
       } 
 
-      //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
 	//if (1) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
@@ -1840,9 +1841,9 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
     for (j = i+1; j < mi->alen; j++) {
      if (mi->COV->mx[i][j] >= hitlist->covthresh) {
        
-       if (!usenull) esl_histogram_Score2Bin(ranklist->ht, mi->COV->mx[i][j], &bin);
+       if (!usenull) esl_histogram_Score2Bin(ranklist->ht,      mi->COV->mx[i][j], &bin);
        else          esl_histogram_Score2Bin(ranklist_null->ha, mi->COV->mx[i][j], &bin);
-
+ 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
 	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
@@ -1881,7 +1882,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 hitlist->hit[h].Eval = (!usenull)? ranklist->ht->expect[bin] : ranklist_null->ha->expect[bin] ;
+	 hitlist->hit[h].Eval = (!usenull)? ranklist->ht->expect[bin] : ranklist_null->ha->expect[bin];
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 

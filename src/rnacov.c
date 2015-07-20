@@ -212,7 +212,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--pmass",        eslARG_REAL,    "0.01",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.005",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -519,10 +519,12 @@ main(int argc, char **argv)
 	}
       }
     }
+
     if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s%s", msa->acc, msa->name, type);
     else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
     else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
     else                                    esl_sprintf(&cfg.msaname, "%s_%d", cfg.filename, cfg.nmsa);
+    if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg.msaname, "%s.select%d", cfg.msaname, esl_opt_GetInteger(go, "--submsa"));
 
     /* R2R annotated sto file */
     esl_sprintf(&cfg.R2Rfile,    "%s/%s.R2R.sto",     cfg.outdir, cfg.msaname);
@@ -1118,16 +1120,20 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
 
   for (s = 0; s < cfg->nshuffle; s ++) {
-    msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
-    if (1||cfg->verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
+    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
+    
     if (1||cfg->verbose) {
+      msamanip_DumpStats(stdout, msa, cfg->mstat);
+      //eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
+ 
       msamanip_XStats(shmsa, &shmstat);
       msamanip_DumpStats(stdout, shmsa, shmstat);
-      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      //eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
     }
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
     
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR;
