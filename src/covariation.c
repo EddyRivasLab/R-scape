@@ -1836,14 +1836,14 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 
   BP  = number_pairs(mi->alen, ct);
   NBP = mi->alen * (mi->alen-1) / 2 - BP;
-
- for (i = 0; i < mi->alen-1; i++) 
+  
+  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-     if (mi->COV->mx[i][j] >= hitlist->covthresh) {
-       
+      if (mi->COV->mx[i][j] >= hitlist->covthresh) {
+	
        if (!usenull) esl_histogram_Score2Bin(ranklist->ht,      mi->COV->mx[i][j], &bin);
        else          esl_histogram_Score2Bin(ranklist_null->ha, mi->COV->mx[i][j], &bin);
- 
+
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
 	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
@@ -1878,7 +1878,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	     else break;
 	   }
 	 }
-	 
+
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
