@@ -1576,6 +1576,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
+    if (ranklist_null->ha->nb < ranklist->ha->nb) ranklist_null->ha->nb = ranklist->ha->nb;
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
     else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);
@@ -1645,11 +1646,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	else {
 	  cov_ranklist_Bin2Bin(b, ranklist->ha, ranklist_null->ha, &newb);
 	  val = ranklist_null->ha->expect[newb]; 
-	  printf("b %d newb %d\n", b, newb);
 	}
       } 
 
-      printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
 	//if (1) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
