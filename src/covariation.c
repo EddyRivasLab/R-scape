@@ -1550,6 +1550,8 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   int          newb;
   int          status;
 
+  if (usenull && (mode == GIVSS || mode == CYKSS) && ranklist_null == NULL) usenull = FALSE;
+
   cov_COVTYPEString(&covtype, mi->type, errbuf);
   cov_THRESHTYPEString(&threshtype, thresh->type, NULL);
 
@@ -1564,9 +1566,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
  
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
- 
+
       /* add to the ha histogram  */
       esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
+
       /* add to the ht histogram if not a real basepair */
       if (ct[i+1] != j+1) 
   	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
@@ -1576,7 +1579,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 
   /* histogram and exponential fit */
   if (mode == GIVSS || mode == CYKSS) {
-    if (ranklist_null->ha->nb < ranklist->ha->nb) ranklist_null->ha->nb = ranklist->ha->nb;
+    if (usenull && ranklist_null->ha->nb < ranklist->ha->nb) ranklist_null->ha->nb = ranklist->ha->nb;
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
     else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);

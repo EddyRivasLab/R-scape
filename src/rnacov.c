@@ -1113,8 +1113,13 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   
   status = create_tree(go, cfg, msa);
   if (status != eslOK) goto ERROR;
-  if (cfg->T == NULL) return eslOK;
-
+  if (cfg->T == NULL) {
+    if (msa->nseq == 1) 
+      return eslOK;
+    else 
+      return eslFAIL;
+  }
+ 
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
@@ -1146,7 +1151,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
-  if (cfg->verbose) {
+  if (1||cfg->verbose) {
     printf("null4 distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
