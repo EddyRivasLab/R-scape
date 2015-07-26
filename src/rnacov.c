@@ -212,7 +212,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk", NULL,              "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--pmass",        eslARG_REAL,    "0.005",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.01",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -634,6 +634,12 @@ main(int argc, char **argv)
      if (status != eslOK) esl_fatal("%s.\nFailed to run null3 rnacov", cfg.errbuf);
     }
     else if (cfg.nulltype == Null4) {
+#if 0
+      cfg.nulltype = Null2;
+      status = null2_rnacov(go, &cfg, msa, &ranklist_aux);
+      if (status != eslOK) esl_fatal("%s.\nFailed to run null2 rnacov", cfg.errbuf);
+#endif
+      cfg.nulltype = Null4;
       status = null4_rnacov(go, &cfg, msa, &ranklist_null);
      if (status != eslOK) esl_fatal("%s.\nFailed to run null4 rnacov", cfg.errbuf);
     }
@@ -1122,7 +1128,10 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
  
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  if (1||cfg->verbose) eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+  if (1||cfg->verbose) {
+    eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+    printf("fitch sc %d\n", sc);
+  }
 
   for (s = 0; s < cfg->nshuffle; s ++) {
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
@@ -1151,7 +1160,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
-  if (1||cfg->verbose) {
+  if (cfg->verbose) {
     printf("null4 distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
