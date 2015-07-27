@@ -39,7 +39,7 @@ static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, in
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
 static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *shallmsa, char *errbuf, int verbose);
 static int shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, ESL_DSQ *new, char *errbuf);
-static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf);
+static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, ESL_DSQ *new,char *errbuf);
 
 int 
 msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
@@ -967,6 +967,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
 	nsub[axa[n]*K+axd[n]] ++;
 	nsubs ++;
       }
+    dxash[n] = axash[n];
   }
 
 #if 1
@@ -985,7 +986,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
     if (nsub[x] > 0) {
       oldc = x/K;
       newc = x%K;
-      status = shuffle_tree_substitute_one(r, oldc, newc, L, new, errbuf);
+      status = shuffle_tree_substitute_one(r, oldc, newc, L, axash, dxash, errbuf);
       if (status != eslOK) goto ERROR;
       nsub[x] --;
       nsubs --;
@@ -1013,7 +1014,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
 }
 
 static int
-shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, ESL_DSQ *new, char *errbuf)
+shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, ESL_DSQ *nx, char *errbuf)
 {
   int       *useme  = NULL;
   int       *colidx = NULL;
@@ -1024,6 +1025,7 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
   int        c;
   int        s;
   int        oldc, newc;
+  int        idx;
   int        status;
   
   /* allocate for all columns */
@@ -1042,7 +1044,10 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
     for (n = 1; n <= L; n++) {
       if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
     }
-    if (ncol == 0) ESL_XFAIL(eslFAIL, errbuf, "cannot make random substitution for oldc %d", oldc);
+    if (ncol == 0) {
+      free(useme);
+      return eslOK;
+    }
     
     ESL_ALLOC(colidx, sizeof(int) * ncol);
     ESL_ALLOC(perm,   sizeof(int) * ncol);
@@ -1054,17 +1059,24 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
     /* pick ns position to change */
     for (newc = 0; newc < K; newc++) {
       s = nsub[oldc*K+newc];
+      if (s > ncol) idx = ncol-1; else idx = s-1;
+
       while (s > 0) {
 #if 1
-	printf("old %d new %d | ncol %d s %d ns %d colidx %d\n", oldc, newc, ncol, s, ns, colidx[perm[ns-1]]);
+	printf("old %d new %d | ncol %d s %d ns %d idx %d colidx %d\n", oldc, newc, ncol, s, ns, idx,  colidx[perm[idx]]);
 	for (n = 1; n <= L; n++) {
-	  if (n==colidx[perm[ns-1]]) printf("*%d*", new[n]); 
-	  else                       printf("%d",   new[n]); 
+	  if (n==colidx[perm[idx]]) printf("*%d*", ax[n]); 
+	  else                      printf("%d",   ax[n]); 
 	}
 	printf("\n");
 #endif
-	new[colidx[perm[ns-1]]] = newc; 
+	nx[colidx[perm[idx]]] = newc; 
 	s --;
+	idx --;
+	if (idx < 0) { //shuffle again a keep going
+	  if ((status = esl_vec_IShuffle(r, perm, ncol)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+	  idx = ncol-1;
+	}
 	ns --;
       }
     }
@@ -1072,7 +1084,7 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
 
 #if 1
     for (n = 1; n <= L; n++) {
-      printf("%d",  new[n]); 
+      printf("%d",  nx[n]); 
     }
     printf("\n");
 #endif
@@ -1094,7 +1106,7 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
 }
 
 static int
-shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, char *errbuf)
+shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *ax, ESL_DSQ *nx, char *errbuf)
 {
   int       *useme  = NULL;
   int       *colidx = NULL;
@@ -1112,7 +1124,10 @@ shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L
   for (n = 1; n <= L; n++) {
     if (ax[n] == oldc) { useme[n] = TRUE; ncol++; }
   }
-  if (ncol == 0) ESL_XFAIL(eslFAIL, errbuf, "cannot make random substitution");
+  if (ncol == 0) {
+    free(useme);
+    return eslOK;
+  }
 
   ESL_ALLOC(colidx, sizeof(int) * ncol);
   ESL_ALLOC(perm,   sizeof(int) * ncol);
@@ -1123,7 +1138,7 @@ shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L
   
   /* pick a random place for oldc to impose the mutation  */
   which = (int)(esl_random(r)*ncol);
-  ax[colidx[perm[which]]] = newc;
+  nx[colidx[perm[which]]] = newc;
   
 #if 1
   printf("old %d new %d | ncol %d colidx %d\n", oldc, newc, ncol, colidx[perm[which]]);
