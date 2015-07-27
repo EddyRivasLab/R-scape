@@ -1654,12 +1654,12 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 
       //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
-	//if (1) printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
+	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
 	cvBP_thresh        = cvBP;
 	cvNBP_thresh       = cvNBP;
-	if (thresh->type == Eval && cvBP > cvBP_prv) { Eval_jump = val; cov_jump = cov; }
+	if (thresh->type == Eval && cvBP >= cvBP_prv) { Eval_jump = val; cov_jump = cov; }
       }
 
       if (thresh->type == Eval && val > thresh->val && cvNBP <= cvNBP_thresh) {
@@ -1677,9 +1677,9 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   effthresh->val  = thresh->val;
   effthresh->sc   = thresh->sc;
   if (thresh->type == Eval) {
-    effthresh->type = thresh->type;
-    effthresh->val  = Eval_jump;
-    effthresh->sc   = cov_jump;
+    effthresh->type    = thresh->type;
+    effthresh->val     = Eval_jump;
+    effthresh->sc      = cov_jump;
     ranklist->scthresh = cov_jump;
   }
 
@@ -2068,7 +2068,8 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
 int
 cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-	     int *msamap, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,RANKLIST **ret_ranklist, double bmin, double w, double pmass, int minloop, enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
+	     int *msamap, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,RANKLIST **ret_ranklist, double bmin, double w, double pmass, int minloop, 
+	     enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
 {
   ESL_MSA  *msa = *omsa;
   RANKLIST *ranklist = NULL;
@@ -2103,18 +2104,9 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(NULL, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, FALSE, FALSE, verbose, errbuf);
+  status = cov_R2R(R2Rcykfile, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, TRUE, TRUE, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
-  if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
-  
-  /* R2Rpdf */
-  status = cov_R2Rpdf(R2Rcykfile, R2Rversion, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  /* R2Rsvg */
-  status = cov_R2Rsvg(R2Rcykfile, R2Rversion, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  
   /* DotPlots (pdf,svg) */
   status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE,  verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -2613,7 +2605,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
    */
   ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
   esl_ct2simplewuss(ct, msa->alen, ssstr);
-  
+
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ssstr);  
   
@@ -2683,7 +2675,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
 
   if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
-  
+
   /* write the R2R annotated to PFAM format */
   if (r2rfile) {
     if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);

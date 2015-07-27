@@ -799,7 +799,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, title, cfg->pmass, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, title, cfg->pmass, 
+				cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
  
