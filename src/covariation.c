@@ -2599,6 +2599,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   int           h;
   int           ih, jh;
   int           tagidx;
+  int           idx;
   int           status;
  
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
@@ -2657,10 +2658,36 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
    *
    * turns out the above solution can only deal with the  <> annotation
    */
-  if (r2rall) 
+  if (r2rall) {
+    for (tagidx = 0; tagidx < r2rmsa->ngf; tagidx++) {
+      esl_strchop(r2rmsa->gf[tagidx], -1);
+      if (strcmp(r2rmsa->gf[tagidx], "keep all") == 0) break;
+    }
+
+    if (tagidx < r2rmsa->ngf) { //remove 
+      for (idx = tagidx; idx < r2rmsa->ngf-1; idx++) {
+	esl_sprintf(&r2rmsa->gf_tag[idx], r2rmsa->gf_tag[idx+1]);
+	esl_sprintf(&r2rmsa->gf[idx],     r2rmsa->gf[idx+1]);
+      }
+      r2rmsa->ngf --;
+    }
+    
     esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
-  else
+  }
+  else {
+    for (tagidx = 0; tagidx < r2rmsa->ngf; tagidx++) {
+      esl_strchop(r2rmsa->gf[tagidx], -1);
+      if (strcmp(r2rmsa->gf[tagidx], "keep allpairs") == 0) break;
+    }
+    if (tagidx < r2rmsa->ngf) { //remove 
+      for (idx = tagidx; idx < r2rmsa->ngf-1; idx++) {
+	esl_sprintf(&r2rmsa->gf_tag[idx], r2rmsa->gf_tag[idx+1]);
+	esl_sprintf(&r2rmsa->gf[idx],     r2rmsa->gf[idx+1]);
+      }
+      r2rmsa->ngf --;
+    }
     esl_msa_AddGF(r2rmsa, "R2R keep allpairs", -1, "", -1);
+  }
   
   /* replace the r2r 'cov_SS_cons' GC line with our own */
   for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
