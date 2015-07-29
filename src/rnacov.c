@@ -565,7 +565,7 @@ main(int argc, char **argv)
     if (msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
  
     esl_msa_Hash(msa);
-    esl_msa_ConvertDegen2X(msa);
+    msamanip_ConvertDegen2RandomCanonical(cfg.r, msa);
     if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
     
     /* given msa aveid and avematch */
@@ -814,6 +814,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   return eslOK;
   
  ERROR:
+  *omsa = NULL;
   if (cfg->T)      esl_tree_Destroy(cfg->T);
   if (mi)          cov_Destroy(mi);
   if (ranklist)    cov_FreeRankList(ranklist);
@@ -917,7 +918,7 @@ null1b_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
   
-  if (1||cfg->verbose) {
+  if (cfg->verbose) {
     printf("null1b distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
@@ -1081,7 +1082,7 @@ null3_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
   
-   if (1||cfg->verbose) {
+   if (cfg->verbose) {
      printf("null3 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
 	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
@@ -1129,7 +1130,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
  
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  if (1||cfg->verbose) {
+  if (cfg->verbose) {
     eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
     printf("fitch sc %d\n", sc);
   }
@@ -1138,7 +1139,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
     
-    if (1||cfg->verbose) {
+    if (cfg->verbose) {
       msamanip_DumpStats(stdout, msa, cfg->mstat);
       //eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
@@ -1148,6 +1149,7 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     }
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "\nerror creating shmsa");
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
     
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);

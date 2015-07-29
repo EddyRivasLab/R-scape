@@ -1541,7 +1541,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       cvBP_thresh = 0.;
   double       cvNBP_thresh = 0.;
   double       cvBP_prv;
-  double       Eval_jump;
+  double       Eval_jump = 0.0;
   double       cov_jump;
   int          usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int          fp, tf, t, f, neg;
@@ -1592,7 +1592,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     /* initialize */
     cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax) + ranklist->ha->w;
     if (!usenull) Eval_jump = ranklist->ht->expect[ranklist->ht->imax];
-    else          Eval_jump = ranklist_null->ha->expect[ranklist_null->ha->imax];
+    else          Eval_jump = -1.0;
   }
 
   /* ranklist from histogram ha */
@@ -1652,21 +1652,21 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	}
       } 
 
-      //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       if (val > 0.0 && val <= thresh->val) { 
-	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
 	cvBP_thresh        = cvBP;
 	cvNBP_thresh       = cvNBP;
 	if (thresh->type == Eval && cvBP >= cvBP_prv) { Eval_jump = val; cov_jump = cov; }
+ 	printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
       }
-
+    
       if (thresh->type == Eval && val > thresh->val && cvNBP <= cvNBP_thresh) {
-	    if (cvBP > cvBP_prv) { 
-	      Eval_jump = val; cov_jump = cov; 
-	      //if (mode==CYKSS) printf("^^eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
-	    }
+	if (cvBP >= cvBP_prv) { 
+	  Eval_jump = val; cov_jump = cov; 
+	  printf("^^eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+	}
       }
     }
     cvBP_prv = cvBP;
@@ -2253,6 +2253,8 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   ymax = log(ESL_MAX(minmass,pmass));
   incx = (xmax-xmin)/12.;
   incy = (ymax-ymin)/12.;
+  xmax += incx;
+  ymin -= incy;
   posx = xmin + 6.*incx;
   posy = ymax - incy;
   fprintf(pipe, "set xrange [%f:%f]\n", xmin, xmax);
@@ -2860,14 +2862,12 @@ return eslOK;
 int
 cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct,  enum grammar_e G, int minloop, int verbose, char *errbuf)
 {
-  char  tag[10] = "RF_cons";
   char    *rfline = NULL;
   ESL_SQ  *sq = NULL;
   int     *ct = *ret_ct;
   int     *cct = NULL;
   SCVAL    sc;
   float    idthresh = 0.3;
-  int      tagidx;
   int      status;
   
   /* create an RF sequence */
@@ -3349,10 +3349,11 @@ cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop)
 static int
 cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logscale, int style1, int style2)
 {
-  int      i;
-  uint64_t c = 0;
-  double   esum;
-  double   ai;
+  int       i;
+  int       x;
+  uint64_t  c = 0;
+  double    esum;
+  double    ai;
  
   /* The observed binned counts:
    */
