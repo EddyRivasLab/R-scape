@@ -159,7 +159,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--covRBPu",     eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max per_position (covRBP/alen) allowed",                                     0 },
   { "--covRBPf",     eslARG_REAL,       NULL,   NULL,   "0<=x<=1",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max fraction     (covRBP/RBP)  allowed",                                     0 },
   /* null hypothesis */
-  { "--nshuffle",      eslARG_INT,       "10",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--nshuffle",      eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
   { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bpaired_columns and nonbpaired_columns independently",                      0 },
   { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle residues within a column",                                                  0 },
