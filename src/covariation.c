@@ -2228,12 +2228,12 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", covhisfile);
     fprintf(pipe, "set terminal svg dynamic fname 'Arial' fsize 12 \n");
-    pointsize = 0.3;
+    pointsize = 0.4;
   }
   else {
     esl_sprintf(&outplot, "%s.ps", covhisfile);
     fprintf(pipe, "set terminal postscript color 14\n");
-    pointsize = 0.6;
+    pointsize = 0.7;
   }
 
   fprintf(pipe, "set output '%s'\n", outplot);
