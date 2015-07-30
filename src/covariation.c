@@ -2233,21 +2233,31 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   else {
     esl_sprintf(&outplot, "%s.ps", covhisfile);
     fprintf(pipe, "set terminal postscript color 14\n");
-    pointsize = 0.5;
+    pointsize = 0.6;
   }
 
   fprintf(pipe, "set output '%s'\n", outplot);
   fprintf(pipe, "set title '%s' \n", title);
 
-  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 1 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey'      pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown'     pt 7 lw 1 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan'      pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red'       pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange'    pt 7 lw 2 ps %f\n", pointsize);
   fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black'     pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green'     pt 7 lw 2 ps %f\n", pointsize);
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue'      pt 7 lw 2 ps %f\n", pointsize);
+
+  fprintf(pipe, "set style line 11  lt 1 lc rgb 'grey'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
+  fprintf(pipe, "set style line 22  lt 1 lc rgb 'brown'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
+  fprintf(pipe, "set style line 33  lt 1 lc rgb 'cyan'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 44  lt 1 lc rgb 'red'       pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 55  lt 1 lc rgb 'orange'    pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 66  lt 1 lc rgb 'turquoise' pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 77  lt 1 lc rgb 'black'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 88  lt 1 lc rgb 'green'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
+  fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
 
   // log survival plot for ranklist and ranklist_null
   fprintf(pipe, "set multiplot\n");
@@ -2266,15 +2276,15 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xrange [%f:%f]\n", xmin, xmax);
   fprintf(pipe, "set yrange [%f:%f]\n", ymin, ymax);
   fprintf(pipe, "set ylabel 'logP(x > score)'\n");
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ha, key1, posx, posy,      TRUE, 9, 2);
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ht, key2, posx, posy-incy, TRUE, 4, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ha, key1, posx, posy,      TRUE, 99, 2);
+  status = cov_histogram_plotsurvival  (pipe, ranklist->ht, key2, posx, posy-incy, TRUE, 44, 2);
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, key3, posx, posy-2.*incy, TRUE, 7, 7);
+    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, key3, posx, posy-2.*incy, TRUE, 77, 7);
     if (status != eslOK) goto ERROR;
   }
   if (ranklist_aux) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_aux->ha, key4, posx, posy-3.*incy, TRUE, 1, 7);
+    status = cov_histogram_plotsurvival(pipe, ranklist_aux->ha, key4, posx, posy-3.*incy, TRUE, 11, 7);
     if (status != eslOK) goto ERROR;
   }
 
@@ -3367,7 +3377,7 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx,
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
-  fprintf(pipe, "plot '-' using 1:2 with points ls %d \n", style1);
+  fprintf(pipe, "plot '-' using 1:2 with linespoints ls %d \n", style1);
 
   if (h->obs[h->imax] > 1) 
     if (fprintf(pipe, "%f\t%f\n", 
