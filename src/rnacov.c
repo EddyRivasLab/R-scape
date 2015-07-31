@@ -221,6 +221,7 @@ static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - significan covarying pairs in RNA alignments";
 
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist);
 static int null1_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -481,8 +482,6 @@ main(int argc, char **argv)
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
-  RANKLIST        *ranklist_null = NULL;
-  RANKLIST        *ranklist_aux  = NULL;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -503,93 +502,14 @@ main(int argc, char **argv)
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     if (msa == NULL) continue;
 
-  
-    /* R2R annotated sto file */
-    esl_sprintf(&cfg.R2Rfile,    "%s/%s.R2R.sto",     cfg.outdir, cfg.msaname);
-    esl_sprintf(&cfg.R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg.outdir, cfg.msaname);
-    
-    /* covhis file */
-    esl_sprintf(&cfg.covhisfile,    "%s/%s.his",     cfg.outdir, cfg.msaname);
-    esl_sprintf(&cfg.cykcovhisfile, "%s/%s.cyk.his", cfg.outdir, cfg.msaname);
-    
-    /* nullcovhis file */
-    esl_sprintf(&cfg.nullcovhisfile,    "%s/%s.nullhis",     cfg.outdir, cfg.msaname);
-    esl_sprintf(&cfg.cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg.outdir, cfg.msaname);
-    
-    /* nullcovplot file */
-    esl_sprintf(&cfg.nullcovfile, "%s/%s.nullcov", cfg.outdir, cfg.msaname);
-    
-    /* dotplot file */
-    esl_sprintf(&cfg.dplotfile,    "%s/%s.dplot",     cfg.outdir, cfg.msaname);
-    esl_sprintf(&cfg.cykdplotfile, "%s/%s.cyk.dplot", cfg.outdir, cfg.msaname);
-      
-    /* the ct vector */
-    status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
-    if (status != eslOK) esl_fatal("%s. Failed to calculate ct vector", cfg.errbuf);
-#if 0
-    msamanip_CalculateBC(msa, cfg.ct, &cfg.ft, &cfg.fbp, &cfg.fnbp, cfg.errbuf);
-    esl_vec_DDump(stdout, cfg.ft,   cfg.abc->K, "total BC");
-    esl_vec_DDump(stdout, cfg.fbp,  cfg.abc->K, "basepairs BC");
-    esl_vec_DDump(stdout, cfg.fnbp, cfg.abc->K, "nonbasepairs BC");
-#endif
-    if (cfg.nbpairs == 0) cfg.docyk = TRUE; // calculate the cyk-cov structure if no given one
-    if (msa->alen > cfg.cykLmax) cfg.docyk = FALSE; // unless alignment is too long
-
-    if (1||cfg.verbose) {
-      fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	      cfg.msaname, msa->nseq, cfg.omstat.nseq, msa->alen, cfg.omstat.alen, 
-	      cfg.mstat.avgid, cfg.omstat.avgid, cfg.nbpairs, cfg.onbpairs);  
-    }
-    
-    /* the null model first */
-    cfg.mode = RANSS;
-    if (cfg.nulltype == Null1) {
-      status = null1_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null1 rnacov", cfg.errbuf);
-    }
-    else if (cfg.nulltype == Null1b) {
-      status = null1b_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null1b rnacov", cfg.errbuf);
-    }
-    else if (cfg.nulltype == Null2) {
-      status = null2_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null2 rnacov", cfg.errbuf);
-    }
-    else if (cfg.nulltype == Null2b) {
-      cfg.nulltype = Null2;
-      status = null2_rnacov(go, &cfg, msa, &ranklist_aux);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null2 rnacov", cfg.errbuf);
-      cfg.nulltype = Null2b;
-      status = null2b_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null2b rnacov", cfg.errbuf);
-    }
-    else if (cfg.nulltype == Null3) {
-      status = null3_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null3 rnacov", cfg.errbuf);
-    }
-    else if (cfg.nulltype == Null4) {
-#if 0
-      cfg.nulltype = Null2;
-      status = null2_rnacov(go, &cfg, msa, &ranklist_aux);
-      if (status != eslOK) esl_fatal("%s.\nFailed to run null2 rnacov", cfg.errbuf);
-#endif
-      cfg.nulltype = Null4;
-      status = null4_rnacov(go, &cfg, msa, &ranklist_null);
-     if (status != eslOK) esl_fatal("%s.\nFailed to run null4 rnacov", cfg.errbuf);
-    }
-    
-    /* main function */
-    cfg.mode = GIVSS;
-    status = run_rnacov(go, &cfg, &msa, ranklist_null, ranklist_aux, NULL);
-    if (status != eslOK) esl_fatal("%s.\nFailed to run rnacov", cfg.errbuf);
+    status = rnacov_for_msa(go, &cfg, &msa);
+    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rnacov"); }
 
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     free(cfg.ct); cfg.ct = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
-    cov_FreeRankList(ranklist_null); ranklist_null = NULL;
-    if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   }
 
   /* cleanup */
@@ -624,9 +544,6 @@ main(int argc, char **argv)
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
-  if (ranklist_null) cov_FreeRankList(ranklist_null);
-  if (ranklist_aux) cov_FreeRankList(ranklist_aux);
-
   return 0;
 }
 
@@ -715,6 +632,105 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   return eslOK;
 }
 
+static int
+rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
+{
+  ESL_MSA  *msa = *omsa;
+  RANKLIST *ranklist_null = NULL;
+  RANKLIST *ranklist_aux  = NULL;
+  int       status;
+  
+  /* R2R annotated sto file */
+  esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
+  esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
+  
+  /* covhis file */
+  esl_sprintf(&cfg->covhisfile,    "%s/%s.his",     cfg->outdir, cfg->msaname);
+  esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
+  
+  /* nullcovhis file */
+  esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
+  esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
+  
+  /* nullcovplot file */
+  esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
+  
+  /* dotplot file */
+  esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
+  esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
+  
+  /* the ct vector */
+  status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, cfg->errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
+#if 0
+  msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
+  esl_vec_DDump(stdout, cfg->ft,   cfg->abc->K, "total BC");
+  esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
+  esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
+#endif
+  if (cfg->nbpairs == 0) cfg->docyk = TRUE; // calculate the cyk-cov structure if no given one
+  if (msa->alen > cfg->cykLmax) cfg->docyk = FALSE; // unless alignment is too long
+  
+  if (1||cfg->verbose) {
+    fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
+	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+  }
+  
+  /* the null model first */
+  cfg->mode = RANSS;
+  if (cfg->nulltype == Null1) {
+    status = null1_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1 rnacov", cfg->errbuf);
+  }
+  else if (cfg->nulltype == Null1b) {
+    status = null1b_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1b rnacov", cfg->errbuf);
+  }
+  else if (cfg->nulltype == Null2) {
+    status = null2_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rnacov", cfg->errbuf);
+  }
+  else if (cfg->nulltype == Null2b) {
+    cfg->nulltype = Null2;
+    status = null2_rnacov(go, cfg, msa, &ranklist_aux);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rnacov", cfg->errbuf);
+    cfg->nulltype = Null2b;
+    status = null2b_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2b rnacov", cfg->errbuf);
+  }
+  else if (cfg->nulltype == Null3) {
+    status = null3_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rnacov", cfg->errbuf);
+  }
+  else if (cfg->nulltype == Null4) {
+#if 0
+    cfg->nulltype = Null2;
+    status = null2_rnacov(go, cfg, msa, &ranklist_aux);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rnacov", cfg->errbuf);
+#endif
+    cfg->nulltype = Null4;
+    status = null4_rnacov(go, cfg, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
+  }
+  
+  /* main function */
+  cfg->mode = GIVSS;
+  status = run_rnacov(go, cfg, &msa, ranklist_null, ranklist_aux, NULL);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rnacov", cfg->errbuf);
+
+  *omsa = msa;
+
+  cov_FreeRankList(ranklist_null); ranklist_null = NULL;
+  if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
+
+  return eslOK;
+
+ ERROR:
+  if (ranklist_null) cov_FreeRankList(ranklist_null); 
+  if (ranklist_aux) cov_FreeRankList(ranklist_aux);
+  return status;
+}
 
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
