@@ -71,6 +71,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *R2Rfp;
 
   int              docyk;
+  int              cykLmax;
   char            *R2Rcykfile;
   FILE            *R2Rcykfp;
   int              minloop;
@@ -208,8 +209,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
+  { "--cykLmax",       eslARG_INT,     "800",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk", NULL,              "grammar used for cococyk calculation",                                                      0 },   
+  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   { "--pmass",        eslARG_REAL,    "0.005",    NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -218,6 +220,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - significan covarying pairs in RNA alignments";
 
+static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist);
 static int null1_rnacov (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -316,6 +319,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
+  cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
 
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -473,20 +477,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 int
 main(int argc, char **argv)
 { 
-  char            *msg = "rnacov failed";
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
-  char            *type = NULL;
-  char            *tp;
-  char            *tok;
   RANKLIST        *ranklist_null = NULL;
   RANKLIST        *ranklist_aux  = NULL;
-  int              seq_cons_len = 0;
-  int              nfrags = 0;	  	  /* # of fragments removed */
-  int              nremoved = 0;	  /* # of identical sequences removed */
-  int              t;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -503,29 +499,11 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
-    /* stats of the original alignment */
-    msamanip_XStats(msa, &cfg.omstat);
-    msamanip_CalculateCT(msa, NULL, &cfg.onbpairs, cfg.errbuf);
+    status = original_msa_manipulate(go, &cfg, &msa);
+    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
+    if (msa == NULL) continue;
 
-    /* write MSA info to the sumfile */
-    for (t = 0; t < msa->ngf; t++) {
-      if (!esl_strcmp(msa->gf_tag[t], "TP")) {
-	tp = msa->gf[t];	
-	while (*tp != '\0') {
-	  if (esl_strtok(&tp,  ";", &tok) != eslOK) esl_fatal(msg);
-	  if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
-	  esl_sprintf(&tok, "_%s", tok);
-	  esl_strcat(&type, -1, tok, -1);
-	}
-      }
-    }
-
-    if      (msa->acc && msa->name && type) esl_sprintf(&cfg.msaname, "%s_%s%s", msa->acc, msa->name, type);
-    else if (msa->acc && msa->name)         esl_sprintf(&cfg.msaname, "%s_%s", msa->acc, msa->name);
-    else if (msa->acc)                      esl_sprintf(&cfg.msaname, "%s", msa->acc);
-    else                                    esl_sprintf(&cfg.msaname, "%s_%d", cfg.filename, cfg.nmsa);
-    if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg.msaname, "%s.select%d", cfg.msaname, esl_opt_GetInteger(go, "--submsa"));
-
+  
     /* R2R annotated sto file */
     esl_sprintf(&cfg.R2Rfile,    "%s/%s.R2R.sto",     cfg.outdir, cfg.msaname);
     esl_sprintf(&cfg.R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg.outdir, cfg.msaname);
@@ -535,7 +513,7 @@ main(int argc, char **argv)
     esl_sprintf(&cfg.cykcovhisfile, "%s/%s.cyk.his", cfg.outdir, cfg.msaname);
     
     /* nullcovhis file */
-    esl_sprintf(&cfg.nullcovhisfile,    "%s/%s.nullhis",    cfg.outdir, cfg.msaname);
+    esl_sprintf(&cfg.nullcovhisfile,    "%s/%s.nullhis",     cfg.outdir, cfg.msaname);
     esl_sprintf(&cfg.cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg.outdir, cfg.msaname);
     
     /* nullcovplot file */
@@ -544,52 +522,7 @@ main(int argc, char **argv)
     /* dotplot file */
     esl_sprintf(&cfg.dplotfile,    "%s/%s.dplot",     cfg.outdir, cfg.msaname);
     esl_sprintf(&cfg.cykdplotfile, "%s/%s.cyk.dplot", cfg.outdir, cfg.msaname);
-    
-    /* select submsa and then apply msa filters 
-     */
-    if (cfg.fragfrac > 0.      && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved)            != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg.r, &msa, cfg.minidthresh, &nremoved)         != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-    if (cfg.submsa             && msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf);              esl_fatal(msg); }
-    if (msa == NULL) {
-      free(type); type = NULL;
-      free(cfg.msaname); cfg.msaname = NULL;
-      continue;
-    }
-    if (msa->nseq < cfg.nseqmin) {
-      esl_msa_Destroy(msa); msa = NULL;
-      free(type); type = NULL;
-      free(cfg.msaname); cfg.msaname = NULL;
-      continue;  
-    }
-    if (msamanip_RemoveGapColumns(cfg.gapthresh, msa, &cfg.msamap, cfg.errbuf, cfg.verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
- 
-    esl_msa_Hash(msa);
-    msamanip_ConvertDegen2RandomCanonical(cfg.r, msa);
-    if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
-    
-    /* given msa aveid and avematch */
-    msamanip_XStats(msa, &cfg.mstat);
-    
-    if ((esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
-	(esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid"))   ) {
-      esl_msa_Destroy(msa); msa = NULL;
-      free(type); type = NULL;
-      free(cfg.msaname); cfg.msaname = NULL;
-      continue;  
-    }
-
-    /* output the actual file used if requested */
-    if (cfg.outmsafp) eslx_msafile_Write(cfg.outmsafp, msa, eslMSAFILE_STOCKHOLM);
- 
-    /* print some info */
-    if (cfg.verbose) {
-      fprintf(cfg.outfp, "Used alignment\n");
-      fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
-      if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
-      msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
-    }
-    
+      
     /* the ct vector */
     status = msamanip_CalculateCT(msa, &cfg.ct, &cfg.nbpairs, cfg.errbuf);
     if (status != eslOK) esl_fatal("%s. Failed to calculate ct vector", cfg.errbuf);
@@ -600,6 +533,7 @@ main(int argc, char **argv)
     esl_vec_DDump(stdout, cfg.fnbp, cfg.abc->K, "nonbasepairs BC");
 #endif
     if (cfg.nbpairs == 0) cfg.docyk = TRUE; // calculate the cyk-cov structure if no given one
+    if (msa->alen > cfg.cykLmax) cfg.docyk = FALSE; // unless alignment is too long
 
     if (1||cfg.verbose) {
       fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
@@ -654,7 +588,6 @@ main(int argc, char **argv)
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
-    if (type) free(type); type = NULL;
     cov_FreeRankList(ranklist_null); ranklist_null = NULL;
     if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   }
@@ -667,7 +600,6 @@ main(int argc, char **argv)
   if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
-  if (type) free(type);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
@@ -700,9 +632,94 @@ main(int argc, char **argv)
 
 
 static int
+original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
+{
+  ESL_MSA *msa = *omsa;
+  char    *msg = "original_msa_manipulate failed";
+  char    *type = NULL;
+  char    *tp;
+  char    *tok;
+  int      seq_cons_len = 0;
+  int      nremoved = 0;	  /* # of identical sequences removed */
+  int      nfrags = 0;	  /* # of fragments removed */
+  int      t;
+
+  /* stats of the original alignment */
+  msamanip_XStats(msa, &cfg->omstat);
+  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, cfg->errbuf);
+  
+  /* the msaname */
+  for (t = 0; t < msa->ngf; t++) {
+    if (!esl_strcmp(msa->gf_tag[t], "TP")) {
+      tp = msa->gf[t];	
+      while (*tp != '\0') {
+	if (esl_strtok(&tp,  ";", &tok) != eslOK) esl_fatal(msg);
+	if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
+	esl_sprintf(&tok, "_%s", tok);
+	esl_strcat(&type, -1, tok, -1);
+      }
+    }
+  }
+  if      (msa->acc && msa->name && type) esl_sprintf(&cfg->msaname, "%s_%s%s", msa->acc, msa->name, type);
+  else if (msa->acc && msa->name)         esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name);
+  else if (msa->acc)                      esl_sprintf(&cfg->msaname, "%s", msa->acc);
+  else                                    esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
+  if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg->msaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
+  
+  /* apply msa filters and than select submsa
+   */
+  if (cfg->fragfrac > 0.      && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, &nremoved)            != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, &msa, cfg->minidthresh, &nremoved)         != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+  if (cfg->submsa             && msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
+  if (msa == NULL) {
+    free(type); type = NULL;
+    free(cfg->msaname); cfg->msaname = NULL;
+    return eslOK;
+  }
+  if (msa->nseq < cfg->nseqmin) {
+    esl_msa_Destroy(msa); msa = NULL;
+    free(type); type = NULL;
+    free(cfg->msaname); cfg->msaname = NULL;
+    return eslOK;
+  }
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
+  
+  esl_msa_Hash(msa);
+  msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
+  if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
+  
+  /* given msa aveid and avematch */
+  msamanip_XStats(msa, &cfg->mstat);
+  
+  if ((esl_opt_IsOn(go, "--minid") && cfg->mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
+      (esl_opt_IsOn(go, "--maxid") && cfg->mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid"))   ) {
+    esl_msa_Destroy(msa); msa = NULL;
+    free(type); type = NULL;
+    free(cfg->msaname); cfg->msaname = NULL;
+    return eslOK;  
+  }
+  
+  /* output the actual file used if requested */
+  if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+  
+  /* print some info */
+  if (cfg->verbose) {
+    fprintf(cfg->outfp, "Used alignment\n");
+    fprintf(cfg->outfp, "%6d          %s\n", msa->nseq, cfg->msafile);
+    if (eslx_msafile_Write(cfg->outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    msamanip_DumpStats(cfg->outfp, msa, cfg->mstat); 
+  }
+  
+  *omsa = msa;
+  return eslOK;
+}
+
+
+static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  int      status;
+  int  status;
   
   /* the TREE */
   status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
