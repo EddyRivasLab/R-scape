@@ -57,6 +57,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *msaname;
   int             *msamap;
 
+  char            *outmsafile;
   FILE            *outmsafp;
  
   char            *outdir;
@@ -296,12 +297,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.watch = esl_stopwatch_Create(); 
   
   esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
-
-   /* outmsa file */
-  cfg.outmsafp = NULL;
-  if (esl_opt_IsOn(go, "--outmsa")) {
-    if ((cfg.outmsafp = fopen(esl_opt_GetString(go, "--outmsa"), "w")) == NULL) esl_fatal("Failed to open outmsa file %s", esl_opt_GetString(go, "--outmsa"));
-  } 
   
   cfg.outdir = NULL;
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
@@ -417,6 +412,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
   /* msa-specific files */
+  cfg.outmsafile = NULL;
+  cfg.outmsafp   = NULL;
+
   cfg.R2Rfile    = NULL;
   cfg.R2Rfp      = NULL;
   cfg.R2Rcykfile = NULL;
@@ -560,9 +558,10 @@ main(int argc, char **argv)
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
   free(cfg.gnuplot);
-  if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
+  if (cfg.outmsafile) free(cfg.outmsafile);
+  if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
@@ -651,9 +650,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;  
   }
   
-  /* output the actual file used if requested */
-  if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-  
   /* print some info */
   if (cfg->verbose) {
     fprintf(cfg->outfp, "Used alignment\n");
@@ -674,6 +670,14 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   RANKLIST *ranklist_aux  = NULL;
   int       status;
   
+  /* outmsa file if requested */
+  if (esl_opt_IsOn(go, "--outmsa")) {
+    esl_sprintf(&cfg->outmsafile, "%s/%s_%s.sto",     cfg->outdir, esl_opt_GetString(go, "--outmsa"), cfg->msaname);
+    if ((cfg->outmsafp = fopen(cfg->outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg->outmsafile);
+    eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+    fclose(cfg->outmsafp);
+  } 
+
   /* R2R annotated sto file */
   esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
   esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
