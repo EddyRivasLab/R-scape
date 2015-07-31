@@ -506,10 +506,6 @@ main(int argc, char **argv)
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rnacov"); }
 
     if (msa) esl_msa_Destroy(msa); msa = NULL;
-    free(cfg.ct); cfg.ct = NULL;
-    if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
-    if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
-    if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
   }
 
   /* cleanup */
@@ -721,12 +717,20 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   *omsa = msa;
 
+  free(cfg->ct); cfg->ct = NULL;
+  if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
+  if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
+  if (cfg->msaname) free(cfg->msaname); cfg->msaname = NULL;
   cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
 
   return eslOK;
 
  ERROR:
+  if (cfg->ct) free(cfg->ct);
+  if (cfg->msafrq) free(cfg->msafrq); 
+  if (cfg->T) esl_tree_Destroy(cfg->T); 
+  if (cfg->msaname) free(cfg->msaname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   return status;

@@ -2202,7 +2202,10 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   char    *key3 = NULL;
   char    *key4 = NULL;
   double   minphi;
-  double   minmass = 0.10;
+  double   minmass = 2.0*pmass;
+  int      pointype;
+  double   pointintbox;
+  int      linew;
   double   pointsize;
   double   xmin, xmax;
   double   ymin, ymax;
@@ -2228,42 +2231,47 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", covhisfile);
     fprintf(pipe, "set terminal svg dynamic fname 'Arial' fsize 12 \n");
-    pointsize = 0.4;
+    pointype    = 71;
+    pointsize   = 0.6;
+    pointintbox = 0.4;
+    linew       = 1;
   }
   else {
     esl_sprintf(&outplot, "%s.ps", covhisfile);
     fprintf(pipe, "set terminal postscript color 14\n");
-    pointsize = 0.7;
+    pointype    = 65;
+    pointsize   = 0.7;
+    pointintbox = 1.0;
+    linew       = 2;
   }
 
   fprintf(pipe, "set output '%s'\n", outplot);
   fprintf(pipe, "set title '%s' \n", title);
 
-  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey'      pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown'     pt 7 lw 1 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan'      pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red'       pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange'    pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black'     pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green'     pt 7 lw 2 ps %f\n", pointsize);
-  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue'      pt 7 lw 2 ps %f\n", pointsize);
-
-  fprintf(pipe, "set style line 11  lt 1 lc rgb 'grey'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
-  fprintf(pipe, "set style line 22  lt 1 lc rgb 'brown'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
-  fprintf(pipe, "set style line 33  lt 1 lc rgb 'cyan'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 44  lt 1 lc rgb 'red'       pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 55  lt 1 lc rgb 'orange'    pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 66  lt 1 lc rgb 'turquoise' pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 77  lt 1 lc rgb 'black'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 88  lt 1 lc rgb 'green'     pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n\n", pointsize);
-  fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt 65 pi -1  lw 2 ps %f \nset pointintervalbox 1\n", pointsize);
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red'       pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange'    pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 11  lt 1 lc rgb 'grey'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 22  lt 1 lc rgb 'brown'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 33  lt 1 lc rgb 'cyan'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 44  lt 1 lc rgb 'red'       pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 55  lt 1 lc rgb 'orange'    pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 66  lt 1 lc rgb 'turquoise' pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 77  lt 1 lc rgb 'black'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 88  lt 1 lc rgb 'green'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
 
   // log survival plot for ranklist and ranklist_null
   fprintf(pipe, "set multiplot\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
-  xmin = (ranklist_null)? ESL_MIN(minphi,ranklist->ht->phi)                   : ESL_MIN(minphi,ranklist->ht->phi);
+  xmin = (ranklist_null)? ESL_MIN(minphi,ranklist_null->ha->phi)              : ESL_MIN(minphi,ranklist->ht->phi);
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
   ymin = -log(ranklist->ht->Nc);
   ymax = log(ESL_MAX(minmass,pmass));
@@ -3366,7 +3374,6 @@ static int
 cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logscale, int style1, int style2)
 {
   int       i;
-  int       x;
   uint64_t  c = 0;
   double    esum;
   double    ai;
