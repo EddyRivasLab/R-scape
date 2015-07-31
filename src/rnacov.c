@@ -129,6 +129,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   THRESH          *thresh;
   MODE             mode;
 
+  int              window;
+  int              slide;
+
   float            tol;
   int              verbose;
 };
@@ -140,6 +143,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--cyk",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
+  { "--slide",        eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -321,6 +326,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
+  cfg.window      = esl_opt_IsOn(go, "--window")?    esl_opt_GetInteger(go, "--window")    : -1;
+  cfg.slide       = esl_opt_IsOn(go, "--slide")?     esl_opt_GetInteger(go, "--slide")     : -1;
 
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -480,8 +487,13 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
+  char            *omsaname = NULL;
   ESLX_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
+  ESL_MSA         *wmsa = NULL;           /* the window alignment   */
+  int             *useme = NULL;
+  int              first, last;
+  int              i;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -501,11 +513,36 @@ main(int argc, char **argv)
     status = original_msa_manipulate(go, &cfg, &msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     if (msa == NULL) continue;
+    
+    if (cfg.window > 0) {
+      esl_sprintf(&omsaname, "%s", cfg.msaname);
 
-    status = rnacov_for_msa(go, &cfg, &msa);
-    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rnacov"); }
+      useme = malloc(sizeof(int)*(msa->alen+1));
+      for (first = 1; first <= msa->alen-cfg.slide; first += cfg.slide) {
+	esl_vec_ISet(useme, msa->alen+1, FALSE);
+	wmsa = esl_msa_Clone(msa);
 
+	last = ESL_MIN(first+cfg.window-1, msa->alen);
+	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
+
+	for (i = first; i <= last; i ++) useme[i] = TRUE;
+	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
+
+	status = rnacov_for_msa(go, &cfg, &wmsa);
+	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rnacov"); }
+ 
+	esl_msa_Destroy(wmsa); wmsa = NULL;
+      }
+    }
+    else {
+      status = rnacov_for_msa(go, &cfg, &msa);
+      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rnacov"); }
+    }
+
+    if (omsaname) free(omsaname); omsaname = NULL;
+    if (useme) free(useme); useme = NULL;
     if (msa) esl_msa_Destroy(msa); msa = NULL;
+    if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
   }
 
   /* cleanup */
@@ -540,6 +577,7 @@ main(int argc, char **argv)
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
+  if (useme) free(useme);
   return 0;
 }
 
@@ -664,7 +702,7 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
-  if (cfg->nbpairs == 0) cfg->docyk = TRUE; // calculate the cyk-cov structure if no given one
+  if (cfg->nbpairs == 0)        cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (msa->alen > cfg->cykLmax) cfg->docyk = FALSE; // unless alignment is too long
   
   if (1||cfg->verbose) {
@@ -720,7 +758,6 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   free(cfg->ct); cfg->ct = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
-  if (cfg->msaname) free(cfg->msaname); cfg->msaname = NULL;
   cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
 
