@@ -1825,6 +1825,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 {
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
+  double   esum;
   int      alloc_nhit = 5;
   int      bin;
   int      tf = 0;
@@ -1892,7 +1893,12 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 hitlist->hit[h].Eval = (!usenull)? ranklist->ht->expect[bin] : ranklist_null->ha->expect[bin] * (double)ranklist->ha->Nc / (double) ranklist_null->ha->Nc;
+	 esum = 0.;
+	 for (b = (!usenull)? ranklist->ht->nb-1 : ranklist_null->ha->nb-1; b >= bin; b --) {
+	   esum += (!usenull)? ranklist->ht->expect[b] : ranklist_null->ha->expect[b] * (double)ranklist->ha->Nc / (double) ranklist_null->ha->Nc;
+	 }
+	 hitlist->hit[h].Eval = esum;
+	 
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 
@@ -2279,53 +2285,54 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   
   // plot evalue
   fprintf(pipe, "set multiplot\n");
-  ymin = 1e-7;
+  ymin = 1.0/ranklist->ha->Nc;
   ymax = ranklist->ha->Nc * ESL_MAX(minmass,pmass);
-  incy = 1.0/ranklist->ha->Nc;
-  posy = ymax - incy;
+  incy = (ymax-ymin)/12.;
+  posy = log(ymax - incy);
   printf("xmax %f xmin %f ymax %f ymin %f posx %f posy %f incx %f incy %f\n", xmax, xmin, ymax, ymin, posx, posy, incx, incy);
   fprintf(pipe, "set logscale y\n");
   fprintf(pipe, "set yrange [%g:%f]\n", ymin, ymax);
-  status = cov_histogram_plotevalue  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,      99, 2);
+  status = cov_histogram_plotevalue  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, log(ymax-incy),      99, 2);
   if (status != eslOK) goto ERROR;
-  status = cov_histogram_plotevalue  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-incy, 44, 2);
+  status = cov_histogram_plotevalue  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, log(ymax-2*incy), 44, 2);
   if (status != eslOK) goto ERROR;
   if (ranklist_null) {
-    status = cov_histogram_plotevalue(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-2*incy, 77, 7);
+    status = cov_histogram_plotevalue(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, log(ymax-3*incy), 77, 7);
     if (status != eslOK) goto ERROR;
   }
   if (ranklist_aux) {
-    status = cov_histogram_plotevalue(pipe, ranklist->ha->Nc, ranklist_aux->ha, key4, posx, posy-3.*incy, 11, 7);
-    if (status != eslOK) goto ERROR;
-  }
-
-  // log survival plot for ranklist and ranklist_null
-  fprintf(pipe, "unset logscale y\n");
-  fprintf(pipe, "set multiplot\n");
-  fprintf(pipe, "unset logscale y\n");
-
-  ymin = -log(ranklist->ht->Nc);
-  ymax = log(ESL_MAX(minmass,pmass));
-  incy = (ymax-ymin)/12.;
-  ymin -= incy;
-  posy = ymax - incy;
-  fprintf(pipe, "set yrange [%f:%f]\n", ymin, ymax);
-  fprintf(pipe, "set ylabel 'lnP(x > score)'\n");
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ha, key1, posx, posy,      TRUE, 99, 2);
-  if (status != eslOK) goto ERROR;
-  status = cov_histogram_plotsurvival  (pipe, ranklist->ht, key2, posx, posy-incy, TRUE, 44, 2);
-  if (status != eslOK) goto ERROR;
-  if (ranklist_null) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, key3, posx, posy-2.*incy, TRUE, 77, 7);
-    if (status != eslOK) goto ERROR;
-  }
-  if (ranklist_aux) {
-    status = cov_histogram_plotsurvival(pipe, ranklist_aux->ha, key4, posx, posy-3.*incy, TRUE, 11, 7);
+    status = cov_histogram_plotevalue(pipe, ranklist->ha->Nc, ranklist_aux->ha, key4, posx, log(ymax-4.*incy), 11, 7);
     if (status != eslOK) goto ERROR;
   }
 
 
   if (!dosvg) {
+
+    // log survival plot for ranklist and ranklist_null
+    fprintf(pipe, "unset logscale y\n");
+    fprintf(pipe, "set multiplot\n");
+    fprintf(pipe, "unset logscale y\n");
+    
+    ymin = -log(ranklist->ht->Nc);
+    ymax = log(ESL_MAX(minmass,pmass));
+    incy = (ymax-ymin)/12.;
+    ymin -= incy;
+    posy = ymax - incy;
+    fprintf(pipe, "set yrange [%f:%f]\n", ymin, ymax);
+    fprintf(pipe, "set ylabel 'lnP(x > score)'\n");
+    status = cov_histogram_plotsurvival  (pipe, ranklist->ha, key1, posx, posy,      TRUE, 99, 2);
+    if (status != eslOK) goto ERROR;
+    status = cov_histogram_plotsurvival  (pipe, ranklist->ht, key2, posx, posy-incy, TRUE, 44, 2);
+    if (status != eslOK) goto ERROR;
+    if (ranklist_null) {
+      status = cov_histogram_plotsurvival(pipe, ranklist_null->ha, key3, posx, posy-2.*incy, TRUE, 77, 7);
+      if (status != eslOK) goto ERROR;
+    }
+    if (ranklist_aux) {
+      status = cov_histogram_plotsurvival(pipe, ranklist_aux->ha, key4, posx, posy-3.*incy, TRUE, 11, 7);
+      if (status != eslOK) goto ERROR;
+    }
+
     // survival plot for ranklist and ranklist_null
     fprintf(pipe, "set multiplot\n");
     xmin = (ranklist_null)? ESL_MIN(ranklist_null->ha->xmin, ranklist->ha->xmin) : ranklist->ha->xmin;
