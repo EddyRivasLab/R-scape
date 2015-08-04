@@ -126,6 +126,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
+  double           mu;
+  double           lambda;
 
   THRESH          *thresh;
   MODE             mode;
@@ -845,7 +847,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   donull2b = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE:FALSE;
   status = cov_Calculate(cfg->r, &msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ranklist_aux, &ranklist, &hitlist, cfg->method, 
 			 cfg->covtype, cfg->covclass, cfg->ct, 
-			 cfg->bmin, cfg->w, cfg->pmass, (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
+			 cfg->bmin, cfg->w, cfg->pmass, &cfg->mu, &cfg->lambda,
+			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
 			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
 			 cfg->thresh, cfg->mode, cfg->onbpairs, donull2b, cfg->tol, cfg->verbose, cfg->errbuf);   
   if (status != eslOK) goto ERROR; 
@@ -858,7 +861,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, title, cfg->pmass, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, title, 
+				cfg->pmass, cfg->mu, cfg->lambda, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
   
@@ -868,7 +872,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     status = cov_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			  &msa, mi, cfg->msamap, ranklist_null, ranklist_aux, &cykranklist, cfg->bmin, cfg->w, cfg->pmass, cfg->minloop, cfg->grammar, 
+			  &msa, mi, cfg->msamap, ranklist_null, ranklist_aux, &cykranklist, cfg->bmin, cfg->w,
+			  cfg->pmass, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, 
 			  cfg->thresh, cfg->thresh->sc, cfg->onbpairs, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     
@@ -878,7 +883,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
     status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, title, cfg->pmass, 
-				cfg->verbose, cfg->errbuf);
+				cfg->mu, cfg->lambda, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR; 
   }
  
