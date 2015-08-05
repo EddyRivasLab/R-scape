@@ -244,8 +244,8 @@ extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, doub
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, 
-					  RANKLIST *ranklist, RANKLIST *ranklist_null,  
-					  double mu, double lambda, int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf);
+					  RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, double mu, double lambda, 
+					  int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf);
 extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
