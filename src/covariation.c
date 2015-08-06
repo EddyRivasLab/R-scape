@@ -1588,7 +1588,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
     else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);
     if (status != eslOK) goto ERROR;
-    if (1||verbose) {
+    if (verbose) {
       if (!usenull) printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist->ht->phi,      mu, lambda, ranklist->ht->Nc);
       else          printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist_null->ha->phi, mu, lambda, ranklist_null->ha->Nc);
     }
@@ -1646,7 +1646,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
       case Eval:  
-	val = pmass * esl_exp_surv(cov, mu, lambda) * (double)ranklist->ha->Nc;
+	val = (lambda < eslINFINITY)? pmass * esl_exp_surv(cov, mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
 	break;
       default: 
 	ESL_XFAIL(eslFAIL, errbuf, "do not recognize thresholding type\n");
@@ -1891,7 +1891,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 eval = pmass * esl_exp_surv(mi->COV->mx[i][j], mu, lambda) * (double)ranklist->ha->Nc;
+	 eval = (lambda < eslINFINITY)? pmass * esl_exp_surv(mi->COV->mx[i][j], mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
 	 hitlist->hit[h].Eval = eval;
 
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
@@ -2178,11 +2178,20 @@ cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double 
   /* exponential fit to tail */
   status = esl_exp_FitCompleteBinned(h, &ep[0], &ep[1]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do exponential fit");
-  if (ep[1] == eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "lambda is infinity in exponential fit for pmass %f\n", pmass);
+
+  while (ep[1] == eslINFINITY && pmass < 0.5) {
+    pmass *= 1.5;
+    status = esl_histogram_SetTailByMass(h, pmass, &newmass);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set TailByMass");
+    status = esl_exp_FitCompleteBinned(h, &ep[0], &ep[1]);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do exponential fit");
+  }
 
   /* add the expected data to the histogram */
-  status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_exp_generic_cdf, ep);
-  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set expected tail");
+  if (ep[1] == eslINFINITY) {  
+    status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_exp_generic_cdf, ep);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set expected tail");
+  }
 
   *ret_mu      = ep[0];
   *ret_lambda  = ep[1];

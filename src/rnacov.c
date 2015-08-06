@@ -832,7 +832,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
   }
-  
+
   /* produce a tree
    */
   if (cfg->method != NAIVE) {
@@ -840,7 +840,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     if (status != eslOK)  { esl_fatal(cfg->errbuf); }
     nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
   }
-  
+
   /* create the MI structure */
   mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)?TRUE:FALSE, cfg->nseqthresh, cfg->abc);
   
@@ -908,7 +908,6 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
  ERROR:
   *omsa = NULL;
-  if (cfg->T)      esl_tree_Destroy(cfg->T);
   if (mi)          cov_Destroy(mi);
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
