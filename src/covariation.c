@@ -1588,7 +1588,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
     else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);
     if (status != eslOK) goto ERROR;
-    if (verbose) {
+    if (1||verbose) {
       if (!usenull) printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist->ht->phi,      mu, lambda, ranklist->ht->Nc);
       else          printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist_null->ha->phi, mu, lambda, ranklist_null->ha->Nc);
     }
@@ -2188,7 +2188,7 @@ cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double 
   }
 
   /* add the expected data to the histogram */
-  if (ep[1] == eslINFINITY) {  
+  if (ep[1] < eslINFINITY) {  
     status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_exp_generic_cdf, ep);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set expected tail");
   }
@@ -2313,17 +2313,17 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
     if (status != eslOK) goto ERROR;
   }
   
-  offx = incx * 3/5;
-  offy = incy * 1;
+  offx = incx * 1/2;
+  offy = incy * 15;
   expsurv = 0.05;
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, pmass, mu, lambda, ymin, ymax, "E 0.05", offx, offy, 1);
   
   expsurv = 1.0;
-  offy = incy * 9;
+  offy = incy * 11;
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, pmass, mu, lambda, ymin, ymax, "E 1.00", offx, offy, 1);
   
   expsurv = 10.0;
-  offy = incy * 4;
+  offy = incy * 6;
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, pmass, mu, lambda, ymin, ymax, "E 10.0", offx, offy, 1);
   
   if (!dosvg) {
