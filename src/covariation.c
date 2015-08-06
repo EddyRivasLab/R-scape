@@ -1588,7 +1588,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,      pmass, &newmass, &mu, &lambda, verbose, errbuf);
     else          status = cov_ExpFitHistogram(ranklist_null->ha, pmass, &newmass, &mu, &lambda, verbose, errbuf);
     if (status != eslOK) goto ERROR;
-    if (verbose) {
+    if (1||verbose) {
       if (!usenull) printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist->ht->phi,      mu, lambda, ranklist->ht->Nc);
       else          printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist_null->ha->phi, mu, lambda, ranklist_null->ha->Nc);
     }
@@ -2178,6 +2178,7 @@ cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double 
   /* exponential fit to tail */
   status = esl_exp_FitCompleteBinned(h, &ep[0], &ep[1]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do exponential fit");
+  if (ep[1] == eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "lambda is infinity in exponential fit for pmass %f\n", pmass);
 
   /* add the expected data to the histogram */
   status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_exp_generic_cdf, ep);
@@ -2304,7 +2305,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   }
   
   offx = incx * 3/5;
-  offy = incy * 14;
+  offy = incy * 1;
   expsurv = 0.05;
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, pmass, mu, lambda, ymin, ymax, "E 0.05", offx, offy, 1);
   

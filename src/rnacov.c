@@ -228,6 +228,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "rnacov - significan covarying pairs in RNA alignments";
 
+static int MSA_banner (FILE *fp, char *msaname, MSA_STAT mstat, MSA_STAT omstat, int nbpairs, int onbpairs);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
@@ -482,6 +483,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   exit(status);
 }
 
+static int
+MSA_banner (FILE *fp, char *msaname, MSA_STAT mstat, MSA_STAT omstat, int nbpairs, int onbpairs)
+{
+  fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	  msaname, mstat.nseq, omstat.nseq, mstat.alen, omstat.alen, 
+	  mstat.avgid, omstat.avgid, nbpairs, onbpairs);
+  return eslOK;
+}
+
 int
 main(int argc, char **argv)
 { 
@@ -672,6 +682,11 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   RANKLIST *ranklist_aux  = NULL;
   int       status;
   
+  if (msa->nseq <= 1) {
+    MSA_banner(cfg->outfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    return eslOK;
+  }
+
   /* outmsa file if requested */
   if (esl_opt_IsOn(go, "--outmsa")) {
     esl_sprintf(&cfg->outmsafile, "%s/%s_%s.sto",     cfg->outdir, esl_opt_GetString(go, "--outmsa"), cfg->msaname);
@@ -711,11 +726,8 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->nbpairs == 0)        cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (msa->alen > cfg->cykLmax) cfg->docyk = FALSE; // unless alignment is too long
   
-  if (1||cfg->verbose) {
-    fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
-	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
-  }
+  if (1||cfg->verbose) 
+    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   
   /* the null model first */
   cfg->mode = RANSS;
@@ -812,13 +824,11 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   esl_stopwatch_Start(cfg->watch);
   
   /* print to stdout */
-  if (cfg->verbose) fprintf(stdout, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-			   cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
-			   cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+  if (cfg->verbose) 
+    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  
   if (cfg->mode != RANSS) {
-    fprintf(cfg->outfp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	    cfg->msaname, msa->nseq, cfg->omstat.nseq, msa->alen, cfg->omstat.alen, 
-	    cfg->mstat.avgid, cfg->omstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+    MSA_banner(cfg->outfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
   }
@@ -1316,3 +1326,4 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   *ocumranklist = cumranklist;
   return eslOK;
 }
+
