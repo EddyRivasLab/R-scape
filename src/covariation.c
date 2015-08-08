@@ -1605,7 +1605,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   /* ranklist from histogram ha */
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
     cov = esl_histogram_Bin2LBound(ranklist->ha, b);
-
+    
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
@@ -1631,7 +1631,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 
     /* evalues */
     eval = (lambda < eslINFINITY)? pmass * esl_exp_surv(cov, mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
-    ranklist->covNBP[b] = eval;
+    ranklist->eval[b] = eval;
   
     if (mode == GIVSS || mode == CYKSS) {
       if (ranklist_null) {
@@ -1879,7 +1879,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].is_compatible = FALSE;
 	 
 	 for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
-	   if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)b*ranklist->ha->w) {
+	   if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
 	     hitlist->hit[h].Eval    = ranklist->eval[b];
 	     hitlist->hit[h].covNBP  = ranklist->covNBP[b];
 	     hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
