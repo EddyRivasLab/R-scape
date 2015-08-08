@@ -2312,7 +2312,10 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   if (status != eslOK) goto ERROR;
 
   subsample = (int)(pmass * (ranklist->ha->imax-ranklist->ha->imin));
-  if (subsample < 1) subsample = (int)(0.01 * (ranklist->ha->imax-ranklist->ha->imin));
+  while (subsample < 1) {
+    pmass *= 10.0;
+    subsample = (int)(pmass * (ranklist->ha->imax-ranklist->ha->imin));
+  }
   if (ranklist_null) {
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, 77, 7);
     if (status != eslOK) goto ERROR;
