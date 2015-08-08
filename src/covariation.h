@@ -116,6 +116,7 @@ typedef struct ranklist_s {
   ESL_HISTOGRAM *ht;             /* histogram of scores (truncated pairs == no ss pairs) */
   double        *covBP;
   double        *covNBP;
+  double        *eval;
   double         scthresh;
 } RANKLIST;
 

@@ -1542,6 +1542,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       F;
   double       cvBP, cvNBP, cvNBPu, cvNBPf;
   double       cvRBP, cvRBPu, cvRBPf;
+  double       eval;
   double       cov;
   double       val;
   double       bmax;
@@ -1627,6 +1628,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
     ranklist->covBP[b]  = cvBP;
     ranklist->covNBP[b] = cvNBP;
+
+    /* evalues */
+    eval = (lambda < eslINFINITY)? pmass * esl_exp_surv(cov, mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
+    ranklist->covNBP[b] = eval;
   
     if (mode == GIVSS || mode == CYKSS) {
       if (ranklist_null) {
@@ -1647,9 +1652,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       case covRBP:  val = cvRBP;  break;
       case covRBPu: val = cvRBPu; break;
       case covRBPf: val = cvRBPf; break;
-      case Eval:  
-	val = (lambda < eslINFINITY)? pmass * esl_exp_surv(cov, mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
-	break;
+      case Eval:    val = eval;   break;
       default: 
 	ESL_XFAIL(eslFAIL, errbuf, "do not recognize thresholding type\n");
 	break;
@@ -1727,9 +1730,11 @@ cov_CreateRankList(double bmax, double bmin, double w)
  
   ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->ha->nb);
   ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->ha->nb);
+  ESL_ALLOC(ranklist->eval,   sizeof(double) * ranklist->ha->nb);
  
   esl_vec_DSet(ranklist->covBP,  ranklist->ha->nb, 0.);
   esl_vec_DSet(ranklist->covNBP, ranklist->ha->nb, 0.);
+  esl_vec_DSet(ranklist->eval,   ranklist->ha->nb, eslINFINITY);
 
   ranklist->scthresh = ranklist->ha->xmax;
   return ranklist;
@@ -1772,6 +1777,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, new->ha, &newb);
     if (newb >= new->ha->imin && newb <= new->ha->imax) {
+      new->eval[newb]    = ranklist->eval[b];
       new->covBP[newb]   = ranklist->covBP[b];
       new->covNBP[newb]  = ranklist->covNBP[b];
       new->ha->obs[newb] = ranklist->ha->obs[b];
@@ -1795,7 +1801,7 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 
   printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) 
-    printf("cov %f covBP %f covNBP %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->covBP[b], ranklist->covNBP[b]); 
+    printf("cov %f eval %f covBP %f covNBP %f \n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->eval[b], ranklist->covBP[b], ranklist->covNBP[b]); 
   
   return eslOK;
 }
@@ -1827,7 +1833,6 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 {
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
-  double   eval;
   int      alloc_nhit = 5;
   int      bin;
   int      tf = 0;
@@ -1875,6 +1880,7 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 
 	 for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
 	   if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)b*ranklist->ha->w) {
+	     hitlist->hit[h].Eval    = ranklist->eval[b];
 	     hitlist->hit[h].covNBP  = ranklist->covNBP[b];
 	     hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
 	     hitlist->hit[h].covNBPf = ranklist->covNBP[b]/(double)NBP;
@@ -1895,8 +1901,6 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 	 hitlist->hit[h].i    = i;
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-	 eval = (lambda < eslINFINITY)? pmass * esl_exp_surv(mi->COV->mx[i][j], mu, lambda) * (double)ranklist->ha->Nc : eslINFINITY;
-	 hitlist->hit[h].Eval = eval;
 
 	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
@@ -1960,6 +1964,7 @@ cov_FreeRankList(RANKLIST *ranklist)
 
   if (ranklist->ha)     esl_histogram_Destroy(ranklist->ha);
   if (ranklist->ht)     esl_histogram_Destroy(ranklist->ht);
+  if (ranklist->eval)   free(ranklist->eval);
   if (ranklist->covBP)  free(ranklist->covBP);
   if (ranklist->covNBP) free(ranklist->covNBP);
   free(ranklist);
@@ -2311,7 +2316,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, 44, 2);
   if (status != eslOK) goto ERROR;
 
-  subsample = (int)(pmass * (ranklist->ha->imax-ranklist->ha->imin));
+  subsample = (int)(5.*pmass * (ranklist->ha->imax-ranklist->ha->imin));
   while (subsample < 1) {
     pmass *= 10.0;
     subsample = (int)(pmass * (ranklist->ha->imax-ranklist->ha->imin));
