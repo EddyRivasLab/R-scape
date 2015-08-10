@@ -2309,7 +2309,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xlabel 'covariation score'\n");
   xmin = (ranklist_null)? ESL_MIN(ranklist->ht->phi, ESL_MIN(minphi, ranklist_null->ha->phi)) : ESL_MIN(minphi, ranklist->ht->phi);
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-  xmin = evalue2cov(ymax, ranklist->ha->Nc, ranklist->ha, pmass, mu, lambda);
+  xmin = ESL_MIN(evalue2cov(ymax, ranklist->ha->Nc, ranklist->ha, pmass, mu, lambda), evalue2cov(ymax, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda));
   incx = (xmax-xmin)/12.;
   xmax += incx;
   posx = xmin + 11.*incx;
