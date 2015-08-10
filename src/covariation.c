@@ -2225,7 +2225,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   char    *key3 = NULL;
   char    *key4 = NULL;
   double   minphi;
-  double   minmass = 0.01;
+  double   minmass = 0.005;
   int      pointype;
   double   pointintbox;
   int      linew;
@@ -2295,23 +2295,25 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
 
   // plot evalue
-  fprintf(pipe, "set multiplot\n");
+  fprintf(pipe, "set multiplot\n");  
+  fprintf(pipe, "set ylabel 'Expected or Observed #pairs(x > score)'\n");
+  cov_histogram_cov2expectsurv(ranklist_null->ha->xmax, ranklist_null->ha, &ymin);
+  cov_histogram_cov2expectsurv(xmin,                    ranklist->ha,      &ymax);
+  ymax = 100.;
+  ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
+  incy = (ymax-ymin)/26.;
+  posy = ymax - 8*incy;
+  fprintf(pipe, "set logscale y\n");
+  fprintf(pipe, "set yrange [%g:%f]\n", ymin, ymax);
+
   fprintf(pipe, "set xlabel 'covariation score'\n");
-  xmin = (ranklist_null)? ESL_MIN(ranklist->ht->phi,ESL_MIN(minphi,ranklist_null->ha->phi)) : ESL_MIN(minphi,ranklist->ht->phi);
+  xmin = (ranklist_null)? ESL_MIN(ranklist->ht->phi, ESL_MIN(minphi, ranklist_null->ha->phi)) : ESL_MIN(minphi, ranklist->ht->phi);
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
+  xmin = evalue2cov(ymax, ranklist->ha->Nc, ranklist->ha, pmass, mu, lambda);
   incx = (xmax-xmin)/12.;
   xmax += incx;
   posx = xmin + 11.*incx;
   fprintf(pipe, "set xrange [%f:%f]\n", xmin, xmax);
-  
-  cov_histogram_cov2expectsurv(ranklist_null->ha->xmax, ranklist_null->ha, &ymin);
-  cov_histogram_cov2expectsurv(xmin,                    ranklist->ha,      &ymax);
-  incy = (ymax-ymin)/26.;
-  ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
-  posy = ymax - 8*incy;
-  fprintf(pipe, "set logscale y\n");
-  fprintf(pipe, "set yrange [%g:%f]\n", ymin, ymax);
-  fprintf(pipe, "set ylabel 'Expected or Observed #pairs(x > score)'\n");
 
   subsample = (int)(0.5*ranklist_null->ha->Nc/ranklist->ha->Nc);
   if (subsample < 1) subsample = 1;
