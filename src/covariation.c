@@ -2833,7 +2833,6 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   }
   if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
   esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
-
   if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
 
   /* write the R2R annotated to PFAM format */
