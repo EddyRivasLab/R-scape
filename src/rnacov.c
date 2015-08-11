@@ -696,24 +696,45 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   } 
 
   /* R2R annotated sto file */
-  esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
-  esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
-  
-  /* covhis file */
-  esl_sprintf(&cfg->covhisfile,    "%s/%s.his",     cfg->outdir, cfg->msaname);
-  esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
-  
-  /* nullcovhis file */
-  esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
-  esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
-  
-  /* nullcovplot file */
-  esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
-  
-  /* dotplot file */
-  esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
-  esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
-  
+  if (cfg->outdir) {
+    esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
+    
+    /* covhis file */
+    esl_sprintf(&cfg->covhisfile,    "%s/%s.his",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
+    
+    /* nullcovhis file */
+    esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
+    
+    /* nullcovplot file */
+    esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
+    
+    /* dotplot file */
+    esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
+  }
+  else {
+    esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
+    esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
+    
+    /* covhis file */
+    esl_sprintf(&cfg->covhisfile,    "%s.his",     cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.his", cfg->msaname);
+    
+    /* nullcovhis file */
+    esl_sprintf(&cfg->nullcovhisfile,    "%s.nullhis",     cfg->msaname);
+    esl_sprintf(&cfg->cyknullcovhisfile, "%s.cyk.nullhis", cfg->msaname);
+    
+    /* nullcovplot file */
+    esl_sprintf(&cfg->nullcovfile, "%s.nullcov", cfg->msaname);
+    
+    /* dotplot file */
+    esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
+    esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
+  }
+
   /* the ct vector */
   status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, cfg->errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
@@ -851,6 +872,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
+  if (cfg->mode == GIVSS || cfg->mode == CYKSS)
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */

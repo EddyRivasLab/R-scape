@@ -1,6 +1,6 @@
 /* covariation.c */
 
-#include "p7_config.h"
+#include "p7_config.h"r
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1545,6 +1545,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       cvBP, cvNBP, cvNBPu, cvNBPf;
   double       cvRBP, cvRBPu, cvRBPf;
   double       cov;
+  double       eval;
   double       val;
   double       bmax;
   double       cvBP_thresh = 0.;
@@ -1563,10 +1564,10 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   cov_COVTYPEString(&covtype, mi->type, errbuf);
   cov_THRESHTYPEString(&threshtype, thresh->type, NULL);
 
-  if (rocfp) {
+  if (rocfp && (mode == GIVSS || mode == CYKSS)) {
     fprintf(rocfp, "\n# %s ", covtype);  
-    if (mi->ishuffled) fprintf(rocfp, "shuffled thresh fp tf found true negatives sen ppv F\n"); 
-    else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F\n"); 
+    if (mi->ishuffled) fprintf(rocfp, "shuffled thresh fp tf found true negatives sen ppv F evalue\n"); 
+    else               fprintf(rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
   }
 
   bmax = mi->maxCOV+W;
@@ -1620,8 +1621,12 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
-    neg = mi->alen * (mi->alen-1) / 2 - t;
-    if (rocfp) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f\n", cov, fp, tf, f, t, neg, sen, ppv, F);
+    neg  = mi->alen * (mi->alen-1) / 2 - t;
+    if (ranklist_null)
+      eval = cov2evalue(cov, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda);
+    else 
+      eval = eslINFINITY;
+    if (rocfp && (mode == GIVSS || mode == CYKSS)) fprintf(rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
     
     cvBP   = (double)tf;
     cvNBP  = (double)fp;
@@ -1634,7 +1639,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       if (ranklist_null) {
 
 	/* evalues */
-	ranklist->eval[b] = cov2evalue(cov, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda);
+	ranklist->eval[b] = eval;
 
 	if      (cov > ranklist_null->ha->bmax) cvRBP = ranklist_null->covBP[ranklist_null->ha->nb-1];
 	else if (cov < ranklist_null->ha->bmin) cvRBP = ranklist_null->covBP[0];
