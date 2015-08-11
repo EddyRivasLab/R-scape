@@ -226,7 +226,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
-static char banner[] = "rnacov - significan covarying pairs in RNA alignments";
+static char banner[] = "rnacov - significant covarying pairs in RNA alignments";
 
 static int MSA_banner (FILE *fp, char *msaname, MSA_STAT mstat, MSA_STAT omstat, int nbpairs, int onbpairs);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
@@ -958,7 +958,7 @@ null1_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to run null1_rnacov");
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to run null1_rnacov", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
      if (status != eslOK) goto ERROR;
@@ -1263,8 +1263,8 @@ null4_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     }
 
     status = run_rnacov(go, cfg, &shmsa, NULL, NULL, &ranklist);
-    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "\nerror creating shmsa");
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rnacov", cfg->errbuf);
+    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR;

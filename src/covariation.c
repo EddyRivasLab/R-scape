@@ -1169,7 +1169,8 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda, FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, 
+cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda, 
+			  FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, 
 			  int nbpairs, CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
 			  double tol, int verbose, char *errbuf)
 {
@@ -1221,9 +1222,11 @@ cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin
       else if (corrtype == ASC) 
 	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
       else if (corrtype == SCA) 
-	mi->COV->mx[i][j]  = COV->mx[i][j] * COVavg / sqrt(COVx[i] * COVx[j]);
+	mi->COV->mx[i][j]  = (COVx[i] > 0.0 && COVx[j] > 0.0)? COV->mx[i][j] * COVavg / sqrt(COVx[i] * COVx[j]) : 0.0;
       else 
 	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
+
+      if (isnan(mi->COV->mx[i][j])) ESL_XFAIL(eslFAIL, errbuf, "bad covariation\n");
 
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
