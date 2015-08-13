@@ -202,85 +202,6 @@ cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struc
      status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
      if (status != eslOK) goto ERROR;
       break;
-   case COVALL: 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateCHI         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateOMES        (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateGT          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateMI          (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateMIr         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      TRUE,  NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, APC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR; 
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, ASC, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateMIg         (covclass, mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs,      FALSE, NULL,      NULL,     ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(          mi, msamap, ct, bmin, w, pmass, ret_mu, ret_lambda, outfp, rocfp, sumfp, thresh, mode, nbpairs, SCA, TRUE,  &ranklist, &hitlist, ranklist_null, ranklist_aux, tol, verbose, errbuf);
-     if (status != eslOK) goto ERROR;
-     break;
    default:
      ESL_XFAIL(eslFAIL, errbuf, "wrong covariation type\n");
      break;
@@ -1625,7 +1546,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg  = mi->alen * (mi->alen-1) / 2 - t;
-    if (ranklist_null)
+    if (ranklist_null) 
       eval = cov2evalue(cov, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda);
     else 
       eval = eslINFINITY;
@@ -1674,7 +1595,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	cvBP_thresh        = cvBP;
 	cvNBP_thresh       = cvNBP;
 	if (thresh->type == Eval && cvBP >= cvBP_prv) { Eval_jump = val; cov_jump = cov; }
- 	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f newb %d\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump, newb);
+ 	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f \n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
       }
     
 #if 0
@@ -1763,7 +1684,8 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
 
   /* bmin has to be a w-multiple of ranklist->bin */
   new_bmin = ranklist->ha->bmin;
-  if (bmin < ranklist->ha->bmin) new_bmin -= bmin * 2 * ranklist->ha->w;
+  if (bmin < ranklist->ha->bmin) new_bmin -= fabs(bmin) * 2. * ranklist->ha->w;
+  
   new = cov_CreateRankList(ESL_MAX(bmax, ranklist->ha->bmax), new_bmin, ranklist->ha->w);
   if (new == NULL) goto ERROR;
 

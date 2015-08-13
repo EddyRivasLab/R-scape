@@ -54,8 +54,7 @@ typedef enum {
   OMESa = 22,
   OMESs = 23,
 
-  COVALL  = 24,
-  COVNONE = 25,
+  COVNONE = 24,
 } COVTYPE;
 
 
