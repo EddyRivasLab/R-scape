@@ -2252,7 +2252,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   offx = incx * 1/2;
   offy = incy * 16;
   expsurv = 0.00001;
-  cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 0.05", offx, offy, 1);
+  cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 1e-5", offx, offy, 1);
   
   expsurv = 1.0;
   offy = incy * 11;
