@@ -3643,6 +3643,7 @@ cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, doub
   double posx, posy;
  
   cov = evalue2cov(expsurv, Nc, h, pmass, mu, lambda);
+  printf("eval %f cov %f\n", expsurv, cov);
 
   posx = cov + offx;
   posy = ymax - offy;
