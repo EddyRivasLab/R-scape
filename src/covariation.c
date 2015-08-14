@@ -2251,7 +2251,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
   offx = incx * 1/2;
   offy = incy * 16;
-  expsurv = 0.05;
+  expsurv = 0.00001;
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 0.05", offx, offy, 1);
   
   expsurv = 1.0;
@@ -3447,13 +3447,14 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, doubl
       c += h->obs[i];
       if ((double)c * (double)Nc / (double)h->Nc > eval) break;
     }    
-    cov = esl_histogram_Bin2UBound(h, i); 
+    cov = esl_histogram_Bin2UBound(h, i+1); 
 
     return cov;
   }
 
   /* otherwise use the exponential fit */
   cov = esl_exp_invsurv(p, mu, lambda);
+  
   
   return cov;
 }
@@ -3643,7 +3644,6 @@ cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, doub
   double posx, posy;
  
   cov = evalue2cov(expsurv, Nc, h, pmass, mu, lambda);
-  printf("eval %f cov %f\n", expsurv, cov);
 
   posx = cov + offx;
   posy = ymax - offy;
