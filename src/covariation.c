@@ -1759,8 +1759,9 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, 
-		  double pmass, double mu, double lambda, int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf)
+cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
+		  RANKLIST *ranklist_null, double pmass, double mu, double lambda, int usenull, char *covtype, char *threshtype, 
+		  MODE mode, int verbose, char *errbuf)
 {
   HITLIST *hitlist = NULL;
   double   sen, ppv, F;
@@ -1773,8 +1774,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
   int      nhit;
   int      h = 0;
   int      i, j;
-  int      ih, jh;
   int      b;
+  int      Eranked = TRUE;
   int      status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
@@ -1860,24 +1861,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
      fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
 	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
    }
- }
- for (h = 0; h < nhit; h ++) {
-   ih = hitlist->hit[h].i;
-   jh = hitlist->hit[h].j;
-   if (outfp) {
-     if (hitlist->hit[h].is_bpair)      { 
-       fprintf(outfp, "*\t%10d\t%10d\t%.2f\t%g\n", 
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-     }
-     else if (hitlist->hit[h].is_compatible) { 
-       fprintf(outfp, "~\t%10d\t%10d\t%.2f\t%g\n", 
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-    }
-     else { 
-       fprintf(outfp, " \t%10d\t%10d\t%.2f\t%g\n",
-	       msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-    } 
-   }
+   if (Eranked) cov_WriteRankedHitList(outfp, nhit, hitlist, msamap);
+   else         cov_WriteHitList(outfp, nhit, hitlist, msamap);
  }
  
  if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
@@ -1886,6 +1871,64 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  ERROR:
  if (hitlist) cov_FreeHitList(hitlist);
  return status;
+}
+
+int 
+cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
+{
+  int h;
+  int ih, jh;
+
+  if (fp = NULL) return eslOK;
+
+  for (h = 0; h < nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    
+    if (hitlist->hit[h].is_bpair)      { 
+      fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else if (hitlist->hit[h].is_compatible) { 
+      fprintf(fp, "~\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else { 
+      fprintf(fp, " \t%10d\t%10d\t%.2f\t%g\n",
+		msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }  
+  }
+
+  return eslOK;
+}
+
+int 
+cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
+{
+  int h;
+  int ih, jh;
+
+  if (fp == NULL) return eslOK;
+
+  for (h = 0; h < nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    
+    if (hitlist->hit[h].is_bpair)      { 
+      fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else if (hitlist->hit[h].is_compatible) { 
+      fprintf(fp, "~\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else { 
+      fprintf(fp, " \t%10d\t%10d\t%.2f\t%g\n",
+		msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }  
+  }
+
+  return eslOK;
 }
 
 void
@@ -2227,8 +2270,6 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   // plot evalue
   fprintf(pipe, "set multiplot\n");  
   fprintf(pipe, "set ylabel 'Expected or Observed #pairs(x > score)'\n");
-  cov_histogram_cov2expectsurv(ranklist_null->ha->xmax, ranklist_null->ha, &ymin);
-  cov_histogram_cov2expectsurv(xmin,                    ranklist->ha,      &ymax);
   ymax = 100.;
   ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
   incy = (ymax-ymin)/26.;

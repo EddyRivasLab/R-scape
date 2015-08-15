@@ -246,6 +246,8 @@ extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, 
 					  RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, double mu, double lambda, 
 					  int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf);
+extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap);
+extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap);
 extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
