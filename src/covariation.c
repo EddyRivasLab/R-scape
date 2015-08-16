@@ -479,7 +479,8 @@ cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 int                 
 cov_CalculateOMES(COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda, 
 		  FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-		  int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, double tol, int verbose, char *errbuf)
+		  int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
+		  double tol, int verbose, char *errbuf)
 {
   int i,j;
   int status;
