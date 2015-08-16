@@ -1915,8 +1915,8 @@ hit_sorter_by_eval(const void *vh1, const void *vh2)
   HIT *h1 = *((HIT **) vh1);  /* don't ask. don't change. Don't Panic. */
   HIT *h2 = *((HIT **) vh2);
 
-  if      (h1->Eval > h2->Eval) return  1;
-  else if (h1->Eval < h2->Eval) return -1;
+  if      (h1->sc < h2->sc) return  1;
+  else if (h1->sc > h2->sc) return -1;
   else {
  
     /* report first pair first */
