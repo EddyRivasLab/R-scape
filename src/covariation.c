@@ -1460,7 +1460,6 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   char        *covtype = NULL;
   RANKLIST    *ranklist = NULL;
   HITLIST     *hitlist = NULL;
-  THRESH      *effthresh = NULL;
   double       newmass;
   double       mu;
   double       lambda;
@@ -1476,8 +1475,6 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   double       cvBP_thresh = 0.;
   double       cvNBP_thresh = 0.;
   double       cvBP_prv;
-  double       Eval_jump = 0.0;
-  double       cov_jump;
   int          usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int          fp, tf, t, f, neg;
   int          i, j;
@@ -1522,11 +1519,6 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
       if (!usenull) printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist->ht->phi,      mu, lambda, ranklist->ht->Nc);
       else          printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", pmass, newmass, ranklist_null->ha->phi, mu, lambda, ranklist_null->ha->Nc);
     }
-    
-    /* initialize */
-    cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
-    if (!usenull) Eval_jump = -1.0;
-    else          Eval_jump = -1.0;
   }
 
   /* ranklist from histogram ha */
@@ -1589,41 +1581,21 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
 	break;
       } 
 
-      //printf("  eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+      //printf("  eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
       if (val > 0.0 && val <= thresh->val) { 
 	ranklist->scthresh = cov; 
 	thresh->sc         = cov; 
 	cvBP_thresh        = cvBP;
 	cvNBP_thresh       = cvNBP;
-	if (thresh->type == Eval && cvBP >= cvBP_prv) { Eval_jump = val; cov_jump = cov; }
- 	//printf("++eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f \n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
+ 	//printf("++eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
       }
     
-#if 0
-      if (thresh->type == Eval && val > thresh->val && cvNBP <= cvNBP_thresh) {
-	if (cvBP >= cvBP_prv) { 
-	  Eval_jump = val; cov_jump = cov; 
-	  //printf("^^eval %g cov %f covBP %f covNBP %f Eval_jump %g cov_jump %f\n", val, cov, cvBP, cvNBP, Eval_jump, cov_jump);
-	}
-      }
-#endif
     }
     cvBP_prv = cvBP;
   }
 
-  ESL_ALLOC(effthresh, sizeof(THRESH));
-  effthresh->type = thresh->type;
-  effthresh->val  = thresh->val;
-  effthresh->sc   = thresh->sc;
-  if (thresh->type == Eval) {
-    effthresh->type    = thresh->type;
-    effthresh->val     = Eval_jump;
-    effthresh->sc      = cov_jump;
-    ranklist->scthresh = cov_jump;
-  }
-
   if (mode == GIVSS || mode == CYKSS) {
-    status = cov_CreateHitList(outfp, &hitlist, effthresh, mi, msamap, ct, ranklist, ranklist_null,
+    status = cov_CreateHitList(outfp, &hitlist, thresh, mi, msamap, ct, ranklist, ranklist_null,
 			       pmass, mu, lambda, usenull, covtype, threshtype, mode, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }    
@@ -1636,7 +1608,6 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
-  free(effthresh);
   return eslOK;
   
  ERROR:
@@ -1644,7 +1615,6 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
   if (hitlist)    cov_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
-  if (effthresh)  free(effthresh);
   return status;
 }
 
