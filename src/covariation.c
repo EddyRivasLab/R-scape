@@ -1524,7 +1524,7 @@ cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RA
     }
     
     /* initialize */
-    cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax) + ranklist->ha->w;
+    cov_jump  = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
     if (!usenull) Eval_jump = -1.0;
     else          Eval_jump = -1.0;
   }
