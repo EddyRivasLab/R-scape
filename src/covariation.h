@@ -19,7 +19,7 @@
 
 #include "covgrammars.h"
 
-#define W     0.5     // COV with
+#define W     0.4     // COV width
 
 #define NCOVTYPE = 5;
 

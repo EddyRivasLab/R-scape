@@ -51,6 +51,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              nseqthresh;
 
+  int              onemsa;
   int              nmsa;
   char            *msafile;
   char            *filename;
@@ -78,6 +79,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              minloop;
   enum grammar_e   grammar;
   
+  int              donullcov;
   char            *covhisfile;
   char            *nullcovhisfile;
 
@@ -148,6 +150,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
+  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -323,9 +326,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
-  cfg.window      = esl_opt_IsOn(go, "--window")?    esl_opt_GetInteger(go, "--window")    : -1;
-  cfg.slide       = esl_opt_IsOn(go, "--slide")?     esl_opt_GetInteger(go, "--slide")     : -1;
-
+  cfg.window      = esl_opt_IsOn(go, "--window")?    esl_opt_GetInteger(go, "--window") : -1;
+  cfg.slide       = esl_opt_IsOn(go, "--slide")?     esl_opt_GetInteger(go, "--slide")  : -1;
+  cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?    esl_opt_GetBoolean(go, "--onemsa") : FALSE;
+  
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
@@ -426,6 +430,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.cykcovhisfile = NULL;
   
   /* nullcovhis file */
+  cfg.donullcov         = FALSE;
   cfg.nullcovhisfile    = NULL;
   cfg.cyknullcovhisfile = NULL;
   
@@ -517,6 +522,7 @@ main(int argc, char **argv)
   while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
+    if (cfg.onemsa && cfg.nmsa > 1) break;
 
     status = original_msa_manipulate(go, &cfg, &msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
@@ -630,10 +636,10 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* apply msa filters and than select submsa
    */
-  if (cfg->fragfrac > 0.      && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len)          != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, &nremoved)            != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, &msa, cfg->minidthresh, &nremoved)         != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-  if (cfg->submsa             && msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
+  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, &msa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
   if (msa == NULL) {
     free(type); type = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
@@ -705,11 +711,13 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
     
     /* nullcovhis file */
-    esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
-    
-    /* nullcovplot file */
-    esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
+    if (cfg->donullcov) {
+      esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
+      esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
+      
+      /* nullcovplot file */
+      esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
+    }
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
@@ -724,11 +732,13 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.his", cfg->msaname);
     
     /* nullcovhis file */
-    esl_sprintf(&cfg->nullcovhisfile,    "%s.nullhis",     cfg->msaname);
-    esl_sprintf(&cfg->cyknullcovhisfile, "%s.cyk.nullhis", cfg->msaname);
+    if (cfg->donullcov) {
+      esl_sprintf(&cfg->nullcovhisfile,    "%s.nullhis",     cfg->msaname);
+      esl_sprintf(&cfg->cyknullcovhisfile, "%s.cyk.nullhis", cfg->msaname);
     
-    /* nullcovplot file */
-    esl_sprintf(&cfg->nullcovfile, "%s.nullcov", cfg->msaname);
+      /* nullcovplot file */
+      esl_sprintf(&cfg->nullcovfile, "%s.nullcov", cfg->msaname);
+    }
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
@@ -898,8 +908,10 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     if (status != eslOK) goto ERROR; 
   }
   
-  status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
-  if (status != eslOK) goto ERROR; 
+  if (cfg->donullcov) {
+    status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
+    if (status != eslOK) goto ERROR; 
+  }
 
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {

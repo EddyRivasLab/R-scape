@@ -2158,11 +2158,13 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
   FILE    *fp = NULL;
   int      status;
 
-  if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", covhisfile);
-  esl_histogram_PlotSurvival(fp, ranklist->ht);
-  fclose(fp);
-  if (ranklist_null) {
-    if ((fp = fopen(nullcovhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", nullcovhisfile);
+  if (covhisfile) {
+    if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
+    esl_histogram_PlotSurvival(fp, ranklist->ht);
+    fclose(fp);
+  }
+  if (ranklist_null && nullcovhisfile) {
+    if ((fp = fopen(nullcovhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open nullcovhisfile %s\n", nullcovhisfile);
     esl_histogram_PlotSurvival(fp, ranklist_null->ha);
     fclose(fp);
   }
