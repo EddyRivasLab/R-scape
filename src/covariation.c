@@ -1779,9 +1779,14 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
   int      status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
+  hitlist->hit    = NULL;
+  hitlist->srthit = NULL;
 
   nhit = alloc_nhit;
-  ESL_ALLOC(hitlist->hit, sizeof(HIT) * nhit);
+  ESL_ALLOC(hitlist->hit,    sizeof(HIT)   * nhit);
+  ESL_ALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
+  hitlist->srthit[0] = hitlist->hit;
+
   hitlist->covthresh = ranklist->scthresh;
 
   BP  = number_pairs(mi->alen, ct);
@@ -1796,7 +1801,8 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
-	  ESL_REALLOC(hitlist->hit, sizeof(HIT) * nhit);
+	  ESL_REALLOC(hitlist->hit,    sizeof(HIT)   * nhit);
+	  ESL_REALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
 	}
 	/* initialize */
 	 hitlist->hit[h].sc            = -eslINFINITY;
@@ -1879,35 +1885,6 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
   int h;
   int ih, jh;
 
-  if (fp = NULL) return eslOK;
-
-  for (h = 0; h < nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-    
-    if (hitlist->hit[h].is_bpair)      { 
-      fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
-	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-    }
-    else if (hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "~\t%10d\t%10d\t%.2f\t%g\n", 
-	      msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-    }
-    else { 
-      fprintf(fp, " \t%10d\t%10d\t%.2f\t%g\n",
-		msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
-    }  
-  }
-
-  return eslOK;
-}
-
-int 
-cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
-{
-  int h;
-  int ih, jh;
-
   if (fp == NULL) return eslOK;
 
   for (h = 0; h < nhit; h ++) {
@@ -1931,6 +1908,58 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
   return eslOK;
 }
 
+static int
+hit_sorter_by_eval(const void *vh1, const void *vh2)
+{
+  HIT *h1 = *((HIT **) vh1);  /* don't ask. don't change. Don't Panic. */
+  HIT *h2 = *((HIT **) vh2);
+
+  if      (h1->Eval > h2->Eval) return  1;
+  else if (h1->Eval < h2->Eval) return -1;
+  else {
+ 
+    /* report first pair first */
+    int dir1 = (h1->i < h2->i ? 1 : -1);
+    int dir2 = (h1->j < h2->j ? 1 : -1);
+    if (dir1 != dir2) return dir2; // so if dir1 is pos (1), and dir2 is neg (-1), this will return -1, placing h1 before h2;  otherwise, vice versa
+    else              return dir1;
+
+  }
+}
+
+int 
+cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
+{
+  int h;
+  int ih, jh;
+
+  if (fp == NULL) return eslOK;
+
+  for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
+  if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), hit_sorter_by_eval);
+
+  for (h = 0; h < nhit; h ++) {
+    ih = hitlist->srthit[h]->i;
+    jh = hitlist->srthit[h]->j;
+    
+    if (hitlist->srthit[h]->is_bpair)      { 
+      fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }
+    else if (hitlist->srthit[h]->is_compatible) { 
+      fprintf(fp, "~\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+1, msamap[jh]+1, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }
+    else { 
+      fprintf(fp, " \t%10d\t%10d\t%.2f\t%g\n",
+		msamap[ih]+1, msamap[jh]+1, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }  
+  }
+
+  return eslOK;
+}
+
+
 void
 cov_FreeRankList(RANKLIST *ranklist)
 {
@@ -1949,7 +1978,8 @@ cov_FreeHitList(HITLIST *hitlist)
 {
   if (hitlist == NULL) return;
 
-  if (hitlist->hit) free(hitlist->hit);
+  if (hitlist->srthit) free(hitlist->srthit);
+  if (hitlist->hit)    free(hitlist->hit);
   free(hitlist);
 }
 

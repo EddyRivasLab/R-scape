@@ -140,6 +140,7 @@ typedef struct hit_s {
 
 typedef struct hitlist_s{
   int     nhit;
+  HIT  **srthit;
   HIT    *hit;
 
   double  covthresh;
