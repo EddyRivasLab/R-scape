@@ -937,7 +937,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   if (hitlist) cov_FreeHitList(hitlist);
   if (title) free(title);
   cov_Destroy(mi); mi = NULL;
-  
+
   return eslOK;
   
  ERROR:

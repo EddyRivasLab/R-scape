@@ -168,6 +168,26 @@ typedef enum {
   RANSS = 2,
 } MODE;
 
+struct data_s {
+  FILE            *outfp;
+  FILE            *rocfp;
+  FILE            *sumfp; 
+  RANKLIST        *ranklist_null;
+  RANKLIST        *ranklist_aux;
+  struct mutual_s *mi; 
+  THRESH          *thresh;
+  MODE             mode;
+  int              nbpairs;
+  int             *ct;
+  int             *msamap;
+  double           bmin;
+  double           w;
+  double           pmass;
+  int              verbose;
+  char            *errbuf;
+};
+
+
 extern int              cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				      RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, 
 				      COVTYPE covtype, COVCLASS covclass, 
@@ -178,54 +198,32 @@ extern int              cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *ms
 extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int donull2b, 
 				  double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              cov_CalculateCHI     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, 
-					      double w, double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateCHI_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateCHI_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateOMES    (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-					      double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateOMES    (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateOMES_C2 (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateGT      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-					      double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateGT      (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateGT_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateGT_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMI      (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-					      double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateMI      (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateMI_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMI_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIr     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-					      double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateMIr     (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateMIr_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIr_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIg     (COVCLASS covclass, struct mutual_s *mi, int *msamap, int *ct, double bmin, double w,
-					      double pmass, double *ret_mu, double *ret_lambda, 
-					      FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-					      int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
-					      double tol, int verbose, char *errbuf);
+extern int              cov_CalculateMIg     (COVCLASS covclass, struct data_s *data, int analyze, 
+					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_CalculateMIg_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIg_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateCOVCorrected(struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-						  double pmass, double *ret_mu, double *ret_lambda, 
-						  FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode, int nbpairs, 
-						  CORRTYPE corrtype, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
-						  RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-						  double tol, int verbose, char *errbuf);
+extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, 
+						  RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
@@ -235,11 +233,7 @@ extern void             cov_Destroy(struct mutual_s *mi);
 extern int              cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);
 extern int              cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);
-extern int              cov_SignificantPairs_Ranking(RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, 
-						     struct mutual_s *mi, int *msamap, int *ct, double bmin, double w, 
-						     double pmass, double *ret_mu, double *ret_lambda,
-						     FILE *outfp, FILE *rocfp, FILE *sumfp, THRESH *thresh, MODE mode,
-						     int nbpairs, int verbose, char *errbuf);
+extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
