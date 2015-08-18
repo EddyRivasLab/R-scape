@@ -951,6 +951,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
+    data.mode = CYKSS;
     status = cov_CYKCOVCT(&data, &msa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
