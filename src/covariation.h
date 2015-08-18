@@ -170,6 +170,7 @@ typedef enum {
 
 struct data_s {
   FILE                *outfp;
+  FILE                *outsrtfp;
   FILE                *rocfp;
   FILE                *sumfp; 
   char                *gnuplot;
@@ -245,7 +246,7 @@ extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
-extern int              cov_CreateHitList(FILE *fp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, 
+extern int              cov_CreateHitList(FILE *fp, FILE *srtfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, 
 					  RANKLIST *ranklist, RANKLIST *ranklist_null, double pmass, double mu, double lambda, 
 					  int usenull, char *covtype, char *threshtype, MODE mode, int verbose, char *errbuf);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap);

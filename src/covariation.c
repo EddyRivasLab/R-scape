@@ -1594,7 +1594,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
 
   if (data->mode == GIVSS || data->mode == CYKSS) {
-    status = cov_CreateHitList(data->outfp, &hitlist, data->thresh, mi, data->msamap, data->ct, ranklist, data->ranklist_null,
+    status = cov_CreateHitList(data->outfp, data->outsrtfp, &hitlist, data->thresh, mi, data->msamap, data->ct, ranklist, data->ranklist_null,
 			       data->pmass, mu, lambda, usenull, covtype, threshtype, data->mode, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }    
@@ -1729,7 +1729,7 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
+cov_CreateHitList(FILE *outfp, FILE *outsrtfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
 		  RANKLIST *ranklist_null, double pmass, double mu, double lambda, int usenull, char *covtype, char *threshtype, 
 		  MODE mode, int verbose, char *errbuf)
 {
@@ -1834,12 +1834,14 @@ cov_CreateHitList(FILE *outfp, HITLIST **ret_hitlist, THRESH *thresh, struct mut
  if (outfp) {
    if (t > 0) {
      if (mode == CYKSS) fprintf(outfp, "# cyk-cov structure\n");
-     fprintf(outfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+     fprintf(outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+     fprintf(outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
 	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
    }
 
-   if (e_rank) cov_WriteRankedHitList(outfp, nhit, hitlist, msamap);
-   else        cov_WriteHitList      (outfp, nhit, hitlist, msamap);
+   cov_WriteRankedHitList(outsrtfp, nhit, hitlist, msamap);
+   cov_WriteHitList      (outfp,    nhit, hitlist, msamap);
  }
  
  if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);

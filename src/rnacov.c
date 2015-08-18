@@ -63,7 +63,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
  
   char            *outdir;
   char            *outfile;
+  char            *outsrtfile;
   FILE            *outfp; 
+  FILE            *outsrtfp; 
   char            *outheader;          /* header for all output files */
    int              infmt;
  
@@ -403,11 +405,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
-    if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+    if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+    esl_sprintf(&cfg.outsrtfile, "%s.sorted", esl_opt_GetString(go, "-o"));
+    if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   } 
   else {
     esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
-    if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+    if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+    esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
+    if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
  
   /*  rocplot file */
@@ -573,6 +579,7 @@ main(int argc, char **argv)
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
   fclose(cfg.outfp);
+  fclose(cfg.outsrtfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
   free(cfg.gnuplot);
@@ -672,10 +679,10 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* print some info */
   if (cfg->verbose) {
-    fprintf(cfg->outfp, "Used alignment\n");
-    fprintf(cfg->outfp, "%6d          %s\n", msa->nseq, cfg->msafile);
-    if (eslx_msafile_Write(cfg->outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
-    msamanip_DumpStats(cfg->outfp, msa, cfg->mstat); 
+    fprintf(stdout, "Used alignment\n");
+    fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
+    if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    msamanip_DumpStats(stdout, msa, cfg->mstat); 
   }
   
   *omsa = msa;
@@ -691,7 +698,8 @@ rnacov_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   int       status;
   
   if (msa->nseq <= 1) {
-    MSA_banner(cfg->outfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     return eslOK;
   }
 
@@ -851,7 +859,6 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
   HITLIST         *hitlist = NULL;
-  int              donull2b;
   int              nnodes;
   int              status;
 
@@ -862,7 +869,8 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   
   if (cfg->mode != RANSS) {
-    MSA_banner(cfg->outfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
   }
@@ -890,6 +898,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* main function */
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
+  data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
   data.rocfp         = cfg->rocfp;
   data.sumfp         = (cfg->mode == RANSS)? cfg->shsumfp : cfg->sumfp;
   data.dplotfile     = cfg->dplotfile;
