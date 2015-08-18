@@ -357,7 +357,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  }
   else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); }
   else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); }
-  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; }
+  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
+    if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
+  }
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
@@ -843,6 +845,7 @@ static int
 run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist)
 {
   char            *title = NULL;
+  struct data_s    data;
   struct mutual_s *mi   = NULL;
   ESL_MSA         *msa = *omsa;
   RANKLIST        *ranklist = NULL;
@@ -873,7 +876,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)?TRUE:FALSE, cfg->nseqthresh, cfg->abc);
+  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->abc);
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
@@ -886,13 +889,37 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
-  donull2b = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE:FALSE;
-  status = cov_Calculate(cfg->r, &msa, cfg->msamap, cfg->T, cfg->ribosum, mi, ranklist_null, ranklist_aux, &ranklist, &hitlist, cfg->method, 
-			 cfg->covtype, cfg->covclass, cfg->ct, 
-			 cfg->bmin, cfg->w, cfg->pmass, &cfg->mu, &cfg->lambda,
-			 (cfg->mode == RANSS)?NULL:cfg->outfp, cfg->rocfp, 
-			 (cfg->mode == RANSS)?cfg->shsumfp:cfg->sumfp, cfg->gnuplot, cfg->dplotfile, cfg->R2Rfile, cfg->R2Rversion, cfg->R2Rall, 
-			 cfg->thresh, cfg->mode, cfg->onbpairs, donull2b, cfg->tol, cfg->verbose, cfg->errbuf);   
+  data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
+  data.rocfp         = cfg->rocfp;
+  data.sumfp         = (cfg->mode == RANSS)? cfg->shsumfp : cfg->sumfp;
+  data.dplotfile     = cfg->dplotfile;
+  data.R2Rfile       = cfg->R2Rfile;
+  data.R2Rcykfile    = cfg->R2Rcykfile;
+  data.R2Rversion    = cfg->R2Rversion;
+  data.R2Rall        = cfg->R2Rall;
+  data.gnuplot       = cfg->gnuplot;
+  data.r             = cfg->r;
+  data.ranklist_null = ranklist_null;
+  data.ranklist_aux  = ranklist_aux;
+  data.mi            = mi;
+  data.covtype       = cfg->covtype;
+  data.thresh        = cfg->thresh;
+  data.method        = cfg->method;
+  data.mode          = cfg->mode;
+  data.nbpairs       = cfg->onbpairs;
+  data.T             = cfg->T;
+  data.ribosum       = cfg->ribosum;
+  data.ct            = cfg->ct;
+  data.msamap        = cfg->msamap;
+  data.bmin          = cfg->bmin;
+  data.w             = cfg->w;
+  data.pmass         = cfg->pmass;
+  data.tol           = cfg->tol;
+  data.verbose       = cfg->verbose;
+  data.errbuf        = cfg->errbuf;
+  data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
+
+  status = cov_Calculate(&data, &msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
@@ -915,10 +942,7 @@ run_rnacov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
 
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
-    status = cov_CYKCOVCT(cfg->outfp, cfg->gnuplot, cfg->cykdplotfile, cfg->R2Rcykfile, cfg->R2Rversion, cfg->R2Rall, cfg->r, 
-			  &msa, mi, cfg->msamap, ranklist_null, ranklist_aux, &cykranklist, cfg->bmin, cfg->w,
-			  cfg->pmass, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, 
-			  cfg->thresh, cfg->thresh->sc, cfg->onbpairs, cfg->errbuf, cfg->verbose);
+    status = cov_CYKCOVCT(&data, &msa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
     if (cfg->verbose) {

@@ -169,32 +169,39 @@ typedef enum {
 } MODE;
 
 struct data_s {
-  FILE            *outfp;
-  FILE            *rocfp;
-  FILE            *sumfp; 
-  RANKLIST        *ranklist_null;
-  RANKLIST        *ranklist_aux;
-  struct mutual_s *mi; 
-  THRESH          *thresh;
-  MODE             mode;
-  int              nbpairs;
-  int             *ct;
-  int             *msamap;
-  double           bmin;
-  double           w;
-  double           pmass;
-  int              verbose;
-  char            *errbuf;
+  FILE                *outfp;
+  FILE                *rocfp;
+  FILE                *sumfp; 
+  char                *gnuplot;
+  char                *dplotfile;
+  char                *R2Rfile;
+  char                *R2Rcykfile;
+  char                *R2Rversion;
+  int                  R2Rall;
+  ESL_RANDOMNESS      *r;
+  RANKLIST            *ranklist_null;
+  RANKLIST            *ranklist_aux;
+  struct mutual_s     *mi; 
+  THRESH              *thresh;
+  METHOD               method;
+  MODE                 mode;
+  COVTYPE              covtype;
+  int                  nbpairs;
+  ESL_TREE            *T;
+  struct ribomatrix_s *ribosum;
+  int                 *ct;
+  int                 *msamap;
+  double               bmin;
+  double               w;
+  double               pmass;
+  double               tol;
+  int                  verbose;
+  char                *errbuf;
+  int                  donull2b;
 };
 
 
-extern int              cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				      RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, METHOD method, 
-				      COVTYPE covtype, COVCLASS covclass, 
-				      int *ct, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda, 
-				      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, 
-				      char *R2Rfile, char *r2rversion, int r2rall, THRESH *thresh, MODE mode, int nbpairs, int donull2b, 
-				      double tol, int verbose, char *errbuf);
+extern int              cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, METHOD method, int donull2b, 
 				  double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
@@ -247,10 +254,8 @@ extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall, ESL_RANDOMNESS *r, 
-				     ESL_MSA **msa, struct mutual_s *mi, int *msamap, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
-				     RANKLIST **ret_ranklist, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda, 
-				     int minloop, enum grammar_e G, THRESH *thresh,  double covthresh, int nbpairs, char *errbuf, int verbose);
+extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA **msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, 
+				     int minloop, enum grammar_e G, double covthresh);
 extern int              cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
 extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, 
 					   RANKLIST *ranklist_aux, char *title, double pmass, double mu, double lambda, int verbose, char *errbuf);

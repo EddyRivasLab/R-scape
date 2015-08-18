@@ -54,185 +54,164 @@ static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_
 static int    cov_histogram_cov2expectsurv(double cov, ESL_HISTOGRAM *h, double *ret_expsurv);
 
 int                 
-cov_Calculate(ESL_RANDOMNESS *r, ESL_MSA **omsa, int *msamap, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-	      RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, HITLIST **ret_hitlist,
-	      METHOD method, COVTYPE covtype, COVCLASS covclass, int *ct, double bmin, double w, double pmass, double *ret_mu, double *ret_lambda,
-	      FILE *outfp, FILE *rocfp, FILE *sumfp, char *gnuplot, char *dplotfile, char *r2rfile, char *r2rversion, int r2rall, 
-	      THRESH *thresh, MODE mode, int nbpairs, int donull2b, double tol, int verbose, char *errbuf)
+cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
 {
-  struct data_s  data;
   ESL_MSA       *msa = *omsa;
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
+  COVCLASS       covclass = data->mi->class;
   int            status;
 
-  data.outfp         = outfp;
-  data.rocfp         = rocfp;
-  data.sumfp         = sumfp;
-  data.ranklist_null = ranklist_null;
-  data.ranklist_aux  = ranklist_aux;
-  data.mi            = mi;
-  data.thresh        = thresh;
-  data.mode          = mode;
-  data.nbpairs       = nbpairs;
-  data.ct            = ct;
-  data.msamap        = msamap;
-  data.bmin          = bmin;
-  data.w             = w;
-  data.pmass         = pmass;
-  data.verbose       = verbose;
-  data.errbuf        = errbuf;
-
   /* Calculate the covariation matrix */
-  status = cov_Probs(r, msa, T, ribosum, mi, method, donull2b, tol, verbose, errbuf);
+  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
 
   if (status != eslOK) goto ERROR;
-  switch(covtype) {
+  switch(data->covtype) {
    case CHIa: 
-     status = cov_CalculateCHI         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case CHIp:
-     status = cov_CalculateCHI         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case CHIs:
-     status = cov_CalculateCHI         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case CHI: 
-     status = cov_CalculateCHI         (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCHI         (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;     
      break;
    case GTa: 
-     status = cov_CalculateGT          (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
       break;
    case GTp: 
-     status = cov_CalculateGT          (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case GTs: 
-     status = cov_CalculateGT          (covclass,  &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass,  data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case GT: 
-     status = cov_CalculateGT          (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
      break;
    case MIa: 
-     status = cov_CalculateMI          (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case MIp: 
-     status = cov_CalculateMI          (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case MIs: 
-     status = cov_CalculateMI          (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case MI: 
-     status = cov_CalculateMI          (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateMI          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
      break;
    case MIra: 
-     status = cov_CalculateMIr         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case MIrp:
-     status = cov_CalculateMIr         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case MIrs:
-     status = cov_CalculateMIr         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case MIr: 
-     status = cov_CalculateMIr         (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateMIr         (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
      break;
    case MIga: 
-     status = cov_CalculateMIg         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case MIgp:
-     status = cov_CalculateMIg         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case MIgs:
-     status = cov_CalculateMIg         (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;  
      break;
    case MIg: 
-     status = cov_CalculateMIg          (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateMIg          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
      break;
    case OMESa: 
-     status = cov_CalculateOMES        (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(ASC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case OMESp: 
-     status = cov_CalculateOMES        (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(APC,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case OMESs: 
-     status = cov_CalculateOMES        (covclass, &data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
+     status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
-     status = cov_CalculateCOVCorrected(SCA,      &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
    case OMES: 
-     status = cov_CalculateOMES        (covclass, &data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateOMES        (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
       break;
    default:
-     ESL_XFAIL(eslFAIL, errbuf, "wrong covariation type\n");
+     ESL_XFAIL(eslFAIL, data->errbuf, "wrong covariation type\n");
      break;
    }
-   fprintf(sumfp, "\n");   
+   fprintf(data->sumfp, "\n");   
       
-   if (mode == GIVSS) { // do the plots only for GIVSS
-     status = cov_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, TRUE, verbose, errbuf);
+   if (data->mode == GIVSS) { // do the plots only for GIVSS
+     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, TRUE, data->verbose, data->errbuf);
      if  (status != eslOK) goto ERROR;
-     status = cov_DotPlot(gnuplot, dplotfile, msa, ct, mi, msamap, hitlist, FALSE, verbose, errbuf);
+     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
      if  (status != eslOK) goto ERROR;
      
-     status = cov_R2R(r2rfile, r2rversion, r2rall, &msa, ct, msamap, hitlist, TRUE, TRUE, verbose, errbuf);
+     status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, &msa, data->ct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
      if  (status != eslOK) goto ERROR;
    }
 
@@ -2080,12 +2059,9 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char *R2Rversion, int R2Rall,  ESL_RANDOMNESS *r, ESL_MSA **omsa, struct mutual_s *mi, 
-	     int *msamap, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,RANKLIST **ret_ranklist, double bmin, double w, 
-	     double pmass, double *ret_mu, double *ret_lambda, int minloop, 
-	     enum grammar_e G, THRESH *thresh, double covthresh, int nbpairs, char *errbuf, int verbose)
+cov_CYKCOVCT(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, int minloop, 
+	     enum grammar_e G, double covthresh)
 {
-  struct data_s  data;
   ESL_MSA       *msa = *omsa;
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
@@ -2094,25 +2070,8 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   SCVAL          sc;
   int            status;
             
-  data.outfp         = outfp;
-  data.rocfp         = NULL;
-  data.sumfp         = NULL;
-  data.ranklist_null = ranklist_null;
-  data.ranklist_aux  = ranklist_aux;
-  data.mi            = mi;
-  data.thresh        = thresh;
-  data.mode          = CYKSS;
-  data.nbpairs       = nbpairs;
-  data.ct            = NULL;
-  data.msamap        = msamap;
-  data.bmin          = bmin;
-  data.w             = w;
-  data.pmass         = pmass;
-  data.verbose       = verbose;
-  data.errbuf        = errbuf;
-
-  /* calculate the cykcov ct vector */
-  status = CYKCOV(r, mi, &cykct, &sc, minloop, covthresh, errbuf, verbose);
+   /* calculate the cykcov ct vector */
+  status = CYKCOV(data->r, data->mi, &cykct, &sc, minloop, covthresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
   /* impose the ct on the msa GC line 'cons_ss' */
@@ -2120,29 +2079,29 @@ cov_CYKCOVCT(FILE *outfp, char *gnuplot, char *dplotfile, char *R2Rcykfile, char
   esl_ct2simplewuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);
-  if (!msa->ax) esl_msa_Digitize(mi->abc, msa, errbuf);
-  if (verbose) {
+  if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
+  if (data->verbose) {
     printf("cykcov score = %f minloop %d covthresh %f\n", sc, minloop, covthresh);
     printf("ss:%s\n", ss);
   }
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
-  status = cov_ExpandCT(R2Rcykfile, R2Rall, r, msa, &cykct, minloop, G, verbose, errbuf);
+  status = cov_ExpandCT(data->R2Rcykfile, data->R2Rall, data->r, msa, &cykct, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
-  data.ct = cykct;
+  data->ct = cykct;
   
   /* redo the hitlist since the ct has now changed */
-  status = cov_SignificantPairs_Ranking(&data, &ranklist, &hitlist, ret_mu, ret_lambda);
+  status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist, ret_mu, ret_lambda);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(R2Rcykfile, R2Rversion, R2Rall, &msa, cykct, msamap, hitlist, TRUE, TRUE, verbose, errbuf);
+  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, &msa, cykct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   /* DotPlots (pdf,svg) */
-  status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, TRUE,  verbose, errbuf);
+  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, hitlist, TRUE,  data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
-  status = cov_DotPlot(gnuplot, dplotfile, msa, cykct, mi, msamap, hitlist, FALSE, verbose, errbuf);
+  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   *omsa = msa;
