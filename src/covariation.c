@@ -47,7 +47,7 @@ static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, do
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, 
-					int style1, int style2);
+					   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda, 
 				    double ymin, double ymax, char *key, double offx, double offy, int style);
 static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_expsurv);
@@ -2213,6 +2213,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   double   expsurv;
   double   offx, offy;
   int      subsample;
+  int      linespoints;
   int      i;
   int      status;
 
@@ -2220,8 +2221,8 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
   esl_FileTail(covhisfile, FALSE, &filename);
 
-  esl_sprintf(&key1, "all-pairs distribution");
-  esl_sprintf(&key2, "not_SS-pairs distribution");
+  esl_sprintf(&key1, "all pairs");
+  esl_sprintf(&key2, "not proposed pairs");
   esl_sprintf(&key3, "null distribution");
   if (ranklist_aux) esl_sprintf(&key4, "null-null distribution");
 
@@ -2307,16 +2308,19 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 10.0", offx, offy, 1);
 
   if (ranklist_null) {
-    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, 77, 7);
+    linespoints = FALSE;
+    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
     if (status != eslOK) goto ERROR;
   }
   if (ranklist_aux) {
-    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, 11, 7);
+    linespoints = FALSE;
+    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, linespoints, 11, 7);
     if (status != eslOK) goto ERROR;
   }
-  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, 44, 2);
+  linespoints = TRUE; 
+  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
-  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,               FALSE, 1, 99, 2);
+  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,               FALSE, 1, linespoints, 99, 2);
   if (status != eslOK) goto ERROR;
   
   if (!dosvg) {
@@ -2707,6 +2711,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   int           ih, jh;
   int           tagidx;
   int           idx;
+  int           do_r2rcovmarkup = FALSE;
   int           status;
  
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
@@ -2736,14 +2741,14 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   if (eslx_msafile_Read(afp, &r2rmsa) != eslOK) eslx_msafile_ReadFailure(afp, status);
   eslx_msafile_Close(afp);
 
-  /* modify the cov_cons_ss line acording to our hitlist */
+  /* modify the cov_cons_ss line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment\n");
   for (i = 1; i <= msa->alen; i ++) {
     found = FALSE;
     for (h = 0; h < hitlist->nhit; h ++) {
       ih = hitlist->hit[h].i+1;
       jh = hitlist->hit[h].j+1;
-
+      
       if ((i == ih || i == jh) && hitlist->hit[h].is_bpair) { 
 	esl_sprintf(&tok, "2"); 
 	found = TRUE; 
@@ -2752,11 +2757,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
       if (found) break;
     }
     if (!found) esl_sprintf(&tok, ".");  
-
+    
     if (i == 1) esl_sprintf(&covstr, "%s", tok);
     else        esl_sprintf(&covstr, "%s%s", covstr, tok);
   }
- 
+  
   /* add line #=GF R2R keep allpairs 
    * so that it does not truncate ss.
    * cannot use the standard esl_msa_addGF:
@@ -2770,14 +2775,14 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
       esl_strchop(r2rmsa->gf[tagidx], -1);
       if (strcmp(r2rmsa->gf[tagidx], "keep all") == 0) break;
     }
-
+    
     if (tagidx < r2rmsa->ngf) { //remove 
       for (idx = tagidx; idx < r2rmsa->ngf-1; idx++) {
 	esl_sprintf(&r2rmsa->gf_tag[idx], r2rmsa->gf_tag[idx+1]);
 	esl_sprintf(&r2rmsa->gf[idx],     r2rmsa->gf[idx+1]);
       }
       r2rmsa->ngf --;
-    }
+      }
     
     esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
   }
@@ -2797,17 +2802,19 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   }
   
   /* replace the r2r 'cov_SS_cons' GC line with our own */
-  for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
-    if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
-  if (tagidx == r2rmsa->ngc) {
-    ESL_REALLOC(r2rmsa->gc_tag, (r2rmsa->ngc+1) * sizeof(char **));
-    ESL_REALLOC(r2rmsa->gc,     (r2rmsa->ngc+1) * sizeof(char **));
-    r2rmsa->gc[r2rmsa->ngc] = NULL;
-    r2rmsa->ngc++;
+  if (!do_r2rcovmarkup) {
+    for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
+      if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
+    if (tagidx == r2rmsa->ngc) {
+      ESL_REALLOC(r2rmsa->gc_tag, (r2rmsa->ngc+1) * sizeof(char **));
+      ESL_REALLOC(r2rmsa->gc,     (r2rmsa->ngc+1) * sizeof(char **));
+      r2rmsa->gc[r2rmsa->ngc] = NULL;
+      r2rmsa->ngc++;
+    }
+    if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+    esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
+    if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
-  if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-  esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
-  if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
 
   /* write the R2R annotated to PFAM format */
   if (r2rfile) {
@@ -3621,7 +3628,8 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx,
 }
 
 static int
-cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2)
+cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, 
+			     int subsample, int linespoints, int style1, int style2)
 {
   int       i;
   uint64_t  c = 0;
@@ -3634,7 +3642,8 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, do
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
-  fprintf(pipe, "plot '-' using 1:2 with linespoints ls %d \n", style1);
+  if (linespoints) fprintf(pipe, "plot '-' using 1:2 with linespoints ls %d \n", style1);
+  else             fprintf(pipe, "plot '-' using 1:2 with points ls %d \n", style1);
 
   if (h->obs[h->imax] > 1) 
     if (fprintf(pipe, "%f\t%f\n", 
