@@ -3132,15 +3132,15 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     resi = (donull2b)? shcoli[s] : coli[s];
     resj = (donull2b)? shcolj[s] : colj[s];
     
-    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += 1.0; }
-    else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; mi->ngap[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += 1./(double)K; }
-    else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; mi->ngap[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += 1./(double)K; }
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; pp[IDX(resi,resj,K)] += msa->wgt[s]; }
+    else if (esl_abc_XIsCanonical(msa->abc, resi)) { mi->nseff[i][j] ++; mi->ngap[i][j] ++; for (y = 0; y < K; y ++) pp[IDX(resi,y,   K)] += msa->wgt[s]/(double)K; }
+    else if (esl_abc_XIsCanonical(msa->abc, resj)) { mi->nseff[i][j] ++; mi->ngap[i][j] ++; for (x = 0; x < K; x ++) pp[IDX(x,   resj,K)] += msa->wgt[s]/(double)K; }
 #if 0
     else { 
       mi->nseff[i][j] ++; 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) 
-	  pp[IDX(x,y,K)] += 1./(double)(K*K);
+	  pp[IDX(x,y,K)] += msa->wgt[s]/(double)(K*K);
     }
 #endif
   }

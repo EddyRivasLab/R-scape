@@ -78,7 +78,7 @@ p7_evotracealign_ComputeTraces(P7_RATE *R, P7_HMM *hmm, ESL_SQ  **sq, int offset
   p7_oprofile_Convert(gm, om);	                     /*    ... *multihit* local      */
   p7_profile_ConfigCustom(gm, hmm, bg, 0, 0.0, 0.5); /*    ... *unihit* glocal/local */
 
-  cx  = p7_checkptmx_Create (hmm->M, sq[offset]->n, ESL_MBYTES(p7_RAMLIMIT));
+  cx  = p7_checkptmx_Create (hmm->M, sq[offset]->n, ESL_MBYTES(p7_SPARSIFY_RAMLIMIT));
   sm  = p7_sparsemask_Create(hmm->M, sq[offset]->n);
   sx1 = p7_sparsemx_Create  (sm);
   sx2 = p7_sparsemx_Create  (sm);

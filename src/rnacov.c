@@ -9,6 +9,7 @@
 #include "esl_msa.h"
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
+#include "esl_msaweight.h"
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
@@ -667,7 +668,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   esl_msa_Hash(msa);
   msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
   if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
-  
+  esl_msaweight_GSC(msa);
+
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   

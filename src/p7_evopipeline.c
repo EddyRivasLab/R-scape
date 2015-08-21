@@ -264,7 +264,7 @@ p7_EvoPipeline(P7_PIPELINE *pli, EMRATE *emR, P7_RATE *oR, P7_HMM *hmm, P7_PROFI
   /* ok, it's for real; passes vectorized local scoring filters.
    * Finish with Backwards and Decoding, defining a sparse mask in <sm>.
    */
-  //p7_BackwardFilter(sq->dsq, sq->n, om, pli->cx, pli->sm, p7_SPARSEMASK_THRESH_DEFAULT);
+  //p7_BackwardFilter(sq->dsq, sq->n, om, pli->cx, pli->sm, p7_SPARSIFY_THRESH);
 
 #if 0
   /* FIXME 3.1
@@ -306,7 +306,7 @@ p7_EvoPipeline(P7_PIPELINE *pli, EMRATE *emR, P7_RATE *oR, P7_HMM *hmm, P7_PROFI
   for (d = 0; d < pli->tr->ndom; d++)
     {
       /* Determine envelope coords by mass trace. */
-      p7_SparseMasstrace(sq->dsq, sq->n, gm, pli->sxf, pli->sxb, pli->tr, pli->tr->anch[d], p7_MASSTRACE_THRESH_DEFAULT, pli->sxx, pli->mt, 
+      p7_SparseMasstrace(sq->dsq, sq->n, gm, pli->sxf, pli->sxb, pli->tr, pli->tr->anch[d], p7_SPARSIFY_THRESH, pli->sxx, pli->mt, 
                          &(dcl[d].iae), &(dcl[d].ibe), &(dcl[d].kae), &(dcl[d].kbe));
       p7_sparsemx_Reuse (pli->sxx);
       p7_masstrace_Reuse(pli->mt);
@@ -1330,7 +1330,7 @@ func_sparseviterbi(ESL_DSQ *dsq, int n, P7_HMM *hmm, P7_RATE *R, P7_PROFILE *gm,
     p7_ForwardFilter(dsq, n, om, cx, NULL); 
   }
   
-  p7_BackwardFilter(dsq, n, om, cx, sm, p7_SPARSEMASK_THRESH_DEFAULT);
+  p7_BackwardFilter(dsq, n, om, cx, sm, p7_SPARSIFY_THRESH);
   p7_SparseViterbi(dsq, n, gm, sm, sxx, tr, &vitsc);
   
 #if 0
@@ -1353,7 +1353,7 @@ func_sparseforward(ESL_DSQ *dsq, int n, P7_HMM *hmm, P7_RATE *R, P7_PROFILE *gm,
   
     p7_checkptmx_Reuse(cx);
     p7_ForwardFilter (dsq, n, om, cx, NULL); 
-    p7_BackwardFilter(dsq, n, om, cx, sm, p7_SPARSEMASK_THRESH_DEFAULT);
+    p7_BackwardFilter(dsq, n, om, cx, sm, p7_SPARSIFY_THRESH);
   }
   
   p7_SparseForward(dsq, n, gm, sm, sxf, &fwdsc);
