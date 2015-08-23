@@ -536,6 +536,7 @@ main(int argc, char **argv)
     status = original_msa_manipulate(go, &cfg, &msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     if (msa == NULL) continue;
+    if (msa->alen == 0) continue;
     
     if (cfg.window > 0) {
       esl_sprintf(&omsaname, "%s", cfg.msaname);
