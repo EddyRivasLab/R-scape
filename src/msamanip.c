@@ -384,8 +384,10 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   int        i;
   int        status;
 
-  omsa = *msa;
+  if (idthresh == 1.0) return eslOK;
 
+  omsa = *msa;
+  
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
   esl_vec_ISet(useme, omsa->nseq, 0);
   
