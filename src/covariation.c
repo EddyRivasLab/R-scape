@@ -1526,9 +1526,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     f = t = tf = 0;
     for (i = 0; i < mi->alen-1; i ++) 
       for (j = i+1; j < mi->alen; j ++) {
-	if (mtx->mx[i][j] > cov)   f  ++;
-	if (data->ct[i+1] == j+1) {      t  ++;
-	  if (mtx->mx[i][j] > cov) tf ++;
+	if (mtx->mx[i][j] > cov)    f  ++;
+	if (data->ct[i+1] == j+1) { t  ++;
+	  if (mtx->mx[i][j] > cov)  tf ++;
 	}	
      }
     

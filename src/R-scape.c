@@ -713,7 +713,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* outmsa file if requested */
   if (esl_opt_IsOn(go, "--outmsa")) {
-    esl_sprintf(&cfg->outmsafile, "%s/%s_%s.sto",     cfg->outdir, esl_opt_GetString(go, "--outmsa"), cfg->msaname);
+    //esl_sprintf(&cfg->outmsafile, "%s/%s_%s.sto",     cfg->outdir, esl_opt_GetString(go, "--outmsa"), cfg->msaname);
+    esl_sprintf(&cfg->outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
     if ((cfg->outmsafp = fopen(cfg->outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg->outmsafile);
     eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
     fclose(cfg->outmsafp);
