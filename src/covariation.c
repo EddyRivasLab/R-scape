@@ -1830,8 +1830,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
  if (data->sumfp) {
-   fprintf(data->sumfp, " %d %d %d %f %f ", 
-	   tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
+   fprintf(data->sumfp, " %s %d %d %d %f %f ", 
+	   covtype, tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
   }
  if (data->outfp) {
      if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
