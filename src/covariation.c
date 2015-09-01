@@ -1488,12 +1488,12 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     else                     fprintf(data->rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
   }
 
-  bmax = mi->maxCOV+W;
+  bmax = mi->maxCOV+data->w;
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
  
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
-
+      printf("mi %f\n", mtx->mx[i][j]);
       /* add to the ha histogram  */
       esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
 
@@ -1580,7 +1580,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	break;
       } 
 
-      //printf("  eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
+      printf("  eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
       if (val > 0.0 && val <= data->thresh->val) { 
 	ranklist->scthresh = cov; 
 	data->thresh->sc   = cov; 

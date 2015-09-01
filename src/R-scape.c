@@ -68,7 +68,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *outfp; 
   FILE            *outsrtfp; 
   char            *outheader;          /* header for all output files */
-   int              infmt;
+  int              infmt;
  
   char            *R2Rversion;
   int              R2Rall;
@@ -400,7 +400,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
   cfg.bmin  = -300.0; /* a guess for lowest cov score */
-  cfg.w     = W;      /* histogram step */
+  cfg.w     = (cfg.covtype == MI || cfg.covtype == MIa ||cfg.covtype == MIp)? WMI : W;      /* histogram step */
   cfg.pmass = esl_opt_GetReal   (go, "--pmass");
 
   /* output file */
