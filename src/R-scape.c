@@ -400,7 +400,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
   cfg.bmin  = -300.0; /* a guess for lowest cov score */
-  cfg.w     = (cfg.covtype == MI || cfg.covtype == MIa ||cfg.covtype == MIp)? WMI : W;      /* histogram step */
+  cfg.w     = (cfg.covtype == MI  || cfg.covtype == MIa  || cfg.covtype == MIp  ||
+	       cfg.covtype == MIr || cfg.covtype == MIra || cfg.covtype == MIrp ||
+	       cfg.covtype == MIg || cfg.covtype == MIga || cfg.covtype == MIgp    )? WMI : W;      /* histogram step */
   cfg.pmass = esl_opt_GetReal   (go, "--pmass");
 
   /* output file */
