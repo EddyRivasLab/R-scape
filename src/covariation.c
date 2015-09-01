@@ -1485,7 +1485,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) {
     fprintf(data->rocfp, "\n# %s ", covtype);  
     if (mi->ishuffled) fprintf(data->rocfp, "shuffled thresh fp tf found true negatives sen ppv F evalue\n"); 
-    else                     fprintf(data->rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
+    else               fprintf(data->rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
   }
 
   bmax = mi->maxCOV+data->w;
@@ -1547,7 +1547,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     cvBP   = (double)tf;
     cvNBP  = (double)fp;
     cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
-    cvNBPf = (neg > 0)?      cvNBP/(double)neg            : 0.0;
+    cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
     ranklist->covBP[b]  = cvBP;
     ranklist->covNBP[b] = cvNBP;
   
@@ -1565,7 +1565,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	}
       }
       cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
-      cvRBPf = (neg > 0)?            cvRBP/(double)neg            : 0.0;
+      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 0.0;
       
       switch(data->thresh->type) {
       case covNBP:  val = cvNBP;  break;
@@ -1594,8 +1594,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
 
   if (data->mode == GIVSS || data->mode == CYKSS) {
-    status = cov_CreateHitList(data->outfp, data->outsrtfp, &hitlist, data->thresh, mi, data->msamap, data->ct, ranklist, data->ranklist_null,
-			       data->pmass, mu, lambda, usenull, covtype, threshtype, data->mode, data->verbose, data->errbuf);
+    status = cov_CreateHitList(data, mi, ranklist, &hitlist, mu, lambda, covtype, threshtype, usenull);
     if (status != eslOK) goto ERROR;
   }    
 
@@ -1729,23 +1728,23 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(FILE *outfp, FILE *outsrtfp, HITLIST **ret_hitlist, THRESH *thresh, struct mutual_s *mi, int *msamap, int *ct, RANKLIST *ranklist, 
-		  RANKLIST *ranklist_null, double pmass, double mu, double lambda, int usenull, char *covtype, char *threshtype, 
-		  MODE mode, int verbose, char *errbuf)
+cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, double mu, double lambda, 
+		  char *covtype, char *threshtype, int usenull)
 {
-  HITLIST *hitlist = NULL;
-  double   sen, ppv, F;
-  int      alloc_nhit = 5;
-  int      bin;
-  int      tf = 0;
-  int      f  = 0;
-  int      t, fp;
-  int      BP, NBP;
-  int      nhit;
-  int      h = 0;
-  int      i, j;
-  int      b;
-  int      status;
+  RANKLIST *ranklist_null = data->ranklist_null;
+  HITLIST  *hitlist = NULL;
+  double    sen, ppv, F;
+  int       alloc_nhit = 5;
+  int       bin;
+  int       tf = 0;
+  int       f  = 0;
+  int       t, fp;
+  int       BP, NBP;
+  int       nhit;
+  int       h = 0;
+  int       i, j;
+  int       b;
+  int       status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
   hitlist->hit    = NULL;
@@ -1758,15 +1757,15 @@ cov_CreateHitList(FILE *outfp, FILE *outsrtfp, HITLIST **ret_hitlist, THRESH *th
 
   hitlist->covthresh = ranklist->scthresh;
 
-  BP  = number_pairs(mi->alen, ct);
+  BP  = number_pairs(mi->alen, data->ct);
   NBP = mi->alen * (mi->alen-1) / 2 - BP;
   
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       if (mi->COV->mx[i][j] >= hitlist->covthresh) {
 	
-       if (!usenull) esl_histogram_Score2Bin(ranklist->ht,      mi->COV->mx[i][j], &bin);
-       else          esl_histogram_Score2Bin(ranklist_null->ha, mi->COV->mx[i][j], &bin);
+       if (usenull) esl_histogram_Score2Bin(ranklist->ht,            mi->COV->mx[i][j], &bin);
+       else         esl_histogram_Score2Bin(data->ranklist_null->ha, mi->COV->mx[i][j], &bin);
 
 	if (h == nhit - 1) {
 	  nhit += alloc_nhit;
@@ -1809,10 +1808,10 @@ cov_CreateHitList(FILE *outfp, FILE *outsrtfp, HITLIST **ret_hitlist, THRESH *th
 	 hitlist->hit[h].j    = j;
 	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
 
-	 if (ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
+	 if (data->ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
 	 else                { 
 	   hitlist->hit[h].is_bpair = FALSE; 
-	   if (ct[i+1] == 0 && ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
+	   if (data->ct[i+1] == 0 && data->ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
 	 } 	 
 	 h ++;
       }
@@ -1830,18 +1829,22 @@ cov_CreateHitList(FILE *outfp, FILE *outsrtfp, HITLIST **ret_hitlist, THRESH *th
  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
  
- if (outfp) {
-     if (mode == CYKSS) fprintf(outfp, "# cyk-cov structure\n");
-     fprintf(outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-   cov_WriteHitList(outfp,    nhit, hitlist, msamap);
+ if (data->sumfp) {
+   fprintf(data->sumfp, " %d %d %d %f %f ", 
+	   tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
+  }
+ if (data->outfp) {
+     if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
+     fprintf(data->outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+	     data->covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+   cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
  }
 
- if (outsrtfp) {
-     if (mode == CYKSS) fprintf(outsrtfp, "# cyk-cov structure\n");
-     fprintf(outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-	     covtype, threshtype, thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-   cov_WriteRankedHitList(outsrtfp, nhit, hitlist, msamap);
+ if (data->outsrtfp) {
+     if (data->mode == CYKSS) fprintf(data->outsrtfp, "# cyk-cov structure\n");
+     fprintf(data->outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+	     data->covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+   cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap);
  }
 
  if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
