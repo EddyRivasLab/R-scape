@@ -1836,14 +1836,14 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
  if (data->outfp) {
      if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
      fprintf(data->outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-	     data->covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-   cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
+	    covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+     cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
  }
 
  if (data->outsrtfp) {
      if (data->mode == CYKSS) fprintf(data->outsrtfp, "# cyk-cov structure\n");
      fprintf(data->outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-	     data->covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+	     covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap);
  }
 
