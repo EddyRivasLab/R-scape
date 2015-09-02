@@ -565,7 +565,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   if (msa->acc) {
     st = msa->acc; /* remove the version from the accession */
     esl_strtok(&st, ".", &newacc);
-    esl_sprintf(&(new->acc), "%s.select%d.%s", newacc, nseq, st);
+    esl_sprintf(&(new->acc), "%s.select%d", newacc, nseq);
   }
   else
     esl_sprintf(&(new->acc), "select%d", nseq);
