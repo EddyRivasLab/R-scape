@@ -541,10 +541,10 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
       return eslOK; 
     }
   }
-
-  if     (msa->name) esl_sprintf(&newfile, "%s_random%d.sto", msa->name, nseq);
-  else if (msa->acc) esl_sprintf(&newfile, "%s_random%d.sto", msa->acc, nseq);
-  else               esl_sprintf(&newfile, "random%d.sto", nseq);
+ 
+  if      (msa->name) esl_sprintf(&newfile, "%s_select%d.sto", msa->name, nseq);
+  else if (msa->acc)  esl_sprintf(&newfile, "%s_select%d.sto", msa->acc, nseq);
+  else                esl_sprintf(&newfile, "select%d.sto", nseq);
 
   /* otherwise, proceed */
   ESL_ALLOC(array, sizeof(int) * (msa->nseq+1));
@@ -565,10 +565,10 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   if (msa->acc) {
     st = msa->acc; /* remove the version from the accession */
     esl_strtok(&st, ".", &newacc);
-    esl_sprintf(&(new->acc), "%s.random%d.%s", newacc, nseq, st);
+    esl_sprintf(&(new->acc), "%s.select%d.%s", newacc, nseq, st);
   }
   else
-    esl_sprintf(&(new->acc), "random%d", nseq);
+    esl_sprintf(&(new->acc), "select%d", nseq);
 
   /* write the submsa to file */
   if (msafile) {

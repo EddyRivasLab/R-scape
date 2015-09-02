@@ -643,12 +643,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     }
   }
   if      (msa->acc  && msa->name && type) esl_sprintf(&cfg->msaname, "%s_%s%s", msa->acc, msa->name, type);
-  else if (msa->acc  && msa->name)         esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name);
-  else if (msa->name && type)              esl_sprintf(&cfg->msaname, "%s%s", msa->name, type);
-  else if (msa->acc)                       esl_sprintf(&cfg->msaname, "%s", msa->acc);
-  else if (msa->name)                      esl_sprintf(&cfg->msaname, "%s", msa->name);
-  else if (cfg->onemsa)                    esl_sprintf(&cfg->msaname, "%s", cfg->filename);
-  else                                     esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
+  else if (msa->acc  && msa->name)         esl_sprintf(&cfg->msaname, "%s_%s",   msa->acc, msa->name);
+  else if (msa->name && type)              esl_sprintf(&cfg->msaname, "%s%s",    msa->name, type);
+  else if (msa->acc)                       esl_sprintf(&cfg->msaname, "%s",      msa->acc);
+  else if (msa->name)                      esl_sprintf(&cfg->msaname, "%s",      msa->name);
+  else if (cfg->onemsa)                    esl_sprintf(&cfg->msaname, "%s",      cfg->filename);
+  else                                     esl_sprintf(&cfg->msaname, "%s_%d",   cfg->filename, cfg->nmsa);
   
   if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg->msaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
   
