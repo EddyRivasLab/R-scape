@@ -13,19 +13,19 @@ BINDIR      = @bindir@
 MANDIR      = @mandir@
 PDFDIR      = @pdfdir@
 
-#MYLIBDIR = -Lsrc -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel -Llib/lib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
-#MYINCDIR = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
-MYLIBDIR = -Lsrc -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel 
-MYINCDIR = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel
+#MYLIBDIR = -Lsrc -Llib/hmmer/src/dp_reference -Llib/hmmer/src/dp_vector -Llib/hmmer/lib/easel -Llib/lib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
+#MYINCDIR = -Isrc -Ilib/hmmer/src -Ilib/hmmer/src/dp_reference -Ilib/hmmer/src/dp_vector -Ilib/hmmer/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
+MYLIBDIR = -Lsrc -Llib/hmmer/src/dp_reference -Llib/hmmer/src/dp_vector -Llib/hmmer/lib/easel 
+MYINCDIR = -Isrc -Ilib/hmmer/src -Ilib/hmmer/src/dp_reference -Ilib/hmmer/src/dp_vector -Ilib/hmmer/lib/easel
 
 LIBS     = -lm
 #MYLIBS   = -lhmmer -leasel -llbfgs
-#LFLAGS   = -Lsrc -Llib/hmmer4/src -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel -Llib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
-#IFLAGS   = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
+#LFLAGS   = -Lsrc -Llib/hmmer/src -Llib/hmmer/src/dp_reference -Llib/hmmer/src/dp_vector -Llib/hmmer/lib/easel -Llib/libLBFGS/liblbfgs-1.10/lib -Llib/libLBFGS/liblbfgs-1.10/include
+#IFLAGS   = -Isrc -Ilib/hmmer/src -Ilib/hmmer/src/dp_reference -Ilib/hmmer/src/dp_vector -Ilib/hmmer/lib/easel -Ilib/libLBFGS/liblbfgs-1.10/lib -Ilib/libLBFGS/liblbfgs-1.10/include
 
 MYLIBS   = -lhmmer -leasel 
-LFLAGS   = -Lsrc -Llib/hmmer4/src -Llib/hmmer4/src/dp_reference -Llib/hmmer4/src/dp_vector -Llib/hmmer4/lib/easel 
-IFLAGS   = -Isrc -Ilib/hmmer4/src -Ilib/hmmer4/src/dp_reference -Ilib/hmmer4/src/dp_vector -Ilib/hmmer4/lib/easel 
+LFLAGS   = -Lsrc -Llib/hmmer/src -Llib/hmmer/src/dp_reference -Llib/hmmer/src/dp_vector -Llib/hmmer/lib/easel 
+IFLAGS   = -Isrc -Ilib/hmmer/src -Ilib/hmmer/src/dp_reference -Ilib/hmmer/src/dp_vector -Ilib/hmmer/lib/easel 
 
 # Compiler configuration
 #
