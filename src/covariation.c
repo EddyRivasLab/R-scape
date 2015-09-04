@@ -2220,7 +2220,8 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   int      i;
   int      status;
 
-  if (!gnuplot) return eslOK;
+  if (gnuplot    == NULL) return eslOK;
+  if (covhisfile == NULL) return eslOK;
 
   esl_FileTail(covhisfile, FALSE, &filename);
 
@@ -2490,7 +2491,9 @@ cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovRBP
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
- 
+  
+  if (nullcovfile == NULL) return eslOK;
+
   esl_FileTail(nullcovfile, FALSE, &filename);
 
   pipe = popen(gnuplot, "w");
@@ -2557,6 +2560,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      i, ipair;
   int      ih, jh;
   int      status;
+
+  if (dplotfile == NULL) return eslOK;
   
   esl_FileTail(dplotfile, FALSE, &filename);
 
@@ -2717,6 +2722,8 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   int           do_r2rcovmarkup = FALSE;
   int           status;
  
+  if (r2rfile == NULL) return eslOK;
+
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
    */
   ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));

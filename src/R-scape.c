@@ -140,6 +140,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              window;
   int              slide;
 
+  int              onlyroc;
+
   float            tol;
   int              verbose;
 };
@@ -154,6 +156,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
+  { "--onlyroc",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc and .sum files only",                                                            1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -318,10 +321,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* other options */
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
-  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")           : -1.0;
-  cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")           : -1.0;
-  cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")           : -1.0;
-  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")    : -1;
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")        : -1.0;
+  cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")        : -1.0;
+  cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")        : -1.0;
+  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin") : -1;
   cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
@@ -329,9 +332,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
-  cfg.window      = esl_opt_IsOn(go, "--window")?    esl_opt_GetInteger(go, "--window") : -1;
-  cfg.slide       = esl_opt_IsOn(go, "--slide")?     esl_opt_GetInteger(go, "--slide")  : -1;
-  cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?    esl_opt_GetBoolean(go, "--onemsa") : FALSE;
+  cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")  : -1;
+  cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")   : -1;
+  cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")  : FALSE;
+  cfg.onlyroc     = esl_opt_IsOn(go, "--onlyroc")?    esl_opt_GetBoolean(go, "--onlyroc") : FALSE;
   
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -723,7 +727,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   } 
 
   /* R2R annotated sto file */
-  if (cfg->outdir) {
+  if (cfg->outdir && !cfg->onlyroc) {
     esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
     
@@ -744,7 +748,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
   }
-  else {
+  else if (!cfg->onlyroc) {
     esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
     
