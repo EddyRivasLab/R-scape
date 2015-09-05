@@ -93,8 +93,10 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
-  if ("FASTTREEDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("FASTTREEDIR")) == NULL) return eslENOTFOUND;
+  if ("FASTTREEDIR" != NULL) {
+    if ((s = getenv("FASTTREEDIR")) == NULL) return eslENOTFOUND;
+  }
+  else esl_sprintf(&s, "../lib/FastTree");
 
   if (msa->abc->type == eslAMINO)
     esl_sprintf(&args, "%s/src/FastTree -quiet %s > %s", s, tmpmsafile, tmptreefile);
