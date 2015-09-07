@@ -434,6 +434,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* msa-specific files */
   cfg.outmsafile = NULL;
   cfg.outmsafp   = NULL;
+  if (esl_opt_IsOn(go, "--outmsa")) {
+    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
+    if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
+  } 
 
   cfg.R2Rfile    = NULL;
   cfg.R2Rfp      = NULL;
@@ -590,6 +594,7 @@ main(int argc, char **argv)
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
   fclose(cfg.outfp);
+  fclose(cfg.outmsafp);
   fclose(cfg.outsrtfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
@@ -718,13 +723,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   }
 
   /* outmsa file if requested */
-  if (esl_opt_IsOn(go, "--outmsa")) {
-    //esl_sprintf(&cfg->outmsafile, "%s/%s_%s.sto",     cfg->outdir, esl_opt_GetString(go, "--outmsa"), cfg->msaname);
-    esl_sprintf(&cfg->outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
-    if ((cfg->outmsafp = fopen(cfg->outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg->outmsafile);
-    eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-    fclose(cfg->outmsafp);
-  } 
+  if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
 
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->onlyroc) {
