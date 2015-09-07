@@ -594,7 +594,6 @@ main(int argc, char **argv)
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
   fclose(cfg.outfp);
-  fclose(cfg.outmsafp);
   fclose(cfg.outsrtfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
