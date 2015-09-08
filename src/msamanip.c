@@ -520,8 +520,10 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   int           s;
   int           status;
 
-  if (nseq == 0 || nseq >= msa->nseq) {  esl_msa_Destroy(msa); *omsa = NULL; return eslOK; }
- 
+  if (nseq == 0 || nseq >= msa->nseq) {  
+    esl_msa_Destroy(msa); *omsa = NULL; return eslOK; 
+  }
+
   /* the newfile file with submsa */
   if (msafile) {
     omsafile = *msafile;
@@ -747,7 +749,6 @@ msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idt
   if (failed) { status = eslFAIL; goto ERROR; }
 
   /* replace msa */
-
   if ((status = reorder_msa(omsa, order, NULL))             != eslOK) goto ERROR;
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
   if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;

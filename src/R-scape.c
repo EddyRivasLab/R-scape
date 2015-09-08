@@ -542,7 +542,7 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
-
+ 
     status = original_msa_manipulate(go, &cfg, &msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     if (msa == NULL) continue;
@@ -550,7 +550,7 @@ main(int argc, char **argv)
       MSA_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
       continue;
     }
-    
+   
     if (cfg.window > 0) {
       esl_sprintf(&omsaname, "%s", cfg.msaname);
 
@@ -572,7 +572,7 @@ main(int argc, char **argv)
       }
     }
     else {
-      status = rscape_for_msa(go, &cfg, &msa);
+     status = rscape_for_msa(go, &cfg, &msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -657,7 +657,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   else if (msa->name)                      esl_sprintf(&cfg->msaname, "%s",      msa->name);
   else if (cfg->onemsa)                    esl_sprintf(&cfg->msaname, "%s",      cfg->filename);
   else                                     esl_sprintf(&cfg->msaname, "%s_%d",   cfg->filename, cfg->nmsa);
-  
   if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg->msaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
   
   /* apply msa filters and than select submsa
@@ -665,10 +664,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, &msa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
+
   if (msa == NULL) {
     free(type); type = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
+    *omsa = NULL;
     return eslOK;
   }
   if (msa->nseq < cfg->nseqmin) {
@@ -715,6 +717,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   RANKLIST *ranklist_aux  = NULL;
   int       status;
   
+  if (msa == NULL) return eslOK;
+
   if (msa->nseq <= 1) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
