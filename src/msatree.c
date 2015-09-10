@@ -93,10 +93,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
-  if ("FASTTREEDIR" != NULL) {
-    if ((s = getenv("FASTTREEDIR")) == NULL) return eslENOTFOUND;
-  }
-  else esl_sprintf(&s, "../lib/FastTree");
+  if ((s = getenv("FASTTREEDIR")) == NULL) esl_sprintf(&s, "lib/FastTree");
 
   if (msa->abc->type == eslAMINO)
     esl_sprintf(&args, "%s/src/FastTree -quiet %s > %s", s, tmpmsafile, tmptreefile);
@@ -104,7 +101,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
     esl_sprintf(&args, "%s/src/FastTree -quiet -nt %s > %s", s, tmpmsafile, tmptreefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
-  if (1||verbose) { printf("%s\n", args); }
+  if (verbose) { printf("%s\n", args); }
   system(args);
     
   remove(tmpmsafile);
