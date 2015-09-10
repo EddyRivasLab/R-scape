@@ -104,7 +104,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
     esl_sprintf(&args, "%s/src/FastTree -quiet -nt %s > %s", s, tmpmsafile, tmptreefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
-  if (verbose) { printf("%s\n", args); }
+  if (1||verbose) { printf("%s\n", args); }
   system(args);
     
   remove(tmpmsafile);
