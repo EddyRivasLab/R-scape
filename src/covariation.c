@@ -1285,7 +1285,7 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
 }
 
 struct mutual_s *
-cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHABET *abc)
+cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHABET *abc, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1328,7 +1328,7 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHAB
   }
 
   /* inititalize to zero the COV matrix */
-  cov_ReuseCOV(mi, COVNONE, C16);
+  cov_ReuseCOV(mi, COVNONE, covclass);
   
   return mi;
   

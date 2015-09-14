@@ -901,7 +901,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->abc);
+  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->abc, cfg->covclass);
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
