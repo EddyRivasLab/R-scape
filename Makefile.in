@@ -78,6 +78,7 @@ PROGS    = src/scorematrix2rate\
 	   src/e2DickersonSynthetic\
 	   src/ehmmDickerson\
 	   src/ribosum\
+	   src/rscape_priors\
 	   src/R-scape
 
 HEADERS  = src/e2_config.h\

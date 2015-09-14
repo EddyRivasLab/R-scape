@@ -18,6 +18,7 @@
 #include "ribosum_matrix.h"
 
 static int ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh, char *errbuf);
+static int aprs_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2,                     int alen, ESL_DMATRIX *prnaP);
 static int bprs_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *prnaP);
 static int prna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *prnaP);
 static int urna_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *urnaP);
@@ -30,7 +31,7 @@ static int parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribo
 static int parse_bg(ESL_FILEPARSER *efp, struct ribomatrix_s *ribosum, int verbose, char *errbuf);
 
 int
-Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf)
+Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, int dorates, double tol, int verbose, char *errbuf)
 {	
   ESL_DMATRIX *pC = NULL;
   ESL_DMATRIX *uC = NULL;
@@ -45,20 +46,22 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_ConditionalsFromJoint()");
 
   /* calculate rates */
+  if (dorates) {
   status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
 
-  if (0) {
     pC = ratematrix_ConditionalsFromRate(1.0, ribosum->prnaQ, tol, errbuf, verbose);
     uC = ratematrix_ConditionalsFromRate(1.0, ribosum->urnaQ, tol, errbuf, verbose);
     esl_dmatrix_Dump(stdout, pC, NULL, NULL);
     esl_dmatrix_Dump(stdout, uC, NULL, NULL);
+
+    ratematrix_Rescale(ribosum->aprsQ, NULL, ribosum->aprsM);
+    ratematrix_Rescale(ribosum->bprsQ, NULL, ribosum->bprsM);
+    ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prnaM);
+    ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
+    ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
   }
 
-  ratematrix_Rescale(ribosum->bprsQ, NULL, ribosum->bprsM);
-  ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prnaM);
-  ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
-  ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
   if (verbose) Ribosum_matrix_Write(stdout, ribosum); 
 
   if (pC) esl_dmatrix_Destroy(pC);
@@ -72,7 +75,7 @@ Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thres
 }
 
 int
-Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
+Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, int dorates, double tol, int verbose, char *errbuf)
 {	
   ESL_DMATRIX *pC = NULL;
   ESL_DMATRIX *uC = NULL;
@@ -87,18 +90,21 @@ Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, double tol, in
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_ConditionalsFromJoint()");
 
   /* calculate rates */
-  status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
-  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
-
-  pC = ratematrix_ConditionalsFromRate(1.0, ribosum->prnaQ, tol, errbuf, verbose);
-  uC = ratematrix_ConditionalsFromRate(1.0, ribosum->urnaQ, tol, errbuf, verbose);
-  ratematrix_specialDump(pC);
-  ratematrix_specialDump(uC);
-
-  ratematrix_Rescale(ribosum->bprsQ, NULL, ribosum->bprsM);
-  ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prnaM);
-  ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
-  ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
+  if (dorates) {
+    status = Ribosum_matrix_RateFromConditionals(ribosum, tol, verbose, errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed Ribosum_matrix_RateFromConditionals()");
+    
+    pC = ratematrix_ConditionalsFromRate(1.0, ribosum->prnaQ, tol, errbuf, verbose);
+    uC = ratematrix_ConditionalsFromRate(1.0, ribosum->urnaQ, tol, errbuf, verbose);
+    ratematrix_specialDump(pC);
+    ratematrix_specialDump(uC);
+    
+    ratematrix_Rescale(ribosum->aprsQ, NULL, ribosum->aprsM);
+    ratematrix_Rescale(ribosum->bprsQ, NULL, ribosum->bprsM);
+    ratematrix_Rescale(ribosum->prnaQ, NULL, ribosum->prnaM);
+    ratematrix_Rescale(ribosum->urnaQ, NULL, ribosum->urnaM);
+    ratematrix_Rescale(ribosum->xrnaQ, NULL, ribosum->xrnaM);
+  }
 
   if (pC) esl_dmatrix_Destroy(pC);
   if (uC) esl_dmatrix_Destroy(uC);
@@ -115,6 +121,9 @@ Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, i
 {
   int    status;
   
+  status = conditionals_from_joints(ribosum->aprsJ, ribosum->aprsC, ribosum->aprsM, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed aprs Ribosum_matrix_ConditionalsFromJoint()");
+
   status = conditionals_from_joints(ribosum->bprsJ, ribosum->bprsC, ribosum->bprsM, tol, verbose, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed bprs Ribosum_matrix_ConditionalsFromJoint()");
 
@@ -146,6 +155,13 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   ribosum->name = NULL;
   if (name) ribosum->name = name;
   
+  ribosum->aprsJ = esl_dmatrix_Create(dim2, dim2);
+  ribosum->aprsC = esl_dmatrix_Create(dim2, dim2);
+  ribosum->aprsQ = esl_dmatrix_Create(dim2, dim2);
+  ESL_ALLOC(ribosum->aprsM, sizeof(double) * dim2);
+  ribosum->aprs_tsat = -1.0;
+  ribosum->aprs_psat = NULL;
+
   ribosum->bprsJ = esl_dmatrix_Create(dim2, dim2);
   ribosum->bprsC = esl_dmatrix_Create(dim2, dim2);
   ribosum->bprsQ = esl_dmatrix_Create(dim2, dim2);
@@ -177,6 +193,7 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   ESL_ALLOC(ribosum->bg, sizeof(double) * dim);
   
   /* set joints to zero, ready to add counts */
+  esl_dmatrix_Set(ribosum->aprsJ, 0.0);
   esl_dmatrix_Set(ribosum->bprsJ, 0.0);
   esl_dmatrix_Set(ribosum->prnaJ, 0.0);
   esl_dmatrix_Set(ribosum->urnaJ, 0.0);
@@ -184,16 +201,19 @@ Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name)
   esl_vec_DSet(ribosum->bg, dim,  0.0);
   
   /* conditionals and marginals */
+  esl_dmatrix_Set(ribosum->aprsC, 0.0);
   esl_dmatrix_Set(ribosum->bprsC, 0.0);
   esl_dmatrix_Set(ribosum->prnaC, 0.0);
   esl_dmatrix_Set(ribosum->urnaC, 0.0);
   esl_dmatrix_Set(ribosum->xrnaC, 0.0);
+  esl_vec_DSet(ribosum->aprsM, dim2, 0.0);
   esl_vec_DSet(ribosum->bprsM, dim2, 0.0);
   esl_vec_DSet(ribosum->prnaM, dim,  0.0);
   esl_vec_DSet(ribosum->urnaM, dim,  0.0);
   esl_vec_DSet(ribosum->xrnaM, dim,  0.0);
   
   /* rates */
+  esl_dmatrix_Set(ribosum->aprsQ, 0.0);
   esl_dmatrix_Set(ribosum->bprsQ, 0.0);
   esl_dmatrix_Set(ribosum->prnaQ, 0.0);
   esl_dmatrix_Set(ribosum->urnaQ, 0.0);
@@ -209,6 +229,12 @@ void
 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum)
 {
   if (ribosum) {
+    if (ribosum->aprsJ)     esl_dmatrix_Destroy(ribosum->aprsJ);
+    if (ribosum->aprsC)     esl_dmatrix_Destroy(ribosum->aprsC);
+    if (ribosum->aprsQ)     esl_dmatrix_Destroy(ribosum->aprsQ);
+    if (ribosum->aprsM)     free(ribosum->aprsM);
+    if (ribosum->aprs_psat) free(ribosum->aprs_psat);
+ 
     if (ribosum->bprsJ)     esl_dmatrix_Destroy(ribosum->bprsJ);
     if (ribosum->bprsC)     esl_dmatrix_Destroy(ribosum->bprsC);
     if (ribosum->bprsQ)     esl_dmatrix_Destroy(ribosum->bprsQ);
@@ -265,6 +291,9 @@ Ribosum_matrix_JointsNormalize(struct ribomatrix_s *ribosum, int verbose, char *
   float sum;
   
  /* normalize */
+  sum = esl_dmx_Sum(ribosum->aprsJ);
+  if (sum > 0.) esl_dmx_Scale(ribosum->aprsJ, 1.0/sum);
+
   sum = esl_dmx_Sum(ribosum->bprsJ);
   if (sum > 0.) esl_dmx_Scale(ribosum->bprsJ, 1.0/sum);
 
@@ -306,6 +335,9 @@ int
 Ribosum_matrix_RateFromConditionals(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf)
 {
   int status;
+
+  status = rate_from_conditionals(ribosum->aprsC, ribosum->aprsQ, tol, verbose, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed aprs RateFromConditionals()");
 
   status = rate_from_conditionals(ribosum->bprsC, ribosum->bprsQ, tol, verbose, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed bprs RateFromConditionals()");
@@ -351,6 +383,7 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     if (strncmp(tok, "RIBO", 4) == 0){
       mtxtype = JOIN;
       esl_sprintf(&ribosum->name, tok);
+      ribosum->aprsJ = esl_dmatrix_Create(dim2, dim2);
       ribosum->bprsJ = esl_dmatrix_Create(dim2, dim2);
       ribosum->prnaJ = esl_dmatrix_Create(dim,  dim);
       ribosum->urnaJ = esl_dmatrix_Create(dim,  dim);
@@ -358,6 +391,7 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     }
     else if (strcmp(tok, "Conditionals") == 0){
       mtxtype = COND;
+      ribosum->aprsC = esl_dmatrix_Create(dim2, dim2);
       ribosum->bprsC = esl_dmatrix_Create(dim2, dim2);
       ribosum->prnaC = esl_dmatrix_Create(dim,  dim);
       ribosum->urnaC = esl_dmatrix_Create(dim,  dim);
@@ -365,6 +399,7 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     }
      else if (strcmp(tok, "Rates") == 0){
       mtxtype = RATE;
+      ribosum->aprsQ = esl_dmatrix_Create(dim2, dim2);
       ribosum->bprsQ = esl_dmatrix_Create(dim2, dim2);
       ribosum->prnaQ = esl_dmatrix_Create(dim,  dim);
       ribosum->urnaQ = esl_dmatrix_Create(dim,  dim);
@@ -372,6 +407,7 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     }
    else if (strcmp(tok, "Marginals") == 0){
       mtxtype = MARG;
+      ESL_ALLOC(ribosum->aprsM, sizeof(double) * dim2);
       ESL_ALLOC(ribosum->bprsM, sizeof(double) * dim2);
       ESL_ALLOC(ribosum->prnaM, sizeof(double) * dim);
       ESL_ALLOC(ribosum->urnaM, sizeof(double) * dim);
@@ -379,6 +415,7 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     }
     else if (strcmp(tok, "Saturation") == 0){
       mtxtype = SATU;
+      ESL_ALLOC(ribosum->aprs_psat, sizeof(double) * dim2);
       ESL_ALLOC(ribosum->bprs_psat, sizeof(double) * dim2);
       ESL_ALLOC(ribosum->prna_psat, sizeof(double) * dim);
       ESL_ALLOC(ribosum->urna_psat, sizeof(double) * dim);
@@ -433,6 +470,9 @@ Ribosum_matrix_Saturation(struct ribomatrix_s *ribosum, double tol, int verbose,
 {
   int status;
   
+  status = ratematrix_SaturationTime(ribosum->aprsQ, &ribosum->aprs_tsat, &ribosum->aprs_psat, tol, errbuf, FALSE);
+  if (status != eslOK) { printf("failed to calculate psat for aprsQ\n%s\n", errbuf); goto ERROR; }
+
   status = ratematrix_SaturationTime(ribosum->bprsQ, &ribosum->bprs_tsat, &ribosum->bprs_psat, tol, errbuf, FALSE);
   if (status != eslOK) { printf("failed to calculate psat for bprsQ\n%s\n", errbuf); goto ERROR; }
 
@@ -466,6 +506,7 @@ void
 Ribosum_matrix_WriteJoints(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "%s\n", ribosum->name);
+  if (ribosum->aprsJ) esl_dmatrix_Dump(fp, ribosum->aprsJ, NULL, NULL);
   if (ribosum->bprsJ) esl_dmatrix_Dump(fp, ribosum->bprsJ, NULL, NULL);
   if (ribosum->prnaJ) esl_dmatrix_Dump(fp, ribosum->prnaJ, "ACGU", "ACGU");
   if (ribosum->urnaJ) esl_dmatrix_Dump(fp, ribosum->urnaJ, "ACGU", "ACGU");
@@ -476,6 +517,7 @@ void
 Ribosum_matrix_WriteConditionals(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Conditionals\n");
+  if (ribosum->aprsC) esl_dmatrix_Dump(fp, ribosum->aprsC, NULL, NULL);
   if (ribosum->bprsC) esl_dmatrix_Dump(fp, ribosum->bprsC, NULL, NULL);
   if (ribosum->prnaC) esl_dmatrix_Dump(fp, ribosum->prnaC, "ACGU", "ACGU");
   if (ribosum->urnaC) esl_dmatrix_Dump(fp, ribosum->urnaC, "ACGU", "ACGU");
@@ -486,6 +528,7 @@ void
 Ribosum_matrix_WriteRates(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Rates\n");
+  if (ribosum->aprsQ) esl_dmatrix_Dump(fp, ribosum->aprsQ, NULL, NULL);
   if (ribosum->bprsQ) esl_dmatrix_Dump(fp, ribosum->bprsQ, NULL, NULL);
   if (ribosum->prnaQ) esl_dmatrix_Dump(fp, ribosum->prnaQ, "ACGU", "ACGU");
   if (ribosum->urnaQ) esl_dmatrix_Dump(fp, ribosum->urnaQ, "ACGU", "ACGU");
@@ -496,6 +539,7 @@ void
 Ribosum_matrix_WriteMarginals(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Marginals\n");
+  if (ribosum->aprsM) esl_vec_DDump   (fp, ribosum->aprsM, ribosum->aprsC->m, NULL);
   if (ribosum->bprsM) esl_vec_DDump   (fp, ribosum->bprsM, ribosum->bprsC->m, NULL);
   if (ribosum->prnaM) esl_vec_DDump   (fp, ribosum->prnaM, ribosum->prnaC->m, "ACGU");
   if (ribosum->urnaM) esl_vec_DDump   (fp, ribosum->urnaM, ribosum->urnaC->m, "ACGU");
@@ -513,6 +557,9 @@ void
 Ribosum_matrix_WriteSaturation(FILE *fp, struct ribomatrix_s *ribosum)
 {
   fprintf(fp, "Saturation probabilities\n");
+  fprintf(fp, "aprsQ: tsat = %f\n", ribosum->aprs_tsat);
+  if (ribosum->aprs_psat) esl_vec_DDump(fp, ribosum->aprs_psat, ribosum->aprsC->m, "ACGU");
+
   fprintf(fp, "bprsQ: tsat = %f\n", ribosum->bprs_tsat);
   if (ribosum->bprs_psat) esl_vec_DDump(fp, ribosum->bprs_psat, ribosum->bprsC->m, "ACGU");
 
@@ -612,6 +659,7 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
       ssi = (msa->ss_cons)? msa->ss_cons: msa->ss[i];
       ssj = (msa->ss_cons)? msa->ss_cons: msa->ss[j];
       
+      aprs_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj,               msa->alen, ribosum->aprsJ);
       bprs_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->bprsJ);
       prna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->prnaJ);
       urna_add_counts(ribosum->abc, wgt, msa->aseq[i], msa->aseq[j], ssi, ssj, ct[i], ct[j], msa->alen, ribosum->urnaJ);
@@ -632,6 +680,38 @@ ribosum_matrix_add_counts(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thre
   return status;
 }
 
+
+static int
+aprs_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int alen, ESL_DMATRIX *aprsJ)
+{
+  int  posa, posb;
+  char c1, c2;
+  char cc1, cc2;
+  int  pair1, pair2;
+
+  for (posa = 0; posa < alen; posa++) {
+    c1 = seq1[posa];
+    c2 = seq2[posa];
+    
+    if (esl_abc_CIsCanonical(abc, c1) && esl_abc_CIsCanonical(abc, c2)) 
+      {
+	for (posb = posa+1; posb < alen; posb++) {
+	  cc1 = seq1[posb];
+	  cc2 = seq2[posb];
+	  if (esl_abc_CIsCanonical(abc, cc1) && esl_abc_CIsCanonical(abc, cc2)) 
+	    {
+	      pair1 = IDX(esl_abc_DigitizeSymbol(abc, c1), esl_abc_DigitizeSymbol(abc, cc1), abc->K);
+	      pair2 = IDX(esl_abc_DigitizeSymbol(abc, c2), esl_abc_DigitizeSymbol(abc, cc2), abc->K);
+	      
+	      aprsJ->mx[pair1][pair2] += wgt;
+	      aprsJ->mx[pair2][pair1] += wgt;
+	    }
+	}
+      }
+  }
+
+  return eslOK;
+}
 
 static int
 bprs_add_counts(ESL_ALPHABET *abc, double wgt, char *seq1, char *seq2, char *ss1, char *ss2, int *ct1, int *ct2, int alen, ESL_DMATRIX *bprsJ)

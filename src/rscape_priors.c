@@ -1,11 +1,7 @@
-/* ribosum 
+/* rscape_priors.c
  *
- * this is an updated/easel-based reimplementation of rnamat_main in qrna,
- * which is a reimplementation of R.Klein's makernamat.c
- *
- * Given an MSA with annotated RNA secondary structure, creates a substitution
- * 16x16 RIBOSUM  matrix using the BLOSUM algorithm (Henikoff and Henikoff,
- * Proc Natl Acad Sci USA 89:10915-10919 (1992))
+ * use easel code to calculate dirichlet priors for the
+ * R-scape joint probabilities pij (from the ssu-lsu cwr alignments)
  *
  */
 #include <stdio.h>
@@ -16,6 +12,7 @@
 #include "esl_config.h"
 #include "easel.h"
 #include "esl_alphabet.h"
+#include "esl_dirichlet.h"
 #include "esl_dmatrix.h"
 #include "esl_getopts.h"
 #include "esl_msa.h"
@@ -48,7 +45,6 @@ struct cfg_s {
   
   int              nmsa;
   char            *msafile;
-  char            *gnuplot;
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
   char            *msaheader;          /* header for all msa-specific output files */
@@ -62,41 +58,41 @@ struct cfg_s {
 
   float            thresh1;            /* cluster threshold */
   float            thresh2;            /* percentage id threshold */
-  int              logodds;
 
-  int              dorates;
-
+  int              N;                  /* number of mixture diritchlet */
   float            tol;
   int              verbose;
 };
 
 static ESL_OPTIONS options[] = {
   /* name           type              default   env  range   toggles        reqs   incomp               help                                       docgroup*/
-  { "-h",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "show brief help on version and usage",                         0 },
-  { "-v",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "be verbose",                                                                                0 },  
-  { "--logodds",    eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "output as logodds",                                                                                0 },
-  { "--dorates",    eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "calculate rates",                                                                                0 },
+  { "-h",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "show brief help on version and usage",       
+                            0 },
+  { "-v",           eslARG_NONE,        FALSE,   NULL, NULL, NULL,   NULL,    NULL,               "be verbose",                                                                                       0 },  
+  { "-N",            eslARG_INT,          "1",   NULL,"n>0", NULL,   NULL,    NULL,               "number of mixture dirichlets",                                                                     0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
   { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
   { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      0 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",  
-                         0},
+                             0},
   /* options for ribosum thresholds */
   { "-1",             eslARG_REAL,    "0.80",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "clustering threshold",                                                                      0 },
   { "-2",             eslARG_REAL,    "0.65",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "percentage id threshold",                                                                   0 },
   /* Control of output */
   { "-o",           eslARG_OUTFILE,      NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "direct output to file <f>, not stdout",                                                     0 },
   /* msa format */
-  { "--informat",    eslARG_STRING,      NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             0 },
+  { "--informat",    eslARG_STRING,      NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            0 },
   /* other options */
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       5 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
-static char banner[] = "given an msa annotated with RNA secondary structure, calculate a ribosum matrix";
+static char banner[] = "given an msa annotated with RNA secondary structure, calculate dirichlet priors for the joints p_ij";
+
+static int fit_dirichlet(FILE *fp, int N, int K, double *p, double sum, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -130,8 +126,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
-  esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
-  
   /* outheader for all output files */
   cfg.outheader = NULL;
   msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
@@ -158,20 +152,18 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.idthresh   = esl_opt_IsOn(go, "-I")? esl_opt_GetReal(go, "-I") : -1.0;
   if (esl_opt_IsOn(go, "--submsa")) cfg.submsa = esl_opt_GetInteger(go, "--submsa");
   else                              cfg.submsa = 0;
-  if (esl_opt_IsOn(go, "--logodds")) cfg.logodds = esl_opt_GetBoolean(go, "--logodds");
-  else                               cfg.logodds = FALSE;
-  if (esl_opt_IsOn(go, "--dorates")) cfg.dorates = esl_opt_GetBoolean(go, "--dorates");
-  else                               cfg.dorates = FALSE;
   
   /* options for mdifying the input msa */
   cfg.thresh1 = esl_opt_GetReal(go, "-1");
   cfg.thresh2 = esl_opt_GetReal(go, "-2");
 
+  cfg.N = esl_opt_GetInteger(go, "-N");
+
   /* other options */
   cfg.tol     = esl_opt_GetReal   (go, "--tol");
   cfg.verbose = esl_opt_GetBoolean(go, "-v");
   
-  esl_sprintf(&cfg.name, "%s%d-%d", (cfg.logodds)? "RIBOSUM":"RIBOPROB", (int)(cfg.thresh1*100), (int)(cfg.thresh2*100));
+  esl_sprintf(&cfg.name, "%s%d-%d", "DIRICHLET", (int)(cfg.thresh1*100), (int)(cfg.thresh2*100));
   
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -204,12 +196,15 @@ output_header(FILE *ofp, ESL_GETOPTS *go)
 int
 main(int argc, char **argv)
 {
-  char                *msg = "ribosum failed";
+  char                *msg = "rscape-priors failed";
   ESL_GETOPTS         *go;
   struct cfg_s         cfg;
   ESLX_MSAFILE        *afp = NULL;
   ESL_MSA             *msa = NULL;                /* the input alignment  */
   struct ribomatrix_s *ribosum = NULL;
+  double               sum_aprsJ, sum_bprsJ;
+  double               sum_aprs = 0.;
+  double               sum_bprs = 0.;
   int                  seq_cons_len = 0;
   int                  nfrags = 0;	  	  /* # of fragments removed */
   int                  nremoved = 0;	          /* # of identical sequences removed */
@@ -268,6 +263,9 @@ main(int argc, char **argv)
     puts("");
     fflush(stdout);
     
+    sum_aprs += msa->nseq * (msa->alen-1.) * msa->alen / 2.0;
+    sum_bprs += msa->nseq * msa->alen/2.0;
+
     status = Ribosum_matrix_JointsAddWeights(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.verbose, cfg.errbuf);
     if (status != eslOK) esl_fatal(msg);
 
@@ -275,18 +273,18 @@ main(int argc, char **argv)
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
   }
+  sum_aprsJ = esl_dmx_Sum(ribosum->aprsJ);
+  sum_bprsJ = esl_dmx_Sum(ribosum->bprsJ);
+  printf("sum %f %f\n", sum_aprs, sum_bprs);
+  printf("sum %f %f\n", sum_aprsJ, sum_bprsJ);
 
-  status = Ribosum_matrix_CalculateFromWeights(ribosum, cfg.dorates, cfg.tol, cfg.verbose, cfg.errbuf);
+  status = Ribosum_matrix_CalculateFromWeights(ribosum, FALSE, cfg.tol, cfg.verbose, cfg.errbuf);
   if (status != eslOK) esl_fatal(msg);
-  
-  if (cfg.dorates) {
-    status = Ribosum_matrix_Saturation(ribosum, cfg.tol, cfg.verbose, cfg.errbuf);
-    if (status != eslOK) esl_fatal(msg);
-  }
-  
-  if (cfg.verbose) Ribosum_matrix_Write(stdout, ribosum);
-  Ribosum_matrix_Write(cfg.outfp, ribosum);
-
+    
+  //status = fit_dirichlet(cfg.outfp, cfg.N, ribosum->aprsJ->n, ribosum->aprsM, sum_aprs, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.N, ribosum->bprsJ->n, ribosum->bprsM, sum_bprs, cfg.verbose);
+  if (status != eslOK) esl_fatal(msg);
+ 
   /* cleanup */
   esl_stopwatch_Destroy(cfg.w);
   fclose(cfg.outfp);
@@ -296,11 +294,51 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
   Ribosum_matrix_Destroy(ribosum);
-  free(cfg.gnuplot);
   return status;
 }
 
 
+static int
+fit_dirichlet(FILE *fp, int N, int K, double *p, double sum, int verbose)
+{
+  ESL_MIXDCHLET       *d = NULL;
+  double             **c = NULL;
+  double               guess;
+  int                  n;
+  int                  k;
+  int                  status;
+
+  sum = 1.;
+  /* calculate dirichlets for the marginal counds counts */
+  ESL_ALLOC(c, sizeof(double *) * N);
+  for (n = 0; n < N; n ++) ESL_ALLOC(c[n], sizeof(double) * K);
+  for (k = 0; k < K; k ++) c[0][k] = sum * p[k];
+  if (1||verbose) esl_vec_DDump(stdout, c[0], K, "");
+  
+  guess = esl_vec_DMax(c[0], K); 
+  printf("\nguess %f\n", guess);
+
+  d = esl_mixdchlet_Create(N, K);
+  if (status != eslOK) goto ERROR;
+  esl_vec_DSet(d->pq,       1, 1.0);
+  esl_vec_DSet(d->alpha[0], K, guess);
+
+  status = esl_mixdchlet_Fit(c, N, d, TRUE);
+  if (status != eslOK) goto ERROR;
+
+  /* write the dirichlets */
+  esl_mixdchlet_Write(fp, d);
+ 
+  for (n = 0; n < N; n ++) free(c[n]);
+  free(c);
+  esl_mixdchlet_Destroy(d);
+
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+ 
 
 /*****************************************************************
  * @LICENSE@

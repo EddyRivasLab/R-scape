@@ -29,6 +29,13 @@ struct ribomatrix_s {
   char         *name;
   ESL_ALPHABET *abc;
 
+  ESL_DMATRIX *aprsJ;      // allpairs joint                        16x16 matrix: aprsJ(aa',bb') = aprsJ(bb',aa')
+  ESL_DMATRIX *aprsC;      // allpairs conditional                  16x16 matrix: aprsC(aa'|bb') = aprsJ(aa',bb')/aprsM(bb')
+  ESL_DMATRIX *aprsQ;      // allpairs rate                         16x16 matrix: aprsQ(aa',bb') = log aprsC(aa'|bb')
+  double      *aprsM;      // [16] marginals for allpairs                         aprsM(aa')     = \sum_{bb'} aprsJ(aa',bb')
+  double       aprs_tsat;  // saturation time
+  double      *aprs_psat;  // [16] saturation allpairs probabilities
+
   ESL_DMATRIX *bprsJ;      // basepairs joint                        16x16 matrix: bprsJ(aa',bb') = bprsJ(bb',aa')
   ESL_DMATRIX *bprsC;      // basepairs conditional                  16x16 matrix: bprsC(aa'|bb') = bprsJ(aa',bb')/bprsM(bb')
   ESL_DMATRIX *bprsQ;      // basepairs rate                         16x16 matrix: bprsQ(aa',bb') = log bprsC(aa'|bb')
@@ -60,8 +67,9 @@ struct ribomatrix_s {
   double      *bg;         // background frequencies
 };
   
-extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, double tol, int verbose, char *errbuf);
-extern int                  Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
+extern int                  Ribosum_matrix_Calculate(ESL_MSA *msa, struct ribomatrix_s *ribosum, float thresh1, float thresh2, int dorates, 
+						     double tol, int verbose, char *errbuf);
+extern int                  Ribosum_matrix_CalculateFromWeights(struct ribomatrix_s *ribosum, int dorates, double tol, int verbose, char *errbuf);
 extern int                  Ribosum_matrix_ConditionalsFromJoint(struct ribomatrix_s *ribosum, double tol, int verbose, char *errbuf);
 extern struct ribomatrix_s *Ribosum_matrix_Create(ESL_ALPHABET *abc, char *name);
 extern void                 Ribosum_matrix_Destroy(struct ribomatrix_s *ribosum);

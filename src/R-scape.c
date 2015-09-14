@@ -6,6 +6,7 @@
 
 #include "esl_getopts.h"
 #include "esl_distance.h"
+#include "esl_fileparser.h"
 #include "esl_msa.h"
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
@@ -120,6 +121,11 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
 
+  char            *mixdchletfile;
+  FILE            *mixdchletfp;
+  ESL_FILEPARSER  *mixdchletefp;
+  ESL_MIXDCHLET   *pri;
+
   int              voutput;
   char            *rocfile;
   FILE            *rocfp; 
@@ -218,6 +224,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
+   /* priors */
+  { "--mixdchlet",    eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,              "read dirichlet priors from file <f>",                                                      0 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -257,6 +265,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS *go = esl_getopts_Create(options);
   struct cfg_s cfg;
+  char         *s = NULL;
   int          status;
 
 
@@ -438,6 +447,24 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
+  
+  /* mixdichlet priors file */
+  cfg.mixdchletfile = NULL;
+  cfg.mixdchletfp   = NULL;
+  cfg.mixdchletefp  = NULL;
+  cfg.pri           = NULL;
+  if (esl_opt_IsOn(go, "--mixdchlet")) {
+    esl_sprintf(&cfg.mixdchletfile, "%s", esl_opt_GetString(go, "--mixdchlet"));
+  } 
+  if (cfg.mixdchletfile) {
+    if ((cfg.mixdchletfp = fopen(cfg.mixdchletfile, "r")) == NULL) esl_fatal("Failed to open mixdchlet file %s", cfg.mixdchletfile);
+    cfg.mixdchletefp = esl_fileparser_Create(cfg.mixdchletfp);
+    if (esl_mixdchlet_Read(cfg.mixdchletefp, &cfg.pri) != eslOK) {
+      fprintf(stderr, "%s;\ndirichlet file %s parse failed at line %d\n",
+	      cfg.mixdchletefp->errbuf, cfg.mixdchletfile, cfg.mixdchletefp->linenumber);
+      exit(1);
+    }
+  }
 
   cfg.R2Rfile    = NULL;
   cfg.R2Rfp      = NULL;
@@ -602,6 +629,10 @@ main(int argc, char **argv)
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
+  if (cfg.mixdchletfp) fclose(cfg.mixdchletfp);
+  if (cfg.mixdchletefp) esl_fileparser_Destroy(cfg.mixdchletefp);
+  if (cfg.mixdchletfile) free(cfg.mixdchletfile);
+  if (cfg.pri) esl_mixdchlet_Destroy(cfg.pri);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
@@ -684,7 +715,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   esl_msa_Hash(msa);
   msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
   if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
-  esl_msaweight_GSC(msa);
 
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
@@ -786,7 +816,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   if (1||cfg->verbose) 
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-  
+
   /* the null model first */
   cfg->mode = RANSS;
   if (cfg->nulltype == Null1) {
@@ -880,7 +910,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
-  
+
+  /* weigth the sequences */
+  esl_msaweight_GSC(msa);
+
   /* print to stdout */
   if (cfg->verbose) 
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -928,6 +961,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.ranklist_null = ranklist_null;
   data.ranklist_aux  = ranklist_aux;
   data.mi            = mi;
+  data.pri           = cfg->pri;
   data.covtype       = cfg->covtype;
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
