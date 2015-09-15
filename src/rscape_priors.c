@@ -17,13 +17,15 @@
 #include "esl_getopts.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+#include "esl_msaweight.h"
 #include "esl_stopwatch.h"
 #include "esl_vectorops.h"
+#include "esl_wuss.h"
 
 #include "msamanip.h"
 #include "msatree.h"
 
-#include "ribosum_matrix.h"
+#define IDX(i,j,L)  ( (i) * (L) + (j) )
 
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
  * 
@@ -92,7 +94,14 @@ static ESL_OPTIONS options[] = {
 static char usage[]  = "[-options] <msafile>";
 static char banner[] = "given an msa annotated with RNA secondary structure, calculate dirichlet priors for the joints p_ij";
 
-static int fit_dirichlet(FILE *fp, int N, int K, double *p, double sum, int verbose);
+static int fit_dirichlet(FILE *fp, int N, int K, double **c, int verbose);
+static int add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, double *xrnaJ, double *prnaJ, double *urnaJ, double *xrnaM, double *prnaM, double *urnaM, char *errbuf);
+static int xrnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa,           double *xrnaJ, char *errbuf);
+static int prnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *prnaJ, char *errbuf);
+static int urnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *urnaJ, char *errbuf);
+static int xrnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa,           double *xrnaJ, char *errbuf);
+static int prnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *prnaJ, char *errbuf);
+static int urnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *urnaJ, char *errbuf);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -201,13 +210,18 @@ main(int argc, char **argv)
   struct cfg_s         cfg;
   ESLX_MSAFILE        *afp = NULL;
   ESL_MSA             *msa = NULL;                /* the input alignment  */
-  struct ribomatrix_s *ribosum = NULL;
-  double               sum_aprsJ, sum_bprsJ;
-  double               sum_aprs = 0.;
-  double               sum_bprs = 0.;
+  double             **xrnaJ = NULL;              // all      positions joint     16 array:     xrnaJ[0..nc-1][IDX(a,b)] = xrnaJ[0..nc-1][IDX(b,a)]
+  double             **prnaJ = NULL;              // paired   positions joint     16 array:     prnaJ[0..nc-1][IDX(a,b)] = prnaJ[0..nc-1][IDX(b,a)]
+  double             **urnaJ = NULL;              // unpaired positions joint     16 array:     urnaJ[0..nc-1][IDX(a,b)] = urnaJ[0..nc-1][IDX(b,a)]
+  double             **xrnaM = NULL;              // all      positions marginals  4 array:     xrnaM[0..nc-1][a] 
+  double             **prnaM = NULL;              // paired   positions marginals  4 array:     prnaM[0..nc-1][a]
+  double             **urnaM = NULL;              // unpaired positions marginals  4 array:     urnaM[0..nc-1][a]
+  int                  K, K2;
+  int                  nalloc = 10;
   int                  seq_cons_len = 0;
   int                  nfrags = 0;	  	  /* # of fragments removed */
   int                  nremoved = 0;	          /* # of identical sequences removed */
+  int                  n;
   int                  idx;
   int                  i;
   int                  status = eslOK;
@@ -216,8 +230,27 @@ main(int argc, char **argv)
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
   
-  ribosum = Ribosum_matrix_Create(cfg.abc, cfg.name);
-  if (ribosum == NULL) esl_fatal("bad ribosum allocation");
+  K  = cfg.abc->K;
+  K2 = K * K;
+  ESL_ALLOC(xrnaJ, sizeof(double *) * nalloc);
+  ESL_ALLOC(prnaJ, sizeof(double *) * nalloc);
+  ESL_ALLOC(urnaJ, sizeof(double *) * nalloc);
+  ESL_ALLOC(xrnaM, sizeof(double *) * nalloc);
+  ESL_ALLOC(prnaM, sizeof(double *) * nalloc);
+  ESL_ALLOC(urnaM, sizeof(double *) * nalloc);
+  ESL_ALLOC(xrnaJ[0], sizeof(double) * K2 * nalloc);
+  ESL_ALLOC(prnaJ[0], sizeof(double) * K2 * nalloc); 
+  ESL_ALLOC(urnaJ[0], sizeof(double) * K2 * nalloc); 
+  ESL_ALLOC(xrnaM[0], sizeof(double) *  K * nalloc); 
+  ESL_ALLOC(prnaM[0], sizeof(double) *  K * nalloc); 
+  ESL_ALLOC(urnaM[0], sizeof(double) *  K * nalloc); 
+
+  for (n = 1; n < nalloc; n ++) xrnaJ[n] = xrnaJ[0] + n * K2;
+  for (n = 1; n < nalloc; n ++) prnaJ[n] = prnaJ[0] + n * K2;
+  for (n = 1; n < nalloc; n ++) urnaJ[n] = urnaJ[0] + n * K2;
+  for (n = 1; n < nalloc; n ++) xrnaM[n] = xrnaM[0] + n *  K;
+  for (n = 1; n < nalloc; n ++) prnaM[n] = prnaM[0] + n *  K;
+  for (n = 1; n < nalloc; n ++) urnaM[n] = urnaM[0] + n *  K;
 
   /* Open the MSA file */
   status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
@@ -227,7 +260,28 @@ main(int argc, char **argv)
   while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
-    
+    if (cfg.nmsa == nalloc) {
+      nalloc += 10;
+      ESL_REALLOC(xrnaJ,    sizeof(double *) * nalloc);
+      ESL_REALLOC(prnaJ,    sizeof(double *) * nalloc);
+      ESL_REALLOC(urnaJ,    sizeof(double *) * nalloc);
+      ESL_REALLOC(xrnaM,    sizeof(double *) * nalloc);
+      ESL_REALLOC(prnaM,    sizeof(double *) * nalloc);
+      ESL_REALLOC(urnaM,    sizeof(double *) * nalloc);
+      ESL_REALLOC(xrnaJ[0], sizeof(double *) * nalloc * K2);
+      ESL_REALLOC(prnaJ[0], sizeof(double *) * nalloc * K2);
+      ESL_REALLOC(urnaJ[0], sizeof(double *) * nalloc * K2);
+      ESL_REALLOC(xrnaM[0], sizeof(double *) * nalloc *  K);
+      ESL_REALLOC(prnaM[0], sizeof(double *) * nalloc *  K);
+      ESL_REALLOC(urnaM[0], sizeof(double *) * nalloc *  K);
+      for (n = cfg.nmsa; n < nalloc; n ++) xrnaJ[n] = xrnaJ[0] + n * K2;
+      for (n = cfg.nmsa; n < nalloc; n ++) prnaJ[n] = prnaJ[0] + n * K2;
+      for (n = cfg.nmsa; n < nalloc; n ++) urnaJ[n] = urnaJ[0] + n * K2;
+      for (n = cfg.nmsa; n < nalloc; n ++) xrnaM[n] = xrnaM[0] + n *  K;
+      for (n = cfg.nmsa; n < nalloc; n ++) prnaM[n] = prnaM[0] + n *  K;
+      for (n = cfg.nmsa; n < nalloc; n ++) urnaM[n] = urnaM[0] + n *  K;
+   }
+   
     /* select submsa */
     if (cfg.submsa) {
       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
@@ -262,27 +316,24 @@ main(int argc, char **argv)
     printf                       ("Number of columns:   %"PRId64"\n",  msa->alen);
     puts("");
     fflush(stdout);
-    
-    sum_aprs += msa->nseq * (msa->alen-1.) * msa->alen / 2.0;
-    sum_bprs += msa->nseq * msa->alen/2.0;
-
-    status = Ribosum_matrix_JointsAddWeights(msa, ribosum, cfg.thresh1, cfg.thresh2, cfg.verbose, cfg.errbuf);
-    if (status != eslOK) esl_fatal(msg);
+ 
+    status = esl_msaweight_GSC(msa);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg.errbuf, "failed msaweight_GSC");
+ 
+    add_counts(cfg.abc, msa, xrnaJ[cfg.nmsa-1], prnaJ[cfg.nmsa-1], urnaJ[cfg.nmsa-1], xrnaM[cfg.nmsa-1], prnaM[cfg.nmsa-1], urnaM[cfg.nmsa-1], cfg.errbuf);
 
     esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msafrq) free(cfg.msafrq); cfg.msafrq = NULL;
     free(cfg.msaheader); cfg.msaheader = NULL;
   }
-  sum_aprsJ = esl_dmx_Sum(ribosum->aprsJ);
-  sum_bprsJ = esl_dmx_Sum(ribosum->bprsJ);
-  printf("sum %f %f\n", sum_aprs, sum_bprs);
-  printf("sum %f %f\n", sum_aprsJ, sum_bprsJ);
 
-  status = Ribosum_matrix_CalculateFromWeights(ribosum, FALSE, cfg.tol, cfg.verbose, cfg.errbuf);
-  if (status != eslOK) esl_fatal(msg);
-    
-  //status = fit_dirichlet(cfg.outfp, cfg.N, ribosum->aprsJ->n, ribosum->aprsM, sum_aprs, cfg.verbose);
-  status = fit_dirichlet(cfg.outfp, cfg.N, ribosum->bprsJ->n, ribosum->bprsM, sum_bprs, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa, K2, xrnaJ, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa, K2, prnaJ, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa, K2, urnaJ, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa,  K, xrnaM, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa,  K, prnaM, cfg.verbose);
+  status = fit_dirichlet(cfg.outfp, cfg.nmsa,  K, urnaM, cfg.verbose);
+   
   if (status != eslOK) esl_fatal(msg);
  
   /* cleanup */
@@ -293,44 +344,46 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
-  Ribosum_matrix_Destroy(ribosum);
+  free(xrnaJ[0]);
+  free(prnaJ[0]);
+  free(urnaJ[0]);
+  free(xrnaM[0]);
+  free(prnaM[0]);
+  free(urnaM[0]);
+  free(xrnaJ);
+  free(prnaJ);
+  free(urnaJ);
+  free(xrnaM);
+  free(prnaM);
+  free(urnaM);
   return status;
+
+ ERROR:
+  exit(1);
 }
 
 
 static int
-fit_dirichlet(FILE *fp, int N, int K, double *p, double sum, int verbose)
+fit_dirichlet(FILE *fp, int nc, int K, double **c, int verbose)
 {
   ESL_MIXDCHLET       *d = NULL;
-  double             **c = NULL;
   double               guess;
-  int                  n;
-  int                  k;
   int                  status;
+ 
+  guess = esl_vec_DArgMax(c[0], K); 
+  guess = 1.;
 
-  sum = 1.;
-  /* calculate dirichlets for the marginal counds counts */
-  ESL_ALLOC(c, sizeof(double *) * N);
-  for (n = 0; n < N; n ++) ESL_ALLOC(c[n], sizeof(double) * K);
-  for (k = 0; k < K; k ++) c[0][k] = sum * p[k];
-  if (1||verbose) esl_vec_DDump(stdout, c[0], K, "");
-  
-  guess = esl_vec_DMax(c[0], K); 
-  printf("\nguess %f\n", guess);
-
-  d = esl_mixdchlet_Create(N, K);
+  d = esl_mixdchlet_Create(1, K);
   if (status != eslOK) goto ERROR;
   esl_vec_DSet(d->pq,       1, 1.0);
   esl_vec_DSet(d->alpha[0], K, guess);
 
-  status = esl_mixdchlet_Fit(c, N, d, TRUE);
+  status = esl_mixdchlet_Fit(c, nc, d, TRUE);
   if (status != eslOK) goto ERROR;
 
   /* write the dirichlets */
   esl_mixdchlet_Write(fp, d);
  
-  for (n = 0; n < N; n ++) free(c[n]);
-  free(c);
   esl_mixdchlet_Destroy(d);
 
   return eslOK;
@@ -340,7 +393,249 @@ fit_dirichlet(FILE *fp, int N, int K, double *p, double sum, int verbose)
 }
  
 
+static int                  
+add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, double *xrnaJ, double *prnaJ, double *urnaJ, double *xrnaM, double *prnaM, double *urnaM, char *errbuf)
+{
+  int    **ct = NULL;   // ct array for each seq
+  int      i;
+  int      status;
+  
+  ESL_ALLOC(ct, sizeof(int *) * msa->nseq);
+  ct[0] = NULL;
+
+  ESL_ALLOC(ct[0], sizeof(int) * (msa->alen+1) * msa->nseq);
+  for (i = 1; i < msa->nseq; i ++) ct[i] = ct[0] + i * (msa->alen+1);
+
+  for (i = 0; i < msa->nseq; i ++) {
+    if      (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct[i]);
+    else if (msa->ss[i])   esl_wuss2ct(msa->ss[i],   msa->alen, ct[i]);
+    else                   ESL_XFAIL(eslFAIL, "no ss for sequence %d\n", errbuf);
+  }  
+
+  xrnaJ_add_counts(abc, msa,     xrnaJ, errbuf);
+  prnaJ_add_counts(abc, msa, ct, prnaJ, errbuf);
+  urnaJ_add_counts(abc, msa, ct, urnaJ, errbuf);
+  xrnaM_add_counts(abc, msa,     xrnaM, errbuf);
+  prnaM_add_counts(abc, msa, ct, prnaM, errbuf);
+  urnaM_add_counts(abc, msa, ct, urnaM, errbuf);
+ 
+  free(ct[0]);
+  free(ct);
+  
+  return eslOK;
+
+ ERROR:
+  if (ct[0]) free(ct[0]);
+  if (ct) free(ct);
+  
+  return status;
+}
+
+static int                  
+xrnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, double *xrnaJ, char *errbuf)
+{
+  double wgt;
+  int    K2 = abc->K * abc->K;
+  int    i;
+  int    posa, posb;
+  int    c, cc;
+  int    pair;
+
+  esl_vec_DSet(xrnaJ, K2, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+    wgt = msa->wgt[i]; 
+    
+    for (posa = 0; posa < msa->alen; posa++) {
+      c = msa->aseq[i][posa];
+      
+      if (esl_abc_CIsCanonical(abc, c)) 
+	{
+	  for (posb = 0; posb < msa->alen; posb++) {
+	    if (posb == posa) continue;
+	    
+	    cc = msa->aseq[i][posb];
+	    if (esl_abc_CIsCanonical(abc, cc)) 
+	      {
+		pair = IDX(esl_abc_DigitizeSymbol(abc,  c), esl_abc_DigitizeSymbol(abc, cc), abc->K);
+		xrnaJ[pair] += wgt;
+	      }
+	  }
+	}
+    }
+  }
+  return eslOK;
+}
+
+static int                  
+prnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *prnaJ, char *errbuf)
+{
+  double wgt;
+  int    K2 = abc->K * abc->K;
+  int    i;
+  int    c, cc;
+  int    posa;
+  int    cposa;
+  int    pair;
+
+  esl_vec_DSet(prnaJ, K2, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+      wgt = msa->wgt[i]; 
+      
+      for (posa = 0; posa < msa->alen; posa++) {
+	c = msa->aseq[i][posa];
+	
+	if (esl_abc_CIsCanonical(abc, c)) 
+	  {
+	    cposa = ct[i][posa+1] - 1;
+	    if (cposa == -1) continue;
+
+	    cc = msa->aseq[i][cposa];	    	    
+	    if (esl_abc_CIsCanonical(abc, cc)) 
+	      {
+		pair = IDX(esl_abc_DigitizeSymbol(abc, c), esl_abc_DigitizeSymbol(abc, cc), abc->K);
+		prnaJ[pair] += wgt;
+	      } 
+	  }
+      }
+  }
+
+  return eslOK;
+}
+
+static int                  
+urnaJ_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *urnaJ, char *errbuf)
+{
+  double wgt;
+  int    K2 = abc->K * abc->K;
+  int    i;
+  int    c, cc;
+  int    posa, posb;
+  int    cposa;
+  int    pair;
+
+  esl_vec_DSet(urnaJ, K2, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+    wgt = msa->wgt[i]; 
+    
+    for (posa = 0; posa < msa->alen; posa++) {
+      c = msa->aseq[i][posa];
+      
+      if (esl_abc_CIsCanonical(abc, c)) 
+	{
+	  cposa = ct[i][posa+1] - 1;
+	  if (cposa >= 0) continue;
+	  
+	  for (posb = 0; posb < msa->alen; posb++) {
+	    if (posb == posa) continue;
+	    
+	    cc = msa->aseq[i][posb];	    	    
+	    if (esl_abc_CIsCanonical(abc, cc)) 
+	      {
+		pair = IDX(esl_abc_DigitizeSymbol(abc, c), esl_abc_DigitizeSymbol(abc, cc), abc->K);
+		urnaJ[pair] += wgt;
+	      } 
+	  }
+	}
+    }
+  }
+  
+   return eslOK;
+}
+static int                  
+xrnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, double *xrnaM, char *errbuf)
+{
+  double wgt;
+  int    K = abc->K;
+  int    i;
+  int    pos;
+  int    c;
+
+  esl_vec_DSet(xrnaM, K, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+    wgt = msa->wgt[i]; 
+    
+    for (pos = 0; pos < msa->alen; pos++) {
+      c = msa->aseq[i][pos];
+      
+      if (esl_abc_CIsCanonical(abc, c)) xrnaM[esl_abc_DigitizeSymbol(abc,c)] += wgt;
+	      
+    }
+  }
+  return eslOK;
+}
+
+static int                  
+prnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *prnaM, char *errbuf)
+{
+  double wgt;
+  int    K = abc->K;
+  int    i;
+  int    c, cc;
+  int    pos;
+  int    cpos;
+
+  esl_vec_DSet(prnaM, 2, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+      wgt = msa->wgt[i]; 
+      
+      for (pos = 0; pos < msa->alen; pos++) {
+	c = msa->aseq[i][pos];
+	
+	if (esl_abc_CIsCanonical(abc, c)) 
+	  {
+	    cpos = ct[i][pos+1] - 1;
+	    if (cpos == -1) continue;
+
+	    cc = msa->aseq[i][cpos];	    	    
+	    if (esl_abc_CIsCanonical(abc, cc)) prnaM[esl_abc_DigitizeSymbol(abc, c)] += wgt;
+	  }
+      }
+  } 
+  return eslOK;
+}
+
+static int                  
+urnaM_add_counts(ESL_ALPHABET *abc, ESL_MSA *msa, int **ct, double *urnaM, char *errbuf)
+{
+  double wgt;
+  int    K = abc->K;
+  int    i;
+  int    c, cc;
+  int    pos;
+  int    cpos;
+
+  esl_vec_DSet(urnaM, K, 0.0);
+
+  for (i = 0; i < msa->nseq; i++) {
+    wgt = msa->wgt[i]; 
+    
+    for (pos = 0; pos < msa->alen; pos++) {
+      c = msa->aseq[i][pos];
+      
+      if (esl_abc_CIsCanonical(abc, c)) 
+	{
+	  cpos = ct[i][pos+1] - 1;
+	  if (cpos >= 0) continue;
+	  
+	  cc = msa->aseq[i][cpos];	    	    
+	  if (esl_abc_CIsCanonical(abc, cc)) urnaM[esl_abc_DigitizeSymbol(abc,c)] += wgt;
+	}
+    }
+  }
+
+ esl_vec_DDump(stdout, urnaM, K, NULL);
+
+  return eslOK;
+}
+
 /*****************************************************************
  * @LICENSE@
  *
  *****************************************************************/
+
+ 

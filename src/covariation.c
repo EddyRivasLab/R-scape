@@ -37,7 +37,7 @@ static int    is_wc(int x, int y);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
 static int    number_pairs(int L, int *ct);
 static int    is_cannonical_pair(char nti, char ntj);
-static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d, 
+static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d,
 				int donull2b, double tol, int verbose, char *errbuf);
 static int    shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
@@ -65,7 +65,7 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
   int            status;
   
   /* Calculate the covariation matrix */
-  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->pri, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->pri, data->primrg, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
   
   if (status != eslOK) goto ERROR;
   switch(data->covtype) {
@@ -229,8 +229,8 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
 }
 
 int                 
-cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_MIXDCHLET *pri, METHOD method, int donull2b, 
-	  double tol, int verbose, char *errbuf)
+cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_MIXDCHLET *pri, ESL_MIXDCHLET *primrg, 
+	  METHOD method, int donull2b, double tol, int verbose, char *errbuf)
 {
   int i, j;
   int x, y;
@@ -252,22 +252,9 @@ cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
     break;
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   } 
-  /* pm are the marginals */
-  for (i = 0; i < mi->alen; i ++) {
-    esl_vec_DSet(mi->pm[i], K, 0.0);
 
-    for (j = 0; j < mi->alen; j ++)     
-      for (x = 0; x < K; x ++) 
-	for (y = 0; y < K; y ++) 
-	  mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
-    esl_vec_DNorm(mi->pm[i], K);
-    status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
-    if (status != eslOK) {
-      printf("pm[%d]\n", i);
-      esl_vec_DDump(stdout, mi->pm[i], K, "ACGU");
-      goto ERROR;
-    }
-  }
+  status = cov_Marginals(mi, primrg, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;    
 
   status = cov_ValidateProbs(mi, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
@@ -366,7 +353,7 @@ cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateCHI_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh)
+    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
       status = cov_CalculateCHI_C2 (mi, verbose, errbuf);
     else
       status = cov_CalculateCHI_C16(mi, verbose, errbuf);
@@ -494,7 +481,7 @@ cov_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
     status = cov_CalculateOMES_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh)
+   if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
       status = cov_CalculateOMES_C2 (mi, verbose, errbuf);
     else
       status = cov_CalculateOMES_C16(mi, verbose, errbuf);
@@ -619,7 +606,7 @@ cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
     status = cov_CalculateGT_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh) {
+    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh) {
       status = cov_CalculateGT_C2 (mi, verbose, errbuf);
     }
     else {
@@ -750,7 +737,7 @@ cov_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
     status = cov_CalculateMI_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh)
+    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
       status = cov_CalculateMI_C2 (mi, verbose, errbuf);
     else
       status = cov_CalculateMI_C16(mi, verbose, errbuf);
@@ -866,7 +853,7 @@ cov_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateMIr_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh)
+    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
       status = cov_CalculateMIr_C2 (mi, verbose, errbuf);
     else
       status = cov_CalculateMIr_C16(mi, verbose, errbuf);
@@ -986,7 +973,7 @@ cov_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateMIg_C2   (mi, verbose, errbuf);
     break;
   case CSELECT:
-    if (mi->nseq <= mi->nseqthresh)
+    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
       status = cov_CalculateMIg_C2 (mi, verbose, errbuf);
     else
       status = cov_CalculateMIg_C16(mi, verbose, errbuf);
@@ -1287,7 +1274,7 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
 }
 
 struct mutual_s *
-cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHABET *abc, COVCLASS covclass)
+cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1299,20 +1286,24 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHAB
   mi->alen       = alen;
   mi->nseq       = nseq;
   mi->nseqthresh = nseqthresh;
+  mi->alenthresh = alenthresh;
   mi->ishuffled  = ishuffled;
   mi->abc        = abc;
 
-  ESL_ALLOC(mi->pp,           sizeof(double **) * alen);
-  ESL_ALLOC(mi->nseff,        sizeof(int     *) * alen);
-  ESL_ALLOC(mi->ngap,         sizeof(int     *) * alen);
-  ESL_ALLOC(mi->pm,           sizeof(double  *) * alen);
+  ESL_ALLOC(mi->ppcounts,            sizeof(double **) * alen);
+  ESL_ALLOC(mi->pp,                  sizeof(double **) * alen);
+  ESL_ALLOC(mi->nseff,               sizeof(int     *) * alen);
+  ESL_ALLOC(mi->ngap,                sizeof(int     *) * alen);
+  ESL_ALLOC(mi->pm,                  sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
-    ESL_ALLOC(mi->pp[i],      sizeof(double  *) * alen);
-    ESL_ALLOC(mi->nseff[i],   sizeof(int      ) * alen);
-    ESL_ALLOC(mi->ngap[i],    sizeof(int      ) * alen);
-    ESL_ALLOC(mi->pm[i],      sizeof(double   ) * K);
+    ESL_ALLOC(mi->ppcounts[i],       sizeof(double  *) * alen);
+    ESL_ALLOC(mi->pp[i],             sizeof(double  *) * alen);
+    ESL_ALLOC(mi->nseff[i],          sizeof(int      ) * alen);
+    ESL_ALLOC(mi->ngap[i],           sizeof(int      ) * alen);
+    ESL_ALLOC(mi->pm[i],             sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
-       ESL_ALLOC(mi->pp[i][j], sizeof(double  ) * K2);
+       ESL_ALLOC(mi->ppcounts[i][j], sizeof(double  ) * K2);
+       ESL_ALLOC(mi->pp[i][j],       sizeof(double  ) * K2);
     }
   }
    
@@ -1325,7 +1316,8 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, ESL_ALPHAB
     for (j = 0; j < alen; j++) {
       mi->nseff[i][j] = 0;
       mi->ngap[i][j]  = 0;
-      esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
+      esl_vec_DSet(mi->ppcounts[i][j], K2, 0.0); 
+      esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
     }
   }
 
@@ -1366,16 +1358,19 @@ cov_Destroy(struct mutual_s *mi)
   if (mi) {
     for (i = 0; i < mi->alen; i++) {
       for (j = 0; j < mi->alen; j++) {
+	free(mi->ppcounts[i][j]);
 	free(mi->pp[i][j]);
       }
       free(mi->nseff[i]);
       free(mi->ngap[i]);
+      free(mi->ppcounts[i]);
       free(mi->pp[i]);
       free(mi->pm[i]);
     }
     esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
     free(mi->ngap);
+    free(mi->ppcounts);
     free(mi->pp);
     free(mi->pm);
     free(mi);
@@ -1399,6 +1394,55 @@ cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET 
   return eslOK;
 
  ERROR:
+  return status;
+}
+
+int
+cov_Marginals(struct mutual_s *mi, ESL_MIXDCHLET *pri, double tol, int verbose, char *errbuf)
+{
+  double *counts = NULL;
+  double *mix    = NULL;
+  int     K = mi->abc->K;
+  int     i, j;
+  int     x, y;
+  int     status;
+
+  ESL_ALLOC(counts, sizeof(double)*K);
+ 
+  /* pm are the marginals */
+  for (i = 0; i < mi->alen; i ++) {
+    esl_vec_DSet(counts, K, 0.0);
+
+    for (j = 0; j < mi->alen; j ++)     
+      for (x = 0; x < K; x ++) 
+	for (y = 0; y < K; y ++) 
+	  counts[x] += mi->ppcounts[i][j][IDX(x,y,K)];
+
+    /* add priors and normalize */
+    if (pri) {
+      ESL_ALLOC(mix, sizeof(double)*pri->N);
+      esl_mixdchlet_MPParameters(counts, K, pri, mix, mi->pm[i]);
+    }
+    else {
+      esl_vec_DCopy(counts, K, mi->pm[i]); 
+      esl_vec_DNorm(mi->pm[i], K);                // normalize
+    }
+  
+    status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
+    if (status != eslOK) {
+      printf("pm[%d]\n", i);
+      esl_vec_DDump(stdout, mi->pm[i], K, "ACGU");
+      goto ERROR;
+    }
+  }
+
+  free(counts);
+  if (mix) free(mix);
+  return eslOK;
+
+ ERROR:
+  if (counts) free(counts);
+  if (mix)    free(mix);
   return status;
 }
 
@@ -2324,8 +2368,10 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
     if (status != eslOK) goto ERROR;
   }
   linespoints = TRUE; 
+#if 0
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
+#endif
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,               FALSE, 1, linespoints, 99, 2);
   if (status != eslOK) goto ERROR;
   
@@ -2357,6 +2403,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
       status = cov_histogram_plotsurvival(pipe, ranklist_aux->ha, key4, posx, posy-3.*incy, TRUE, subsample, 11, 7);
       if (status != eslOK) goto ERROR;
     }
+
     status = cov_histogram_plotsurvival  (pipe, ranklist->ht, key2, posx, posy-incy, TRUE, 1, 44, 2);
     if (status != eslOK) goto ERROR;
     status = cov_histogram_plotsurvival  (pipe, ranklist->ha, key1, posx, posy,      TRUE, 1, 99, 2);
@@ -3108,9 +3155,10 @@ is_cannonical_pair(char nti, char ntj)
 
 
 static int    
-mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *pri, int donull2b, double tol, int verbose, char *errbuf)
+mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *pri,
+		  int donull2b, double tol, int verbose, char *errbuf)
 {
-  double *counts = NULL;
+  double *counts = mi->ppcounts[i][j];
   double *ip = NULL;
   double *mix = NULL;
   int    *coli = NULL;
@@ -3124,9 +3172,8 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     x, y;
   int     status;
 
-  ESL_ALLOC(counts, sizeof(double) * K2);
-  ESL_ALLOC(ip,     sizeof(double) * K2);
-  esl_vec_DSet(counts, K2, 1.0);       /* +1 prior */
+  ESL_ALLOC(ip, sizeof(double) * K2);
+  esl_vec_DSet(counts, K2, 0.0); 
   esl_vec_DSet(ip,     K2, 0.0);      
   mi->nseff[i][j] = 0;
 
@@ -3179,8 +3226,9 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     esl_mixdchlet_MPParameters(counts, K2, pri, mix, ip);
   }
   else {
+    esl_vec_DIncrement(counts, K2, 0.0);  // laplace prior
     esl_vec_DCopy(counts, K2, ip); 
-    esl_vec_DNorm(ip, K2);        // normalize
+    esl_vec_DNorm(ip, K2);                // normalize
   }
     
   /* symmetrize */
@@ -3189,7 +3237,6 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
       mi->pp[j][i][IDX(y,x,K)] = mi->pp[i][j][IDX(x,y,K)] = ip[IDX(x,y,K)];
   mi->nseff[j][i] = mi->nseff[i][j];
   
-  free(counts);
   free(ip);
   free(coli);
   free(colj);
@@ -3199,7 +3246,6 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   return eslOK;
 
  ERROR:
-  if (counts) free(counts);
   if (ip)     free(ip);
   if (coli)   free(coli);
   if (colj)   free(colj);

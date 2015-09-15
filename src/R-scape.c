@@ -45,14 +45,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
   double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
-
+  
   double           minidthresh;	       /* fractional minimal identity threshold for selecting subset of sequences */
-
+  
   COVTYPE          covtype;
   COVCLASS         covclass;
-
+  
   int              nseqthresh;
-
+  int              alenthresh;
+  
   int              onemsa;
   int              nmsa;
   char            *msafile;
@@ -121,10 +122,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
 
-  char            *mixdchletfile;
-  FILE            *mixdchletfp;
-  ESL_FILEPARSER  *mixdchletefp;
+  char            *prifile;
+  FILE            *prifp;
+  ESL_FILEPARSER  *priefp;
   ESL_MIXDCHLET   *pri;
+
+  char            *primrgfile;
+  FILE            *primrgfp;
+  ESL_FILEPARSER  *primrgefp;
+  ESL_MIXDCHLET   *primrg;
 
   int              voutput;
   char            *rocfile;
@@ -219,13 +225,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 0 },
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
+  { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "use C2 if alen <= alenthresh otherwise use C16",                                            0 },   
    /* phylogenetic method */
   { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
    /* priors */
-  { "--mixdchlet",    eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,              "read dirichlet priors from file <f>",                                                      0 },
+  { "--pri",       eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                   "read dirichlet priors from file <f>",                                                      0 },
+  { "--primrg",    eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                   "read dirichlet priors for the marginals from file <f>",                                    0 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -265,7 +273,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS *go = esl_getopts_Create(options);
   struct cfg_s cfg;
-  char         *s = NULL;
   int          status;
 
 
@@ -330,6 +337,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* other options */
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
+  cfg.alenthresh  = esl_opt_GetInteger(go, "--alenthresh");
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")        : -1.0;
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")        : -1.0;
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")        : -1.0;
@@ -448,20 +456,37 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
   
-  /* mixdichlet priors file */
-  cfg.mixdchletfile = NULL;
-  cfg.mixdchletfp   = NULL;
-  cfg.mixdchletefp  = NULL;
+  /* priors file */
+  cfg.prifile = NULL;
+  cfg.prifp   = NULL;
+  cfg.priefp  = NULL;
   cfg.pri           = NULL;
-  if (esl_opt_IsOn(go, "--mixdchlet")) {
-    esl_sprintf(&cfg.mixdchletfile, "%s", esl_opt_GetString(go, "--mixdchlet"));
+  if (esl_opt_IsOn(go, "--pri")) {
+    esl_sprintf(&cfg.prifile, "%s", esl_opt_GetString(go, "--pri"));
   } 
-  if (cfg.mixdchletfile) {
-    if ((cfg.mixdchletfp = fopen(cfg.mixdchletfile, "r")) == NULL) esl_fatal("Failed to open mixdchlet file %s", cfg.mixdchletfile);
-    cfg.mixdchletefp = esl_fileparser_Create(cfg.mixdchletfp);
-    if (esl_mixdchlet_Read(cfg.mixdchletefp, &cfg.pri) != eslOK) {
+  if (cfg.prifile) {
+    if ((cfg.prifp = fopen(cfg.prifile, "r")) == NULL) esl_fatal("Failed to open pri file %s", cfg.prifile);
+    cfg.priefp = esl_fileparser_Create(cfg.prifp);
+    if (esl_mixdchlet_Read(cfg.priefp, &cfg.pri) != eslOK) {
       fprintf(stderr, "%s;\ndirichlet file %s parse failed at line %d\n",
-	      cfg.mixdchletefp->errbuf, cfg.mixdchletfile, cfg.mixdchletefp->linenumber);
+	      cfg.priefp->errbuf, cfg.prifile, cfg.priefp->linenumber);
+      exit(1);
+    }
+  }
+  /* prior por marginals */
+  cfg.primrgfile = NULL;
+  cfg.primrgfp   = NULL;
+  cfg.primrgefp  = NULL;
+  cfg.primrg     = NULL;
+  if (esl_opt_IsOn(go, "--primrg")) {
+    esl_sprintf(&cfg.primrgfile, "%s", esl_opt_GetString(go, "--primrg"));
+  } 
+  if (cfg.primrgfile) {
+    if ((cfg.primrgfp = fopen(cfg.primrgfile, "r")) == NULL) esl_fatal("Failed to open primrg file %s", cfg.primrgfile);
+    cfg.primrgefp = esl_fileparser_Create(cfg.primrgfp);
+    if (esl_mixdchlet_Read(cfg.primrgefp, &cfg.primrg) != eslOK) {
+      fprintf(stderr, "%s;\ndirichlet file %s parse failed at line %d\n",
+	      cfg.primrgefp->errbuf, cfg.primrgfile, cfg.primrgefp->linenumber);
       exit(1);
     }
   }
@@ -629,10 +654,14 @@ main(int argc, char **argv)
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
-  if (cfg.mixdchletfp) fclose(cfg.mixdchletfp);
-  if (cfg.mixdchletefp) esl_fileparser_Destroy(cfg.mixdchletefp);
-  if (cfg.mixdchletfile) free(cfg.mixdchletfile);
+  if (cfg.prifp) fclose(cfg.prifp);
+  if (cfg.priefp) esl_fileparser_Destroy(cfg.priefp);
+  if (cfg.prifile) free(cfg.prifile);
   if (cfg.pri) esl_mixdchlet_Destroy(cfg.pri);
+  if (cfg.primrgfp) fclose(cfg.primrgfp);
+  if (cfg.primrgefp) esl_fileparser_Destroy(cfg.primrgefp);
+  if (cfg.primrgfile) free(cfg.primrgfile);
+  if (cfg.primrg) esl_mixdchlet_Destroy(cfg.primrg);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
@@ -934,7 +963,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->abc, cfg->covclass);
+  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
@@ -962,6 +991,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.ranklist_aux  = ranklist_aux;
   data.mi            = mi;
   data.pri           = cfg->pri;
+  data.primrg        = cfg->primrg;
   data.covtype       = cfg->covtype;
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;

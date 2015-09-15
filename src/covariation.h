@@ -82,10 +82,11 @@ typedef enum{
 struct mutual_s {
   int64_t         alen;
   int64_t         nseq;
-  double       ***pp;    // joint probability of two position [0,alen-1][0.alen-1][0..15]
-  double        **pm;    // marginal probabilities [0,alen-1][0..3]
-  int           **nseff; // effective number of sequences  [0,alen-1][0,alen-1]
-  int           **ngap;  // number of gaps  [0,alen-1][0,alen-1]
+  double       ***ppcounts;    // joint counts of two position [0,alen-1][0.alen-1][0..15]
+  double       ***pp;          // joint probability of two position [0,alen-1][0.alen-1][0..15]
+  double        **pm;          // marginal probabilities [0,alen-1][0..3]
+  int           **nseff;       // effective number of sequences  [0,alen-1][0,alen-1]
+  int           **ngap;        // number of gaps  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
   COVCLASS        class;
@@ -97,6 +98,7 @@ struct mutual_s {
 
   int             ishuffled;
   int             nseqthresh; // if nseq <= nseqthresh use C2 method otherwise use C16
+  int             alenthresh; // if alen <= alenthresh use C2 method otherwise use C16
 
   ESL_ALPHABET   *abc;
 };
@@ -186,6 +188,7 @@ struct data_s {
   RANKLIST            *ranklist_aux;
   struct mutual_s     *mi; 
   ESL_MIXDCHLET       *pri;
+  ESL_MIXDCHLET       *primrg;
   THRESH              *thresh;
   METHOD               method;
   MODE                 mode;
@@ -206,8 +209,8 @@ struct data_s {
 
 
 extern int              cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
-extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_MIXDCHLET *d, 
-				  METHOD method, int donull2b, double tol, int verbose, char *errbuf);
+extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_MIXDCHLET *pri, 
+				  ESL_MIXDCHLET *pri_marg, METHOD method, int donull2b, double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              cov_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, 
 					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
@@ -238,10 +241,12 @@ extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
-extern struct mutual_s *cov_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, ESL_ALPHABET *abc, COVCLASS covclass);
+extern struct mutual_s *cov_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass);
 extern int              cov_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             cov_Destroy(struct mutual_s *mi);
-extern int              cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d, int donull2b, double tol, int verbose, char *errbuf);
+extern int              cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d,
+				    int donull2b, double tol, int verbose, char *errbuf);
+extern int              cov_Marginals(struct mutual_s *mi, ESL_MIXDCHLET *pri, double tol, int verbose, char *errbuf);
 extern int              cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);
 extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
