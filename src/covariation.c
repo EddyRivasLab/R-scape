@@ -779,7 +779,7 @@ cov_CalculateMI_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] && mi->pm[j][y])? 
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] > 0.0 && mi->pm[j][y] > 0.0)? 
 	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
@@ -897,15 +897,15 @@ cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  HH -= (mi->pp[i][j][IDX(x,y,K)])? mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]) : 0.0;
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0  && mi->pm[i][x] && mi->pm[j][y])? 
+	  HH -= (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]) : 0.0;
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0  && mi->pm[i][x] > 0.0 && mi->pm[j][y] > 0.0)? 
 	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
-    }
+   }
   
   return status;
 }
@@ -1017,7 +1017,7 @@ cov_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] && mi->pm[j][y])? 
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] > 0.0  && mi->pm[j][y] > 0.0)? 
 	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}
 	  
@@ -3153,7 +3153,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     x, y;
   int     status;
 
-  esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
+  esl_vec_DSet(mi->pp[i][j], K2, 1.0); //laplace prior 
   mi->nseff[i][j] = 0;
 
   ESL_ALLOC(coli, sizeof(int)*msa->nseq);
