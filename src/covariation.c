@@ -13,7 +13,6 @@
 
 #include "easel.h"
 #include "esl_alphabet.h"
-#include "esl_dirichlet.h"
 #include "esl_dmatrix.h"
 #include "esl_exponential.h"
 #include "esl_histogram.h"
@@ -37,7 +36,7 @@ static int    is_wc(int x, int y);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
 static int    number_pairs(int L, int *ct);
 static int    is_cannonical_pair(char nti, char ntj);
-static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d,
+static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
 				int donull2b, double tol, int verbose, char *errbuf);
 static int    shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
@@ -65,7 +64,7 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
   int            status;
   
   /* Calculate the covariation matrix */
-  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->pri, data->primrg, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
   
   if (status != eslOK) goto ERROR;
   switch(data->covtype) {
@@ -229,7 +228,7 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
 }
 
 int                 
-cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_MIXDCHLET *pri, ESL_MIXDCHLET *primrg, 
+cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 	  METHOD method, int donull2b, double tol, int verbose, char *errbuf)
 {
   int i, j;
@@ -239,7 +238,7 @@ cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
 
   switch(method) {
   case NAIVE:
-    status = cov_NaivePP(r, msa, mi, pri, donull2b, tol, verbose, errbuf);
+    status = cov_NaivePP(r, msa, mi, donull2b, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
     break;
   case PHYLO:
@@ -253,7 +252,7 @@ cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *rib
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   } 
 
-  status = cov_Marginals(mi, primrg, tol, verbose, errbuf);
+  status = cov_Marginals(mi, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;    
 
   status = cov_ValidateProbs(mi, tol, verbose, errbuf);
@@ -1086,6 +1085,7 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
   int              verbose = data->verbose;
+  char            *type = NULL;
   char            *covtype = NULL;
   ESL_DMATRIX     *COV  = NULL;
   double          *COVx = NULL;
@@ -1093,12 +1093,12 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
   int              i, j;
   int              status = eslOK;
   
-  cov_COVTYPEString(&covtype, mi->type, errbuf);
+  cov_COVTYPEString(&type, mi->type, errbuf);
 
   switch(corrtype) {
-  case APC: esl_sprintf(&covtype, "%sp", covtype); break;
-  case ASC: esl_sprintf(&covtype, "%sa", covtype); break;
-  case SCA: esl_sprintf(&covtype, "%ss", covtype); break;
+  case APC: esl_sprintf(&covtype, "%sp", type); break;
+  case ASC: esl_sprintf(&covtype, "%sa", type); break;
+  case SCA: esl_sprintf(&covtype, "%ss", type); break;
   default:  
     ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
     break;
@@ -1156,13 +1156,15 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
   if (analyze) 
     status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
   if (status != eslOK) goto ERROR;
-
-  if (covtype) free(covtype);
+  
+  free(type);
+  free(covtype);
   esl_dmatrix_Destroy(COV);
   free(COVx);
   return status;
 
  ERROR:
+  if (type)    free(type);
   if (covtype) free(covtype);
   if (COV)     esl_dmatrix_Destroy(COV);
   if (COVx)    free(COVx);
@@ -1293,19 +1295,16 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenth
   mi->ishuffled  = ishuffled;
   mi->abc        = abc;
 
-  ESL_ALLOC(mi->ppcounts,            sizeof(double **) * alen);
   ESL_ALLOC(mi->pp,                  sizeof(double **) * alen);
   ESL_ALLOC(mi->nseff,               sizeof(int     *) * alen);
   ESL_ALLOC(mi->ngap,                sizeof(int     *) * alen);
   ESL_ALLOC(mi->pm,                  sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
-    ESL_ALLOC(mi->ppcounts[i],       sizeof(double  *) * alen);
     ESL_ALLOC(mi->pp[i],             sizeof(double  *) * alen);
     ESL_ALLOC(mi->nseff[i],          sizeof(int      ) * alen);
     ESL_ALLOC(mi->ngap[i],           sizeof(int      ) * alen);
     ESL_ALLOC(mi->pm[i],             sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
-       ESL_ALLOC(mi->ppcounts[i][j], sizeof(double  ) * K2);
        ESL_ALLOC(mi->pp[i][j],       sizeof(double  ) * K2);
     }
   }
@@ -1319,7 +1318,6 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenth
     for (j = 0; j < alen; j++) {
       mi->nseff[i][j] = 0;
       mi->ngap[i][j]  = 0;
-      esl_vec_DSet(mi->ppcounts[i][j], K2, 0.0); 
       esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
     }
   }
@@ -1361,19 +1359,16 @@ cov_Destroy(struct mutual_s *mi)
   if (mi) {
     for (i = 0; i < mi->alen; i++) {
       for (j = 0; j < mi->alen; j++) {
-	free(mi->ppcounts[i][j]);
 	free(mi->pp[i][j]);
       }
       free(mi->nseff[i]);
       free(mi->ngap[i]);
-      free(mi->ppcounts[i]);
       free(mi->pp[i]);
       free(mi->pm[i]);
     }
     esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
     free(mi->ngap);
-    free(mi->ppcounts);
     free(mi->pp);
     free(mi->pm);
     free(mi);
@@ -1382,7 +1377,7 @@ cov_Destroy(struct mutual_s *mi)
 
 
 int 
-cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *pri, int donull2b, double tol, int verbose, char *errbuf)
+cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
   int     i, j;
@@ -1390,7 +1385,7 @@ cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET 
 
   for (i = 0; i < alen-1; i ++)
     for (j = i+1; j < alen; j ++) {
-      status = mutual_naive_ppij(r, i, j, msa, mi, pri, donull2b, tol, verbose, errbuf);
+      status = mutual_naive_ppij(r, i, j, msa, mi, donull2b, tol, verbose, errbuf);
       if (status != eslOK) goto ERROR;
     }
   
@@ -1401,35 +1396,24 @@ cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET 
 }
 
 int
-cov_Marginals(struct mutual_s *mi, ESL_MIXDCHLET *pri, double tol, int verbose, char *errbuf)
+cov_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
-  double *counts = NULL;
-  double *mix    = NULL;
   int     K = mi->abc->K;
   int     i, j;
   int     x, y;
   int     status;
 
-  ESL_ALLOC(counts, sizeof(double)*K);
- 
   /* pm are the marginals */
   for (i = 0; i < mi->alen; i ++) {
-    esl_vec_DSet(counts, K, 0.0);
+    esl_vec_DSet(mi->pm[i], K, 0.0);
 
     for (j = 0; j < mi->alen; j ++)     
       for (x = 0; x < K; x ++) 
 	for (y = 0; y < K; y ++) 
-	  counts[x] += mi->ppcounts[i][j][IDX(x,y,K)];
+	  mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
 
-    /* add priors and normalize */
-    if (pri) {
-      ESL_ALLOC(mix, sizeof(double)*pri->N);
-      esl_mixdchlet_MPParameters(counts, K, pri, mix, mi->pm[i]);
-    }
-    else {
-      esl_vec_DCopy(counts, K, mi->pm[i]); 
-      esl_vec_DNorm(mi->pm[i], K);                // normalize
-    }
+    // it should be normalized, but just in case
+    esl_vec_DNorm(mi->pm[i], K);              
   
     status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
     if (status != eslOK) {
@@ -1439,13 +1423,9 @@ cov_Marginals(struct mutual_s *mi, ESL_MIXDCHLET *pri, double tol, int verbose, 
     }
   }
 
-  free(counts);
-  if (mix) free(mix);
   return eslOK;
 
  ERROR:
-  if (counts) free(counts);
-  if (mix)    free(mix);
   return status;
 }
 
@@ -1813,95 +1793,96 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     for (j = i+1; j < mi->alen; j++) {
       if (mi->COV->mx[i][j] >= hitlist->covthresh) {
 	
-       if (usenull) esl_histogram_Score2Bin(ranklist->ht,            mi->COV->mx[i][j], &bin);
-       else         esl_histogram_Score2Bin(data->ranklist_null->ha, mi->COV->mx[i][j], &bin);
-
+	if (usenull) esl_histogram_Score2Bin(ranklist->ht,            mi->COV->mx[i][j], &bin);
+	else         esl_histogram_Score2Bin(data->ranklist_null->ha, mi->COV->mx[i][j], &bin);
+	
 	if (h == nhit - 1) {
-	  nhit += alloc_nhit;
+ 	  nhit += alloc_nhit;
+	  
 	  ESL_REALLOC(hitlist->hit,    sizeof(HIT)   * nhit);
 	  ESL_REALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
 	}
 	/* initialize */
-	 hitlist->hit[h].sc            = -eslINFINITY;
-	 hitlist->hit[h].Eval          = +eslINFINITY;
-	 hitlist->hit[h].covNBP        = 0.0;
-	 hitlist->hit[h].covNBPu       = 0.0;
-	 hitlist->hit[h].covNBPf       = 0.0;
-	 hitlist->hit[h].covRBP        = 0.0;
-	 hitlist->hit[h].covRBPu       = 0.0;
-	 hitlist->hit[h].covRBPf       = 0.0;
-	 hitlist->hit[h].is_bpair      = FALSE;
-	 hitlist->hit[h].is_compatible = FALSE;
-	 
-	 for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
-	   if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
-	     hitlist->hit[h].Eval    = ranklist->eval[b];
-	     hitlist->hit[h].covNBP  = ranklist->covNBP[b];
-	     hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
-	     hitlist->hit[h].covNBPf = ranklist->covNBP[b]/(double)NBP;
-	   }
-	   else break;
-	 }
-	 if (ranklist_null) {
-	   for (b = ranklist_null->ha->imax; b >= ranklist->ha->imin; b --) {
-	     if (mi->COV->mx[i][j] <= ranklist_null->ha->bmin+(double)b*ranklist_null->ha->w) {
-	       hitlist->hit[h].covRBP  = ranklist_null->covBP[b];
-	       hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[b]/(double)mi->alen:0.;
-	       hitlist->hit[h].covRBPf = ranklist_null->covNBP[b]/(double)BP;
-	     }
-	     else break;
-	   }
-	 }
-
-	 hitlist->hit[h].i    = i;
-	 hitlist->hit[h].j    = j;
-	 hitlist->hit[h].sc   = mi->COV->mx[i][j];
-
-	 if (data->ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
-	 else                { 
-	   hitlist->hit[h].is_bpair = FALSE; 
-	   if (data->ct[i+1] == 0 && data->ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
-	 } 	 
-	 h ++;
+	hitlist->hit[h].sc            = -eslINFINITY;
+	hitlist->hit[h].Eval          = +eslINFINITY;
+	hitlist->hit[h].covNBP        = 0.0;
+	hitlist->hit[h].covNBPu       = 0.0;
+	hitlist->hit[h].covNBPf       = 0.0;
+	hitlist->hit[h].covRBP        = 0.0;
+	hitlist->hit[h].covRBPu       = 0.0;
+	hitlist->hit[h].covRBPf       = 0.0;
+	hitlist->hit[h].is_bpair      = FALSE;
+	hitlist->hit[h].is_compatible = FALSE;
+	
+	for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
+	  if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
+	    hitlist->hit[h].Eval    = ranklist->eval[b];
+	    hitlist->hit[h].covNBP  = ranklist->covNBP[b];
+	    hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
+	    hitlist->hit[h].covNBPf = ranklist->covNBP[b]/(double)NBP;
+	  }
+	  else break;
+	}
+	if (ranklist_null) {
+	  for (b = ranklist_null->ha->imax; b >= ranklist->ha->imin; b --) {
+	    if (mi->COV->mx[i][j] <= ranklist_null->ha->bmin+(double)b*ranklist_null->ha->w) {
+	      hitlist->hit[h].covRBP  = ranklist_null->covBP[b];
+	      hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[b]/(double)mi->alen:0.;
+	      hitlist->hit[h].covRBPf = ranklist_null->covNBP[b]/(double)BP;
+	    }
+	    else break;
+	  }
+	}
+	
+	hitlist->hit[h].i    = i;
+	hitlist->hit[h].j    = j;
+	hitlist->hit[h].sc   = mi->COV->mx[i][j];
+	
+	if (data->ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
+	else                { 
+	  hitlist->hit[h].is_bpair = FALSE; 
+	  if (data->ct[i+1] == 0 && data->ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
+	} 	 
+	h ++;
       }
     }
- nhit = h;
- hitlist->nhit = nhit;
-
- t = BP;
- for (h = 0; h < nhit; h ++) {
-   f ++;
-   if (hitlist->hit[h].is_bpair) tf ++;
- } 
- fp = f - tf;
- sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
- ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
- F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
- 
- if (data->sumfp) {
-   fprintf(data->sumfp, " %s %d %d %d %f %f ", 
-	   covtype, tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
+  nhit = h;
+  hitlist->nhit = nhit;
+  
+  t = BP;
+  for (h = 0; h < nhit; h ++) {
+    f ++;
+    if (hitlist->hit[h].is_bpair) tf ++;
+  } 
+  fp = f - tf;
+  sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
+  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
+  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
+  
+  if (data->sumfp) {
+    fprintf(data->sumfp, " %s %d %d %d %f %f ", 
+	    covtype, tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
   }
- if (data->outfp) {
-     if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
-     fprintf(data->outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+  if (data->outfp) {
+    if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
+    fprintf(data->outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
 	    covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-     cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
- }
-
- if (data->outsrtfp) {
-     if (data->mode == CYKSS) fprintf(data->outsrtfp, "# cyk-cov structure\n");
-     fprintf(data->outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
-	     covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-   cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap);
- }
-
- if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
- return eslOK;
- 
+    cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
+  }
+  
+  if (data->outsrtfp) {
+    if (data->mode == CYKSS) fprintf(data->outsrtfp, "# cyk-cov structure\n");
+    fprintf(data->outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
+	    covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap);
+  }
+  
+  if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
+  return eslOK;
+  
  ERROR:
- if (hitlist) cov_FreeHitList(hitlist);
- return status;
+  if (hitlist) cov_FreeHitList(hitlist);
+  return status;
 }
 
 int 
@@ -3158,12 +3139,9 @@ is_cannonical_pair(char nti, char ntj)
 
 
 static int    
-mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *pri,
+mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
 		  int donull2b, double tol, int verbose, char *errbuf)
 {
-  double *counts = mi->ppcounts[i][j];
-  double *ip = NULL;
-  double *mix = NULL;
   int    *coli = NULL;
   int    *colj = NULL;
   int    *shcoli = NULL;
@@ -3175,9 +3153,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     x, y;
   int     status;
 
-  ESL_ALLOC(ip, sizeof(double) * K2);
-  esl_vec_DSet(counts, K2, 0.0); 
-  esl_vec_DSet(ip,     K2, 0.0);      
+  esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
   mi->nseff[i][j] = 0;
 
   ESL_ALLOC(coli, sizeof(int)*msa->nseq);
@@ -3201,60 +3177,48 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { 
       mi->nseff[i][j] ++; 
-      counts[IDX(resi,resj,K)] += msa->wgt[s]; 
+      mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { 
       mi->nseff[i][j] ++; 
       mi->ngap[i][j]  ++; 
-      for (y = 0; y < K; y ++) counts[IDX(resi,y,K)] += msa->wgt[s]/(double)K; 
+      for (y = 0; y < K; y ++) mi->pp[i][j][IDX(resi,y,K)] += msa->wgt[s]/(double)K; 
     }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { 
       mi->nseff[i][j] ++; 
       mi->ngap[i][j]  ++; 
-      for (x = 0; x < K; x ++) counts[IDX(x,resj,K)] += msa->wgt[s]/(double)K; 
+      for (x = 0; x < K; x ++) mi->pp[i][j][IDX(x,resj,K)] += msa->wgt[s]/(double)K; 
     }
 #if 0
     else { 
       mi->nseff[i][j] ++; 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) 
-	  counts[IDX(x,y,K)] += msa->wgt[s]/(double)K2;
+	  mi->pp[i][j][IDX(x,y,K)] += msa->wgt[s]/(double)K2;
     }
 #endif
   }
 
-  /* add priors and normalize */
-  if (pri) {
-    ESL_ALLOC(mix, sizeof(double)*pri->N);
-    esl_mixdchlet_MPParameters(counts, K2, pri, mix, ip);
-  }
-  else {
-    esl_vec_DIncrement(counts, K2, 0.0);  // laplace prior
-    esl_vec_DCopy(counts, K2, ip); 
-    esl_vec_DNorm(ip, K2);                // normalize
-  }
-    
+  // normalize
+  esl_vec_DNorm(mi->pp[i][j], K2);             
+
   /* symmetrize */
   for (x = 0; x < K; x ++)
     for (y = 0; y < K; y ++) 
-      mi->pp[j][i][IDX(y,x,K)] = mi->pp[i][j][IDX(x,y,K)] = ip[IDX(x,y,K)];
+      mi->pp[j][i][IDX(y,x,K)] = mi->pp[i][j][IDX(x,y,K)];
   mi->nseff[j][i] = mi->nseff[i][j];
   
-  free(ip);
   free(coli);
   free(colj);
   if (shcoli) free(shcoli);
   if (shcolj) free(shcolj);
-  if (mix)    free(mix);
   return eslOK;
 
  ERROR:
-  if (ip)     free(ip);
   if (coli)   free(coli);
   if (colj)   free(colj);
   if (shcoli) free(shcoli);
   if (shcolj) free(shcolj);
-  if (mix)    free(mix);
 
   return status;
 }
@@ -3595,7 +3559,6 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, doubl
 
   /* otherwise use the exponential fit */
   cov = esl_exp_invsurv(p, mu, lambda);
-  
   
   return cov;
 }

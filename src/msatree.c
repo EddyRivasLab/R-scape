@@ -1582,6 +1582,8 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 
   *ret_sc = sc;
   
+  free(S[0]);
+  free(S);
   esl_stack_Destroy(vs);
   return eslOK;
   

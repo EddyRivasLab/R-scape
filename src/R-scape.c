@@ -122,16 +122,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
 
-  char            *prifile;
-  FILE            *prifp;
-  ESL_FILEPARSER  *priefp;
-  ESL_MIXDCHLET   *pri;
-
-  char            *primrgfile;
-  FILE            *primrgfp;
-  ESL_FILEPARSER  *primrgefp;
-  ESL_MIXDCHLET   *primrg;
-
   int              voutput;
   char            *rocfile;
   FILE            *rocfp; 
@@ -231,9 +221,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
-   /* priors */
-  { "--pri",       eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                   "read dirichlet priors from file <f>",                                                      0 },
-  { "--primrg",    eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,                   "read dirichlet priors for the marginals from file <f>",                                    0 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -323,12 +310,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.watch = esl_stopwatch_Create(); 
   
-  esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
-  
   cfg.outdir = NULL;
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
  
- esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
+  esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
   if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
   if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
@@ -456,41 +441,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
   
-  /* priors file */
-  cfg.prifile = NULL;
-  cfg.prifp   = NULL;
-  cfg.priefp  = NULL;
-  cfg.pri           = NULL;
-  if (esl_opt_IsOn(go, "--pri")) {
-    esl_sprintf(&cfg.prifile, "%s", esl_opt_GetString(go, "--pri"));
-  } 
-  if (cfg.prifile) {
-    if ((cfg.prifp = fopen(cfg.prifile, "r")) == NULL) esl_fatal("Failed to open pri file %s", cfg.prifile);
-    cfg.priefp = esl_fileparser_Create(cfg.prifp);
-    if (esl_mixdchlet_Read(cfg.priefp, &cfg.pri) != eslOK) {
-      fprintf(stderr, "%s;\ndirichlet file %s parse failed at line %d\n",
-	      cfg.priefp->errbuf, cfg.prifile, cfg.priefp->linenumber);
-      exit(1);
-    }
-  }
-  /* prior por marginals */
-  cfg.primrgfile = NULL;
-  cfg.primrgfp   = NULL;
-  cfg.primrgefp  = NULL;
-  cfg.primrg     = NULL;
-  if (esl_opt_IsOn(go, "--primrg")) {
-    esl_sprintf(&cfg.primrgfile, "%s", esl_opt_GetString(go, "--primrg"));
-  } 
-  if (cfg.primrgfile) {
-    if ((cfg.primrgfp = fopen(cfg.primrgfile, "r")) == NULL) esl_fatal("Failed to open primrg file %s", cfg.primrgfile);
-    cfg.primrgefp = esl_fileparser_Create(cfg.primrgfp);
-    if (esl_mixdchlet_Read(cfg.primrgefp, &cfg.primrg) != eslOK) {
-      fprintf(stderr, "%s;\ndirichlet file %s parse failed at line %d\n",
-	      cfg.primrgefp->errbuf, cfg.primrgfile, cfg.primrgefp->linenumber);
-      exit(1);
-    }
-  }
-
   cfg.R2Rfile    = NULL;
   cfg.R2Rfp      = NULL;
   cfg.R2Rcykfile = NULL;
@@ -635,6 +585,7 @@ main(int argc, char **argv)
   }
 
   /* cleanup */
+  free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
@@ -649,19 +600,13 @@ main(int argc, char **argv)
   fclose(cfg.outsrtfp);
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
+  free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
+  if (cfg.shsumfile) free(cfg.shsumfile);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
-  if (cfg.prifp) fclose(cfg.prifp);
-  if (cfg.priefp) esl_fileparser_Destroy(cfg.priefp);
-  if (cfg.prifile) free(cfg.prifile);
-  if (cfg.pri) esl_mixdchlet_Destroy(cfg.pri);
-  if (cfg.primrgfp) fclose(cfg.primrgfp);
-  if (cfg.primrgefp) esl_fileparser_Destroy(cfg.primrgefp);
-  if (cfg.primrgfile) free(cfg.primrgfile);
-  if (cfg.primrg) esl_mixdchlet_Destroy(cfg.primrg);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
@@ -677,6 +622,8 @@ main(int argc, char **argv)
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
   if (useme) free(useme);
+  if (cfg.msamap) free(cfg.msamap); 
+
   return 0;
 }
 
@@ -765,6 +712,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   }
   
   *omsa = msa;
+
+  if (type) free(type);
   return eslOK;
 }
 
@@ -990,8 +939,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.ranklist_null = ranklist_null;
   data.ranklist_aux  = ranklist_aux;
   data.mi            = mi;
-  data.pri           = cfg->pri;
-  data.primrg        = cfg->primrg;
   data.covtype       = cfg->covtype;
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
@@ -1049,7 +996,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   *omsa = msa;
   if (ret_ranklist) *ret_ranklist = ranklist; else cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
-  if (hitlist) cov_FreeHitList(hitlist);
+  if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   cov_Destroy(mi); mi = NULL;
 
