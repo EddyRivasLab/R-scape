@@ -241,7 +241,7 @@ extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
-extern struct mutual_s *cov_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass);
+extern struct mutual_s *cov_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int thresh, ESL_ALPHABET *abc, COVCLASS covclass);
 extern int              cov_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             cov_Destroy(struct mutual_s *mi);
 extern int              cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, ESL_MIXDCHLET *d,
