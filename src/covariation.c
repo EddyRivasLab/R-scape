@@ -780,7 +780,8 @@ cov_CalculateMI_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] && mi->pm[j][y])? 
+	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
@@ -898,7 +899,8 @@ cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
 	  HH -= (mi->pp[i][j][IDX(x,y,K)])? mi->pp[i][j][IDX(x,y,K)] * log(mi->pp[i][j][IDX(x,y,K)]) : 0.0;
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0  && mi->pm[i][x] && mi->pm[j][y])? 
+	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
@@ -1016,7 +1018,8 @@ cov_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0)? mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
+	  mutinf += (mi->pp[i][j][IDX(x,y,K)] > 0.0 && mi->pm[i][x] && mi->pm[j][y])? 
+	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}
 	  
       /* the negative correction of gaps */
