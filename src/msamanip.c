@@ -583,15 +583,17 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
 
   esl_msa_Destroy(msa);
   if (omsafile) free(omsafile);
-
+ 
   if (msafile) *msafile = newfile;
   if (omsa)    *omsa    = new;
 
+  free(newfile);
   free(array);
   free(useme);
   return eslOK;
 
  ERROR:
+  if (newfile) free(newfile);
   if (array)  free(array);
   if (useme)  free(useme);
   if (new)    esl_msa_Destroy(new);

@@ -115,8 +115,6 @@ typedef enum {
 typedef struct ranklist_s {
   ESL_HISTOGRAM *ha;             /* histogram of scores (all pairs) */
   ESL_HISTOGRAM *ht;             /* histogram of scores (truncated pairs == no ss pairs) */
-  double        *covBP;
-  double        *covNBP;
   double        *eval;
   double         scthresh;
 } RANKLIST;
@@ -127,14 +125,6 @@ typedef struct hit_s {
   
   double sc;
   double Eval;
-
-  double covNBP;
-  double covNBPu;
-  double covNBPf;
-
-  double covRBP;
-  double covRBPu;
-  double covRBPf;
 
   int is_bpair;
   int is_compatible;
@@ -149,13 +139,7 @@ typedef struct hitlist_s{
 }  HITLIST;
 
 typedef enum {
-  covNBP  = 0, // cov NonBPs:    max total        (covNPB)      allowed
-  covNBPu = 1, // cov NonBPs;    max per_position (covNBP/alen) allowed
-  covNBPf = 2, // cov NonBPs;    max fraction     (covNBP/NBP)  allowed
-  covRBP  = 3, // cov RandomBPs: max total        (covRPB)      allowed
-  covRBPu = 4, // cov RandomBPs; max per_position (covRBP/alen) allowed
-  covRBPf = 5, // cov RandomBPs; max fraction     (covRBP/RBP)  allowed
-  Eval    = 6, // Eval;          max expected number of CovNBPs allowed
+  Eval    = 0, // Eval;          max expected number of CovNBPs allowed
 } THRESHTYPE;
 
 typedef struct thresh_s {
@@ -264,7 +248,6 @@ extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char
 					   RANKLIST *ranklist_aux, char *title, double pmass, double mu, double lambda, int verbose, char *errbuf);
 extern int              cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
 						  char *title, double pmass, double mu, double lambda, int dosvg, char *errbuf);
-extern int              cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
 extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);

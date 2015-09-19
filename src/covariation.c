@@ -1,6 +1,6 @@
 /* covariation.c */
 
-#include "p7_config.h"r
+#include "p7_config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1176,12 +1176,6 @@ cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
   int status;
 
   switch(type) {
-  case covNBP:   esl_sprintf(ret_threshtype, "covNBP");  break;
-  case covNBPu:  esl_sprintf(ret_threshtype, "covNBPu"); break;
-  case covNBPf:  esl_sprintf(ret_threshtype, "covNBPf"); break;
-  case covRBP:   esl_sprintf(ret_threshtype, "covRBP");  break;
-  case covRBPu:  esl_sprintf(ret_threshtype, "covRBPu"); break;
-  case covRBPf:  esl_sprintf(ret_threshtype, "covRBPu"); break;
   case Eval:     esl_sprintf(ret_threshtype, "Eval");    break;
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong THRESHTYPE");
   }
@@ -1490,19 +1484,14 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           sen;
   double           ppv;
   double           F;
-  double           cvBP, cvNBP, cvNBPu, cvNBPf;
-  double           cvRBP, cvRBPu, cvRBPf;
   double           cov;
   double           eval;
   double           val;
   double           bmax;
-  double           cvBP_thresh = 0.;
-  double           cvNBP_thresh = 0.;
-  double           cvBP_prv;
   int              usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int              fp, tf, t, f, neg;
   int              i, j;
-  int              b, nullb;
+  int              b;
   int              status;
 
   if (usenull && (data->mode == GIVSS || data->mode == CYKSS) && data->ranklist_null == NULL) usenull = FALSE;
@@ -1534,7 +1523,13 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   /* histogram and exponential fit */
   if (data->mode == GIVSS || data->mode == CYKSS) {
-    if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) data->ranklist_null->ha->nb = ranklist->ha->nb;
+#if 1
+    if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
+      ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
+      for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
+      data->ranklist_null->ha->nb = ranklist->ha->nb;
+    }
+#endif
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
@@ -1572,52 +1567,22 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) 
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
     
-    cvBP   = (double)tf;
-    cvNBP  = (double)fp;
-    cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
-    cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
- 
-  
-    if (data->mode == GIVSS || data->mode == CYKSS) {
-      if (data->ranklist_null) {
+    if (data->mode == GIVSS || data->mode == CYKSS) { 
 
-	/* evalues */
-	ranklist->covBP[b]  = cvBP;
-	ranklist->covNBP[b] = cvNBP;
-	ranklist->eval[b]   = eval;
-
-	if      (cov > data->ranklist_null->ha->bmax) cvRBP = data->ranklist_null->covBP[data->ranklist_null->ha->nb-1];
-	else if (cov < data->ranklist_null->ha->bmin) cvRBP = data->ranklist_null->covBP[0];
-	else {
-	  esl_histogram_Score2Bin(data->ranklist_null->ha, cov, &nullb);
-	  cvRBP = data->ranklist_null->covBP[nullb];
-	}
-      }
-      cvRBPu = (mi->alen > 0)? cvRBP/(double)mi->alen : 0.0;
-      cvRBPf = (neg > 0)?      cvRBP/(double)neg      : 0.0;
+      ranklist->eval[b] = eval; // evalues
       
       switch(data->thresh->type) {
-      case covNBP:  val = cvNBP;  break;
-      case covNBPu: val = cvNBPu; break;
-      case covNBPf: val = cvNBPf; break;
-      case covRBP:  val = cvRBP;  break;
-      case covRBPu: val = cvRBPu; break;
-      case covRBPf: val = cvRBPf; break;
       case Eval:    val = ranklist->eval[b]; break;
       default: 
 	ESL_XFAIL(eslFAIL, data->errbuf, "do not recognize thresholding type\n");
 	break;
       } 
-
+      
       if (val > 0.0 && val <= data->thresh->val) { 
 	ranklist->scthresh = cov; 
 	data->thresh->sc   = cov; 
-	cvBP_thresh        = cvBP;
-	cvNBP_thresh       = cvNBP;
       }
-    
     }
-    cvBP_prv = cvBP;
   }
 
   if (data->mode == GIVSS || data->mode == CYKSS) {
@@ -1654,13 +1619,8 @@ cov_CreateRankList(double bmax, double bmin, double w)
   ranklist->ha = esl_histogram_Create(bmin, bmax, w);
   ranklist->ht = esl_histogram_Create(bmin, bmax, w);
  
-  ESL_ALLOC(ranklist->covBP,  sizeof(double) * ranklist->ha->nb);
-  ESL_ALLOC(ranklist->covNBP, sizeof(double) * ranklist->ha->nb);
-  ESL_ALLOC(ranklist->eval,   sizeof(double) * ranklist->ha->nb);
- 
-  esl_vec_DSet(ranklist->covBP,  ranklist->ha->nb, 0.);
-  esl_vec_DSet(ranklist->covNBP, ranklist->ha->nb, 0.);
-  esl_vec_DSet(ranklist->eval,   ranklist->ha->nb, eslINFINITY);
+  ESL_ALLOC(ranklist->eval, sizeof(double) * ranklist->ha->nb);
+  esl_vec_DSet(ranklist->eval, ranklist->ha->nb, eslINFINITY);
 
   ranklist->scthresh = ranklist->ha->xmax;
   return ranklist;
@@ -1705,8 +1665,6 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
     cov_ranklist_Bin2Bin(b, ranklist->ha, new->ha, &newb);
     if (newb >= new->ha->imin && newb <= new->ha->imax) {
       new->eval[newb]    = ranklist->eval[b];
-      new->covBP[newb]   = ranklist->covBP[b];
-      new->covNBP[newb]  = ranklist->covNBP[b];
       new->ha->obs[newb] = ranklist->ha->obs[b];
     }
   }
@@ -1728,7 +1686,7 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 
   printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) 
-    printf("cov %f eval %f covBP %f covNBP %f \n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->eval[b], ranklist->covBP[b], ranklist->covNBP[b]); 
+    printf("cov %f eval %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->eval[b]); 
   
   return eslOK;
 }
@@ -1758,7 +1716,6 @@ int
 cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, double mu, double lambda, 
 		  char *covtype, char *threshtype, int usenull)
 {
-  RANKLIST *ranklist_null = data->ranklist_null;
   HITLIST  *hitlist = NULL;
   double    sen, ppv, F;
   int       alloc_nhit = 5;
@@ -1803,33 +1760,14 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	/* initialize */
 	hitlist->hit[h].sc            = -eslINFINITY;
 	hitlist->hit[h].Eval          = +eslINFINITY;
-	hitlist->hit[h].covNBP        = 0.0;
-	hitlist->hit[h].covNBPu       = 0.0;
-	hitlist->hit[h].covNBPf       = 0.0;
-	hitlist->hit[h].covRBP        = 0.0;
-	hitlist->hit[h].covRBPu       = 0.0;
-	hitlist->hit[h].covRBPf       = 0.0;
 	hitlist->hit[h].is_bpair      = FALSE;
 	hitlist->hit[h].is_compatible = FALSE;
 	
 	for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
 	  if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
 	    hitlist->hit[h].Eval    = ranklist->eval[b];
-	    hitlist->hit[h].covNBP  = ranklist->covNBP[b];
-	    hitlist->hit[h].covNBPu = (mi->alen > 0)? ranklist->covNBP[b]/(double)mi->alen:0.;
-	    hitlist->hit[h].covNBPf = ranklist->covNBP[b]/(double)NBP;
 	  }
 	  else break;
-	}
-	if (ranklist_null) {
-	  for (b = ranklist_null->ha->imax; b >= ranklist->ha->imin; b --) {
-	    if (mi->COV->mx[i][j] <= ranklist_null->ha->bmin+(double)b*ranklist_null->ha->w) {
-	      hitlist->hit[h].covRBP  = ranklist_null->covBP[b];
-	      hitlist->hit[h].covRBPu = (mi->alen > 0)? ranklist_null->covBP[b]/(double)mi->alen:0.;
-	      hitlist->hit[h].covRBPf = ranklist_null->covNBP[b]/(double)BP;
-	    }
-	    else break;
-	  }
 	}
 	
 	hitlist->hit[h].i    = i;
@@ -1972,8 +1910,6 @@ cov_FreeRankList(RANKLIST *ranklist)
   if (ranklist->ha)     esl_histogram_Destroy(ranklist->ha);
   if (ranklist->ht)     esl_histogram_Destroy(ranklist->ht);
   if (ranklist->eval)   free(ranklist->eval);
-  if (ranklist->covBP)  free(ranklist->covBP);
-  if (ranklist->covNBP) free(ranklist->covNBP);
   free(ranklist);
 }
 
@@ -2465,117 +2401,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 }
 
 
-int 
-cov_CreateNullCov(char *gnuplot, char *nullcovfile, int L, int *ct, RANKLIST *ranklist, RANKLIST *ranklist_null, int dosvg, char *errbuf)
-{
-  FILE    *fp = NULL;
-  double   cov;
-  double   covBP, covBP_prv;
-  double   covNBP, covNBP_prv;
-  double   covRBP, covRBP_prv;
-  int      nullb;
-  int      BP;
-  int      b;
-  int      status;
 
-  if (ranklist_null == NULL) return eslOK;
-
-  BP = number_pairs(L, ct); if (BP <= 0.) return eslOK;
-  
-  if ((fp = fopen(nullcovfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open file %s\n", nullcovfile);
-
-  covRBP_prv = -1.0;
-  covBP_prv  = 0.0;
-  covNBP_prv = 0.0;
-  for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b--) {
-    cov = esl_histogram_Bin2LBound(ranklist->ha,b);
-    covBP  = ranklist->covBP[b];
-    covNBP = ranklist->covNBP[b];
-    
-    if      (cov > ranklist_null->ha->bmax) covRBP = 0;
-    else if (cov < ranklist_null->ha->bmin) covRBP = ranklist_null->covBP[0];
-    else {
-      esl_histogram_Score2Bin(ranklist_null->ha, cov, &nullb);
-      covRBP = ranklist_null->covBP[nullb];
-    }
-    
-    if (covRBP > covRBP_prv) {
-      fprintf(fp, "%f %f %f %f %f %f\n", cov, covRBP, 100.*covRBP/(double)BP, covBP, 100.0*covBP/(double)BP, covNBP);
-    }
-    
-    covBP_prv  = covBP;
-    covNBP_prv = covNBP;
-    covRBP_prv = covRBP;
-  } 
-  fclose(fp);
-
-  if (gnuplot) cov_PlotNullCov(gnuplot, nullcovfile, 2.*(double)BP, 0.2, 0.2*(double)BP, dosvg);
-  return eslOK;
-
- ERROR:
-  return status;
-}
-
-int 
-cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovRBP, double maxcovRBPf, int dosvg)
-{
-  FILE    *pipe;
-  char    *filename = NULL;
-  char    *outplot = NULL;
-  
-  if (nullcovfile == NULL) return eslOK;
-
-  esl_FileTail(nullcovfile, FALSE, &filename);
-
-  pipe = popen(gnuplot, "w");
-
-  if (dosvg) {
-    esl_sprintf(&outplot, "%s.svg", nullcovfile);
-    fprintf(pipe, "set terminal svg fname 'Arial' fsize 12 \n");
-  }
-  else {
-    esl_sprintf(&outplot, "%s.ps", nullcovfile);
-    fprintf(pipe, "set terminal postscript color 14\n");
-  }
-
-  fprintf(pipe, "set output '%s'\n", outplot);
-  fprintf(pipe, "unset key\n");
-  //fprintf(pipe, "set pointsize %f\n", pointsize);
-  fprintf(pipe, "set title '%s' \n", filename);
-
-  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green' pt 7 lw 2 ps variable\n");
-  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue' pt 7 lw 2 ps variable\n");
-
-  // covarying BP and covaryingNBPs (covBP & covNBP) / null convarying bpairs (covRBP)
-  fprintf(pipe, "set ylabel '# covarying pairs'\n");
-  fprintf(pipe, "set xlabel '# null covarying basepairs'\n");
-  fprintf(pipe, "set yrange [0:%f]\n", maxBP);
-  fprintf(pipe, "set xrange [0:%f]\n", maxcovRBP);
-  fprintf(pipe, "plot '%s' u 2:4 with linespoints ls 8, ", nullcovfile);
-  fprintf(pipe, "'%s' u 2:6 with linespoints ls 7\n", nullcovfile);
-  
-  // % covarying bpairs (covBPf) / % null convarying bpairs (covRBPf)
-  fprintf(pipe, "set size ratio -1\n");
-  fprintf(pipe, "set ylabel '%% covarying basepairs'\n");
-  fprintf(pipe, "set xlabel '%% null covarying basepairs'\n");
-  fprintf(pipe, "set yrange [0:100]\n");
-  fprintf(pipe, "set xrange [0:100]\n");
-  fprintf(pipe, "plot '%s' u 3:5 with linespoints ls 8\n", nullcovfile);
-  
-  pclose(pipe);
-  
-  free(outplot);
-  free(filename);
-
-  return eslOK;
-}
 
 int              
 cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
@@ -3056,6 +2882,7 @@ int
 cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
 {
   double x;
+  int    newb;
   int    status;
   
   x = esl_histogram_Bin2UBound(h, b);
@@ -3070,8 +2897,11 @@ cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
   if (x < (double) INT_MIN || x > (double) INT_MAX) 
     ESL_XEXCEPTION(eslERANGE, "value %f isn't going to fit in histogram", x);
   
-  *ret_newb = (int) x;
-
+  newb = (int) x;
+  if (newb > new->nb) 
+    ESL_XEXCEPTION(eslERANGE, "bin value %d isn't going to fit in histogram bin %d ", newb, new->nb);
+  
+  *ret_newb = newb;
   return eslOK;
 
  ERROR:

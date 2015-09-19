@@ -26,7 +26,7 @@
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--CHIs,--GT,--GTa,--GTp,--GTs,--MI,--MIp,--MIa,--MIs,--MIr,--MIrp,--MIra,--MIrs,--MIg,--MIgp,--MIga,--MIga,--OMES,--OMESp,--OMESa,--OMESa"              
 #define COVCLASSOPTS "--C16,--C2"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
-#define THRESHOPTS   "--covNBP,--covNBPu,--covNBPf,--covRBP,--covRBPu,--covRBPf,-E"                                          
+#define THRESHOPTS   "-E"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -84,14 +84,11 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              minloop;
   enum grammar_e   grammar;
   
-  int              donullcov;
   char            *covhisfile;
-  char            *nullcovhisfile;
-
   char            *cykcovhisfile;
+  char            *nullcovhisfile;
   char            *cyknullcovhisfile;
 
-  char            *nullcovfile;
   char            *dplotfile;
   char            *cykdplotfile;
 
@@ -172,12 +169,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
    /* different ways to assess significance */
   { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                              1 },
-  { "--covNBP",      eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs:    max total        (covNPB)      allowed",                                     1 },
-  { "--covNBPu",     eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max per_position (covNBP/alen) allowed",                                     1 },
-  { "--covNBPf",     eslARG_REAL,       NULL,   NULL,    "0<x<=1",THRESHOPTS, NULL,  NULL,               "cov NonBPs;    max fraction     (covNBP/NBP)  allowed",                                     1 },
-  { "--covRBP",      eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs: max total        (covRPB)      allowed",                                     0 },
-  { "--covRBPu",     eslARG_REAL,       NULL,   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max per_position (covRBP/alen) allowed",                                     0 },
-  { "--covRBPf",     eslARG_REAL,       NULL,   NULL,   "0<=x<=1",THRESHOPTS, NULL,  NULL,               "cov RandomBPs; max fraction     (covRBP/RBP)  allowed",                                     0 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       "20",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
@@ -360,13 +351,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
 
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
-  if      (esl_opt_IsOn(go, "--covNBP") )  { cfg.thresh->type = covNBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covNBP");  }
-  else if (esl_opt_IsOn(go, "--covNBPu"))  { cfg.thresh->type = covNBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPu"); }
-  else if (esl_opt_IsOn(go, "--covNBPf"))  { cfg.thresh->type = covNBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covNBPf"); }
-  else if (esl_opt_IsOn(go, "--covRBP") )  { cfg.thresh->type = covRBP;  cfg.thresh->val = esl_opt_GetReal(go, "--covRBP");  }
-  else if (esl_opt_IsOn(go, "--covRBPu"))  { cfg.thresh->type = covRBPu; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPu"); }
-  else if (esl_opt_IsOn(go, "--covRBPf"))  { cfg.thresh->type = covRBPf; cfg.thresh->val = esl_opt_GetReal(go, "--covRBPf"); }
-  else if (esl_opt_IsOn(go, "-E"))         { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
+  if (esl_opt_IsOn(go, "-E")) { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
     if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
   }
 
@@ -451,13 +436,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.cykcovhisfile = NULL;
   
   /* nullcovhis file */
-  cfg.donullcov         = FALSE;
   cfg.nullcovhisfile    = NULL;
   cfg.cyknullcovhisfile = NULL;
   
-  /* nullcovplot file */
-  cfg.nullcovfile = NULL;
-
   /* dotplot file */
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
@@ -585,6 +566,11 @@ main(int argc, char **argv)
   }
 
   /* cleanup */
+  fclose(cfg.outfp);
+  fclose(cfg.outsrtfp);
+  fclose(cfg.rocfp);
+  fclose(cfg.sumfp);
+  if (cfg.outmsafp) fclose(cfg.outmsafp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -594,19 +580,15 @@ main(int argc, char **argv)
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
   if (cfg.outfile) free(cfg.outfile);
+  if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
-  fclose(cfg.outfp);
-  fclose(cfg.outsrtfp);
-  fclose(cfg.rocfp);
-  fclose(cfg.sumfp);
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.shsumfp) fclose(cfg.shsumfp);
   if (cfg.shsumfile) free(cfg.shsumfile);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
-  if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
@@ -614,7 +596,6 @@ main(int argc, char **argv)
   if (cfg.nullcovhisfile) free(cfg.nullcovhisfile);
   if (cfg.cykcovhisfile) free(cfg.cykcovhisfile);
   if (cfg.cyknullcovhisfile) free(cfg.cyknullcovhisfile);
-  if (cfg.nullcovfile) free(cfg.nullcovfile);
   if (cfg.dplotfile) free(cfg.dplotfile);
   if (cfg.cykdplotfile) free(cfg.cykdplotfile);
   if (cfg.ft) free(cfg.ft);
@@ -636,6 +617,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *type = NULL;
   char    *tp;
   char    *tok;
+  char    *tok2 = NULL;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	  /* # of fragments removed */
@@ -652,8 +634,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       while (*tp != '\0') {
 	if (esl_strtok(&tp,  ";", &tok) != eslOK) esl_fatal(msg);
 	if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
-	esl_sprintf(&tok, "_%s", tok);
-	esl_strcat(&type, -1, tok, -1);
+	esl_sprintf(&tok2, "_%s", tok);
+	esl_strcat(&type, -1, tok2, -1);
       }
     }
   }
@@ -713,6 +695,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   *omsa = msa;
 
+  if (tok2) free(tok2);
   if (type) free(type);
   return eslOK;
 }
@@ -745,15 +728,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&cfg->covhisfile,    "%s/%s.his",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
     
-    /* nullcovhis file */
-    if (cfg->donullcov) {
-      esl_sprintf(&cfg->nullcovhisfile,    "%s/%s.nullhis",     cfg->outdir, cfg->msaname);
-      esl_sprintf(&cfg->cyknullcovhisfile, "%s/%s.cyk.nullhis", cfg->outdir, cfg->msaname);
-      
-      /* nullcovplot file */
-      esl_sprintf(&cfg->nullcovfile, "%s/%s.nullcov", cfg->outdir, cfg->msaname);
-    }
-    
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
@@ -765,15 +739,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s.his",     cfg->msaname);
     esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.his", cfg->msaname);
-    
-    /* nullcovhis file */
-    if (cfg->donullcov) {
-      esl_sprintf(&cfg->nullcovhisfile,    "%s.nullhis",     cfg->msaname);
-      esl_sprintf(&cfg->cyknullcovhisfile, "%s.cyk.nullhis", cfg->msaname);
-    
-      /* nullcovplot file */
-      esl_sprintf(&cfg->nullcovfile, "%s.nullcov", cfg->msaname);
-    }
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
@@ -972,11 +937,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     if (status != eslOK) goto ERROR; 
   }
   
-  if (cfg->donullcov) {
-    status = cov_CreateNullCov(cfg->gnuplot, cfg->nullcovfile, msa->alen, cfg->ct, ranklist, ranklist_null, FALSE, cfg->errbuf);
-    if (status != eslOK) goto ERROR; 
-  }
-
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
@@ -1022,7 +982,6 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int       *useme = NULL;
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
-  int        b;                   // index for ranked list
   int        status;
 
   /* shuffle all the columns */
@@ -1039,11 +998,6 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      
     esl_msa_Destroy(shmsa); shmsa = NULL;
     cov_FreeRankList(ranklist); ranklist = NULL;
-  }
-  
-  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-    cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-    cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
   
    if (cfg->verbose) {
@@ -1079,7 +1033,6 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   int       *useme2 = NULL;
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
-  int        b;                   // index for ranked list
   int        status;
 
   /* shuffle all the columns */
@@ -1099,11 +1052,6 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      
      esl_msa_Destroy(shmsa); shmsa = NULL;
      cov_FreeRankList(ranklist); ranklist = NULL;
-  }
-  
-  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-    cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-    cumranklist->covNBP[b] /= (double)cfg->nshuffle;
   }
   
   if (cfg->verbose) {
@@ -1152,10 +1100,6 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
    
-   for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
-   }
    if (cfg->verbose) {
      printf("null2 distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1187,7 +1131,6 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       s;
-  int       b;
   int       status;
 
   /* this shuffle is comparisond dependent, cannot create a general shmsa,
@@ -1206,10 +1149,6 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
    
-   for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-     cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-     cumranklist->covNBP[b] /= (double)cfg->nshuffle;
-   }
    if (cfg->verbose) {
      printf("null2b distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1241,7 +1180,6 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int       *useme2 = NULL;
   int        n;                   // index for alignment positions
   int        s;                   // index for shuffles
-  int        b;                   // index for ranked list
   int        status;
 
   /* shuffle all the columns */
@@ -1265,18 +1203,13 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-    cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-    cumranklist->covNBP[b] /= (double)cfg->nshuffle;
+  if (cfg->verbose) {
+    printf("null3 distribution - cummulative\n");
+    printf("imin %d imax %d xmax %f xmin %f\n", 
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, cumranklist->h);
+    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
   }
-  
-   if (cfg->verbose) {
-     printf("null3 distribution - cummulative\n");
-     printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-     //esl_histogram_Plot(stdout, cumranklist->h);
-     //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-   }
 
   *ret_cumranklist = cumranklist;
   free(useme1);
@@ -1304,7 +1237,6 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   RANKLIST  *ranklist = NULL;
   int       sc;
   int       s;
-  int       b;
   int       status;
   
   status = create_tree(go, cfg, msa);
@@ -1347,10 +1279,6 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  for (b = cumranklist->ha->imin; b <= cumranklist->ha->imax; b ++) {
-    cumranklist->covBP[b]  /= (double)cfg->nshuffle;
-    cumranklist->covNBP[b] /= (double)cfg->nshuffle;
-  }
   if (cfg->verbose) {
     printf("null4 distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1400,8 +1328,6 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
     cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
     
     if (cumb >= cumranklist->ha->imin && cumb <= cumranklist->ha->imax) {
-      cumranklist->covBP[cumb]  += ranklist->covBP[b];
-      cumranklist->covNBP[cumb] += ranklist->covNBP[b];
       if (b >= ranklist->ha->imin && b <= ranklist->ha->imax) {
 	cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
 	cumranklist->ha->Nc        += ranklist->ha->obs[b];
