@@ -40,8 +40,7 @@ static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, s
 				int donull2b, double tol, int verbose, char *errbuf);
 static int    shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
-static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
+static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
@@ -1516,10 +1515,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (mi->ishuffled) fprintf(data->rocfp, "shuffled thresh fp tf found true negatives sen ppv F evalue\n"); 
     else               fprintf(data->rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
   }
-
   bmax = mi->maxCOV+data->w;
+
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
- 
+
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
 
@@ -1577,14 +1576,15 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     cvNBP  = (double)fp;
     cvNBPu = (mi->alen > 0)? cvNBP/(double)mi->alen : 0.0;
     cvNBPf = (neg > 0)?      cvNBP/(double)neg      : 0.0;
-    ranklist->covBP[b]  = cvBP;
-    ranklist->covNBP[b] = cvNBP;
+ 
   
     if (data->mode == GIVSS || data->mode == CYKSS) {
       if (data->ranklist_null) {
 
 	/* evalues */
-	ranklist->eval[b] = eval;
+	ranklist->covBP[b]  = cvBP;
+	ranklist->covNBP[b] = cvNBP;
+	ranklist->eval[b]   = eval;
 
 	if      (cov > data->ranklist_null->ha->bmax) cvRBP = data->ranklist_null->covBP[data->ranklist_null->ha->nb-1];
 	else if (cov < data->ranklist_null->ha->bmin) cvRBP = data->ranklist_null->covBP[0];
@@ -1609,13 +1609,11 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	break;
       } 
 
-      //printf("  eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
       if (val > 0.0 && val <= data->thresh->val) { 
 	ranklist->scthresh = cov; 
 	data->thresh->sc   = cov; 
 	cvBP_thresh        = cvBP;
 	cvNBP_thresh       = cvNBP;
- 	//printf("++eval %g cov %f covBP %f covNBP %f\n", val, cov, cvBP, cvNBP);
       }
     
     }
