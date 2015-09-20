@@ -1616,9 +1616,15 @@ cov_CreateRankList(double bmax, double bmin, double w)
   
   ESL_ALLOC(ranklist, sizeof(RANKLIST));
 
+  printf("^^ bmin %f bmax %f\n", bmin, bmax);
+  ranklist->ha = NULL;
+  ranklist->ht = NULL;
   ranklist->ha = esl_histogram_Create(bmin, bmax, w);
   ranklist->ht = esl_histogram_Create(bmin, bmax, w);
- 
+  if (ranklist->ha == NULL) goto ERROR;
+  if (ranklist->ht == NULL) goto ERROR;
+
+  ranklist->eval = NULL;
   ESL_ALLOC(ranklist->eval, sizeof(double) * ranklist->ha->nb);
   esl_vec_DSet(ranklist->eval, ranklist->ha->nb, eslINFINITY);
 
@@ -1907,9 +1913,9 @@ cov_FreeRankList(RANKLIST *ranklist)
 {
   if (ranklist == NULL) return;
 
-  if (ranklist->ha)     esl_histogram_Destroy(ranklist->ha);
-  if (ranklist->ht)     esl_histogram_Destroy(ranklist->ht);
-  if (ranklist->eval)   free(ranklist->eval);
+  if (ranklist->ha)   esl_histogram_Destroy(ranklist->ha);
+  if (ranklist->ht)   esl_histogram_Destroy(ranklist->ht);
+  if (ranklist->eval) free(ranklist->eval);
   free(ranklist);
 }
 
