@@ -1524,10 +1524,12 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   /* histogram and exponential fit */
   if (data->mode == GIVSS || data->mode == CYKSS) {
 #if 1
-    if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
-      ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
-      for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
-      data->ranklist_null->ha->nb = ranklist->ha->nb;
+    if (data->ranklist_null) {
+      if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
+	ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
+	for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
+	data->ranklist_null->ha->nb = ranklist->ha->nb;
+      }
     }
 #endif
     /* censor the histogram and do an exponential fit to the tail */
@@ -1616,7 +1618,6 @@ cov_CreateRankList(double bmax, double bmin, double w)
   
   ESL_ALLOC(ranklist, sizeof(RANKLIST));
 
-  printf("^^ bmin %f bmax %f\n", bmin, bmax);
   ranklist->ha = NULL;
   ranklist->ht = NULL;
   ranklist->ha = esl_histogram_Create(bmin, bmax, w);
@@ -1669,7 +1670,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
 
   for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, new->ha, &newb);
-    if (newb >= new->ha->imin && newb <= new->ha->imax) {
+    if (newb < new->ha->nb) {
       new->eval[newb]    = ranklist->eval[b];
       new->ha->obs[newb] = ranklist->ha->obs[b];
     }
