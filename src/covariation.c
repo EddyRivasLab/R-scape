@@ -1566,7 +1566,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       eval = eslINFINITY;
     if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) {
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
-      fprintf(stdout, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
+      //fprintf(stdout, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
     }
 
     if (data->mode == GIVSS || data->mode == CYKSS) { 
