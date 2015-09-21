@@ -1523,15 +1523,15 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   /* histogram and exponential fit */
   if (data->mode == GIVSS || data->mode == CYKSS) {
-#if 1
     if (data->ranklist_null) {
       if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
+#if 0
 	ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
 	for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
+#endif
 	data->ranklist_null->ha->nb = ranklist->ha->nb;
       }
     }
-#endif
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
