@@ -953,7 +953,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
  
   *omsa = msa;
-  if (ret_ranklist) *ret_ranklist = ranklist; else cov_FreeRankList(ranklist); ranklist = NULL;
+  if (ret_ranklist) *ret_ranklist = ranklist; 
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
