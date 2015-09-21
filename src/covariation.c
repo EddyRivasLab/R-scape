@@ -1534,7 +1534,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    if (1||data->verbose) {
+    if (data->verbose) {
       if (!usenull) 
 	printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", data->pmass, newmass, ranklist->ht->phi,            mu, lambda, ranklist->ht->Nc);
       else          
@@ -1564,9 +1564,11 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
     else 
       eval = eslINFINITY;
-    if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) 
+    if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) {
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
-    
+      fprintf(stdout, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
+    }
+
     if (data->mode == GIVSS || data->mode == CYKSS) { 
       ranklist->eval[b] = eval; // evalues
       
