@@ -1560,15 +1560,15 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg  = mi->alen * (mi->alen-1) / 2 - t;
-    if (data->ranklist_null) 
+    if (data->ranklist_null) {
       eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
+      if (cov< -280) printf("^^ imax %d imin %d b %d cov %f eval %f\n", ranklist->ha->imax, ranklist->ha->imin, b, cov, eval);
+    }
     else 
       eval = eslINFINITY;
-    if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) {
+    if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) 
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
-      //fprintf(stdout, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
-    }
-
+  
     if (data->mode == GIVSS || data->mode == CYKSS) { 
       ranklist->eval[b] = eval; // evalues
       
