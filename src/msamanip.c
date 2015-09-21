@@ -411,7 +411,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
 
   /* replace msa */
-  esl_msa_Destroy(omsa);
+  esl_msa_Destroy(*msa);
   *msa = new;
   
   free(useme);
@@ -1240,15 +1240,12 @@ shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L
 int
 msamanip_OutfileHeader(char *acc, char **ret_outheader)
 {      
-  char *outheader = NULL;
   char *st = NULL;
 
   esl_FileTail(acc, TRUE, &st);
-  esl_sprintf(&outheader, "%s", st);
- 
-  *ret_outheader = outheader;
-  free(st);
+  esl_sprintf(ret_outheader, "%s", st);
 
+  free(st);
   return eslOK;
 }
 

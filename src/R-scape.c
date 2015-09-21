@@ -124,8 +124,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *rocfp; 
   char            *sumfile;
   FILE            *sumfp; 
-  char            *shsumfile;
-  FILE            *shsumfp; 
 
   double           bmin;    /* score histograms */
   double           w;
@@ -249,9 +247,10 @@ static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int
  */
 static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *ret_cfg)
 {
-  ESL_GETOPTS *go = esl_getopts_Create(options);
-  struct cfg_s cfg;
-  int          status;
+  ESL_GETOPTS  *go = esl_getopts_Create(options);
+  struct cfg_s  cfg;
+  char         *outname = NULL;
+  int           status;
 
 
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
@@ -307,8 +306,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
   if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
-  if (esl_opt_IsOn(go, "--submsa")) { cfg.submsa = esl_opt_GetInteger(go, "--submsa"); esl_sprintf(&cfg.outheader, "%s.select%d", cfg.outheader, cfg.submsa); }
-  else                              { cfg.submsa = 0; }
+  if (esl_opt_IsOn(go, "--submsa")) { 
+    cfg.submsa = esl_opt_GetInteger(go, "--submsa"); 
+    esl_sprintf(&outname, "%s.select%d", cfg.outheader, cfg.submsa);  
+    esl_sprintf(&cfg.outheader, "%s", outname); 
+  }
+  else { cfg.submsa = 0; }
     
   /* other options */
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
@@ -418,7 +421,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
-  /* msa-specific files */
+ /* file with the msa actually used */
   cfg.outmsafile = NULL;
   cfg.outmsafp   = NULL;
   if (esl_opt_IsOn(go, "--outmsa")) {
@@ -426,6 +429,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
   
+  /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rfp      = NULL;
   cfg.R2Rcykfile = NULL;
@@ -442,15 +446,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* dotplot file */
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
-  
-  cfg.shsumfile = NULL;
-  cfg.shsumfp   = NULL;
-  
-  if (cfg.nulltype != NullNONE) {
-    /*  sh-summary file */
-    esl_sprintf(&cfg.shsumfile, "%s.shsum", cfg.outheader); 
-    if ((cfg.shsumfp = fopen(cfg.shsumfile, "w")) == NULL) esl_fatal("Failed to open shsumfile %s", cfg.shsumfile);
-  }
   
   cfg.T  = NULL;
   cfg.ct = NULL;
@@ -474,6 +469,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   *ret_go  = go;
   *ret_cfg = cfg;
+
+  if (outname) free(outname);
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
@@ -481,10 +478,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (puts("\nwhere options are:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
+  if (outname) free(outname);
   exit(1);  
 
  ERROR:
   if (go) esl_getopts_Destroy(go);
+  if (outname) free(outname);
   exit(status);
 }
 
@@ -563,6 +562,7 @@ main(int argc, char **argv)
     if (useme) free(useme); useme = NULL;
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
+    if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
   }
 
   /* cleanup */
@@ -585,8 +585,6 @@ main(int argc, char **argv)
   free(cfg.outheader);
   free(cfg.sumfile);
   free(cfg.gnuplot);
-  if (cfg.shsumfp) fclose(cfg.shsumfp);
-  if (cfg.shsumfile) free(cfg.shsumfile);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.R2Rfile) free(cfg.R2Rfile); 
@@ -618,6 +616,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *tp;
   char    *tok;
   char    *tok2 = NULL;
+  char    *submsaname = NULL;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	  /* # of fragments removed */
@@ -646,24 +645,29 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   else if (msa->name)                      esl_sprintf(&cfg->msaname, "%s",      msa->name);
   else if (cfg->onemsa)                    esl_sprintf(&cfg->msaname, "%s",      cfg->filename);
   else                                     esl_sprintf(&cfg->msaname, "%s_%d",   cfg->filename, cfg->nmsa);
-  if (esl_opt_IsOn(go, "--submsa")) esl_sprintf(&cfg->msaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
+  if (esl_opt_IsOn(go, "--submsa")) {
+    esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
+    esl_sprintf(&cfg->msaname, "%s", submsaname);
+  }
   
   /* apply msa filters and than select submsa
    */
-  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, &msa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
 
-  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
+  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
 
+  msa = *omsa;
   if (msa == NULL) {
+    if (submsaname) free(submsaname);
     free(type); type = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
-    *omsa = NULL;
     return eslOK;
   }
   if (msa->nseq < cfg->nseqmin) {
-    esl_msa_Destroy(msa); msa = NULL;
+    esl_msa_Destroy(msa); 
+    if (submsaname) free(submsaname);
     free(type); type = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
@@ -692,11 +696,10 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->mstat); 
   }
-  
-  *omsa = msa;
 
   if (tok2) free(tok2);
   if (type) free(type);
+  if (submsaname) free(submsaname);
   return eslOK;
 }
 
@@ -802,8 +805,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   status = run_rscape(go, cfg, &msa, ranklist_null, ranklist_aux, NULL);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
 
-  *omsa = msa;
-
   free(cfg->ct); cfg->ct = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
@@ -882,8 +883,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
     fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
-  else
-    fprintf(cfg->shsumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
   
   /* write MSA info to the rocfile */
   if (cfg->mode == GIVSS || cfg->mode == CYKSS)
@@ -893,7 +892,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
   data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
   data.rocfp         = cfg->rocfp;
-  data.sumfp         = (cfg->mode == RANSS)? cfg->shsumfp : cfg->sumfp;
+  data.sumfp         = (cfg->mode == RANSS)? NULL : cfg->sumfp;
   data.dplotfile     = cfg->dplotfile;
   data.R2Rfile       = cfg->R2Rfile;
   data.R2Rcykfile    = cfg->R2Rcykfile;

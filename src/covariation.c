@@ -203,7 +203,7 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
     ESL_XFAIL(eslFAIL, data->errbuf, "wrong covariation type\n");
     break;
   }
-  fprintf(data->sumfp, "\n");   
+  if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
   
   if (data->mode == GIVSS) { // do the plots only for GIVSS
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, TRUE, data->verbose, data->errbuf);
@@ -1802,7 +1802,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
   F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
   
-  if (data->sumfp) {
+  if (data->mode != RANSS && data->sumfp) {
     fprintf(data->sumfp, " %s %d %d %d %f %f ", 
 	    covtype, tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
   }
@@ -2576,6 +2576,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   char         *s = NULL;
   char         *ssstr = NULL;
   char         *covstr = NULL;
+  char         *prv_covstr = NULL;
   char         *tok;
   int           found;
   int           i;
@@ -2633,7 +2634,9 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
     if (!found) esl_sprintf(&tok, ".");  
     
     if (i == 1) esl_sprintf(&covstr, "%s", tok);
-    else        esl_sprintf(&covstr, "%s%s", covstr, tok);
+    else        esl_sprintf(&covstr, "%s%s", prv_covstr, tok);
+
+    esl_sprintf(&prv_covstr, "%s%s", covstr, tok);
   }
   
   /* add line #=GF R2R keep allpairs 
@@ -2712,9 +2715,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   
   *ret_msa = r2rmsa;
   esl_msa_Destroy(msa);
+  free(tok);
   if (args) free(args);
-  if (ssstr)  free(ssstr);
+  if (ssstr) free(ssstr);
   if (covstr) free(covstr);
+  if (prv_covstr) free(prv_covstr);
   return eslOK;
 
  ERROR:
@@ -2723,9 +2728,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   
   if (msa)    esl_msa_Destroy(msa);
   if (r2rmsa) esl_msa_Destroy(r2rmsa);
+  if (tok)    free(tok);
   if (args)   free(args);
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
+  if (prv_covstr) free(prv_covstr);
   return status;
 }
 
