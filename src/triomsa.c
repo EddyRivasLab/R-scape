@@ -108,7 +108,7 @@ struct cfg_s {
   EVOM               evomodel;
   struct rateparam_s rateparam;
  
-  MSA_STAT           mstat;               /* statistics of the input alignment */
+  MSA_STAT          *mstat;               /* statistics of the input alignment */
   float             *msafrq;
 
   int                infmt;
@@ -196,7 +196,7 @@ static int set_random_segment(ESL_GETOPTS *go, struct cfg_s *cfg, FILE *logfp, E
 static int merge_alignments(struct cfg_s *cfg, ESL_MSA *msa1, ESL_MSA *msa2, ESL_MSA **ret_msa);
 static int run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa);
 static int run_triomsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa1, ESL_MSA *msa2);
-static int run_benchmark(struct cfg_s *cfg, FILE *benchfp, char *method, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc);
+static int run_benchmark(struct cfg_s *cfg, FILE *benchfp, char *method, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -876,9 +876,9 @@ run_triomsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa1, ES
   ESL_MSA  *e2msa1 = NULL;
   ESL_MSA  *e2msa2 = NULL;
   ESL_MSA  *e2msa  = NULL;
-  MSA_STAT  m1stat;
-  MSA_STAT  m2stat;
-  MSA_STAT  e2mstat;
+  MSA_STAT *m1stat = NULL;
+  MSA_STAT *m2stat = NULL;
+  MSA_STAT *e2mstat = NULL;
   float     sc1, sc2, sc;
   int       status;
 
@@ -901,7 +901,7 @@ run_triomsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa1, ES
   msamanip_CStats(cfg->abc, e2msa2, &m2stat);
   
   /* total score per position */
-  sc = 0.5 * (sc1/m1stat.avgsqlen + sc2/m2stat.avgsqlen);
+  sc = 0.5 * (sc1/m1stat->avgsqlen + sc2/m2stat->avgsqlen);
 
   /* The leaves-only alignments */
   msamanip_MSALeaves(&e2msa1, FALSE);   
@@ -1033,8 +1033,8 @@ static int
 run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
 {
   ESL_MSA  *e2msa = NULL;
-  MSA_STAT  alle2mstat;
-  MSA_STAT  e2mstat;
+  MSA_STAT *alle2mstat = NULL;
+  MSA_STAT *e2mstat = NULL;
   float     sc;
   int       status;
 
@@ -1059,10 +1059,10 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
   /* The leaves-only alignment */
   msamanip_MSALeaves(&e2msa, FALSE);   
   msamanip_CStats(cfg->abc, e2msa, &e2mstat);
-  e2mstat.anclen = alle2mstat.anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
+  e2mstat->anclen = alle2mstat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
 
   /* score per position */
-  sc /= e2mstat.avgsqlen;
+  sc /= e2mstat->avgsqlen;
 
   if (cfg->voutput) { /* write output alignment */
     /* print output info */
@@ -1073,7 +1073,9 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
 
   if ((status = run_benchmark(cfg, cfg->benchfp2, cfg->method, rmsa, cfg->mstat, e2msa, e2mstat, sc)) != eslOK) goto ERROR;
   
-  if (e2msa) esl_msa_Destroy(e2msa);  
+  if (e2msa) esl_msa_Destroy(e2msa); 
+  if (e2mstat) free(e2mstat);
+  if (alle2mstat) free(alle2mstat);
   return eslOK;
 
  ERROR:
@@ -1084,7 +1086,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
 
 
 static int 
-run_benchmark(struct cfg_s *cfg, FILE *benchfp, char *method, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc)
+run_benchmark(struct cfg_s *cfg, FILE *benchfp, char *method, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc)
 {
   char   *msaname = NULL;
   double  time;

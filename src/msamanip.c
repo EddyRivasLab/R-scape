@@ -565,6 +565,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
 
   /* change the accession of the msa to reflect that it is a subset of the original */
   if (msa->acc) {
+    if (new->acc) free(new->acc); new->acc = NULL;
     st = msa->acc; /* remove the version from the accession */
     esl_strtok(&st, ".", &newacc);
     esl_sprintf(&(new->acc), "%s.select%d", newacc, nseq);
@@ -1278,85 +1279,103 @@ msamanip_MSALeaves(ESL_MSA **msa, int incnode)
 }
 
 int
-msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT mstat)
+msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT *mstat)
 {
   fprintf(ofp, "name                 %%id     %%match     alen    avg_indel_num    avg_indel_len    max_indel_len  ancestral_len      avd_seq_len\n");
   fprintf(ofp, "%-20s %3.0f%%    %3.0f%%    %6d     %3.1f +/- %3.1f     %3.1f +/- %3.1f  %6d        %6d                %3.1f +/- %3.1f \n", 
-	  msa->name, mstat.avgid, mstat.avgmatch, (int)msa->alen, mstat.avginum, mstat.stdinum,  mstat.avgilen, mstat.stdilen, mstat.maxilen, mstat.anclen, mstat.avgsqlen, mstat.stdsqlen);
+	  msa->name, mstat->avgid, mstat->avgmatch, (int)msa->alen, mstat->avginum, mstat->stdinum,  mstat->avgilen, mstat->stdilen, mstat->maxilen, mstat->anclen, mstat->avgsqlen, mstat->stdsqlen);
   
  return eslOK;
 }
 
 int
-msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT *ret_mstat)
+msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret_mstat)
 {
-  MSA_STAT mstat;
-
+  MSA_STAT *mstat;
+  int       status;
+  
+  ESL_ALLOC(mstat, sizeof(MSA_STAT));
+  
   if (msa == NULL) {
-    (*ret_mstat).nseq     = 0;
-    (*ret_mstat).alen     = 0;
-    (*ret_mstat).avgid    = 0.0;
-    (*ret_mstat).avgmatch = 0.0;
-    (*ret_mstat).maxilen  = 0;
-    (*ret_mstat).totilen  = 0;
-    (*ret_mstat).totinum  = 0;
-    (*ret_mstat).avginum  = 0.0;
-    (*ret_mstat).stdinum  = 0.0;
-    (*ret_mstat).avgilen  = 0.0;
-    (*ret_mstat).stdilen  = 0.0;
-    (*ret_mstat).avgsqlen = 0.0;
-    (*ret_mstat).stdsqlen = 0.0;
-    (*ret_mstat).anclen   = 0;
+    mstat->nseq     = 0;
+    mstat->alen     = 0;
+    mstat->avgid    = 0.0;
+    mstat->avgmatch = 0.0;
+    mstat->maxilen  = 0;
+    mstat->totilen  = 0;
+    mstat->totinum  = 0;
+    mstat->avginum  = 0.0;
+    mstat->stdinum  = 0.0;
+    mstat->avgilen  = 0.0;
+    mstat->stdilen  = 0.0;
+    mstat->avgsqlen = 0.0;
+    mstat->stdsqlen = 0.0;
+    mstat->anclen   = 0;
+    *ret_mstat = mstat;
     return eslOK;
    }
   
-  mstat.nseq = msa->nseq;
-  mstat.alen = msa->alen;
-  esl_dst_CAverageId   (msa->aseq, msa->nseq, 10000, &mstat.avgid);    /* 10000 is max_comparisons, before sampling kicks in */
-  esl_dst_CAverageMatch(msa->aseq, msa->nseq, 10000, &mstat.avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
-  mstat.avgid    *= 100;
-  mstat.avgmatch *= 100;
+  mstat->nseq = msa->nseq;
+  mstat->alen = msa->alen;
+  esl_dst_CAverageId   (msa->aseq, msa->nseq, 10000, &mstat->avgid);    /* 10000 is max_comparisons, before sampling kicks in */
+  esl_dst_CAverageMatch(msa->aseq, msa->nseq, 10000, &mstat->avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
+  mstat->avgid    *= 100;
+  mstat->avgmatch *= 100;
  
-  calculate_Cstats(msa, &mstat.maxilen, &mstat.totilen, &mstat.totinum, &mstat.avginum, &mstat.stdinum, &mstat.avgilen, &mstat.stdilen, &mstat.avgsqlen, &mstat.stdsqlen, &mstat.anclen);
+  calculate_Cstats(msa, &mstat->maxilen, &mstat->totilen, &mstat->totinum, &mstat->avginum, &mstat->stdinum, &mstat->avgilen, 
+		   &mstat->stdilen, &mstat->avgsqlen, &mstat->stdsqlen, &mstat->anclen);
 
-  if (ret_mstat) *ret_mstat = mstat;
+  *ret_mstat = mstat;
   return eslOK;
+
+ ERROR:
+  if (mstat) free(mstat);
+  return status;
 }
 
 int
-msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat)
+msamanip_XStats(ESL_MSA *msa, MSA_STAT **ret_mstat)
 {
-  MSA_STAT mstat;
+  MSA_STAT *mstat;
+  int       status;
   
+  ESL_ALLOC(mstat, sizeof(MSA_STAT));
+
   if (msa == NULL) {
-    (*ret_mstat).nseq     = 0;
-    (*ret_mstat).alen     = 0;
-    (*ret_mstat).avgid    = 0.0;
-    (*ret_mstat).avgmatch = 0.0;
-    (*ret_mstat).maxilen  = 0;
-    (*ret_mstat).totilen  = 0;
-    (*ret_mstat).totinum  = 0;
-    (*ret_mstat).avginum  = 0.0;
-    (*ret_mstat).stdinum  = 0.0;
-    (*ret_mstat).avgilen  = 0.0;
-    (*ret_mstat).stdilen  = 0.0;
-    (*ret_mstat).avgsqlen = 0.0;
-    (*ret_mstat).stdsqlen = 0.0;
-    (*ret_mstat).anclen   = 0;
+    mstat->nseq     = 0;
+    mstat->alen     = 0;
+    mstat->avgid    = 0.0;
+    mstat->avgmatch = 0.0;
+    mstat->maxilen  = 0;
+    mstat->totilen  = 0;
+    mstat->totinum  = 0;
+    mstat->avginum  = 0.0;
+    mstat->stdinum  = 0.0;
+    mstat->avgilen  = 0.0;
+    mstat->stdilen  = 0.0;
+    mstat->avgsqlen = 0.0;
+    mstat->stdsqlen = 0.0;
+    mstat->anclen   = 0;
+    *ret_mstat = mstat;
     return eslOK;
    }
 
-  mstat.nseq = msa->nseq;
-  mstat.alen = msa->alen;
-  esl_dst_XAverageId   (msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgid);    /* 10000 is max_comparisons, before sampling kicks in */
-  esl_dst_XAverageMatch(msa->abc, msa->ax, msa->nseq, 10000, &mstat.avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
-  mstat.avgid    *= 100;
-  mstat.avgmatch *= 100;
+  mstat->nseq = msa->nseq;
+  mstat->alen = msa->alen;
+  esl_dst_XAverageId   (msa->abc, msa->ax, msa->nseq, 10000, &mstat->avgid);    /* 10000 is max_comparisons, before sampling kicks in */
+  esl_dst_XAverageMatch(msa->abc, msa->ax, msa->nseq, 10000, &mstat->avgmatch); /* 10000 is max_comparisons, before sampling kicks in */
+  mstat->avgid    *= 100;
+  mstat->avgmatch *= 100;
  
-  calculate_Xstats(msa, &mstat.maxilen, &mstat.totilen, &mstat.totinum, &mstat.avginum, &mstat.stdinum, &mstat.avgilen, &mstat.stdilen, &mstat.avgsqlen, &mstat.stdsqlen, &mstat.anclen);
+  calculate_Xstats(msa, &mstat->maxilen, &mstat->totilen, &mstat->totinum, &mstat->avginum, &mstat->stdinum, &mstat->avgilen, 
+		   &mstat->stdilen, &mstat->avgsqlen, &mstat->stdsqlen, &mstat->anclen);
   
-  if (ret_mstat) *ret_mstat = mstat;
+  *ret_mstat = mstat;
   return eslOK;
+
+ ERROR:
+  if (mstat) free(mstat);
+  return status;
 }
 
 int
@@ -1438,7 +1457,7 @@ msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_frq)
 }
 
 int
-msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc, 
+msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc, 
 		   float treeavgt, float time, int lcu_r, int lcu_e, char *errbuf, int verbose)
 {
   double   sen    = 0.0;
@@ -1471,18 +1490,18 @@ msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc
   SPE = (nhr > 0)? (float)nhe/(float)nhr : 0.0;
  
   if (method) fprintf(benchfp, "%s         %10d %10d %10d %10d %10d  %2.2f %2.2f %2.2f %2.2f    %f    %f    %s    %" PRId64 "  %d  %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d\n", 
-		      msaname, tph, trueh, foundh, nhe, nhr, mrstat.avgid, mestat.avgid, mrstat.avgmatch, mestat.avgmatch, treeavgt, time, method, 
-		      rmsa->alen, alen, mrstat.avgsqlen, mrstat.stdsqlen, mestat.avgsqlen, mestat.stdsqlen, 
-		      mrstat.avginum, mrstat.stdinum, mestat.avginum, mestat.stdinum, mrstat.avgilen, mrstat.stdilen, mestat.avgilen, mestat.stdilen, sc, hr, he, hre);
+		      msaname, tph, trueh, foundh, nhe, nhr, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, treeavgt, time, method, 
+		      rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen, 
+		      mrstat->avginum, mrstat->stdinum, mestat->avginum, mestat->stdinum, mrstat->avgilen, mrstat->stdilen, mestat->avgilen, mestat->stdilen, sc, hr, he, hre);
   else        fprintf(benchfp, "%s         %10d %10d %10d %10d %10d   %2.2f %2.2f %2.2f %2.2f    %f    %f    NA    %" PRId64 "  %d  %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d\n",      
-		      msaname, tph, trueh, foundh, nhe, nhr, mrstat.avgid, mestat.avgid, mrstat.avgmatch, mestat.avgmatch, treeavgt, time, 
-		      rmsa->alen, alen, mrstat.avgsqlen, mrstat.stdsqlen, mestat.avgsqlen, mestat.stdsqlen,  
-		      mrstat.avginum, mrstat.stdinum, mestat.avginum, mestat.stdinum, mrstat.avgilen, mrstat.stdilen, mestat.avgilen, mestat.stdilen, sc, hr, he, hre);
+		      msaname, tph, trueh, foundh, nhe, nhr, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, treeavgt, time, 
+		      rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen,  
+		      mrstat->avginum, mrstat->stdinum, mestat->avginum, mestat->stdinum, mrstat->avgilen, mrstat->stdilen, mestat->avgilen, mestat->stdilen, sc, hr, he, hre);
 
   if (1||verbose) fprintf(stdout, "#%s         %10d %10d %10d %10d %10d |  %.4f   %.4f   %.4f   %.4f | %2.2f %2.2f %2.2f %2.2f | %.4f     %.2f | %" PRId64 "  %d  %.2f +/- %.2f %.2f +/- %.2f %.4f | %d %d %d\n",      
-			  msaname, tph, trueh, foundh, nhe, nhr, sen, ppv, F, SPE, mrstat.avgid, mestat.avgid, mrstat.avgmatch, mestat.avgmatch, 
+			  msaname, tph, trueh, foundh, nhe, nhr, sen, ppv, F, SPE, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, 
 			  treeavgt, time, 
-			  rmsa->alen, alen, mrstat.avgsqlen, mrstat.stdsqlen, mestat.avgsqlen, mestat.stdsqlen, sc, hr, he, hre);
+			  rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen, sc, hr, he, hre);
    return eslOK;
 
  ERROR:

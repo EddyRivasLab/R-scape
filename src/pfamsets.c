@@ -56,7 +56,7 @@ struct cfg_s {
   int                  nmsa;
   char                *msafile;
   ESL_MSA             *msa;
-  MSA_STAT             mstat;                   /* statistics of the individual alignment */
+  MSA_STAT            *mstat;                   /* statistics of the individual alignment */
   int                  ntrain;
   int                  ntest;
 
@@ -295,7 +295,7 @@ main(int argc, char **argv)
 static int
 extract_sets(struct cfg_s *cfg, int *ret_n, int *ret_ntrain, int *ret_ntest)
 {
-  MSA_STAT  msastat;
+  MSA_STAT *msastat = NULL;
   float     frac;
   int       ntrain = 0;
   int       ntest = 0;
@@ -310,7 +310,7 @@ extract_sets(struct cfg_s *cfg, int *ret_n, int *ret_ntrain, int *ret_ntest)
     if (strcmp(cfg->msa->acc, cfg->exfamname[n]) == 0) { return eslOK; }
   }
   
-  if (msastat.avgid > cfg->minid && msastat.avgid <= cfg->maxid) {
+  if (msastat->avgid > cfg->minid && msastat->avgid <= cfg->maxid) {
     if (*ret_ntrain < cfg->ntrain && esl_random(cfg->r) < frac/(frac+1.))  { 
       ntrain ++;
       write_pwmsa(cfg->trainfp, cfg->msa, &msastat, TRUE); 
@@ -325,6 +325,7 @@ extract_sets(struct cfg_s *cfg, int *ret_n, int *ret_ntrain, int *ret_ntest)
   *ret_ntrain += ntrain;
   *ret_ntest  += ntest;
 
+  free(msastat);
   return eslOK;
 }
 
@@ -335,7 +336,7 @@ static int
 write_pwmsa(FILE *fp, ESL_MSA *msa, MSA_STAT *msastat, int verbose)
 {
   if (eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
-  if (msastat) msamanip_DumpStats(stdout, msa, *msastat); 
+  if (msastat) msamanip_DumpStats(stdout, msa, msastat); 
   return eslOK;
 }
 

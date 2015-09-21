@@ -56,7 +56,7 @@ struct cfg_s {
   int                  nmsa;
   char                *msafile;
   ESL_MSA             *msa;
-  MSA_STAT             mstat;                   /* statistics of the individual alignment */
+  MSA_STAT            *mstat;                   /* statistics of the individual alignment */
   int                  ntrio;
 
   int                  infmt;
@@ -235,6 +235,7 @@ main(int argc, char **argv)
     }
 
     esl_msa_Destroy(cfg.msa); cfg.msa = NULL;
+    if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
 
     if (cfg.ntrio > 0 && ntrio == cfg.ntrio) break;
   }
@@ -290,13 +291,14 @@ extract_trio(struct cfg_s *cfg, int *ret_ntrio)
 static int
 write_msa(FILE *fp, ESL_MSA *msa, int verbose)
 {
-  MSA_STAT msastat;
+  MSA_STAT *mstat = NULL;
 
   if (eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
   if (verbose) {
-    msamanip_XStats(msa, &msastat); //  msa aveid and avematch 
-    msamanip_DumpStats(stdout, msa, msastat); 
+    msamanip_XStats(msa, &mstat); //  msa aveid and avematch 
+    msamanip_DumpStats(stdout, msa, mstat); 
   }
   
+  if (mstat) free(mstat);
   return eslOK;
 }

@@ -61,7 +61,7 @@ struct cfg_s {
   ESL_MSA            **msalist;
   ESL_TREE           **Tlist;
   float              **msafrq;
-  MSA_STAT             mstat;                   /* statistics of the individual alignment */
+  MSA_STAT            *mstat;                   /* statistics of the individual alignment */
   
   E2_PIPELINE         *pli;
   E1_BG               *bg;	   	       /* null model (copies made of this into threads) */
@@ -431,9 +431,9 @@ run_voutput (struct cfg_s *cfg)
 {
   char           *msaname = NULL;
   ESL_MSA        *e2msa = NULL;
-  MSA_STAT        msastat;
-  MSA_STAT        alle2msastat;
-  MSA_STAT        e2msastat;
+  MSA_STAT       *msastat = NULL;
+  MSA_STAT       *alle2msastat = NULL;
+  MSA_STAT       *e2msastat = NULL;
   double          time;
   double          ttime = 0.0;
   float           sc;
@@ -469,7 +469,7 @@ run_voutput (struct cfg_s *cfg)
     /* The leaves-only alignment */
     msamanip_MSALeaves(&e2msa, FALSE);   
     msamanip_CStats(cfg->msalist[n]->abc, e2msa, &e2msastat);
-    e2msastat.anclen = alle2msastat.anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
+    e2msastat->anclen = alle2msastat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
     
     //if (eslx_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
     
@@ -479,12 +479,18 @@ run_voutput (struct cfg_s *cfg)
   }
 
   if (e2msa) esl_msa_Destroy(e2msa);
+  if (msastat) free(msastat);
+  if (e2msastat) free(e2msastat);
+  if (alle2msastat) free(alle2msastat);
   fclose(cfg->benchfp);
   free(cfg->benchfile);
    return eslOK;
   
  ERROR:
   if (e2msa) esl_msa_Destroy(e2msa);
+  if (msastat) free(msastat);
+  if (e2msastat) free(e2msastat);
+  if (alle2msastat) free(alle2msastat);
   if (cfg->benchfp) fclose(cfg->benchfp);
   if (cfg->benchfile) free(cfg->benchfile);
    return status;

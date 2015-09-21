@@ -112,8 +112,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nseqmin;
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
-  MSA_STAT         omstat;              /* statistics of the original alignment */
-  MSA_STAT         mstat;               /* statistics of the analyzed alignment */
+  MSA_STAT        *omstat;              /* statistics of the original alignment */
+  MSA_STAT        *mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
   int             *ct;
   int              onbpairs;
@@ -228,7 +228,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "R-scape - RNA Structure-driven Covariation Above Phylogenetic Expectation";
 
-static int MSA_banner (FILE *fp, char *msaname, MSA_STAT mstat, MSA_STAT omstat, int nbpairs, int onbpairs);
+static int MSA_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
@@ -309,6 +309,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_IsOn(go, "--submsa")) { 
     cfg.submsa = esl_opt_GetInteger(go, "--submsa"); 
     esl_sprintf(&outname, "%s.select%d", cfg.outheader, cfg.submsa);  
+    free(cfg.outheader); cfg.outheader = NULL;
     esl_sprintf(&cfg.outheader, "%s", outname); 
   }
   else { cfg.submsa = 0; }
@@ -399,6 +400,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 	       cfg.covtype == MIg || cfg.covtype == MIga || cfg.covtype == MIgp    )? WMI : W;      /* histogram step */
   cfg.pmass = esl_opt_GetReal   (go, "--pmass");
 
+  cfg.mstat  = NULL;
+  cfg.omstat = NULL;
+
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
@@ -488,11 +492,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 }
 
 static int
-MSA_banner (FILE *fp, char *msaname, MSA_STAT mstat, MSA_STAT omstat, int nbpairs, int onbpairs)
+MSA_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs)
 {
   fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  msaname, mstat.nseq, omstat.nseq, mstat.alen, omstat.alen, 
-	  mstat.avgid, omstat.avgid, nbpairs, onbpairs);
+	  msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
+	  mstat->avgid, omstat->avgid, nbpairs, onbpairs);
   return eslOK;
 }
 
@@ -542,6 +546,7 @@ main(int argc, char **argv)
 	wmsa = esl_msa_Clone(msa);
 
 	last = ESL_MIN(first+cfg.window-1, msa->alen);
+	free(cfg.msaname); cfg.msaname = NULL;
 	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
 
 	for (i = first; i <= last; i ++) useme[i] = TRUE;
@@ -563,6 +568,8 @@ main(int argc, char **argv)
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
+    if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
+    if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
   }
 
   /* cleanup */
@@ -583,6 +590,7 @@ main(int argc, char **argv)
   if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
+  free(cfg.rocfile);
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
@@ -602,6 +610,8 @@ main(int argc, char **argv)
   if (cfg.thresh) free(cfg.thresh);
   if (useme) free(useme);
   if (cfg.msamap) free(cfg.msamap); 
+  if (cfg.omstat) free(cfg.omstat);
+  if (cfg.mstat) free(cfg.mstat); 
 
   return 0;
 }
@@ -614,8 +624,9 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *msg = "original_msa_manipulate failed";
   char    *type = NULL;
   char    *tp;
-  char    *tok;
-  char    *tok2 = NULL;
+  char    *tok1;
+  char    *tok2;
+  char    *tok = NULL;
   char    *submsaname = NULL;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
@@ -631,10 +642,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (!esl_strcmp(msa->gf_tag[t], "TP")) {
       tp = msa->gf[t];	
       while (*tp != '\0') {
-	if (esl_strtok(&tp,  ";", &tok) != eslOK) esl_fatal(msg);
-	if (esl_strtok(&tok, " ", &tok) != eslOK) esl_fatal(msg);
-	esl_sprintf(&tok2, "_%s", tok);
-	esl_strcat(&type, -1, tok2, -1);
+	if (type) free(type); type = NULL;
+	if (tok) free(tok); tok = NULL;
+	if (esl_strtok(&tp,   ";", &tok1) != eslOK) esl_fatal(msg);
+	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);
+	esl_sprintf(&tok, "_%s", tok2);
+	esl_strcat(&type, -1, tok, -1);
       }
     }
   }
@@ -645,8 +658,9 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   else if (msa->name)                      esl_sprintf(&cfg->msaname, "%s",      msa->name);
   else if (cfg->onemsa)                    esl_sprintf(&cfg->msaname, "%s",      cfg->filename);
   else                                     esl_sprintf(&cfg->msaname, "%s_%d",   cfg->filename, cfg->nmsa);
-  if (esl_opt_IsOn(go, "--submsa")) {
+  if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
+    free(cfg->msaname); cfg->msaname = NULL;
     esl_sprintf(&cfg->msaname, "%s", submsaname);
   }
   
@@ -661,14 +675,16 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   msa = *omsa;
   if (msa == NULL) {
     if (submsaname) free(submsaname);
-    free(type); type = NULL;
+    if (type) free(type); type = NULL;
+    if (tok) free(tok); tok = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
   if (msa->nseq < cfg->nseqmin) {
     esl_msa_Destroy(msa); 
     if (submsaname) free(submsaname);
-    free(type); type = NULL;
+    if (type) free(type); type = NULL;
+    if (tok) free(tok); tok = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
@@ -681,10 +697,11 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   
-  if ((esl_opt_IsOn(go, "--minid") && cfg->mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
-      (esl_opt_IsOn(go, "--maxid") && cfg->mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid"))   ) {
+  if ((esl_opt_IsOn(go, "--minid") && cfg->mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
+      (esl_opt_IsOn(go, "--maxid") && cfg->mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid"))   ) {
     esl_msa_Destroy(msa); msa = NULL;
-    free(type); type = NULL;
+    if (type) free(type); type = NULL;
+    if (tok) free(tok); tok = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;  
   }
@@ -697,7 +714,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     msamanip_DumpStats(stdout, msa, cfg->mstat); 
   }
 
-  if (tok2) free(tok2);
+  if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
   return eslOK;
@@ -866,7 +883,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
-		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat.avgid), cfg->nbpairs);
+		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
 
   /* produce a tree
@@ -882,11 +899,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) 
-    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat.avgid); 
+    fprintf(cfg->sumfp, "%f\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat->avgid); 
   
   /* write MSA info to the rocfile */
   if (cfg->mode == GIVSS || cfg->mode == CYKSS)
-  fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat.avgid, cfg->nbpairs, cfg->onbpairs);  
+  fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);  
   
   /* main function */
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
@@ -953,7 +970,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   }
  
   *omsa = msa;
-  if (ret_ranklist) *ret_ranklist = ranklist; 
+  if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
@@ -1084,7 +1101,6 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       s;
-  int       b;
   int       status;
 
    for (s = 0; s < cfg->nshuffle; s ++) {
@@ -1231,7 +1247,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 {
   ESL_MSA   *allmsa = NULL;
   ESL_MSA   *shmsa = NULL;
-  MSA_STAT   shmstat;
+  MSA_STAT  *shmstat = NULL;
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       sc;
@@ -1291,11 +1307,13 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   *ret_cumranklist = cumranklist;
 
   esl_msa_Destroy(allmsa);
+  free(shmstat);
   return eslOK;
   
  ERROR:
   if (allmsa) esl_msa_Destroy(allmsa);
   if (shmsa) esl_msa_Destroy(shmsa);
+  if (shmstat) free(shmstat);
   if (ranklist) cov_FreeRankList(ranklist);
   if (cumranklist) cov_FreeRankList(cumranklist);
   return status;

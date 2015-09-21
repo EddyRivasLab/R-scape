@@ -1525,10 +1525,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (data->mode == GIVSS || data->mode == CYKSS) {
     if (data->ranklist_null) {
       if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
-#if 0
 	ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
 	for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
-#endif
 	data->ranklist_null->ha->nb = ranklist->ha->nb;
       }
     }
@@ -1570,7 +1568,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
     
     if (data->mode == GIVSS || data->mode == CYKSS) { 
-
       ranklist->eval[b] = eval; // evalues
       
       switch(data->thresh->type) {

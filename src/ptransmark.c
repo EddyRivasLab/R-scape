@@ -104,7 +104,7 @@ struct cfg_s {
   P7_HMMFILE      *hfp;                /* input HMM file */
   P7_HMM          *hmm;                /* HMM            */
  
-  MSA_STAT         trmstat;            /* statistics of the input alignment */
+  MSA_STAT        *trmstat;            /* statistics of the input alignment */
   float           *trmsafrq;
 
   int              domax;
@@ -181,10 +181,10 @@ static int truncate_testmsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, in
 static int expand_partialmsas(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa1, ESL_MSA **omsa2, int L1, int L2);
 static int set_gaps(ESL_ALPHABET *abc, ESL_DSQ *dsq, int L);
 static int set_random_segment(ESL_GETOPTS *go, struct cfg_s *cfg, FILE *logfp, ESL_DSQ *dsq, int L);
-static int run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MSA *rmsa, MSA_STAT rmsastat, int domax);
+static int run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MSA *rmsa, MSA_STAT *rmsastat, int domax);
 static int domain_dump(struct domain_s *dom, int ndom);
 static int parse_edomtbl(char *tblfile, ESL_MSA *msa, struct domain_s **ret_dom, int *ret_ndom, char *errbuf);
-static int domain2domain_msa(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, struct domain_s *dom, int ndom, ESL_MSA **omsa, ESL_MSA *rmsa, MSA_STAT rmsastat, 
+static int domain2domain_msa(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, struct domain_s *dom, int ndom, ESL_MSA **omsa, ESL_MSA *rmsa, MSA_STAT *rmsastat, 
 			     int domax, char *errbuf);
 static int expand_msa(ESL_MSA **omsa, struct domain_s *dom, int alen);
 static int swap_msa(ESL_MSA **omsa);
@@ -192,7 +192,7 @@ static int ehmm_stats(struct cfg_s *cfg, char *hmmfile, float time, char **ret_h
 		      float *ret_hmmME, float *ret_hmmMRE);
 static int parse_ehmmemit(char *file, char **ret_hmmname, float *ret_hmmME, float *ret_hmmMRE, char *errbuf);
 static int parse_alistat(char *file, int *ret_hmmALEN, float *ret_hmmSQLEN, float *ret_hmmPID, char *errbuf);
-static int run_benchmark(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float avgsc, float avgtime);
+static int run_benchmark(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float avgsc, float avgtime);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -951,7 +951,7 @@ set_random_segment(ESL_GETOPTS *go, struct cfg_s *cfg, FILE *logfp, ESL_DSQ *dsq
   
 
 static int
-run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MSA *rmsa, MSA_STAT rmsastat, int domax)
+run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MSA *rmsa, MSA_STAT *rmsastat, int domax)
 {
   char             tmprmsafile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char             tmpmsafile[16]   = "esltmpXXXXXX"; /* tmpfile template */
@@ -1170,13 +1170,13 @@ domain_dump(struct domain_s *dom, int ndom)
 }
 
 static int
-domain2domain_msa(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, struct domain_s *domain, int ndom, ESL_MSA **omsa, ESL_MSA *rmsa, MSA_STAT rmsastat, 
+domain2domain_msa(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, struct domain_s *domain, int ndom, ESL_MSA **omsa, ESL_MSA *rmsa, MSA_STAT *rmsastat, 
 		  int domax, char *errbuf)
 {
   struct domain_s *dom1, *dom2;
   ESL_MSA         *dmsa = NULL;
   ESL_MSA         *msa;
-  MSA_STAT         dmsastat;
+  MSA_STAT        *dmsastat = NULL;
   float            avgsc;
   float            avgtime;
   float            sc1max = -eslINFINITY;
@@ -1488,7 +1488,7 @@ parse_alistat(char *file, int *ret_hmmALEN, float *ret_hmmSQLEN, float *ret_hmmP
 }
 
 static int 
-run_benchmark(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float avgsc, float avgtime)
+run_benchmark(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float avgsc, float avgtime)
 {
   char   *msaname = NULL;
   double  cputime;

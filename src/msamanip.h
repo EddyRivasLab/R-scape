@@ -56,12 +56,13 @@ extern int msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ES
 					     char *errbuf, int verbose);
 extern int msamanip_OutfileHeader(char *acc, char **ret_outheader);
 extern int msamanip_MSALeaves(ESL_MSA **msa, int incnode);
-extern int msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT mstat);
-extern int msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT *ret_mstat);
-extern int msamanip_XStats(ESL_MSA *msa, MSA_STAT *ret_mstat);
+extern int msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT *mstat);
+extern int msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret_mstat);
+extern int msamanip_XStats(ESL_MSA *msa, MSA_STAT **ret_mstat);
 extern int msamanip_CBaseComp(const ESL_ALPHABET *abc, ESL_MSA *msa, float *prior, float **ret_msafreq);
 extern int msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_msafreq);
-extern int msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc, 
+extern int msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, 
+			      ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc, 
 			      float treeavgt, float time, int lcu_r, int lcu_e, char *errbuf, int verbose);
 #endif /*MSAMANIP_INCLUDED*/
 

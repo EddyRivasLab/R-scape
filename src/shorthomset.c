@@ -63,7 +63,7 @@ struct cfg_s {
   int                  nmsa;
   char                *msafile;
   ESL_MSA             *msa;
-  MSA_STAT             mstat;                   /* statistics of the individual alignment */
+  MSA_STAT            *mstat;                   /* statistics of the individual alignment */
 
   char                *dbfile;
   int                  dbfmt;
@@ -560,7 +560,7 @@ length_dealigned(ESL_ALPHABET *abc, ESL_DSQ *dsq, int alen, int idx, int *l)
 static int
 write_msa(FILE *fp, ESL_MSA *msa, int verbose)
 {
-  MSA_STAT msastat;
+  MSA_STAT *msastat = NULL;
 
   if (eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
   if (verbose) {
@@ -568,6 +568,7 @@ write_msa(FILE *fp, ESL_MSA *msa, int verbose)
     msamanip_DumpStats(stdout, msa, msastat); 
   }
   
+  if (msastat) free(msastat);
   return eslOK;
 }
 

@@ -117,7 +117,7 @@ struct cfg_s {
 
   int                submsa;              /* set to the number of random seqs taken from original msa.
 					   * Set to 0 if we are taking all */
-  MSA_STAT           mstat;               /* statistics of the input alignment */
+  MSA_STAT          *mstat;               /* statistics of the input alignment */
   float             *msafrq;
 
   int                infmt;
@@ -266,7 +266,7 @@ static int run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa);
 static int run_ssearch(struct cfg_s *cfg, ESL_MSA *msa);
 static int run_muscle(struct cfg_s *cfg, ESL_MSA *msa);
 static int run_msaprobs(struct cfg_s *cfg, ESL_MSA *msa);
-static int run_benchmark(struct cfg_s *cfg, char *method, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc);
+static int run_benchmark(struct cfg_s *cfg, char *method, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc);
 static int train(struct cfg_s *cfg, ESL_MSA *msa);
 static int explore_distribution(struct cfg_s *cfg, ESL_MSA *msa);
 
@@ -343,6 +343,8 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.voutput    = esl_opt_GetBoolean(go, "--voutput");
   cfg.probdist   = esl_opt_GetBoolean(go, "--probdist"); 
   cfg.train      = esl_opt_GetBoolean(go, "--train"); 
+
+  cfg.mstat = NULL;
 
   /* branch length options */
   cfg.fixpid     = esl_opt_IsOn(go, "--fixpid")?  esl_opt_GetReal(go, "--fixpid") : -1.0; 
@@ -566,8 +568,8 @@ main(int argc, char **argv)
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);
     msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
 
-    if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
-    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
+    if (esl_opt_IsOn(go, "--minid") && cfg.mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
+    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
 
     /* print some info */
     if (cfg.voutput) {
@@ -656,6 +658,7 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   eslx_msafile_Close(afp);
+  free(cfg.mstat);
   return 0;
 }
 
@@ -681,8 +684,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   ESL_MSA   *dmsa  = NULL;
   ESL_MSA   *e2msa = NULL;
-  MSA_STAT   alle2mstat;
-  MSA_STAT   e2mstat;
+  MSA_STAT  *alle2mstat = NULL;
+  MSA_STAT  *e2mstat = NULL;
   float      sc;
   int        nnodes;
   int        r;
@@ -776,7 +779,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* The leaves-only alignment */
   msamanip_MSALeaves(&e2msa, FALSE);   
   msamanip_CStats(cfg->abc, e2msa, &e2mstat);
-  e2mstat.anclen = alle2mstat.anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
+  e2mstat->anclen = alle2mstat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
 
   if (cfg->voutput) { /* write output alignment */
     /* print output info */
@@ -812,6 +815,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
  
   if (dmsa)   esl_msa_Destroy(dmsa);
   if (e2msa)  esl_msa_Destroy(e2msa);
+  if (e2mstat) free(e2mstat);
+  if (alle2mstat) free(alle2mstat);
   if (cfg->T) esl_tree_Destroy(cfg->T);
   
   return eslOK;
@@ -827,7 +832,7 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
 {
   char     *name = NULL;
   ESL_MSA  *phmmermsa = NULL;
-  MSA_STAT  phmmermstat;
+  MSA_STAT *phmmermstat = NULL;
   float     usetime = -1.0;
   float     sc = -eslINFINITY;
   int       status;
@@ -875,6 +880,7 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
 
   if (name) free(name);
   if (phmmermsa) esl_msa_Destroy(phmmermsa);
+  if (phmmermstat) free(phmmermstat); phmmermstat = NULL;
   if (cfg->msaefname_phmmer3) free(cfg->msaefname_phmmer3); cfg->msaefname_phmmer3 = NULL;
   if (cfg->msaefname_phmmer)  free(cfg->msaefname_phmmer);  cfg->msaefname_phmmer  = NULL;
   return eslOK;
@@ -882,6 +888,7 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
  ERROR:
   if (name) free(name);
   if (phmmermsa) esl_msa_Destroy(phmmermsa);
+  if (phmmermstat) free(phmmermstat); phmmermstat = NULL;
   if (cfg->msaefname_phmmer3) free(cfg->msaefname_phmmer3); cfg->msaefname_phmmer3 = NULL;
   if (cfg->msaefname_phmmer)  free(cfg->msaefname_phmmer);  cfg->msaefname_phmmer  = NULL;
   return status;
@@ -890,10 +897,10 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
 static int
 run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA *blastmsa = NULL;
-  MSA_STAT blastmstat;
-  float    sc = -eslINFINITY;
-  int      status;
+  ESL_MSA  *blastmsa = NULL;
+  MSA_STAT *blastmstat = NULL;
+  float     sc = -eslINFINITY;
+  int       status;
 
   esl_stopwatch_Start(cfg->w);
   NCBIBLAST_Align(msa, cfg->wordsize, &blastmsa, cfg->errbuf, cfg->verbose);
@@ -918,11 +925,13 @@ run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   if (blastmsa) esl_msa_Destroy(blastmsa);
+  if (blastmstat) free(blastmstat);
   if (cfg->msaefname_ncbiblast) free(cfg->msaefname_ncbiblast);
    return eslOK;
 
  ERROR:
   if (blastmsa) esl_msa_Destroy(blastmsa);
+  if (blastmstat) free(blastmstat);
   if (cfg->msaefname_ncbiblast) free(cfg->msaefname_ncbiblast);
   return status;
 }
@@ -930,10 +939,10 @@ run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_ssearch(struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA *ssearchmsa = NULL;
-  MSA_STAT ssearchmstat;			
-  float    sc;
-  int      status;
+  ESL_MSA  *ssearchmsa = NULL;
+  MSA_STAT *ssearchmstat = NULL;			
+  float     sc;
+  int       status;
 
   esl_stopwatch_Start(cfg->w);
   SSEARCH_Align(cfg->fastaversion, msa, &ssearchmsa, &sc, cfg->fasta_s, cfg->fasta_f, cfg->fasta_g, cfg->errbuf, cfg->verbose);
@@ -958,6 +967,7 @@ run_ssearch(struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   if (ssearchmsa) esl_msa_Destroy(ssearchmsa);
+  if (ssearchmstat) free(ssearchmstat);
   if (cfg->msaefname_ssearch) free(cfg->msaefname_ssearch);
    return eslOK;
 
@@ -970,10 +980,10 @@ run_ssearch(struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_muscle(struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA *musclemsa = NULL;
-  MSA_STAT musclemstat;
-  float    sc = -eslINFINITY;
-  int      status;
+  ESL_MSA  *musclemsa = NULL;
+  MSA_STAT *musclemstat = NULL;
+  float     sc = -eslINFINITY;
+  int       status;
 
   esl_stopwatch_Start(cfg->w);
   MUSCLE_Align(msa, &musclemsa, cfg->errbuf, cfg->verbose);
@@ -998,11 +1008,13 @@ run_muscle(struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   if (musclemsa)             esl_msa_Destroy(musclemsa);
+  if (musclemstat)           free(musclemstat);
   if (cfg->msaefname_muscle) free(cfg->msaefname_muscle);
    return eslOK;
 
  ERROR:
   if (musclemsa)             esl_msa_Destroy(musclemsa);
+  if (musclemstat)           free(musclemstat);
   if (cfg->msaefname_muscle) free(cfg->msaefname_muscle);
   return status;
 }
@@ -1010,10 +1022,10 @@ run_muscle(struct cfg_s *cfg, ESL_MSA *msa)
 static int
 run_msaprobs(struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA *msaprobsmsa = NULL;  
-  MSA_STAT msaprobsmstat;
-  float    sc = -eslINFINITY;
-  int      status;
+  ESL_MSA  *msaprobsmsa = NULL;  
+  MSA_STAT *msaprobsmstat = NULL;
+  float     sc = -eslINFINITY;
+  int       status;
   
   esl_stopwatch_Start(cfg->w);
   status = MSAProbs_Align(msa, &msaprobsmsa, cfg->errbuf, cfg->verbose);
@@ -1040,18 +1052,20 @@ run_msaprobs(struct cfg_s *cfg, ESL_MSA *msa)
   }
 
  if (msaprobsmsa)             esl_msa_Destroy(msaprobsmsa);
+ if (msaprobsmstat)           free(msaprobsmstat);
  if (cfg->msaefname_msaprobs) free(cfg->msaefname_msaprobs);
  return eslOK;
 
  ERROR:
  if (msaprobsmsa)             esl_msa_Destroy(msaprobsmsa);
+ if (msaprobsmstat)           free(msaprobsmstat);
  if (cfg->msaefname_msaprobs) free(cfg->msaefname_msaprobs);
  return status;
 }
 
 
 static int 
-run_benchmark(struct cfg_s *cfg, char *method, ESL_MSA *rmsa, MSA_STAT mrstat, ESL_MSA *emsa, MSA_STAT mestat, float sc)
+run_benchmark(struct cfg_s *cfg, char *method, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc)
 {
   char   *msaname = NULL;
   double  time;
@@ -1076,7 +1090,7 @@ static int
 train(struct cfg_s *cfg, ESL_MSA *msa)
 {
   ESL_MSA    *pairmsa = NULL;
-  MSA_STAT    pairmstat;
+  MSA_STAT   *pairmstat = NULL;
   int        *useme = NULL;
   PSQ       **psq = NULL;
   int         N = msa->nseq; 
@@ -1098,7 +1112,7 @@ train(struct cfg_s *cfg, ESL_MSA *msa)
    	useme[j] = TRUE; 
     	esl_msa_SequenceSubset(msa, useme, &pairmsa); 
    	msamanip_XStats(pairmsa, &pairmstat); 
-	printf("# id %f match %f alen %" PRId64 "  inserts %d ilen %d\n", pairmstat.avgid, pairmstat.avgmatch, pairmsa->alen, pairmstat.totinum, pairmstat.totilen);
+	printf("# id %f match %f alen %" PRId64 "  inserts %d ilen %d\n", pairmstat->avgid, pairmstat->avgmatch, pairmsa->alen, pairmstat->totinum, pairmstat->totilen);
 
 	useme[j] = FALSE;
 	esl_msa_Destroy(pairmsa); pairmsa = NULL;
@@ -1117,6 +1131,7 @@ train(struct cfg_s *cfg, ESL_MSA *msa)
  ERROR:
   if (useme)   free(useme);  
   if (pairmsa) esl_msa_Destroy(pairmsa); 
+  if (pairmstat) free(pairmstat);
    if (psq) {
     for (i = 0; i < N; i++) psq_Destroy(psq[i]);
     free(psq);
@@ -1129,7 +1144,7 @@ static int
 explore_distribution(struct cfg_s *cfg, ESL_MSA *msa)
 {
   ESL_MSA    *pairmsa = NULL;
-  MSA_STAT    pairmstat;
+  MSA_STAT   *pairmstat = NULL;
   int        *useme = NULL;
   PSQ       **psq = NULL;
   ESL_SQ     *sq = NULL;
@@ -1185,7 +1200,7 @@ explore_distribution(struct cfg_s *cfg, ESL_MSA *msa)
    	status = e2_Optimize(cfg->r, cfg->pli, psq[i], psq[j], cfg->msafrq, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, &timel, &timer, NULL, NULL, &sc, cfg->e2ali, OPTTIME, 
    			     cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose); 
    	optime = timel+timer; 
-   	printf("# id %f match %f L %" PRId64 " optime %f optsc %f\n", pairmstat.avgid, pairmstat.avgmatch, pairmsa->alen, optime, sc); 
+   	printf("# id %f match %f L %" PRId64 " optime %f optsc %f\n", pairmstat->avgid, pairmstat->avgmatch, pairmsa->alen, optime, sc); 
 
    	/* P(s1,s2|t) as a function of time */ 
    	time = 1e-6; 
@@ -1199,7 +1214,8 @@ explore_distribution(struct cfg_s *cfg, ESL_MSA *msa)
 	printf("&\n");
 	useme[j] = FALSE;
 	
-	esl_msa_Destroy(pairmsa); pairmsa = NULL;
+	esl_msa_Destroy(pairmsa); pairmsa = NULL; 
+	if (pairmstat) free(pairmstat); pairmstat = NULL;
       }
     useme[i] = FALSE;
   }
@@ -1214,7 +1230,8 @@ explore_distribution(struct cfg_s *cfg, ESL_MSA *msa)
 
  ERROR:
   if (useme)   free(useme);  
-  if (pairmsa) esl_msa_Destroy(pairmsa); 
+  if (pairmsa) esl_msa_Destroy(pairmsa);
+  if (pairmstat) free(pairmstat);
   if (sq)      esl_sq_Destroy(sq);
   if (psq) {
     for (i = 0; i < N; i++) psq_Destroy(psq[i]);
