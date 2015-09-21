@@ -1534,7 +1534,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    if (data->verbose) {
+    if (1||data->verbose) {
       if (!usenull) 
 	printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", data->pmass, newmass, ranklist->ht->phi,            mu, lambda, ranklist->ht->Nc);
       else          
