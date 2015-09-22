@@ -1283,37 +1283,37 @@ msamanip_DumpStats(FILE *ofp, ESL_MSA *msa, MSA_STAT *mstat)
 {
   fprintf(ofp, "name                 %%id     %%match     alen    avg_indel_num    avg_indel_len    max_indel_len  ancestral_len      avd_seq_len\n");
   fprintf(ofp, "%-20s %3.0f%%    %3.0f%%    %6d     %3.1f +/- %3.1f     %3.1f +/- %3.1f  %6d        %6d                %3.1f +/- %3.1f \n", 
-	  msa->name, mstat->avgid, mstat->avgmatch, (int)msa->alen, mstat->avginum, mstat->stdinum,  mstat->avgilen, mstat->stdilen, mstat->maxilen, mstat->anclen, mstat->avgsqlen, mstat->stdsqlen);
-  
+	  msa->name, mstat->avgid, mstat->avgmatch, (int)msa->alen, mstat->avginum, mstat->stdinum,  mstat->avgilen, 
+	  mstat->stdilen, mstat->maxilen, mstat->anclen, mstat->avgsqlen, mstat->stdsqlen);
  return eslOK;
 }
 
 int
 msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret_mstat)
 {
-  MSA_STAT *mstat;
+  MSA_STAT *mstat = NULL;
   int       status;
   
   ESL_ALLOC(mstat, sizeof(MSA_STAT));
+  mstat->nseq     = 0;
+  mstat->alen     = 0;
+  mstat->avgid    = 0.0;
+  mstat->avgmatch = 0.0;
+  mstat->maxilen  = 0;
+  mstat->totilen  = 0;
+  mstat->totinum  = 0;
+  mstat->avginum  = 0.0;
+  mstat->stdinum  = 0.0;
+  mstat->avgilen  = 0.0;
+  mstat->stdilen  = 0.0;
+  mstat->avgsqlen = 0.0;
+  mstat->stdsqlen = 0.0;
+  mstat->anclen   = 0;
   
   if (msa == NULL) {
-    mstat->nseq     = 0;
-    mstat->alen     = 0;
-    mstat->avgid    = 0.0;
-    mstat->avgmatch = 0.0;
-    mstat->maxilen  = 0;
-    mstat->totilen  = 0;
-    mstat->totinum  = 0;
-    mstat->avginum  = 0.0;
-    mstat->stdinum  = 0.0;
-    mstat->avgilen  = 0.0;
-    mstat->stdilen  = 0.0;
-    mstat->avgsqlen = 0.0;
-    mstat->stdsqlen = 0.0;
-    mstat->anclen   = 0;
     *ret_mstat = mstat;
     return eslOK;
-   }
+  }
   
   mstat->nseq = msa->nseq;
   mstat->alen = msa->alen;
@@ -1336,29 +1336,29 @@ msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret_mstat)
 int
 msamanip_XStats(ESL_MSA *msa, MSA_STAT **ret_mstat)
 {
-  MSA_STAT *mstat;
+  MSA_STAT *mstat = NULL;
   int       status;
   
   ESL_ALLOC(mstat, sizeof(MSA_STAT));
-
+  mstat->nseq     = 0;
+  mstat->alen     = 0;
+  mstat->avgid    = 0.0;
+  mstat->avgmatch = 0.0;
+  mstat->maxilen  = 0;
+  mstat->totilen  = 0;
+  mstat->totinum  = 0;
+  mstat->avginum  = 0.0;
+  mstat->stdinum  = 0.0;
+  mstat->avgilen  = 0.0;
+  mstat->stdilen  = 0.0;
+  mstat->avgsqlen = 0.0;
+  mstat->stdsqlen = 0.0;
+  mstat->anclen   = 0;
+  
   if (msa == NULL) {
-    mstat->nseq     = 0;
-    mstat->alen     = 0;
-    mstat->avgid    = 0.0;
-    mstat->avgmatch = 0.0;
-    mstat->maxilen  = 0;
-    mstat->totilen  = 0;
-    mstat->totinum  = 0;
-    mstat->avginum  = 0.0;
-    mstat->stdinum  = 0.0;
-    mstat->avgilen  = 0.0;
-    mstat->stdilen  = 0.0;
-    mstat->avgsqlen = 0.0;
-    mstat->stdsqlen = 0.0;
-    mstat->anclen   = 0;
     *ret_mstat = mstat;
     return eslOK;
-   }
+  }
 
   mstat->nseq = msa->nseq;
   mstat->alen = msa->alen;
@@ -1511,8 +1511,8 @@ msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc
 
 
 static int
-calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, 
-		   double *ret_stdsqlen, int *ret_anclen) 
+calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, 
+		 double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen) 
 {
   char   *aseq;
   double  avginum = 0.;
@@ -1609,7 +1609,8 @@ calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_toti
 }
 
 static int
-calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen) 
+calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, 
+		 double *ret_avgilen, double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen) 
 {
   ESL_DSQ *ax;
   double   avginum = 0.;

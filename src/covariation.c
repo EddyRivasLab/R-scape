@@ -1561,8 +1561,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     neg  = mi->alen * (mi->alen-1) / 2 - t;
     if (data->ranklist_null) {
       eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
-      printf("^^ cov %f bmin %f bmax %f b %d imin %d imax %d eval %f\n", 
-	     cov, ranklist->ha->bmin, ranklist->ha->bmax, b, ranklist->ha->imin, ranklist->ha->imax, eval);
     }
     else {
       eval = eslINFINITY;
@@ -1676,9 +1674,8 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
     }
   }
     
-  cov_FreeRankList(*oranklist);
+  cov_FreeRankList(ranklist);
   *oranklist = new;
-
   return eslOK;
 
  ERROR:

@@ -693,11 +693,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (type) free(type); type = NULL;
     if (tok) free(tok); tok = NULL;
     free(cfg->msaname); cfg->msaname = NULL;
+    if (submsaname) free(submsaname);
     return eslOK;  
   }
   
   /* print some info */
-  if (cfg->verbose) {
+  if (1||cfg->verbose) {
     fprintf(stdout, "Used alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
     if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
@@ -1324,21 +1325,23 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   int       b;
   int       cumb;
   
-  if (cumranklist == NULL) {
-    cumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
+  if (*ocumranklist == NULL) {
+    *ocumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
+    cumranklist = *ocumranklist;
     cumranklist->ha->n     = ranklist->ha->n;
-
     cumranklist->ha->xmin  = ranklist->ha->xmin;
     cumranklist->ha->xmax  = ranklist->ha->xmax;
-       cumranklist->ha->imin  = ranklist->ha->imin;
-       cumranklist->ha->imax  = ranklist->ha->imax;
-       cumranklist->scthresh  = ranklist->scthresh;
+    cumranklist->ha->imin  = ranklist->ha->imin;
+    cumranklist->ha->imax  = ranklist->ha->imax;
+    cumranklist->scthresh  = ranklist->scthresh;
   }
   else {                    
-    cov_GrowRankList(&cumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
-    cumranklist->scthresh = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
+    cov_GrowRankList(ocumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
+    cumranklist = *ocumranklist;
+    cumranklist->scthresh  = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
     cumranklist->ha->n    += ranklist->ha->n;
   }
+ 
   for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
     
@@ -1359,7 +1362,8 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
     //esl_histogram_PlotSurvival(stdout, ranklist->h);
   }
 
-  *ocumranklist = cumranklist;
-  return eslOK;
+  //*ocumranklist = cumranklist;
+ 
+ return eslOK;
 }
 
