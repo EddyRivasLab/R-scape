@@ -3371,6 +3371,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   /* use the sampled distribution if possible */
   if (icov <= h->imax && icov >= h->imin) {
 
+    if (icov < h->imin) icov = h->imin;
     if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;
     
     for (i = h->imax; i >= icov; i--) c += h->obs[i];
