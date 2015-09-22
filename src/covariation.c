@@ -1521,14 +1521,14 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   /* histogram and exponential fit */
   if (data->mode == GIVSS || data->mode == CYKSS) {
-    if (data->ranklist_null) {
-      if (usenull && data->ranklist_null->ha->nb < ranklist->ha->nb) {
+    if (data->ranklist_null && usenull) {
+       if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
 	ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
 	for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
 	data->ranklist_null->ha->nb = ranklist->ha->nb;
       }
     }
-
+    
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
@@ -3366,9 +3366,8 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the sampled distribution if possible */
-  if (icov <= h->imax) {
-    
-    if (icov < h->imin) icov = h->imin;
+  if (icov <= h->imax && icov >= h->imin) {
+
     if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;
     
     for (i = h->imax; i >= icov; i--) c += h->obs[i];
