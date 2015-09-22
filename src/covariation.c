@@ -3372,11 +3372,12 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   int    i;
   
   esl_histogram_Score2Bin(h, cov, &icov);
-  printf("^^ cov %f icov %d imax %d\n", cov, icov, h->imax);
+  printf("^^ cov %f icov %d imax %d imin %d nb %d\n", cov, icov, h->imax, h->imin, h->nb);
 
   /* use the sampled distribution if possible */
   if (icov <= h->imax) {
     
+    if (icov < 0) icov = 0;
     if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;
     
     for (i = h->imax; i >= icov; i--) c += h->obs[i];
