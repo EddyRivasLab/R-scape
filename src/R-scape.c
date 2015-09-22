@@ -229,9 +229,9 @@ static char banner[] = "R-scape - RNA Structure-driven Covariation Above Phyloge
 
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
-static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist);
+static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist);
 static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null2_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -550,14 +550,14 @@ main(int argc, char **argv)
 	for (i = first; i <= last; i ++) useme[i] = TRUE;
 	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
 
-	status = rscape_for_msa(go, &cfg, &wmsa);
+	status = rscape_for_msa(go, &cfg, wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
  
 	esl_msa_Destroy(wmsa); wmsa = NULL;
       }
     }
     else {
-      status = rscape_for_msa(go, &cfg, &msa);
+      status = rscape_for_msa(go, &cfg, msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -711,9 +711,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 }
 
 static int
-rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
+rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA  *msa = *omsa;
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
   int       status;
@@ -804,7 +803,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* main function */
   cfg->mode = GIVSS;
-  status = run_rscape(go, cfg, omsa, ranklist_null, ranklist_aux, NULL);
+  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
 
   free(cfg->ct); cfg->ct = NULL;
@@ -860,12 +859,11 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist)
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist)
 {
   char            *title = NULL;
   struct data_s    data;
   struct mutual_s *mi   = NULL;
-  ESL_MSA         *msa = *omsa;
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
   HITLIST         *hitlist = NULL;
@@ -939,7 +937,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
 
-  status = cov_Calculate(&data, omsa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
@@ -958,7 +956,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
-    status = cov_CYKCOVCT(&data, omsa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    status = cov_CYKCOVCT(&data, msa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
     if (cfg->verbose) {
@@ -1006,7 +1004,7 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
-    status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to run null1_rscape", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1060,7 +1058,7 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
-    status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null1b rscape", cfg->errbuf);
    
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1105,7 +1103,7 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
    for (s = 0; s < cfg->nshuffle; s ++) {
      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
-     status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2 rscape", cfg->errbuf);
      
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1154,7 +1152,7 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
    */
    for (s = 0; s < cfg->nshuffle; s ++) {
      shmsa = esl_msa_Clone(msa);
-     status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2b rscape", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1208,7 +1206,7 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
 
-    status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rscape shuffled", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1283,7 +1281,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       //eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
     }
 
-    status = run_rscape(go, cfg, &shmsa, NULL, NULL, &ranklist);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     

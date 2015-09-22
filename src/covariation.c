@@ -54,9 +54,8 @@ static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_
 static int    cov_histogram_cov2expectsurv(double cov, ESL_HISTOGRAM *h, double *ret_expsurv);
 
 int                 
-cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
 {
-  ESL_MSA       *msa = *omsa;
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
   COVCLASS       covclass = data->mi->class;
@@ -211,11 +210,10 @@ cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, HITL
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
     
-    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, &msa, data->ct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
   }
   
-  *omsa = msa;
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
@@ -2037,10 +2035,9 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-cov_CYKCOVCT(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, int minloop, 
+cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, int minloop, 
 	     enum grammar_e G, double covthresh)
 {
-  ESL_MSA       *msa = *omsa;
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
   int           *cykct = NULL;
@@ -2073,7 +2070,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, doubl
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, &msa, cykct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, msa, cykct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   /* DotPlots (pdf,svg) */
@@ -2082,7 +2079,6 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA **omsa, RANKLIST **ret_ranklist, doubl
   status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
-  *omsa = msa;
   *ret_ranklist = ranklist;
 
   cov_FreeHitList(hitlist);
@@ -2565,11 +2561,10 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
-  ESL_MSA      *msa = *ret_msa;
   ESL_MSA      *r2rmsa = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
@@ -2720,12 +2715,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
     }
   }
   
+  esl_msa_Destroy(r2rmsa);
+
   remove(tmpinfile);
   remove(tmpoutfile);
   
-  //if (msa)    esl_msa_Destroy(msa);
-  *ret_msa = r2rmsa;
-
   free(tok);
   if (args) free(args);
   if (ssstr) free(ssstr);

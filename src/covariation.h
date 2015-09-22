@@ -188,7 +188,7 @@ struct data_s {
 };
 
 
-extern int              cov_Calculate(struct data_s *data, ESL_MSA **omsa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
 extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				   METHOD method, int donull2b, double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
@@ -241,7 +241,7 @@ extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA **msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, 
+extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, 
 				     int minloop, enum grammar_e G, double covthresh);
 extern int              cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
 extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, 
@@ -251,7 +251,7 @@ extern int              cov_PlotHistogramSurvival(char *gnuplot, char *covhisfil
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
 extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);
-extern int              cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
+extern int              cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
 				int verbose, char *errbuf);
 extern int              cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
