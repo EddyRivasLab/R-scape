@@ -75,7 +75,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *R2Rversion;
   int              R2Rall;
   char            *R2Rfile;
-  FILE            *R2Rfp;
 
   int              docyk;
   int              cykLmax;
@@ -435,7 +434,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* msa-specific files */
   cfg.R2Rfile    = NULL;
-  cfg.R2Rfp      = NULL;
   cfg.R2Rcykfile = NULL;
   cfg.R2Rcykfp   = NULL;
 
@@ -559,7 +557,7 @@ main(int argc, char **argv)
       }
     }
     else {
-     status = rscape_for_msa(go, &cfg, &msa);
+      status = rscape_for_msa(go, &cfg, &msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -595,15 +593,7 @@ main(int argc, char **argv)
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
-  if (cfg.R2Rfile) free(cfg.R2Rfile); 
   if (cfg.R2Rversion) free(cfg.R2Rversion); 
-  if (cfg.R2Rfp) fclose(cfg.R2Rfp); 
-  if (cfg.covhisfile) free(cfg.covhisfile); 
-  if (cfg.nullcovhisfile) free(cfg.nullcovhisfile);
-  if (cfg.cykcovhisfile) free(cfg.cykcovhisfile);
-  if (cfg.cyknullcovhisfile) free(cfg.cyknullcovhisfile);
-  if (cfg.dplotfile) free(cfg.dplotfile);
-  if (cfg.cykdplotfile) free(cfg.cykdplotfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
@@ -646,7 +636,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 	if (tok) free(tok); tok = NULL;
 	if (esl_strtok(&tp,   ";", &tok1) != eslOK) esl_fatal(msg);
 	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);
-	esl_sprintf(&tok, "_%s", tok2);
+ 	esl_sprintf(&tok, "_%s", tok2);
 	esl_strcat(&type, -1, tok, -1);
       }
     }
@@ -733,7 +723,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (msa->nseq <= 1) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    return eslOK;
+    return eslOK; 
   }
 
   /* outmsa file if requested */
@@ -807,11 +797,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null4) {
-#if 0
-    cfg->nulltype = Null2;
-    status = null2_rscape(go, cfg, msa, &ranklist_aux);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-#endif
     cfg->nulltype = Null4;
     status = null4_rscape(go, cfg, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
@@ -819,7 +804,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* main function */
   cfg->mode = GIVSS;
-  status = run_rscape(go, cfg, &msa, ranklist_null, ranklist_aux, NULL);
+  status = run_rscape(go, cfg, omsa, ranklist_null, ranklist_aux, NULL);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
 
   free(cfg->ct); cfg->ct = NULL;
@@ -827,6 +812,15 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
   cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
+
+  if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
+  if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
+  if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
+  if (cfg->dplotfile) free(cfg->dplotfile);
+  if (cfg->cykdplotfile) free(cfg->cykdplotfile);
+  if (cfg->R2Rfile) free(cfg->R2Rfile); 
+  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
 
   return eslOK;
 
@@ -837,6 +831,14 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->msaname) free(cfg->msaname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
+  if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
+  if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
+  if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
+  if (cfg->dplotfile) free(cfg->dplotfile);
+  if (cfg->cykdplotfile) free(cfg->cykdplotfile);
+  if (cfg->R2Rfile) free(cfg->R2Rfile); 
+  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
   return status;
 }
 
@@ -878,7 +880,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* print to stdout */
   if (cfg->verbose) 
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-  
+   
   if (cfg->mode != RANSS) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -937,7 +939,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
 
-  status = cov_Calculate(&data, &msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
+  status = cov_Calculate(&data, omsa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
@@ -956,7 +958,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
-    status = cov_CYKCOVCT(&data, &msa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    status = cov_CYKCOVCT(&data, omsa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
     if (cfg->verbose) {
@@ -969,7 +971,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
     if (status != eslOK) goto ERROR; 
   }
  
-  *omsa = msa;
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
@@ -979,7 +980,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa, RANKLIST *ranklis
   return eslOK;
   
  ERROR:
-  *omsa = NULL;
   if (mi)          cov_Destroy(mi);
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
@@ -1298,8 +1298,8 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     printf("null4 distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, cumranklist->h);
-    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
+    //esl_histogram_Plot(stdout, cumranklist->ha);
+    esl_histogram_PlotSurvival(stdout, cumranklist->ha);
   }
   
   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);

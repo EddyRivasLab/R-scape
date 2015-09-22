@@ -1530,6 +1530,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	data->ranklist_null->ha->nb = ranklist->ha->nb;
       }
     }
+
     /* censor the histogram and do an exponential fit to the tail */
     if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
     else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
@@ -1562,10 +1563,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     neg  = mi->alen * (mi->alen-1) / 2 - t;
     if (data->ranklist_null) {
       eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
-      if (cov< -280) printf("^^ imax %d imin %d b %d cov %f eval %f\n", ranklist->ha->imax, ranklist->ha->imin, b, cov, eval);
     }
-    else 
+    else {
       eval = eslINFINITY;
+    }
     if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) 
       fprintf(data->rocfp, "%.5f %d %d %d %d %d %.2f %.2f %.2f %g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
   
@@ -1692,8 +1693,8 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
 
   printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) 
-    printf("cov %f eval %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->eval[b]); 
-  
+    printf("cov %f eval %f\n",  esl_histogram_Bin2LBound(ranklist->ha,b), ranklist->eval[b]);
+ 
   return eslOK;
 }
 int              
@@ -2594,6 +2595,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   esl_ct2simplewuss(ct, msa->alen, ssstr);
 
   /* replace the 'SS_cons' GC line with the new ss */
+  if (msa->ss_cons) free(msa->ss_cons); msa->ss_cons = NULL;
   esl_sprintf(&(msa->ss_cons), "%s", ssstr);  
   
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
@@ -2630,12 +2632,15 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
       
       if (found) break;
     }
-    if (!found) esl_sprintf(&tok, ".");  
+    if (!found) esl_sprintf(&tok, ".");
     
     if (i == 1) esl_sprintf(&covstr, "%s", tok);
     else        esl_sprintf(&covstr, "%s%s", prv_covstr, tok);
 
+    free(prv_covstr); prv_covstr = NULL;
     esl_sprintf(&prv_covstr, "%s%s", covstr, tok);
+    free(tok); tok = NULL;
+    free(covstr); covstr = NULL;
   }
   
   /* add line #=GF R2R keep allpairs 
@@ -2669,6 +2674,8 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
     }
     if (tagidx < r2rmsa->ngf) { //remove 
       for (idx = tagidx; idx < r2rmsa->ngf-1; idx++) {
+	free(r2rmsa->gf_tag[idx]); r2rmsa->gf_tag[idx] = NULL; 
+	free(r2rmsa->gf[idx]);      r2rmsa->gf[idx] = NULL; 
 	esl_sprintf(&r2rmsa->gf_tag[idx], r2rmsa->gf_tag[idx+1]);
 	esl_sprintf(&r2rmsa->gf[idx],     r2rmsa->gf[idx+1]);
       }
@@ -2687,7 +2694,9 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
       r2rmsa->gc[r2rmsa->ngc] = NULL;
       r2rmsa->ngc++;
     }
+    if (r2rmsa->gc_tag[tagidx]) free(r2rmsa->gc_tag[tagidx]); r2rmsa->gc_tag[tagidx] = NULL;
     if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+    free(r2rmsa->gc[tagidx]); r2rmsa->gc[tagidx] = NULL; 
     esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
     if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
@@ -2712,8 +2721,9 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA **ret_msa, int *ct,
   remove(tmpinfile);
   remove(tmpoutfile);
   
+  //if (msa)    esl_msa_Destroy(msa);
   *ret_msa = r2rmsa;
-  esl_msa_Destroy(msa);
+
   free(tok);
   if (args) free(args);
   if (ssstr) free(ssstr);
@@ -3360,15 +3370,15 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   int    icov;
   int    i;
   
+  esl_histogram_Score2Bin(h, cov, &icov);
+  
   /* use the sampled distribution if possible */
-  if (cov <= h->xmax) {
-    esl_histogram_Score2Bin(h, cov, &icov);
+  if (icov <= h->imax) {
     
     if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;
     
     for (i = h->imax; i >= icov; i--) c += h->obs[i];
     eval = (double)c * (double)Nc / (double)h->Nc;
-    
     return eval;
   }
 

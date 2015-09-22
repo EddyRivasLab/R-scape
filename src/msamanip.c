@@ -411,7 +411,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
 
   /* replace msa */
-  esl_msa_Destroy(*msa);
+  esl_msa_Destroy(omsa);
   *msa = new;
   
   free(useme);
