@@ -1486,6 +1486,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           eval;
   double           val;
   double           bmax;
+  double           add;
   int              usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int              fp, tf, t, f, neg;
   int              i, j;
@@ -1510,11 +1511,13 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     for (j = i+1; j < mi->alen; j ++) {
 
       /* add to the ha histogram  */
-      esl_histogram_Add(ranklist->ha, mtx->mx[i][j]);
+      
+      add = (data->ranklist_null)? ESL_MAX(mtx->mx[i][j], data->ranklist_null->ha->bmin) : mtx->mx[i][j];
+      esl_histogram_Add(ranklist->ha, add);
 
       /* add to the ht histogram if not a real basepair */
       if (data->ct[i+1] != j+1) 
-  	esl_histogram_Add(ranklist->ht, mtx->mx[i][j]);
+  	esl_histogram_Add(ranklist->ht, add);
     }
   /* initialize to something impossible*/
   ranklist->scthresh = ranklist->ha->xmax + ranklist->ha->w;
