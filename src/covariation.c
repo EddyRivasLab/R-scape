@@ -1563,6 +1563,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     neg  = mi->alen * (mi->alen-1) / 2 - t;
     if (data->ranklist_null) {
       eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
+      printf("^^ cov %f bmin %f bmax %f b %d imin %d imax %d eval %f\n", cov, ranklist->ha->bmin, ranklist->ha->bmax, ranklist->ha->imin, ranklist->ha->imax, eval);
     }
     else {
       eval = eslINFINITY;
@@ -3371,7 +3372,8 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   int    i;
   
   esl_histogram_Score2Bin(h, cov, &icov);
-  
+  printf("^^ cov %f icov %d imax %d\n", cov, icov, h->imax);
+
   /* use the sampled distribution if possible */
   if (icov <= h->imax) {
     
