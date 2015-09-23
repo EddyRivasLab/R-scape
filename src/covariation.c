@@ -3000,7 +3000,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     x, y;
   int     status;
 
-  esl_vec_DSet(mi->pp[i][j], K2, 1.0); //laplace prior 
+  esl_vec_DSet(mi->pp[i][j], K2, 1e-5); //some prior to avoid zeros
   mi->nseff[i][j] = 0;
 
   ESL_ALLOC(coli, sizeof(int)*msa->nseq);
@@ -3369,7 +3369,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the sampled distribution if possible */
-  if (icov <= h->imax && icov >= h->imin) {
+  if (icov <= h->imax) {
 
     if (icov < h->imin) icov = h->imin;
     if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;

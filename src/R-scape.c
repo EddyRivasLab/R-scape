@@ -1279,7 +1279,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
  
       msamanip_XStats(shmsa, &shmstat);
       msamanip_DumpStats(stdout, shmsa, shmstat);
-      //eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
     }
 
     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);

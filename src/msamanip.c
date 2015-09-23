@@ -1051,6 +1051,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   }
 
 #if 0
+  int x;
   if (1||verbose) {
     printf("nsub %d\n", nsubs);
     for (x = 0; x < K; x ++)
