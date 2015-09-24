@@ -818,7 +818,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
-  if (cfg->R2Rfile) free(cfg->R2Rfile); 
+  if (cfg->R2Rfile) free(cfg->R2Rfile);
   if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
 
   return eslOK;

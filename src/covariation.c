@@ -1511,7 +1511,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     for (j = i+1; j < mi->alen; j ++) {
 
       /* add to the ha histogram  */
-      
       add = ESL_MAX(mtx->mx[i][j], data->bmin+data->w);
       esl_histogram_Add(ranklist->ha, add);
 
@@ -2697,22 +2696,20 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int 
     esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
     if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
-
+  
   /* write the R2R annotated to PFAM format */
-  if (r2rfile) {
-    if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
-    eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
-    fclose(fp);
-    
-    /* produce the R2R pdf */
-    if (makepdf) {
-      status = cov_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
-      if (status != eslOK) goto ERROR;
-    }
-    if (makesvg) {
-      status = cov_R2Rsvg(r2rfile, r2rversion, verbose, errbuf);
-      if (status != eslOK) goto ERROR;
-    }
+  if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
+  eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
+  fclose(fp);
+  
+  /* produce the R2R pdf */
+  if (makepdf) {
+    status = cov_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+  if (makesvg) {
+    status = cov_R2Rsvg(r2rfile, r2rversion, verbose, errbuf);
+    if (status != eslOK) goto ERROR;
   }
   
   esl_msa_Destroy(r2rmsa);
@@ -2792,6 +2789,8 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   int   L = msa->alen;
   int   status;
   
+  if (r2rfile == NULL) return eslOK;
+
   /* replace any R2R line with a new one not tab delimited 
    * R2R chockes on tab delimited lines
    */
