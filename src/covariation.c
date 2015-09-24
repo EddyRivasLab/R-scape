@@ -40,7 +40,8 @@ static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, s
 				int donull2b, double tol, int verbose, char *errbuf);
 static int    shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
-static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
+static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi,
+				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
@@ -209,7 +210,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     if  (status != eslOK) goto ERROR;
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
-    
+
     status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
   }
@@ -2290,7 +2291,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
     if (status != eslOK) goto ERROR;
   }
   linespoints = TRUE; 
-#if 0
+#if 1
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
 #endif
@@ -2634,7 +2635,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int 
     else        esl_sprintf(&covstr, "%s%s", prv_covstr, tok);
 
     free(prv_covstr); prv_covstr = NULL;
-    esl_sprintf(&prv_covstr, "%s%s", covstr, tok);
+    esl_sprintf(&prv_covstr, "%s", covstr);
     free(tok); tok = NULL;
     free(covstr); covstr = NULL;
   }
@@ -2693,7 +2694,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int 
     if (r2rmsa->gc_tag[tagidx]) free(r2rmsa->gc_tag[tagidx]); r2rmsa->gc_tag[tagidx] = NULL;
     if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
     free(r2rmsa->gc[tagidx]); r2rmsa->gc[tagidx] = NULL; 
-    esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", covstr);
+    esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", prv_covstr);
     if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
   
@@ -2750,9 +2751,8 @@ cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
   if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
   esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
-  //esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rpdf);
   system(args);
-  
+
   free(args);
   free(r2rpdf);
   
