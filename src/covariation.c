@@ -1512,7 +1512,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
       /* add to the ha histogram  */
       
-      add = (data->ranklist_null)? ESL_MAX(mtx->mx[i][j], data->ranklist_null->ha->bmin) : mtx->mx[i][j];
+      add = ESL_MAX(mtx->mx[i][j], data->bmin);
       esl_histogram_Add(ranklist->ha, add);
 
       /* add to the ht histogram if not a real basepair */
