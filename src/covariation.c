@@ -1507,10 +1507,14 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (mi->ishuffled) fprintf(data->rocfp, "shuffled thresh fp tf found true negatives sen ppv F evalue\n"); 
     else               fprintf(data->rocfp, "thresh fp tf found true negatives sen ppv F evalue\n"); 
   }
+  
   bmax = mi->maxCOV+data->w;
+  while (bmax <= data->bmin) bmax += data->w;
+
+  printf("^^ bmin %f bmax %f w %f\n", data->bmin, bmax, data->w);
+  if (bmax <= data->bmin) ESL_XFAIL(eslFAIL, data->errbuf, "bad histogram allocation bmin = %f bmax = %f\n", data->bmin, bmax);
 
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
-  printf("^^ bmin %f bmax %f w %f\n", ranklist->ha->bmin, ranklist->ha->bmax, ranklist->ha->w);
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
 
