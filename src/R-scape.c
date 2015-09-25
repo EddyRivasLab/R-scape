@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -124,6 +123,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *sumfile;
   FILE            *sumfp; 
 
+  double           hpts;    /* number of points in the histogram */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
@@ -231,7 +231,8 @@ static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist);
+static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analize);
+static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null2_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -393,9 +394,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
  
-  cfg.bmin  = -100.0; /* a guess for lowest cov score */
-  cfg.w     = (cfg.covtype == MI  || cfg.covtype == MIa  || cfg.covtype == MIp  ||
-	       cfg.covtype == MIg || cfg.covtype == MIga || cfg.covtype == MIgp    )? WMI : W;      /* histogram step */
+  /* for the cov histograms */
+  cfg.hpts  = HPTS; /* number of points in the histogram */
+  cfg.bmin  = BMIN; /* a guess for lowest cov score */
+  cfg.w     = -1;   /* histogram step, will be determined for each msa */
   cfg.pmass = esl_opt_GetReal   (go, "--pmass");
 
   cfg.mstat  = NULL;
@@ -803,7 +805,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   /* main function */
   cfg->mode = GIVSS;
-  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL);
+  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, TRUE);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
 
   free(cfg->ct); cfg->ct = NULL;
@@ -859,7 +861,67 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist)
+calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+{
+  struct mutual_s *mi = NULL;
+  struct data_s    data;
+  int              status;
+
+  /* weigth the sequences */
+  esl_msaweight_GSC(msa);
+
+  /* create the MI structure */
+  mi = cov_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+
+  /* main function */
+  data.outfp         = NULL;
+  data.outsrtfp      = NULL;
+  data.rocfp         = NULL;
+  data.sumfp         = NULL;
+  data.dplotfile     = NULL;
+  data.R2Rfile       = NULL;
+  data.R2Rcykfile    = NULL;
+  data.R2Rversion    = NULL;
+  data.R2Rall        = FALSE;
+  data.gnuplot       = NULL;
+  data.r             = cfg->r;
+  data.ranklist_null = NULL;
+  data.ranklist_aux  = NULL;
+  data.mi            = mi;
+  data.covtype       = cfg->covtype;
+  data.thresh        = cfg->thresh;
+  data.method        = cfg->method;
+  data.mode          = cfg->mode;
+  data.nbpairs       = cfg->onbpairs;
+  data.T             = cfg->T;
+  data.ribosum       = cfg->ribosum;
+  data.ct            = cfg->ct;
+  data.msamap        = cfg->msamap;
+  data.bmin          = cfg->bmin;
+  data.w             = cfg->w;
+  data.pmass         = cfg->pmass;
+  data.tol           = cfg->tol;
+  data.verbose       = cfg->verbose;
+  data.errbuf        = cfg->errbuf;
+  data.donull2b      = FALSE;
+
+  status = cov_Calculate(&data, msa, NULL, NULL, NULL, NULL, FALSE);   
+  if (status != eslOK) goto ERROR; 
+  if (mi->maxCOV < cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
+
+  cfg->w = (mi->maxCOV - cfg->bmin) / (double) cfg->hpts;
+  if (1||cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (cfg->w <= 0) return eslFAIL;
+
+  return eslOK;
+
+ ERROR:
+  if (mi) cov_Destroy(mi);
+  return status;
+}
+
+static int
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analize)
 {
   char            *title = NULL;
   struct data_s    data;
@@ -937,7 +999,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
 
-  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda);   
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda, analize);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
@@ -1004,7 +1066,13 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+    
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to run null1_rscape", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1058,7 +1126,13 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   for (s = 0; s < cfg->nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null1b rscape", cfg->errbuf);
    
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1103,7 +1177,13 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
    for (s = 0; s < cfg->nshuffle; s ++) {
      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
-     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+
+     if (s == 0) {
+       status = calculate_width_histo(go, cfg, shmsa);
+       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+     }
+
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2 rscape", cfg->errbuf);
      
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1152,7 +1232,13 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
    */
    for (s = 0; s < cfg->nshuffle; s ++) {
      shmsa = esl_msa_Clone(msa);
-     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+
+     if (s == 0) {
+       status = calculate_width_histo(go, cfg, shmsa);
+       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+     }
+     
+     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
      if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2b rscape", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1206,7 +1292,12 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
 
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rscape shuffled", cfg->errbuf);
 
      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1281,7 +1372,12 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
       eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
     }
 
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist);
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     

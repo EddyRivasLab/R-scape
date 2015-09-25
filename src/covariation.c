@@ -55,7 +55,7 @@ static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_
 static int    cov_histogram_cov2expectsurv(double cov, ESL_HISTOGRAM *h, double *ret_expsurv);
 
 int                 
-cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda, int analize)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
@@ -68,135 +68,135 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (status != eslOK) goto ERROR;
   switch(data->covtype) {
   case CHIa: 
-    status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case CHIp:
-    status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case CHIs:
-    status = cov_CalculateCHI         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateCHI         (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case CHI: 
-    status = cov_CalculateCHI         (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCHI         (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;     
     break;
   case GTa: 
-    status = cov_CalculateGT          (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case GTp: 
-    status = cov_CalculateGT          (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR; 
      break;
   case GTs: 
-    status = cov_CalculateGT          (covclass,  data, FALSE, NULL,      NULL,     NULL,  NULL);
+    status = cov_CalculateGT          (covclass,  data, FALSE,  NULL,      NULL,     NULL,  NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,       data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case GT: 
-     status = cov_CalculateGT          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
      if (status != eslOK) goto ERROR;
      break;
   case MIa: 
-    status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMI          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case MIp: 
-    status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case MIs: 
-    status = cov_CalculateMI          (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case MI: 
-    status = cov_CalculateMI          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMI          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;
     break;
   case MIra: 
-    status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case MIrp:
-    status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case MIrs:
-    status = cov_CalculateMIr         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case MIr: 
-    status = cov_CalculateMIr         (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMIr         (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;
     break;
   case MIga: 
-    status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case MIgp:
-    status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case MIgs:
-    status = cov_CalculateMIg         (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;  
     break;
   case MIg: 
-    status = cov_CalculateMIg          (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMIg          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;
     break;
   case OMESa: 
-    status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESp: 
-    status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESs: 
-    status = cov_CalculateOMES        (covclass, data, FALSE, NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR; 
     break;
   case OMES: 
-    status = cov_CalculateOMES        (covclass, data, TRUE,  &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateOMES        (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
     if (status != eslOK) goto ERROR;
     break;
   default:

@@ -19,8 +19,8 @@
 
 #include "covgrammars.h"
 
-#define W      0.40     // COV width
-#define WMI    0.05     // COV width
+#define BMIN 0.0     // minimum COV value 
+#define HPTS 200     // number of point in histogram
 
 #define NCOVTYPE = 5;
 
@@ -188,7 +188,8 @@ struct data_s {
 };
 
 
-extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, 
+				      double *ret_mu, double *ret_lambda, int analize);
 extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				   METHOD method, int donull2b, double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
