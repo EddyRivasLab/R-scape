@@ -1074,7 +1074,7 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j]; 
-    }
+   }
 
   return status;
 }
@@ -1510,7 +1510,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   bmax = mi->maxCOV+data->w;
 
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
-
+  printf("^^ bmin %f bmax %f w %f\n", ranklist->ha->bmin, ranklist->ha->bmax, ranklist->ha->w);
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
 
