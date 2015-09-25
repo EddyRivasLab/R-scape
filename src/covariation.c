@@ -881,6 +881,7 @@ int
 cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
 {
   double mutinf, HH;
+  double tol = 1e-2;
   int    i, j;
   int    x, y;
   int    K = mi->abc->K;
@@ -900,10 +901,11 @@ cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
 	    mi->pp[i][j][IDX(x,y,K)] * ( log(mi->pp[i][j][IDX(x,y,K)]) - log(mi->pm[i][x]) - log(mi->pm[j][y]) ) : 0.0;
 	}	  
       
-      mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > tol)? mutinf/HH : 0.0;
+
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
-   }
+    }
   
   return status;
 }
@@ -914,6 +916,7 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
   double mutinf, HH;
   double pij_wc, pij_nwc;
   double qij_wc, qij_nwc;
+  double tol = 1e-2;
   int    i, j;
   int    x, y;
   int    K = mi->abc->K;
@@ -946,7 +949,7 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf += (pij_wc  > 0. && qij_wc  > 0.0)? pij_wc  * ( log(pij_wc)  - log(qij_wc)  ) : 0.0;
       mutinf += (pij_nwc > 0. && qij_nwc > 0.0)? pij_nwc * ( log(pij_nwc) - log(qij_nwc) ) : 0.0;
       
-      mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > 0.0)? mutinf/HH : 0.0;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = (HH > tol)? mutinf/HH : 0.0;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j]; 
     }
