@@ -19,8 +19,8 @@
 
 #include "covgrammars.h"
 
-#define BMIN 0.0     // minimum COV value 
-#define HPTS 200     // number of point in histogram
+#define BMIN -0.5     // minimum COV value 
+#define HPTS 200      // number of point in histogram
 
 #define NCOVTYPE = 5;
 

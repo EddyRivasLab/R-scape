@@ -52,7 +52,6 @@ static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h,
 static int    cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda, 
 				    double ymin, double ymax, char *key, double offx, double offy, int style);
 static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_expsurv);
-static int    cov_histogram_cov2expectsurv(double cov, ESL_HISTOGRAM *h, double *ret_expsurv);
 
 int                 
 cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda, int analize)
@@ -1491,6 +1490,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           val;
   double           bmax;
   double           add;
+  double           tol = 1e-2;
   int              usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int              fp, tf, t, f, neg;
   int              i, j;
@@ -1509,11 +1509,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
   
   bmax = mi->maxCOV+data->w;
-  while (bmax <= data->bmin) bmax += data->w;
+  while (fabs(bmax-data->bmin) < tol) bmax += data->w;
 
   printf("^^ bmin %f bmax %f w %f\n", data->bmin, bmax, data->w);
-  if (bmax <= data->bmin) ESL_XFAIL(eslFAIL, data->errbuf, "bad histogram allocation bmin = %f bmax = %f\n", data->bmin, bmax);
-
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
@@ -3639,22 +3637,3 @@ cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_expsurv)
   return eslOK;
 }
 
-int 
-cov_histogram_cov2expectsurv(double cov, ESL_HISTOGRAM *h, double *ret_expsurv)
-{
-  double expsurv = 0.;
-  int    i;
-  int    status;
-
-  esl_histogram_Score2Bin(h, cov, &i);
-
-  status = cov_histogram_bin2expectsurv(i, h, &expsurv);
-  if (status != eslOK) goto ERROR;
-
-  *ret_expsurv = expsurv;
-			      
-  return eslOK;
-
- ERROR:
-  return eslFAIL;
-}
