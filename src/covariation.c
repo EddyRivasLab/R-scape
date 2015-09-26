@@ -1511,7 +1511,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   bmax = mi->maxCOV+data->w;
   while (fabs(bmax-data->bmin) < tol) bmax += data->w;
 
-  printf("^^ bmin %f bmax %f w %f\n", data->bmin, bmax, data->w);
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
