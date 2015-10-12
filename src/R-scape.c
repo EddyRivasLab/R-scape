@@ -117,6 +117,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
 
+  MSA_STAT        *wmstat;              /* statistics of the original alignment */
+  int              wnbpairs;
+
   int              voutput;
   char            *rocfile;
   FILE            *rocfp; 
@@ -402,6 +405,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
+  cfg.wmstat = NULL;
 
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
@@ -411,7 +415,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   } 
   else {
-    esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
+    if (cfg.window == 0) esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
+    else                 esl_sprintf(&cfg.outfile, "%s.w%d.s%d.out", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
     esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
@@ -493,9 +498,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 static int
 MSA_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs)
 {
-  fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	  msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
-	  mstat->avgid, omstat->avgid, nbpairs, onbpairs);
+  if (omstat) 
+    fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	    msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
+	    mstat->avgid, omstat->avgid, nbpairs, onbpairs);
+  else
+    fprintf(fp, "# wMSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
+	    msaname, mstat->nseq, mstat->alen, mstat->avgid, nbpairs);
+
   return eslOK;
 }
 
@@ -551,10 +561,15 @@ main(int argc, char **argv)
 	for (i = first; i <= last; i ++) useme[i] = TRUE;
 	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
 
+	/* stats of the window alignment */
+	msamanip_XStats(wmsa, &cfg.wmstat);
+	msamanip_CalculateCT(wmsa, NULL, &cfg.wnbpairs, cfg.errbuf);
+
 	status = rscape_for_msa(go, &cfg, wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
  
 	esl_msa_Destroy(wmsa); wmsa = NULL;
+	free(cfg.wmstat); cfg.wmstat = NULL;
       }
     }
     else {
@@ -569,6 +584,7 @@ main(int argc, char **argv)
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
+    if (cfg.wmstat) free(cfg.wmstat); cfg.wmstat = NULL;
   }
 
   /* cleanup */
@@ -603,6 +619,7 @@ main(int argc, char **argv)
   if (cfg.msamap) free(cfg.msamap); 
   if (cfg.omstat) free(cfg.omstat);
   if (cfg.mstat) free(cfg.mstat); 
+  if (cfg.wmstat) free(cfg.wmstat); 
 
   return 0;
 }
@@ -722,8 +739,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (msa == NULL) return eslOK;
 
   if (msa->nseq <= 1) {
-    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     return eslOK; 
   }
 
@@ -769,7 +786,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (msa->alen > cfg->cykLmax) cfg->docyk = FALSE; // unless alignment is too long
   
   if (1||cfg->verbose) 
-    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(stdout, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
 
   /* the null model first */
   cfg->mode = RANSS;
@@ -940,11 +957,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   /* print to stdout */
   if (cfg->verbose) 
-    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(stdout, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
    
   if (cfg->mode != RANSS) {
-    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
