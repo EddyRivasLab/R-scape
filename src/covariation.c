@@ -1862,7 +1862,7 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 }
 
 static int
-hit_sorter_by_eval(const void *vh1, const void *vh2)
+hit_sorted_by_eval(const void *vh1, const void *vh2)
 {
   HIT *h1 = *((HIT **) vh1);  /* don't ask. don't change. Don't Panic. */
   HIT *h2 = *((HIT **) vh2);
@@ -1889,7 +1889,7 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
   if (fp == NULL) return eslOK;
 
   for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
-  if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), hit_sorter_by_eval);
+  if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), hit_sorted_by_eval);
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->srthit[h]->i + firstpos;
@@ -2104,6 +2104,8 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
   FILE    *fp = NULL;
   int      status;
 
+  if (ranklist == NULL) return eslOK;
+
   if (covhisfile) {
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
     esl_histogram_PlotSurvival(fp, ranklist->ht);
@@ -2195,6 +2197,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
   if (gnuplot    == NULL) return eslOK;
   if (covhisfile == NULL) return eslOK;
+  if (ranklist   == NULL) return eslOK;
 
   esl_FileTail(covhisfile, FALSE, &filename);
 
@@ -2428,6 +2431,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      status;
 
   if (dplotfile == NULL) return eslOK;
+  if (hitlist == NULL) return eslOK;
   
   esl_FileTail(dplotfile, FALSE, &filename);
 
@@ -2595,6 +2599,7 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
   int           status;
  
   if (r2rfile == NULL) return eslOK;
+  if (hitlist == NULL) return eslOK;
 
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
    */

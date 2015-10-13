@@ -416,7 +416,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   } 
   else {
-    if (cfg.window == 0) esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
+    if (cfg.window <= 0) esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
     else                 esl_sprintf(&cfg.outfile, "%s.w%d.s%d.out", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
     esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
@@ -424,12 +424,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   /*  rocplot file */
-  if (cfg.window == 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
+  if (cfg.window <= 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
   else                 esl_sprintf(&cfg.rocfile, "%s.w%d.s%d.roc", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
   
   /*  summary file */
-  if (cfg.window == 0) esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
+  if (cfg.window <= 0) esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
   else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
