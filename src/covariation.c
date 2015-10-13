@@ -205,12 +205,12 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
   
   if (data->mode == GIVSS) { // do the plots only for GIVSS
-    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, TRUE, data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
-    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
 
-    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
   }
   
@@ -1808,20 +1808,20 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   if (data->mode != RANSS && data->sumfp) {
     fprintf(data->sumfp, " %s %d %d %d %f %f ", 
-	    covtype, tf, t, data->nbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->nbpairs>0)? 100.*(double)tf/(double)data->nbpairs:0.0);
+	    covtype, tf, t, data->onbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->onbpairs>0)? 100.*(double)tf/(double)data->onbpairs:0.0);
   }
   if (data->outfp) {
     if (data->mode == CYKSS) fprintf(data->outfp, "# cyk-cov structure\n");
     fprintf(data->outfp,    "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
 	    covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap);
+    cov_WriteHitList(data->outfp,    nhit, hitlist, data->msamap, data->firstpos);
   }
   
   if (data->outsrtfp) {
     if (data->mode == CYKSS) fprintf(data->outsrtfp, "# cyk-cov structure\n");
     fprintf(data->outsrtfp, "# %s thresh %s %f cov=%f [%f,%f] [%d | %d %d %d | %f %f %f] \n", 
 	    covtype, threshtype, data->thresh->val, ranklist->scthresh, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap);
+    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap, data->firstpos);
   }
   
   if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
@@ -1833,7 +1833,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 }
 
 int 
-cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
+cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos)
 {
   int h;
   int ih, jh;
@@ -1841,8 +1841,8 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
   if (fp == NULL) return eslOK;
 
   for (h = 0; h < nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
+    ih = hitlist->hit[h].i + firstpos;
+    jh = hitlist->hit[h].j + firstpos;
     
     if (hitlist->hit[h].is_bpair)      { 
       fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
@@ -1881,7 +1881,7 @@ hit_sorter_by_eval(const void *vh1, const void *vh2)
 }
 
 int 
-cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
+cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos)
 {
   int h;
   int ih, jh;
@@ -1892,8 +1892,8 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap)
   if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), hit_sorter_by_eval);
 
   for (h = 0; h < nhit; h ++) {
-    ih = hitlist->srthit[h]->i;
-    jh = hitlist->srthit[h]->j;
+    ih = hitlist->srthit[h]->i + firstpos;
+    jh = hitlist->srthit[h]->j + firstpos;
     
     if (hitlist->srthit[h]->is_bpair)      { 
       fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
@@ -1935,7 +1935,7 @@ cov_FreeHitList(HITLIST *hitlist)
 }
 
 int
-cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf)
+cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf)
 {
   double       avgi, avgj;
   double       stdi, stdj;
@@ -1981,7 +1981,7 @@ cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbo
       zscorei = (mi->COV->mx[i][ipair] - avgi) / stdi;
       zscorej = (mi->COV->mx[i][ipair] - avgj) / stdj;
       zscore  = ESL_MIN(zscorej, zscorej);
-      printf("[%d][%d] %f | %f | %f %f | %f %f\n", msamap[i], msamap[ipair], zscore, mi->COV->mx[i][ipair], avgi, stdi, avgj, stdj);
+      printf("[%d][%d] %f | %f | %f %f | %f %f\n", msamap[i+firstpos], msamap[ipair+firstpos], zscore, mi->COV->mx[i][ipair], avgi, stdi, avgj, stdj);
     }
   }  
   return eslOK;
@@ -2074,13 +2074,13 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double 
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, msa, cykct, data->msamap, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   /* DotPlots (pdf,svg) */
-  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, hitlist, TRUE,  data->verbose, data->errbuf);
+  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, hitlist, TRUE,  data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
-  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, hitlist, FALSE, data->verbose, data->errbuf);
+  status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   *ret_ranklist = ranklist;
@@ -2413,7 +2413,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
 
 int              
-cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
+cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
@@ -2486,6 +2486,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i+1) : ileft;
   iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j+1) : iright;
 
+  ileft  += firstpos;
+  iright += firstpos;
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+1, msamap[iright-1]+1);
 
@@ -2502,7 +2504,10 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "plot '-' u 1:2:3 with points ls 9\n");
   for (i = 1; i <= msa->alen; i ++) {
     ipair = ct[i];
+ 
     if (ipair > 0) {
+      i     += firstpos;
+      ipair += firstpos;
       fprintf(pipe, "%d %d %f\n", msamap[i-1]+1,     msamap[ipair-1]+1, (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
       fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+1, msamap[i-1]+1,     (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
     }	
@@ -2515,8 +2520,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "set origin 0,0\n");  
   fprintf(pipe, "plot '-' u 1:2:3 with points ls 8 \n");
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
+    ih = hitlist->hit[h].i + firstpos;
+    jh = hitlist->hit[h].j + firstpos;
     if (hitlist->hit[h].is_bpair) {
       fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);
       fprintf(pipe, "%d %d %f\n", msamap[jh]+1, msamap[ih]+1, hitlist->hit[h].sc);
@@ -2529,8 +2534,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "set origin 0,0\n");  
   fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
+    ih = hitlist->hit[h].i + firstpos;
+    jh = hitlist->hit[h].j + firstpos;
     if (hitlist->hit[h].is_compatible) {
       fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);	
       fprintf(pipe, "%d %d %f\n", msamap[jh]+1, msamap[ih]+1, hitlist->hit[h].sc);	
@@ -2543,8 +2548,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "set origin 0,0\n");  
   fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
+    ih = hitlist->hit[h].i + firstpos;
+    jh = hitlist->hit[h].j + firstpos;
     if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) {
       fprintf(pipe, "%d %d %f\n", msamap[ih]+1, msamap[jh]+1, hitlist->hit[h].sc);	
       fprintf(pipe, "%d %d %f\n", msamap[jh]+1, msamap[ih]+1, hitlist->hit[h].sc);	
@@ -2565,7 +2570,8 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
+	HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;

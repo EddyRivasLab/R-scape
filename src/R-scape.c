@@ -23,7 +23,7 @@
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--CHIs,--GT,--GTa,--GTp,--GTs,--MI,--MIp,--MIa,--MIs,--MIr,--MIrp,--MIra,--MIrs,--MIg,--MIgp,--MIga,--MIga,--OMES,--OMESp,--OMESa,--OMESa"              
-#define COVCLASSOPTS "--C16,--C2"                                          
+#define COVCLASSOPTS "--C16,--C2"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
 
@@ -59,6 +59,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *filename;
   char            *msaname;
   int             *msamap;
+  int              firstpos;
 
   char            *outmsafile;
   FILE            *outmsafp;
@@ -145,7 +146,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              verbose;
 };
 
- static ESL_OPTIONS options[] = {
+static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
@@ -168,7 +169,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
    /* different ways to assess significance */
-  { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                              1 },
+  { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       "20",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
@@ -219,7 +220,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
-  { "--cykLmax",       eslARG_INT,     "800",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
+  { "--cykLmax",       eslARG_INT,    "1500",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
@@ -234,7 +235,7 @@ static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analize);
+static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -421,16 +422,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
- 
+  
   /*  rocplot file */
-  esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
+  if (cfg.window == 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
+  else                 esl_sprintf(&cfg.rocfile, "%s.w%d.s%d.roc", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
-
+  
   /*  summary file */
-  esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
+  if (cfg.window == 0) esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
+  else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
- /* file with the msa actually used */
+  /* file with the msa actually used */
   cfg.outmsafile = NULL;
   cfg.outmsafp   = NULL;
   if (esl_opt_IsOn(go, "--outmsa")) {
@@ -457,7 +460,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   cfg.T  = NULL;
   cfg.ct = NULL;
-  cfg.nbpairs = 0;
+  cfg.onbpairs = 0;
+  cfg.nbpairs  = 0;
+  cfg.wnbpairs = 0;
 
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
@@ -556,7 +561,7 @@ main(int argc, char **argv)
 
 	last = ESL_MIN(first+cfg.window-1, msa->alen);
 	free(cfg.msaname); cfg.msaname = NULL;
-	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
+	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, cfg.msamap[first-1], cfg.msamap[last-1]);
 
 	for (i = first; i <= last; i ++) useme[i] = TRUE;
 	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
@@ -565,6 +570,7 @@ main(int argc, char **argv)
 	msamanip_XStats(wmsa, &cfg.wmstat);
 	msamanip_CalculateCT(wmsa, NULL, &cfg.wnbpairs, cfg.errbuf);
 
+	cfg.firstpos = first;
 	status = rscape_for_msa(go, &cfg, wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
  
@@ -573,6 +579,7 @@ main(int argc, char **argv)
       }
     }
     else {
+      cfg.firstpos = 0;
       status = rscape_for_msa(go, &cfg, msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
@@ -734,6 +741,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
+  int       analyze;
   int       status;
   
   if (msa == NULL) return eslOK;
@@ -822,15 +830,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   /* main function */
   cfg->mode = GIVSS;
-  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, TRUE);
+  analyze = (cfg->nbpairs == 0)? FALSE : TRUE;
+  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
 
-  free(cfg->ct); cfg->ct = NULL;
+  if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
-  cov_FreeRankList(ranklist_null); ranklist_null = NULL;
+  if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
-
+  
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
@@ -909,7 +918,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
-  data.nbpairs       = cfg->onbpairs;
+  data.onbpairs      = cfg->onbpairs;
+  data.nbpairs       = cfg->nbpairs;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -939,7 +949,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 }
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analize)
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
   char            *title = NULL;
   struct data_s    data;
@@ -1004,11 +1014,13 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
+  data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->onbpairs;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
   data.msamap        = cfg->msamap;
+  data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
   data.pmass         = cfg->pmass;
@@ -1017,7 +1029,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
 
-  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda, analize);   
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda, analyze);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     

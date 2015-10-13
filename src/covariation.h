@@ -173,11 +173,13 @@ struct data_s {
   METHOD               method;
   MODE                 mode;
   COVTYPE              covtype;
+  int                  onbpairs;
   int                  nbpairs;
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
   int                 *ct;
   int                 *msamap;
+  int                  firstpos;
   double               bmin;
   double               w;
   double               pmass;
@@ -236,11 +238,11 @@ extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, double mu, double lambda,
 					  char *covtype, char *threshtype, int usenull);
-extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap);
-extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap);
+extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
+extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
 extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
-extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int *ct, int verbose, char *errbuf);
+extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
 extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, 
 				     int minloop, enum grammar_e G, double covthresh);
@@ -250,13 +252,14 @@ extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char
 extern int              cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
 						  char *title, double pmass, double mu, double lambda, int dosvg, char *errbuf);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
-extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, HITLIST *hitlist, 
+extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);
-extern int              cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, int *msamap, HITLIST *hitlist, int makepdf, int makesvg,
-				int verbose, char *errbuf);
+extern int              cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist,
+				int makepdf, int makesvg, int verbose, char *errbuf);
 extern int              cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
 extern int              cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
-extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
+extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, 
+				     int verbose, char *errbuf);
 extern int              cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);
 extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
 extern int              cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb);
