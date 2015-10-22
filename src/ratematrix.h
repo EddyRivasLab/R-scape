@@ -778,6 +778,8 @@ extern int          ratematrix_CalculateConditionalsFromRate(double rt, const ES
 extern ESL_DMATRIX *ratematrix_ConditionalsFromRate(double rt, const ESL_DMATRIX *Q, double tol, char *errbuf, int verbose);
 extern ESL_DMATRIX *ratematrix_ConditionalsFromRateYang93(double rt, double b, double c, const ESL_DMATRIX *Q, int ncat, int discrete, double tol, char *errbuf, int verbose);
 extern int          ratematrix_SaturationTime(const ESL_DMATRIX *Q, double *ret_tsat, double **ret_psat, double tol, char *errbuf, int verbose);
+extern double       ratematrix_Entropy(const ESL_DMATRIX *P);
+extern double       ratematrix_RelEntropy(const ESL_DMATRIX *P, double *p);
 extern int          ratematrix_isnan(const ESL_DMATRIX *P, char *errbuf);
 extern int          ratematrix_ValidateP(const ESL_DMATRIX *P, double tol, char *errbuf);
 extern int          ratematrix_ValidateQ(const ESL_DMATRIX *Q, double tol, char *errbuf);

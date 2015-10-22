@@ -107,6 +107,8 @@ main(int argc, char **argv)
   P7_BG           *bg  = NULL;		  /* null model (copies made of this into threads)    */
   double           subsite;
   double           fsubsite;
+  double           entropy;
+  double           relentr;
   float            rt  = 1.0;
   double           tol = 0.0001;
   double           time;
@@ -178,7 +180,9 @@ main(int argc, char **argv)
     Pt = ratematrix_ConditionalsFromRate(time, ratebld->Q, tol, errbuf, verbose);
     esl_dmatrix_Dump(stdout, Pt, NULL, NULL);
     fsubsite = ratematrix_DFreqSubsPerSite(Pt, ratebld->p);
-    printf("Frequency of SubsPerSite %f pid %f\n", fsubsite, 1.0-fsubsite);
+    entropy = ratematrix_Entropy(Pt);
+    relentr = ratematrix_RelEntropy(Pt, ratebld->p)/Pt->n;
+    printf("Frequency of SubsPerSite %f pid %f Entropy %f Rel Entropy %f\n", fsubsite, 1.0-fsubsite, entropy, relentr);
   }
 
   /* Saturation */

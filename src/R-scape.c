@@ -22,7 +22,7 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--CHIs,--GT,--GTa,--GTp,--GTs,--MI,--MIp,--MIa,--MIs,--MIr,--MIrp,--MIra,--MIrs,--MIg,--MIgp,--MIga,--MIga,--OMES,--OMESp,--OMESa,--OMESa"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp"              
 #define COVCLASSOPTS "--C16,--C2"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
@@ -131,8 +131,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
-  double           mu;
-  double           lambda;
+  int              doexpfit; // do an exponential fit, defautl is chi-square
 
   THRESH          *thresh;
   MODE             mode;
@@ -181,28 +180,28 @@ static ESL_OPTIONS options[] = {
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ACS corrected calculation",                                                            0 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
-  { "--CHIs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  SCA corrected calculation",                                                            0 },
   { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  calculation",                                                                          0 },
   { "--GTa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   ACS corrected calculation",                                                            0 },
   { "--GTp",          eslARG_NONE,       TRUE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   APS corrected calculation",                                                            0 },
-  { "--GTs",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   SCA corrected calculation",                                                            0 },
   { "--GT",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   calculation",                                                                          0 },
   { "--MIa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   ACS corrected calculation",                                                            0 },
   { "--MIp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   APS corrected calculation",                                                            0 },
-  { "--MIs",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   SCA corrected calculation",                                                            0 },
   { "--MI",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   calculation",                                                                          0 },
   { "--MIra",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  ACS corrected calculation",                                                            0 },
   { "--MIrp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  APS corrected calculation",                                                            0 },
-  { "--MIrs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  SCA corrected calculation",                                                            0 },
   { "--MIr",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIr  calculation",                                                                          0 },
   { "--MIga",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  ACS corrected calculation",                                                            0 },
   { "--MIgp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  APS corrected calculation",                                                            0 },
-  { "--MIgs",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  SCA corrected calculation",                                                            0 },
   { "--MIg",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MIg  calculation",                                                                          0 },
   { "--OMESa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES ACS corrected calculation",                                                            0 },
   { "--OMESp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES APS corrected calculation",                                                            0 },
-  { "--OMESs",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES SCA corrected calculation",                                                            0 },
   { "--OMES",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "OMES calculation",                                                                          0 },
+  { "--RAFa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold APS corrected calculation",                                                      0 },
+  { "--RAFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold APS corrected calculation",                                                      0 },
+  { "--RAF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold calculation",                                                                    0 },
+  { "--RAFSa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking APS corrected calculation",                                             0 },
+  { "--RAFSp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking  APS corrected calculation",                                            0 },
+  { "--RAFS",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking  calculation",                                                          0 },
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                0 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 0 },
@@ -220,7 +219,7 @@ static ESL_OPTIONS options[] = {
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
-  { "--cykLmax",       eslARG_INT,    "1500",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
+  { "--cykLmax",       eslARG_INT,    "1800",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
@@ -365,29 +364,29 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
-  else if (esl_opt_GetBoolean(go, "--CHIs"))  cfg.covtype = CHIs;
   else if (esl_opt_GetBoolean(go, "--CHI"))   cfg.covtype = CHI;
   else if (esl_opt_GetBoolean(go, "--GTa"))   cfg.covtype = GTa;
   else if (esl_opt_GetBoolean(go, "--GTp"))   cfg.covtype = GTp;
-  else if (esl_opt_GetBoolean(go, "--GTs"))   cfg.covtype = GTs;
   else if (esl_opt_GetBoolean(go, "--GT"))    cfg.covtype = GT;
   else if (esl_opt_GetBoolean(go, "--MIa"))   cfg.covtype = MIa;
   else if (esl_opt_GetBoolean(go, "--MIp"))   cfg.covtype = MIp;
-  else if (esl_opt_GetBoolean(go, "--MIs"))   cfg.covtype = MIs;
   else if (esl_opt_GetBoolean(go, "--MI"))    cfg.covtype = MI;
   else if (esl_opt_GetBoolean(go, "--MIra"))  cfg.covtype = MIra;
   else if (esl_opt_GetBoolean(go, "--MIrp"))  cfg.covtype = MIrp;
-  else if (esl_opt_GetBoolean(go, "--MIrs"))  cfg.covtype = MIrs;
   else if (esl_opt_GetBoolean(go, "--MIr"))   cfg.covtype = MIr;
   else if (esl_opt_GetBoolean(go, "--MIga"))  cfg.covtype = MIga;
   else if (esl_opt_GetBoolean(go, "--MIgp"))  cfg.covtype = MIgp;
-  else if (esl_opt_GetBoolean(go, "--MIgs"))  cfg.covtype = MIgs;
   else if (esl_opt_GetBoolean(go, "--MIg"))   cfg.covtype = MIg;
   else if (esl_opt_GetBoolean(go, "--OMESa")) cfg.covtype = OMESa;
   else if (esl_opt_GetBoolean(go, "--OMESp")) cfg.covtype = OMESp;
-  else if (esl_opt_GetBoolean(go, "--OMESs")) cfg.covtype = OMESs;
   else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;
-
+  else if (esl_opt_GetBoolean(go, "--RAFa"))  cfg.covtype = RAFa;
+  else if (esl_opt_GetBoolean(go, "--RAFp"))  cfg.covtype = RAFp;
+  else if (esl_opt_GetBoolean(go, "--RAF"))   cfg.covtype = RAF;
+  else if (esl_opt_GetBoolean(go, "--RAFSa")) cfg.covtype = RAFSa;
+  else if (esl_opt_GetBoolean(go, "--RAFSp")) cfg.covtype = RAFSp;
+  else if (esl_opt_GetBoolean(go, "--RAFS"))  cfg.covtype = RAFS;
+  
  
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -403,6 +402,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.bmin  = BMIN; /* a guess for lowest cov score */
   cfg.w     = -1;   /* histogram step, will be determined for each msa */
   cfg.pmass = esl_opt_GetReal   (go, "--pmass");
+  cfg.doexpfit = TRUE;
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
@@ -927,12 +927,13 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
   data.pmass         = cfg->pmass;
+  data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = FALSE;
 
-  status = cov_Calculate(&data, msa, NULL, NULL, NULL, NULL, FALSE);   
+  status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
   if (mi->maxCOV <= cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
 
@@ -1024,12 +1025,13 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
   data.pmass         = cfg->pmass;
+  data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
 
-  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &cfg->mu, &cfg->lambda, analyze);   
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
     
@@ -1040,15 +1042,14 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, ranklist_null, ranklist_aux, title, 
-				cfg->pmass, cfg->mu, cfg->lambda, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
   
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
-    status = cov_CYKCOVCT(&data, msa, &cykranklist, &cfg->mu, &cfg->lambda, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    status = cov_CYKCOVCT(&data, msa, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
     if (cfg->verbose) {
@@ -1056,8 +1057,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, ranklist_null, ranklist_aux, title, cfg->pmass, 
-				cfg->mu, cfg->lambda, cfg->verbose, cfg->errbuf);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, title);
     if (status != eslOK) goto ERROR; 
   }
  

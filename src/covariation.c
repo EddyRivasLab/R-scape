@@ -15,6 +15,7 @@
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
 #include "esl_exponential.h"
+#include "esl_gamma.h"
 #include "esl_histogram.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
@@ -43,18 +44,18 @@ static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int
 static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi,
 				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
-static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
-static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda);
+static double cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h);
+static double evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h);
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, 
 					   int linespoints, int style1, int style2);
-static int    cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda, 
+static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h,
 				    double ymin, double ymax, char *key, double offx, double offy, int style);
 static int    cov_histogram_bin2expectsurv(int i, ESL_HISTOGRAM *h, double *ret_expsurv);
 
 int                 
-cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda, int analize)
+cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analize)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
@@ -62,140 +63,139 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   int            status;
   
   /* Calculate the covariation matrix */
-  status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
-  
-  if (status != eslOK) goto ERROR;
+  if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
+	 data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
+    status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+    if (status != eslOK) goto ERROR;
+  }
+
   switch(data->covtype) {
   case CHIa: 
-    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case CHIp:
-    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR;  
-    break;
-  case CHIs:
-    status = cov_CalculateCHI         (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case CHI: 
-    status = cov_CalculateCHI         (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCHI         (covclass, data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;     
     break;
   case GTa: 
-    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case GTp: 
-    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
      if (status != eslOK) goto ERROR; 
      break;
-  case GTs: 
-    status = cov_CalculateGT          (covclass,  data, FALSE,  NULL,      NULL,     NULL,  NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,       data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR; 
-    break;
   case GT: 
-     status = cov_CalculateGT          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+     status = cov_CalculateGT          (covclass, data, analize, &ranklist, &hitlist);
      if (status != eslOK) goto ERROR;
      break;
   case MIa: 
-    status = cov_CalculateMI          (covclass, data, FALSE,  NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMI          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIp: 
-    status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR; 
-    break;
-  case MIs: 
-    status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MI: 
-    status = cov_CalculateMI          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMI          (covclass, data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case MIra: 
-    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIrp:
-    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR;  
-    break;
-  case MIrs:
-    status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case MIr: 
-    status = cov_CalculateMIr         (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMIr         (covclass, data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case MIga: 
-    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIgp:
-    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR;  
-    break;
-  case MIgs:
-    status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case MIg: 
-    status = cov_CalculateMIg          (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateMIg          (covclass, data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case OMESa: 
-    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESp: 
-    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
+    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
-    if (status != eslOK) goto ERROR; 
-    break;
-  case OMESs: 
-    status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL,     NULL,   NULL);
-    if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(SCA,      data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case OMES: 
-    status = cov_CalculateOMES        (covclass, data, analize, &ranklist, &hitlist, ret_mu, ret_lambda);
+    status = cov_CalculateOMES        (covclass, data, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR;
+    break;
+ case RAFa: 
+   status = cov_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case RAFp: 
+    status = cov_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case RAF: 
+    status = cov_CalculateRAF         (covclass, data, msa, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR;
+    break;
+  case RAFSa: 
+    status = cov_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case RAFSp: 
+    status = cov_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case RAFS: 
+    status = cov_CalculateRAFS        (covclass, data, msa, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   default:
@@ -333,7 +333,7 @@ cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -365,7 +365,7 @@ cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
   }
 
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
 
@@ -461,7 +461,7 @@ cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -493,7 +493,7 @@ cov_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
   }
   
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
 
@@ -586,7 +586,7 @@ cov_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -620,7 +620,7 @@ cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
   }
   
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
   
@@ -717,7 +717,7 @@ cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -749,7 +749,7 @@ cov_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
   }
   
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
   
@@ -834,7 +834,7 @@ cov_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -866,7 +866,7 @@ cov_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
   }
   
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
   
@@ -958,7 +958,7 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
 
 
 int                 
-cov_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -990,7 +990,7 @@ cov_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
   }
   
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
   
@@ -1078,9 +1078,126 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
   return status;
 }
 
+int                 
+cov_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa,  int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+{
+  struct mutual_s *mi = data->mi;
+  int              verbose = data->verbose;
+  double           psi = 1.0;
+  double           cij, qij;
+  int              i, j;
+  int              s1, s2;
+  int              ai, aj, bi, bj;
+  int              status = eslOK;
+  
+  cov_ReuseCOV(mi, RAF, C2);
+
+  // RAF
+  for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) {
+      cij = 0.0;
+      qij = 0.0;
+      
+      for (s1 = 0; s1 < msa->nseq; s1 ++) {
+	ai = msa->ax[s1][i+1];
+	aj = msa->ax[s1][j+1];
+
+	if ( !is_wc(ai,aj) ) qij += 1.0;
+	
+	for (s2 = s1+1; s2 < msa->nseq; s2 ++) {
+	  bi = msa->ax[s2][i+1];
+	  bj = msa->ax[s2][j+1];
+
+	  if ( is_wc(ai,aj) && is_wc(bi,bj) ) 
+	    {
+	      if      (ai != bi && aj != bj) cij += 2.0;
+	      else if (ai != bi || aj != bj) cij += 1.0;
+	    }
+	}
+      }
+      qij /= msa->nseq;
+      
+      cij /= (msa->nseq > 1)? (double)msa->nseq * ((double)msa->nseq-1.0): 1.0;
+      cij *= 2.0;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = cij - psi * qij;
+      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
+      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j]; 
+
+    }
+
+  if (verbose) {
+    printf("RAF[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (i==5&&j==118) printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+      } 
+  }
+  
+  if (analyze) {
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
+    if (status != eslOK) goto ERROR;
+  }
+
+  return status;
+  
+ ERROR:
+  return status;
+}
 
 int                 
-cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+{
+  struct mutual_s *mi = data->mi;
+  int              verbose = data->verbose;
+  ESL_DMATRIX     *bij = NULL;
+  double           bijs;
+  int              i, j;
+  int              status = eslOK;
+
+  cov_ReuseCOV(mi, RAF, C2);
+  cov_CalculateRAF(RAF, data, msa, FALSE, NULL, NULL);
+
+  // RAFS
+  bij = esl_dmatrix_Clone(mi->COV);
+  cov_ReuseCOV(mi, RAFS, C2);
+  for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) {
+      
+      bijs = 2.0 * bij->mx[i][j];
+      if (i > 0 && j < mi->alen-1) bijs += bij->mx[i-1][j+1];
+      if (j > 0 && i < mi->alen-1) bijs += bij->mx[i+1][j-1];
+      bijs *= 0.25;
+
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = bijs;     
+      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
+      if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j]; 
+
+    }
+
+  if (verbose) {
+    printf("RAFS[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (i==5&&j==118) printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+      } 
+  }
+  
+  if (analyze) {
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
+    if (status != eslOK) goto ERROR;
+  }
+
+  esl_dmatrix_Destroy(bij);
+  return status;
+  
+ ERROR:
+  if (bij) esl_dmatrix_Destroy(bij);
+  return status;
+}
+
+
+int                 
+cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -1098,7 +1215,6 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
   switch(corrtype) {
   case APC: esl_sprintf(&covtype, "%sp", type); break;
   case ASC: esl_sprintf(&covtype, "%sa", type); break;
-  case SCA: esl_sprintf(&covtype, "%ss", type); break;
   default:  
     ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
     break;
@@ -1133,8 +1249,6 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
 	mi->COV->mx[i][j] = (COVavg != 0.0)? COV->mx[i][j] - COVx[i] * COVx[j] / COVavg : 0.0;
       else if (corrtype == ASC) 
 	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
-      else if (corrtype == SCA) 
-	mi->COV->mx[i][j]  = (COVx[i] > 0.0 && COVx[j] > 0.0)? COV->mx[i][j] * COVavg / sqrt(COVx[i] * COVx[j]) : 0.0;
       else 
 	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
 
@@ -1154,7 +1268,7 @@ cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, R
   }
 
   if (analyze) 
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist, ret_mu, ret_lambda);
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
   if (status != eslOK) goto ERROR;
   
   free(type);
@@ -1198,6 +1312,8 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MI:    esl_sprintf(ret_covtype, "MI");    break;
   case MIr:   esl_sprintf(ret_covtype, "MIr");   break; 
   case MIg:   esl_sprintf(ret_covtype, "MIg");   break; 
+  case RAF:   esl_sprintf(ret_covtype, "RAF");   break; 
+  case RAFS:  esl_sprintf(ret_covtype, "RAFS");  break; 
 
   case CHIp:  esl_sprintf(ret_covtype, "CHIp");  break;
   case GTp:   esl_sprintf(ret_covtype, "GTp");   break;
@@ -1205,6 +1321,8 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIp:   esl_sprintf(ret_covtype, "MIp");   break;
   case MIrp:  esl_sprintf(ret_covtype, "MIrp");  break; 
   case MIgp:  esl_sprintf(ret_covtype, "MIgp");  break; 
+  case RAFp:  esl_sprintf(ret_covtype, "RAFp");  break; 
+  case RAFSp: esl_sprintf(ret_covtype, "RAFSp"); break; 
 
   case CHIa:  esl_sprintf(ret_covtype, "CHIa");  break;
   case GTa:   esl_sprintf(ret_covtype, "GTa");   break;
@@ -1212,13 +1330,8 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIa:   esl_sprintf(ret_covtype, "MIa");   break;
   case MIra:  esl_sprintf(ret_covtype, "MIra");  break; 
   case MIga:  esl_sprintf(ret_covtype, "MIga");  break; 
-
-  case CHIs:  esl_sprintf(ret_covtype, "CHIs");  break;
-  case GTs:   esl_sprintf(ret_covtype, "GTs");   break;
-  case OMESs: esl_sprintf(ret_covtype, "OMESs"); break;
-  case MIs:   esl_sprintf(ret_covtype, "MIs");   break;
-  case MIrs:  esl_sprintf(ret_covtype, "MIrs");  break; 
-  case MIgs:  esl_sprintf(ret_covtype, "MIgs");  break; 
+  case RAFa:  esl_sprintf(ret_covtype, "RAFa");  break; 
+  case RAFSa: esl_sprintf(ret_covtype, "RAFSa"); break; 
 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE");
   }
@@ -1241,6 +1354,8 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MI"))     type = MI;
   else if (!esl_strcmp(covtype, "MIr"))    type = MIr;
   else if (!esl_strcmp(covtype, "MIg"))    type = MIg;
+  else if (!esl_strcmp(covtype, "RAF"))    type = RAF;
+  else if (!esl_strcmp(covtype, "RAFS"))   type = RAFS;
 
   else if (!esl_strcmp(covtype, "CHIp"))   type = CHIp;
   else if (!esl_strcmp(covtype, "GTp"))    type = GTp;
@@ -1248,6 +1363,8 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MIp"))    type = MIp;
   else if (!esl_strcmp(covtype, "MIrp"))   type = MIrp;
   else if (!esl_strcmp(covtype, "MIgp"))   type = MIgp;
+  else if (!esl_strcmp(covtype, "RAFp"))   type = RAFp;
+  else if (!esl_strcmp(covtype, "RAFSp"))  type = RAFSp;
 
   else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
   else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
@@ -1255,13 +1372,9 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MIa"))    type = MIa;
   else if (!esl_strcmp(covtype, "MIra"))   type = MIra;
   else if (!esl_strcmp(covtype, "MIga"))   type = MIga;
+  else if (!esl_strcmp(covtype, "RAFa"))   type = RAFa;
+  else if (!esl_strcmp(covtype, "RAFSa"))  type = RAFSa;
 
-  else if (!esl_strcmp(covtype, "CHIs"))   type = CHIs;
-  else if (!esl_strcmp(covtype, "GTs"))    type = GTs;
-  else if (!esl_strcmp(covtype, "OMESs"))  type = OMESs;
-  else if (!esl_strcmp(covtype, "MIs"))    type = MIs;
-  else if (!esl_strcmp(covtype, "MIrs"))   type = MIrs;
-  else if (!esl_strcmp(covtype, "MIgs"))   type = MIgs;
   else
     ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE %s", covtype);
 
@@ -1471,7 +1584,7 @@ cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct 
 
 
 int
-cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda)
+cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   ESL_DMATRIX     *mtx = mi->COV;
@@ -1480,8 +1593,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   RANKLIST        *ranklist = NULL;
   HITLIST         *hitlist = NULL;
   double           newmass;
-  double           mu;
-  double           lambda;
   double           sen;
   double           ppv;
   double           F;
@@ -1537,14 +1648,31 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
     
     /* censor the histogram and do an exponential fit to the tail */
-    if (!usenull) status = cov_ExpFitHistogram(ranklist->ht,            data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
-    else          status = cov_ExpFitHistogram(data->ranklist_null->ha, data->pmass, &newmass, &mu, &lambda, data->verbose, data->errbuf);
-    if (status != eslOK) goto ERROR;
-    if (data->verbose) {
-      if (!usenull) 
-	printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", data->pmass, newmass, ranklist->ht->phi,            mu, lambda, ranklist->ht->Nc);
-      else          
-	printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", data->pmass, newmass, data->ranklist_null->ha->phi, mu, lambda, data->ranklist_null->ha->Nc);
+    if (data->doexpfit) {
+      if (!usenull) status = cov_NullFitExponential(ranklist->ht,            data->pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
+      else          status = cov_NullFitExponential(data->ranklist_null->ha, data->pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
+      if (status != eslOK) goto ERROR;
+      if (data->verbose) {
+	if (!usenull) 
+	  printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", 
+		 data->pmass, newmass, ranklist->ht->phi,            data->mu, data->lambda, (int)ranklist->ht->Nc);
+	else          
+	  printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", 
+		 data->pmass, newmass, data->ranklist_null->ha->phi, data->mu, data->lambda, (int)data->ranklist_null->ha->Nc);
+      }
+    }
+    else { // a chi-square test
+      if (!usenull) status = cov_NullFitChiSquare(ranklist->ht,            data->pmass, &newmass, &data->mu, &data->lambda, &data->k, data->verbose, data->errbuf);
+      else          status = cov_NullFitChiSquare(data->ranklist_null->ha, data->pmass, &newmass, &data->mu, &data->lambda, &data->k, data->verbose, data->errbuf);
+      if (status != eslOK) goto ERROR;
+     if (data->verbose) {
+	if (!usenull) 
+	  printf("pmass %f newmass %f phi %f mu %f lambda %f k %f Nc %d\n", 
+		 data->pmass, newmass, ranklist->ht->phi,            data->mu, data->lambda, data->k, (int)ranklist->ht->Nc);
+	else          
+	  printf("pmass %f newmass %f phi %f mu %f lambda %f k %f Nc %d\n", 
+		 data->pmass, newmass, data->ranklist_null->ha->phi, data->mu, data->lambda, data->k, (int)data->ranklist_null->ha->Nc);
+      }
     }
   }
 
@@ -1567,7 +1695,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg  = mi->alen * (mi->alen-1) / 2 - t;
     if (data->ranklist_null) {
-      eval = cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->pmass, mu, lambda);
+      eval = cov2evalue(data, cov, ranklist->ha->Nc, data->ranklist_null->ha);
     }
     else {
       eval = eslINFINITY;
@@ -1593,13 +1721,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
 
   if (data->mode == GIVSS || data->mode == CYKSS) {
-    status = cov_CreateHitList(data, mi, ranklist, &hitlist, mu, lambda, covtype, threshtype, usenull);
+    status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype, usenull);
     if (status != eslOK) goto ERROR;
   }    
 
-  *ret_mu     = mu;
-  *ret_lambda = lambda;
-  
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
   
@@ -1724,7 +1849,7 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, double mu, double lambda, 
+cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist,
 		  char *covtype, char *threshtype, int usenull)
 {
   HITLIST  *hitlist = NULL;
@@ -2039,8 +2164,7 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 }
 
 int
-cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, int minloop, 
-	     enum grammar_e G, double covthresh)
+cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int minloop, enum grammar_e G, double covthresh)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
@@ -2070,7 +2194,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double 
   data->ct = cykct;
   
   /* redo the hitlist since the ct has now changed */
-  status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist, ret_mu, ret_lambda);
+  status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
   if (status != eslOK) goto ERROR;
 
   /* R2R */
@@ -2098,11 +2222,12 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double 
 }
 
 int 
-cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux,
-		   char *title, double pmass, double mu, double lambda, int verbose, char *errbuf)
+cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, char *title)
 {
-  FILE    *fp = NULL;
-  int      status;
+  FILE     *fp = NULL;
+  RANKLIST *ranklist_null = data->ranklist_null;
+  char     *errbuf = data->errbuf;
+  int       status;
 
   if (ranklist == NULL) return eslOK;
 
@@ -2117,8 +2242,8 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
     fclose(fp);
   }
 
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, title, pmass, mu, lambda, FALSE, errbuf);
-  status = cov_PlotHistogramSurvival(gnuplot, covhisfile, ranklist, ranklist_null, ranklist_aux, title, pmass, mu, lambda, TRUE,  errbuf);
+  status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE);
+  status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE);
   if (status != eslOK) goto ERROR;
 
   return eslOK;
@@ -2129,7 +2254,7 @@ cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLI
 }
 
 int 
-cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf)
+cov_NullFitExponential(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf)
 {
   double ep[2];  	/* estimated mu, lambda  */
   double newmass;
@@ -2166,34 +2291,68 @@ cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double 
   return status;
 }
 
+int 
+cov_NullFitChiSquare(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf)
+{
+  double ep[3];  	/* ep[0] = mu; ep[1]=lambda=1/2; ep[2] = tau = k/2 */
+  double newmass;
+  int    status;
+
+  ep[1] = 0.5; // lambda = 1/2 for chi-square
+
+  /* set the tail by mass */
+  status = esl_histogram_SetTailByMass(h, pmass, &newmass);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set TailByMass");
+
+  /* chi-square fit to tail */
+  status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do chi-square fit");
+
+  /* add the expected data to the histogram */
+  if (ep[1] < eslINFINITY) {  
+    status = esl_histogram_SetExpectedTail(h, ep[0], newmass, &esl_gam_generic_cdf, ep);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set expected tail");
+  }
+
+  *ret_mu     = ep[0];
+  *ret_lambda = ep[1];
+  *ret_k      = ep[2];
+  *ret_newmass = newmass;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 
 int 
-cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, char *title, 
-			  double pmass, double mu, double lambda,  int dosvg, char *errbuf)
+cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg)
 {
-  FILE    *pipe;
-  char    *filename = NULL;
-  char    *outplot = NULL;
-  char    *key1 = NULL;
-  char    *key2 = NULL;
-  char    *key3 = NULL;
-  char    *key4 = NULL;
-  double   minphi;
-  double   minmass = 0.005;
-  int      pointype;
-  double   pointintbox;
-  int      linew;
-  double   pointsize;
-  double   xmin, xmax;
-  double   ymin, ymax;
-  double   posx, posy;
-  double   incx, incy;
-  double   expsurv;
-  double   offx, offy;
-  int      subsample;
-  int      linespoints;
-  int      i;
-  int      status;
+  FILE     *pipe;
+  RANKLIST *ranklist_null = data->ranklist_null;
+  RANKLIST *ranklist_aux  = data->ranklist_null;
+  char     *filename = NULL;
+  char     *outplot = NULL;
+  char     *key1 = NULL;
+  char     *key2 = NULL;
+  char     *key3 = NULL;
+  char     *key4 = NULL;
+  double    minphi;
+  double    minmass = 0.005;
+  int       pointype;
+  double    pointintbox;
+  int       linew;
+  double    pointsize;
+  double    xmin, xmax;
+  double    ymin, ymax;
+  double    posx, posy;
+  double    incx, incy;
+  double    expsurv;
+  double    offx, offy;
+  int       subsample;
+  int       linespoints;
+  int       i;
+  int       status;
 
   if (gnuplot    == NULL) return eslOK;
   if (covhisfile == NULL) return eslOK;
@@ -2264,7 +2423,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   fprintf(pipe, "set xlabel 'covariation score'\n");
   xmin = (ranklist_null)? ESL_MIN(ranklist->ht->phi, ESL_MIN(minphi, ranklist_null->ha->phi)) : ESL_MIN(minphi, ranklist->ht->phi);
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-  xmin = ESL_MIN(evalue2cov(ymax, ranklist->ha->Nc, ranklist->ha, pmass, mu, lambda), evalue2cov(ymax, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda));
+  xmin = ESL_MIN(evalue2cov(data, ymax, ranklist->ha->Nc, ranklist->ha), evalue2cov(data, ymax, ranklist->ha->Nc, ranklist_null->ha));
   incx = (xmax-xmin)/12.;
   xmax += incx;
   posx = xmin + 11.*incx;
@@ -2277,15 +2436,15 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
   offx = incx * 1/2;
   offy = incy * 16;
   expsurv = 0.00001;
-  cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 1e-5", offx, offy, 1);
+  cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 1e-5", offx, offy, 1);
   
   expsurv = 1.0;
   offy = incy * 11;
-  cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 1.00", offx, offy, 1);
+  cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 1.00", offx, offy, 1);
   
   expsurv = 10.0;
   offy = incy * 6;
-  cov_plot_lineatexpcov(pipe, expsurv, ranklist->ha->Nc, ranklist_null->ha, pmass, mu, lambda, ymin, ymax, "E 10.0", offx, offy, 1);
+  cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 10.0", offx, offy, 1);
 
   if (ranklist_null) {
     linespoints = FALSE;
@@ -2319,7 +2478,7 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
     fprintf(pipe, "set xrange [%f:%f]\n", xmin, xmax);
     
     ymin = -log(ranklist->ht->Nc);
-    ymax = log(ESL_MAX(minmass,pmass));
+    ymax = log(ESL_MAX(minmass, data->pmass));
     incy = (ymax-ymin)/12.;
     ymin -= incy;
     posy = ymax - incy;
@@ -2416,7 +2575,8 @@ cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, R
 
 
 int              
-cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, int dosvg, int verbose, char *errbuf)
+cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, 
+	    int dosvg, int verbose, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
@@ -3373,7 +3533,7 @@ cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop)
 }
 
 static double
-cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda)
+cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
 {
   double eval;
   int    c = 0;
@@ -3393,17 +3553,22 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double
     return eval;
   }
 
-  /* otherwise use the exponential fit */
-  eval = (lambda < eslINFINITY)? pmass * esl_exp_surv(cov, mu, lambda) * (double)Nc : eslINFINITY;
+  /* otherwise use the fit */
+  if (data->doexpfit) {
+    eval = (data->lambda < eslINFINITY)? data->pmass * esl_exp_surv(cov, data->mu, data->lambda) * (double)Nc : eslINFINITY;
+  }
+  else {
+    eval = eslINFINITY;
+  }
   
   return eval;
 }
  
 static double
-evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda)
+evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
 {
   double cov;
-  double p  = eval/(double)Nc/pmass;
+  double p  = eval/(double)Nc/data->pmass;
   int    c = 0;
   int    i;
   
@@ -3419,8 +3584,9 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, doubl
     return cov;
   }
 
-  /* otherwise use the exponential fit */
-  cov = esl_exp_invsurv(p, mu, lambda);
+  /* otherwise use the fit */
+  if (data->doexpfit) cov = esl_exp_invsurv(p, data->mu, data->lambda);
+  else                cov = -eslINFINITY;
   
   return cov;
 }
@@ -3605,13 +3771,13 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, do
 }
 
 static int
-cov_plot_lineatexpcov(FILE *pipe, double expsurv, int Nc, ESL_HISTOGRAM *h, double pmass, double mu, double lambda, double ymin, double ymax, char *key, 
+cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double ymin, double ymax, char *key, 
 		      double offx, double offy, int style)
 {
   double cov;
   double posx, posy;
  
-  cov = evalue2cov(expsurv, Nc, h, pmass, mu, lambda);
+  cov = evalue2cov(data, expsurv, Nc, h);
 
   posx = cov + offx;
   posy = ymax - offy;

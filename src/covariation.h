@@ -28,32 +28,34 @@ typedef enum {
   CHI   = 0,
   CHIp  = 1,
   CHIa  = 2,
-  CHIs  = 3,
 
-  GT    = 4,
-  GTp   = 5,
-  GTa   = 6,
-  GTs   = 7,
+  GT    = 3,
+  GTp   = 4,
+  GTa   = 5,
 
-  MI    = 8,
-  MIp   = 9,
-  MIa   = 10,
-  MIs   = 11,
+  MI    = 6,
+  MIp   = 7,
+  MIa   = 8,
 
-  MIr   = 12,
-  MIrp  = 13,
-  MIra  = 14,
-  MIrs  = 15,
+  MIr   = 9,
+  MIrp  = 10,
+  MIra  = 11,
 
-  MIg   = 16,
-  MIgp  = 17,
-  MIga  = 18,
-  MIgs  = 19,
+  MIg   = 12,
+  MIgp  = 13,
+  MIga  = 14,
 
-  OMES  = 20,
-  OMESp = 21,
-  OMESa = 22,
-  OMESs = 23,
+  OMES  = 15,
+  OMESp = 16,
+  OMESa = 17,
+
+  RAF   = 18,
+  RAFp  = 19,
+  RAFa  = 20,
+
+  RAFS  = 21,
+  RAFSp = 22,
+  RAFSa = 23,
 
   COVNONE = 24,
 } COVTYPE;
@@ -67,8 +69,7 @@ typedef enum {
 
 typedef enum {
   APC = 0,
-  ASC = 1,
-  SCA = 2, //spearman correction of attenuation
+  ASC = 1
 } CORRTYPE;
 
 typedef enum{
@@ -183,6 +184,10 @@ struct data_s {
   double               bmin;
   double               w;
   double               pmass;
+  int                  doexpfit; // TRUE for an exponential fit, default is chi-square
+  double               k;        // for chi-square fit  of null distribution, effective number of degress of freedom
+  double               mu;       // for exponential fit of null distribution
+  double               lambda;   // for exponential fit of null distribution
   double               tol;
   int                  verbose;
   char                *errbuf;
@@ -190,37 +195,31 @@ struct data_s {
 };
 
 
-extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, 
-				      double *ret_mu, double *ret_lambda, int analize);
+extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, int analize);
 extern int              cov_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 				   METHOD method, int donull2b, double tol, int verbose, char *errbuf);
 extern int              cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
-extern int              cov_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateCHI_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateCHI_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateOMES    (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateOMES    (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateOMES_C2 (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateGT      (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateGT      (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateGT_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateGT_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMI      (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateMI      (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateMI_C16  (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMI_C2   (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIr     (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateMIr     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateMIr_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIr_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateMIg     (COVCLASS covclass, struct data_s *data, int analyze, 
-					      RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateMIg     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateMIg_C16 (struct mutual_s *mi, int verbose, char *errbuf);
 extern int              cov_CalculateMIg_C2  (struct mutual_s *mi, int verbose, char *errbuf);
-extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, 
-						  RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_CalculateRAF     (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              cov_CalculateRAFS    (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);
@@ -231,12 +230,12 @@ extern int              cov_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutu
 extern int              cov_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              cov_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);
-extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, double *ret_mu, double *ret_lambda);
+extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
-extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, double mu, double lambda,
+extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist,
 					  char *covtype, char *threshtype, int usenull);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
 extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
@@ -244,13 +243,12 @@ extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, double *ret_mu, double *ret_lambda, 
-				     int minloop, enum grammar_e G, double covthresh);
-extern int              cov_ExpFitHistogram(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
-extern int              cov_WriteHistogram(char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, 
-					   RANKLIST *ranklist_aux, char *title, double pmass, double mu, double lambda, int verbose, char *errbuf);
-extern int              cov_PlotHistogramSurvival(char *gnuplot, char *covhisfile, RANKLIST *ranklist, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, 
-						  char *title, double pmass, double mu, double lambda, int dosvg, char *errbuf);
+extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int minloop, enum grammar_e G, double covthresh);
+extern int              cov_NullFitChiSquare(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda,
+					     double *ret_k, int verbose, char *errbuf);
+extern int              cov_NullFitExponential(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
+extern int              cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, char *title);
+extern int              cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
 extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);

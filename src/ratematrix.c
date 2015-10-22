@@ -58,6 +58,7 @@ ratematrix_CreateFromConditionals(const ESL_DMATRIX *P, const double *p, ESL_DMA
   return status;
 }
 
+
 int 
 ratematrix_CalculateFromConditionals(const ESL_DMATRIX *P, const double *p, ESL_DMATRIX *Q, ESL_DMATRIX *E, double tol, char *errbuf, int verbose)
 {
@@ -383,6 +384,31 @@ ratematrix_SaturationTime(const ESL_DMATRIX *Q, double *ret_tsat, double **ret_p
   if (P)    esl_dmatrix_Destroy(P);
   if (Pinf) esl_dmatrix_Destroy(Pinf);
   return status;
+}
+
+double
+ratematrix_Entropy(const ESL_DMATRIX *P)
+{
+  double entropy = 0.0;
+  int    i, j;
+
+  for (i = 0; i < P->n; i++)  
+    for (j = 0; j < P->m; j++)  
+      if (P->mx[i][j] > 0.) entropy += P->mx[i][j] * log(P->mx[i][j]);
+
+  return(-1.44269504 * entropy); /* converts to bits */
+}
+double
+ratematrix_RelEntropy(const ESL_DMATRIX *P, double *p)
+{
+  double entropy = 0.0;
+  int    i, j;
+
+  for (i = 0; i < P->n; i++)  
+    for (j = 0; j < P->m; j++)  
+      if (P->mx[i][j] > 0. && p[j] > 0.) entropy += P->mx[i][j] * (log(P->mx[i][j]) - log(p[j]));
+
+  return(1.44269504 * entropy); /* converts to bits */
 }
 
 int 
