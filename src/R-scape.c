@@ -131,6 +131,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
+  int              Nfit;
   int              doexpfit; // do an exponential fit, defautl is chi-square
 
   THRESH          *thresh;
@@ -156,6 +157,7 @@ static ESL_OPTIONS options[] = {
   { "--slide",        eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
   { "--onlyroc",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc and .sum files only",                                                            1 },
+  { "--expo",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "true to do an exponential fit (default is gamma)",                                          0},
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,    "0.97",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -224,7 +226,8 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--pmass",        eslARG_REAL,    "0.0001",  NULL,       NULL,   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--Nfit",         eslARG_INT,    "100",      NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.001",   NULL,      "x<1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -336,7 +339,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")   : -1;
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")  : FALSE;
   cfg.onlyroc     = esl_opt_IsOn(go, "--onlyroc")?    esl_opt_GetBoolean(go, "--onlyroc") : FALSE;
-  
+  cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?        esl_opt_GetBoolean(go, "--expo")   : FALSE;
+
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
@@ -401,8 +405,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.hpts  = HPTS; /* number of points in the histogram */
   cfg.bmin  = BMIN; /* a guess for lowest cov score */
   cfg.w     = -1;   /* histogram step, will be determined for each msa */
-  cfg.pmass = esl_opt_GetReal   (go, "--pmass");
-  cfg.doexpfit = TRUE;
+  cfg.pmass = esl_opt_GetReal(go, "--pmass");
+  cfg.Nfit  = esl_opt_GetInteger(go, "--Nfit");
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
@@ -419,7 +423,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (cfg.window <= 0) esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
     else                 esl_sprintf(&cfg.outfile, "%s.w%d.s%d.out", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
-    esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
+    if (cfg.window <= 0) esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
+    else                 esl_sprintf(&cfg.outsrtfile, "%s.w%d.s%d.sorted.out", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
   
@@ -926,6 +931,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
+  data.Nfit          = cfg->Nfit;
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
@@ -1024,6 +1030,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
+  data.Nfit          = cfg->Nfit;
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;

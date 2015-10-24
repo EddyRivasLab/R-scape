@@ -1592,7 +1592,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   char            *covtype = NULL;
   RANKLIST        *ranklist = NULL;
   HITLIST         *hitlist = NULL;
-  double           newmass;
+  double           pmass, newmass;
   double           sen;
   double           ppv;
   double           F;
@@ -1648,30 +1648,28 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
     
     /* censor the histogram and do an exponential fit to the tail */
+    if (!usenull) pmass = ESL_MIN((double)data->Nfit/(double)ranklist->ht->Nc,            data->pmass);
+    else          pmass = ESL_MIN((double)data->Nfit/(double)data->ranklist_null->ha->Nc, data->pmass);
     if (data->doexpfit) {
-      if (!usenull) status = cov_NullFitExponential(ranklist->ht,            data->pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
-      else          status = cov_NullFitExponential(data->ranklist_null->ha, data->pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
+      if (!usenull) status = cov_NullFitExponential(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
+      else          status = cov_NullFitExponential(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       if (status != eslOK) goto ERROR;
-      if (data->verbose) {
+      if (1||data->verbose) {
 	if (!usenull) 
-	  printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", 
-		 data->pmass, newmass, ranklist->ht->phi,            data->mu, data->lambda, (int)ranklist->ht->Nc);
+	  printf("ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
 	else          
-	  printf("pmass %f newmass %f phi %f mu %f lambda %f Nc %d\n", 
-		 data->pmass, newmass, data->ranklist_null->ha->phi, data->mu, data->lambda, (int)data->ranklist_null->ha->Nc);
+	  printf("ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
       }
     }
-    else { // a chi-square test
-      if (!usenull) status = cov_NullFitChiSquare(ranklist->ht,            data->pmass, &newmass, &data->mu, &data->lambda, &data->k, data->verbose, data->errbuf);
-      else          status = cov_NullFitChiSquare(data->ranklist_null->ha, data->pmass, &newmass, &data->mu, &data->lambda, &data->k, data->verbose, data->errbuf);
+    else { // a gamma fit
+      if (!usenull) status = cov_NullFitGamma(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
+      else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
       if (status != eslOK) goto ERROR;
-     if (data->verbose) {
+     if (1||data->verbose) {
 	if (!usenull) 
-	  printf("pmass %f newmass %f phi %f mu %f lambda %f k %f Nc %d\n", 
-		 data->pmass, newmass, ranklist->ht->phi,            data->mu, data->lambda, data->k, (int)ranklist->ht->Nc);
+	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
 	else          
-	  printf("pmass %f newmass %f phi %f mu %f lambda %f k %f Nc %d\n", 
-		 data->pmass, newmass, data->ranklist_null->ha->phi, data->mu, data->lambda, data->k, (int)data->ranklist_null->ha->Nc);
+	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
       }
     }
   }
@@ -1750,8 +1748,8 @@ cov_CreateRankList(double bmax, double bmin, double w)
 
   ranklist->ha = NULL;
   ranklist->ht = NULL;
-  ranklist->ha = esl_histogram_Create(bmin, bmax, w);
-  ranklist->ht = esl_histogram_Create(bmin, bmax, w);
+  ranklist->ha = esl_histogram_CreateFull(bmin, bmax, w);
+  ranklist->ht = esl_histogram_CreateFull(bmin, bmax, w);
   if (ranklist->ha == NULL) goto ERROR;
   if (ranklist->ht == NULL) goto ERROR;
 
@@ -2292,13 +2290,11 @@ cov_NullFitExponential(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, doub
 }
 
 int 
-cov_NullFitChiSquare(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf)
+cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf)
 {
   double ep[3];  	/* ep[0] = mu; ep[1]=lambda=1/2; ep[2] = tau = k/2 */
   double newmass;
   int    status;
-
-  ep[1] = 0.5; // lambda = 1/2 for chi-square
 
   /* set the tail by mass */
   status = esl_histogram_SetTailByMass(h, pmass, &newmass);
@@ -2307,6 +2303,7 @@ cov_NullFitChiSquare(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double
   /* chi-square fit to tail */
   status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do chi-square fit");
+  if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f\n", ep[0], ep[1], ep[2]);
 
   /* add the expected data to the histogram */
   if (ep[1] < eslINFINITY) {  
@@ -3558,7 +3555,7 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
     eval = (data->lambda < eslINFINITY)? data->pmass * esl_exp_surv(cov, data->mu, data->lambda) * (double)Nc : eslINFINITY;
   }
   else {
-    eval = eslINFINITY;
+    eval = (data->lambda < eslINFINITY)? data->pmass * esl_gam_surv(cov, data->mu, data->lambda, data->tau) * (double)Nc : eslINFINITY;
   }
   
   return eval;
@@ -3778,9 +3775,11 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
   double posx, posy;
  
   cov = evalue2cov(data, expsurv, Nc, h);
+  if (cov <= -eslINFINITY) return eslOK;
 
   posx = cov + offx;
   posy = ymax - offy;
+
   /* The observed binned counts:
    */
   fprintf(pipe, "set size 1,1\n");
