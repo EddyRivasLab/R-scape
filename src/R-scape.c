@@ -118,9 +118,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
 
-  MSA_STAT        *wmstat;              /* statistics of the original alignment */
-  int              wnbpairs;
-
   int              voutput;
   char            *rocfile;
   FILE            *rocfp; 
@@ -226,14 +223,15 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--Nfit",         eslARG_INT,    "100",      NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.001",   NULL,      "x<1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--Nfit",         eslARG_INT,     "20",      NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.01",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "R-scape - RNA Structure-driven Covariation Above Phylogenetic Expectation";
 
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
+static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
@@ -333,13 +331,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
-  cfg.docyk       = esl_opt_IsOn(go, "--cyk")? TRUE:FALSE;
+  cfg.docyk       = esl_opt_IsOn(go, "--cyk")?                                       TRUE : FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")  : -1;
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")   : -1;
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")  : FALSE;
   cfg.onlyroc     = esl_opt_IsOn(go, "--onlyroc")?    esl_opt_GetBoolean(go, "--onlyroc") : FALSE;
-  cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?        esl_opt_GetBoolean(go, "--expo")   : FALSE;
+  cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")    : FALSE;
 
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -410,7 +408,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
-  cfg.wmstat = NULL;
 
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
@@ -467,7 +464,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ct = NULL;
   cfg.onbpairs = 0;
   cfg.nbpairs  = 0;
-  cfg.wnbpairs = 0;
 
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
@@ -548,42 +544,55 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
  
-    status = original_msa_manipulate(go, &cfg, &msa);
+    /* the msaname */
+    status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
-    if (msa == NULL) continue;
-    if (msa->alen == 0) {
-      MSA_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
-      continue;
-    }
-   
+	
     if (cfg.window > 0) {
+ 
       esl_sprintf(&omsaname, "%s", cfg.msaname);
 
       useme = malloc(sizeof(int)*(msa->alen+1));
-      for (first = 1; first <= msa->alen-cfg.slide; first += cfg.slide) {
+      for (first = 1; first <= ESL_MAX(1,msa->alen); first += cfg.slide) {
+
 	esl_vec_ISet(useme, msa->alen+1, FALSE);
 	wmsa = esl_msa_Clone(msa);
 
-	last = ESL_MIN(first+cfg.window-1, msa->alen);
-	free(cfg.msaname); cfg.msaname = NULL;
-	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, cfg.msamap[first-1], cfg.msamap[last-1]);
-
-	for (i = first; i <= last; i ++) useme[i] = TRUE;
+	last = ESL_MIN(first+cfg.window-1, msa->alen);	
+	for (i = first-1; i < last; i ++) useme[i] = TRUE;
 	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
+	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
 
-	/* stats of the window alignment */
-	msamanip_XStats(wmsa, &cfg.wmstat);
-	msamanip_CalculateCT(wmsa, NULL, &cfg.wnbpairs, cfg.errbuf);
+	/* add the name including the from-to information */
+	free(cfg.msaname); cfg.msaname = NULL;
+	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
+	esl_msa_SetName(wmsa, cfg.msaname, -1);
+  
+	status = original_msa_manipulate(go, &cfg, &wmsa);
+	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
+	if (wmsa == NULL) continue;
+	if (wmsa->alen <= 0) {
+	  MSA_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
+	  continue;
+	}
 
 	cfg.firstpos = first;
+
 	status = rscape_for_msa(go, &cfg, wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
  
 	esl_msa_Destroy(wmsa); wmsa = NULL;
-	free(cfg.wmstat); cfg.wmstat = NULL;
       }
     }
-    else {
+    else {      
+      status = original_msa_manipulate(go, &cfg, &msa);
+      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
+      if (msa == NULL) continue;
+      if (msa->alen == 0) {
+	MSA_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
+	continue;
+      }
+      
       cfg.firstpos = 0;
       status = rscape_for_msa(go, &cfg, msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
@@ -596,7 +605,6 @@ main(int argc, char **argv)
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
-    if (cfg.wmstat) free(cfg.wmstat); cfg.wmstat = NULL;
   }
 
   /* cleanup */
@@ -631,31 +639,21 @@ main(int argc, char **argv)
   if (cfg.msamap) free(cfg.msamap); 
   if (cfg.omstat) free(cfg.omstat);
   if (cfg.mstat) free(cfg.mstat); 
-  if (cfg.wmstat) free(cfg.wmstat); 
 
   return 0;
 }
 
-
 static int
-original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
+get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  ESL_MSA *msa = *omsa;
-  char    *msg = "original_msa_manipulate failed";
-  char    *type = NULL;
-  char    *tp;
-  char    *tok1;
-  char    *tok2;
-  char    *tok = NULL;
-  char    *submsaname = NULL;
-  int      seq_cons_len = 0;
-  int      nremoved = 0;	  /* # of identical sequences removed */
-  int      nfrags = 0;	  /* # of fragments removed */
-  int      t;
-
-  /* stats of the original alignment */
-  msamanip_XStats(msa, &cfg->omstat);
-  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, cfg->errbuf);
+  char    *msg = "get_msaname failed";
+  char *type = NULL;
+  char *tp;
+  char *tok1;
+  char *tok2;
+  char *tok = NULL;
+  char *submsaname = NULL;
+  int   t;
   
   /* the msaname */
   for (t = 0; t < msa->ngf; t++) {
@@ -666,7 +664,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 	if (tok) free(tok); tok = NULL;
 	if (esl_strtok(&tp,   ";", &tok1) != eslOK) esl_fatal(msg);
 	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);
- 	esl_sprintf(&tok, "_%s", tok2);
+	esl_sprintf(&tok, "_%s", tok2);
 	esl_strcat(&type, -1, tok, -1);
       }
     }
@@ -682,6 +680,35 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
     free(cfg->msaname); cfg->msaname = NULL;
     esl_sprintf(&cfg->msaname, "%s", submsaname);
+  }
+
+  if (tok) free(tok);
+  if (type) free(type);
+  if (submsaname) free(submsaname);
+  return eslOK;
+}
+
+static int
+original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
+{
+  ESL_MSA *msa = *omsa;
+  char    *msg = "original_msa_manipulate failed";
+  char    *type = NULL;
+  char    *tok = NULL;
+  char    *submsaname = NULL;
+  int      seq_cons_len = 0;
+  int      nremoved = 0;	  /* # of identical sequences removed */
+  int      nfrags = 0;	  /* # of fragments removed */
+
+  /* stats of the original alignment */
+  msamanip_XStats(msa, &cfg->omstat);
+  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, cfg->errbuf);
+  /* print some info */
+  if (1||cfg->verbose) {
+    fprintf(stdout, "Given alignment\n");
+    fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
+    if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
   
   /* apply msa filters and than select submsa
@@ -701,7 +728,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;
   }
   if (msa->nseq < cfg->nseqmin) {
-    esl_msa_Destroy(msa); 
+    esl_msa_Destroy(msa); msa = NULL;
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
     if (tok) free(tok); tok = NULL;
@@ -713,6 +740,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   esl_msa_Hash(msa);
   msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
   if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
+  if (msa == NULL || msa->nseq < cfg->nseqmin) {
+    if (msa) esl_msa_Destroy(msa); msa = NULL;
+    if (submsaname) free(submsaname);
+    if (type) free(type); type = NULL;
+    if (tok) free(tok); tok = NULL;
+    free(cfg->msaname); cfg->msaname = NULL;
+    return eslOK;
+  }
 
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
@@ -726,12 +761,15 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (submsaname) free(submsaname);
     return eslOK;  
   }
+
+  /* add the name */
+  esl_msa_SetName(msa, cfg->msaname, -1);
   
   /* print some info */
-  if (cfg->verbose) {
+  if (1||cfg->verbose) {
     fprintf(stdout, "Used alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
-    if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    if (msa->alen > 0 && eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->mstat); 
   }
 
@@ -752,8 +790,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (msa == NULL) return eslOK;
 
   if (msa->nseq <= 1) {
-    MSA_banner(cfg->outfp,    cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    MSA_banner(cfg->outsrtfp, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     return eslOK; 
   }
 
@@ -795,11 +833,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
-  if (cfg->nbpairs == 0)        cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
-  if (msa->alen > cfg->cykLmax) cfg->docyk = FALSE; // unless alignment is too long
+  if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
+  if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
   
   if (1||cfg->verbose) 
-    MSA_banner(stdout, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
 
   /* the null model first */
   cfg->mode = RANSS;
@@ -974,11 +1012,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   /* print to stdout */
   if (cfg->verbose) 
-    MSA_banner(stdout, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
    
   if (cfg->mode != RANSS) {
-    MSA_banner(cfg->outfp,    cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    MSA_banner(cfg->outsrtfp, cfg->msaname, (cfg->window>0)?cfg->wmstat:cfg->mstat, (cfg->window>0)?NULL:cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
