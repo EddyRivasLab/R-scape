@@ -704,7 +704,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   msamanip_XStats(msa, &cfg->omstat);
   msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, cfg->errbuf);
   /* print some info */
-  if (1||cfg->verbose) {
+  if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
     if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
@@ -766,7 +766,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   esl_msa_SetName(msa, cfg->msaname, -1);
   
   /* print some info */
-  if (1||cfg->verbose) {
+  if (cfg->verbose) {
     fprintf(stdout, "Used alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
     if (msa->alen > 0 && eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
