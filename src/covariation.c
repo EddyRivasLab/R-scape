@@ -177,7 +177,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
-  case RAF: 
+  case RAF:
     status = cov_CalculateRAF         (covclass, data, msa, analize, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
@@ -204,8 +204,10 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
   
   if (data->mode == GIVSS) { // do the plots only for GIVSS
+
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
+ 
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
 
@@ -1724,7 +1726,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
-  
+ 
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype); 
   return eslOK;
@@ -2343,7 +2345,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   double    ymin, ymax;
   double    posx, posy;
   double    incx, incy;
-  double    en, eo, eo_prv;
+  double    en, eo;
   double    cov;
   double    expsurv;
   double    offx, offy;
@@ -2415,21 +2417,23 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set ylabel 'Expected or Observed #pairs(x > score)'\n");
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
+  // the ymax and xmax values
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
   ymax = 100.;
   cov = xmax;
   eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
   en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
-  eo_prv = eo;
-  while(eo - en > tol || (eo-en < tol && eo == eo_prv)) {
-    cov -= 0.1;
-    eo_prv = eo;
+  while(eo - en > tol && cov > ranklist->ha->cmin) {
+    cov -= ranklist->ha->w;
     eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
     en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
   }
-  ymax = ESL_MAX(ymax,en);
-  ymax = en;
+  while (en > ymax) { // ymax = 100 or 1000, or 10000 or ...
+    ymax *= 10;
+  }
+  //ymax = en; // for a variable ymax right at the intersction point of both distributions
 
+  // the ymin and xmin values
   ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
   xmin = ESL_MIN(evalue2cov(data, ymax, ranklist->ha->Nc, ranklist->ha), evalue2cov(data, ymax, ranklist->ha->Nc, ranklist_null->ha));
 
@@ -2565,7 +2569,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   }
   
   pclose(pipe);
-  
+ 
   free(key1);
   free(key2);
   free(key3);

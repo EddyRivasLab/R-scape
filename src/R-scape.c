@@ -137,7 +137,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              window;
   int              slide;
 
-  int              onlyroc;
+  int              nofigures;
 
   float            tol;
   int              verbose;
@@ -153,7 +153,7 @@ static ESL_OPTIONS options[] = {
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
-  { "--onlyroc",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc and .sum files only",                                                            1 },
+  { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .out .roc and .sum files only",                                                            1 },
   { "--expo",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "true to do an exponential fit (default is gamma)",                                          0},
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
@@ -322,22 +322,22 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.alenthresh  = esl_opt_GetInteger(go, "--alenthresh");
-  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")        : -1.0;
-  cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")        : -1.0;
-  cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")        : -1.0;
-  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin") : -1;
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : -1.0;
+  cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          : -1.0;
+  cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
+  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
   cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
   cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
-  cfg.docyk       = esl_opt_IsOn(go, "--cyk")?                                       TRUE : FALSE;
+  cfg.docyk       = esl_opt_IsOn(go, "--cyk")?                                         TRUE : FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
-  cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")  : -1;
-  cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")   : -1;
-  cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")  : FALSE;
-  cfg.onlyroc     = esl_opt_IsOn(go, "--onlyroc")?    esl_opt_GetBoolean(go, "--onlyroc") : FALSE;
-  cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")    : FALSE;
+  cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
+  cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
+  cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
+  cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
+  cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
 
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -799,7 +799,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
 
   /* R2R annotated sto file */
-  if (cfg->outdir && !cfg->onlyroc) {
+  if (cfg->outdir && !cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
     
@@ -811,7 +811,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
   }
-  else if (!cfg->onlyroc) {
+  else if (!cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
     
@@ -1083,9 +1083,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
       printf("score total distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
+      printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin, ranklist->ha->w);
       printf("score truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin);
+      printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
