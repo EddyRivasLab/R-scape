@@ -2326,7 +2326,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 {
   FILE     *pipe;
   RANKLIST *ranklist_null = data->ranklist_null;
-  RANKLIST *ranklist_aux  = data->ranklist_null;
+  RANKLIST *ranklist_aux  = data->ranklist_aux;
   char     *filename = NULL;
   char     *outplot = NULL;
   char     *key1 = NULL;
@@ -2343,7 +2343,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   double    ymin, ymax;
   double    posx, posy;
   double    incx, incy;
-  double    en, eo;
+  double    en, eo, eo_prv;
   double    cov;
   double    expsurv;
   double    offx, offy;
@@ -2416,14 +2416,14 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set xlabel 'covariation score'\n");
 
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-
   ymax = 100.;
   cov = xmax;
   eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
   en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
-
-  while(eo - en > tol) {
+  eo_prv = eo;
+  while(eo - en > tol || (eo-en < tol && eo == eo_prv)) {
     cov -= 0.1;
+    eo_prv = eo;
     eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
     en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
   }
@@ -2463,7 +2463,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     linespoints = FALSE;
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
     if (status != eslOK) goto ERROR;
-  }
+}
   if (ranklist_aux) {
     linespoints = FALSE;
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, linespoints, 11, 7);
@@ -3566,10 +3566,10 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
 
   /* otherwise use the fit */
   if (data->doexpfit) {
-    eval = (data->lambda < eslINFINITY)? data->pmass * esl_exp_surv(cov, data->mu, data->lambda) * (double)Nc : eslINFINITY;
+    eval = (data->lambda < eslINFINITY)? data->pmass * esl_exp_surv(cov, data->mu, data->lambda) * (double)Nc / (double)h->Nc : eslINFINITY;
   }
   else {
-    eval = (data->lambda < eslINFINITY)? data->pmass * esl_gam_surv(cov, data->mu, data->lambda, data->tau) * (double)Nc : eslINFINITY;
+    eval = (data->lambda < eslINFINITY)? data->pmass * esl_gam_surv(cov, data->mu, data->lambda, data->tau) * (double)Nc / (double)h->Nc: eslINFINITY;
   }
   
   return eval;
@@ -3579,7 +3579,7 @@ static double
 evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
 {
   double cov = -eslINFINITY;
-  double p  = eval/(double)Nc/data->pmass;
+  double p  = (eval*(double)h->Nc)/((double)Nc*data->pmass);
   int    c = 0;
   int    i;
   int    maxit = 100;
