@@ -789,6 +789,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (msa == NULL) return eslOK;
 
+  // reset the docyk flag in case it changed with the previous alignment
+  cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
+
   if (msa->nseq <= 1) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
