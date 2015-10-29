@@ -42,8 +42,8 @@
 
 # Autoconf 2.61 has a bug in AC_FUNC_FSEEKO; don't use it.
 AC_PREREQ(2.63)
-AC_INIT(E2, 0.01, rivase@janelia.hhmi.org, e2)
-AC_MSG_NOTICE([Configuring E2 for your system.])
+AC_INIT(mysource, 0.01, elenarivas@fas.harvard.edu, mysource)
+AC_MSG_NOTICE([Configuring mysource for your system.])
 
 # remember if the user is overriding CFLAGS
 if test x"$CFLAGS" = x; then 

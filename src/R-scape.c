@@ -727,7 +727,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  if (msa->nseq < cfg->nseqmin) {
+  if (msa->nseq < cfg->nseqmin || msa->alen == 0) {
     esl_msa_Destroy(msa); msa = NULL;
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
