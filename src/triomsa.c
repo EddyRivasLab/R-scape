@@ -1104,7 +1104,7 @@ run_benchmark(struct cfg_s *cfg, FILE *benchfp, char *method, ESL_MSA *rmsa, MSA
 		 * p7_tracealign_Seqs() and includes lower case
 		 * for residues that did not align to the more divergent "a" sequence
 		 */
-  status = msamanip_Benchmark(benchfp, msaname, method, cfg->abc, rmsa, mrstat, emsa, mestat, sc, cfg->treeavgt, time, lcu_r, lcu_e, cfg->errbuf, cfg->verbose);
+  status = FastSP_Benchmark(benchfp, msaname, method, cfg->abc, rmsa, mrstat, emsa, mestat, sc, cfg->treeavgt, time, lcu_r, lcu_e, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
 
   free(msaname);

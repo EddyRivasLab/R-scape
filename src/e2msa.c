@@ -1075,7 +1075,7 @@ run_benchmark(struct cfg_s *cfg, char *method, ESL_MSA *rmsa, MSA_STAT *mrstat, 
   
   esl_sprintf(&msaname, "%s.%d", cfg->msaheader, cfg->nmsa);
 
-  status = msamanip_Benchmark(cfg->benchfp, (rmsa->name)? rmsa->name : msaname, method, cfg->abc, rmsa, mrstat, emsa, mestat, sc, cfg->treeavgt, time, cfg->lcu_r, cfg->lcu_e, cfg->errbuf, cfg->verbose);
+  status = FastSP_Benchmark(cfg->benchfp, (rmsa->name)? rmsa->name : msaname, method, cfg->abc, rmsa, mrstat, emsa, mestat, sc, cfg->treeavgt, time, cfg->lcu_r, cfg->lcu_e, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
 
   if (msaname) free(msaname);

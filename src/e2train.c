@@ -473,7 +473,7 @@ run_voutput (struct cfg_s *cfg)
     
     //if (eslx_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
     
-    status = msamanip_Benchmark(cfg->benchfp, msaname, cfg->method, cfg->abc, cfg->msalist[n], msastat, e2msa, e2msastat, sc, treeavgt, time, FALSE, FALSE, cfg->errbuf, cfg->verbose);
+    status = FastSP_Benchmark(cfg->benchfp, msaname, cfg->method, cfg->abc, cfg->msalist[n], msastat, e2msa, e2msastat, sc, treeavgt, time, FALSE, FALSE, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     esl_msa_Destroy(e2msa); e2msa = NULL;
   }

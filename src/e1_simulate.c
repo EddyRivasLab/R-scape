@@ -28,8 +28,6 @@
 #include "e1_simulate.h"
 #include "e1_rate.h"
 #include "e1_model.h"
-#include "e2_profile.h"
-#include "e2_trace.h"
 #include "ratematrix.h"
 
 

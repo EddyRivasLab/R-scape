@@ -27,8 +27,6 @@
 #include "esl_wuss.h"
 
 
-#include "e2_tree.h"
-#include "fastsp.h"
 #include "msamanip.h"
 
 
@@ -1454,58 +1452,6 @@ msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_frq)
 
  ERROR:
   if (frq) free(frq);
-  return status;
-}
-
-int
-msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc, 
-		   float treeavgt, float time, int lcu_r, int lcu_e, char *errbuf, int verbose)
-{
-  double   sen    = 0.0;
-  double   ppv    = 0.0;
-  double   F      = 0.0;
-  double   TC     = 0.0;
-  double   SPE    = 0.0;
-  int      alen;
-  int      trueh  = 0;
-  int      foundh = 0;
-  int      tph    = 0;
-  int      cac    = 0; // correctly aligned columns
-  int      ac     = 0; // aligned columns in reference alignment
-  int      nhr    = 0; // number of nonhomologous  positions in reference
-  int      nhe    = 0; // number of nonhomologous  positions in inferred
-  int      hr     = 0; // number of homologous  positions in reference
-  int      he     = 0; // number of homologous  positions in inferred
-  int      hre    = 0; // number of homologous  positions in reference and inferred
-  int      status; 
-  
-  status = FastSP_Run(rmsa, emsa, &tph, &trueh, &foundh, &cac, &ac, &sen, &ppv, &F, &TC, lcu_r, lcu_e, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
-
-  alen = (emsa)? (int)emsa->alen : 0.0;
-
-  /* nonhomologies */
-  status = msamanip_NonHomologous(abc, rmsa, emsa, &nhr, &nhe, &hr, &he, &hre, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  SPE = (nhr > 0)? (float)nhe/(float)nhr : 0.0;
- 
-  if (method) fprintf(benchfp, "%s         %10d %10d %10d %10d %10d  %2.2f %2.2f %2.2f %2.2f    %f    %f    %s    %" PRId64 "  %d  %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d\n", 
-		      msaname, tph, trueh, foundh, nhe, nhr, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, treeavgt, time, method, 
-		      rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen, 
-		      mrstat->avginum, mrstat->stdinum, mestat->avginum, mestat->stdinum, mrstat->avgilen, mrstat->stdilen, mestat->avgilen, mestat->stdilen, sc, hr, he, hre);
-  else        fprintf(benchfp, "%s         %10d %10d %10d %10d %10d   %2.2f %2.2f %2.2f %2.2f    %f    %f    NA    %" PRId64 "  %d  %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d\n",      
-		      msaname, tph, trueh, foundh, nhe, nhr, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, treeavgt, time, 
-		      rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen,  
-		      mrstat->avginum, mrstat->stdinum, mestat->avginum, mestat->stdinum, mrstat->avgilen, mrstat->stdilen, mestat->avgilen, mestat->stdilen, sc, hr, he, hre);
-
-  if (1||verbose) fprintf(stdout, "#%s         %10d %10d %10d %10d %10d |  %.4f   %.4f   %.4f   %.4f | %2.2f %2.2f %2.2f %2.2f | %.4f     %.2f | %" PRId64 "  %d  %.2f +/- %.2f %.2f +/- %.2f %.4f | %d %d %d\n",      
-			  msaname, tph, trueh, foundh, nhe, nhr, sen, ppv, F, SPE, mrstat->avgid, mestat->avgid, mrstat->avgmatch, mestat->avgmatch, 
-			  treeavgt, time, 
-			  rmsa->alen, alen, mrstat->avgsqlen, mrstat->stdsqlen, mestat->avgsqlen, mestat->stdsqlen, sc, hr, he, hre);
-   return eslOK;
-
- ERROR:
   return status;
 }
 

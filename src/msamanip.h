@@ -12,9 +12,8 @@
 #include "esl_msa.h"
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
+#include "esl_tree.h"
 
-#include "e2_tree.h"
- 
 typedef struct msa_stat_s {
   int     nseq;
   int64_t alen;
@@ -61,9 +60,6 @@ extern int msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret
 extern int msamanip_XStats(ESL_MSA *msa, MSA_STAT **ret_mstat);
 extern int msamanip_CBaseComp(const ESL_ALPHABET *abc, ESL_MSA *msa, float *prior, float **ret_msafreq);
 extern int msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_msafreq);
-extern int msamanip_Benchmark(FILE *benchfp, char *msaname, char *method, ESL_ALPHABET *abc, 
-			      ESL_MSA *rmsa, MSA_STAT *mrstat, ESL_MSA *emsa, MSA_STAT *mestat, float sc, 
-			      float treeavgt, float time, int lcu_r, int lcu_e, char *errbuf, int verbose);
 #endif /*MSAMANIP_INCLUDED*/
 
 /************************************************************

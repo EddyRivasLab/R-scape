@@ -1,20 +1,65 @@
 cd ~/src/src/mysource
-mkdir rscape
-cd rscape
+mkdir rscape_v0.0
+cd rscape_v0.0
 cp ~/src/src/mysource/configure .
 cp ~/src/src/mysource/configure.ac .
+cp ~/src/src/mysource/config.sub .
+cp ~/src/src/mysource/config.guess .
 cp ~/src/src/mysource/aclocal.m4 .
 cp -rf ~/src/src/mysource/autom4te.cache .
 cp ~/src/src/mysource/install-sh .
-
-cp -rf ~/src/src/mysource/lib
-
-mkdir src
-cp ~/src/src/mysource/src/R-scape.c        src/.
-cp ~/src/src/mysource/src/covariation.*    src/.
-cp ~/src/src/mysource/src/msamanip.*       src/.
-cp ~/src/src/mysource/src/msatree.*        src/.
-cp ~/src/src/mysource/src/covgrammars.*    src/.
-cp ~/src/src/mysource/src/ribosum_matrix.* src/.
-
 cp ~/src/src/mysource/Makefile.in .
+
+mkdir lib
+cd lib
+cp -rf ~/src/src/mysource/lib/hmmer .
+cp -rf ~/src/src/mysource/lib/FastTree .
+
+cp -rf ~/src/src/mysource/src .
+rm src/*Dickerson*
+rm src/orthologs*
+rm src/tkf*
+rm src/ssi*
+rm src/fetchpfam*
+rm src/mya*
+rm src/msaprobs*
+rm src/muscle*
+rm src/ncbiblast*
+rm src/trio*
+rm src/*hmmer*
+rm src/e2*_generic*
+rm src/e2_gmx*
+rm src/e2train*
+rm src/e2_profile.*
+rm src/e2_pipeline*
+rm src/fasta*
+rm src/etophits*
+rm src/gappenalties*
+rm src/pfam*
+rm src/ptransmark*
+rm src/e2tracealing*
+rm src/modelconfig*
+rm src/plot*
+rm src/shorthom*
+rm src/e2_trace*
+rm src/e2_train*
+rm src/e2_msa*
+rm src/e2_tree*
+rm src/e2_evolve*
+rm src/rscape_priors*
+rm src/e1sim*
+rm src/e2sim*
+rm src/e2msa*
+rm -rf src/programs
+rm src/e1_goodness*
+
+
+
+open Makefile.in
+
+change PROGS and OBJS code manifests to
+
+# Code manifests
+#
+PROGS    = src/R-scape
+

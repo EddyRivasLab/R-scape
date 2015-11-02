@@ -31,7 +31,6 @@
 #include "e2.h"
 #include "e1_rate.h"
 #include "e1_model.h"
-#include "e2_trace.h"
 #include "ratematrix.h"
 
 static int e1_model_transitions_LI  (E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errbuf, int verbose);

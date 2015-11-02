@@ -419,7 +419,7 @@ run_voutput (struct cfg_s *cfg, int n)
   //if (eslx_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
   
   treeavgt = esl_tree_er_AverageBL(cfg->T);
-  status = msamanip_Benchmark(cfg->benchfp, cfg->msaname, cfg->method, cfg->abc, cfg->msa, cfg->msastat, e2msa, e2msastat, sc, treeavgt, 0.0, FALSE, FALSE, cfg->errbuf, cfg->verbose);
+  status = FastSP_Benchmark(cfg->benchfp, cfg->msaname, cfg->method, cfg->abc, cfg->msa, cfg->msastat, e2msa, e2msastat, sc, treeavgt, 0.0, FALSE, FALSE, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   esl_msa_Destroy(e2msa); 
   free(e2msastat);

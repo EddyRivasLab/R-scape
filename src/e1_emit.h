@@ -1,4 +1,4 @@
-/* e2_gmx
+/* e1_emit
  *
  *   
 */
@@ -22,9 +22,6 @@
 #include "e1_rate.h"
 #include "e1_model.h"
 #include "e1_bg.h"
-#include "e2_profilesq.h"
-#include "e2_pipeline.h"
-#include "e2_trace.h"
 
 #include "hmmer.h"
 

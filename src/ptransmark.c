@@ -1518,7 +1518,7 @@ run_benchmark(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, ESL_MSA *rmsa, MS
 		 * p7_tracealign_Seqs() and includes lower case
 		 * for residues that did not align to the more divergent "a" sequence
 		 */
-  status = msamanip_Benchmark(benchfp, msaname, NULL, cfg->abc, rmsa, mrstat, emsa, mestat, avgsc, avgtime, cputime, lcu_r, lcu_e, cfg->errbuf, cfg->verbose);
+  status = FastSP_Benchmark(benchfp, msaname, NULL, cfg->abc, rmsa, mrstat, emsa, mestat, avgsc, avgtime, cputime, lcu_r, lcu_e, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   
   free(hmmname);

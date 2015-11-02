@@ -14,6 +14,8 @@
 #include "esl_tree.h"
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
+#include "e2.h"
+
 #include "msamanip.h"
 #include "msatree.h"
 #include "covariation.h"
