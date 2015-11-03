@@ -675,6 +675,8 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
     if (i != which && q[i] < 0.0) break; 
   if (i == n) return eslOK; /* rate does not have negative non-diagonal entries */
 
+  printf("row %d has negative entries\n", which);
+
  /* Reorder row so that r(1) = R(which, which) */
   ESL_ALLOC(copy, sizeof(double) * n);
   esl_vec_DCopy(q, n, copy);
@@ -685,7 +687,7 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
   }
 
   /* Construct q(i) = q(i) - lambda, for lambda = 1/n sum_i q(i) */
-  lambda = esl_vec_DSum(q, n)/n;
+  lambda = esl_vec_DSum(q, n)/(double)n;
   esl_vec_DIncrement(q, n, -lambda);
 
   /* calculate perm[i] */
@@ -695,7 +697,7 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
   ESL_ALLOC(c, sizeof(double) * n);
   esl_vec_DSet(c, n, 0.0);  
   for (i = 1; i < n-1; i++) {
-    c[i] = q[perm[0]] - (n-i) * q[perm[i]];
+    c[i] = q[perm[0]] - (double)(n-i) * q[perm[i]];
     for (j = i; j < n; j++) c[i] += q[perm[j]];
   }
   
@@ -713,15 +715,20 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
    */
   corr = q[perm[0]];
   for (i = imin+1; i < n; i++) corr += q[perm[i]];
-  corr /= (n-imin);
+  corr /= ((double)n-(double)imin);
   
   for (i = 1; i < n; i++) {
     if (i <= imin) q[perm[i]]  = 0.0;
     else           q[perm[i]] -= corr;
   }
+
+  // for numberical stability
+  q[0] = 0.;
+  for (i = 1; i < n; i++) q[0] -= q[i];
   
   /* Reorder row to original form */
   esl_vec_DCopy(q, n, copy);
+
   if (which > 0) {
     q[which] = copy[0];
     for (i = 0; i < n; i++) if (i < which) q[i] = copy[i+1];
@@ -732,8 +739,7 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
     if (i == which) { if (q[i] > 0.0) ESL_XFAIL(eslFAIL, errbuf, "diag elem %d %d > 0, %f", which, i, q[i]); }
     else            { if (q[i] < 0.0) ESL_XFAIL(eslFAIL, errbuf, "offdiag elem %d,%d < 0", which, i); }
   }
-  if (fabs(esl_vec_DSum(q, n)) > tol) ESL_XFAIL(eslFAIL, errbuf, "row %d does not sum to 0.0 but %f", which, fabs(esl_vec_DSum(q, n)));
-  
+
   free(c);
   free(copy);
   free(perm);

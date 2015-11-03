@@ -81,8 +81,8 @@ PROGS    = src/scorematrix2rate\
 	   src/ehmmDickerson\
 	   src/ribosum\
 	   src/rscape_priors\
-	   src/R-scape
-
+	   src/R-scape\
+	   src/R-scape-sim\
 
 
 OBJS     = src/e1_bg.o\
@@ -147,6 +147,7 @@ OBJS     = src/e1_bg.o\
 	   src/tkf_rate.o\
 	   src/tkf_simulate.o\
 	   src/ribosum_matrix.o\
+	   src/cov_simulate.o\
 
 
 all: libsrc.a ${PROGS} 

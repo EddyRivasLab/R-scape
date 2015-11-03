@@ -47,6 +47,8 @@ msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
   int  i, j;
   int  status;
   
+  if (msa == NULL) return eslOK;
+
   ESL_ALLOC(ct, sizeof(int) * (msa->alen+1));
   if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct);
   else              esl_vec_ISet(ct, msa->alen+1, 0);
@@ -1293,6 +1295,8 @@ msamanip_CStats(const ESL_ALPHABET *abc, ESL_MSA *msa, MSA_STAT **ret_mstat)
   MSA_STAT *mstat = NULL;
   int       status;
   
+  if (msa == NULL) return eslOK;
+
   ESL_ALLOC(mstat, sizeof(MSA_STAT));
   mstat->nseq     = 0;
   mstat->alen     = 0;
@@ -1338,6 +1342,8 @@ msamanip_XStats(ESL_MSA *msa, MSA_STAT **ret_mstat)
   MSA_STAT *mstat = NULL;
   int       status;
   
+  if (msa == NULL) return eslOK;
+
   ESL_ALLOC(mstat, sizeof(MSA_STAT));
   mstat->nseq     = 0;
   mstat->alen     = 0;
