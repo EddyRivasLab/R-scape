@@ -34,45 +34,50 @@
  * of shared data amongst different parallel processes (threads or MPI processes).
  */
 struct cfg_s { /* Shared configuration in masters & workers */
-  int              argc;
-  char           **argv;
-  ESL_STOPWATCH   *watch;
-  char             errbuf[eslERRBUFSIZE];
-  ESL_RANDOMNESS  *r;	               /* random numbers */
-  ESL_ALPHABET    *abc;                /* the alphabet */
+  int                  argc;
+  char               **argv;
+  ESL_STOPWATCH       *watch;
+  char                 errbuf[eslERRBUFSIZE];
+  ESL_RANDOMNESS      *r;	               /* random numbers */
+  ESL_ALPHABET        *abc;                    /* the alphabet */
   
-  int              onemsa;
-  int              nmsa;
-  char            *msafile;
-  char            *msaname;
-
-  char            *outdir;
-  char            *filename;
-  char            *outheader;          /* header for all output files */
-  char            *simsafile;
-  FILE            *simsafp;
-  int              infmt;
+  int                  onemsa;
+  int                  nmsa;
+  char                *msafile;
+  char                *msaname;
   
-  int              N;         // number of sequences in the alignment
-  double           abl;       // average branch length (in number of changes per site)
-  TREETYPE         treetype;  // star, given or simulated tree topology
-  ESL_TREE        *T;
-
-  int              noss;      // asume unstructured, do not use the given secondary structure if any
-
+  char                *outdir;
+  char                *filename;
+  char                *outheader;              // header for all output files 
+  char                *simsafile;
+  FILE                *simsafp;
+  int                  infmt;
+  
+  int                  N;                      // number of sequences in the alignment
+  double               abl;                    // average branch length (in number of changes per site)
+  TREETYPE             treetype;               // star, given or simulated tree topology
+  ESL_TREE            *T;
+  
+  int                  noss;                   // asume unstructured, do not use the given secondary structure if any
+  
+  MSA_STAT            *mstat;                  // statistics of the given alignment 
+  MSA_STAT            *simstat;                // statistics of the simulated alignment 
+  int                 *ct;
+  int                  nbpairs;
+  int                  simnbpairs;
+  
+  EVOM                 evomodel;
+  char                *paramfile;
+  struct rateparam_s   rateparam;
   E1_RATE             *e1rate;
+  ESL_DMATRIX         *R1;                      // 4x4 rate matrix
+  double              *bg;                      // background frequencies
 
   char                *ribofile;
   struct ribomatrix_s *ribosum;
   
-  MSA_STAT        *mstat;               /* statistics of the given alignment */
-  MSA_STAT        *simstat;             /* statistics of the simulated alignment */
-  int             *ct;
-  int              nbpairs;
-  int              simnbpairs;
-
-  float            tol;
-  int              verbose;
+  float                tol;
+  int                  verbose;
 };
 
 static ESL_OPTIONS options[] = {
@@ -83,19 +88,23 @@ static ESL_OPTIONS options[] = {
   { "-N",              eslARG_INT,       "40",   NULL,      "n>1",   NULL,    NULL,  NULL,               "number of sequences in the simulated msa",                                                  0 }, 
   { "--abl",           eslARG_REAL,     "0.6",   NULL,      "x>0",   NULL,    NULL,  NULL,               "tree average branch length in number of changes per site",                                  0 }, 
   { "--noss",        eslARG_NONE,       FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
-  { "--star",        eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS,  NULL,  NULL,               "star topology",                                                                            0 },
-  { "--given",       eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS,  NULL,  NULL,               "given msa topology",                                                                       0 },
-  { "--sim",         eslARG_NONE,        TRUE,   NULL,       NULL,  TREEOPTS,  NULL,  NULL,               "simulated topology",                                                                       0 },
+  { "--star",        eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
+  { "--given",       eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
+  { "--sim",         eslARG_NONE,        TRUE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
   /* options for input msa (if seqs are given as a reference msa) */
   { "--informat",   eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
+   /* Control of scoring system - substitutions */ 
+  { "--mxfile",     eslARG_INFILE,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "read substitution rate matrix from file <f>",                              0 },
+  /* Control of scoring system - indels */ 
+  { "--evomodel",     eslARG_STRING,    "AIF",   NULL,       NULL,   NULL,    NULL,  NULL,                "evolutionary model used",                                                                  0 },
   /* Control of scoring system - ribosum */
-  { "--ribofile",     eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "read ribosum structure from file <f>",                                                      0 },
+  { "--ribofile",     eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "read ribosum structure from file <f>",                                                     0 },
   /* Control of output */
-  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
-  { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
+  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "specify a directory for all output files",                                                 1 },
+  { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "send output to file <f>, not stdout",                                                      1 },
   /* other options */  
-  { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,      "0",     NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
+  { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,                "tolerance",                                                                                0 },
+  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,                "set RNG seed to <n>",                                                                      0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -116,14 +125,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   struct cfg_s  cfg;
   int           status;
 
-
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_VerifyConfig(go)               != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-
+  
   cfg.argc = argc;
   cfg.argv = argv;
- 
+  
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
@@ -131,38 +139,38 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       esl_usage(stdout,  cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
-     exit(0);
+      exit(0);
     }
-
+  
   cfg.msafile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
- 
+  
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-    cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+  cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
   /* outheader for all output files */
   cfg.outheader = NULL;
   msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
   
-   /* If you know the MSA file format, set it (<infmt>, here). */
+  /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
       (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   cfg.msaname = NULL;
-
+  
   /* alphabet */
   cfg.abc = esl_alphabet_Create(eslRNA);
   esl_alphabet_SetEquiv(cfg.abc, '=', '-');     /* allow = as a gap character too */
   esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
-
+  
   cfg.watch = esl_stopwatch_Create(); 
   
   cfg.outdir = NULL;
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
- 
+  
   esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
   if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
@@ -175,8 +183,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
 
   /* other options */
-  cfg.tol         = esl_opt_GetReal   (go, "--tol");
-  cfg.verbose     = esl_opt_GetBoolean(go, "-v");
+  cfg.tol     = esl_opt_GetReal   (go, "--tol");
+  cfg.verbose = esl_opt_GetBoolean(go, "-v");
 
   /* file with the simulated msa */
   cfg.simsafile = NULL;
@@ -191,19 +199,43 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nbpairs    = 0;
   cfg.simnbpairs = 0;
 
-  /* the e1_rate  */
-  cfg.e1rate = NULL;
+  /* the evolutionary model */
+  cfg.evomodel = e1_rate_Evomodel(esl_opt_GetString(go, "--evomodel"));
+  
+  /* the paramfile  */
+  cfg.paramfile = NULL;
+  if (cfg.evomodel == AIF)
+    esl_sprintf(&cfg.paramfile, "lib/evoparam/Pfam.seed.S1000.trainGD.AIF.param");
+  else if (cfg.evomodel == AFG)
+    esl_sprintf(&cfg.paramfile, "lib/evoparam/Pfam.seed.S1000.trainGD.AFG.param");
+  else esl_fatal("could not identify evomodel");
+  status = e1_rate_ReadParamfile(cfg.paramfile, &cfg.rateparam, &cfg.evomodel, cfg.errbuf, cfg.verbose);
+  if (status != eslOK) esl_fatal("Failed to read paramfile %s\n%s", cfg.paramfile, cfg.errbuf);
 
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
-    if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
-    else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.er.ribosum");
-    
-    cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
-    if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
-    if (1||cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
- 
+  if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
+  else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
+  cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
+  if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
+  if (1||cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
+
+  /* the e1_rate  */
+  cfg.e1rate = NULL;
+  cfg.R1 = cfg.ribosum->xrnaQ;
+  cfg.bg = cfg.ribosum->bg;
+
+  cfg.e1rate = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, NULL, cfg.R1, cfg.bg, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
+  cfg.e1rate->evomodel = cfg.evomodel; 
+  if (cfg.e1rate == NULL) { printf("%s. bad rate model\n", cfg.errbuf); esl_fatal("Failed to create e1rate"); }
+  if (1||cfg.verbose) {
+    e1_rate_Dump(stdout, cfg.e1rate);
+    esl_dmatrix_Dump(stdout, cfg.e1rate->em->Qstar, "ACGU", "ACGU");
+    esl_dmatrix_Dump(stdout, cfg.e1rate->em->E, "ACGU", "ACGU");
+    esl_vec_DDump(stdout, cfg.e1rate->em->f, cfg.abc->K, "ACGU");
+  }
+
   *ret_go  = go;
   *ret_cfg = cfg;
 
@@ -353,7 +385,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   ESL_MSA *msafull = NULL; /* alignment of leaves and internal node sequences */
   int     *useme = NULL;
   int      root_bp;
-  int      status;
+  int      i;
   
   if (msa == NULL) return eslOK;
   if (cfg->treetype == GIVEN) cfg->N = msa->nseq;
@@ -383,9 +415,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
     eslx_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
   }
 
-#if 0
   /* Generate the simulated alignment */
-  if (cov_GenerateAlignment(cfg->r, cfg->T, root, cfg->R, cfg->R16, &msafull, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+  if (cov_GenerateAlignment(cfg->r, cfg->T, root, cfg->e1rate, cfg->ribosum, &msafull, cfg->noss, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
     esl_fatal("%s\nfailed to generate the simulated alignment", cfg->errbuf);
   
   if (cfg->verbose) 
@@ -405,20 +436,10 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   if (esl_msa_Digitize(cfg->abc, *simsa, NULL)!= eslOK) 
     esl_fatal("failed to digitize simulated alignment");
 
- 
   free(useme);
   esl_msa_Destroy(root);
   esl_msa_Destroy(msafull);
-#endif
-
   return eslOK;
-
- ERROR:
-  if (useme) free(useme);
-  if (root) esl_msa_Destroy(root);
-  if (msafull) esl_msa_Destroy(msafull);
-
-  return status;
 }
 
 static int

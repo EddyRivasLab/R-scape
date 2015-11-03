@@ -155,7 +155,7 @@ AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int
   rateparam.ldI  = ld;
   rateparam.muAM = muA;
 
-  R1 = e1_rate_CreateWithValues(abc, evomodel, rateparam, NULL, ratebld->Q, gapscale, tol, errbuf, FALSE);
+  R1 = e1_rate_CreateWithValues(abc, evomodel, rateparam, NULL, ratebld->Q, NULL, gapscale, tol, errbuf, FALSE);
   if (R1 == NULL) { printf("%s\n", errbuf); esl_fatal(msg); }
 
   for (x = 0; x <= totalt*N; x ++) {

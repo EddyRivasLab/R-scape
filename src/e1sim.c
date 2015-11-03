@@ -293,7 +293,7 @@ e1sim(ESL_GETOPTS  *go, ESL_RANDOMNESS *r, FILE *fp, FILE *fitfp, int L, int N, 
   esl_vec_DSet(eS_inf,  N, 0.0);
   esl_vec_DSet(lS_inf,  N, 0.0);
 
-  R = e1_rate_CreateWithValues(NULL, evomodel, rateparam, NULL, NULL, TRUE, tol, errbuf, FALSE);
+  R = e1_rate_CreateWithValues(NULL, evomodel, rateparam, NULL, NULL, NULL, TRUE, tol, errbuf, FALSE);
   if (R == NULL) { printf("%s\n", errbuf); esl_fatal(msg); }
   printf("Simulations with model: %s\n", e1_rate_EvomodelType(R->evomodel));
 

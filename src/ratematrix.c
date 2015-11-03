@@ -675,8 +675,6 @@ ratematrix_QOGRegularization(double *q, int n, int which, double tol, char *errb
     if (i != which && q[i] < 0.0) break; 
   if (i == n) return eslOK; /* rate does not have negative non-diagonal entries */
 
-  printf("row %d has negative entries\n", which);
-
  /* Reorder row so that r(1) = R(which, which) */
   ESL_ALLOC(copy, sizeof(double) * n);
   esl_vec_DCopy(q, n, copy);
@@ -1595,57 +1593,58 @@ vec_PermDDecreasing(double *p, int n)
  * Throws:    <eslEMEM> on allocation error.
  */
 int
-ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, float *f, EMRATE *R, int scaledrate, double tol, char *errbuf, int verbose)
+ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, double *f, EMRATE *R, int scaledrate, double tol, char *errbuf, int verbose)
 {
   int           which;
   int           nmat;
   int           x, y;
 
-  if (R->abc_r->type == eslAMINO)
-    {
-      if (name) {
-	nmat = (scaledrate)? sizeof(SCALED_RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s) : sizeof(RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s);
-	for (which = 0; which < nmat; which++) {
-	  if ( scaledrate && strcmp(SCALED_RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
-	  if (!scaledrate && strcmp(       RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
-	}
-	if (which >= nmat) return eslENOTFOUND;
-      }
-  
-       strcpy(R->outorder, "ARNDCQEGHILKMFPSTWYV"); 
-     /* All standard PAM, BLOSUM matrices have same list of valid
-       * residues. If that ever changes, make <outorder> a data elem in the
-       * structures above.
-       */
-    }
-  else return eslENOTFOUND;	/* no DNA matrices are built in yet! */
+  if (name && ! R->abc_r->type == eslAMINO) return eslFAIL;
 
+  if (name && R->abc_r->type == eslAMINO) {
+    nmat = (scaledrate)? 
+      sizeof(SCALED_RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s) : sizeof(RATEMATRIX_AA_PRELOADS) / sizeof(struct ratematrix_aa_preload_s);
+    for (which = 0; which < nmat; which++) {
+      if ( scaledrate && strcmp(SCALED_RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
+      if (!scaledrate && strcmp(       RATEMATRIX_AA_PRELOADS[which].name, name) == 0) break;
+    }
+    if (which >= nmat) return eslENOTFOUND;
+  }
+      
+  /* All standard PAM, BLOSUM matrices have same list of valid
+   * residues. If that ever changes, make <outorder> a data elem in the
+   * structures above.
+   */
+  if (R->abc_r->type == eslAMINO) strcpy(R->outorder, "ARNDCQEGHILKMFPSTWYV"); 
+  if (R->abc_r->type == eslDNA)   strcpy(R->outorder, "ACGT"); 
+  if (R->abc_r->type == eslRNA)   strcpy(R->outorder, "ACGU"); 
+    
   /* Transfer scores from static built-in storage */
   for (x = 0; x < R->E->n; x++) 
     for (y = 0; y < R->E->n; y++) 
       R->Qstar->mx[x][y] = (name)? ((scaledrate)? SCALED_RATEMATRIX_AA_PRELOADS[which].matrix[x][y] : RATEMATRIX_AA_PRELOADS[which].matrix[x][y] ): rate->mx[x][y];
- 
+  
   /* set Qstar and Qinfy identical for now */
   esl_dmatrix_Copy(R->Qstar, R->Qinfy);
-
+  
   if (f != NULL) { 
     /* the background frequencies */
     for (x = 0; x < R->E->n; x++)
-      R->f[x] = (double)f[x];    
-  }
-  else if (name) {
+      R->f[x] = f[x];  
+  
+    /* the exchangeabilities (in logspace) */
+    ratematrix_ExchangeFromRate(R->Qstar, R->f, R->E);
+ }
+  else if (name && R->abc_r->type == eslAMINO) {
     for (x = 0; x < R->E->n; x++) R->f[x] = (scaledrate)? SCALED_RATEMATRIX_AA_PRELOADS[which].pmarg[x] : RATEMATRIX_AA_PRELOADS[which].pmarg[x];
   }
-
-  /* the exchangeabilities (in logspace) */
-   if (R->f) ratematrix_ExchangeFromRate(R->Qstar, R->f, R->E);
  
   /* Use <outorder> */
   R->nc = strlen(R->outorder);
   if (R->nc != R->E->n) return eslEMEM;
 
   /* Copy the name */
-  if (esl_strdup(name, -1, &(R->name)) != eslOK) return eslEMEM;
+  if (name && esl_strdup(name, -1, &(R->name)) != eslOK) return eslEMEM;
 
   if (verbose) ratematrix_emrate_Dump(stdout, R);
 
@@ -1863,7 +1862,7 @@ ratematrix_emrate_Validate(EMRATE *R, double tol, char *errbuf)
 }
 
 int
-ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix, const ESL_DMATRIX *rate, float *f, int scaledrate, double tol, char *errbuf, int verbose)
+ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix, const ESL_DMATRIX *rate, double *f, int scaledrate, double tol, char *errbuf, int verbose)
 {
   int status;
  

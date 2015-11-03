@@ -803,7 +803,7 @@ extern int          dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double
 extern int          dmx_QRdecomposition (ESL_DMATRIX *X, ESL_DMATRIX **ret_Q, ESL_DMATRIX **ret_R, double tol);
 extern int         *vec_PermDIncreasing(double *p, int n);
 extern int         *vec_PermDDecreasing(double *p, int n);
-extern int          ratematrix_emrate_Set(const char *name,  const ESL_DMATRIX *rate, float *f, EMRATE *R, int scaledrate, double tol, char *errbuf, int verbose);
+extern int          ratematrix_emrate_Set(const char *name,  const ESL_DMATRIX *rate, double *f, EMRATE *R, int scaledrate, double tol, char *errbuf, int verbose);
 extern EMRATE      *ratematrix_emrate_Create(const ESL_ALPHABET *abc, int N);
 extern int          ratematrix_emrate_Copy(const EMRATE *src, EMRATE *dest);
 extern EMRATE      *ratematrix_emrate_Clone(const EMRATE *R);
@@ -811,7 +811,7 @@ extern int          ratematrix_emrate_Compare(const EMRATE *R1, const EMRATE *R2
 extern void         ratematrix_emrate_Destroy(EMRATE *R, int N);
 extern int          ratematrix_emrate_Dump(FILE *fp, EMRATE *R);
 extern int          ratematrix_emrate_Validate(EMRATE *R, double tol, char *errbuf);
-extern int          ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix,  const ESL_DMATRIX *rate, float *f, int scaledrate, double tol, char *errbuf, int verbose);
+extern int          ratematrix_emrate_LoadRate(EMRATE *emR, const char *matrix,  const ESL_DMATRIX *rate, double *f, int scaledrate, double tol, char *errbuf, int verbose);
 #endif /*RATEMATRIX_INCLUDED*/
 
 /************************************************************

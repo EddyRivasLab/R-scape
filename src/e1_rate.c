@@ -98,15 +98,15 @@ e1_rate_Create(const ESL_ALPHABET *abc, EVOM evomodel)
 
 E1_RATE *
 e1_rate_CreateWithValues(const ESL_ALPHABET *abc, EVOM evomodel, struct rateparam_s rateparam,
-			 char *subsrate, ESL_DMATRIX *rate, int subsratescaled, double tol, char *errbuf, int verbose)
+			 char *subsrate, ESL_DMATRIX *rate, double *f, int subsratescaled, double tol, char *errbuf, int verbose)
 {
   E1_RATE *R = NULL;
   int      status;
 
   if ((R = e1_rate_Create(abc, evomodel)) == NULL) ESL_XFAIL(eslFAIL, errbuf, "e1_rate_Create failed");
  
-  if (e1_rate_AssignTransitionsFromRates(R, rateparam, errbuf, verbose)             != eslOK) goto ERROR;
-  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescaled, tol, errbuf, verbose) != eslOK) goto ERROR;
+  if (e1_rate_AssignTransitionsFromRates(R, rateparam, errbuf, verbose)                          != eslOK) goto ERROR;
+  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, f, subsratescaled, tol, errbuf, verbose) != eslOK) goto ERROR;
   
   return R;
   
@@ -124,8 +124,8 @@ e1_rate_CreateFromCosts(const ESL_ALPHABET *abc, EVOM evomodel, double popen, do
 
   if ((R = e1_rate_Create(abc, evomodel)) == NULL) ESL_XFAIL(eslFAIL, errbuf, "e1_rate_Create failed");
  
-  if (e1_rate_AssignTransitionsFromCosts(R, popen, pextend, pcross, &rateparam, errbuf, verbose) != eslOK) goto ERROR;
-  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescaled, tol, errbuf, verbose)              != eslOK) goto ERROR;
+  if (e1_rate_AssignTransitionsFromCosts(R, popen, pextend, pcross, &rateparam, errbuf, verbose)    != eslOK) goto ERROR;
+  if (ratematrix_emrate_LoadRate(R->em, subsrate, rate, NULL, subsratescaled, tol, errbuf, verbose) != eslOK) goto ERROR;
   
   return R;
   

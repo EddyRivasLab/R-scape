@@ -104,7 +104,7 @@ struct cfg_s {
   E1_RATE        **R1;
   P7_RATE         *R7;
   int              nr;
-  char            *subsmx;             /* BLUSUM62, ... */
+  char            *subsmx;             /* BLOSUM62, ... */
   int              userates;           /* if TRUE construct the R from given rate values */
   
   E2_ALI             e2ali;
@@ -702,7 +702,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->R1[0] = NULL;
   if (cfg->e2ali == E2 || cfg->e2ali == E2F) {
     for (r = 0; r < cfg->nr; r ++) {
-      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
+      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       else               cfg->R1[r] = e1_rate_CreateFromCosts(cfg->abc, cfg->evomodel, cfg->popen, cfg->pextend, cfg->pcross, cfg->subsmx, 
 							      NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       if (cfg->R1[r] == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg->errbuf); }

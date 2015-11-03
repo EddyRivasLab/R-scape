@@ -421,44 +421,43 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
       ESL_ALLOC(ribosum->urna_psat, sizeof(double) * dim);
       ESL_ALLOC(ribosum->xrna_psat, sizeof(double) * dim);
     }
-   else if (strcmp(tok, "Background") == 0){
+    else if (strcmp(tok, "Background") == 0){
       mtxtype = BACK;
-     ESL_ALLOC(ribosum->bg, sizeof(double) * dim);
+      ESL_ALLOC(ribosum->bg, sizeof(double) * dim);
     }
     else {
       switch(mtxtype) {
       case JOIN:
 	status = parse_mtx(efp, JOIN, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Joints");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse Joints", errbuf);
 	break;
       case COND:
 	status = parse_mtx(efp, COND, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Conditionals");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse Conditionals", errbuf);
 	break;
       case RATE:
 	status = parse_mtx(efp, RATE, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Rates");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse Rates", errbuf);
 	break;
       case MARG:
 	status = parse_vec(efp, MARG, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Marginals");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse Marginals", errbuf);
 	break;
       case SATU:
 	status = parse_vec(efp, SATU, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse Saturation probabilities");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse Saturation probabilities", errbuf);
 	break;
       case BACK:
 	status = parse_bg(efp, ribosum, verbose, errbuf);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse background frequencies");
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s.\nFailed to parse background frequencies", errbuf);
 	break;
       }
     }
-    
   }
   esl_fileparser_Close(efp);
-
+  
   if (verbose) Ribosum_matrix_Write(stdout, ribosum);
-
+  
   return ribosum;
 
  ERROR:
@@ -856,22 +855,40 @@ static int
 parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, int verbose, char *errbuf)
 {
   char        *tok;
+  ESL_DMATRIX *aprs;
   ESL_DMATRIX *bprs;
   ESL_DMATRIX *prna;
   ESL_DMATRIX *urna;
   ESL_DMATRIX *xrna;
-  int          dim = ribosum->abc->K;
-  int          dim2 = ribosum->abc->K*ribosum->abc->K;
+  int          dim  = ribosum->abc->K;
+  int          dim2 = dim*dim;
   int          i, j;
   int          status;
 
-  if      (mtxtype == JOIN) { bprs = ribosum->bprsJ; prna = ribosum->prnaJ; urna = ribosum->urnaJ; xrna = ribosum->xrnaJ; }
-  else if (mtxtype == COND) { bprs = ribosum->bprsC; prna = ribosum->prnaC; urna = ribosum->urnaC; xrna = ribosum->xrnaC; }
-  else if (mtxtype == RATE) { bprs = ribosum->bprsQ; prna = ribosum->prnaQ; urna = ribosum->urnaQ; xrna = ribosum->xrnaQ; }
+  if      (mtxtype == JOIN) { aprs = ribosum->aprsJ; bprs = ribosum->bprsJ; prna = ribosum->prnaJ; urna = ribosum->urnaJ; xrna = ribosum->xrnaJ; }
+  else if (mtxtype == COND) { aprs = ribosum->aprsC; bprs = ribosum->bprsC; prna = ribosum->prnaC; urna = ribosum->urnaC; xrna = ribosum->xrnaC; }
+  else if (mtxtype == RATE) { aprs = ribosum->aprsQ; bprs = ribosum->bprsQ; prna = ribosum->prnaQ; urna = ribosum->urnaQ; xrna = ribosum->xrnaQ; }
   else ESL_XFAIL(eslFAIL, errbuf, "cannot find mtxtype");
   
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs header");
+  if (esl_strcmp(tok, "2") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs header");
+
+  for (i = 0; i < dim2; i ++) {
+    if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs frequencies");
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs header");
+    if (atoi(tok) != i+1) ESL_XFAIL(eslFAIL, errbuf, "failed to parse prna header");
+    
+    for (j = 0; j < dim2; j ++) {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs[%d][%d]", i, j);
+      if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs[%d,%d]", i, j);
+      aprs->mx[i][j] = atof(tok);
+    }
+  }
+  if (verbose) esl_dmatrix_Dump(stdout, aprs, NULL, NULL);
+  
+  if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs frequencies");
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
-  if (esl_strcmp(tok, "2") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
+  if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs header");
 
   for (i = 0; i < dim2; i ++) {
     if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs frequencies");
@@ -879,13 +896,12 @@ parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, int ve
     if (atoi(tok) != i+1) ESL_XFAIL(eslFAIL, errbuf, "failed to parse prna header");
     
     for (j = 0; j < dim2; j ++) {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bps[%d][%d]", i, j);
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs[%d][%d]", i, j);
       if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs[%d,%d]", i, j);
       bprs->mx[i][j] = atof(tok);
     }
   }
-  if (verbose) esl_dmatrix_Dump(stdout, bprs, NULL, NULL);
-
+  if (verbose) esl_dmatrix_Dump(stdout, aprs, NULL, NULL);
   
   if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse prna header");
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse prna header");
@@ -903,7 +919,6 @@ parse_mtx(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, int ve
     }
   }
   if (verbose) esl_dmatrix_Dump(stdout, prna, "ACGU", "ACGU");
-
 
   if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse urna header");
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse urna header");
@@ -949,6 +964,7 @@ static int
 parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, int verbose, char *errbuf)
 {
   char   *tok;
+  double *aprs;
   double *bprs;
   double *prna;
   double *urna;
@@ -956,13 +972,23 @@ parse_vec(ESL_FILEPARSER *efp, MTX mtxtype, struct ribomatrix_s *ribosum, int ve
   int     i;
   int     status;
 
-  if      (mtxtype == MARG) { bprs = ribosum->bprsM;     prna = ribosum->prnaM;     urna = ribosum->urnaM;     xrna = ribosum->xrnaM;     }
-  else if (mtxtype == SATU) { bprs = ribosum->bprs_psat; prna = ribosum->prna_psat; urna = ribosum->urna_psat; xrna = ribosum->xrna_psat; }
+  if      (mtxtype == MARG) { aprs = ribosum->aprsM;     bprs = ribosum->bprsM;     prna = ribosum->prnaM;     urna = ribosum->urnaM;     xrna = ribosum->xrnaM;     }
+  else if (mtxtype == SATU) { aprs = ribosum->aprs_psat; bprs = ribosum->bprs_psat; prna = ribosum->prna_psat; urna = ribosum->urna_psat; xrna = ribosum->xrna_psat; }
   else ESL_XFAIL(eslFAIL, errbuf, "cannot find mtxtype");
 
   if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals header");
   if (esl_strcmp(tok, "2") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals header");
+  if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals frequencies");
+  for (i = 0; i < ribosum->abc->K*ribosum->abc->K; i ++) {
+    if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs[%d]", i);
+    if (!esl_str_IsReal(tok)) ESL_XFAIL(eslFAIL, errbuf, "failed to parse aprs[%d]", i);
+    aprs[i] = atof(tok);
+  }
+  if (verbose) esl_vec_DDump(stdout, aprs, ribosum->abc->K*ribosum->abc->K, NULL);
 
+  if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals frequencies");
+  if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals header");
+  if (esl_strcmp(tok, "1") != 0)  ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals header");
   if (esl_fileparser_NextLine(efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse marginals frequencies");
   for (i = 0; i < ribosum->abc->K*ribosum->abc->K; i ++) {
     if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse bprs[%d]", i);

@@ -14,6 +14,8 @@
 
 #include "e2.h"
 #include "e1_rate.h"
+#include "ribosum_matrix.h"
+
 #include "ratematrix.h"
 
 typedef enum {
@@ -22,6 +24,8 @@ typedef enum {
   SIM   = 2          // simulate tree
 } TREETYPE;
 
+extern int cov_GenerateAlignment(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, struct ribomatrix_s *ribosum, 
+				 ESL_MSA **msafull, int noss, double tol, char *errbuf, int verbose);
 
 #endif /*COVSIMULATE_INCLUDED*/
 

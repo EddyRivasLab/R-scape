@@ -319,7 +319,7 @@ main(int argc, char **argv)
      cfg.pli = e2_pipeline_Create(go, 1, 100, 100);
      
      /* Create the evolutionary rate model */
-     cfg.R = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
+     cfg.R = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, cfg.subsmx, NULL, NULL, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
      if (cfg.R == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg.errbuf); }
  
      /* calculate the tree */
