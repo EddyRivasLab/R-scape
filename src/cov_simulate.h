@@ -26,6 +26,10 @@ typedef enum {
 
 extern int cov_GenerateAlignment(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, struct ribomatrix_s *ribosum, 
 				 ESL_MSA **msafull, int noss, double tol, char *errbuf, int verbose);
+extern int cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, struct ribomatrix_s *ribosum, 
+					 ESL_MSA **ret_msafull, int noss, double tol, char *errbuf, int verbose);
+extern int cov_GenerateAlignmentAddGaps(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, struct ribomatrix_s *ribosum, 
+					ESL_MSA *msafull, int noss, double tol, char *errbuf, int verbose);
 
 #endif /*COVSIMULATE_INCLUDED*/
 

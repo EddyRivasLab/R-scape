@@ -92,9 +92,11 @@ struct e1_params {
 
 
 /* e1_model.c */
-extern E1_MODEL *e1_model_Create(E1_RATE *R, float time, const float *fmatch, const float *fins, int mode, int L, const ESL_ALPHABET *abc, float tol, char *errbuf, int verbose);
+extern E1_MODEL *e1_model_Create(E1_RATE *R, float time, const float *fmatch, const float *fins, int mode, int L, const ESL_ALPHABET *abc, 
+				 float tol, char *errbuf, int verbose);
 extern int       e1_model_Transitions(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errbuf, int verbose);
 extern void      e1_model_RenormStateE(E1_MODEL *evom);
+extern int       e1_model_RenormNoIndels(E1_MODEL *evom);
 extern void      e1_model_Destroy(E1_MODEL *evom);
 extern int       e1_model_Zero(E1_MODEL *evom);
 extern int       e1_model_Dump(FILE *fp, const E1_MODEL *evom);

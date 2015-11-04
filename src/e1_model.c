@@ -259,6 +259,36 @@ e1_model_RenormStateE(E1_MODEL *evom)
   evom->t[e1H_IE]  = 0.;
 }
 
+int
+e1_model_RenormNoIndels(E1_MODEL *evom)
+{
+ /* B state */
+  evom->t[e1H_BS] = 1.0;
+  evom->t[e1H_BD] = 0.0;
+  evom->t[e1H_BI] = 0.0;
+  evom->t[e1H_BE] = 0.0;
+  
+
+  /* S state */
+  evom->t[e1H_SS] = 1.0;
+  evom->t[e1H_SD] = 0.0;
+  evom->t[e1H_SI] = 0.0;
+  evom->t[e1H_SE] = 0.0;
+    
+  /* D state */
+  evom->t[e1H_DS] = 0.0;
+  evom->t[e1H_DD] = 1.0; // does not matter D is never reached
+  evom->t[e1H_DI] = 0.0;
+  evom->t[e1H_DE] = 0.0;
+
+  /* I state */
+  evom->t[e1H_IS] = 0.0;
+  evom->t[e1H_ID] = 0.0;
+  evom->t[e1H_II] = 1.0; // does not matter I is never reached
+  evom->t[e1H_IE] = 0.0;
+
+  return eslOK;
+}
 
 /* Function:  e1_model_Destroy()
  * Synopsis:  Free a <E1_MODEL>.
