@@ -402,7 +402,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   if (esl_msa_MinimGaps(root, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to generate the root sequence");
   free(useme); useme = NULL;
-  
+ 
   // adjust the secondary structure
   useme = malloc(root->alen * sizeof(int));
   esl_vec_ISet(useme, root->alen, TRUE);
