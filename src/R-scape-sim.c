@@ -189,7 +189,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* file with the simulated msa */
   cfg.simsafile = NULL;
   cfg.simsafp   = NULL;
-  esl_sprintf(&cfg.simsafile, "%s", esl_opt_GetString(go, "-o"));
+  if ( esl_opt_IsOn(go, "-o") ) 
+    esl_sprintf(&cfg.simsafile, "%s", esl_opt_GetString(go, "-o"));
+  else
+    esl_sprintf(&cfg.simsafile, "%s_synthetic.sto", cfg.filename);
+
   if ((cfg.simsafp = fopen(cfg.simsafile, "w")) == NULL) esl_fatal("Failed to open simsa file %s", cfg.simsafile);
   
   cfg.T  = NULL;
@@ -219,7 +223,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
   cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
   if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
-  if (1||cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
+  if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
 
   /* the e1_rate  */
   cfg.e1rate = NULL;
@@ -229,7 +233,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.e1rate = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, NULL, cfg.R1, cfg.bg, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
   cfg.e1rate->evomodel = cfg.evomodel; 
   if (cfg.e1rate == NULL) { printf("%s. bad rate model\n", cfg.errbuf); esl_fatal("Failed to create e1rate"); }
-  if (1||cfg.verbose) {
+  if (cfg.verbose) {
     e1_rate_Dump(stdout, cfg.e1rate);
     esl_dmatrix_Dump(stdout, cfg.e1rate->em->Qstar, "ACGU", "ACGU");
     esl_dmatrix_Dump(stdout, cfg.e1rate->em->E, "ACGU", "ACGU");
@@ -299,7 +303,6 @@ main(int argc, char **argv)
     /* stats of the given alignment */
     msamanip_XStats(msa, &cfg.mstat);
     msamanip_CalculateCT(msa, NULL, &cfg.nbpairs, cfg.errbuf);
-    if (1|| cfg.verbose) MSA_banner(stdout, cfg.msaname, cfg.simstat, cfg.mstat, cfg.simnbpairs, cfg.nbpairs);
  
     status = simulate_msa(go, &cfg, msa, &simsa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to simulate msa"); }
@@ -310,7 +313,10 @@ main(int argc, char **argv)
  
     /* write the simulated msa to file */
     if (cfg.simsafp && simsa) eslx_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
-    if (1||cfg.verbose) MSA_banner(stdout, cfg.msaname, cfg.simstat, cfg.mstat, cfg.simnbpairs, cfg.nbpairs);
+    if (1||cfg.verbose) {
+      MSA_banner(stdout, cfg.msaname, cfg.simstat, cfg.mstat, cfg.simnbpairs, cfg.nbpairs);
+      eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
+    }
   
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (simsa) esl_msa_Destroy(simsa); simsa = NULL;
@@ -340,13 +346,12 @@ main(int argc, char **argv)
 static int
 get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  char    *msg = "get_msaname failed";
+  char *msg = "get_msaname failed";
   char *type = NULL;
   char *tp;
   char *tok1;
   char *tok2;
   char *tok = NULL;
-  char *submsaname = NULL;
   int   t;
   
   /* the msaname */
@@ -373,7 +378,6 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   if (tok) free(tok);
   if (type) free(type);
-  if (submsaname) free(submsaname);
   return eslOK;
 }
 
@@ -383,6 +387,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
 {
   ESL_MSA *root = NULL;    /* the ancestral sq and structure */
   ESL_MSA *msafull = NULL; /* alignment of leaves and internal node sequences */
+  char    *rootname = NULL;
   int     *useme = NULL;
   int      root_bp;
   int      i;
@@ -401,6 +406,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   esl_msa_SequenceSubset(msa, useme, &root);
   if (esl_msa_MinimGaps(root, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to generate the root sequence");
+  esl_sprintf(&rootname, "%s-%s", cfg->filename, root->sqname[0]);
+  esl_msa_SetName(root, rootname, -1);
   free(useme); useme = NULL;
  
   // adjust the secondary structure
@@ -409,14 +416,14 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   esl_msa_ColumnSubset(root, cfg->errbuf, useme);
   free(useme); useme = NULL;
 
-  if (1 ||cfg->verbose) {
+  if (cfg->verbose) {
     msamanip_CalculateCT(root, NULL, &root_bp, cfg->errbuf);
     printf("root sequence L = %d nbps = %d \n", (int)root->alen, root_bp);
     eslx_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
   }
 
   /* Generate the simulated alignment */
-  if (cov_GenerateAlignment(cfg->r, cfg->T, root, cfg->e1rate, cfg->ribosum, &msafull, cfg->noss, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+  if (cov_GenerateAlignment(cfg->r, cfg->N, cfg->abl, cfg->T, root, cfg->e1rate, cfg->ribosum, &msafull, cfg->noss, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
     esl_fatal("%s\nfailed to generate the simulated alignment", cfg->errbuf);
   
   if (cfg->verbose) 
@@ -433,10 +440,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   if (esl_msa_MinimGaps(*simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to generate leaf alignment");
   
-  if (esl_msa_Digitize(cfg->abc, *simsa, NULL)!= eslOK) 
-    esl_fatal("failed to digitize simulated alignment");
-
   free(useme);
+  free(rootname);
   esl_msa_Destroy(root);
   esl_msa_Destroy(msafull);
   return eslOK;
@@ -465,7 +470,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* scale the tree */
   if (cfg->T) {
     if (esl_tree_er_RescaleAverageTotalBL(cfg->abl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
-    if (1||cfg->verbose) {
+    if (cfg->verbose) {
       printf("average branch length = %f\n", cfg->abl);
       Tree_Dump(stdout, cfg->T, "Tree");
     }
