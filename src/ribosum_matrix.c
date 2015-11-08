@@ -383,47 +383,21 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
     if (strncmp(tok, "RIBO", 4) == 0){
       mtxtype = JOIN;
       esl_sprintf(&ribosum->name, tok);
-      ribosum->aprsJ = esl_dmatrix_Create(dim2, dim2);
-      ribosum->bprsJ = esl_dmatrix_Create(dim2, dim2);
-      ribosum->prnaJ = esl_dmatrix_Create(dim,  dim);
-      ribosum->urnaJ = esl_dmatrix_Create(dim,  dim);
-      ribosum->xrnaJ = esl_dmatrix_Create(dim,  dim);
     }
     else if (strcmp(tok, "Conditionals") == 0){
       mtxtype = COND;
-      ribosum->aprsC = esl_dmatrix_Create(dim2, dim2);
-      ribosum->bprsC = esl_dmatrix_Create(dim2, dim2);
-      ribosum->prnaC = esl_dmatrix_Create(dim,  dim);
-      ribosum->urnaC = esl_dmatrix_Create(dim,  dim);
-      ribosum->xrnaC = esl_dmatrix_Create(dim,  dim);
     }
      else if (strcmp(tok, "Rates") == 0){
       mtxtype = RATE;
-      ribosum->aprsQ = esl_dmatrix_Create(dim2, dim2);
-      ribosum->bprsQ = esl_dmatrix_Create(dim2, dim2);
-      ribosum->prnaQ = esl_dmatrix_Create(dim,  dim);
-      ribosum->urnaQ = esl_dmatrix_Create(dim,  dim);
-      ribosum->xrnaQ = esl_dmatrix_Create(dim,  dim);
     }
    else if (strcmp(tok, "Marginals") == 0){
       mtxtype = MARG;
-      ESL_ALLOC(ribosum->aprsM, sizeof(double) * dim2);
-      ESL_ALLOC(ribosum->bprsM, sizeof(double) * dim2);
-      ESL_ALLOC(ribosum->prnaM, sizeof(double) * dim);
-      ESL_ALLOC(ribosum->urnaM, sizeof(double) * dim);
-      ESL_ALLOC(ribosum->xrnaM, sizeof(double) * dim);
     }
     else if (strcmp(tok, "Saturation") == 0){
       mtxtype = SATU;
-      ESL_ALLOC(ribosum->aprs_psat, sizeof(double) * dim2);
-      ESL_ALLOC(ribosum->bprs_psat, sizeof(double) * dim2);
-      ESL_ALLOC(ribosum->prna_psat, sizeof(double) * dim);
-      ESL_ALLOC(ribosum->urna_psat, sizeof(double) * dim);
-      ESL_ALLOC(ribosum->xrna_psat, sizeof(double) * dim);
-    }
+     }
     else if (strcmp(tok, "Background") == 0){
       mtxtype = BACK;
-      ESL_ALLOC(ribosum->bg, sizeof(double) * dim);
     }
     else {
       switch(mtxtype) {

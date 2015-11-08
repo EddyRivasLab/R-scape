@@ -54,11 +54,14 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int                  infmt;
   
   int                  N;                      // number of sequences in the alignment
-  double               abl;                    // average branch length (in number of changes per site)
+  double               target_abl;             // average branch length (in number of changes per site)
+  double               target_atbl;            // average total branch length (in number of changes per site)
+  double               atbl;                   // average total branch length (in number of changes per site)
   TREETYPE             treetype;               // star, given or simulated tree topology
   ESL_TREE            *T;
   
   int                  noss;                   // asume unstructured, do not use the given secondary structure if any
+  int                  noindels;               // make ungapped alignmenst
   
   MSA_STAT            *mstat;                  // statistics of the given alignment 
   MSA_STAT            *simstat;                // statistics of the simulated alignment 
@@ -70,12 +73,13 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char                *paramfile;
   struct rateparam_s   rateparam;
   E1_RATE             *e1rate;
+  E1_RATE             *e1rateB;                 // only difference with e1rate: rate of deletion of ancestral residues is lower.
+                                                // used to delete basepaired residues
   ESL_DMATRIX         *R1;                      // 4x4 rate matrix
   double              *bg;                      // background frequencies
 
   char                *ribofile;
   struct ribomatrix_s *ribosum;
-  
   float                tol;
   int                  verbose;
 };
@@ -86,8 +90,10 @@ static ESL_OPTIONS options[] = {
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* parameters to control the simulation */
   { "-N",              eslARG_INT,       "40",   NULL,      "n>1",   NULL,    NULL,  NULL,               "number of sequences in the simulated msa",                                                  0 }, 
-  { "--abl",           eslARG_REAL,     "0.6",   NULL,      "x>0",   NULL,    NULL,  NULL,               "tree average branch length in number of changes per site",                                  0 }, 
+  { "--abl",           eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
+  { "--atbl",          eslARG_REAL,     "0.6",   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noss",        eslARG_NONE,       FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
+  { "--noindels",    eslARG_NONE,       FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
   { "--star",        eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
   { "--given",       eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
   { "--sim",         eslARG_NONE,        TRUE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
@@ -103,6 +109,7 @@ static ESL_OPTIONS options[] = {
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "specify a directory for all output files",                                                 1 },
   { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "send output to file <f>, not stdout",                                                      1 },
   /* other options */  
+  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "if file has more than one msa, analyze only the first one",                                1 },
   { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,                "tolerance",                                                                                0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,                "set RNG seed to <n>",                                                                      0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -175,14 +182,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
   /* parameters of the simulation */
-  cfg.N    = esl_opt_GetInteger(go, "-N");
-  cfg.abl  = esl_opt_GetReal   (go, "--abl");
-  cfg.noss = esl_opt_GetBoolean(go, "--noss");
+  cfg.N        = esl_opt_GetInteger(go, "-N");
+  cfg.noss     = esl_opt_GetBoolean(go, "--noss");
+  cfg.noindels = esl_opt_GetBoolean(go, "--noindels");
   if      (esl_opt_GetBoolean  (go, "--star"))  cfg.treetype = STAR;
   else if (esl_opt_GetBoolean  (go, "--given")) cfg.treetype = GIVEN;
   else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
 
+  cfg.target_abl  = esl_opt_IsOn(go, "--abl")?  esl_opt_GetReal(go, "--abl")  : -1.0;
+  cfg.target_atbl = esl_opt_IsOn(go, "--abl")? -1.0 : esl_opt_GetReal(go, "--atbl");
+
   /* other options */
+  cfg.onemsa  = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.tol     = esl_opt_GetReal   (go, "--tol");
   cfg.verbose = esl_opt_GetBoolean(go, "-v");
 
@@ -227,6 +238,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* the e1_rate  */
   cfg.e1rate = NULL;
+  cfg.e1rateB = NULL;
   cfg.R1 = cfg.ribosum->xrnaQ;
   cfg.bg = cfg.ribosum->bg;
 
@@ -239,6 +251,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_dmatrix_Dump(stdout, cfg.e1rate->em->E, "ACGU", "ACGU");
     esl_vec_DDump(stdout, cfg.e1rate->em->f, cfg.abc->K, "ACGU");
   }
+  // for e1rateB, lower the rate of ancestral deletions
+  cfg.rateparam.muAM /= 5.0;
+  cfg.e1rateB = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, NULL, cfg.R1, cfg.bg, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
+  cfg.e1rateB->evomodel = cfg.evomodel; 
+  if (cfg.e1rateB == NULL) { printf("%s. bad rate model\n", cfg.errbuf); esl_fatal("Failed to create e1rateB"); }
+  if (cfg.verbose) {
+    e1_rate_Dump(stdout, cfg.e1rateB);
+    esl_dmatrix_Dump(stdout, cfg.e1rateB->em->Qstar, "ACGU", "ACGU");
+    esl_dmatrix_Dump(stdout, cfg.e1rateB->em->E, "ACGU", "ACGU");
+    esl_vec_DDump(stdout, cfg.e1rateB->em->f, cfg.abc->K, "ACGU");
+  }
+
 
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -323,9 +347,12 @@ main(int argc, char **argv)
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
     if (cfg.simstat) free(cfg.simstat); cfg.simstat = NULL;
+    if (cfg.T) esl_tree_Destroy(cfg.T); cfg.T = NULL;
   }
 
   /* cleanup */
+  if (cfg.paramfile) free(cfg.paramfile);
+  if (cfg.filename) free(cfg.filename);
   if (cfg.simsafp) fclose(cfg.simsafp);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -334,7 +361,10 @@ main(int argc, char **argv)
   if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
-   free(cfg.outheader);
+  free(cfg.outheader);
+  if (cfg.e1rate)  e1_rate_Destroy(cfg.e1rate);
+  if (cfg.e1rateB) e1_rate_Destroy(cfg.e1rateB);
+  if (cfg.ribofile) free(cfg.ribofile);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.simsafile) free(cfg.simsafile);
   if (cfg.mstat) free(cfg.mstat); 
@@ -383,10 +413,11 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
 
 static int
-simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
+simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_simsa)
 {
-  ESL_MSA *root = NULL;    /* the ancestral sq and structure */
-  ESL_MSA *msafull = NULL; /* alignment of leaves and internal node sequences */
+  ESL_MSA *root    = NULL;    /* the ancestral sq and structure */
+  ESL_MSA *msafull = NULL;    /* alignment of leaves and internal node sequences */
+  ESL_MSA *simsa   = NULL;    /* alignment of leave sequences */
   char    *rootname = NULL;
   int     *useme = NULL;
   int      root_bp;
@@ -423,7 +454,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
   }
 
   /* Generate the simulated alignment */
-  if (cov_GenerateAlignment(cfg->r, cfg->N, cfg->abl, cfg->T, root, cfg->e1rate, cfg->ribosum, &msafull, cfg->noss, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+  if (cov_GenerateAlignment(cfg->r, cfg->N, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, cfg->ribosum, &msafull, 
+			    cfg->noss, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
     esl_fatal("%s\nfailed to generate the simulated alignment", cfg->errbuf);
   
   if (cfg->verbose) 
@@ -435,11 +467,13 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simsa)
     if (strncmp(msafull->sqname[i], "v", 1) == 0) useme[i] = FALSE; 
     else                                          useme[i] = TRUE;
   }
-  if (esl_msa_SequenceSubset(msafull, useme, simsa) != eslOK)
+  if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
     esl_fatal("failed to generate leaf alignment");
-  if (esl_msa_MinimGaps(*simsa, NULL, "-", FALSE) != eslOK) 
-    esl_fatal("failed to generate leaf alignment");
+  if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
+    esl_fatal("failed to remove gaps alignment");
   
+  *ret_simsa = simsa;
+
   free(useme);
   free(rootname);
   esl_msa_Destroy(root);
@@ -456,6 +490,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the TREE */
   if (cfg->treetype == STAR) { // sequences are independent 
     cfg->T = NULL;
+    cfg->atbl = cfg->target_atbl;
   }
   else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
@@ -469,11 +504,16 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* scale the tree */
   if (cfg->T) {
-    if (esl_tree_er_RescaleAverageTotalBL(cfg->abl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
-    if (cfg->verbose) {
-      printf("average branch length = %f\n", cfg->abl);
-      Tree_Dump(stdout, cfg->T, "Tree");
+    if (cfg->target_abl > 0) {
+      if (esl_tree_er_RescaleAverageBL(cfg->target_abl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
+    else if (cfg->target_atbl > 0) {
+      if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
+    }
+    
+    Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+    if (1||cfg->verbose) printf("average leave distance to root: %f abl %f\n", cfg->atbl, esl_tree_er_AverageBL(cfg->T));
+    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
   
   return eslOK;

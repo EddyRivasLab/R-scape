@@ -105,8 +105,8 @@ e1_model_Create(E1_RATE *R, float time, const float *fmatch, const float *fins, 
   }
   
   if (fins != NULL) {
-    ESL_ALLOC(evom->ins, sizeof(float) * e2_MAXABET);
-    esl_vec_FCopy(fins, e2_MAXABET, evom->ins);
+    ESL_ALLOC(evom->ins, sizeof(float) * abc->K);
+    esl_vec_FCopy(fins, abc->K, evom->ins);
   }
   if (verbose) {
     e1_model_DumpTransitions(stdout, evom);
@@ -330,10 +330,10 @@ e1_model_Zero(E1_MODEL *evom)
 {
   int k;
 
-  esl_vec_FSet(evom->t,   e1H_NTRANSITIONS, 0.);  
-  esl_vec_FSet(evom->ins, e2_MAXABET,       0.); 
+  esl_vec_FSet(evom->t,   e1H_NTRANSITIONS,      0.);  
+  esl_vec_FSet(evom->ins, evom->abc->K,          0.); 
   for (k = 0; k < evom->abc->K; k++) 
-    esl_vec_DSet(evom->sub->mx[k], e2_MAXABET, 0.);  
+    esl_vec_DSet(evom->sub->mx[k], evom->abc->K, 0.);  
   
   return eslOK;
 }
@@ -367,10 +367,10 @@ e1_model_DumpEmissions(FILE *fp, const E1_MODEL *evom)
   int k;
 
   fprintf(fp, "\nINSERTIONS at time %f\n", evom->time);
-  esl_vec_FDump(fp, (float *)evom->ins, e2_MAXABET,          NULL); 
+  esl_vec_FDump(fp, (float *)evom->ins, evom->abc->K,          NULL); 
   fprintf(fp, "\nSUBSTITUTIONS at time %f frqsubsite %f\n", evom->time, evom->fsubsite);
   for (k = 0; k < evom->abc->K; k++) 
-    esl_vec_DDump(fp, evom->sub->mx[k], e2_MAXABET, NULL); 
+    esl_vec_DDump(fp, evom->sub->mx[k], evom->abc->K, NULL); 
   
    return eslOK;
 }
