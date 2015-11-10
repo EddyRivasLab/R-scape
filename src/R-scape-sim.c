@@ -190,7 +190,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
 
   cfg.target_abl  = esl_opt_IsOn(go, "--abl")?  esl_opt_GetReal(go, "--abl")  : -1.0;
-  cfg.target_atbl = esl_opt_IsOn(go, "--abl")? -1.0 : esl_opt_GetReal(go, "--atbl");
+  cfg.target_atbl = esl_opt_IsOn(go, "--abl")? -1.0 : ( esl_opt_IsOn(go, "--atbl")? esl_opt_GetReal(go, "--atbl"):-1);
 
   /* other options */
   cfg.onemsa  = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
@@ -252,7 +252,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_vec_DDump(stdout, cfg.e1rate->em->f, cfg.abc->K, "ACGU");
   }
   // for e1rateB, lower the rate of ancestral deletions
-  cfg.rateparam.muAM /= 5.0;
+  cfg.rateparam.muAM /= 2.0;
   cfg.e1rateB = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, NULL, cfg.R1, cfg.bg, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
   cfg.e1rateB->evomodel = cfg.evomodel; 
   if (cfg.e1rateB == NULL) { printf("%s. bad rate model\n", cfg.errbuf); esl_fatal("Failed to create e1rateB"); }
@@ -419,6 +419,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   ESL_MSA *msafull = NULL;    /* alignment of leaves and internal node sequences */
   ESL_MSA *simsa   = NULL;    /* alignment of leave sequences */
   char    *rootname = NULL;
+  char    *rootdesc = NULL;
   int     *useme = NULL;
   int      root_bp;
   int      i;
@@ -437,8 +438,10 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   esl_msa_SequenceSubset(msa, useme, &root);
   if (esl_msa_MinimGaps(root, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to generate the root sequence");
-  esl_sprintf(&rootname, "%s-%s", cfg->filename, root->sqname[0]);
+  esl_sprintf(&rootname, "%s", cfg->filename);
+  esl_sprintf(&rootdesc, "%s-%s", cfg->filename, root->sqname[0]);
   esl_msa_SetName(root, rootname, -1);
+  esl_msa_SetDesc(root, rootdesc, -1);
   free(useme); useme = NULL;
  
   // adjust the secondary structure
@@ -467,7 +470,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
     if (strncmp(msafull->sqname[i], "v", 1) == 0) useme[i] = FALSE; 
     else                                          useme[i] = TRUE;
   }
-  if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
+ if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
     esl_fatal("failed to generate leaf alignment");
   if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
@@ -476,6 +479,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
 
   free(useme);
   free(rootname);
+  free(rootdesc);
   esl_msa_Destroy(root);
   esl_msa_Destroy(msafull);
   return eslOK;
@@ -512,9 +516,11 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     }
     
     Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    if (1||cfg->verbose) printf("average leave distance to root: %f abl %f\n", cfg->atbl, esl_tree_er_AverageBL(cfg->T));
-    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+    if (1||cfg->verbose) printf("average leave-to-root length: %f average branch length: %f\n", cfg->atbl, esl_tree_er_AverageBL(cfg->T));
+    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
+  else if (1||cfg->verbose) printf("average leave-to-root length: %f \n", cfg->target_atbl);
+
   
   return eslOK;
 }

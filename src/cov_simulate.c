@@ -62,12 +62,12 @@ cov_GenerateAlignment(ESL_RANDOMNESS *r, int N, double atbl, ESL_TREE *T, ESL_MS
 
   status = cov_GenerateAlignmentUngapped(r, N, atbl, T, root, e1rate, ribosum, &msafull, &ct, noss, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (1|| verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+  if ( verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
 
   if (!noindels) {
     status = cov_GenerateAlignmentAddGaps(r, N, atbl, T, msafull, &ct, e1rate, e1rateB, tol, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-    if (1|| verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+    if ( verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
   }
   
   *ret_msafull = msafull;
@@ -107,7 +107,7 @@ cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, int N, double atbl, ESL_TREE *T
   tnode = inode + N;
   msa = esl_msa_CreateDigital(root->abc, tnode, 0);
 
-  esl_sprintf(&name, "%s_syntethic_L%d_N%d", root->name, L, N);
+  esl_sprintf(&name, "%s_synthetic_N%d", root->name, N);
   status = esl_strdup(name, -1, &(msa->name)); if (status != eslOK) goto ERROR;
   status = esl_strdup(name, -1, &(msa->acc));  if (status != eslOK) goto ERROR;
   
@@ -335,8 +335,9 @@ cov_evolve_indels_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1rate, E
     if (cov_evolve_ascendant_to_descendant_indels(r, ret_idx, nidx, v, -i, atbl, inodes, e1rate, e1rateB, ret_ct, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "%s\nfailed to evolve from parent %d to daughther %d after time %f", errbuf, v, i, atbl);
 
-    if (verbose) 
+    if (verbose) { 
       printf("%s[%d] | len %" PRId64 " \n", msa->sqname[i], i, esl_abc_dsqlen(msa->ax[i])); ax_dump(msa->ax[i]);   
+    }
   }
 
   return eslOK;
@@ -439,7 +440,7 @@ cov_evolve_ascendant_to_descendant_indels(ESL_RANDOMNESS *r, int *ret_idx, int *
   e1_model_RenormStateE(e1model);  // Renormalize transitions so that T(X->E) = 0 
   e1_model_RenormStateE(e1modelB); // Renormalize transitions so that T(X->E) = 0 
 
-  if (1||verbose) {
+  if (verbose) {
     printf("e1model\n");
     e1_model_DumpTransitions(stdout, e1model);
     e1_model_DumpEmissions(stdout, e1model);
@@ -716,12 +717,10 @@ cov_insert(ESL_RANDOMNESS *r, int sqidx, int pos, int **ret_ct, ESL_MSA *msa, do
   /* update ss_cons */
   ESL_ALLOC(ss, sizeof(char) * (newalen+1));
   esl_ct2simplewuss(ct, msa->alen, ss);
-  //printf("1^^%s\n", ss);
   
   /* move over residues past 'pos' */
   for (n = msa->alen; n >= pos; n--) ss[n+l]   = ss[n];
   for (n = 0; n < l; n ++)           ss[pos+n] = '.'; 
-  //printf("2^^%s\n", ss);
   
   /* newss becomes ss_cons */
   ESL_REALLOC(msa->ss_cons, sizeof(char) * (newalen+1));
