@@ -739,7 +739,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   }
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
   
-  esl_msa_Hash(msa);
   msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
   if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
   if (msa == NULL || msa->nseq < cfg->nseqmin) {

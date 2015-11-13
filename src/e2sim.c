@@ -330,9 +330,9 @@ generate_random_tree(struct cfg_s  *cfg, double abl, ESL_TREE **ret_T)
   ESL_TREE *T = NULL;
   int       status;
 
-  if (esl_tree_Simulate(cfg->r, cfg->ntaxa, &T)                                  != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to simulate the tree");
-  if (esl_tree_er_RescaleAverageBL(abl, &T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to rescale the tree");
-  if (esl_tree_Validate(T, NULL)                                                 != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to validate the tree");
+  if (esl_tree_Simulate(cfg->r, cfg->ntaxa, &T)                                 != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to simulate the tree");
+  if (esl_tree_er_RescaleAverageBL(abl, T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to rescale the tree");
+  if (esl_tree_Validate(T, NULL)                                                != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to validate the tree");
 
   if (1||cfg->verbose) esl_tree_WriteNewick(stdout, T);
   

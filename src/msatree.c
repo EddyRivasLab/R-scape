@@ -1400,31 +1400,25 @@ esl_tree_er_RandomBranch(ESL_RANDOMNESS *r, ESL_TREE *T)
 }
 
 int
-esl_tree_er_Rescale(double scale, ESL_TREE **ret_T)
+esl_tree_er_Rescale(double scale, ESL_TREE *T)
 {
-  ESL_TREE *T;
   int       nnode;
   int       n;
   
-  T = *ret_T;
-   
   /* do the scaling of branches */
   nnode = (T->N > 1)? T->N-1 : T->N;
   for (n = 0; n < nnode; n ++) {
     T->ld[n] *= scale;
     T->rd[n] *= scale;
   }
-      
-  *ret_T = T;
   
   return eslOK;
 }
 
 int
-esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE **ret_T, double tol, char *errbuf, int verbose)
+esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE *T, double tol, char *errbuf, int verbose)
 
 {
-  ESL_TREE *T;
   double    mean_tbl;
   double    min_tbl;
   double    max_tbl;
@@ -1432,20 +1426,16 @@ esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE **ret_T, double to
   double    scale = 1.0;
   int       status;
   
-  T = *ret_T;
-
   /* scaling factor */
   Tree_GetNodeTime(0, T, &mean_tbl, &min_tbl, &max_tbl, errbuf, verbose);
   if (mean_tbl > 0.0) scale *= target_tbl / mean_tbl; 
   
-  esl_tree_er_Rescale(scale, &T);
+  esl_tree_er_Rescale(scale, T);
   
   /* paranoia */
   Tree_GetNodeTime(0, T, &tbl, NULL, NULL, errbuf, verbose);
   if (abs(tbl - target_tbl) > tol) 
     ESL_XFAIL(eslFAIL, errbuf, "esl_tree_er_RescaleAverageBL(): bad rescaling found total_bl=%f target total_bl=%f \n", tbl, target_tbl); 
-  
-  *ret_T = T;
   
   return eslOK;
 
@@ -1454,28 +1444,23 @@ esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE **ret_T, double to
 }
 
 int
-esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE **ret_T, double tol, char *errbuf, int verbose)
+esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE *T, double tol, char *errbuf, int verbose)
 {
-  ESL_TREE *T;
   double    abl;
   double    scale = 1.0;
   int       status;
   
-  T = *ret_T;
-
   /* scaling factor */
   abl = esl_tree_er_AverageBL(T);
   if (abl > 0.0) scale *= target_abl / abl; 
   
-  esl_tree_er_Rescale(scale, &T);
+  esl_tree_er_Rescale(scale, T);
   
   /* paranoia */
   abl = esl_tree_er_AverageBL(T);
   if (abs(abl - target_abl) > tol) 
     ESL_XFAIL(eslFAIL, errbuf, "esl_tree_er_RescaleAverageBL(): bad rescaling abl=%f target_abl=%f \n", abl, target_abl); 
    
-  *ret_T = T;
-  
   return eslOK;
 
  ERROR:

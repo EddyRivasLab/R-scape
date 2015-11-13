@@ -1658,8 +1658,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       if (1||data->verbose) {
 	if (!usenull) 
 	  printf("ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
-	else          
-	  printf("ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
+	else {      
+	  fprintf(data->outfp, "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
+	  fprintf(stdout,      "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
+	}
       }
     }
     else { // a gamma fit
@@ -1669,8 +1671,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
      if (1||data->verbose) {
 	if (!usenull) 
 	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
-	else          
-	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
+	else {       
+	  fprintf(data->outfp, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
+	  fprintf(stdout,      "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
+	}
       }
     }
   }

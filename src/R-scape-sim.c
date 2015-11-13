@@ -56,6 +56,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int                  N;                      // number of sequences in the alignment
   double               target_abl;             // average branch length (in number of changes per site)
   double               target_atbl;            // average total branch length (in number of changes per site)
+  double               abl;                    // average branch length (in number of changes per site)
   double               atbl;                   // average total branch length (in number of changes per site)
   TREETYPE             treetype;               // star, given or simulated tree topology
   ESL_TREE            *T;
@@ -68,7 +69,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int                 *ct;
   int                  nbpairs;
   int                  simnbpairs;
-  
+  int                  usesq;                   // use a specific seq in the original msa as root
+
   EVOM                 evomodel;
   char                *paramfile;
   struct rateparam_s   rateparam;
@@ -91,27 +93,29 @@ static ESL_OPTIONS options[] = {
   /* parameters to control the simulation */
   { "-N",              eslARG_INT,       "40",   NULL,      "n>1",   NULL,    NULL,  NULL,               "number of sequences in the simulated msa",                                                  0 }, 
   { "--abl",           eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
-  { "--atbl",          eslARG_REAL,     "0.6",   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
-  { "--noss",        eslARG_NONE,       FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
-  { "--noindels",    eslARG_NONE,       FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
-  { "--star",        eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
-  { "--given",       eslARG_NONE,       FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
-  { "--sim",         eslARG_NONE,        TRUE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
-  /* options for input msa (if seqs are given as a reference msa) */
+  { "--atbl",          eslARG_REAL,    "0.60",   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
+  { "--noss",          eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
+  { "--noindels",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
+  { "--star",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
+  { "--rand",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "independent sequences",                                                                     0 },
+  { "--given",         eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
+  { "--sim",           eslARG_NONE,      TRUE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
+  { "--usesq",          eslARG_INT,      NULL,   NULL,      "n>=1",  NULL,    NULL,  NULL,               "sq from the origional msa used as root (default random)",                                   0 }, 
+ /* options for input msa (if seqs are given as a reference msa) */
   { "--informat",   eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
    /* Control of scoring system - substitutions */ 
-  { "--mxfile",     eslARG_INFILE,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "read substitution rate matrix from file <f>",                              0 },
+  { "--mxfile",     eslARG_INFILE,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "read substitution rate matrix from file <f>",                                              0 },
   /* Control of scoring system - indels */ 
-  { "--evomodel",     eslARG_STRING,    "AIF",   NULL,       NULL,   NULL,    NULL,  NULL,                "evolutionary model used",                                                                  0 },
+  { "--evomodel",     eslARG_STRING,    "AIF",   NULL,       NULL,   NULL,    NULL,  NULL,                "evolutionary model used",                                                                 0 },
   /* Control of scoring system - ribosum */
-  { "--ribofile",     eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "read ribosum structure from file <f>",                                                     0 },
+  { "--ribofile",     eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "read ribosum structure from file <f>",                                                    0 },
   /* Control of output */
-  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "specify a directory for all output files",                                                 1 },
-  { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "send output to file <f>, not stdout",                                                      1 },
+  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "specify a directory for all output files",                                                1 },
+  { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "send output to file <f>, not stdout",                                                     1 },
   /* other options */  
-  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "if file has more than one msa, analyze only the first one",                                1 },
-  { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,                "tolerance",                                                                                0 },
-  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,                "set RNG seed to <n>",                                                                      0 },
+  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "if file has more than one msa, analyze only the first one",                               1 },
+  { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,                "tolerance",                                                                               0 },
+  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,                "set RNG seed to <n>",                                                                     0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -188,10 +192,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean  (go, "--star"))  cfg.treetype = STAR;
   else if (esl_opt_GetBoolean  (go, "--given")) cfg.treetype = GIVEN;
   else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
+  else if (esl_opt_GetBoolean  (go, "--rand"))  cfg.treetype = RAND; 
 
+  cfg.usesq       = esl_opt_IsOn(go, "--usesq")? esl_opt_GetInteger(go, "--usesq") : -1.0;
+  cfg.target_atbl = esl_opt_GetReal(go, "--atbl");
   cfg.target_abl  = esl_opt_IsOn(go, "--abl")?  esl_opt_GetReal(go, "--abl")  : -1.0;
-  cfg.target_atbl = esl_opt_IsOn(go, "--abl")? -1.0 : ( esl_opt_IsOn(go, "--atbl")? esl_opt_GetReal(go, "--atbl"):-1);
-
+  cfg.abl  = -1.0;
+  cfg.atbl = -1.0;
+  
   /* other options */
   cfg.onemsa  = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.tol     = esl_opt_GetReal   (go, "--tol");
@@ -319,7 +327,19 @@ main(int argc, char **argv)
     if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
- 
+    
+    if (cfg.N < msa->nseq && cfg.treetype == GIVEN) {
+      status = msamanip_SelectSubset(cfg.r, cfg.N, &msa, NULL, cfg.errbuf, cfg.verbose);
+      if (status != eslOK) {
+	printf("%s\n", cfg.errbuf);              
+	esl_fatal("Failed to manipulate original alignment"); 
+      }
+      if (cfg.verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+    }
+
+    /* remove degenacies */
+    msamanip_ConvertDegen2RandomCanonical(cfg.r, msa);
+
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate original alignment"); }
@@ -330,6 +350,7 @@ main(int argc, char **argv)
  
     status = simulate_msa(go, &cfg, msa, &simsa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to simulate msa"); }
+    if (simsa == NULL)    { printf("%s\n", cfg.errbuf); esl_fatal("Failed to create msa"); }
     
     /* stats of the simulated alignment */
     msamanip_XStats(simsa, &cfg.simstat);
@@ -337,10 +358,10 @@ main(int argc, char **argv)
  
     /* write the simulated msa to file */
     if (cfg.simsafp && simsa) eslx_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
-    if (1||cfg.verbose) {
+    if (1||cfg.verbose) 
       MSA_banner(stdout, cfg.msaname, cfg.simstat, cfg.mstat, cfg.simnbpairs, cfg.nbpairs);
+    if (cfg.verbose) 
       eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
-    }
   
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (simsa) esl_msa_Destroy(simsa); simsa = NULL;
@@ -422,6 +443,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   char    *rootdesc = NULL;
   int     *useme = NULL;
   int      root_bp;
+  int      usesq;
   int      i;
   
   if (msa == NULL) return eslOK;
@@ -434,7 +456,9 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   // sample the ancestral sequence from msa, adjust the secondary structure
   useme = malloc(msa->nseq * sizeof(int));
   esl_vec_ISet(useme, msa->nseq, FALSE);
-  useme[(int)(esl_random(cfg->r)*msa->nseq)] = TRUE;
+  usesq = (cfg->usesq > 0 && cfg->usesq < msa->nseq)? cfg->usesq-1 : (int)(esl_random(cfg->r)*msa->nseq);
+  useme[usesq] = TRUE;
+
   esl_msa_SequenceSubset(msa, useme, &root);
   if (esl_msa_MinimGaps(root, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to generate the root sequence");
@@ -444,25 +468,17 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   esl_msa_SetDesc(root, rootdesc, -1);
   free(useme); useme = NULL;
  
-  // adjust the secondary structure
-  useme = malloc(root->alen * sizeof(int));
-  esl_vec_ISet(useme, root->alen, TRUE);
-  esl_msa_ColumnSubset(root, cfg->errbuf, useme);
-  free(useme); useme = NULL;
-
   if (cfg->verbose) {
     msamanip_CalculateCT(root, NULL, &root_bp, cfg->errbuf);
     printf("root sequence L = %d nbps = %d \n", (int)root->alen, root_bp);
     eslx_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
-  }
+ }
 
   /* Generate the simulated alignment */
-  if (cov_GenerateAlignment(cfg->r, cfg->N, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, cfg->ribosum, &msafull, 
+  if (cov_GenerateAlignment(cfg->r, cfg->treetype, cfg->N, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, cfg->ribosum, &msafull, 
 			    cfg->noss, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
     esl_fatal("%s\nfailed to generate the simulated alignment", cfg->errbuf);
-  
-  if (cfg->verbose) 
-    eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+  if (msafull == NULL) esl_fatal("%s\nfailed to generate the simulated alignment", cfg->errbuf);
 
   /* The leaves-only alignment */
   useme = malloc(msafull->nseq * sizeof(int));
@@ -470,18 +486,21 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
     if (strncmp(msafull->sqname[i], "v", 1) == 0) useme[i] = FALSE; 
     else                                          useme[i] = TRUE;
   }
- if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
+  if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
     esl_fatal("failed to generate leaf alignment");
   if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
   
+ if (1||cfg->verbose) 
+    eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
+
   *ret_simsa = simsa;
 
   free(useme);
   free(rootname);
   free(rootdesc);
   esl_msa_Destroy(root);
-  esl_msa_Destroy(msafull);
+  if (msafull) esl_msa_Destroy(msafull);
   return eslOK;
 }
 
@@ -492,9 +511,10 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int   status;
   
   /* the TREE */
-  if (cfg->treetype == STAR) { // sequences are independent 
+  if (cfg->treetype == RAND || cfg->treetype == STAR) { // sequences are independent or sequences are independent but derived form a common ancestor
     cfg->T = NULL;
-    cfg->atbl = cfg->target_atbl;
+    cfg->atbl = cfg->abl = cfg->target_atbl;
+
   }
   else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
@@ -509,18 +529,18 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* scale the tree */
   if (cfg->T) {
     if (cfg->target_abl > 0) {
-      if (esl_tree_er_RescaleAverageBL(cfg->target_abl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
+      if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     else if (cfg->target_atbl > 0) {
-      if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, &cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
+      if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     
+    cfg->abl = esl_tree_er_AverageBL(cfg->T);
     Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    if (1||cfg->verbose) printf("average leave-to-root length: %f average branch length: %f\n", cfg->atbl, esl_tree_er_AverageBL(cfg->T));
-    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+    if (cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
+    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
-  else if (1||cfg->verbose) printf("average leave-to-root length: %f \n", cfg->target_atbl);
-
+  else if (cfg->verbose) printf("# average leave-to-root length: %f \n", cfg->atbl);
   
   return eslOK;
 }
