@@ -8,9 +8,9 @@ use FUNCS;
 #use constant GNUPLOT => '/usr/bin/gnuplot';
 use constant GNUPLOT => '/opt/local/bin/gnuplot';
 
-use vars qw ($opt_a $opt_A $opt_c $opt_C $opt_E $opt_f $opt_g $opt_i $opt_K $opt_N $opt_s $opt_t $opt_T $opt_u $opt_v );  # required if strict used
+use vars qw ($opt_a $opt_A $opt_c $opt_C $opt_E $opt_f $opt_g $opt_i $opt_K $opt_N $opt_s $opt_t $opt_T $opt_u $opt_v $opt_V);  # required if strict used
 use Getopt::Std;
-getopts ('a:A:cCE:fgiK:N:st:T:u:v');
+getopts ('a:A:cCE:fgiK:N:st:T:u:vV');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -31,6 +31,7 @@ if (!@ARGV) {
 	print "-u <n>    : use sq number <n> as root\n";
  	print "-s        : do not use ss\n";
  	print "-v        : be verbose\n";
+ 	print "-V        : viewplots\n";
  	exit;
 }
 my $omsafile  = shift;
@@ -44,7 +45,11 @@ my $rscape_sim = "~/src/src/mysource/src/R-scape-sim";
 my $N         = 40;    if ($opt_N) { $N = $opt_N; }
 my $atbl      = -1;    if ($opt_A) { $atbl = $opt_A; }
 my $abl       = -1;    if ($opt_a) { $abl  = $opt_a; }
-my $treetype  = "sim"; if ($opt_T) { $treetype = "$opt_T"; } if ($treetype =~ /^sim$/ || $treetype =~ /^star$/ || $treetype =~ /^rand$/ || $treetype =~ /^given$/) {  } else { print "bad treetype $treetype\n"; die; }
+my $treetype  = "sim"; if ($opt_T) { $treetype = "$opt_T"; } if ($treetype =~ /^sim$/   || 
+								 $treetype =~ /^star$/  || 
+								 $treetype =~ /^rand$/  || 
+								 $treetype =~ /^given$/ || 
+								 $treetype =~ /^all$/     ) {  } else { print "bad treetype $treetype\n"; die; }
 my $noss      = 0;     if ($opt_s) { $noss = 1; }
 my $noindels  = 0;     if ($opt_i) { $noindels = 1; }
 my $gdb       = 0;     if ($opt_g) { $gdb = 1; }
@@ -58,39 +63,110 @@ my $isC2      = 0;     if ($opt_c) { $isC2  = 1; }
 my $usesq     = -1;    if ($opt_u) { $usesq = $opt_u; }
 
 # options for both
-my $verbose  = 0;      if ($opt_v) { $verbose = 1; }
- 
-my $simsafile = "$msaname.synthetic_N$N\_$treetype.sto"; 
-my $outfile   = "$msaname.synthetic_N$N\_$treetype.out"; 
+my $K         = 20;    if ($opt_K) { $K = $opt_K; }
+my $verbose   = 0;     if ($opt_v) { $verbose = 1; }
+my $viewplots = 0;     if ($opt_V) { $viewplots = 1; }
 
-my $K = 20;
-my $tau;
-my $Fm;
-my $mean_tau = 0.0;
-my $stdv_tau = 0.0;
-my $mean_F   = 0.0;
-my $stdv_F   = 0.0;
-
-if ($opt_K) { $K = $opt_K; }
-for (my $k = 0; $k < $K; $k ++) {
-    run_rscapesim($N, $abl, $atbl, $treetype, $noss, $noindels, $usesq, $gdb, $omsafile, $simsafile, $verbose);
-    run_rscape ($Eval, $covtype, $nofigures, $isC2, $isC16, $outfile, $simsafile, $verbose);
-    if ($verbose) { system("more $outfile\n"); }
-
-    parse_outfile($outfile, \$tau, \$Fm);
-    if ($tau < 0) { print "bad tau $tau\n"; }
-    if ($Fm  < 0) { print "bad Fm  $Fm\n"; die; }
-    $mean_F   += $Fm;
-    $stdv_F   += $Fm*$Fm;
-    $mean_tau += $tau;
-    $stdv_tau += $tau*$tau;
+if ($treetype =~ /^all$/) {
+    run_for_treetype("rand", $K, $omsafile, $verbose,
+		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $Eval, $covtype, $nofigures, $isC2, $isC16);
+    run_for_treetype("star", $K, $omsafile, $verbose,
+		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $Eval, $covtype, $nofigures, $isC2, $isC16);
+    run_for_treetype("sim", $K, $omsafile, $verbose,
+		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $Eval, $covtype, $nofigures, $isC2, $isC16);
+    run_for_treetype("given", $K, $omsafile, $verbose,
+		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $Eval, $covtype, $nofigures, $isC2, $isC16);
+}
+else {
+    run_for_treetype($treetype, $K, $omsafile, $verbose,
+		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $Eval, $covtype, $nofigures, $isC2, $isC16);
 }
 
-FUNCS::calculate_averages(\$mean_F,   \$stdv_F, $K);
-FUNCS::calculate_averages(\$mean_tau, \$stdv_tau, $K);
 
-printf("tau %f +/- %f\n", $mean_tau, $stdv_tau);
-printf("F   %f +/- %f\n", $mean_F, $stdv_F);
+sub run_for_treetype {
+    my ($treetype, $K, $omsafile, $verbose,
+	$N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+	$Eval, $covtype, $nofigures, $isC2, $isC16) = @_;
+    
+    my $simsafile = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.sto"   : "$msaname\_synthetic_N$N\_$treetype.sto"; 
+    my $outfile   = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.out"   : "$msaname\_synthetic_N$N\_$treetype.out"; 
+    my $hisfile   = ($noss)? "$msaname\_synthetic_N$N\_$treetype.cyk.his.ps" : "$msaname\_synthetic_N$N\_$treetype.his.ps"; 
+
+    my $taufile   = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.tauhis"    : "$msaname\_synthetic_N$N\_$treetype.tauhis";
+    my $taups     = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.tauhis.ps" : "$msaname\_synthetic_N$N\_$treetype.tauhis.ps";
+
+    my $maxscfile = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.maxschis"    : "$msaname\_synthetic_N$N\_$treetype.maxschis";
+    my $maxscps   = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.maxschis.ps" : "$msaname\_synthetic_N$N\_$treetype.maxschis.ps";
+
+    my $tau;
+    my $Fm;
+    my $maxsc;
+    my $avgid;
+    my $mean_tau   = 0.0;
+    my $stdv_tau   = 0.0;
+    my $min_tau    = 123456789;
+    my $max_tau    = -123456789;
+    my $mean_F     = 0.0;
+    my $stdv_F     = 0.0;
+    my $mean_maxsc = 0.0;
+    my $stdv_maxsc = 0.0;
+    my $min_maxsc  = 123456789;
+    my $max_maxsc  = -123456789;
+    my $mean_avgid = 0.0;
+    my $stdv_avgid = 0.0;
+
+    my @his_tau = ();
+    my $Nt = 40;
+    my $kt = 5;
+    FUNCS::init_histo_array($Nt, $kt, \@his_tau);
+
+    my @his_maxsc = ();
+    my $Nsc = 500;
+    my $ksc = 1;
+    FUNCS::init_histo_array($Nsc, $ksc, \@his_maxsc);
+    
+    for (my $x = 0; $x < $K; $x ++) {
+	run_rscapesim($N, $abl, $atbl, $treetype, $noss, $noindels, $usesq, $gdb, $omsafile, $simsafile, $verbose);
+	run_rscape ($Eval, $covtype, $nofigures, $isC2, $isC16, $outfile, $simsafile, $verbose);
+	if ($verbose) { system("more $outfile\n"); }
+	
+	parse_outfile($outfile, $Nsc, $ksc, \@his_maxsc, \$maxsc, $Nt, $kt, \@his_tau, \$tau, \$Fm, \$avgid);
+	if ($tau < 0) { print "bad tau $tau\n"; }
+	if ($Fm  < 0) { print "bad Fm  $Fm\n"; die; }
+	$mean_F     += $Fm;
+	$stdv_F     += $Fm*$Fm;
+	$mean_tau   += $tau;
+	$stdv_tau   += $tau*$tau;
+ 	$mean_maxsc += $maxsc;
+	$stdv_maxsc += $maxsc*$maxsc;
+	$mean_avgid += $avgid;
+	$stdv_avgid += $avgid*$avgid;
+	if ($tau   < $min_tau)   { $min_tau   = $tau;   }
+	if ($tau   > $max_tau)   { $max_tau   = $tau;   }
+	if ($maxsc < $min_maxsc) { $min_maxsc = $maxsc; }
+	if ($maxsc > $max_maxsc) { $max_maxsc = $maxsc; }
+    }
+    FUNCS::write_histogram($Nt,  $kt,  0, \@his_tau,   1.0, $taufile,   0);
+    FUNCS::write_histogram($Nsc, $ksc, 0, \@his_maxsc, 1.0, $maxscfile, 0);
+    my $key = "avgid=$avgid";
+    FUNCS::gnuplot_histo($taufile,   1, 2, $taups,   $key, "tau",        "ocurrence", "$treetype", 0, 1, $min_tau-0.2, $max_tau+0.2, $Nt/2.);
+    FUNCS::gnuplot_histo($maxscfile, 1, 2, $maxscps, $key, "max cov sc", "ocurrence", "$treetype", 0, 1, $min_maxsc-5, $max_maxsc+5, $Nsc/2.);
+
+    if ($viewplots && $K == 1) { system("more $outfile\n"); system("open $hisfile\n"); }
+    
+    FUNCS::calculate_averages(\$mean_F,     \$stdv_F,     $K);
+    FUNCS::calculate_averages(\$mean_tau,   \$stdv_tau,   $K);
+    FUNCS::calculate_averages(\$mean_maxsc, \$stdv_maxsc, $K);
+    
+    printf("#tau   %f +/- %f\n", $mean_tau,   $stdv_tau);
+    printf("#F     %f +/- %f\n", $mean_F,     $stdv_F);   
+    printf("#maxsc %f +/- %f [%f,%f]\n", $mean_maxsc, $stdv_maxsc, $min_maxsc, $max_maxsc);   
+}
 
 sub
 run_rscapesim {
@@ -107,7 +183,7 @@ run_rscapesim {
     $cmd .= "--$treetype ";
     $cmd .= "-o $simsafile $omsafile";
 
-    printf("$cmd\n");
+    #printf("$cmd\n");
     system("$cmd\n");
 }
 
@@ -128,17 +204,24 @@ run_rscape {
 
 sub 
 parse_outfile {
-    my ($outfile, $ret_tau, $ret_F) = @_;
+    my ($outfile, $Nsc, $ksc, $his_maxsc_ref, $ret_maxsc, $Nt, $kt, $his_tau_ref, $ret_tau, $ret_F, $ret_avgid) = @_;
 
-    my $tau = -1;
-    my $F   = -1;
+    my $maxsc = -1;
+    my $tau   = -1;
+    my $F     = -1;
+    my $avgid = -1;
 
     open (OUT, "$outfile") || die; 
     while (<OUT>) {
-	if (/\# GammaFIT:.+tau (\S+)\s*/)  { $tau = $1; }
-	if (/\#.+thresh.+\s+(\S+)]\s*$/)   { $F   = $1; }
+	if    (/\# GammaFIT:.+tau (\S+)\s*/)  { $tau = $1; }
+	elsif (/\# .+avgid (\S+)\s*/)         { $avgid = $1; }
+	elsif (/\#.+thresh.+\s+cov=\S+\s\[\S+\,(\S+)\]\s\[.+(\S+)\]\s*$/) { $maxsc = $1; $F = $2; }
     }
 
-    $$ret_F   = $F;
-    $$ret_tau = $tau;
+    FUNCS::fill_histo_array(1, $tau,   $Nt,  $kt,  0, $his_tau_ref);
+    FUNCS::fill_histo_array(1, $maxsc, $Nsc, $ksc, 0, $his_maxsc_ref);
+    $$ret_F     = $F;
+    $$ret_tau   = $tau;
+    $$ret_maxsc = $maxsc;
+    $$ret_avgid = $avgid;
 }

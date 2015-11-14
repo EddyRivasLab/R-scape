@@ -491,7 +491,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
   
- if (1||cfg->verbose) 
+ if (cfg->verbose) 
     eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
 
   *ret_simsa = simsa;
