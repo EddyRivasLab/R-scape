@@ -68,6 +68,8 @@ my $verbose   = 0;     if ($opt_v) { $verbose = 1; }
 my $viewplots = 0;     if ($opt_V) { $viewplots = 1; }
 
 if ($treetype =~ /^all$/) {
+    if ($usesq < 0) { $usesq = 1 + int(rand($N)); } # so all treetype methods start from the same ancestral
+    
     run_for_treetype("rand", $K, $omsafile, $verbose,
 		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
@@ -151,22 +153,36 @@ sub run_for_treetype {
 	if ($maxsc < $min_maxsc) { $min_maxsc = $maxsc; }
 	if ($maxsc > $max_maxsc) { $max_maxsc = $maxsc; }
     }
-    FUNCS::write_histogram($Nt,  $kt,  0, \@his_tau,   1.0, $taufile,   0);
-    FUNCS::write_histogram($Nsc, $ksc, 0, \@his_maxsc, 1.0, $maxscfile, 0);
-    my $key = "avgid=$avgid";
-    FUNCS::gnuplot_histo($taufile,   1, 2, $taups,   $key, "tau",        "ocurrence", "$treetype", 0, 1, $min_tau-0.2, $max_tau+0.2, $Nt/2.);
-    FUNCS::gnuplot_histo($maxscfile, 1, 2, $maxscps, $key, "max cov sc", "ocurrence", "$treetype", 0, 1, $min_maxsc-5, $max_maxsc+5, $Nsc/2.);
-
-    if ($viewplots && $K == 1) { system("more $outfile\n"); system("open $hisfile\n"); }
-    
     FUNCS::calculate_averages(\$mean_F,     \$stdv_F,     $K);
     FUNCS::calculate_averages(\$mean_tau,   \$stdv_tau,   $K);
     FUNCS::calculate_averages(\$mean_maxsc, \$stdv_maxsc, $K);
-    
+    FUNCS::calculate_averages(\$mean_avgid, \$stdv_avgid, $K);
     printf("#tau   %f +/- %f\n", $mean_tau,   $stdv_tau);
     printf("#F     %f +/- %f\n", $mean_F,     $stdv_F);   
     printf("#maxsc %f +/- %f [%f,%f]\n", $mean_maxsc, $stdv_maxsc, $min_maxsc, $max_maxsc);   
-}
+    printf("#avgid %f +/- %f\n", $mean_avgid, $stdv_avgid);   
+    
+    FUNCS::write_histogram($Nt,  $kt,  0, \@his_tau,   1.0, $taufile,   0);
+    FUNCS::write_histogram($Nsc, $ksc, 0, \@his_maxsc, 1.0, $maxscfile, 0);
+    open(HIS, ">>$taufile");
+    print HIS "# mean_avgid $mean_avgid stdv_avgid $stdv_avgid\n";
+    close(HIS);
+    open(HIS, ">>$maxscfile");
+    print HIS "# mean_avgid $mean_avgid stdv_avgid $stdv_avgid\n";
+    close(HIS);
+
+    my $key = "avgid=$mean_avgid +/- $stdv_avgid";
+    FUNCS::gnuplot_histo($taufile,   1, 2, $taups,   $key, "tau",        "ocurrence", "$treetype", 0, 1, $min_tau-0.2, $max_tau+0.2, $Nt/2.);
+    FUNCS::gnuplot_histo($maxscfile, 1, 2, $maxscps, $key, "max cov sc", "ocurrence", "$treetype", 0, 1, $min_maxsc-5, $max_maxsc+5, $Nsc/2.);
+    
+    if ($viewplots && $K == 1) { system("more $outfile\n"); system("open $hisfile\n"); }
+    system("rm *sto\n");
+    system("rm *out\n");
+    system("rm *sorted\n");
+    system("rm *roc\n");
+    system("rm *sum\n");
+    system("rm *out\n");
+ }
 
 sub
 run_rscapesim {

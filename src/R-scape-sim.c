@@ -40,6 +40,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char                 errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS      *r;	               /* random numbers */
   ESL_ALPHABET        *abc;                    /* the alphabet */
+  char                *rscapedir;
   
   int                  onemsa;
   int                  nmsa;
@@ -152,7 +153,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
       exit(0);
     }
-  
+
+  if ((cfg.rscapedir = getenv("RSCAPEDIR")) == NULL) esl_fatal("Failed to find envvar RSCAPEDIR");
+
   cfg.msafile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   
@@ -228,9 +231,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* the paramfile  */
   cfg.paramfile = NULL;
   if (cfg.evomodel == AIF)
-    esl_sprintf(&cfg.paramfile, "lib/evoparam/Pfam.seed.S1000.trainGD.AIF.param");
+    esl_sprintf(&cfg.paramfile, "%s/lib/evoparam/Pfam.seed.S1000.trainGD.AIF.param", cfg.rscapedir);
   else if (cfg.evomodel == AFG)
-    esl_sprintf(&cfg.paramfile, "lib/evoparam/Pfam.seed.S1000.trainGD.AFG.param");
+    esl_sprintf(&cfg.paramfile, "%s/lib/evoparam/Pfam.seed.S1000.trainGD.AFG.param", cfg.rscapedir);
   else esl_fatal("could not identify evomodel");
   status = e1_rate_ReadParamfile(cfg.paramfile, &cfg.rateparam, &cfg.evomodel, cfg.errbuf, cfg.verbose);
   if (status != eslOK) esl_fatal("Failed to read paramfile %s\n%s", cfg.paramfile, cfg.errbuf);
@@ -239,7 +242,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
   if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
-  else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
+  else esl_sprintf(&cfg.ribofile, "%s/lib/ribosum/ssu-lsu.final.er.ribosum", cfg.rscapedir);
   cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
   if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
   if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
@@ -491,7 +494,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
   
- if (cfg->verbose) 
+ if (1||cfg->verbose) 
     eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
 
   *ret_simsa = simsa;
@@ -513,8 +516,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the TREE */
   if (cfg->treetype == RAND || cfg->treetype == STAR) { // sequences are independent or sequences are independent but derived form a common ancestor
     cfg->T = NULL;
-    cfg->atbl = cfg->abl = cfg->target_atbl;
-
+    cfg->atbl = cfg->target_atbl;
   }
   else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
@@ -537,10 +539,10 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     
     cfg->abl = esl_tree_er_AverageBL(cfg->T);
     Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    if (cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
-    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+    if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
+    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
-  else if (cfg->verbose) printf("# average leave-to-root length: %f \n", cfg->atbl);
+  else if (1||cfg->verbose) printf("# average leave-to-root length: %f \n", cfg->atbl);
   
   return eslOK;
 }
