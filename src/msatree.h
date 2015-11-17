@@ -29,6 +29,7 @@ extern int       Tree_MyCluster(ESL_DMATRIX *D, ESL_TREE **ret_T);
 extern int       esl_tree_er_Copy(ESL_TREE *T, ESL_TREE *Tdst);
 extern int       esl_tree_er_RandomBranch(ESL_RANDOMNESS *r, ESL_TREE *T);
 extern double    esl_tree_er_AverageBL(ESL_TREE *T);
+extern int       esl_tree_er_EqualBL(ESL_TREE *T);
 extern int       esl_tree_er_Rescale(double scale, ESL_TREE *T);
 extern int       esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE *T, double tol, char *errbuf, int verbose);
 extern int       esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE *T, double tol, char *errbuf, int verbose);

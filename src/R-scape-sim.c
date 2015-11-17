@@ -494,7 +494,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
   
- if (1||cfg->verbose) 
+ if (cfg->verbose) 
     eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
 
   *ret_simsa = simsa;
@@ -530,6 +530,8 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* scale the tree */
   if (cfg->T) {
+    if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg);
+
     if (cfg->target_abl > 0) {
       if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }

@@ -199,7 +199,7 @@ run_rscapesim {
     $cmd .= "--$treetype ";
     $cmd .= "-o $simsafile $omsafile";
 
-    #printf("$cmd\n");
+    printf("$cmd\n");
     system("$cmd\n");
 }
 
@@ -208,7 +208,7 @@ run_rscapesim {
 sub
 run_rscape {
     my ($Eval, $covtype, $nofigures, $isC2, $isC16, $outfile, $msafile, $verbose) = @_;
-    my $cmd = "$rscape ";
+    my $cmd = "time $rscape ";
     $cmd .= "-E $Eval "; 
     if ($isC2)     { $cmd .= "--C2 "; }
     if ($isC16)    { $cmd .= "--C16 "; }
@@ -233,6 +233,7 @@ parse_outfile {
 	elsif (/\# .+avgid (\S+)\s*/)         { $avgid = $1; }
 	elsif (/\#.+thresh.+\s+cov=\S+\s\[\S+\,(\S+)\]\s\[.+(\S+)\]\s*$/) { $maxsc = $1; $F = $2; }
     }
+    close(OUT);
 
     FUNCS::fill_histo_array(1, $tau,   $Nt,  $kt,  0, $his_tau_ref);
     FUNCS::fill_histo_array(1, $maxsc, $Nsc, $ksc, 0, $his_maxsc_ref);

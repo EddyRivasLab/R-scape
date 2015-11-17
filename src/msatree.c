@@ -1366,6 +1366,24 @@ esl_tree_er_AverageBL(ESL_TREE *T)
 
   return abl;
 }
+int
+esl_tree_er_EqualBL(ESL_TREE *T)
+{
+  double abl;
+  int    nnode;
+  int    n;
+
+  nnode = (T->N > 1)? T->N-1 : T->N;
+  abl = esl_tree_er_AverageBL(T);
+  
+  /* set all branch lengths equal */
+  for (n = 0; n < nnode; n ++) 
+    T->ld[n] = T->rd[n] = abl;
+  
+  if (fabs(abl - esl_tree_er_AverageBL(T)) > 1e-5) return eslFAIL;
+
+  return eslOK;
+}
 
 int
 esl_tree_er_Copy(ESL_TREE *T, ESL_TREE *Tdst)
