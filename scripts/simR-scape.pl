@@ -8,9 +8,9 @@ use FUNCS;
 #use constant GNUPLOT => '/usr/bin/gnuplot';
 use constant GNUPLOT => '/opt/local/bin/gnuplot';
 
-use vars qw ($opt_a $opt_A $opt_c $opt_C $opt_E $opt_f $opt_g $opt_i $opt_K $opt_N $opt_s $opt_t $opt_T $opt_u $opt_v $opt_V);  # required if strict used
+use vars qw ($opt_a $opt_A $opt_c $opt_C $opt_e $opt_E $opt_f $opt_g $opt_i $opt_K $opt_N $opt_s $opt_t $opt_T $opt_u $opt_v $opt_V);  # required if strict used
 use Getopt::Std;
-getopts ('a:A:cCE:fgiK:N:st:T:u:vV');
+getopts ('a:A:cCeE:fgiK:N:st:T:u:vV');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -20,7 +20,8 @@ if (!@ARGV) {
  	print "-A <x>    : set atbl to <x> \n";
  	print "-c        : C2  type\n";
  	print "-C        : C16 type\n";
- 	print "-E <x>    : E-value is <x>\n";
+ 	print "-e        : make tree branches equal length\n";
+	print "-E <x>    : E-value is <x>\n";
 	print "-i        : noindels flag is on\n";
  	print "-f        : draw figures\n";
  	print "-g        : debugging flag\n";
@@ -52,6 +53,7 @@ my $treetype  = "sim"; if ($opt_T) { $treetype = "$opt_T"; } if ($treetype =~ /^
 								 $treetype =~ /^all$/     ) {  } else { print "bad treetype $treetype\n"; die; }
 my $noss      = 0;     if ($opt_s) { $noss = 1; }
 my $noindels  = 0;     if ($opt_i) { $noindels = 1; }
+my $eqbranch  = 0;     if ($opt_e) { $eqbranch = 1; }
 my $gdb       = 0;     if ($opt_g) { $gdb = 1; }
 
 # options for R-scape
@@ -71,28 +73,28 @@ if ($treetype =~ /^all$/) {
     if ($usesq < 0) { $usesq = 1 + int(rand($N)); } # so all treetype methods start from the same ancestral
     
     run_for_treetype("rand", $K, $omsafile, $verbose,
-		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
     run_for_treetype("star", $K, $omsafile, $verbose,
-		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
     run_for_treetype("sim", $K, $omsafile, $verbose,
-		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
     run_for_treetype("given", $K, $omsafile, $verbose,
-		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
 }
 else {
     run_for_treetype($treetype, $K, $omsafile, $verbose,
-		     $N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+		     $N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 		     $Eval, $covtype, $nofigures, $isC2, $isC16);
 }
 
 
 sub run_for_treetype {
     my ($treetype, $K, $omsafile, $verbose,
-	$N, $abl, $atbl, $noss, $noindels, $usesq, $gdb, 
+	$N, $abl, $atbl, $noss, $noindels, $eqbranch, $usesq, $gdb, 
 	$Eval, $covtype, $nofigures, $isC2, $isC16) = @_;
     
     my $simsafile = ($noss)? "$msaname\_synthetic_N$N\_$treetype.noss.sto"   : "$msaname\_synthetic_N$N\_$treetype.sto"; 
@@ -133,7 +135,7 @@ sub run_for_treetype {
     FUNCS::init_histo_array($Nsc, $ksc, \@his_maxsc);
     
     for (my $x = 0; $x < $K; $x ++) {
-	run_rscapesim($N, $abl, $atbl, $treetype, $noss, $noindels, $usesq, $gdb, $omsafile, $simsafile, $verbose);
+	run_rscapesim($N, $abl, $atbl, $treetype, $noss, $noindels, $eqbranch, $usesq, $gdb, $omsafile, $simsafile, $verbose);
 	run_rscape ($Eval, $covtype, $nofigures, $isC2, $isC16, $outfile, $simsafile, $verbose);
 	if ($verbose) { system("more $outfile\n"); }
 	
@@ -172,8 +174,8 @@ sub run_for_treetype {
     close(HIS);
 
     my $key = "avgid=$mean_avgid +/- $stdv_avgid";
-    FUNCS::gnuplot_histo($taufile,   1, 2, $taups,   $key, "tau",        "ocurrence", "$treetype", 0, 1, $min_tau-0.2, $max_tau+0.2, $Nt/2.);
-    FUNCS::gnuplot_histo($maxscfile, 1, 2, $maxscps, $key, "max cov sc", "ocurrence", "$treetype", 0, 1, $min_maxsc-5, $max_maxsc+5, $Nsc/2.);
+    FUNCS::gnuplot_histo($taufile,   1, 2, $taups,   $key, "tau",        "ocurrence", "$treetype", 0, $viewplots, $min_tau-0.2, $max_tau+0.2, $Nt/2.);
+    FUNCS::gnuplot_histo($maxscfile, 1, 2, $maxscps, $key, "max cov sc", "ocurrence", "$treetype", 0, $viewplots, $min_maxsc-5, $max_maxsc+5, $Nsc/2.);
     
     if ($viewplots && $K == 1) { system("more $outfile\n"); system("open $hisfile\n"); }
     system("rm *sto\n");
@@ -181,12 +183,11 @@ sub run_for_treetype {
     system("rm *sorted\n");
     system("rm *roc\n");
     system("rm *sum\n");
-    system("rm *out\n");
  }
 
 sub
 run_rscapesim {
-    my ($N, $abl, $atbl, $treetype, $noss, $noindels, $usesq, $gdb, $omsafile, $simsafile, $verbose) = @_;
+    my ($N, $abl, $atbl, $treetype, $noss, $noindels, $eqbranch, $usesq, $gdb, $omsafile, $simsafile, $verbose) = @_;
     
     my $cmd = ($gdb)? "gdb --args $rscape_sim ": "$rscape_sim ";
     if ($N     > 0) { $cmd .= "-N $N "; }
@@ -195,6 +196,7 @@ run_rscapesim {
     if ($usesq > 0) { $cmd .= "--usesq $usesq "; }
     if ($noss)      { $cmd .= "--noss "; }
     if ($noindels)  { $cmd .= "--noindels "; }
+    if ($eqbranch)  { $cmd .= "--eqbranch "; }
 
     $cmd .= "--$treetype ";
     $cmd .= "-o $simsafile $omsafile";

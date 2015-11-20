@@ -63,7 +63,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_TREE            *T;
   
   int                  noss;                   // asume unstructured, do not use the given secondary structure if any
-  int                  noindels;               // make ungapped alignmenst
+  int                  noindels;               // make ungapped alignments
+  int                  eqbranch;               // modify the tree to all branches being the same length
   
   MSA_STAT            *mstat;                  // statistics of the given alignment 
   MSA_STAT            *simstat;                // statistics of the simulated alignment 
@@ -97,6 +98,7 @@ static ESL_OPTIONS options[] = {
   { "--atbl",          eslARG_REAL,    "0.60",   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noss",          eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
   { "--noindels",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
+  { "--eqbranch",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make all branch lengths equal size",                                                              0 }, 
   { "--star",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
   { "--rand",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "independent sequences",                                                                     0 },
   { "--given",         eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
@@ -192,6 +194,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.N        = esl_opt_GetInteger(go, "-N");
   cfg.noss     = esl_opt_GetBoolean(go, "--noss");
   cfg.noindels = esl_opt_GetBoolean(go, "--noindels");
+  cfg.eqbranch = esl_opt_GetBoolean(go, "--eqbranch");
   if      (esl_opt_GetBoolean  (go, "--star"))  cfg.treetype = STAR;
   else if (esl_opt_GetBoolean  (go, "--given")) cfg.treetype = GIVEN;
   else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
@@ -245,6 +248,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else esl_sprintf(&cfg.ribofile, "%s/lib/ribosum/ssu-lsu.final.er.ribosum", cfg.rscapedir);
   cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
   if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
+  esl_dmx_Scale(cfg.ribosum->bprsQ, 4.0/3.0);
   if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
 
   /* the e1_rate  */
@@ -252,6 +256,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.e1rateB = NULL;
   cfg.R1 = cfg.ribosum->xrnaQ;
   cfg.bg = cfg.ribosum->bg;
+  ratematrix_Rescale(cfg.R1, NULL, cfg.bg);
 
   cfg.e1rate = e1_rate_CreateWithValues(cfg.abc, cfg.evomodel, cfg.rateparam, NULL, cfg.R1, cfg.bg, TRUE, cfg.tol, cfg.errbuf, cfg.verbose);
   cfg.e1rate->evomodel = cfg.evomodel; 
@@ -530,7 +535,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* scale the tree */
   if (cfg->T) {
-    if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg);
+    if (cfg->eqbranch) { if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg); }
 
     if (cfg->target_abl > 0) {
       if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
@@ -544,7 +549,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
     if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
-  else if (1||cfg->verbose) printf("# average leave-to-root length: %f \n", cfg->atbl);
+  else if (1||cfg->verbose) printf("# average leave-to-root length: %f\n", cfg->atbl);
   
   return eslOK;
 }

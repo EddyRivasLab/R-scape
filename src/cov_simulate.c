@@ -123,7 +123,6 @@ cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, doubl
   esl_sprintf(&name, "%s_synthetic_N%d_%s", root->name, N, ttype);
   if (msa->acc) free(msa->acc); msa->acc = NULL;
   status = esl_strdup(name, -1, &(msa->acc));  if (status != eslOK) goto ERROR;
-    printf("\n---NNN %d\n", N);
 
   /* The ct vector with the secondary structure */
   ESL_ALLOC(ct, sizeof(int)*(L+1));
