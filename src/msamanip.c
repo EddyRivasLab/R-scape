@@ -408,7 +408,6 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
 
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -428,7 +427,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
  return status;
 }
 
-/* Extract subset with sequences no lessthan idthesh similar to each other
+/* Extract subset with sequences no less than idthesh similar to each other
  */
 int
 msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
@@ -481,7 +480,6 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
 
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -561,7 +559,6 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   for (s = 1; s <= nseq; s ++) useme[array[s]] = 1;
   
   if ((status = esl_msa_SequenceSubset(msa, useme, &new)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create msa subset");
-  esl_msa_MinimGaps(new, errbuf, "-_.~", TRUE);
 
   /* change the accession of the msa to reflect that it is a subset of the original */
   if (msa->acc) {

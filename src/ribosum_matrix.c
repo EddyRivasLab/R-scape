@@ -1,4 +1,4 @@
-/* ribosum_matrix.c */
+/* RateF_matrix.c */
 
 #include "p7_config.h"
 
