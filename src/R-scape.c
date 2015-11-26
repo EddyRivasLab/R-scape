@@ -594,7 +594,7 @@ main(int argc, char **argv)
 	continue;
       }
       
-      cfg.firstpos = 0;
+      cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
@@ -699,7 +699,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *submsaname = NULL;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
-  int      nfrags = 0;	  /* # of fragments removed */
+  int      nfrags = 0;	          /* # of fragments removed */
 
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
@@ -715,14 +715,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* apply msa filters and than select submsa
    */
   if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
-  fprintf(stdout, "\n1-%6d %d\n", (*omsa)->nseq, (int)(*omsa)->alen);
-
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  fprintf(stdout, "\n2-%6d %d\n", (*omsa)->nseq, (int)(*omsa)->alen);
-
-
   if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
 
 
@@ -834,7 +828,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   /* the ct vector */
+  int i;
   status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, cfg->errbuf);
+
   if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);

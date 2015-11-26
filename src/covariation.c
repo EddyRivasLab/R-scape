@@ -1904,17 +1904,17 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	
 	for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
 	  if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
-	    hitlist->hit[h].Eval    = ranklist->eval[b];
+	    hitlist->hit[h].Eval = ranklist->eval[b];
 	  }
 	  else break;
 	}
 	
-	hitlist->hit[h].i    = i;
-	hitlist->hit[h].j    = j;
-	hitlist->hit[h].sc   = mi->COV->mx[i][j];
+	hitlist->hit[h].i  = i;
+	hitlist->hit[h].j  = j;
+	hitlist->hit[h].sc = mi->COV->mx[i][j];
 	
 	if (data->ct[i+1] == j+1) { hitlist->hit[h].is_bpair = TRUE;  }
-	else                { 
+	else { 
 	  hitlist->hit[h].is_bpair = FALSE; 
 	  if (data->ct[i+1] == 0 && data->ct[j+1] == 0) hitlist->hit[h].is_compatible = TRUE;
 	} 	 
