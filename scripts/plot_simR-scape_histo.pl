@@ -38,7 +38,7 @@ my $iscum = 0;
 my $seeplots = 1;
 my $xleft = "";
 my $xright = ""; if ($opt_X) { $xright = "$opt_X"; }
-my $ymax = "";
+my $ymax = 20;
 gnuplot_N_histo($N, \@hisfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $iscum, $seeplots, $xleft, $xright, $ymax);
 
 

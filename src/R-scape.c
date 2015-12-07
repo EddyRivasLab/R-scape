@@ -1,4 +1,4 @@
-/* R-scape -- RNA Structure-driven Covariation Above Phylogenetic Expectation
+/* R-scape -- RNA Structural Covariation Above Phylogenetic Expectation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -230,7 +230,7 @@ static ESL_OPTIONS options[] = {
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
-static char banner[] = "R-scape - RNA Structure-driven Covariation Above Phylogenetic Expectation";
+static char banner[] = "R-scape - RNA Structural Covariation Above Phylogenetic Expectation";
 
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);

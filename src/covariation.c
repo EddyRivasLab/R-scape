@@ -2478,7 +2478,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     if (status != eslOK) goto ERROR;
   }
   linespoints = TRUE; 
-#if 1
+#if 0
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
 #endif
