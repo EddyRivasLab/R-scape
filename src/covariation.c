@@ -54,7 +54,7 @@ static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double exps
 				    double ymin, double ymax, char *key, double offx, double offy, int style);
 
 int                 
-cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analize)
+cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analyze)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
@@ -72,129 +72,129 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case CHIa: 
     status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case CHIp:
     status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case CHI: 
-    status = cov_CalculateCHI         (covclass, data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCHI         (covclass, data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;     
     break;
   case GTa: 
     status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case GTp: 
     status = cov_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
      if (status != eslOK) goto ERROR; 
      break;
   case GT: 
-     status = cov_CalculateGT          (covclass, data, analize, &ranklist, &hitlist);
+     status = cov_CalculateGT          (covclass, data, analyze, &ranklist, &hitlist);
      if (status != eslOK) goto ERROR;
      break;
   case MIa: 
     status = cov_CalculateMI          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIp: 
     status = cov_CalculateMI          (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MI: 
-    status = cov_CalculateMI          (covclass, data, analize, &ranklist, &hitlist);
+    status = cov_CalculateMI          (covclass, data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case MIra: 
     status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIrp:
     status = cov_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case MIr: 
-    status = cov_CalculateMIr         (covclass, data, analize, &ranklist, &hitlist);
+    status = cov_CalculateMIr         (covclass, data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case MIga: 
     status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case MIgp:
     status = cov_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;  
     break;
   case MIg: 
-    status = cov_CalculateMIg          (covclass, data, analize, &ranklist, &hitlist);
+    status = cov_CalculateMIg          (covclass, data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case OMESa: 
     status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESp: 
     status = cov_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case OMES: 
-    status = cov_CalculateOMES        (covclass, data, analize, &ranklist, &hitlist);
+    status = cov_CalculateOMES        (covclass, data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
  case RAFa: 
    status = cov_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFp: 
     status = cov_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case RAF:
-    status = cov_CalculateRAF         (covclass, data, msa, analize, &ranklist, &hitlist);
+    status = cov_CalculateRAF         (covclass, data, msa, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   case RAFSa: 
     status = cov_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(ASC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFSp: 
     status = cov_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = cov_CalculateCOVCorrected(APC,      data, analize, &ranklist, &hitlist);
+    status = cov_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFS: 
-    status = cov_CalculateRAFS        (covclass, data, msa, analize, &ranklist, &hitlist);
+    status = cov_CalculateRAFS        (covclass, data, msa, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
   default:
@@ -2478,7 +2478,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     if (status != eslOK) goto ERROR;
   }
   linespoints = TRUE; 
-#if 0
+#if 1
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
 #endif
