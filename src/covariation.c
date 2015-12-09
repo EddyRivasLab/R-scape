@@ -1516,11 +1516,11 @@ cov_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf)
     esl_vec_DSet(mi->pm[i], K, 0.0);
 
     for (j = 0; j < mi->alen; j ++)     
-      for (x = 0; x < K; x ++) 
-	for (y = 0; y < K; y ++) 
-	  mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
+      for (x = 0; x < K; x ++) {
+	for (y = 0; y < K; y ++) mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
+      }
 
-    // it should be normalized, but just in case
+    // normalized
     esl_vec_DNorm(mi->pm[i], K);              
   
     status = esl_vec_DValidate(mi->pm[i], K, tol, errbuf);
@@ -3219,22 +3219,22 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
       mi->nseff[i][j] ++; 
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
+#if 0
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { 
       mi->nseff[i][j] ++; 
       mi->ngap[i][j]  ++; 
-      for (y = 0; y < K; y ++) mi->pp[i][j][IDX(resi,y,K)] += msa->wgt[s]/(double)K; 
+      for (y = 0; y < K; y ++) mi->pp[i][j][IDX(resi,y,K)] += msa->wgt[s] / (double)K; 
     }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { 
       mi->nseff[i][j] ++; 
       mi->ngap[i][j]  ++; 
-      for (x = 0; x < K; x ++) mi->pp[i][j][IDX(x,resj,K)] += msa->wgt[s]/(double)K; 
+      for (x = 0; x < K; x ++) mi->pp[i][j][IDX(x,resj,K)] += msa->wgt[s] / (double)K; 
     }
-#if 0
     else { 
       mi->nseff[i][j] ++; 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) 
-	  mi->pp[i][j][IDX(x,y,K)] += msa->wgt[s]/(double)K2;
+	  mi->pp[i][j][IDX(x,y,K)] += msa->wgt[s] / (double)K2;
     }
 #endif
   }
