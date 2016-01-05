@@ -59,6 +59,8 @@ sub gnuplot_N_histo {
     print GP "set xlabel '$xlabel'\n";
     print GP "set xrange [$xleft:$xright]\n";
     print GP "set yrange [0:$ymax]\n";
+    print GP "set style histogram cluster gap 1\n";
+    print GP "set style fill solid noborder \n";
 
     #print GP "set title \"$title\\n\\n$key\"\n";
     print GP "set title '$title'\n";

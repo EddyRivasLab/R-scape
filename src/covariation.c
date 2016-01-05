@@ -397,8 +397,8 @@ cov_CalculateCHI_C16(struct mutual_s *mi, int verbose, char *errbuf)
 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
-	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
+	  exp = mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
+	  obs = mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  chi += (exp > 0.)? (obs-exp) * (obs-exp) / exp : 0.0 ;
 	}	  
       
@@ -444,10 +444,10 @@ cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}	  
       
-      exp_wc  = (double)mi->nseff[i][j] * qij_wc;
-      exp_nwc = (double)mi->nseff[i][j] * qij_nwc;
-      obs_wc  = (double)mi->nseff[i][j] * pij_wc;
-      obs_nwc = (double)mi->nseff[i][j] * pij_nwc;
+      exp_wc  = mi->nseff[i][j] * qij_wc;
+      exp_nwc = mi->nseff[i][j] * qij_nwc;
+      obs_wc  = mi->nseff[i][j] * pij_wc;
+      obs_nwc = mi->nseff[i][j] * pij_nwc;
 
       chi += (exp_wc  > 0.)? (obs_wc -exp_wc)  * (obs_wc -exp_wc)  / exp_wc  : 0.0 ;
       chi += (exp_nwc > 0.)? (obs_nwc-exp_nwc) * (obs_nwc-exp_nwc) / exp_nwc : 0.0 ;
@@ -523,9 +523,9 @@ cov_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf)
       omes  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
-	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
-	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / (double)mi->nseff[i][j] : 0.0;
+	  exp = mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
+	  obs = mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
+	  omes += (exp > 0.)? (obs-exp) * (obs-exp) / mi->nseff[i][j] : 0.0;
 	}	  
       
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = omes;
@@ -570,13 +570,13 @@ cov_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}	  
       
-      exp_wc  = (double)mi->nseff[i][j] * qij_wc;
-      exp_nwc = (double)mi->nseff[i][j] * qij_nwc;
-      obs_wc  = (double)mi->nseff[i][j] * pij_wc;
-      obs_nwc = (double)mi->nseff[i][j] * pij_nwc;
+      exp_wc  = mi->nseff[i][j] * qij_wc;
+      exp_nwc = mi->nseff[i][j] * qij_nwc;
+      obs_wc  = mi->nseff[i][j] * pij_wc;
+      obs_nwc = mi->nseff[i][j] * pij_nwc;
 
-      omes += (exp_wc  > 0.)? (obs_wc -exp_wc)  * (obs_wc -exp_wc)  / (double)mi->nseff[i][j] : 0.0;
-      omes += (exp_nwc > 0.)? (obs_nwc-exp_nwc) * (obs_nwc-exp_nwc) / (double)mi->nseff[i][j] : 0.0;
+      omes += (exp_wc  > 0.)? (obs_wc -exp_wc)  * (obs_wc -exp_wc)  / mi->nseff[i][j] : 0.0;
+      omes += (exp_nwc > 0.)? (obs_nwc-exp_nwc) * (obs_nwc-exp_nwc) / mi->nseff[i][j] : 0.0;
 
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = omes;
       if (omes < mi->minCOV) mi->minCOV = omes;
@@ -597,14 +597,14 @@ cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
  
   switch (covclass) {
   case C16:
-    status = cov_CalculateGT_C16  (mi, verbose, errbuf);
+    status = cov_CalculateGT_C16 (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateGT_C2   (mi, verbose, errbuf);
+    status = cov_CalculateGT_C2  (mi, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh) {
-      status = cov_CalculateGT_C2 (mi, verbose, errbuf);
+      status = cov_CalculateGT_C2(mi, verbose, errbuf);
     }
     else {
       status = cov_CalculateGT_C16(mi, verbose, errbuf);
@@ -613,10 +613,10 @@ cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
   }
   
   if (verbose) {
-    printf("GT[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    printf("GTrange[%f,%f] clase %d\n", mi->minCOV, mi->maxCOV, covclass);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("GT[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	if (data->msamap[i]==15&&data->msamap[j]==70) printf("GT[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
   
@@ -651,8 +651,8 @@ cov_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
       gt  = 0.0;
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  exp = (double)mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
-	  obs = (double)mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
+	  exp = mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
+	  obs = mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  gt += (exp > 0. && obs > 0.) ? obs * log (obs / exp) : 0.0;
 	}	  
       gt *= 2.0;
@@ -699,10 +699,10 @@ cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
 	  }
 	}
 
-      exp_wc  = (double)mi->nseff[i][j] * qij_wc;
-      exp_nwc = (double)mi->nseff[i][j] * qij_nwc;
-      obs_wc  = (double)mi->nseff[i][j] * pij_wc;
-      obs_nwc = (double)mi->nseff[i][j] * pij_nwc;
+      exp_wc  = mi->nseff[i][j] * qij_wc;
+      exp_nwc = mi->nseff[i][j] * qij_nwc;
+      obs_wc  = mi->nseff[i][j] * pij_wc;
+      obs_nwc = mi->nseff[i][j] * pij_nwc;
       
       gt += (exp_wc  > 0. && obs_wc  > 0.) ? obs_wc  * log (obs_wc  / exp_wc)  : 0.0;
       gt += (exp_nwc > 0. && obs_nwc > 0.) ? obs_nwc * log (obs_nwc / exp_nwc) : 0.0;
@@ -1023,7 +1023,7 @@ cov_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
 	}
 	  
       /* the negative correction of gaps */
-      mutinf -= (mi->nseff[i][j] > 0)? (double)mi->ngap[i][j] / (double)mi->nseff[i][j] : 0.0;
+      mutinf -= (mi->nseff[i][j] > 0)? mi->ngap[i][j] / mi->nseff[i][j] : 0.0;
 
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
@@ -1069,7 +1069,7 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
       mutinf += (pij_nwc > 0.0)? pij_nwc * ( log(pij_nwc) - log(qij_nwc) ) : 0.0;
       
       /* the negative correction of gaps */
-      mutinf -= (mi->nseff[i][j] > 0)? (double)mi->ngap[i][j] / (double)mi->nseff[i][j] : 0.0;
+      mutinf -= (mi->nseff[i][j] > 0)? mi->ngap[i][j] / mi->nseff[i][j] : 0.0;
 
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = mutinf;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
@@ -1404,13 +1404,13 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenth
   mi->abc        = abc;
 
   ESL_ALLOC(mi->pp,                  sizeof(double **) * alen);
-  ESL_ALLOC(mi->nseff,               sizeof(int     *) * alen);
-  ESL_ALLOC(mi->ngap,                sizeof(int     *) * alen);
+  ESL_ALLOC(mi->nseff,               sizeof(double  *) * alen);
+  ESL_ALLOC(mi->ngap,                sizeof(double  *) * alen);
   ESL_ALLOC(mi->pm,                  sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
     ESL_ALLOC(mi->pp[i],             sizeof(double  *) * alen);
-    ESL_ALLOC(mi->nseff[i],          sizeof(int      ) * alen);
-    ESL_ALLOC(mi->ngap[i],           sizeof(int      ) * alen);
+    ESL_ALLOC(mi->nseff[i],          sizeof(double   ) * alen);
+    ESL_ALLOC(mi->ngap[i],           sizeof(double   ) * alen);
     ESL_ALLOC(mi->pm[i],             sizeof(double   ) * K);
     for (j = 0; j < alen; j++) {
        ESL_ALLOC(mi->pp[i][j],       sizeof(double  ) * K2);
@@ -1424,8 +1424,8 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenth
     esl_vec_DSet(mi->pm[i], K, 0.0); 
  
     for (j = 0; j < alen; j++) {
-      mi->nseff[i][j] = 0;
-      mi->ngap[i][j]  = 0;
+      mi->nseff[i][j] = 0.;
+      mi->ngap[i][j]  = 0.;
       esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
     }
   }
@@ -3194,7 +3194,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     status;
 
   esl_vec_DSet(mi->pp[i][j], K2, 1e-5); //some prior to avoid zeros
-  mi->nseff[i][j] = 0;
+  mi->nseff[i][j] = 0.;
 
   ESL_ALLOC(coli, sizeof(int)*msa->nseq);
   ESL_ALLOC(colj, sizeof(int)*msa->nseq);
@@ -3216,22 +3216,24 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     resj = (donull2b)? shcolj[s] : colj[s];
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { 
-      mi->nseff[i][j] ++; 
+      mi->nseff[i][j] += 1.0; 
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
 #if 0
     else if (esl_abc_XIsCanonical(msa->abc, resi)) { 
-      mi->nseff[i][j] ++; 
-      mi->ngap[i][j]  ++; 
+      mi->nseff[i][j] +=  msa->wgt[s]; 
+      mi->ngap[i][j]  +=  msa->wgt[s]; 
       for (y = 0; y < K; y ++) mi->pp[i][j][IDX(resi,y,K)] += msa->wgt[s] / (double)K; 
     }
     else if (esl_abc_XIsCanonical(msa->abc, resj)) { 
-      mi->nseff[i][j] ++; 
-      mi->ngap[i][j]  ++; 
+      mi->nseff[i][j] += msa->wgt[s]; 
+      mi->ngap[i][j]  += msa->wgt[s]; 
       for (x = 0; x < K; x ++) mi->pp[i][j][IDX(x,resj,K)] += msa->wgt[s] / (double)K; 
     }
+#endif
+#if 0
     else { 
-      mi->nseff[i][j] ++; 
+      mi->nseff[i][j] += 1.0; 
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) 
 	  mi->pp[i][j][IDX(x,y,K)] += msa->wgt[s] / (double)K2;

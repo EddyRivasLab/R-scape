@@ -84,8 +84,8 @@ struct mutual_s {
   int64_t         nseq;
   double       ***pp;          // joint probability of two position [0,alen-1][0.alen-1][0..15]
   double        **pm;          // marginal probabilities [0,alen-1][0..3]
-  int           **nseff;       // effective number of sequences  [0,alen-1][0,alen-1]
-  int           **ngap;        // number of gaps  [0,alen-1][0,alen-1]
+  double        **nseff;       // effective number of sequences  [0,alen-1][0,alen-1]
+  double        **ngap;        // number of gaps  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
   COVCLASS        class;

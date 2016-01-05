@@ -16,7 +16,7 @@ getopts ('a:A:cCeE:fgiK:N:st:T:u:vV');
 if (!@ARGV) {
         print "usage:  simR-scape.pl [options] <msafile> \n\n";
         print "options:\n";
- 	print "-a <x>    : set abl to <x>\n";
+ 	print "-a <x>    : set abl  to <x>\n";
  	print "-A <x>    : set atbl to <x> \n";
  	print "-c        : C2  type\n";
  	print "-C        : C16 type\n";
@@ -40,6 +40,7 @@ my $msaname = "$omsafile"; if ($msaname =~ /([^\/]+).sto$/) { $msaname = $1; }
 
 #programs
 my $rscape     = "~/src/src/mysource/src/R-scape";
+
 my $rscape_sim = "~/src/src/mysource/src/R-scape-sim";
 
 # options for R-scape-sim

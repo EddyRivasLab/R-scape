@@ -95,7 +95,7 @@ static ESL_OPTIONS options[] = {
   /* parameters to control the simulation */
   { "-N",              eslARG_INT,       "40",   NULL,      "n>1",   NULL,    NULL,  NULL,               "number of sequences in the simulated msa",                                                  0 }, 
   { "--abl",           eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
-  { "--atbl",          eslARG_REAL,    "0.60",   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
+  { "--atbl",          eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noss",          eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
   { "--noindels",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
   { "--eqbranch",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make all branch lengths equal size",                                                              0 }, 
@@ -201,8 +201,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean  (go, "--rand"))  cfg.treetype = RAND; 
 
   cfg.usesq       = esl_opt_IsOn(go, "--usesq")? esl_opt_GetInteger(go, "--usesq") : -1.0;
-  cfg.target_atbl = esl_opt_GetReal(go, "--atbl");
-  cfg.target_abl  = esl_opt_IsOn(go, "--abl")?  esl_opt_GetReal(go, "--abl")  : -1.0;
+  cfg.target_atbl = esl_opt_IsOn(go, "--atbl")?  esl_opt_GetReal(go, "--atbl")     : -1.0;
+  cfg.target_abl  = esl_opt_IsOn(go, "--abl")?   esl_opt_GetReal(go, "--abl")      : -1.0;
   cfg.abl  = -1.0;
   cfg.atbl = -1.0;
   
@@ -515,16 +515,31 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  char *msg = "bad tree";
-  int   status;
+  char   *msg = "bad tree";
+  double  atbl;
+  int     status;
   
   /* the TREE */
-  if (cfg->treetype == RAND || cfg->treetype == STAR) { // sequences are independent or sequences are independent but derived form a common ancestor
-    cfg->T = NULL;
-    cfg->atbl = cfg->target_atbl;
+  if (cfg->treetype == RAND) { // sequences are independent
+    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
+    else { 
+      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+      esl_tree_Destroy(cfg->T); cfg->T = NULL;
+    }
+  }
+  if (cfg->treetype == STAR) { // sequences are independent but derived form a common ancestor
+    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
+    else { 
+      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+      esl_tree_Destroy(cfg->T); cfg->T = NULL;
+    }
   }
   else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
-    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
     if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
   }
   else if (cfg->treetype == SIM) {  // generate random ultrametric tree T
@@ -535,12 +550,16 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* scale the tree */
   if (cfg->T) {
+
+    Tree_GetNodeTime(0, cfg->T, &atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+
     if (cfg->eqbranch) { if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg); }
 
     if (cfg->target_abl > 0) {
       if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     else if (cfg->target_atbl > 0) {
+      printf("Tree re-scaled from %f to atbl=%f\n", atbl, cfg->target_atbl);
       if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     
