@@ -50,6 +50,8 @@ static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, char *key,
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, 
 					   int linespoints, int style1, int style2);
+static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, int subsample, 
+				   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h,
 				    double ymin, double ymax, char *key, double offx, double offy, int style);
 
@@ -2225,7 +2227,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int min
 }
 
 int 
-cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *nullcovhisfile, RANKLIST *ranklist, char *title)
+cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, char *nullcovhisfile, RANKLIST *ranklist, char *title)
 {
   FILE     *fp = NULL;
   RANKLIST *ranklist_null = data->ranklist_null;
@@ -2246,9 +2248,18 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *n
   }
 
   status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE);
+  if (status != eslOK) goto ERROR;
   status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE);
   if (status != eslOK) goto ERROR;
 
+#if 0
+  // the qq plots. Not as useful as the histogram plots above. 
+  // commented to avoid extra time
+  status = cov_PlotHistogramQQ(data, gnuplot, covqqfile, ranklist, title, FALSE);
+  if (status != eslOK) goto ERROR;
+  status = cov_PlotHistogramQQ(data, gnuplot, covqqfile, ranklist, title, TRUE);
+  if (status != eslOK) goto ERROR;
+#endif
   return eslOK;
 
  ERROR:
@@ -2423,7 +2434,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
   // the ymax and xmax values
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-  ymax = 100.;
+  ymax = 50.;
   cov = xmax;
   eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
   en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
@@ -2587,6 +2598,128 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   if (key2) free(key2);
   if (key3) free(key3);
   if (key4) free(key4);
+  if (outplot) free(outplot);
+  if (filename) free(filename);
+  return status;
+}
+
+int 
+cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg)
+{
+  FILE     *pipe;
+  RANKLIST *ranklist_null = data->ranklist_null;
+  char     *filename = NULL;
+  char     *outplot = NULL;
+  char     *key1 = NULL;
+  char     *key2 = NULL;
+  double    minphi;
+  double    minmass = 0.005;
+  int       pointype;
+  double    pointintbox;
+  int       linew;
+  double    pointsize;
+  double    min, max;
+  double    en, eo;
+  double    cov;
+  int       subsample;
+  int       linespoints = TRUE;
+  double    tol = 0.01;
+  int       status;
+
+  if (gnuplot    == NULL) return eslOK;
+  if (covhisfile == NULL) return eslOK;
+  if (ranklist   == NULL) return eslOK;
+
+  esl_FileTail(covhisfile, FALSE, &filename);
+
+  esl_sprintf(&key1, "all pairs");
+  esl_sprintf(&key2, "not base pairs");
+
+  /* for plotting */
+  esl_histogram_SetTailByMass(ranklist->ha, minmass, NULL);
+  minphi = ranklist->ha->phi; 
+ 
+  /* do the plotting */
+  pipe = popen(gnuplot, "w");
+  if (dosvg) {
+    esl_sprintf(&outplot, "%s.svg", covhisfile);
+    fprintf(pipe, "set terminal svg dynamic fname 'Arial' fsize 12 \n");
+    pointype    = 71;
+    pointsize   = 0.6;
+    pointintbox = 0.4;
+    linew       = 1;
+  }
+  else {
+    esl_sprintf(&outplot, "%s.ps", covhisfile);
+    fprintf(pipe, "set terminal postscript color 14\n");
+    pointype    = 65;
+    pointsize   = 0.7;
+    pointintbox = 1.0;
+    linew       = 2;
+  }
+
+  fprintf(pipe, "set output '%s'\n", outplot);
+  fprintf(pipe, "set title '%s' \n", title);
+
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'grey'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red'       pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange'    pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 8   lt 1 lc rgb 'green'     pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 9   lt 1 lc rgb 'blue'      pt 7 lw %d ps %f\n", linew, pointsize);
+  fprintf(pipe, "set style line 11  lt 1 lc rgb 'grey'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 22  lt 1 lc rgb 'brown'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 33  lt 1 lc rgb 'cyan'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 44  lt 1 lc rgb 'red'       pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 55  lt 1 lc rgb 'orange'    pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 66  lt 1 lc rgb 'turquoise' pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 77  lt 1 lc rgb 'black'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 88  lt 1 lc rgb 'green'     pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+  fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
+
+  // plot qq
+  fprintf(pipe, "set multiplot\n");  
+  fprintf(pipe, "set ylabel 'Observed #pairs'\n");
+  fprintf(pipe, "set xlabel 'Expected #pairs (E-value)'\n");
+
+  // the max values
+  max = 50.;
+  cov = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
+  eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
+  en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
+
+  fprintf(pipe, "set logscale x\n");
+  //fprintf(pipe, "set logscale y\n");
+  fprintf(pipe, "set yrange [%g:%f]\n", 0.0, max);
+  fprintf(pipe, "set xrange [%g:%f]\n", en, 2.0*max);
+
+  subsample = (int)(0.5*ranklist_null->ha->Nc/ranklist->ha->Nc);
+  if (subsample < 1) subsample = 1;
+  subsample = 1;
+
+  fprintf(pipe, "plot x title 'exp=obs' ls 77\n");
+  if (ranklist_null) {
+    status = cov_histogram_plotqq(pipe, data, ranklist->ha, ranklist_null->ha, key1, FALSE, subsample, linespoints, 99, 2);
+    if (status != eslOK) goto ERROR;
+#if 1
+    status = cov_histogram_plotqq(pipe, data, ranklist->ht, ranklist_null->ha, key2, FALSE, 1, linespoints, 44, 2);
+    if (status != eslOK) goto ERROR;
+#endif
+  }
+  pclose(pipe);
+  
+  free(key1);
+  free(key2);
+  free(outplot);
+  free(filename);
+  return eslOK;
+
+ ERROR:
+  if (key1) free(key1);
+  if (key2) free(key2);
   if (outplot) free(outplot);
   if (filename) free(filename);
   return status;
@@ -3737,6 +3870,38 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx,
       fprintf(pipe, "e\n"); 
     }
   
+  return eslOK;
+}
+
+static int
+cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, int subsample, int linespoints, int style1, int style2)
+{
+  int       i;
+  uint64_t  c = 0;
+  double    eval = 0.;
+  double    ai;
+ 
+  /* The observed binned counts:
+   */
+  fprintf(pipe, "set size 1,1\n");
+  fprintf(pipe, "set origin 0,0\n");
+  fprintf(pipe, "plot '-' using 1:2 title '%s' with linespoints ls %d \n", key, style1);
+
+  for (i = h1->imax; i >= h1->imin; i--)
+    {
+      c += h1->obs[i];
+  
+      if (h1->obs[i] > 0 && (i-h1->imin)%subsample == 0) {
+	ai = esl_histogram_Bin2LBound(h1, i);
+	eval = cov2evalue(data, ai, h1->Nc, h2);
+	if (fprintf(pipe, "%g\t%g\n", 
+		    (logval)? log(eval)      : eval,
+		    (logval)? log((double)c) : (double)c) < 0) 
+	  ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+     }
+    }
+  fprintf(pipe, "e\n");
+   
   return eslOK;
 }
 

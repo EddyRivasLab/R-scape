@@ -87,6 +87,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   
   char            *covhisfile;
   char            *cykcovhisfile;
+  char            *covqqfile;
+  char            *cykcovqqfile;
   char            *nullcovhisfile;
   char            *cyknullcovhisfile;
 
@@ -453,6 +455,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.covhisfile    = NULL;
   cfg.cykcovhisfile = NULL;
   
+  /* covqq file */
+  cfg.covqqfile    = NULL;
+  cfg.cykcovqqfile = NULL;
+  
   /* nullcovhis file */
   cfg.nullcovhisfile    = NULL;
   cfg.cyknullcovhisfile = NULL;
@@ -811,6 +817,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->covhisfile,    "%s/%s.his",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.his", cfg->outdir, cfg->msaname);
     
+   /* covqq file */
+    esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykcovqqfile, "%s/%s.cyk.qq", cfg->outdir, cfg->msaname);
+    
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
@@ -822,6 +832,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s.his",     cfg->msaname);
     esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.his", cfg->msaname);
+    
+    /* covqq file */
+    esl_sprintf(&cfg->covqqfile,    "%s.qq",     cfg->msaname);
+    esl_sprintf(&cfg->cykcovqqfile, "%s.cyk.qq", cfg->msaname);
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
@@ -890,8 +904,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   
   if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->covqqfile)  free(cfg->covqqfile); 
   if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
+  if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
   if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
@@ -908,8 +924,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->covqqfile)  free(cfg->covqqfile); 
   if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
+  if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
   if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
@@ -1093,7 +1111,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->nullcovhisfile, ranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->nullcovhisfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
   
@@ -1108,7 +1126,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cyknullcovhisfile, cykranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cfg->cyknullcovhisfile, cykranklist, title);
     if (status != eslOK) goto ERROR; 
   }
  
