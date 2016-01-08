@@ -173,7 +173,7 @@ static ESL_OPTIONS options[] = {
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
-  { "--nshuffle",      eslARG_INT,       "20",   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
   { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bpaired_columns and nonbpaired_columns independently",                      0 },
   { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle residues within a column",                                                  0 },
@@ -241,12 +241,12 @@ static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null2_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null2b_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null2_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null2b_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 
 /* process_commandline()
@@ -323,7 +323,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else { cfg.submsa = 0; }
     
   /* other options */
-  cfg.nshuffle    = esl_opt_GetInteger(go, "--nshuffle");
+  cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.alenthresh  = esl_opt_GetInteger(go, "--alenthresh");
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : -1.0;
@@ -791,6 +791,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
+  int       nshuffle;
   int       analyze;
   int       status;
   
@@ -858,36 +859,44 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (1||cfg->verbose) 
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  
+  nshuffle = cfg->nshuffle;
+  if (nshuffle < 0) {
+    nshuffle = 20;
+    if (msa->nseq*msa->alen < 1e4) nshuffle = 50;
+    if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
+  }
+  //printf("NSHUFFLE %d\ | nseq %d alen %d %d\n", nshuffle, msa->nseq, msa->alen, msa->nseq*msa->alen);
 
   /* the null model first */
   cfg->mode = RANSS;
   if (cfg->nulltype == Null1) {
-    status = null1_rscape(go, cfg, msa, &ranklist_null);
+    status = null1_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1 rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null1b) {
-    status = null1b_rscape(go, cfg, msa, &ranklist_null);
+    status = null1b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1b rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null2) {
-    status = null2_rscape(go, cfg, msa, &ranklist_null);
+    status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null2b) {
     cfg->nulltype = Null2;
-    status = null2_rscape(go, cfg, msa, &ranklist_aux);
+    status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_aux);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
     cfg->nulltype = Null2b;
-    status = null2b_rscape(go, cfg, msa, &ranklist_null);
+    status = null2b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2b rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null3) {
-    status = null3_rscape(go, cfg, msa, &ranklist_null);
+    status = null3_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rscape", cfg->errbuf);
   }
   else if (cfg->nulltype == Null4) {
     cfg->nulltype = Null4;
-    status = null4_rscape(go, cfg, msa, &ranklist_null);
+    status = null4_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
   }
   
@@ -1149,7 +1158,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
 /* shuffle all the alignment columns, leave the ss intact */
 static int
-null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
@@ -1163,7 +1172,7 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   ESL_ALLOC(useme, sizeof(int) * msa->alen);
   for (n = 0; n < msa->alen; n ++) useme[n] = TRUE;
 
-  for (s = 0; s < cfg->nshuffle; s ++) {
+  for (s = 0; s < nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
 
     if (s == 0) {
@@ -1205,7 +1214,7 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
 /* shuffle the paired alignment columns and the unpaired columns independently, leave the ss intact */
 static int
-null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
@@ -1222,7 +1231,7 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
 
-  for (s = 0; s < cfg->nshuffle; s ++) {
+  for (s = 0; s < nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
 
@@ -1266,7 +1275,7 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
 
 /* shuffle residues within each column */
 static int
-null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
@@ -1274,7 +1283,7 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   int       s;
   int       status;
 
-   for (s = 0; s < cfg->nshuffle; s ++) {
+   for (s = 0; s < nshuffle; s ++) {
      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
 
      if (s == 0) {
@@ -1317,7 +1326,7 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
  * a partner in column j (i) forming a canonical pair.
  */
 static int
-null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
@@ -1329,7 +1338,7 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
    * shuffling needs to be done on the spot.
    * We make a copy of the original msa anyway.
    */
-   for (s = 0; s < cfg->nshuffle; s ++) {
+   for (s = 0; s < nshuffle; s ++) {
      shmsa = esl_msa_Clone(msa);
 
      if (s == 0) {
@@ -1369,7 +1378,7 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
 
 /* mull1(b) + null2 */
 static int
-null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *shmsa = NULL;
   RANKLIST  *cumranklist = NULL;
@@ -1386,7 +1395,7 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
   for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
 
-  for (s = 0; s < cfg->nshuffle; s ++) {
+  for (s = 0; s < nshuffle; s ++) {
     msamanip_ShuffleColumns     (cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
@@ -1431,7 +1440,7 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
 
 /* use a tree to generate residues independently for each alignment column */
 static int
-null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *allmsa = NULL;
   ESL_MSA   *shmsa = NULL;
@@ -1458,7 +1467,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cu
     printf("fitch sc %d\n", sc);
   }
 
-  for (s = 0; s < cfg->nshuffle; s ++) {
+  for (s = 0; s < nshuffle; s ++) {
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     

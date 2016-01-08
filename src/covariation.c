@@ -2260,6 +2260,7 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
   status = cov_PlotHistogramQQ(data, gnuplot, covqqfile, ranklist, title, TRUE);
   if (status != eslOK) goto ERROR;
 #endif
+
   return eslOK;
 
  ERROR:
@@ -2450,6 +2451,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
   // the ymin and xmin values
   ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
+  ymin = 1e-6;
   xmin = ESL_MIN(evalue2cov(data, ymax, ranklist->ha->Nc, ranklist->ha), evalue2cov(data, ymax, ranklist->ha->Nc, ranklist_null->ha));
 
   incx = (xmax-xmin)/12.;
@@ -2467,7 +2469,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   posy = ymax - 8*incy;
   offx = incx * 1/2;
   offy = incy * 16;
-  expsurv = 0.00001;
+
+  expsurv = 1e-5;
   cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 1e-5", offx, offy, 1);
   
   expsurv = 1.0;
@@ -2482,7 +2485,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     linespoints = FALSE;
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
     if (status != eslOK) goto ERROR;
-}
+  }
   if (ranklist_aux) {
     linespoints = FALSE;
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, linespoints, 11, 7);
@@ -3689,10 +3692,12 @@ cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop)
 static double
 cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
 {
-  double eval;
+  double eval = +eslINFINITY;
+  double expect = 0.0;
   int    c = 0;
   int    icov;
   int    i;
+  int    b;
   
   esl_histogram_Score2Bin(h, cov, &icov);
 
@@ -3700,7 +3705,7 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
   if (icov <= h->imax) {
 
     if (icov < h->imin) icov = h->imin;
-    if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc / (double)h->Nc;
+    if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc;
     
     for (i = h->imax; i >= icov; i--) c += h->obs[i];
     eval = (double)c * (double)Nc / (double)h->Nc;
@@ -3708,13 +3713,10 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
   }
 
   /* otherwise use the fit */
-  if (data->doexpfit) {
-    eval = (data->lambda < eslINFINITY)? data->pmass * esl_exp_surv(cov, data->mu, data->lambda) * (double)Nc / (double)h->Nc : eslINFINITY;
+  if (h->expect) {  
+    for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
+    eval = expect * (double)Nc / (double)h->Nc;
   }
-  else {
-    eval = (data->lambda < eslINFINITY)? data->pmass * esl_gam_surv(cov, data->mu, data->lambda, data->tau) * (double)Nc / (double)h->Nc: eslINFINITY;
-  }
-  
   return eval;
 }
  
@@ -3722,11 +3724,14 @@ static double
 evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
 {
   double cov = -eslINFINITY;
-  double p  = (eval*(double)h->Nc)/((double)Nc*data->pmass);
+  double p;
+  double val;
+  double exp = 0.0;
   int    c = 0;
   int    i;
+  int    b;
   int    maxit = 100;
-  int    it;
+  int    it = 0;
   
   /* use the sampled distribution if possible */
   if (eval >= (double)Nc / (double)h->Nc) {
@@ -3736,23 +3741,19 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
       if ((double)c * (double)Nc / (double)h->Nc > eval) break;
     }    
     cov = esl_histogram_Bin2UBound(h, i+1); 
-
+    
     return cov;
   }
 
   /* otherwise use the fit */
-  if (data->doexpfit) cov = esl_exp_invsurv(p, data->mu, data->lambda);
-  else { // approximate the (not implemented) esl_gam_invsurv()
-    cov = esl_histogram_Bin2UBound(h, h->imax);
-    while (it < maxit) {
-      it ++;
-      if      (Nc*esl_gam_surv(cov, data->mu, data->lambda, data->tau) - Nc*eval > data->tol) cov += 0.1;   
-      else if (Nc*eval - Nc*esl_gam_surv(cov, data->mu, data->lambda, data->tau) > data->tol) cov -= 0.1;   
-      else break;
-    }
-    if (it == maxit) return -eslINFINITY;
+  if (h->expect) {
+    for (b = h->nb-1; b >= 0; b--) {
+      exp += h->expect[b];
+      if (exp * (double)Nc / (double)h->Nc > eval) break;
+    }    
+    cov = esl_histogram_Bin2LBound(h, b+1); 
   }
-  
+ 
   return cov;
 }
 
@@ -3916,7 +3917,8 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, do
  
   /* The observed binned counts:
    */
-  fprintf(pipe, "set size 1,1\n");
+ double cov = -eslINFINITY;
+   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
