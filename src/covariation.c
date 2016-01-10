@@ -46,6 +46,7 @@ static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, str
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static double cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h);
 static double evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h);
+static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, int target_nfit);
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, 
@@ -1651,8 +1652,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
     
     /* censor the histogram and do an exponential fit to the tail */
-    if (!usenull) pmass = (data->Nfit < ranklist->ht->Nc)?            (double)data->Nfit/(double)data->ranklist_null->ha->Nc : data->pmass;
-    else          pmass = (data->Nfit < data->ranklist_null->ha->Nc)? (double)data->Nfit/(double)data->ranklist_null->ha->Nc : data->pmass;
+    pmass = cov_histogram_pmass((!usenull)? ranklist->ht : data->ranklist_null->ha, data->pmass, data->Nfit);
     if (data->doexpfit) {
       if (!usenull) status = cov_NullFitExponential(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       else          status = cov_NullFitExponential(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
@@ -1669,7 +1669,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     else { // a gamma fit
       if (!usenull) status = cov_NullFitGamma(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
       else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
-      if (status != eslOK) goto ERROR;
+     if (status != eslOK) goto ERROR;
      if (1||data->verbose) {
 	if (!usenull) 
 	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
@@ -2317,10 +2317,10 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *re
   status = esl_histogram_SetTailByMass(h, pmass, &newmass);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set TailByMass");
 
-  /* chi-square fit to tail */
+  /* Gamma fit to tail */
   status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
-  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do chi-square fit");
-  if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f\n", ep[0], ep[1], ep[2]);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do a Gamma fit");
+  if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
 
   /* add the expected data to the histogram */
   if (ep[1] < eslINFINITY) {  
@@ -3757,6 +3757,27 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
   return cov;
 }
 
+static double
+cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, int target_nfit)
+{
+  int       i;
+  int       nfit = 0;
+  uint64_t  c = 0;
+  double    pmass;
+
+  for (i = h->imax; i >= h->imin; i--)
+    {
+      c += h->obs[i];
+      if (h->obs[i] > 0) {
+	nfit ++;
+	pmass = (double)c / (double)h->Nc;
+	if (nfit > target_nfit || pmass > target_pmass) break;
+      }
+    }
+
+  return pmass;
+}
+
 
 static int
 cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, char *key, double posx, double posy, int logval, int subsample, int style1, int style2)
@@ -3917,8 +3938,8 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, do
  
   /* The observed binned counts:
    */
- double cov = -eslINFINITY;
-   fprintf(pipe, "set size 1,1\n");
+  double cov = -eslINFINITY;
+  fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
