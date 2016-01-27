@@ -93,7 +93,7 @@ static ESL_OPTIONS options[] = {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* parameters to control the simulation */
-  { "-N",              eslARG_INT,       "40",   NULL,      "n>1",   NULL,    NULL,  NULL,               "number of sequences in the simulated msa",                                                  0 }, 
+  { "-N",              eslARG_INT,       "40",   NULL,      "n>=0",  NULL,    NULL,  NULL,               "number of sequences in the simulated msa, N=0 for use all",                                 0 }, 
   { "--abl",           eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
   { "--atbl",          eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noss",          eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "assume unstructured, even if msa has a given ss_cons",                                      0 }, 
@@ -336,7 +336,7 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
     
-    if (cfg.N < msa->nseq && cfg.treetype == GIVEN) {
+    if (cfg.N > 0 && cfg.N < msa->nseq && cfg.treetype == GIVEN) {
       status = msamanip_SelectSubset(cfg.r, cfg.N, &msa, NULL, cfg.errbuf, cfg.verbose);
       if (status != eslOK) {
 	printf("%s\n", cfg.errbuf);              
