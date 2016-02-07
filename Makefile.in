@@ -54,7 +54,6 @@ LFLAGS   = -Lsrc -Llib/hmmer/src -Llib/hmmer/lib/easel
 IFLAGS   = -Isrc -Ilib/hmmer/src -Ilib/hmmer/lib/easel 
 
 
-
 # Code manifests
 #
 PROGS    = src/scorematrix2rate\
@@ -83,6 +82,7 @@ PROGS    = src/scorematrix2rate\
 	   src/rscape_priors\
 	   src/R-scape\
 	   src/R-scape-sim\
+	   src/R-scape-sim-nobps\
 
 
 OBJS     = src/e1_bg.o\
