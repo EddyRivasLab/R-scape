@@ -1446,6 +1446,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   MSA_STAT  *shmstat = NULL;
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
+  int       *usecol = NULL;
   int       sc;
   int       s;
   int       status;
@@ -1458,7 +1459,11 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     else 
       return eslFAIL;
   }
- 
+
+  // use all columns to do the shuffling
+  ESL_ALLOC(usecol, sizeof(int) * (msa->alen+1));
+  esl_vec_ISet(usecol, msa->alen+1, TRUE);
+
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   if (cfg->verbose) {
@@ -1467,16 +1472,16 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   }
 
   for (s = 0; s < nshuffle; s ++) {
-    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, &shmsa, cfg->errbuf, cfg->verbose);
+    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     
     if (cfg->verbose) {
       msamanip_DumpStats(stdout, msa, cfg->mstat);
       //eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
+      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       msamanip_XStats(shmsa, &shmstat);
       msamanip_DumpStats(stdout, shmsa, shmstat);
-      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
     }
 
     if (s == 0) {
@@ -1487,10 +1492,10 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
-    
+   
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR;
-    
+  
     esl_msa_Destroy(shmsa); shmsa = NULL;
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
@@ -1508,12 +1513,14 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   *ret_cumranklist = cumranklist;
 
   esl_msa_Destroy(allmsa);
+  free(usecol);
   free(shmstat);
   return eslOK;
   
  ERROR:
   if (allmsa) esl_msa_Destroy(allmsa);
   if (shmsa) esl_msa_Destroy(shmsa);
+  if (usecol) free(usecol);
   if (shmstat) free(shmstat);
   if (ranklist) cov_FreeRankList(ranklist);
   if (cumranklist) cov_FreeRankList(cumranklist);
