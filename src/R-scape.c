@@ -102,6 +102,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double          *fnbp;
 
   METHOD           method;
+  char            *treefile;
+  FILE            *treefp;
   ESL_TREE        *T;
   double           treeavgt;
  
@@ -170,6 +172,7 @@ static ESL_OPTIONS options[] = {
   { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
+  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              0 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
@@ -177,7 +180,7 @@ static ESL_OPTIONS options[] = {
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
   { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bpaired_columns and nonbpaired_columns independently",                      0 },
   { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle residues within a column",                                                  0 },
-  { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle residues within a column that appear to be canonical (i,j) pairs ",                                                  0 },
+  { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle residues within a column that appear to be canonical (i,j) pairs ",         0 },
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
   { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
   /* covariation measures */
@@ -227,8 +230,8 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--Nfit",         eslARG_INT,        "4",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.01",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--Nfit",          eslARG_INT,       "4",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.01",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msa>";
@@ -467,7 +470,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
   
-  cfg.T  = NULL;
+  cfg.treefile  = NULL;
+  cfg.treefp    = NULL;
+  cfg.T         = NULL;
+  if (esl_opt_IsOn(go, "--treefile")) {
+    esl_sprintf( &cfg.treefile, "%s", esl_opt_GetString(go, "--treefile"));
+    if ((cfg.treefp = fopen(cfg.treefile, "r")) == NULL) esl_fatal("Failed to open tree file %s", cfg.treefile);
+    esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T);
+  }
+
   cfg.ct = NULL;
   cfg.onbpairs = 0;
   cfg.nbpairs  = 0;
@@ -629,6 +640,8 @@ main(int argc, char **argv)
   if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
+  if (cfg.treefp) close(cfg.treefp);
+  if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
@@ -865,7 +878,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (msa->nseq*msa->alen < 1e4) nshuffle = 50;
     if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
   }
-  //printf("NSHUFFLE %d\ | nseq %d alen %d %d\n", nshuffle, msa->nseq, msa->alen, msa->nseq*msa->alen);
 
   /* the null model first */
   cfg->mode = RANSS;
@@ -947,15 +959,18 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  int  status;
-  
-  /* the TREE */
-  status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+  int  status; 
+ 
+  /* create tree from MSA */
+  if (cfg->T == NULL) {
+    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+  }
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+    if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
   }
+  if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   
   return eslOK;
 }
@@ -1451,12 +1466,10 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   int       status;
   
   status = create_tree(go, cfg, msa);
-  if (status != eslOK) goto ERROR;
+   if (status != eslOK) goto ERROR;
   if (cfg->T == NULL) {
-    if (msa->nseq == 1) 
-      return eslOK;
-    else 
-      return eslFAIL;
+    if (msa->nseq == 1) return eslOK;
+    else                return eslFAIL;
   }
  
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
