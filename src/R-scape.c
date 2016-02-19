@@ -476,7 +476,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_IsOn(go, "--treefile")) {
     esl_sprintf( &cfg.treefile, "%s", esl_opt_GetString(go, "--treefile"));
     if ((cfg.treefp = fopen(cfg.treefile, "r")) == NULL) esl_fatal("Failed to open tree file %s", cfg.treefile);
-    esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T);
+    if (esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T) != eslOK) esl_fatal("Failed to read tree file %s", cfg.treefile);
   }
 
   cfg.ct = NULL;
@@ -968,7 +968,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-    if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
+    if (1||cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
   }
   if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   
@@ -1479,7 +1479,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
 
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  if (cfg->verbose) {
+  if (1||cfg->verbose) {
     eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
     printf("fitch sc %d\n", sc);
   }
@@ -1488,13 +1488,13 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     
-    if (cfg->verbose) {
-      msamanip_DumpStats(stdout, msa, cfg->mstat);
+    if (1||cfg->verbose) {
+      //msamanip_DumpStats(stdout, msa, cfg->mstat);
       //eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
       eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       msamanip_XStats(shmsa, &shmstat);
-      msamanip_DumpStats(stdout, shmsa, shmstat);
+      //msamanip_DumpStats(stdout, shmsa, shmstat);
     }
 
     if (s == 0) {

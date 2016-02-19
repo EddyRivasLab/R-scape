@@ -978,11 +978,11 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
     if (T->left[v]  <= 0) useme[-T->left[v]]  = TRUE;
     if (T->right[v] <= 0) useme[-T->right[v]] = TRUE;
     
-    //printf("\nnode_%d -> node_%d\n", v, T->left[v]);
+    printf("\nnode_%d -> node_%d\n", v, T->left[v]);
     status = shuffle_tree_substitutions(r, idx, idxl,  ax, axl, shallmsa, usecol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - left descendant", errbuf);
     
-    //printf("\nnode_%d -> node_%d\n", v, T->right[v]);
+    printf("\nnode_%d -> node_%d\n", v, T->right[v]);
     status = shuffle_tree_substitutions(r, idx, idxr, ax, axr, shallmsa, usecol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - right descendant", errbuf);
   }
@@ -1024,7 +1024,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   int          *nsub = NULL;
   int           status;
  
-#if 0
+#if 1
   printf("\n");
   for (n = 1; n <= L; n++) {
     printf("%d",  axash[n]); 
@@ -1052,7 +1052,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
     dxash[n] = axash[n];
   }
 
-#if 0
+#if 1
   int x;
   if (1||verbose) {
     printf("nsub %d\n", nsubs);
@@ -1080,7 +1080,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   if (status != eslOK) goto ERROR;
 #endif
   
-#if 0
+#if 1
   printf("\n");
   for (n = 1; n <= L; n++) {
     printf("%d",  dxash[n]); 
