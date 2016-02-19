@@ -1501,8 +1501,6 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
   int         v;
   int         status;
 
-  printf("^^ col %d\n", c);
-
  /* create a stack, and put root in the stack */
   if (( vs = esl_stack_ICreate()) == NULL) { status = eslEMEM; goto ERROR; };
 
@@ -1540,20 +1538,22 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
       if (S[idxr][dim-1] == FALSE) { esl_stack_IPush(vs, T->right[v]); continue; }
       
       idx  = T->N + v;
-      if (1||verbose) printf("v %d idx %d Sl[%d] %d %d %d %d %d %d Sr[%d] %d %d %d %d %d %d ", 
+      if (verbose) printf("v %d idx %d Sl[%d] %d %d %d %d %d %d Sr[%d] %d %d %d %d %d %d ", 
 			  v, idx, 
 			  idxl, S[idxl][0], S[idxl][1], S[idxl][2], S[idxl][3], S[idxl][4], S[idxl][5], 
 			  idxr, S[idxr][0], S[idxr][1], S[idxr][2], S[idxr][3], S[idxr][4], S[idxr][5]);
       status = tree_fitch_upwards(dim, S[idxl], S[idxr], S[idx], &sc, errbuf); 
-      if (1||verbose) printf("S[%d] %d %d %d %d %d %d | sc %d\n", idx, S[idx][0], S[idx][1], S[idx][2], S[idx][3], S[idx][4], S[idx][5], sc);
+      if (verbose) printf("S[%d] %d %d %d %d %d %d | sc %d\n", idx, S[idx][0], S[idx][1], S[idx][2], S[idx][3], S[idx][4], S[idx][5], sc);
       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Fitch Algorithm upwards failed at c=%d v=%d", errbuf, c, v);
 
       if (v > 0) esl_stack_IPush(vs, T->parent[v]);
     }
-  if (1||verbose) printf("column %d score %d\n", c, sc);
+  if (verbose) printf("column %d score %d\n", c, sc);
 
   /* set an arbitrary character at the root */
   allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
+  if (c==5) allmsa->ax[T->N][c] = 0;
+  if (c==9) allmsa->ax[T->N][c] = 3;
 
   /* go down the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
