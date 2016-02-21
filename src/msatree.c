@@ -1552,8 +1552,6 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 
   /* set an arbitrary character at the root */
   allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
-  if (c==5) allmsa->ax[T->N][c] = 0;
-  if (c==10) allmsa->ax[T->N][c] = 3;
 
   /* go down the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
