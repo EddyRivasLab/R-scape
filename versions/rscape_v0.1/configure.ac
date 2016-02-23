@@ -42,8 +42,8 @@
 
 # Autoconf 2.61 has a bug in AC_FUNC_FSEEKO; don't use it.
 AC_PREREQ(2.63)
-AC_INIT(mysource, 0.01, elenarivas@fas.harvard.edu, mysource)
-AC_MSG_NOTICE([Configuring mysource for your system.])
+AC_INIT(R-scape, 0.1, elenarivas@fas.harvard.edu, R-scape)
+AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
 if test x"$CFLAGS" = x; then 
@@ -54,10 +54,10 @@ fi
 # 3. Info on the package
 #
 # The four AC_INIT args set these output variables and preprocessor symbols:
-#     PACKAGE_NAME      <package>     e.g. "R-scape"
-#     PACKAGE_VERSION   <version>     e.g. "0.0"
-#     PACKAGE_BUGREPORT <bug-report>  e.g. "elenarivas@fas.harvard.edu"
-#     PACKAGE_TARNAME   <tarname>     e.g. "rscape"
+#     PACKAGE_NAME      <package>     e.g. "E2"
+#     PACKAGE_VERSION   <version>     e.g. "3.0"
+#     PACKAGE_BUGREPORT <bug-report>  e.g. "eddys@janelia.hhmi.org"
+#     PACKAGE_TARNAME   <tarname>     e.g. "hmmer"
 # From them, it derives one more:
 #     PACKAGE_STRING    <package> <version>, e.g. "HMMER 3.0"
 # We also define additional variables:
@@ -73,33 +73,53 @@ fi
 # to use HMMER as a library inside other packages, with no name clashes.
 ################################################################
 
+E2_DATE="DEC 2011"
+E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
+E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+E2_VERSION=$PACKAGE_VERSION
+E2_URL="http://hmmer.org/"
+E2_ESLDIR="easel"
+E2_SADIR="libdivsufsort"
+
 RSCAPE_DATE="FEB 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-RSCAPE_VERSION="0.1"
-RSCAPE_URL="http://eddylab.org/"
-RSCAPE_FASTTREEDIR="lib/FastTree"
-RSCAPE_HMMERDIR="lib/hmmer"
-RSCAPE_ESLDIR="lib/hmmer/lib/easel"
-RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+RSCAPE_VERSION=$PACKAGE_VERSION
+RSCAPE_URL="http://selab.org/"
+RSCAPE_ESLDIR="easel"
+RSCAPE_SADIR="libdivsufsort"
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+AC_SUBST(E2_DATE)
+AC_SUBST(E2_COPYRIGHT)
+AC_SUBST(E2_LICENSE)
+AC_SUBST(E2_VERSION)
+AC_SUBST(E2_URL)
+AC_SUBST(E2_ESLDIR)
+AC_SUBST(E2_SADIR)
+
 AC_SUBST(RSCAPE_DATE)
 AC_SUBST(RSCAPE_COPYRIGHT)
 AC_SUBST(RSCAPE_LICENSE)
 AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
-AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
 
 
-# Preprocessor symbols (replace #undefs in rscape_config.h)
+# Preprocessor symbols (replace #undefs in e2_config.h)
+AC_DEFINE_UNQUOTED(E2_DATE,      "$E2_DATE")
+AC_DEFINE_UNQUOTED(E2_COPYRIGHT, "$E2_COPYRIGHT")
+AC_DEFINE_UNQUOTED(E2_LICENSE,   "$E2_LICENSE")
+AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
+AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
+
 AC_DEFINE_UNQUOTED(RSCAPE_DATE,      "$RSCAPE_DATE")
 AC_DEFINE_UNQUOTED(RSCAPE_COPYRIGHT, "$RSCAPE_COPYRIGHT")
 AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")
 AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
+
 
 
 # Figure out what host we're compiling on.
@@ -122,7 +142,7 @@ AC_CANONICAL_HOST
 # Implements a sneaky if statement that wraps most of the configure.ac M4 code.
 #
 #if ((! test -d binaries) && test -d src); then 
-AC_MSG_NOTICE([Full R-scape source distribution - using full configuration])
+AC_MSG_NOTICE([Full E2 source distribution - using full configuration])
 
 
 
@@ -232,7 +252,7 @@ fi
 # Uses ACX_PTHREAD macro from the GNU macro archive.
 # Back to my code to finish enabling pthreads...
 # Define these preprocessor variables:
-#     RSCAPE_THREADS
+#     E2_THREADS
 #     HAVE_PTHREAD_SETCONCURRENCY
 #     HAVE_PTHREAD_ATTR_SETSCOPE
 #
@@ -256,7 +276,7 @@ esac
  
 AS_IF([test "x$check_threads" != xno],
       [ACX_PTHREAD([AC_DEFINE(EHMMER_THREADS)
-		    AC_DEFINE(RSCAPE_THREADS)
+		    AC_DEFINE(E2_THREADS)
                     AC_DEFINE(HAVE_PTHREAD)
                     AC_SUBST(PTHREAD_LIBS)
                     AC_SUBST(PTHREAD_CFLAGS)],
@@ -270,7 +290,7 @@ AS_IF([test "x$check_threads" != xno],
 #   yes) AC_MSG_NOTICE([enabled POSIX multithreading support])
 #        AC_CHECK_FUNCS(pthread_setconcurrency)
 #        AC_CHECK_FUNCS(pthread_attr_setscope)
-#	ACX_PTHREAD(AC_DEFINE(RSCAPE_THREADS))
+#	ACX_PTHREAD(AC_DEFINE(E2_THREADS))
 #	;;
 #   no)  AC_MSG_NOTICE([POSIX multithreading support disabled])
 #        ;;
@@ -378,7 +398,7 @@ ESL_PIC_FLAGS
 # If we're using SSE, figure out our @SIMD_CFLAGS@
 if test "$impl_choice" = "sse" && test "x$SIMD_CFLAGS" = x; then
    case $ax_cv_c_compiler_vendor in
-   gnu)   AX_CHECK_COMPILER_FLAGS(-mssrscape,[SIMD_CFLAGS="-mssrscape"],[impl_choice=dummy]);;
+   gnu)   AX_CHECK_COMPILER_FLAGS(-msse2,[SIMD_CFLAGS="-msse2"],[impl_choice=dummy]);;
    intel) ;;
    *)     ;;
    esac
@@ -591,7 +611,10 @@ AC_SYS_LARGEFILE
 # Done.
 # Config subdirs and files (except main Makefile, which we defer)
 #
- AC_CONFIG_HEADERS([src/e2_config.h],[src/rscape_config.h])
+AC_CONFIG_HEADERS([
+src/e2_config.h
+src/rscape_config.h
+])
 
 
 ################################################################
@@ -607,17 +630,18 @@ AC_OUTPUT
 
 echo "
 
-R-scape configuration:
+E2 configuration:
      compiler:             ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
      host:                 $host
      linker:               ${LDFLAGS}
-     libraries:            ${LIBS} ${PTHREAD_LIBS}
+     libraries:            ${LIBS} ${LIBGSL} ${PTHREAD_LIBS}
+     DP implementation:    ${impl_choice}
 "
 
 if test "$impl_choice" = "dummy"; then
   AC_MSG_WARN([We will compile the "dummy", a portable ANSI C reference implementation.])
   AC_MSG_WARN([It is slow, about 100x slower than real H3, and is NOT intended for production use!])
-  AC_MSG_WARN([It only intended to show the basics of how RSCAPE works, portably.])
+  AC_MSG_WARN([It only intended to show the basics of how E2 works, portably.])
 fi
 
 

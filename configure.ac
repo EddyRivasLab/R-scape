@@ -42,8 +42,8 @@
 
 # Autoconf 2.61 has a bug in AC_FUNC_FSEEKO; don't use it.
 AC_PREREQ(2.63)
-AC_INIT(mysource, 0.01, elenarivas@fas.harvard.edu, mysource)
-AC_MSG_NOTICE([Configuring mysource for your system.])
+AC_INIT(R-scape, 0.1, elenarivas@fas.harvard.edu, R-scape)
+AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
 if test x"$CFLAGS" = x; then 
@@ -81,6 +81,14 @@ E2_URL="http://hmmer.org/"
 E2_ESLDIR="easel"
 E2_SADIR="libdivsufsort"
 
+RSCAPE_DATE="FEB 2016"
+RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
+RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+RSCAPE_VERSION=$PACKAGE_VERSION
+RSCAPE_URL="http://selab.org/"
+RSCAPE_ESLDIR="easel"
+RSCAPE_SADIR="libdivsufsort"
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 AC_SUBST(E2_DATE)
 AC_SUBST(E2_COPYRIGHT)
@@ -90,6 +98,14 @@ AC_SUBST(E2_URL)
 AC_SUBST(E2_ESLDIR)
 AC_SUBST(E2_SADIR)
 
+AC_SUBST(RSCAPE_DATE)
+AC_SUBST(RSCAPE_COPYRIGHT)
+AC_SUBST(RSCAPE_LICENSE)
+AC_SUBST(RSCAPE_VERSION)
+AC_SUBST(RSCAPE_URL)
+AC_SUBST(RSCAPE_ESLDIR)
+AC_SUBST(RSCAPE_SADIR)
+
 
 # Preprocessor symbols (replace #undefs in e2_config.h)
 AC_DEFINE_UNQUOTED(E2_DATE,      "$E2_DATE")
@@ -97,6 +113,13 @@ AC_DEFINE_UNQUOTED(E2_COPYRIGHT, "$E2_COPYRIGHT")
 AC_DEFINE_UNQUOTED(E2_LICENSE,   "$E2_LICENSE")
 AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
 AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
+
+AC_DEFINE_UNQUOTED(RSCAPE_DATE,      "$RSCAPE_DATE")
+AC_DEFINE_UNQUOTED(RSCAPE_COPYRIGHT, "$RSCAPE_COPYRIGHT")
+AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")
+AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
+AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
+
 
 
 # Figure out what host we're compiling on.
@@ -588,7 +611,10 @@ AC_SYS_LARGEFILE
 # Done.
 # Config subdirs and files (except main Makefile, which we defer)
 #
-AC_CONFIG_HEADERS([src/e2_config.h])
+AC_CONFIG_HEADERS([
+src/e2_config.h
+src/rscape_config.h
+])
 
 
 ################################################################

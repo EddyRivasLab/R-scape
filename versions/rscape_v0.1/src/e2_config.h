@@ -21,11 +21,11 @@
 
 /* Version info - set once for whole package in configure.ac
  */
-/* #undef E2_VERSION */
-/* #undef E2_DATE */
-/* #undef E2_COPYRIGHT */
-/* #undef E2_LICENSE */
-/* #undef E2_URL */
+#define E2_VERSION "0.1"
+#define E2_DATE "DEC 2011"
+#define E2_COPYRIGHT "Copyright (C) 2011 Howard Hughes Medical Institute."
+#define E2_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
+#define E2_URL "http://hmmer.org/"
 
 /* Large file support (must precede any header file inclusion.)
  */
@@ -45,13 +45,13 @@
 /* #undef HAVE_MPI */
 /* #undef E2_PVM */
 /* #undef EHMM_THREADS */
-/* #undef E2_THREADS */
+#define E2_THREADS 1
 /* #undef HAVE_PTHREAD_ATTR_SETSCOPE */
 /* #undef HAVE_PTHREAD_SETCONCURRENCY */
 
 /* Optional processor specific support
  */
-/* #undef HAVE_FLUSH_ZERO_MODE */
+#define HAVE_FLUSH_ZERO_MODE 1
 
 /* Debugging hooks
  */
