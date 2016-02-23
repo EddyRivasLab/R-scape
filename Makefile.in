@@ -44,14 +44,13 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 
 
-MYLIBDIR = -Lsrc -Llib/hmmer/src -Llib/hmmer/lib/easel 
 MYINCDIR = -Isrc -Ilib/hmmer/src -Ilib/hmmer/lib/easel
 
 LIBS     = -lm
 
 MYLIBS   = -lhmmer -leasel 
-LFLAGS   = -Lsrc -Llib/hmmer/src -Llib/hmmer/lib/easel 
 IFLAGS   = -Isrc -Ilib/hmmer/src -Ilib/hmmer/lib/easel 
+LFLAGS   = -Llib/hmmer/src -Llib/hmmer/lib/easel 
 
 
 # Code manifests

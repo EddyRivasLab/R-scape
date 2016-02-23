@@ -102,7 +102,7 @@ static ESL_OPTIONS options[] = {
   { "--star",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
   { "--rand",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "independent sequences",                                                                     0 },
   { "--given",         eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
-  { "--sim",           eslARG_NONE,      TRUE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
+  { "--sim",           eslARG_NONE,     "TRUE",   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
   { "--usesq",          eslARG_INT,      NULL,   NULL,      "n>=1",  NULL,    NULL,  NULL,               "sq from the origional msa used as root (default random)",                                   0 }, 
  /* options for input msa (if seqs are given as a reference msa) */
   { "--informat",   eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },

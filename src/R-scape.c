@@ -188,7 +188,7 @@ static ESL_OPTIONS options[] = {
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APS corrected calculation",                                                            0 },
   { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  calculation",                                                                          0 },
   { "--GTa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   ACS corrected calculation",                                                            0 },
-  { "--GTp",          eslARG_NONE,       TRUE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   APS corrected calculation",                                                            0 },
+  { "--GTp",          eslARG_NONE,     "TRUE",   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   APS corrected calculation",                                                            0 },
   { "--GT",           eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "GT   calculation",                                                                          0 },
   { "--MIa",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   ACS corrected calculation",                                                            0 },
   { "--MIp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "MI   APS corrected calculation",                                                            0 },
@@ -214,7 +214,7 @@ static ESL_OPTIONS options[] = {
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "use C2 if nseq <= nseqthresh otherwise use C16",                                            0 },   
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "use C2 if alen <= alenthresh otherwise use C16",                                            0 },   
    /* phylogenetic method */
-  { "--naive",        eslARG_NONE,       TRUE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
+  { "--naive",        eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive calculations",                                                                        0 },
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo calculations",                                                                        0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI calculations",                                            0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI calculations",                                                              0 },
@@ -400,7 +400,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;
 
-  if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = OPTNONE;
+  if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = NAIVE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
@@ -640,7 +640,6 @@ main(int argc, char **argv)
   if (cfg.ct) free(cfg.ct);
   eslx_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
-  if (cfg.treefp) close(cfg.treefp);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outsrtfile) free(cfg.outsrtfile);

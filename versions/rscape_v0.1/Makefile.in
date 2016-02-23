@@ -1,0 +1,105 @@
+# VPATH and shell configuration
+#
+top_srcdir     = @top_srcdir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+SHELL          = /bin/sh
+
+# location of easel
+ESLDIR         = @HMMER_ESLDIR@
+
+# Package information
+#
+PACKAGE         = @PACKAGE_NAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+
+# Installation targets
+#
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir      = @bindir@
+libdir      = @libdir@
+includedir  = @includedir@
+mandir      = @mandir@
+docdir      = @docdir@
+pdfdir      = @pdfdir@
+mandir      = @mandir@
+man1dir     = ${mandir}/man1
+man1ext     = .1
+
+# Compiler configuration
+#
+CC        = @CC@
+CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ @PIC_FLAGS@
+LDFLAGS   = -static @LDFLAGS@
+SIMDFLAGS = @SIMD_CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+
+# Other tools
+#
+AR        = @AR@ 
+RANLIB    = @RANLIB@
+INSTALL   = @INSTALL@
+
+
+MYLIBDIR = -Lsrc -Llib/hmmer/src -Llib/hmmer/lib/easel 
+
+LIBS     = -lm
+
+MYLIBS   = -lhmmer -leasel 
+LFLAGS   = -Lsrc -Llib/hmmer/src -Llib/hmmer/lib/easel 
+IFLAGS   = -Isrc -Ilib/hmmer/src -Ilib/hmmer/lib/easel 
+
+
+# Code manifests
+#
+PROGS    = src/R-scape
+
+OBJS     = src/e1_bg.o\
+           src/e1_model.o\
+           src/e1_rate.o\
+           src/e1_emit.o\
+           src/e1_simulate.o\
+           src/e2_profilesq.o\
+           src/cococyk.o\
+           src/covgrammars.o\
+           src/covariation.o\
+           src/cykcov.o\
+           src/logsum.o\
+           src/minimize.o\
+           src/miscellaneous.o\
+           src/msatree.o\
+           src/msamanip.o\
+           src/ratematrix.o\
+           src/ratebuilder.o\
+           src/ribosum_matrix.o\
+
+
+all: libsrc.a ${PROGS} 
+
+${PROGS}: %: %.o ${OBJS}
+	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} ${MYLIBS} 
+
+
+.c.o:   
+	${CC} ${MYINCDIR} ${IFLAGS} ${LFLAGS} ${CFLAGS} -o $@ -c $<
+
+libsrc.a:  ${OBJS}
+	${AR} -r src/libsrc.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} src/libsrc.a
+
+
+clean:
+	-rm -f ${PROGS} ${OBJS} src/libsrc.a *.tab.c *.output src/*.o src/programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+
+
+
+################################################################
+# @LICENSE@
+################################################################

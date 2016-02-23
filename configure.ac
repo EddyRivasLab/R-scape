@@ -511,19 +511,6 @@ fi
 
 
 
-# Check if the linker supports library groups for recursive libraries
-AS_IF([test "x$impl_choice" != xno],
-      [AC_MSG_CHECKING([compiler support --start-group])
-       LDFLAGS_save=$LDFLAGS
-       LDFLAGS="-Wl,--start-group -Wl,--end-group $LDFLAGS"
-       AC_LINK_IFELSE(AC_LANG_PROGRAM([],[]),
-           [AC_MSG_RESULT([yes])
-            AC_SUBST([GROUPE2LIBS], ["-Wl,--start-group -lhmmer -lhmmerimpl -Wl,--end-group"])],
-           [AC_MSG_RESULT([no])
-            AC_SUBST([GROUPE2LIBS], ["-lhmmer -lhmmerimpl"])])
-       LDFLAGS=$LDFLAGS_save],
-      [AC_SUBST([GROUPE2LIBS], ["-lhmmer"])])
-
 # Define HAVE_GZIP if gzip is in $PATH (or if HAVE_GZIP is already set)
 AC_PATH_PROG(HAVE_GZIP, "gzip", "no")
 if test "${HAVE_GZIP}" = "no"; then

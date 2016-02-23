@@ -389,7 +389,7 @@ delete(ESL_RANDOMNESS *r, int pos, int idxp, int idxd, E1_MODEL *evom, ESL_MSA *
 static int
 substitute(ESL_RANDOMNESS *r, int pos, int idxp, int idxd, E1_MODEL *evom, ESL_MSA *msa, char *errbuf, int verbose)
 {
-  ESL_ALPHABET *abc = evom->abc;
+  ESL_ALPHABET *abc = (ESL_ALPHABET *)evom->abc;
   char          achar;
   ESL_DSQ       a;
 

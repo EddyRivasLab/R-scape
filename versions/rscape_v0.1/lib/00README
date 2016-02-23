@@ -1,0 +1,44 @@
+ER, Mon Nov  2 09:50:13 EST 2015
+
+FastTree downloaded from
+http://www.microbesonline.org/fasttree/
+
+
+http://www.microbesonline.org/fasttree/#Install
+
+Downloading and Installing FastTree
+===================================
+
+FastTree 2.1.8 is available as
+
+    Linux 64-bit executable (+SSE)
+        Multi-threaded executable (+SSE +OpenMP) (see usage guide)
+    Windows 32-bit command-line executable (no SSE)
+    C code
+
+If you use a Mac or other platform not included above, download FastTree.c and run
+
+gcc -O3 -finline-functions -funroll-loops -Wall -o FastTree FastTree.c -lm
+
+(gcc is installed on many Mac OS X and Unix machines. If you use a
+Mac, you may need to install it from xcode. gcc is also available for
+virtually every platform.) Note that FastTree will try to use
+SSE2/SSE3 instructions to speed up some inner loops. This will not
+work on many Windows or Mac machines. If FastTree will not run, then
+try compiling it with this command instead:
+
+gcc -DNO_SSE -O3 -finline-functions -funroll-loops -Wall -o FastTree FastTree.c -lm
+
+If you want to build the multi-threaded "FastTreeMP," use
+
+gcc -DOPENMP -fopenmp -O3 -finline-functions -funroll-loops -Wall -o FastTreeMP FastTree.c -lm
+
+(The OpenMP version may not compile on some versions of Mac OS X
+unless you install a different version of gcc.) See here for more
+information about using FastTreeMP.
+
+FastTree is open source software -- you are free to modify and
+redistribute it as you wish. If you do make any improvements to
+FastTree, please send them to us so we can incorporate your changes
+into the main version.
+

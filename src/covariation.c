@@ -1158,7 +1158,7 @@ cov_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
   int              status = eslOK;
 
   cov_ReuseCOV(mi, RAF, C2);
-  cov_CalculateRAF(RAF, data, msa, FALSE, NULL, NULL);
+  cov_CalculateRAF(C2, data, msa, FALSE, NULL, NULL);
 
   // RAFS
   bij = esl_dmatrix_Clone(mi->COV);

@@ -1,0 +1,20 @@
+cd lib
+
+cd hmmer
+autoconf
+./configure
+make
+
+I provide an executable of FastTree. It if does not work for you,
+go to 
+lib/FastTree
+and follow the instructions in the 00README file.
+
+cd ..
+autoconf
+./configure
+make
+
+you shoud have an executable for R-scape:
+
+src/R-scape

@@ -55,7 +55,7 @@ struct cfg_s {
   
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
-  MSA_STAT         mstat;               /* statistics of the input alignment */
+  MSA_STAT        *mstat;               /* statistics of the input alignment */
   float           *msafrq;
 
   float            thresh1;            /* cluster threshold */
@@ -300,8 +300,8 @@ main(int argc, char **argv)
     cfg.msafrq = NULL;
     //msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
     
-    if (esl_opt_IsOn(go, "--minid") && cfg.mstat.avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
-    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat.avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
+    if (esl_opt_IsOn(go, "--minid") && cfg.mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
+    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
     
     /* Make all seqs upper case */
     for (idx = 0; idx < msa->nseq; idx++) 
