@@ -68,26 +68,26 @@ endif
 #
 
 
-PROGS    = src/R-scape
+PROGS    = R-scape
 
-OBJS     = src/e1_bg.o\
-           src/e1_model.o\
-           src/e1_rate.o\
-           src/e1_emit.o\
-           src/e1_simulate.o\
-           src/e2_profilesq.o\
-           src/cococyk.o\
-           src/covgrammars.o\
-           src/covariation.o\
-           src/cykcov.o\
-           src/logsum.o\
-           src/minimize.o\
-           src/miscellaneous.o\
-           src/msatree.o\
-           src/msamanip.o\
-           src/ratematrix.o\
-           src/ratebuilder.o\
-           src/ribosum_matrix.o\
+OBJS     = e1_bg.o\
+           e1_model.o\
+           e1_rate.o\
+           e1_emit.o\
+           e1_simulate.o\
+           e2_profilesq.o\
+           cococyk.o\
+           covgrammars.o\
+           covariation.o\
+           cykcov.o\
+           logsum.o\
+           minimize.o\
+           miscellaneous.o\
+           msatree.o\
+           msamanip.o\
+           ratematrix.o\
+           ratebuilder.o\
+           ribosum_matrix.o\
 
 
 
