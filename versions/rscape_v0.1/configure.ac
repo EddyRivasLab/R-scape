@@ -87,6 +87,8 @@ RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3).
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://selab.org/"
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
+RSCAPE_R2RDIR="lib/R2R/src"
+R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
@@ -106,6 +108,8 @@ AC_SUBST(RSCAPE_LICENSE)
 AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
 AC_SUBST(RSCAPE_FASTTREEDIR)
+AC_SUBST(RSCAPE_R2RDIR)
+AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
@@ -620,6 +624,12 @@ src/e2_config.h
 src/rscape_config.h
 ])
 
+AC_CONFIG_SUBDIRS(lib/hmmer)
+AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
+AC_CONFIG_SUBDIRS(lib/R2R/NotbyZasha/infernal-0.7)
+AC_CONFIG_SUBDIRS(lib/FastTree/src)
+AC_CONFIG_SUBDIRS(src)
+
 
 ################################################################
 # 13. AC_OUTPUT
@@ -632,15 +642,6 @@ src/rscape_config.h
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-echo "
-
-R-scape configuration:
-     compiler:             ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
-     host:                 $host
-     linker:               ${LDFLAGS}
-     libraries:            ${LIBS} ${LIBGSL} ${PTHREAD_LIBS}
-     DP implementation:    ${impl_choice}
-"
 
 if test "$impl_choice" = "dummy"; then
   AC_MSG_WARN([We will compile the "dummy", a portable ANSI C reference implementation.])

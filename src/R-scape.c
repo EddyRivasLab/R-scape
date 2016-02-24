@@ -273,19 +273,23 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.argc = argc;
   cfg.argv = argv;
  
+  /* R-scape banner */
+  rscape_banner(stdout, cfg.argv[0], banner);
+
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      rscape_banner(stdout, cfg.argv[0], banner);
       esl_usage(stdout,  cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 1, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
      exit(0);
     }
 
-  cfg.msafile = NULL;
-  if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  cfg.msafile = NULL;  
+  if (esl_opt_ArgNumber(go) != 1) { 
+    if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
+
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
     cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));

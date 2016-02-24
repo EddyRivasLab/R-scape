@@ -52,3 +52,6 @@ $(EXE) : $(OBJFILES)
 
 clean:
 	rm -f *.o $(EXE)
+
+distclean:
+	rm -f *.o $(EXE)

@@ -79,3 +79,12 @@ clean:
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 
+distclean:
+	-rm -f ${PROGS} ${OBJS} 
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+	-rm -rf autom4te.cache
+	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
+	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
+

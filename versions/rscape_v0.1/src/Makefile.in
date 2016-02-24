@@ -66,30 +66,29 @@ endif
 
 # Code manifests
 #
+PROGS    = R-scape\
+	   R-scape-sim\
+	   R-scape-sim-nobps\
 
-
-PROGS    = R-scape
 
 OBJS     = e1_bg.o\
-           e1_model.o\
-           e1_rate.o\
-           e1_emit.o\
-           e1_simulate.o\
-           e2_profilesq.o\
-           cococyk.o\
-           covgrammars.o\
-           covariation.o\
-           cykcov.o\
+	   e1_emit.o\
+	   e1_model.o\
+	   e1_rate.o\
+	   e1_simulate.o\
+	   cococyk.o\
+	   covgrammars.o\
+	   covariation.o\
+	   cov_simulate.o\
+	   cykcov.o\
            logsum.o\
            minimize.o\
            miscellaneous.o\
-           msatree.o\
            msamanip.o\
-           ratematrix.o\
+           msatree.o\
            ratebuilder.o\
-           ribosum_matrix.o\
-
-
+           ratematrix.o\
+	   ribosum_matrix.o\
 
 all: libsrc.a ${PROGS} 
 
@@ -112,6 +111,16 @@ clean:
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
+
+distclean:
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+	-rm -rf autom4te.cache
+	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
+	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
 
 
 

@@ -624,6 +624,12 @@ src/e2_config.h
 src/rscape_config.h
 ])
 
+AC_CONFIG_SUBDIRS(lib/hmmer)
+AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
+AC_CONFIG_SUBDIRS(lib/R2R/NotbyZasha/infernal-0.7)
+AC_CONFIG_SUBDIRS(lib/FastTree/src)
+AC_CONFIG_SUBDIRS(src)
+
 
 ################################################################
 # 13. AC_OUTPUT
@@ -636,15 +642,6 @@ src/rscape_config.h
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-echo "
-
-R-scape configuration:
-     compiler:             ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
-     host:                 $host
-     linker:               ${LDFLAGS}
-     libraries:            ${LIBS} ${LIBGSL} ${PTHREAD_LIBS}
-     DP implementation:    ${impl_choice}
-"
 
 if test "$impl_choice" = "dummy"; then
   AC_MSG_WARN([We will compile the "dummy", a portable ANSI C reference implementation.])

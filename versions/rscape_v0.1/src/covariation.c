@@ -206,18 +206,17 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
   
   if (data->mode == GIVSS) { // do the plots only for GIVSS
-
-    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
+     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
+     if  (status != eslOK) goto ERROR;
+ 
+     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
  
-    status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
-    if  (status != eslOK) goto ERROR;
-
-    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
   }
   
-  if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
+   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
   
@@ -1669,7 +1668,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       if (!usenull) status = cov_NullFitGamma(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
       else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
      if (status != eslOK) goto ERROR;
-     if (1||data->verbose) {
+     if (data->verbose) {
 	if (!usenull) 
 	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
 	else {       
@@ -2202,7 +2201,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int min
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+  status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   /* DotPlots (pdf,svg) */
@@ -2740,6 +2739,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   double   pointsize;
   double   ps_max = 0.40;
   double   ps_min = 0.0003;
+  int      isempty;
   int      ileft, iright;
   int      h;           /* index for hitlist */
   int      i, ipair;
@@ -2817,63 +2817,87 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   fprintf(pipe, "plot fun(x) with lines ls 7\n");
 
   // the actual ct
-  fprintf(pipe, "set size 1,1\n");
-  fprintf(pipe, "set origin 0,0\n");  
-  fprintf(pipe, "plot '-' u 1:2:3 with points ls 9\n");
-  for (i = 1; i <= msa->alen; i ++) {
-    ipair = ct[i];
- 
-    if (ipair > 0) {
-      fprintf(pipe, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
-	      (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
-      fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
-	      (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
-    }	
-  } 
-  fprintf(pipe, "e\n");
-
+  isempty = TRUE;
+  for (i = 1; i <= msa->alen; i ++) { if (ipair > 0) { isempty = FALSE; break; } }
+  if (!isempty) {
+    fprintf(pipe, "set size 1,1\n");
+    fprintf(pipe, "set origin 0,0\n");  
+    fprintf(pipe, "plot '-' u 1:2:3 with points ls 9\n");
+    for (i = 1; i <= msa->alen; i ++) {
+      ipair = ct[i];
+      
+      if (ipair > 0) {
+	fprintf(pipe, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
+		(mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
+	fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
+		(mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
+      }	
+    } 
+    fprintf(pipe, "e\n");
+  }
+  
   // the covarying basepairs
-  //fprintf(pipe, "plot '-' u 1:2:3 with image \n");
-  fprintf(pipe, "set size 1,1\n");
-  fprintf(pipe, "set origin 0,0\n");  
-  fprintf(pipe, "plot '-' u 1:2:3 with points ls 8 \n");
+  isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-    if (hitlist->hit[h].is_bpair) {
-      fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
-      fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
-    }	
-  } 
-  fprintf(pipe, "e\n");
+    if (hitlist->hit[h].is_bpair) { isempty = FALSE; break; }
+  }
+
+  if (!isempty) {
+    fprintf(pipe, "set size 1,1\n");
+    fprintf(pipe, "set origin 0,0\n");  
+    fprintf(pipe, "plot '-' u 1:2:3 with points ls 8 \n");
+    for (h = 0; h < hitlist->nhit; h ++) {
+      ih = hitlist->hit[h].i;
+      jh = hitlist->hit[h].j;
+      if (hitlist->hit[h].is_bpair) {
+	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
+	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
+      }	
+    } 
+    fprintf(pipe, "e\n");
+  }
 
   // covarying pairs compatible with the given structure
-  fprintf(pipe, "set size 1,1\n");
-  fprintf(pipe, "set origin 0,0\n");  
-  fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
+  isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-    if (hitlist->hit[h].is_compatible) {
-      fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-      fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
-    }
-  } 
-  fprintf(pipe, "e\n");
+    if (hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
+  }
+  
+  if (!isempty) {
+    fprintf(pipe, "set size 1,1\n");
+    fprintf(pipe, "set origin 0,0\n");  
+    fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
+    for (h = 0; h < hitlist->nhit; h ++) {
+      ih = hitlist->hit[h].i;
+      jh = hitlist->hit[h].j;
+      if (hitlist->hit[h].is_compatible) {
+	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+      }
+    } 
+    fprintf(pipe, "e\n");
+  }
   
   // covarying pairs incompatible with the given structure
-  fprintf(pipe, "set size 1,1\n");
-  fprintf(pipe, "set origin 0,0\n");  
-  fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
+  isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-    if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) {
-      fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-      fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
-    }
-  } 
-  fprintf(pipe, "e\n");
+    if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
+  }
+
+  if (!isempty) {
+    fprintf(pipe, "set size 1,1\n");
+    fprintf(pipe, "set origin 0,0\n");  
+    fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
+    for (h = 0; h < hitlist->nhit; h ++) {
+      ih = hitlist->hit[h].i;
+      jh = hitlist->hit[h].j;
+      if (!hitlist->hit[h].is_bpair && !hitlist->hit[h].is_compatible) {
+	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+      }
+    } 
+    fprintf(pipe, "e\n");
+  }
   
   pclose(pipe);
   
@@ -2888,8 +2912,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
-	HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
@@ -2930,10 +2953,10 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
   fclose(fp);
   
   /* run R2R */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-  esl_sprintf(&args, "%s/%s/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, r2rversion, tmpinfile, tmpoutfile);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
  
@@ -3034,11 +3057,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
   
   /* produce the R2R pdf */
   if (makepdf) {
-    status = cov_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
+    status = cov_R2Rpdf(r2rfile, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
   if (makesvg) {
-    status = cov_R2Rsvg(r2rfile, r2rversion, verbose, errbuf);
+    status = cov_R2Rsvg(r2rfile, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
   
@@ -3069,45 +3092,53 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
 }
 
 int
-cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rpdf = NULL;
   char *args = NULL;
   char *s = NULL;
+  int   status;
 
   /* produce the R2R pdf */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rpdf);
   system(args);
 
   free(args);
   free(r2rpdf);
   
   return eslOK;
+
+ ERROR:
+  return status;
  }
 
 int
-cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rsvg = NULL;
   char *args = NULL;
   char *s = NULL;
+  int   status;
 
   /* produce the R2R svg */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   esl_sprintf(&r2rsvg, "%s.svg", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rsvg);
-  //esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rsvg);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rsvg);
+  //esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s ", s, r2rfile, r2rsvg);
   system(args);
   
   free(args);
   free(r2rsvg);
   
   return eslOK;
- }
+ 
+ ERROR:
+  return status;
+}
 
 int
 cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf)

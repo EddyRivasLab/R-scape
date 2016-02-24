@@ -18,6 +18,8 @@ SHELL          = /bin/sh
 
 # location of easel, hmmer, FastTree
 FASTTREEDIR    = @RSCAPE_FASTTREEDIR@
+R2RDIR         = @RSCAPE_R2RDIR@
+INFERNALDIR    = @R2R_INFERNALDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
 
@@ -80,6 +82,8 @@ endif
 #
 all: 
 	${QUIET_SUBDIR0}${FASTTREEDIR}  ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${INFERNALDIR}  ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${R2RDIR}       ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${ESLDIR}       ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${SADIR}        ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${HMMERDIR}     ${QUIET_SUBDIR1} all
@@ -105,6 +109,8 @@ uninstall:
 #
 clean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}     ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${INFERNALDIR}     ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${R2RDIR}          ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${HMMERDIR}        ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${ESLDIR}          ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${SADIR}           ${QUIET_SUBDIR1} clean
@@ -114,11 +120,13 @@ clean:
 # "make distclean" leaves a pristine source distribution.
 #
 distclean:
-	${QUIET_SUBDIR0}src                ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${FASTTREEDIR}     ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}${INFERNALDIR}     ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}${R2RDIR}          ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${HMMERDIR}        ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${ESLDIR}          ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${SADIR}           ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}src                ${QUIET_SUBDIR1} distclean
 	-rm config.log config.status
 	-rm -rf autom4te.cache
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
