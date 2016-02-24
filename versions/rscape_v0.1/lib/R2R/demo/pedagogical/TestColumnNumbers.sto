@@ -1,0 +1,10 @@
+# STOCKHOLM 1.0
+a                         AAG..CUU
+b                         GGG..GAA
+c                         UUGUUUUU
+#=GC SS_cons              ........
+#=GF R2R tick_label #:0 pos 0
+#=GF qR2R tick_label #:3 pos 3, this should cause an error when running r2r
+#=GF R2R tick_label #:6 pos 6
+#=GF R2R SetDrawingParam dumpInfoFile test-dump.tab
+//

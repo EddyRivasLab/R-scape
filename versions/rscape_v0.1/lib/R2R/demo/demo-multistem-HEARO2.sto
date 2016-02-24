@@ -1,0 +1,20 @@
+# STOCKHOLM 1.0
+one                          UAGAU.GUAGAACCGCCUCAUUCGUGGUAAACCACGUUGCGAA.GCUA
+#=GC R2R_LABEL               ...J1...2.............................3....4....
+#=GC SS_cons                 ((((,,,..<<<..._____>>><<<<---.>>>>,,,,,.,,.))))
+
+#=GF R2R set_dir pos0 -90
+#=GF R2R ifdefeq solver 1
+#=GF R2R ifndef domanual multistem_junction_circular_solver J s0 0 ai s1 -90 ai s2 0 ai align_stem_horiz 0 2
+#=GF R2R ifdef domanual multistem_junction_bulgey J J0/base 0 2.15287 -0.778517 0 0 -90 J1/base 0 4.39955 -9.90438e-07 0 0 -360 bspecifyendpoints0 0 0.0170836 0.0218392 0.224412 -0.0920024 backbonelen 1 1.33608 bspecifyendpoints2 0 0.46101 0.169695 -0.0175362 0.174328 backbonelen 3 2.68973
+#=GF R2R endif
+#=GF R2R ifdefeq solver 2
+#=GF R2R ifndef domanual multistem_junction_circular_solver J s0 0 ai s1 -90 ai=0 s2 0 ai=1 align_stem_horiz 0 2
+#=GF R2R ifdef domanual multistem_junction_bulgey J J0/base 0 1.95135 -0.774952 0 0 -90 J1/base 0 4.20242 -1.35579e-07 0 0 -360 bspecifyendpoints0 0 0.0148536 0.0185951 0.202826 -0.0906111 backbonelen 1 1.13709 bspecifyendpoints2 0 0.439561 0.169349 -0.0168168 0.175206 backbonelen 3 2.22035
+#=GF R2R endif
+#=GF R2R var_backbone_range 1 2
+#=GF R2R var_backbone_range 3 4
+
+#=GF Makefile define solver 1
+#=GF Makefile define solver 2
+//

@@ -1,0 +1,15 @@
+# STOCKHOLM 1.0
+1              ACCUUUCGGU
+2              ACCUUACGGU
+3              AGCUUAAGCU
+4              AGCUUUAGCU
+5              AGGUUUCCCU
+#=GC SS_cons   [[[....]]]
+#=GC R2R_LABEL .gg....gg.
+
+#=GF R2R ifdefeq oneseq 5
+#=GF R2R nuc_color g rgb:0,204,0
+#=GF R2R endif
+
+#=GF Makefile oneseq 5
+//

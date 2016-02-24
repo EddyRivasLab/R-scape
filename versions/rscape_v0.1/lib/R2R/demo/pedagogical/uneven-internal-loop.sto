@@ -1,0 +1,32 @@
+# STOCKHOLM 1.0
+seq            GAAUUACUGCAUAGCACAAUUGAUUC
+#=GC SS_cons   <<<<<<.<<<...>>>....>>>>>>
+#=GC R2R_LABEL abcdefghijklmnopqrstuvwxyz
+
+#=GF R2R ifdefeq layout default
+#=GF R2R endif
+
+#=GF R2R ifdefeq layout broken-left
+#=GF R2R internal_loop_to_bulges g
+#=GF R2R bulge q
+#=GF R2R place_explicit h f 0 3 0 0 0 0
+#=GF R2R endif
+
+#=GF R2R ifdefeq layout anyangle
+#=GF R2R multistem_junction_circular f all-stems-anyangle
+#=GF R2R endif
+
+#=GF R2R ifdefeq layout left-turn-multistem
+#=GF R2R multistem_junction_bulgecircley_solver f s0 0 ai s1 -90 ai
+#=GF R2R endif
+
+#=GF R2R ifdefeq layout left-turn-multistem
+#=GF R2R turn_stem_at_internal g -1 r
+#=GF R2R endif
+
+#=GF Makefile oneseq seq define layout default
+#=GF Makefile oneseq seq define layout broken-left
+#=GF Makefile oneseq seq define layout anyangle
+#=GF Makefile oneseq seq define layout left-turn-multistem
+#=GF Makefile oneseq seq define layout left-turn
+//
