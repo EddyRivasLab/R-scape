@@ -2,17 +2,15 @@
  * FastTree -- inferring approximately-maximum-likelihood trees for large
  * multiple sequence alignments.
  *
- * Morgan N. Price
+ * Morgan N. Price, 2008-2011
  * http://www.microbesonline.org/fasttree/
  *
  * Thanks to Jim Hester of the Cleveland Clinic Foundation for
  * providing the first parallel (OpenMP) code, Siavash Mirarab of
- * UT Austin for implementing the WAG option, Samuel Shepard
- * at the CDC for suggesting and helping with the -quote option, and
- * Aaron Darling (University of Technology, Sydney) for numerical changes
- * for wide alignments of closely-related sequences.
+ * UT Austin for implementing the WAG option, and Samuel Shepard
+ * at the CDC for suggesting and helping with the -quote option.
  *
- *  Copyright (C) 2008-2015 The Regents of the University of California
+ *  Copyright (C) 2008-2011 The Regents of the University of California
  *  All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -307,8 +305,7 @@
 
 /* By default, tries to compile with SSE instructions for greater speed.
    But if compiled with -DUSE_DOUBLE, uses double precision instead of single-precision
-   floating point (2x memory required), does not use SSE, and allows much shorter
-   branch lengths.
+   floating point (2x memroy required), and does not use SSE.
 */
 #ifdef __SSE__
 #if !defined(NO_SSE) && !defined(USE_DOUBLE)
@@ -343,7 +340,7 @@ typedef float numeric_t;
 
 #endif /* USE_SSE3 */
 
-#define FT_VERSION "2.1.8"
+#define FT_VERSION "2.1.7"
 
 char *usage =
   "  FastTree protein_alignment > tree\n"
@@ -851,24 +848,14 @@ const double LogLkUnderflow = 9.21034037197618; /* -log(LkUnderflowInv) */
 const double Log2 = 0.693147180559945;
 /* These are used to limit the optimization of branch lengths.
    Also very short branch lengths can create numerical problems.
-   In version 2.1.7, the minimum branch lengths (MLMinBranchLength and MLMinRelBranchLength)
+   In version 2.1.7., the minimum branch lengths (MLMinBranchLength and MLMinRelBranchLength)
    were increased to prevent numerical problems in rare cases.
-   In version 2.1.8, to provide useful branch lengths for genome-wide alignments,
-   the minimum branch lengths were dramatically decreased if USE_DOUBLE is defined.
+   If compiled with -DUSE_DOUBLE then these minimums could be decreased.
 */
-#ifndef USE_DOUBLE
 const double MLMinBranchLengthTolerance = 1.0e-4; /* absolute tolerance for optimizing branch lengths */
 const double MLFTolBranchLength = 0.001; /* fractional tolerance for optimizing branch lengths */
-const double MLMinBranchLength = 5.0e-4; /* minimum value for branch length */
+const double MLMinBranchLength = 5.0e-4;
 const double MLMinRelBranchLength = 2.5e-4; /* minimum of rate * length */
-const double fPostTotalTolerance = 1.0e-10; /* posterior vector must sum to at least this before rescaling */
-#else
-const double MLMinBranchLengthTolerance = 1.0e-9;
-const double MLFTolBranchLength = 0.001;
-const double MLMinBranchLength = 5.0e-9;
-const double MLMinRelBranchLength = 2.5e-9;
-const double fPostTotalTolerance = 1.0e-20;
-#endif
 
 int mlAccuracy = 1;		/* Rounds of optimization of branch lengths; 1 means do 2nd round only if close */
 double closeLogLkLimit = 5.0;	/* If partial optimization of an NNI looks like it would decrease the log likelihood
@@ -2224,20 +2211,21 @@ int main(int argc, char **argv) {
       UpdateBranchLengths(/*IN/OUT*/NJ);
       LogTree("ME_Lengths",0, fpLog, NJ, aln->names, unique, bQuote);
 
-      double total_len = 0;
-      int iNode;
-      for (iNode = 0; iNode < NJ->maxnode; iNode++)
-	total_len += fabs(NJ->branchlength[iNode]);
-
-      if (verbose>0) {
-	fprintf(stderr, "Total branch-length %.3f after %.2f sec\n",
-		total_len, clockDiff(&clock_start));
-	fflush(stderr);
-      }
-      if (fpLog) {
-	fprintf(fpLog, "Total branch-length %.3f after %.2f sec\n",
-		total_len, clockDiff(&clock_start));
-	fflush(stderr);
+      if(verbose>0 || fpLog) {
+	double total_len = 0;
+	int iNode;
+	for (iNode = 0; iNode < NJ->maxnode; iNode++)
+	  total_len += fabs(NJ->branchlength[iNode]);
+	if (verbose>0) {
+	  fprintf(stderr, "Total branch-length %.3f after %.2f sec\n",
+		  total_len, clockDiff(&clock_start));
+	  fflush(stderr);
+	}
+	if (fpLog) {
+	  fprintf(fpLog, "Total branch-length %.3f after %.2f sec\n",
+		  total_len, clockDiff(&clock_start));
+	  fflush(stderr);
+	}
       }
 
 #ifdef TRACK_MEMORY
@@ -2250,27 +2238,7 @@ int main(int argc, char **argv) {
 #endif
 
       SplitCount_t splitcount = {0,0,0,0,0.0,0.0};
-
       if (MLnniToDo > 0 || MLlen) {
-	bool warn_len = total_len/NJ->maxnode < 0.001 && MLMinBranchLengthTolerance > 1.0/aln->nPos;
-	bool warn = warn_len || (total_len/NJ->maxnode < 0.001 && aln->nPos >= 10000);
-	if (warn)
-	  fprintf(stderr, "\nWARNING! This alignment consists of closely-related and very-long sequences.\n");
-	if (warn_len)
-	  fprintf(stderr,
-		  "This version of FastTree may not report reasonable branch lengths!\n"
-#ifdef USE_DOUBLE
-		  "Consider changing MLMinBranchLengthTolerance.\n"
-#else
-		  "Consider recompiling FastTree with -DUSE_DOUBLE.\n"
-#endif
-		  "For more information, visit\n"
-		  "http://www.microbesonline.org/fasttree/#BranchLen\n\n");
-	if (warn)
-	  fprintf(stderr, "WARNING! FastTree (or other standard maximum-likelihood tools)\n"
-		  "may not be appropriate for aligments of very closely-related sequences\n"
-		  "like this one, as FastTree does not account for recombination or gene conversion\n\n");
-
 	/* Do maximum-likelihood computations */
 	/* Convert profiles to use the transition matrix */
 	distance_matrix_t *tmatAsDist = TransMatToDistanceMat(/*OPTIONAL*/NJ->transmat);
@@ -3593,19 +3561,14 @@ void PrintNJ(FILE *fp, NJ_t *NJ, char **names, uniquify_t *unique, bool bShowSup
 	fprintf(fp,")");
       }
       /* Print the branch length */
-#ifdef USE_DOUBLE
-#define FP_FORMAT "%.9f"
-#else
-#define FP_FORMAT "%.5f"
-#endif
-      fprintf(fp, ":" FP_FORMAT, NJ->branchlength[node]);
+      fprintf(fp, ":%.5f", NJ->branchlength[node]);
     } else if (end) {
       if (node == NJ->root)
 	fprintf(fp, ")");
       else if (bShowSupport)
-	fprintf(fp, ")%.3f:" FP_FORMAT, NJ->support[node], NJ->branchlength[node]);
+	fprintf(fp, ")%.3f:%.5f", NJ->support[node], NJ->branchlength[node]);
       else
-	fprintf(fp, "):" FP_FORMAT, NJ->branchlength[node]);
+	fprintf(fp, "):%.5f", NJ->branchlength[node]);
     } else {
       if (node != NJ->root && NJ->child[NJ->parent[node]].child[0] != node) fprintf(fp, ",");
       fprintf(fp, "(");
@@ -4407,7 +4370,7 @@ void NormalizeFreq(/*IN/OUT*/numeric_t *freq, distance_matrix_t *dmat) {
     for (k = 0; k < nCodes; k++)
       total_freq += freq[k];
   }
-  if (total_freq > fPostTotalTolerance) {
+  if (total_freq > 1e-10) {
     numeric_t inverse_weight = 1.0/total_freq;
     vector_multiply_by(/*IN/OUT*/freq, inverse_weight, nCodes);
   } else {
@@ -4999,7 +4962,7 @@ profile_t *PosteriorProfile(profile_t *p1, profile_t *p2,
       double fPostTot = 0;
       for (j = 0; j < 4; j++)
 	fPostTot += fPost[j];
-      assert(fPostTot > fPostTotalTolerance);
+      assert(fPostTot > 1e-10);
       double fPostInv = 1.0/fPostTot;
 #if 0 /* SSE3 is slower */
       vector_multiply_by(fPost, fPostInv, 4);
@@ -5062,7 +5025,7 @@ profile_t *PosteriorProfile(profile_t *p1, profile_t *p2,
 	fPost[j] = value >= 0 ? value : 0;
       }
       double fPostTot = vector_sum(fPost, 20);
-      assert(fPostTot > fPostTotalTolerance);
+      assert(fPostTot > 1e-10);
       double fPostInv = 1.0/fPostTot;
       vector_multiply_by(/*IN/OUT*/fPost, fPostInv, 20);
       int ch = -1;		/* the dominant character, if any */

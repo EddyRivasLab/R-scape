@@ -1,0 +1,120 @@
+# VPATH and shell configuration
+#
+top_srcdir     = @top_srcdir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+SHELL          = /bin/sh
+
+
+# Package information
+#
+PACKAGE         = @PACKAGE_NAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+
+# Installation targets
+#
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir      = @bindir@
+libdir      = @libdir@
+includedir  = @includedir@
+mandir      = @mandir@
+docdir      = @docdir@
+pdfdir      = @pdfdir@
+mandir      = @mandir@
+man1dir     = ${mandir}/man1
+man1ext     = .1
+
+# Compiler configuration
+#
+CC        = @CC@
+CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ 
+LDFLAGS   = -static @LDFLAGS@
+SIMDFLAGS = @SIMD_CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+
+# Other tools
+#
+AR        = @AR@ 
+RANLIB    = @RANLIB@
+INSTALL   = @INSTALL@
+
+
+MYINCDIR = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
+
+LIBS     = -lm
+
+MYLIBS   = -lhmmer -leasel 
+IFLAGS   = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel 
+LFLAGS   = -L../src -L../lib/hmmer/src -L../lib/hmmer/lib/easel 
+
+# beautification magic stolen from git
+#
+QUIET_SUBDIR0 = +${MAKE} -C #space separator after -c
+QUIET_SUBDIR1 =
+ifndef V
+	QUIET_CC      = @echo '    ' CC $@;
+	QUIET_GEN     = @echo '    ' GEN $@;
+	QUIET_AR      = @echo '    ' AR $@;
+	QUIET_SUBDIR0 = +@subdir=
+	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
+		        ${MAKE} -C $$subdir
+endif
+
+
+# Code manifests
+#
+
+
+PROGS    = src/R-scape
+
+OBJS     = src/e1_bg.o\
+           src/e1_model.o\
+           src/e1_rate.o\
+           src/e1_emit.o\
+           src/e1_simulate.o\
+           src/e2_profilesq.o\
+           src/cococyk.o\
+           src/covgrammars.o\
+           src/covariation.o\
+           src/cykcov.o\
+           src/logsum.o\
+           src/minimize.o\
+           src/miscellaneous.o\
+           src/msatree.o\
+           src/msamanip.o\
+           src/ratematrix.o\
+           src/ratebuilder.o\
+           src/ribosum_matrix.o\
+
+
+
+all: libsrc.a ${PROGS} 
+
+
+${PROGS}: %: %.o ${OBJS}
+	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} ${MYLIBS} 
+
+
+.c.o:   
+	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
+
+libsrc.a:  ${OBJS}
+	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} libsrc.a
+
+
+clean:
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+
+
+
+################################################################
+# @LICENSE@
+################################################################

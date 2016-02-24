@@ -1,0 +1,81 @@
+# Top level Makefile for Easel
+#
+# On most systems, to build Easel you should only need:
+#     % ./configure; make
+#
+# Optionally, you can run a test suite:
+#     % make check
+#
+# And optionally, you can install everything more permanently:
+#     % make install
+#
+# For more information, see the Installation chapter of the Easel Guide.
+#
+
+# VPATH and shell configuration
+#
+top_srcdir = @top_srcdir@
+srcdir     = @srcdir@
+VPATH      = @srcdir@
+SHELL      = /bin/sh
+
+# Package information
+#
+PACKAGE         = @PACKAGE_NAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+
+# Installation targets
+#
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir      = @bindir@
+libdir      = @libdir@
+includedir  = @includedir@
+mandir      = @mandir@
+docdir      = @docdir@
+pdfdir      = @pdfdir@
+mandir      = @mandir@
+man1dir     = ${mandir}/man1
+man1ext     = .1
+
+# Compiler configuration
+#
+CC       = @CC@
+CFLAGS   = -O3 -finline-functions -funroll-loops -Wall 
+LIBS     = @LIBS@ 
+
+# Other tools
+#
+COMPRESS = gzip
+AR       = @AR@
+RANLIB   = @RANLIB@
+INSTALL  = @INSTALL@
+
+LIBS     = -lm
+
+# Code manifests
+#
+PROGS    = FastTree\
+
+
+OBJS     = FastTree.o\
+
+all: ${PROGS} 
+
+
+${PROGS}: %: %.o ${OBJS}
+	${CC} ${CFLAGS}  -o $@ $@.o ${LIBS} 
+
+
+.c.o:   
+	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
+
+
+
+clean:
+	-rm -f ${PROGS} ${OBJS} 
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+
