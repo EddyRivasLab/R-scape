@@ -13,7 +13,7 @@ Starting from a source distribution, R-scape_@RSCAPE_VERSION@.tar.gz:
 
 
 
-For complete documentation, see the R-scape User's Guide (Userguide.pdf).
+For complete documentation, see the R-scape User's Guide (R-scape_userguide.pdf).
 
 The default installation produces executable: R-scape_@RSCAPE_VERSION@/src/R-scape
 

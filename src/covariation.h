@@ -164,7 +164,6 @@ struct data_s {
   char                *dplotfile;
   char                *R2Rfile;
   char                *R2Rcykfile;
-  char                *R2Rversion;
   int                  R2Rall;
   ESL_RANDOMNESS      *r;
   RANKLIST            *ranklist_null;
@@ -253,10 +252,10 @@ extern int              cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, 
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
 extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, 
 				    int dosvg, int verbose, char *errbuf);
-extern int              cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist,
+extern int              cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist,
 				int makepdf, int makesvg, int verbose, char *errbuf);
-extern int              cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
-extern int              cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf);
+extern int              cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf);
+extern int              cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf);
 extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, 
 				     int verbose, char *errbuf);
 extern int              cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf);

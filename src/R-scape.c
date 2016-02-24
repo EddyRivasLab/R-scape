@@ -76,7 +76,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outheader;          /* header for all output files */
   int              infmt;
  
-  char            *R2Rversion;
   int              R2Rall;
   char            *R2Rfile;
 
@@ -348,6 +347,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
+  cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
 
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
@@ -356,8 +356,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
   }
   
-  esl_sprintf(&cfg.R2Rversion, "R2R-1.0.4");			
-  cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
@@ -677,7 +675,6 @@ main(int argc, char **argv)
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
-  if (cfg.R2Rversion) free(cfg.R2Rversion); 
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
@@ -1023,7 +1020,6 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.dplotfile     = NULL;
   data.R2Rfile       = NULL;
   data.R2Rcykfile    = NULL;
-  data.R2Rversion    = NULL;
   data.R2Rall        = FALSE;
   data.gnuplot       = NULL;
   data.r             = cfg->r;
@@ -1121,7 +1117,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.dplotfile     = cfg->dplotfile;
   data.R2Rfile       = cfg->R2Rfile;
   data.R2Rcykfile    = cfg->R2Rcykfile;
-  data.R2Rversion    = cfg->R2Rversion;
   data.R2Rall        = cfg->R2Rall;
   data.gnuplot       = cfg->gnuplot;
   data.r             = cfg->r;

@@ -1,0 +1,3 @@
+The alignment in this file is derived from a previously published alignment (Regulski, et al, 2008)
+
+http://www.ncbi.nlm.nih.gov/pubmed/18363797

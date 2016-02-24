@@ -213,7 +213,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
 
-    status = cov_R2R(data->R2Rfile, data->R2Rversion, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if  (status != eslOK) goto ERROR;
   }
   
@@ -2202,7 +2202,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int min
   if (status != eslOK) goto ERROR;
 
   /* R2R */
-  status = cov_R2R(data->R2Rcykfile, data->R2Rversion, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+  status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   /* DotPlots (pdf,svg) */
@@ -2888,8 +2888,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
-	HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESLX_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
@@ -2930,10 +2929,10 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
   fclose(fp);
   
   /* run R2R */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-  esl_sprintf(&args, "%s/%s/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, r2rversion, tmpinfile, tmpoutfile);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
  
@@ -3034,11 +3033,11 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
   
   /* produce the R2R pdf */
   if (makepdf) {
-    status = cov_R2Rpdf(r2rfile, r2rversion, verbose, errbuf);
+    status = cov_R2Rpdf(r2rfile, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
   if (makesvg) {
-    status = cov_R2Rsvg(r2rfile, r2rversion, verbose, errbuf);
+    status = cov_R2Rsvg(r2rfile, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
   
@@ -3069,45 +3068,53 @@ cov_R2R(char *r2rfile, char *r2rversion, int r2rall, ESL_MSA *msa, int *ct,
 }
 
 int
-cov_R2Rpdf(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rpdf = NULL;
   char *args = NULL;
   char *s = NULL;
+  int   status;
 
   /* produce the R2R pdf */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rpdf);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rpdf);
   system(args);
 
   free(args);
   free(r2rpdf);
   
   return eslOK;
+
+ ERROR:
+  return status;
  }
 
 int
-cov_R2Rsvg(char *r2rfile, char *r2rversion, int verbose, char *errbuf)
+cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rsvg = NULL;
   char *args = NULL;
   char *s = NULL;
+  int   status;
 
   /* produce the R2R svg */
-  if ("R2RDIR" == NULL)               return eslENOTFOUND;
-  if ((s = getenv("R2RDIR")) == NULL) return eslENOTFOUND;
+  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
   esl_sprintf(&r2rsvg, "%s.svg", r2rfile);
-  esl_sprintf(&args, "%s/%s/src/r2r %s %s >/dev/null", s, r2rversion, r2rfile, r2rsvg);
-  //esl_sprintf(&args, "%s/%s/src/r2r %s %s ", s, r2rversion, r2rfile, r2rsvg);
+  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rsvg);
+  //esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s ", s, r2rfile, r2rsvg);
   system(args);
   
   free(args);
   free(r2rsvg);
   
   return eslOK;
- }
+ 
+ ERROR:
+  return status;
+}
 
 int
 cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf)
