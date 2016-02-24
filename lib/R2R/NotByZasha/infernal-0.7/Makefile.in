@@ -74,7 +74,8 @@ check:
 # "make install" installs the programs in BINDIR
 #
 install:
-	echo install is disabled for R2R.  If you'd like the full Infernal package, go to http://infernal.janelia.org
+	echo install is disabled for R2R.  
+#If you'd like the full Infernal package, go to http://infernal.janelia.org
 
 # "make clean" removes almost everything except configuration files
 #              and binaries.
