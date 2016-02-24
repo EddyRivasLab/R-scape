@@ -93,12 +93,12 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
-  if ((s = getenv("FASTTREEDIR")) == NULL) esl_sprintf(&s, "lib/FastTree");
+  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "Failed to find envvar RSCAPEDIR\n");
 
   if (msa->abc->type == eslAMINO)
-    esl_sprintf(&args, "%s/src/FastTree -quiet %s > %s", s, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s/lib/FastTree/src/FastTree -quiet %s > %s", s, tmpmsafile, tmptreefile);
   else if (msa->abc->type == eslDNA || msa->abc->type == eslRNA)
-    esl_sprintf(&args, "%s/src/FastTree -quiet -nt %s > %s", s, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s/lib/FastTree/src/FastTree -quiet -nt %s > %s", s, tmpmsafile, tmptreefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
   if (verbose) { printf("%s\n", args); }

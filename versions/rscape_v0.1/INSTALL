@@ -1,20 +1,22 @@
-cd lib
+Brief installation instructions.
+R-scape
+http://selab.org
+-------------------------------------------------------------------------------------------
 
-cd hmmer
-autoconf
-./configure
-make
+Starting from a source distribution, R-scape_@RSCAPE_VERSION@.tar.gz:
+ uncompress:                uncompress R-scape_@RSCAPE_VERSION@.tar.gz  
+ unpack:                    tar xf R-scape_@RSCAPE_VERSION@.tar
+ move into new directory:   cd R-scape_@RSCAPE_VERSION@
+ configure:                 ./configure
+ build:                     make
+ environmental variable:    RSCAPEDIR set to path-to-directory R-scape_@RSCAPE_VERSION@
 
-I provide an executable of FastTree. It if does not work for you,
-go to 
-lib/FastTree
-and follow the instructions in the 00README file.
 
-cd ..
-autoconf
-./configure
-make
 
-you shoud have an executable for R-scape:
+For complete documentation, see the R-scape User's Guide (Userguide.pdf).
 
-src/R-scape
+The default installation produces executable: R-scape_@RSCAPE_VERSION@/src/R-scape
+
+-------------------------------------------------------------------------------------------
+Elena Rivas
+elenarivas@fas.harvard.edu
