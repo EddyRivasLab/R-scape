@@ -22,9 +22,9 @@
 # dependent files (e.g. the programs): an example ${exec_prefix} might be
 # /nfs/share/irix64/
 #
-prefix      = @prefix@
-exec_prefix = @exec_prefix@
-BINDIR      = @bindir@
+prefix      = /usr/local
+exec_prefix = ${prefix}
+BINDIR      = ${exec_prefix}/bin
 
 # how to install the man pages; 
 # cp is generally fine, unless you preformat your pages.
@@ -34,8 +34,8 @@ BINDIR      = @bindir@
 
 # your compiler and compiler flags
 #
-CC     = @CC@
-CFLAGS = @CFLAGS@
+CC     = gcc
+CFLAGS = -g -O2
 
 #######
 ## You should not need to modify below this line.
@@ -44,13 +44,13 @@ CFLAGS = @CFLAGS@
 ## St. Louis)
 #######
 SHELL       = /bin/sh
-PACKAGE     = @PACKAGE_NAME@
-BASENAME    = @PACKAGE_TARNAME@
-RELEASE     = @PACKAGE_VERSION@
-RELEASEDATE = "@PACKAGE_DATE@"
-COPYRIGHT   = "@PACKAGE_COPYRIGHT@"
-LICENSELINE = "@PACKAGE_LICENSE@"
-RELCODE     = @PACKAGE_RELCODE@
+PACKAGE     = squid-extracted-from-Infernal
+BASENAME    = infernal-squid
+RELEASE     = 0.7
+RELEASEDATE = "December 2005"
+COPYRIGHT   = "Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
+LICENSELINE = "Freely distributed under the GNU General Public License (GPL)"
+RELCODE     = infernal0_7
 LICENSETAG  = gnu
 COMPRESS    = gzip
 FTPDIR      = /nfs/ftp/eddy/software/infernal
