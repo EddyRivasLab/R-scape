@@ -86,8 +86,10 @@ RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://selab.org/"
-RSCAPE_ESLDIR="easel"
-RSCAPE_SADIR="libdivsufsort"
+RSCAPE_FASTTREEDIR="lib/FastTree"
+RSCAPE_HMMERDIR="lib/hmmer/src"
+RSCAPE_ESLDIR="lib/hmmer/lib/easel"
+RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 AC_SUBST(E2_DATE)
@@ -103,6 +105,8 @@ AC_SUBST(RSCAPE_COPYRIGHT)
 AC_SUBST(RSCAPE_LICENSE)
 AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
+AC_SUBST(RSCAPE_FASTTREEDIR)
+AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
 
@@ -630,7 +634,7 @@ AC_OUTPUT
 
 echo "
 
-E2 configuration:
+R-scape configuration:
      compiler:             ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
      host:                 $host
      linker:               ${LDFLAGS}

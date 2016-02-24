@@ -1,4 +1,4 @@
-/* src/e2_config.h.  Generated from e2_config.h.in by configure.  */
+/* e2_config.h.  Generated from e2_config.h.in by configure.  */
 /* @configure_input@
  * e2config.h.in -> e2config.h
  * 
@@ -21,11 +21,11 @@
 
 /* Version info - set once for whole package in configure.ac
  */
-#define E2_VERSION "0.1"
-#define E2_DATE "DEC 2011"
-#define E2_COPYRIGHT "Copyright (C) 2011 Howard Hughes Medical Institute."
-#define E2_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define E2_URL "http://hmmer.org/"
+/* #undef E2_VERSION */
+/* #undef E2_DATE */
+/* #undef E2_COPYRIGHT */
+/* #undef E2_LICENSE */
+/* #undef E2_URL */
 
 /* Large file support (must precede any header file inclusion.)
  */
@@ -41,17 +41,17 @@
 
 /* Optional parallel implementations
  */
-/* #undef HAVE_SSE2 */
+#define HAVE_SSE2 1
 /* #undef HAVE_MPI */
 /* #undef E2_PVM */
 /* #undef EHMM_THREADS */
-#define E2_THREADS 1
+/* #undef E2_THREADS */
 /* #undef HAVE_PTHREAD_ATTR_SETSCOPE */
 /* #undef HAVE_PTHREAD_SETCONCURRENCY */
 
 /* Optional processor specific support
  */
-#define HAVE_FLUSH_ZERO_MODE 1
+/* #undef HAVE_FLUSH_ZERO_MODE */
 
 /* Debugging hooks
  */
