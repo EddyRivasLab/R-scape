@@ -7382,7 +7382,7 @@ subdirs="$subdirs src"
 #else
 #  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
 #fi
-ac_config_files="$ac_config_files Makefile"
+ac_config_files="$ac_config_files Makefile documentation/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -8078,6 +8078,7 @@ do
     "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
     "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

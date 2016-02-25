@@ -639,7 +639,10 @@ AC_CONFIG_SUBDIRS(src)
 #else
 #  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
 #fi
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([
+Makefile
+documentation/Makefile
+])
 AC_OUTPUT
 
 
