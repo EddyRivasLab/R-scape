@@ -30,6 +30,16 @@ HFILES=AdobeGraphics.h AdobeGraphicsLayout.h CommaSepFileReader.h MiscExceptions
 OBJFILES=$(CPPFILES:%.cpp=%.o)
 EXE=r2r
 
+# Installation targets
+#
+prefix      = /usr/local
+exec_prefix = ${prefix}
+bindir      = ${exec_prefix}/bin
+
+# Other tools
+#
+INSTALL   = /usr/bin/install -c
+
 .PHONY : all exe clean
 all : exe
 
@@ -49,6 +59,8 @@ $(EXE) : $(OBJFILES)
 %.o : %.cpp
 	$(CC) $(CFLAGS) -o $@ $<
 
+install: r2r
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 
 clean:
 	rm -f *.o $(EXE)

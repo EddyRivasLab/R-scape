@@ -71,7 +71,8 @@ ${PROGS}: %: %.o ${OBJS}
 .c.o:   
 	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
-
+install: 
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 
 clean:
 	-rm -f ${PROGS} ${OBJS} 

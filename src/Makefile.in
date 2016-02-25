@@ -66,6 +66,8 @@ endif
 
 # Code manifests
 #
+SUBDIRS = ../src
+
 PROGS    = scorematrix2rate\
 	   programs/ehmmalign\
 	   programs/ehmmemit\
@@ -173,6 +175,9 @@ libsrc.a:  ${OBJS}
 	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
 	@${RANLIB} libsrc.a
 
+
+install: libsrc.a
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 
 clean:
 	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
