@@ -71,7 +71,13 @@ ${PROGS}: %: %.o ${OBJS}
 .c.o:   
 	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
-
+install: 
+	${QUIET}if [ ! -z "${PROGS}" ]; then \
+	   for file in ${PROGS}; do \
+	      echo '    ' INSTALL $$file ;\
+	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
+	   done ;\
+	fi
 
 clean:
 	-rm -f ${PROGS} ${OBJS} 
@@ -87,4 +93,5 @@ distclean:
 	-rm -rf autom4te.cache
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
-	-rm Makefile
+	-rm     Makefile
+

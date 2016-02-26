@@ -72,7 +72,12 @@ ${PROGS}: %: %.o ${OBJS}
 	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
 install: 
-	$(INSTALL) -d $(DESTDIR)$(bindir)
+	${QUIET}if [ ! -z "${PROGS}" ]; then \
+	   for file in ${PROGS}; do \
+	      echo '    ' INSTALL $$file ;\
+	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
+	   done ;\
+	fi
 
 clean:
 	-rm -f ${PROGS} ${OBJS} 

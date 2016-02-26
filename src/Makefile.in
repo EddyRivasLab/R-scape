@@ -175,9 +175,14 @@ libsrc.a:  ${OBJS}
 	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
 	@${RANLIB} libsrc.a
 
+install:
+	${QUIET}if [ ! -z "${PROGS}" ]; then \
+	   for file in ${PROGS}; do \
+	      echo '    ' INSTALL $$file ;\
+	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
+	   done ;\
+	fi
 
-install: libsrc.a
-	$(INSTALL) -d $(DESTDIR)$(bindir)
 
 clean:
 	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o

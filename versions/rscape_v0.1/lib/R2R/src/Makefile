@@ -30,7 +30,18 @@ HFILES=AdobeGraphics.h AdobeGraphicsLayout.h CommaSepFileReader.h MiscExceptions
 OBJFILES=$(CPPFILES:%.cpp=%.o)
 EXE=r2r
 
+# Installation targets
+#
+prefix      = /usr/local
+exec_prefix = ${prefix}
+bindir      = ${exec_prefix}/bin
+
+# Other tools
+#
+INSTALL   = /usr/bin/install -c
+
 .PHONY : all exe clean
+
 all : exe
 
 # just say if any .h file changes, re-build everything
@@ -49,6 +60,13 @@ $(EXE) : $(OBJFILES)
 %.o : %.cpp
 	$(CC) $(CFLAGS) -o $@ $<
 
+install: 
+	${QUIET}if [ ! -z "${EXE}" ]; then \
+	   for file in ${EXE}; do \
+	      echo '    ' INSTALL $$file ;\
+	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir} ;\
+	   done ;\
+	fi
 
 clean:
 	rm -f *.o $(EXE)

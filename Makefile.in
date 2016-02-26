@@ -99,7 +99,9 @@ install:
 	${INSTALL} -d ${DESTDIR}${bindir}
 	${INSTALL} -d ${DESTDIR}${man1dir}
 	${INSTALL} -d ${DESTDIR}${pdfdir}
-	${QUIET_SUBDIR0}src           ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}${FASTTREEDIR}      ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} install
 
 # uninstall: Reverses the steps of "make install".
 #
