@@ -626,6 +626,7 @@ src/rscape_config.h
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
+AC_CONFIG_SUBDIRS(lib/R2R/src)
 AC_CONFIG_SUBDIRS(lib/R2R/NotbyZasha/infernal-0.7)
 AC_CONFIG_SUBDIRS(lib/FastTree/src)
 AC_CONFIG_SUBDIRS(src)
@@ -639,10 +640,7 @@ AC_CONFIG_SUBDIRS(src)
 #else
 #  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
 #fi
-AC_CONFIG_FILES([
-Makefile
-documentation/Makefile
-])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
 
