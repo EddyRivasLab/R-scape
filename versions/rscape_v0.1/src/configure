@@ -656,6 +656,7 @@ build_os
 build_vendor
 build_cpu
 build
+RSCAPE_HOME
 RSCAPE_URL
 RSCAPE_VERSION
 RSCAPE_LICENSE
@@ -2370,14 +2371,9 @@ fi
 #     EASEL_VERSION    e.g. "1.9a"
 #
 
-RSCAPE_DATE="FEB 2016"
-RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute"
-RSCAPE_LICENSE="Freely distributed under the BSD open source license."
-RSCAPE_VERSION=$PACKAGE_VERSION
-RSCAPE_URL="http://bioeasel.org/"
-
 # Output variables.
 # (AC_OUTPUT replaces instances of @var@ in input files.)
+
 
 
 
@@ -2401,6 +2397,10 @@ _ACEOF
 
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_VERSION "$RSCAPE_VERSION"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define RSCAPE_HOME "${prefix}"
 _ACEOF
 
 

@@ -17,6 +17,7 @@
 #undef RSCAPE_DATE      
 #undef RSCAPE_COPYRIGHT 
 #undef RSCAPE_LICENSE   
+#undef RSCAPE_HOME   
 
 /* Large file support
  * Must precede any header file inclusion.

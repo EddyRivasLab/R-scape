@@ -84,12 +84,6 @@ fi
 #     EASEL_VERSION    e.g. "1.9a"
 #
 
-RSCAPE_DATE="FEB 2016"
-RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute"
-RSCAPE_LICENSE="Freely distributed under the BSD open source license."
-RSCAPE_VERSION=$PACKAGE_VERSION
-RSCAPE_URL="http://bioeasel.org/"
-
 # Output variables.
 # (AC_OUTPUT replaces instances of @var@ in input files.)
 AC_SUBST(RSCAPE_DATE)
@@ -97,6 +91,7 @@ AC_SUBST(RSCAPE_COPYRIGHT)
 AC_SUBST(RSCAPE_LICENSE)
 AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
+AC_SUBST(RSCAPE_HOME)
 
 # Preprocessor symbols.
 # adds a -Dvar=value to @DEFS@;
@@ -105,6 +100,7 @@ AC_DEFINE_UNQUOTED(RSCAPE_DATE,      "$RSCAPE_DATE")
 AC_DEFINE_UNQUOTED(RSCAPE_COPYRIGHT, "$RSCAPE_COPYRIGHT")
 AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")
 AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
+AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "${prefix}")
 
 # Figure out what host we're compiling on.
 # Three GNU scripts must be included in the distro: 

@@ -1,10 +1,4 @@
-# Process this file with autoconf to produce the HMMER configure script.
-#
-# Note that this is synchronized with Easel's configure script,
-# so that HMMER configures Easel in addition to itself; this saves
-# having to do a separate ./configure in Easel. That is,
-# everything that appears in Easel's configure script must also
-# appear here. 
+# Process this file with autoconf to produce the RSCAPE configure script.
 #
 # reminders to save re-reading autoconf manual for the n'th time:
 #    output variables:
@@ -86,12 +80,16 @@ RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://selab.org/"
+
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+
+RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
+AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 AC_SUBST(E2_DATE)
@@ -113,6 +111,7 @@ AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
+AC_SUBST(RSCAPE_HOME)
 
 
 # Preprocessor symbols (replace #undefs in e2_config.h)
@@ -122,11 +121,13 @@ AC_DEFINE_UNQUOTED(E2_LICENSE,   "$E2_LICENSE")
 AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
 AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
 
+# Preprocessor symbols (replace #undefs in rscape_config.h)
 AC_DEFINE_UNQUOTED(RSCAPE_DATE,      "$RSCAPE_DATE")
 AC_DEFINE_UNQUOTED(RSCAPE_COPYRIGHT, "$RSCAPE_COPYRIGHT")
 AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")
 AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
+AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 
 
 
@@ -620,8 +621,6 @@ AC_SYS_LARGEFILE
 # Config subdirs and files (except main Makefile, which we defer)
 #
 AC_CONFIG_HEADERS([
-src/e2_config.h
-src/rscape_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
@@ -640,7 +639,9 @@ AC_CONFIG_SUBDIRS(src)
 #else
 #  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
 #fi
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([
+Makefile
+])
 AC_OUTPUT
 
 

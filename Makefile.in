@@ -23,6 +23,7 @@ INFERNALDIR    = @R2R_INFERNALDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
 
+
 # location of libdivsufsort for suffix array creation
 SADIR          = @RSCAPE_SADIR@
 
@@ -47,6 +48,7 @@ pdfdir      = @pdfdir@
 mandir      = @mandir@
 man1dir     = ${mandir}/man1
 man1ext     = .1
+
 
 # Compiler configuration
 #
@@ -137,11 +139,6 @@ distclean:
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
 	-rm Makefile
-#Use 'ifneq' instead of 'test -e' because the '+@' in QUIET_SUBDIR0 can't
-#be passed to the shell. Note that ifneq breaks if indented.
-ifneq (,$(wildcard ./documentation/release-notes/LICENSE.sh))
-	-rm -f documentation/release-notes/LICENSE.sh
-endif
 
 
 ################################################################

@@ -585,6 +585,7 @@ PACKAGE_STRING='R-scape 0.1'
 PACKAGE_BUGREPORT='elenarivas@fas.harvard.edu'
 PACKAGE_URL=''
 
+ac_default_prefix="`pwd`"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -660,6 +661,7 @@ build_os
 build_vendor
 build_cpu
 build
+RSCAPE_HOME
 RSCAPE_SADIR
 RSCAPE_ESLDIR
 RSCAPE_HMMERDIR
@@ -2328,6 +2330,7 @@ RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://selab.org/"
+
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
@@ -2335,7 +2338,11 @@ RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
+RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
+ #changes the prefix default from /usr/bin to RSCAPE_HOME
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+
 
 
 
@@ -2379,6 +2386,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# Preprocessor symbols (replace #undefs in rscape_config.h)
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_DATE "$RSCAPE_DATE"
 _ACEOF
@@ -2397,6 +2405,10 @@ _ACEOF
 
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_URL "$RSCAPE_URL"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define RSCAPE_HOME "$RSCAPE_HOME"
 _ACEOF
 
 
@@ -7358,7 +7370,7 @@ fi
 # Done.
 # Config subdirs and files (except main Makefile, which we defer)
 #
-ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h"
+ac_config_headers="$ac_config_headers "
 
 
 
@@ -8078,8 +8090,6 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
-    "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
