@@ -585,6 +585,7 @@ PACKAGE_STRING='R-scape 0.1'
 PACKAGE_BUGREPORT='elenarivas@fas.harvard.edu'
 PACKAGE_URL=''
 
+ac_default_prefix="`pwd`"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -662,6 +663,7 @@ RSCAPE_VERSION
 RSCAPE_LICENSE
 RSCAPE_COPYRIGHT
 RSCAPE_DATE
+RSCAPE_NAME
 target_alias
 host_alias
 build_alias
@@ -2370,6 +2372,29 @@ fi
 # new preprocessor symbol of our own:
 #     EASEL_VERSION    e.g. "1.9a"
 #
+E2_DATE="DEC 2011"
+E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
+E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+E2_VERSION=$PACKAGE_VERSION
+E2_URL="http://selab.org/"
+E2_ESLDIR="lib/easel"
+E2_SADIR="libdivsufsort"
+
+RSCAPE_DATE="FEB 2016"
+RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
+RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+RSCAPE_VERSION=$PACKAGE_VERSION
+RSCAPE_URL="http://selab.org/"
+
+RSCAPE_FASTTREEDIR="lib/FastTree/src"
+RSCAPE_R2RDIR="lib/R2R/src"
+R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
+RSCAPE_HMMERDIR="lib/hmmer/src"
+RSCAPE_ESLDIR="lib/hmmer/lib/easel"
+RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+
+RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
+ #changes the prefix default from /usr/bin to RSCAPE_HOME
 
 # Output variables.
 # (AC_OUTPUT replaces instances of @var@ in input files.)
@@ -2380,9 +2405,14 @@ fi
 
 
 
+
 # Preprocessor symbols.
 # adds a -Dvar=value to @DEFS@;
 # replace #undef's in easel.h.in
+cat >>confdefs.h <<_ACEOF
+#define RSCAPE_NAME "$RSCAPE_NAME"
+_ACEOF
+
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_DATE "$RSCAPE_DATE"
 _ACEOF

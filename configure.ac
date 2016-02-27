@@ -71,10 +71,11 @@ E2_DATE="DEC 2011"
 E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
 E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://hmmer.org/"
-E2_ESLDIR="easel"
+E2_URL="http://selab.org/"
+E2_ESLDIR="lib/easel"
 E2_SADIR="libdivsufsort"
 
+RSCAPE_NAME="R-scape"
 RSCAPE_DATE="FEB 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
@@ -100,6 +101,7 @@ AC_SUBST(E2_URL)
 AC_SUBST(E2_ESLDIR)
 AC_SUBST(E2_SADIR)
 
+AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
 AC_SUBST(RSCAPE_COPYRIGHT)
 AC_SUBST(RSCAPE_LICENSE)
@@ -122,6 +124,7 @@ AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
 AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
 
 # Preprocessor symbols (replace #undefs in rscape_config.h)
+AC_DEFINE_UNQUOTED(RSCAPE_NAME,      "$RSCAPE_NAME")
 AC_DEFINE_UNQUOTED(RSCAPE_DATE,      "$RSCAPE_DATE")
 AC_DEFINE_UNQUOTED(RSCAPE_COPYRIGHT, "$RSCAPE_COPYRIGHT")
 AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")

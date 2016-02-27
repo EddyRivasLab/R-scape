@@ -673,6 +673,7 @@ RSCAPE_VERSION
 RSCAPE_LICENSE
 RSCAPE_COPYRIGHT
 RSCAPE_DATE
+RSCAPE_NAME
 E2_SADIR
 E2_ESLDIR
 E2_URL
@@ -2321,10 +2322,11 @@ E2_DATE="DEC 2011"
 E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
 E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://hmmer.org/"
-E2_ESLDIR="easel"
+E2_URL="http://selab.org/"
+E2_ESLDIR="lib/easel"
 E2_SADIR="libdivsufsort"
 
+RSCAPE_NAME="R-scape"
 RSCAPE_DATE="FEB 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
@@ -2342,6 +2344,7 @@ RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+
 
 
 
@@ -2387,6 +2390,10 @@ _ACEOF
 
 
 # Preprocessor symbols (replace #undefs in rscape_config.h)
+cat >>confdefs.h <<_ACEOF
+#define RSCAPE_NAME "$RSCAPE_NAME"
+_ACEOF
+
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_DATE "$RSCAPE_DATE"
 _ACEOF

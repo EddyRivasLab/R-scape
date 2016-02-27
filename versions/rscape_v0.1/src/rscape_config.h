@@ -14,11 +14,11 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION ""
-#define RSCAPE_DATE ""
-#define RSCAPE_COPYRIGHT ""
-#define RSCAPE_LICENSE ""
-#define RSCAPE_HOME "/Users/erivas/src/src/mysource/versions/rscape_v0.1"
+#define RSCAPE_VERSION "0.1"
+#define RSCAPE_DATE "FEB 2016"
+#define RSCAPE_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute."
+#define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
+#define RSCAPE_HOME "/Users/rivase/src/src/mysource/versions/rscape_v0.1"
 
 /* Large file support
  * Must precede any header file inclusion.

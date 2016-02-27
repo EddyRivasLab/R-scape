@@ -9,9 +9,10 @@ Starting from a source distribution, R-scape_@RSCAPE_VERSION@.tar.gz:
  move into new directory:   cd R-scape_@RSCAPE_VERSION@
  configure:                 ./configure
  build:                     make
- environmental variable:    RSCAPEDIR set to path-to-directory R-scape_@RSCAPE_VERSION@
+ install:		    make install
 
-
+The newly compiled binary "R-scape" is in the R-scape_@RSCAPE_VERSION@/bin directory.
+You can run it from there.
 
 For complete documentation, see the R-scape User's Guide (R-scape_userguide.pdf).
 
