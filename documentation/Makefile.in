@@ -36,8 +36,6 @@ TEXFILES =\
 	macros.tex\
 	main.tex\
 	more.tex\
-	pipeline.tex\
-	tabular.tex\
 	tutorial.tex
 
 ifndef V
