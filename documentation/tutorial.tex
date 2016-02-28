@@ -114,16 +114,88 @@ consensus structure.
 
 
 \subsection{Running \rscape\, on one alignment file}
+Running \rscape\, with default parameters on the sequence
+\prog{tutorial/updated\_arisong.sto}.
 
-\prog{bin/R-scape tuturial/updated\_arisong.sto}
+\user{bin/R-scape tutorial/updated\_arisong.sto}\\
+Default parameters remove sequences that are more than 97\% similar to
+each other (\prog{-I 0.97}), consider only columns that have at least
+50\% of the positions occupied (\prog{--gapthresh 0.5}), and uses the
+product-average corrected G-Test (\prog{--GTp}) covariation
+statistic.\\
+
+
+The \prog{tutorial/updated\_arisong.out} output file looks like this:
 
 \begin{sreoutput}
+more tutorial/updated_Arisong.out 
+# MSA updated_Arisong_1 nseq 69 (95) alen 65 (150) avgid 65.16 (64.97) nbpairs 20 (20)
+# GTp thresh Eval 0.050000 cov=41.310069 [-9.744726,89.076909] [2 | 9 20 11 | 45.000000 81.818182 58.064516] 
+                93             104      43.65   6.01567e-06
+*               94             110      43.17   4.29923e-05
+*               96             108      65.95   0
+*               98             106      89.08   0
+...
+\end{sreoutput}
+The output is a list of significant pairs ordered by the first positions. \\
+
+\begin{sreitems}{\emprog{Second and third columns}}
+\item[\emprog{First column}] indicates whether the significant pair is
+  part of the given structure (*), or not.  If the pair is not in the
+  structure, we distinguish whether the pair is compatible with the
+  given structure ($\sim$) o not, in which case it is a blank.
+
+\item[\emprog{Second and third columns}] are the two positions of the
+  pair. Positions are relative to the input alignment.
+
+\item[\emprog{Forth column}] is the covariation score
+
+\item[\emprog{Fifth column}] is the E-value. Significant positions
+  have E-values $<< 1$.
+\end{sreitems}
+
+The first commented line on top describe properties of the given
+alignment: number of sequence (nseq), alignment length (alen), average
+percentage identity (avgid), and number of base pairs (nbpairs).
+Values in parenthesis correspond to the alignment as is given. Values
+not in parenthesis correspond to the analyzed alignment after the
+default filters have been applied.
+
+The second commented line describes the covariation method (GTp), the
+E-value threshold (0.05), the score at that evalue (42.3), the range
+of scores for all pairs in the alignmens (from -9.7 to 89.1), the
+number of covaring not base pairs (2), the number of covarying base
+pairs (9), the number of base pairs (20), and the total number of
+covarying pairs (11). Lastly we provide the sensitivity (45.0=9/20),
+positivie predictive value (81.8=9/11)), and F-measure (58.1 = 2 *
+45.0 * 81.8 / (45.0+81.8))).\\
+
+Other outputs are more relevant for benchmarking purposes, such as:\\
+The \prog{tutorial/updated\_arisong.sum} file:
+
+\begin{sreoutput}
+more tutorial/updated_Arisong.sum 
+0.050000        updated_Arisong_1       69      65      65.16    GTp 9 20 20 45.000000 45.000000 
+\end{sreoutput}
+
+The \prog{tutorial/updated\_arisong.roc} file:
+\begin{sreoutput}
+more tutorial/updated_Arisong.roc
+# MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
+
+# GTp thresh fp tf found true negatives sen ppv F evalue
+89.04630 0 1 1 20 2060 5.00 100.00 9.52 0
+88.79103 0 1 1 20 2060 5.00 100.00 9.52 0
+88.53575 0 1 1 20 2060 5.00 100.00 9.52 0
+88.28048 0 1 1 20 2060 5.00 100.00 9.52 0
+88.02521 0 1 1 20 2060 5.00 100.00 9.52 0
+87.76993 0 1 1 20 2060 5.00 100.00 9.52 0
+87.51466 0 1 1 20 2060 5.00 100.00 9.52 0
+...
 \end{sreoutput}
 
 
-
-
-
+\subsection{\rscape\, graphical outputs per alignment}
 
 
 
