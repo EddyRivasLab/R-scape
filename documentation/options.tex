@@ -3,26 +3,73 @@
 \label{section:options}
 \setcounter{footnote}{0}
 
-The whole list of options can be found using \prog{R-scape -h}.
+The whole list of options can be found using 
+
+\user{R-scape -h}.\\
 
 Some important options are:
+\subsection{Covariation statistic options}
 
-\subsection{Selection of covariation statistic, \prog{--GTp}}
+\subsubsection{\prog{-E <x>}}
 
-\subsection{\prog{-E}}
+\subsubsection{\prog{--GT, --MI,  --MIr, --MIg, --CHI, --OMES, --RAF, --RAFS, }}
+We favor the G-test covariation statistic, but a total of eight
+covariation statistics are currently implemented in \rscape. For each
+covariation statistic (GT, for instance), \rscape\ can also calculate
+its average product correction (GTp) ad its average sum corretions
+(GTa).  Each option \prog{--GT} stands for three independent ones:
+\prog{--GT, --GTp, --GTa}.
 
-\subsection{\prog{--cyk}}
+The \rscape\ default is \prog{--GTp}.
 
-\subsection{\prog{--nofigures}}
+Details of the definition and provenance of the different covariation
+statistics can be found in the \rscape\ manuscript: Rivas, E. \& Eddy
+S.~E., \textit{``A statistical test of RNA base pair covariation
+  applied to proposed lncRNA structures}.
 
-\subsection{\prog{--C2, --C16}}
+\subsubsection{\prog{--C2, --C16}}
+For all the covariation statistics (except RAF and RAFS), one can do a
+16-component (C16) or a two-component (C2) calculation, depending on
+whether it uses the 16 possible pair combinations, or those are group
+in two classes depending on whether they form a Watson-Crick pair (6
+cases, including U:G and G:U), or whether they do not (10 cases).
+
+\rscape's default is the 16 component covariation statistic, unless
+the number of sequences in the alignment is $\leq$ 8 or the length of
+the alignment is $\leq$ 50, in which case it uses the two-class
+covariation statistic.
+
+\subsection{Seach options}
+
+\subsubsection{\prog{--cyk}}
 
 
-\subsection{\prog{--gapthresh <x>}}
+\subsubsection{\prog{--window <n>}}
 
-\subsection{\prog{-I <x>}}
+\subsubsection{\prog{--slide <n>}}
 
-\subsection{\prog{--tree <s>}}
+\subsection{Input alignment options}
+
+\subsubsection{\prog{-I <x>}}
+
+\subsubsection{\prog{--gapthresh <x>}}
+
+\subsubsection{\prog{--submsa <n>}}
+
+\subsubsection{\prog{--tree <s>}}
+
+
+\subsection{Output options}
+
+\subsubsection{\prog{--outmsa <f>}}
+
+
+\subsection{Plotting options}
+
+\subsubsection{\prog{--nofigures}}
+
+
+\subsubsection{\prog{--r2rall}}
 
 
 
