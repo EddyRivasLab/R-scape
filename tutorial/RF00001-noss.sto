@@ -756,7 +756,6 @@ AY544572.1/31-151        --ACAUGC-G-------U-ACG----UG-C-G-C-G---GAAUAU--AUUAA-GC
 EF175853.1/1-105         --GGGUGC-GA-U-C-GU-ACC----AG-C-A-C-U---AA----------A-GC-A----------C---CG----A-UC----CCAUCA-------GA-ACUCU-UU-AGUUAA-A-----------------CGUGCUU-G-G--G---CG--AGAGUA--GUACUGGCU--U--------------G-GGU---G-
 DQ867109.1/483-591       --GCUUAC-GG-C-C-AC-AUC----AG-U-G-U-G---AA----------A-GU-G----------U--CUG----A-----------------------UCUUC-GA-AGUUAA-A-----------------CACGCCU-G-U--G---CU--CGGCUA--GUACGUGGA--UGGGAAAU-C-GCCUG-AGA---A-
 AF516462.1/347-450       --GGAUGC-GA-U-C-AU-ACC----AG-C-A-C-U---AA----------A-GC-A----------C--CGG----A-------------------------UCC-CA-U---CA-G-----------------CGUGCUU-G-G--G---CG--AGAGUA--GUACUAGGA--UAGGUGAC-C-UCCUG-GGA---A-
-#=GC SS_cons             ..((((((.((.(.,.,,.,<<....-<.<.<.<.<...--..........-.<<.-..........-..<<<....<.<<....______.......>>.-->>>.>-.->>---.-.................>>>>>--.>.>..<...<<..-<<---..-<-<<----..-<<____>.>.-----.>>-...>.
 #=GC RF                  ..gccuGc.gg.c.C.AU.Acc....ag.c.g.c.g...aA..........a.gc.A..........C..cgG....a.uC....CCAUCc.......Ga.ACuCc.gA.AguUAA.G.................cgcgcUu.g.g..g...Cc..agggUA..GUAcuagGa..UGgGuGAc.C.uCcUG.ggA...A.
 
 X01556.1/3-118           --AGUA----GG-U-CA-UC--G-UCAAGC
@@ -1471,6 +1470,5 @@ AY544572.1/31-151        --ACCU----CG-U--A-UU--G-CAUUCC
 EF175853.1/1-105         --AAC-----CG-C-AA-UU--U-CUUUUC
 DQ867109.1/483-591       --CCCC----AG-G-UG-CU--A-UAAGCU
 AF516462.1/347-450       --GUCG---UCG-U--G-UU--G-CAUUCC
-#=GC SS_cons             .-->>-....>>.>..).))..).))))):
 #=GC RF                  .gacca....gG.u..g.cc..g.Caggcc
 //

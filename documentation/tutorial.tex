@@ -43,20 +43,53 @@ alignments, all in Stockholm format:
   version of the one published in \citep{JungEddy11}.
 \item[\emprog{ar14.sto}] Structural alignment of the $\alpha$-proteobacteria ncRNA ar14. This alignment is an updated version of the one
   published in \citep{delVal12}.
-\item[\emprog{RF00001.sto}] Rfam v12.0 seed alignment of 5S rRNA. 
 \item[\emprog{RF00005.sto}] Rfam v12.0 seed alignment of tRNA. 
 \item[\emprog{RF00001.sto}] Rfam v12.0 seed alignment of YRNA. 
+\item[\emprog{RF00001-noss.sto}] Rfam v12.0 seed alignment of 5S rRNA, after removing the consensus secondary structure. 
 \end{sreitems}
 
 
 \subsection{Running \rscape\, on one alignment file}
-Running \rscape\, with default parameters on the sequence
-\prog{tutorial/updated\_arisong.sto}.
+To run \rscape\ with default parameters on alignment file
+\prog{tutorial/updated\_arisong.sto} use:\\
 
 \user{bin/R-scape tutorial/updated\_arisong.sto}\\
-Default parameters remove sequences that are more than 97\% similar to
-each other (\prog{-I 0.97}), consider only columns that have at least
-50\% of the positions occupied (\prog{--gapthresh 0.5}), and uses the
-product-average corrected G-Test (\prog{--GTp}) covariation
-statistic.
+
+Default parameters are:\\
+\begin{sreitems}{\emprog{Avg. percent identity:}}
+\item[\emprog{Target E-value:}]Reports pairs which covariation
+scores have E-values smaller or equal to 0.05. The target E-value can be changed
+  with option \emprog{-E <x>}.
+
+\item[\emprog{Avg. percent identity:}]sequences with more than
+  97\% similarity to each other are removed.  The maximum average
+  percentage identity in the alignment can be changed with option
+  \emprog{-I <x>}.
+
+\item[\emprog{Gaps in columns}]columns with more than 50\% gaps are
+  removed. The gap threshold for removing columns can be modified
+  using option \emprog{--gapthresh <x>}
+
+\item[\emprog{Covariation statistic}]covariation statistic in the
+  product-average corrected G-Test (\emprog{--GTp}).
+
+\item[\emprog{Covariation Class}]uses the 16 compoment covariation
+  statistic (C16), unless the number of sequences in the alignment is
+  $\leq$ 8 or the length of the alignment is $\leq$ 50, in which case
+  it uses the two-class covariation statistic (C2). A particular
+  covariation class can be selected using either \emprog{--C16} or
+  \emprog{--C2}.
+
+  The threshold for the minimun number of sequences can be changed
+  with option \prog{--nseqthresh <n>}.  The threshold for the minimun
+  alignment length can be changed with option \prog{--alenthresh <n>}.
+
+\item[\emprog{Null alignments:}]produces 20 null
+  alignments, unless the product of the number of sequences by the
+  length of the alignment $<$ 10,000 in which case the number of null
+  alignments is 50; or $<$ 1,000 in which case it is 100. The
+  number of null alignments can be controlled with option
+  \emprog{--nshuffle <n>}.
+\end{sreitems}
+
 

@@ -1,28 +1,153 @@
-
-\section{Output Format}
-\label{section:output}
+\label{section:outputs}
 \setcounter{footnote}{0}
+\section{Outputs of \rscape}
 
-\subsection{\prog{.out} file}
+For each alignment file \prog{rnafile.sto}, \rscape\, produces the following output:
 
-\subsection{\prog{.roc} file}
+\begin{sreitems}{\emprog{rnafile.sorted.out}}
+\item[\emprog{rnafile.out}] Tabular output with the significant pairs,
+  with their score and E-value.
+%
+\item[\emprog{rnafile.sorted.out}] Tabular output sorted from highest to
+  lowest E-value.
+%
+\item[\emprog{rnafile.roc}] Tabular output that provides statistics for 
+each score value.
+%
+\item[\emprog{rnafile.sum}] Tabular output with a line summary statistics
+  per alignment in the file.
+%
+\end{sreitems}
 
-\subsection{\prog{.sum} file}
+An Stockholm alignment file can include several alignments.  For each
+individual alignment (\prog{msaname}) in the Stockholm file,
+\rscape\ produces the following output:
 
-\subsection{\prog{.his} files}
+\subsection{Alignment with consensus seconary structure}
+If the given alignment does have a consensus secondary structure
+(\prog{\#=GF SS\_cons} markup), the following files are produced
+
+\begin{sreitems}{\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}}
+\item[\emprog{rnafile\_msaname.his}] A two column histogram file for the
+  covariation scores.
+%
+\item[\emprog{rnafile\_msaname.his.ps}] Plot of the score histogram.
+%
+\item[\emprog{rnafile\_msaname.R2R.sto}] Stockholm file annotated by a
+  modified version of the R2R program. This file includes the
+  information necesary to draw the consensus structure, and to
+  annotate the significantly covarying base pairs.
+%
+\item[\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}] Drawing of the
+  \rscape-annotated consensus secondary structure.
+%
+\item[\emprog{rnafile\_msaname.dplot.\{ps,svg\}}] Dot plot of the consensus
+  secondary structure annotated according to covariation.
+%
+\end{sreitems}
+For each alignment, \emprog{msaname} is given
+by \prog{<ACC>\_<ID>}, the combination of the accesion \prog{\#=GF
+AC <AC>} and name \prog{\#=GF ID <ID>} stockholm-format markups (or
+one of two if the other in not defined).  If none of those fields are
+defined, \emprog{msaname} is a number describing the order in the
+file of the given alignment.
+
+\subsection{Alignment without consensus seconary structure}
+Alternatively, if the alignemnt does not have a consensus secondary
+structure (or if it does and the option \prog{\rscape\ --cyk} is
+used) \rscape\, produces the following additional files describing the
+maximal-covariation optimal secondary structure:
+
+\begin{sreitems}{\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}}
+\item[\emprog{rnafile\_msaname.cyk.his}]
+%
+\item[\emprog{rnafile\_msaname.cyk.his.\{ps.svg\}}]
+%
+\item[\emprog{rnafile\_msaname.cyk.R2R.sto}]
+%
+\item[\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}]
+%
+\item[\emprog{rnafile\_msaname.cyk.dplot.\{ps,svg\}}]
+%
+\end{sreitems}
+These files are formatted identially to those for describing the given
+consensus structure.
 
 
-\subsection{\prog{.R2R.sto} files}
 
-\subsection{\prog{.dplot.ps} file}
+\subsection{Tabular outputs per file}
+
+The \prog{tutorial/updated\_arisong.out} output file looks like this:
+
+\begin{sreoutput}
+more tutorial/updated_Arisong.out 
+# MSA updated_Arisong_1 nseq 69 (95) alen 65 (150) avgid 65.16 (64.97) nbpairs 20 (20)
+# GTp thresh Eval 0.050000 cov=41.310069 [-9.744726,89.076909] [2 | 9 20 11 | 45.000000 81.818182 58.064516] 
+                93             104      43.65   6.01567e-06
+*               94             110      43.17   4.29923e-05
+*               96             108      65.95   0
+*               98             106      89.08   0
+...
+\end{sreoutput}
+The output is a list of significant pairs ordered by the first positions. \\
+
+\begin{sreitems}{\emprog{Second and third columns}}
+\item[\emprog{First column}] indicates whether the significant pair is
+  part of the given structure (*), or not.  If the pair is not in the
+  structure, we distinguish whether the pair is compatible with the
+  given structure ($\sim$) o not, in which case it is a blank.
+
+\item[\emprog{Second and third columns}] are the two positions of the
+  pair. Positions are relative to the input alignment.
+
+\item[\emprog{Forth column}] is the covariation score
+
+\item[\emprog{Fifth column}] is the E-value. Significant positions
+  have E-values $<< 1$.
+\end{sreitems}
+
+The first commented line on top describe properties of the given
+alignment: number of sequence (nseq), alignment length (alen), average
+percentage identity (avgid), and number of base pairs (nbpairs).
+Values in parenthesis correspond to the alignment as is given. Values
+not in parenthesis correspond to the analyzed alignment after the
+default filters have been applied.
+
+The second commented line describes the covariation method (GTp), the
+E-value threshold (0.05), the score at that evalue (42.3), the range
+of scores for all pairs in the alignmens (from -9.7 to 89.1), the
+number of covaring not base pairs (2), the number of covarying base
+pairs (9), the number of base pairs (20), and the total number of
+covarying pairs (11). Lastly we provide the sensitivity (45.0=9/20),
+positivie predictive value (81.8=9/11)), and F-measure (58.1 = 2 *
+45.0 * 81.8 / (45.0+81.8))).\\
+
+Other outputs are more relevant for benchmarking purposes, such as:\\
+The \prog{tutorial/updated\_arisong.sum} file:
+
+\begin{sreoutput}
+more tutorial/updated_Arisong.sum 
+0.050000        updated_Arisong_1       69      65      65.16    GTp 9 20 20 45.000000 45.000000 
+\end{sreoutput}
+
+The \prog{tutorial/updated\_arisong.roc} file:
+\begin{sreoutput}
+more tutorial/updated_Arisong.roc
+# MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
+
+# GTp thresh fp tf found true negatives sen ppv F evalue
+89.04630 0 1 1 20 2060 5.00 100.00 9.52 0
+88.79103 0 1 1 20 2060 5.00 100.00 9.52 0
+88.53575 0 1 1 20 2060 5.00 100.00 9.52 0
+88.28048 0 1 1 20 2060 5.00 100.00 9.52 0
+88.02521 0 1 1 20 2060 5.00 100.00 9.52 0
+87.76993 0 1 1 20 2060 5.00 100.00 9.52 0
+87.51466 0 1 1 20 2060 5.00 100.00 9.52 0
+...
+\end{sreoutput}
 
 
-
-
-
-
-
-
+\subsection{Graphical outputs per alignment}
 
 
 
