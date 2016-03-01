@@ -290,15 +290,17 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-    cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+  cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
-  esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
-
+  cfg.gnuplot = NULL;
+  if ("GNUPLOT" && getenv("GNUPLOT"))
+    esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
+  
   /* outheader for all output files */
   cfg.outheader = NULL;
   msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
   
-   /* If you know the MSA file format, set it (<infmt>, here). */
+  /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
       (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)

@@ -2745,8 +2745,9 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      ih, jh;
   int      status;
 
+  if (gnuplot   == NULL) return eslOK;
   if (dplotfile == NULL) return eslOK;
-  if (hitlist == NULL) return eslOK;
+  if (hitlist   == NULL) return eslOK;
   
   esl_FileTail(dplotfile, FALSE, &filename);
 
