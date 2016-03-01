@@ -10,7 +10,7 @@ The whole list of options can be found using
 Some important options are:
 \subsection{Covariation statistic options}
 
-\subsubsection{\prog{-E <x>}}
+\subsubsection{\prog{-E <x>}}  Target E-value is $x\geq 0$.
 
 \subsubsection{\prog{--GT, --MI,  --MIr, --MIg, --CHI, --OMES, --RAF, --RAFS, }}
 We favor the G-test covariation statistic, but a total of eight
@@ -18,14 +18,57 @@ covariation statistics are currently implemented in \rscape. For each
 covariation statistic (GT, for instance), \rscape\ can also calculate
 its average product correction (GTp) ad its average sum corrections
 (GTa).  Each option \prog{--GT} stands for three independent ones:
-\prog{--GT, --GTp, --GTa}.
+\prog{--GT, --GTp, --GTa}.\\
 
-The \rscape\ default is \prog{--GTp}.
+The \rscape\ default is \prog{--GTp}.\\
 
 Details of the definition and provenance of the different covariation
 statistics can be found in the \rscape\ manuscript: Rivas, E. \& Eddy
 S.~E., \textit{``A statistical test of RNA base pair covariation
-  applied to proposed lncRNA structures}.
+  applied to proposed lncRNA structures''}. In a nutshell, given two
+alignment columns $i,j$,
+%
+\[
+\begin{array}{lrcl}
+  \mbox{G-test:\citep{Woolf1957}}                                       & \mathrm{GT}(i,j)   & = & 2 \, \sum_{a,b} \mathrm{Obs}^{ab}_{ij} \, \log \frac{ \mathrm{Obs}^{ab}_{ij} } { \mathrm{Exp}^{ab}_{ij} }, \\
+  \mbox{Pearson's chi-square:}                                          & \mathrm{CHI}(i,j)  & = &      \sum_{a,b} \frac{ \left(\mathrm{Obs}^{ab}_{ij} - \mathrm{Exp}^{ab}_{ij}\right)^2 }{\mathrm{Exp}^{ab}_{ij}},\\ 
+  \mbox{Mutual information:\citep{Shannon48,Gutell94b}}                 & \mathrm{MI}(i,j)   & = &      \sum_{a,b} P^{ab}_{ij} \, \log \frac{ P^{ab}_{ij} }{ p^{a}_{i} \, p^{b}_{j}},                       \\
+  \mbox{MI normalized:\citep{Martin05}}                                 & \mathrm{MIr}(i,j)  & = & \frac{\mathrm{MI}(i,j)} {H(i,j)} = \frac{\mathrm{MI}(i,j)} { -\sum_{a,b} P^{ab}_{ij} \log  P^{ab}_{ij}},        \\
+  \mbox{MI with gap penalty:\citep{LindgreenKrogh06}}                   & \mathrm{MIg}(i,j)  & = & \mathrm{MI}(i,j) - \frac{N^G_{ij}} {N},                                                                   \\
+  \mbox{Obs-Minus-Exp-Squared:\citep{Fodor04}}                          & \mathrm{OMES}(i,j) & = &      \sum_{a,b} \frac{ \left(\mathrm{Obs}^{ab}_{ij} - \mathrm{Exp}^{ab}_{ij}\right)^2 }{N_{ij}},                \\
+  \mbox{RNAalifold (RAF):\citep{Hofacker02}}                            & \mathrm{RAF}(i,j)  & = & \mathrm{B}_{i,j},                                      \\
+  \mbox{RNAalifold Stacking (RAFS):\citep{LindgreenKrogh06}}            & \mathrm{RAFS}(i,j) & = & \frac{1}{4}\left(\mathrm{B}_{i-1,j+1}+2\,\mathrm{B}_{i,j}+\mathrm{B}_{i+1,j-1}\right).                                      \\
+\end{array}
+\]
+%
+\noindent
+where $a,b$ are (non-gap) residues; $N$ is the total number of aligned
+sequences; $\mathrm{Obs}^{ab}_{ij}$ is the observed count of $a:b$
+pairs in columns $i,j$ (only counting when both a,b are residues);
+$N_{ij}$ is the total number of residue pairs in columns $i,j$ (only
+counting when both a,b are residues); $P^{ab}_{ij}$ is the observed
+frequency of pair $a:b$ in columns $i,j$
+($P^{ab}_{ij}=\frac{Obs^{ab}_{ij}}{N_{ij}}$); $\mathrm{Exp}^{ab}_{ij}=
+N_{ij} p^a_ip^b_j$ is the expected frequency of pair $a:b$ assuming
+$i,j$ are independent, where $p^a_i$ are the marginal frequencies of
+$a$ residues in column $i$ (averaged to all other positions) ($p^a_i
+= \frac{1}{L-1}\sum_{j\neq i} \sum_b P^{ab}_{ij}$); $N^G_{ij} = N -
+N_{ij}$ is the number of pairs involving at least one gap symbol; the
+definition of $\mathrm{B}_{i,j}$ used in the RAF and RAFS statistics
+is involved, a concise definition can be found
+elsewhere~\citep{LindgreenKrogh06}.
+
+The background corrections~\citep{DunnGloor07} for a given
+covariation statistic above $\mathrm{COV}(i,j)$ are,
+%
+\[
+\begin{array}{lrcl}
+  \mbox{\small Average product correction} & \mathrm{COVp}(i,j) & = &  \mathrm{COV}(i,j) - \frac { \mathrm{COV}(i) \mathrm{COV}(j) } { \mathrm{COV} }. \\
+  \mbox{\small Average sum correction}     & \mathrm{COVa}(i,j) & = &  \mathrm{COV}(i,j) - \left( \mathrm{COV}(i) + \mathrm{COV}(j) - \mathrm{COV} \right), \\
+\end{array}
+\]
+
+
 
 \subsubsection{\prog{--C2, --C16}}
 For all the covariation statistics (except RAF and RAFS), one can do a
@@ -41,35 +84,43 @@ covariation statistic.
 
 \subsection{Search options}
 
-\subsubsection{\prog{--cyk}}
+\subsubsection{\prog{--cyk}} An optimal secondary structure is computed that includes all significant base pairs. The files for this
+maximum-covariation optimal structure all include the suffix
+\prog{.cyk.}
 
 
-\subsubsection{\prog{--window <n>}}
+\subsubsection{\prog{--window <n>}} \rscape\ can be run in a window scanning version for long alignments.
+The window size is $n>0$.
 
-\subsubsection{\prog{--slide <n>}}
+\subsubsection{\prog{--slide <n>}} In scanning mode, this options sets the number of positions to move from window to window, $n >0$.
+
 
 \subsection{Input alignment options}
 
-\subsubsection{\prog{-I <x>}}
+\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$ fraction identity are  considered in the analysis.
 
-\subsubsection{\prog{--gapthresh <x>}}
+\subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
 
-\subsubsection{\prog{--submsa <n>}}
+\subsubsection{\prog{--submsa <n>}} Analyzes a random subset of the input alignment.
 
-\subsubsection{\prog{--tree <s>}}
+\subsubsection{\prog{--treefile <f>}} A phylogenetic tree in Newick format can be given (by default a tree is created 
+from the alignment using the program FastTree~\citep{Price10}).  \rscape\ checks that the  number of taxa and the names
+of the taxa matches for all alignments analyzed.
 
 
 \subsection{Output options}
 
-\subsubsection{\prog{--outmsa <f>}}
+\subsubsection{\prog{--outmsa <f>}} The actual alignment analyzed can be saved in Stockholm format to file <f>.
 
 
 \subsection{Plotting options}
 
-\subsubsection{\prog{--nofigures}}
+\subsubsection{\prog{--nofigures}} None of the graphical outputs are produced using this option.
 
 
-\subsubsection{\prog{--r2rall}}
+\subsubsection{\prog{--r2rall}} Forces R2R to draw all positions in the alignment. By default only
+those that are more than 50\% occupied or are base paired are
+depicted.
 
 
 

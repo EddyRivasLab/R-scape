@@ -979,8 +979,13 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* create tree from MSA */
   if (cfg->T == NULL) {
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+    if (status != eslOK) esl_fatal(cfg->errbuf); 
   }
+
+  /* match the tree leaves to the msa names */
+  status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) esl_fatal(cfg->errbuf); 
+
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }

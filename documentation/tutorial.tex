@@ -44,7 +44,6 @@ alignments, all in Stockholm format:
 \item[\emprog{ar14.sto}] Structural alignment of the $\alpha$-proteobacteria ncRNA ar14. This alignment is an updated version of the one
   published in~\citep{delVal12}.
 \item[\emprog{RF00005.sto}] Rfam v12.0~\citep{Nawrocki15} seed alignment of tRNA. 
-\item[\emprog{RF00001.sto}] Rfam v12.0 seed alignment of YRNA. 
 \item[\emprog{RF00001-noss.sto}] Rfam v12.0 seed alignment of 5S rRNA, after removing the consensus secondary structure. 
 \end{sreitems}
 
@@ -250,7 +249,7 @@ Three plots are produced per alignment in the input file:
 \subsection{Other tabular outputs}
 
 \rscape\ produces two more tabular outputs per input file that are
-more relevant for benchmarking purposes, such as:\\
+more relevant for benchmarking purposes, those are:\\
 
 File \prog{tutorial/updated\_Arisong.sum} looks lie:
 
@@ -258,7 +257,21 @@ File \prog{tutorial/updated\_Arisong.sum} looks lie:
 more tutorial/updated_Arisong.sum 
 0.050000        updated_Arisong_1       69      65      65.16    GTp 9 20 20 45.000000 45.000000 
 \end{sreoutput}
+This file produces a one line output per alignment in the file.
+\begin{sreitems}{\emprog{Second column}}
+\item[\emprog{Column 1}] Target E-value.
+\item[\emprog{Column 2}] Alignment name.
+\item[\emprog{Column 3}] Number of sequence in the analyzed alignment.
+\item[\emprog{Column 4}] Number of columns analyzed.
+\item[\emprog{Column 5}] Average percentage identity in the analyzed alignment.
+\item[\emprog{Column 6}] Covariation statistic.
+\item[\emprog{Column 7}] Number of significant base pairs (tf).
+\item[\emprog{Column 8}] Number of base pairs (true).
+\item[\emprog{Column 9}] Number of significant pairs (found).
+\item[\emprog{Column 10}] Sensitivity = tf/true.
+\item[\emprog{Column 11}] Positive predictive value = tf/found.
 
+\end{sreitems}
 
 File \prog{tutorial/updated\_Arisong.roc} looks like:
 \begin{sreoutput}
@@ -275,3 +288,7 @@ more tutorial/updated_Arisong.roc
 87.51466 0 1 1 20 2060 5.00 100.00 9.52 0
 ...
 \end{sreoutput}
+
+This file produces a tabular output for each alignment and for as a
+function of the covariation score. The values in the file are
+described by the commented line.
