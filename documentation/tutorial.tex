@@ -37,7 +37,7 @@ files used in the tutorial.
 The tutorial provides several examples of RNA structural
 alignments, all in Stockholm format:
 
-\begin{sreitems}{\emprog{minifam.h3\{m,i,f,p\}}}
+\begin{sreitems}{\emprog{updated\_Arisong.sto}}
 \item[\emprog{updated\_Arisong.sto}] Structural alignment of the ciliate
   Arisong RNA. This alignment is an updated
   version of the one published in~\citep{JungEddy11}.
@@ -86,7 +86,7 @@ Default parameters are:
   particular covariation class can be selected using either
   \emprog{--C16} or \emprog{--C2}.
 
-  The threshold for the minimun number of sequences can be changed
+  The threshold for the minimum number of sequences can be changed
   with option \prog{--nseqthresh <n>}.  The threshold for the minimun
   alignment length can be changed with option \prog{--alenthresh <n>}.
 
@@ -146,11 +146,11 @@ comment lines per alignment in the file:
 
 \item[\emprog{Second comment line}]describes properties of the
   \rscape\ search: the covariation method (GTp), the E-value threshold
-  (0.05), the score at that evalue (42.3), the range of scores for all
-  pairs in the alignmens (from -9.7 to 89.1), the number of covaring
+  (0.05), the score at that E-value (42.3), the range of scores for all
+  pairs in the alignments (from -9.7 to 89.1), the number of covarying
   not base pairs (2), the number of covarying base pairs (9), the
   number of base pairs (20), and the total number of covarying pairs
-  (11). Lastly we provide the sensitivity (SEN=45.0=9/20), positivie
+  (11). Lastly we provide the sensitivity (SEN=45.0=9/20), positive
   predictive value (PPV=81.8=9/11), and F-measure (F=58.1 = 2 * SEN *
   PPV / (SEN+PPV)).
 \end{sreitems}
@@ -178,9 +178,9 @@ more tutorial/updated_Arisong.his
 \end{sreoutput}
 
 
-File \prog{tutorial/updated\_Arisong\_1.R2R.sto} is a stockholm
-formated alignment that includes the input alignment annotated with
-the consensus structure. This stockholm file also includes the
+File \prog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
+formatted alignment that includes the input alignment annotated with
+the consensus structure. This Stockholm file also includes the
 additional annotation required to use the drawing program R2R.
 
 It is possible that the resulting drawing will show parts of the
@@ -210,7 +210,7 @@ Three plots are produced per alignment in the input file:
     annotated consensus secondary structure.} Base pairs with
   covariation scores equal or below the target E-value (0.05 as
   default) are depicted in green. By default only positions in the
-  alignment with more than 50\% ocupancy are depicted (unless they form
+  alignment with more than 50\% occupancy are depicted (unless they form
   a base pair). Option \prog{--r2rall} forces the depiction of all
   positions in the alignment.  }
 \label{fig:r2r}
@@ -219,9 +219,9 @@ Three plots are produced per alignment in the input file:
 \begin{figure}
   \includegraphics[scale=0.60]{Arisong_dplot.pdf}
 \caption{\small\textbf{\prog{tutorial/updated\_Arisong\_1.dplot.\{ps,svg\}}:
-    dotplot.}  Dot size is propotional to the covariation score. In
+    dotplot.}  Dot size is proportional to the covariation score. In
   blue we depict the consensus base pairs; in green, the consensus
-  base pairs that show significant covariation; in orage other pairs
+  base pairs that show significant covariation; in orange other pairs
   that have significant covariation, are not part of the consensus
   secondary structure but are compatible with it; in black we depict
   other significant pairs.  Position are relative to the input alignment}

@@ -2819,7 +2819,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   // the actual ct
   isempty = TRUE;
-  for (i = 1; i <= msa->alen; i ++) { if (ipair > 0) { isempty = FALSE; break; } }
+  for (i = 1; i <= msa->alen; i ++) { if (ct[i] > 0) { isempty = FALSE; break; } }
   if (!isempty) {
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");  

@@ -1,6 +1,7 @@
 /* covariation.c */
 
 #include "p7_config.h"
+#include "rscape_config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -2818,7 +2819,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   // the actual ct
   isempty = TRUE;
-  for (i = 1; i <= msa->alen; i ++) { if (ipair > 0) { isempty = FALSE; break; } }
+  for (i = 1; i <= msa->alen; i ++) { if (ct[i] > 0) { isempty = FALSE; break; } }
   if (!isempty) {
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");  
@@ -2921,6 +2922,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char          covtag[12] = "cov_SS_cons";
   char         *args = NULL;
+  char         *cmd = NULL;
   char         *s = NULL;
   char         *ssstr = NULL;
   char         *covstr = NULL;
@@ -2953,10 +2955,16 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   fclose(fp);
   
   /* run R2R */
-  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
-  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
-  if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-  esl_sprintf(&args, "%s/lib/R2R/src/r2r --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", s, tmpinfile, tmpoutfile);
+ if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
+
+ if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
+    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
+  else if (RSCAPE_HOME)         // look for the installed executable
+    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  else
+    ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
+
+  esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
  
@@ -3071,6 +3079,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   remove(tmpoutfile);
   
   free(tok);
+  if (cmd)  free(cmd);
   if (args) free(args);
   if (ssstr) free(ssstr);
   if (covstr) free(covstr);
@@ -3084,6 +3093,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   if (msa)    esl_msa_Destroy(msa);
   if (r2rmsa) esl_msa_Destroy(r2rmsa);
   if (tok)    free(tok);
+  if (cmd)    free(cmd);
   if (args)   free(args);
   if (ssstr)  free(ssstr);
   if (covstr) free(covstr);
@@ -3096,22 +3106,31 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rpdf = NULL;
   char *args = NULL;
+  char *cmd = NULL;
   char *s = NULL;
   int   status;
 
   /* produce the R2R pdf */
-  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
-  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
-  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rpdf);
+  if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
+    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
+  else if (RSCAPE_HOME)                         // look for the installed executable
+    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  else
+    ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
+
+ esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
+ esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
   system(args);
 
+  free(cmd);
   free(args);
   free(r2rpdf);
   
   return eslOK;
 
  ERROR:
+  if (cmd)  free(cmd);
+  if (args) free(args);
   return status;
  }
 
@@ -3120,23 +3139,31 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
 {
   char *r2rsvg = NULL;
   char *args = NULL;
+  char *cmd = NULL;
   char *s = NULL;
   int   status;
 
   /* produce the R2R svg */
-  if ("RSCAPEDIR" == NULL)               ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
-  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "failed to find envvar RSCAPEDIR");
+  if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
+    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
+  else if (RSCAPE_HOME)                         // look for the installed executable
+    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  else
+    ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
+
   esl_sprintf(&r2rsvg, "%s.svg", r2rfile);
-  esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s >/dev/null", s, r2rfile, r2rsvg);
-  //esl_sprintf(&args, "%s/lib/R2R/src/r2r %s %s ", s, r2rfile, r2rsvg);
+  esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rsvg);
   system(args);
-  
-  free(args);
-  free(r2rsvg);
-  
+    
+  if (cmd)    free(cmd);
+  if (args)   free(args);
+  if (r2rsvg) free(r2rsvg);
   return eslOK;
  
  ERROR:
+  if (cmd)    free(cmd);
+  if (args)   free(args);
+  if (r2rsvg) free(r2rsvg);
   return status;
 }
 
