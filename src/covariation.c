@@ -2226,7 +2226,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int min
 }
 
 int 
-cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, char *nullcovhisfile, RANKLIST *ranklist, char *title)
+cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, RANKLIST *ranklist, char *title)
 {
   FILE     *fp = NULL;
   RANKLIST *ranklist_null = data->ranklist_null;
@@ -2237,12 +2237,8 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
 
   if (covhisfile) {
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
-    esl_histogram_PlotSurvival(fp, ranklist->ht);
-    fclose(fp);
-  }
-  if (ranklist_null && nullcovhisfile) {
-    if ((fp = fopen(nullcovhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open nullcovhisfile %s\n", nullcovhisfile);
-    esl_histogram_PlotSurvival(fp, ranklist_null->ha);
+    esl_histogram_PlotSurvival(fp, ranklist->ha);
+    if (ranklist_null) esl_histogram_PlotSurvival(fp, ranklist_null->ha);
     fclose(fp);
   }
 
@@ -2491,15 +2487,16 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     if (status != eslOK) goto ERROR;
   }
   linespoints = TRUE; 
-#if 0
+#if 1
+  // the distribution of not-base-pairs pairs
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
   if (status != eslOK) goto ERROR;
 #endif
   status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,               FALSE, 1, linespoints, 99, 2);
   if (status != eslOK) goto ERROR;
   
+#if 0
   if (!dosvg) {
-    
     // log survival plot for ranklist and ranklist_null
     fprintf(pipe, "unset logscale y\n");
     fprintf(pipe, "set multiplot\n");
@@ -2584,7 +2581,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     }
 
   }
-  
+  #endif
+
   pclose(pipe);
  
   free(key1);

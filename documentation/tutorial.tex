@@ -125,7 +125,8 @@ The output is a list of significant pairs ordered by the first positions. \\
   given structure ($\sim$) o not, in which case it is a blank.
 
 \item[\emprog{Second and third columns}] are the two positions of the
-  pair. Positions are relative to the input alignment.
+  pair, $i\leq j$ respectively. Positions are relative to the input
+  alignment.
 
 \item[\emprog{Forth column}] is the covariation score
 
@@ -159,23 +160,36 @@ comment lines per alignment in the file:
 \subsection{Outputs per alignment}
 Two files are produced per alignment in the input file: \\
 
-File \prog{tutorial/updated\_Arisong\_1.his} is a two column
-histogram. The first column is the covariation score. The second
-column is the observed (or expected according the
- 
+File \prog{tutorial/updated\_Arisong\_1.his} looks like this:
 \begin{sreoutput}
 more tutorial/updated_Arisong.his
-46.926096       0.000485437
-43.607534       0.000970874
-35.438767       0.00145631
-26.759452       0.00194175
-25.993630       0.00242718
-25.227808       0.00291262
-24.461986       0.0038835
-24.206712       0.00436893
-23.951438       0.00485437
-....
+89.046301       0.000480769
+68.879658       0.000961538
+65.816370       0.00144231
+56.115959       0.00192308
+...
+&
+41.054795       9.61538e-06
+40.799521       3.84615e-05
+40.288973       6.73077e-05
+...
+&
+49.478836       2.13504e-20
+49.223562       4.27009e-20
+48.968288       1.06752e-19
+...
+&
 \end{sreoutput}
+The first column is a covariation score (x). The second column is the
+survival function $P(X > x)$, that is the frequency of pairs having
+score larger than x. The file includes three histograms separated by a
+``\&'' line. The three histogram correspond to:
+
+\begin{sreitems}{\emprog{Second histogram}}
+\item[\emprog{First histogram}] the given alignment, all possible pairs.
+\item[\emprog{Second histogram}] the aggregation of all null alignments, all possible pairs.
+\item[\emprog{Third histogram}] the expected null histogram according to the tail Gamma fit.
+\end{sreitems}
 
 
 File \prog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
@@ -200,7 +214,8 @@ Three plots are produced per alignment in the input file:
   pairs in the given alignment is depicted in blue. The histogram for
   the null alignments is depicted in black. A black line indicates to
   fit to a truncated Gamma distribution of the tail of the null
-  distribution.}
+  distribution. In red, we plot the histogram of scores for the pairs
+  in the given alignment excluding those proposed as base pairs.}
 \label{fig:histogram}
 \end{figure}
 
@@ -221,10 +236,11 @@ Three plots are produced per alignment in the input file:
 \caption{\small\textbf{\prog{tutorial/updated\_Arisong\_1.dplot.\{ps,svg\}}:
     dotplot.}  Dot size is proportional to the covariation score. In
   blue we depict the consensus base pairs; in green, the consensus
-  base pairs that show significant covariation; in orange other pairs
-  that have significant covariation, are not part of the consensus
-  secondary structure but are compatible with it; in black we depict
-  other significant pairs.  Position are relative to the input alignment}
+  base pairs that show significant covariation; in orange (none shown
+  in this plot), we depict other pairs that have significant
+  covariation, are not part of the consensus secondary structure but
+  are compatible with it; in black we depict other significant pairs.
+  Position are relative to the input alignment}
 \label{fig:dplot}
 \end{figure}
 

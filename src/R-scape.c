@@ -90,9 +90,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *cykcovhisfile;
   char            *covqqfile;
   char            *cykcovqqfile;
-  char            *nullcovhisfile;
-  char            *cyknullcovhisfile;
-
   char            *dplotfile;
   char            *cykdplotfile;
 
@@ -467,10 +464,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* covqq file */
   cfg.covqqfile    = NULL;
   cfg.cykcovqqfile = NULL;
-  
-  /* nullcovhis file */
-  cfg.nullcovhisfile    = NULL;
-  cfg.cyknullcovhisfile = NULL;
   
   /* dotplot file */
   cfg.dplotfile    = NULL;
@@ -951,10 +944,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
   if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
-  if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile);
@@ -971,10 +962,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->nullcovhisfile) free(cfg->nullcovhisfile);
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
   if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
-  if (cfg->cyknullcovhisfile) free(cfg->cyknullcovhisfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile); 
@@ -1158,7 +1147,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("score truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->nullcovhisfile, ranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
   
@@ -1173,7 +1162,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cfg->cyknullcovhisfile, cykranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cykranklist, title);
     if (status != eslOK) goto ERROR; 
   }
  

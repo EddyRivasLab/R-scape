@@ -10,6 +10,7 @@
  */
 
 #include "p7_config.h"
+#include "rscape_config.h"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -84,6 +85,7 @@ int
 Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verbose)
 {
   char  tmpmsafile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char *cmd  = NULL;
   char *args = NULL;
   char *s = NULL;
   FILE *msafp = NULL;
@@ -93,12 +95,17 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
-  if ((s = getenv("RSCAPEDIR")) == NULL) ESL_XFAIL(status, errbuf, "Failed to find envvar RSCAPEDIR\n");
+  if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
+    esl_sprintf(&cmd, "%s/lib/FastTree/src/FastTree", s);
+  else if (RSCAPE_HOME)                         // look for the installed executable
+    esl_sprintf(&cmd, "%s/bin/FastTree", RSCAPE_HOME);  
+  else
+    ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
   if (msa->abc->type == eslAMINO)
-    esl_sprintf(&args, "%s/lib/FastTree/src/FastTree -quiet %s > %s", s, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s -quiet %s > %s", cmd, tmpmsafile, tmptreefile);
   else if (msa->abc->type == eslDNA || msa->abc->type == eslRNA)
-    esl_sprintf(&args, "%s/lib/FastTree/src/FastTree -quiet -nt %s > %s", s, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s -quiet -nt %s > %s", cmd, tmpmsafile, tmptreefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
   if (verbose) { printf("%s\n", args); }
@@ -106,11 +113,13 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
     
   remove(tmpmsafile);
   
+  if (cmd  != NULL) free(cmd);
   if (args != NULL) free(args);
   return eslOK;
   
  ERROR:
   remove(tmpmsafile);
+  if (cmd  != NULL) free(cmd);
   if (args != NULL) free(args);
   return status;  
 }

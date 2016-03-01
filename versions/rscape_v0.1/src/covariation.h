@@ -246,7 +246,7 @@ extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP,
 extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int minloop, enum grammar_e G, double covthresh);
 extern int              cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf);
 extern int              cov_NullFitExponential(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
-extern int              cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, char *nullcovhisfile, RANKLIST *ranklist, char *title);
+extern int              cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, RANKLIST *ranklist, char *title);
 extern int              cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg);
 extern int              cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covqqfile, RANKLIST *ranklist, char *title, int dosvg);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
