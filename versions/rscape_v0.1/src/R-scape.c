@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -260,6 +263,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS  *go = esl_getopts_Create(options);
   struct cfg_s  cfg;
+  char         *path = NULL;
+  char         *s;
+  char         *tok;
+  struct stat  info;
   char         *outname = NULL;
   int           status;
 
@@ -292,9 +299,24 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
+  /* find gnuplot */
   cfg.gnuplot = NULL;
-  if ("GNUPLOT" && getenv("GNUPLOT"))
+  if ("GNUPLOT" && getenv("GNUPLOT")) {
     esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
+  }
+  else { // if there is not GNUPLOT envvar, chech if we can executable in the path
+    path = getenv("PATH");
+    
+     s = path; 
+     while (s) {
+       esl_strtok(&s, ":", &tok);
+       esl_sprintf(&tok, "%s/gnuplot", tok);
+       if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
+	 esl_sprintf(&cfg.gnuplot, "%s -persist", tok);    
+	 break;
+       }
+     }       
+   }
   
   /* outheader for all output files */
   cfg.outheader = NULL;
@@ -512,11 +534,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
   if (outname) free(outname);
+  if (path) free(path);
   exit(1);  
 
  ERROR:
   if (go) esl_getopts_Destroy(go);
   if (outname) free(outname);
+  if (path) free(path);
   exit(status);
 }
 

@@ -25,54 +25,60 @@ produces the following output files, one for each individual alignment
 in the input Stockholm file:
 
 
-\subsection{Alignment with consensus seconary structure}
+\subsection{Alignment with consensus secondary structure}
 If the given alignment does have a consensus secondary structure
 (\prog{\#=GF SS\_cons} markup), the following files are produced
 
 \begin{sreitems}{\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}}
-\item[\emprog{rnafile\_msaname.his}] A two column histogram file for the
-  covariation scores.
-%
-\item[\emprog{rnafile\_msaname.his.ps}] Plot of the score histogram.
-%
 \item[\emprog{rnafile\_msaname.R2R.sto}] Stockholm file annotated by a
   modified version of the R2R program. This file includes the
-  information necesary to draw the consensus structure, and to
+  information necessary to draw the consensus structure, and to
   annotate the significantly covarying base pairs.
 %
 \item[\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}] Drawing of the
   \rscape-annotated consensus secondary structure.
 %
+\item[\emprog{rnafile\_msaname.his}] A two column histogram file for the
+  covariation scores.
+%
+\item[\emprog{rnafile\_msaname.his.ps}] Plot of the score histogram. Drawing of this
+file requires that program \emprog{gnuplot} is installed somewhere in the
+\prog{\$\{PATH\}}, of that the environmental variable GNUPLOT 
+pointing to a gnuplot executable is defined.
+%
 \item[\emprog{rnafile\_msaname.dplot.\{ps,svg\}}] Dot plot of the consensus
-  secondary structure annotated according to covariation.
+  secondary structure annotated according to covariation. Drawing of this
+file requires that program \emprog{gnuplot} is installed somewhere in the
+\prog{\$\{PATH\}}, of that the environmental variable GNUPLOT 
+pointing to a gnuplot executable is defined.
 %
 \end{sreitems}
 For each alignment, \emprog{msaname} is given
-by \prog{<ACC>\_<ID>}, the combination of the accesion \prog{\#=GF
-AC <AC>} and name \prog{\#=GF ID <ID>} in the stockholm-format markups (or
+by \prog{<ACC>\_<ID>}, the combination of the accession \prog{\#=GF
+AC <AC>} and name \prog{\#=GF ID <ID>} in the Stockholm-format markups (or
 one of two if the other in not defined).  If none of those fields are
 defined, \emprog{msaname} is a number describing the order in the
 file of the given alignment.
 
-\subsection{Alignment without consensus seconary structure}
-Alternatively, if the alignemnt does not have a consensus secondary
+\subsection{Alignment without consensus secondary structure}
+Alternatively, if the alignment does not have a consensus secondary
 structure (or if it does and the option \prog{\rscape\ --cyk} is
 used) \rscape\, produces the following additional files describing the
 maximal-covariation optimal secondary structure:
 
 \begin{sreitems}{\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}}
-\item[\emprog{rnafile\_msaname.cyk.his}]
-%
-\item[\emprog{rnafile\_msaname.cyk.his.\{ps.svg\}}]
-%
 \item[\emprog{rnafile\_msaname.cyk.R2R.sto}]
 %
 \item[\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}]
 %
+\item[\emprog{rnafile\_msaname.cyk.his}]
+%
+\item[\emprog{rnafile\_msaname.cyk.his.\{ps.svg\}}]
+%
 \item[\emprog{rnafile\_msaname.cyk.dplot.\{ps,svg\}}]
 %
 \end{sreitems}
-These files are formatted identially to those for describing the given
+These files are formatted identically to those for describing the given
 consensus structure.
 
 

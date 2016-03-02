@@ -103,7 +103,7 @@ A full list of the \rscape\ options is fund by using
 
 \subsection{Tabular output per input file}
 
-The output file \prog{tutorial/updated\_Arisong.out} looks like this:
+The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
 
 \begin{sreoutput}
 more tutorial/updated_Arisong.out 
@@ -115,36 +115,35 @@ more tutorial/updated_Arisong.out
 *               98             106      89.08   0
 ...
 \end{sreoutput}
-The output is a list of significant pairs ordered by the first positions. \\
+The output file is a tabular list of significant pairs ordered by the first positions:
 
-\begin{sreitems}{\emprog{Second and third columns}}
-\item[\emprog{First column}] indicates whether the significant pair is
+\begin{sreitems}{\prog{Second and third columns}}
+\item[\prog{First column}] indicates whether the significant pair is
   part of the given structure (*), or not.  If the pair is not in the
   structure, we distinguish whether the pair is compatible with the
   given structure ($\sim$) o not, in which case it is a blank.
 
-\item[\emprog{Second and third columns}] are the two positions of the
+\item[\prog{Second and third columns}] are the two positions of the
   pair, $i\leq j$ respectively. Positions are relative to the input
   alignment.
 
-\item[\emprog{Forth column}] is the covariation score
+\item[\prog{Forth column}] is the covariation score
 
-\item[\emprog{Fifth column}] is the E-value. Significant positions
+\item[\prog{Fifth column}] is the E-value. Significant positions
   have E-values $<< 1$.
 \end{sreitems}
+The output file also includes two comment lines per alignment in the
+file:
 
-The output file \prog{tutorial/updated\_Arisong.out} includes two
-comment lines per alignment in the file:
-
-\begin{sreitems}{\emprog{Second comment line}}
-\item[\emprog{First comment line}]describes properties of the
+\begin{sreitems}{\prog{Second comment line}}
+\item[\prog{First comment line}]describes properties of the
   alignment: number of sequence (nseq), alignment length (alen),
   average percentage identity (avgid), and number of base pairs
   (nbpairs).  Values in parenthesis correspond to the alignment as is
   given. Values not in parenthesis correspond to the analyzed
   alignment after the default filters have been applied.
 
-\item[\emprog{Second comment line}]describes properties of the
+\item[\prog{Second comment line}]describes properties of the
   \rscape\ search: the covariation method (GTp), the E-value threshold
   (0.05), the score at that E-value (42.3), the range of scores for all
   pairs in the alignments (from -9.7 to 89.1), the number of covarying
@@ -159,7 +158,18 @@ comment lines per alignment in the file:
 \subsection{Outputs per alignment}
 Two files are produced per alignment in the input file: \\
 
-File \prog{tutorial/updated\_Arisong\_1.his} looks like this:
+File \emprog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
+formatted alignment that includes the input alignment annotated with
+the consensus structure. This Stockholm file also includes the
+additional annotation required to use the drawing program R2R.
+
+It is possible that the resulting drawing will show parts of the
+secondary structure occluded from each other (especially for long
+RNAs).  Using this file, one can customize a different drawing of the
+structure using the R2R documentation, provided in
+\prog{lib/R2R/R2R-manual.pdf}.\\
+
+File \emprog{tutorial/updated\_Arisong\_1.his} looks like this:
 \begin{sreoutput}
 more tutorial/updated_Arisong.his
 89.046301       0.000480769
@@ -184,43 +194,19 @@ survival function $P(X > x)$, that is the frequency of pairs having
 score larger than x. The file includes three histograms separated by a
 ``\&'' line. The three histogram correspond to:
 
-\begin{sreitems}{\emprog{Second histogram}}
-\item[\emprog{First histogram}] the given alignment, all possible pairs.
-\item[\emprog{Second histogram}] the aggregation of all null alignments, all possible pairs.
-\item[\emprog{Third histogram}] the expected null histogram according to the tail Gamma fit.
+\begin{sreitems}{\prog{Second histogram}}
+\item[\prog{First histogram}] the given alignment, all possible pairs.
+\item[\prog{Second histogram}] the aggregation of all null alignments, all possible pairs.
+\item[\prog{Third histogram}] the expected null histogram according to the tail Gamma fit.
 \end{sreitems}
-
-
-File \prog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
-formatted alignment that includes the input alignment annotated with
-the consensus structure. This Stockholm file also includes the
-additional annotation required to use the drawing program R2R.
-
-It is possible that the resulting drawing will show parts of the
-secondary structure occluded from each other (especially for long
-RNAs).  Using this file, one can customize a different drawing of the
-structure using the R2R documentation, provided in
-\prog{lib/R2R/R2R-manual.pdf}.
 
 
 \subsection{Graphical outputs per alignment}
 Three plots are produced per alignment in the input file: 
 
 \begin{figure}
-  \includegraphics[scale=0.50]{Arisong_his.pdf} 
-\caption{\small\textbf{\prog{tutorial/updated\_Arisong\_1.his.\{ps,svg\}}:
-    covariation scores histogram.}  The histogram of scores for all
-  pairs in the given alignment is depicted in blue. The histogram for
-  the null alignments is depicted in black. A black line indicates to
-  fit to a truncated Gamma distribution of the tail of the null
-  distribution. In red, we plot the histogram of scores for the pairs
-  in the given alignment excluding those proposed as base pairs.}
-\label{fig:histogram}
-\end{figure}
-
-\begin{figure}
   \includegraphics[scale=1.5]{Arisong_R2R.pdf} 
-\caption{\small\textbf{\prog{tutorial/updated\_Arisong\_1.R2R.sto.\{pdf,svg\}}:
+\caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.R2R.sto.\{pdf,svg\}}:
     annotated consensus secondary structure.} Base pairs with
   covariation scores equal or below the target E-value (0.05 as
   default) are depicted in green. By default only positions in the
@@ -231,8 +217,21 @@ Three plots are produced per alignment in the input file:
 \end{figure}
 
 \begin{figure}
+  \includegraphics[scale=0.50]{Arisong_his.pdf} 
+\caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.his.\{ps,svg\}}:
+    covariation scores histogram.}  The histogram of scores for all
+  pairs in the given alignment is depicted in blue. The histogram for
+  the null alignments is depicted in black. A black line indicates to
+  fit to a truncated Gamma distribution of the tail of the null
+  distribution. In red, we plot the histogram of scores for the pairs
+  in the given alignment excluding those proposed as base pairs.}
+\label{fig:histogram}
+\end{figure}
+
+
+\begin{figure}
   \includegraphics[scale=0.60]{Arisong_dplot.pdf}
-\caption{\small\textbf{\prog{tutorial/updated\_Arisong\_1.dplot.\{ps,svg\}}:
+\caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.dplot.\{ps,svg\}}:
     dotplot.}  Dot size is proportional to the covariation score. In
   blue we depict the consensus base pairs; in green, the consensus
   base pairs that show significant covariation; in orange (none shown
@@ -251,29 +250,29 @@ Three plots are produced per alignment in the input file:
 \rscape\ produces two more tabular outputs per input file that are
 more relevant for benchmarking purposes, those are:\\
 
-File \prog{tutorial/updated\_Arisong.sum} looks lie:
+File \emprog{tutorial/updated\_Arisong.sum} looks lie:
 
 \begin{sreoutput}
 more tutorial/updated_Arisong.sum 
 0.050000        updated_Arisong_1       69      65      65.16    GTp 9 20 20 45.000000 45.000000 
 \end{sreoutput}
 This file produces a one line output per alignment in the file.
-\begin{sreitems}{\emprog{Second column}}
-\item[\emprog{Column 1}] Target E-value.
-\item[\emprog{Column 2}] Alignment name.
-\item[\emprog{Column 3}] Number of sequence in the analyzed alignment.
-\item[\emprog{Column 4}] Number of columns analyzed.
-\item[\emprog{Column 5}] Average percentage identity in the analyzed alignment.
-\item[\emprog{Column 6}] Covariation statistic.
-\item[\emprog{Column 7}] Number of significant base pairs (tf).
-\item[\emprog{Column 8}] Number of base pairs (true).
-\item[\emprog{Column 9}] Number of significant pairs (found).
-\item[\emprog{Column 10}] Sensitivity = tf/true.
-\item[\emprog{Column 11}] Positive predictive value = tf/found.
+\begin{sreitems}{\prog{Second column}}
+\item[\prog{Column 1}] Target E-value.
+\item[\prog{Column 2}] Alignment name.
+\item[\prog{Column 3}] Number of sequence in the analyzed alignment.
+\item[\prog{Column 4}] Number of columns analyzed.
+\item[\prog{Column 5}] Average percentage identity in the analyzed alignment.
+\item[\prog{Column 6}] Covariation statistic.
+\item[\prog{Column 7}] Number of significant base pairs (tf).
+\item[\prog{Column 8}] Number of base pairs (true).
+\item[\prog{Column 9}] Number of significant pairs (found).
+\item[\prog{Column 10}] Sensitivity = tf/true.
+\item[\prog{Column 11}] Positive predictive value = tf/found.
 
 \end{sreitems}
 
-File \prog{tutorial/updated\_Arisong.roc} looks like:
+File \emprog{tutorial/updated\_Arisong.roc} looks like:
 \begin{sreoutput}
 more tutorial/updated_Arisong.roc
 # MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
