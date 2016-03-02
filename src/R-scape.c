@@ -293,7 +293,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
   cfg.gnuplot = NULL;
-  if ("GNUPLOT" && getenv("GNUPLOT"))
+  if ("GNUPLOT" && getenv("GNUPLOT")) 
     esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
   
   /* outheader for all output files */
