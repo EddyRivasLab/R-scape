@@ -301,22 +301,23 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* find gnuplot */
   cfg.gnuplot = NULL;
-  if ("GNUPLOT" && getenv("GNUPLOT")) {
-    esl_sprintf(&cfg.gnuplot, "%s -persist", getenv("GNUPLOT"));
+  path = getenv("PATH"); // chech for an executable in the path
+  s = path; 
+  while (s) {
+    esl_strtok(&s, ":", &tok);
+    esl_sprintf(&tok, "%s/gnuplot", tok);
+    if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok);    
+      break;
+    }
   }
-  else { // if there is not GNUPLOT envvar, chech if we can executable in the path
-    path = getenv("PATH");
-    
-     s = path; 
-     while (s) {
-       esl_strtok(&s, ":", &tok);
-       esl_sprintf(&tok, "%s/gnuplot", tok);
-       if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
-	 esl_sprintf(&cfg.gnuplot, "%s -persist", tok);    
-	 break;
-       }
-     }       
-   }
+  if (cfg.gnuplot == NULL && "GNUPLOT" && s = getenv("GNUPLOT")) { // check for an envvar
+    if ("GNUPLOT" && s = getenv("GNUPLOT")) {
+      if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
+	esl_sprintf(&cfg.gnuplot, "%s -persist", s);
+      }
+    }
+  }
   
   /* outheader for all output files */
   cfg.outheader = NULL;
