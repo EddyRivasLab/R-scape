@@ -311,11 +311,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       break;
     }
   }
-  if (cfg.gnuplot == NULL && "GNUPLOT" && s = getenv("GNUPLOT")) { // check for an envvar
-    if ("GNUPLOT" && s = getenv("GNUPLOT")) {
-      if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
-	esl_sprintf(&cfg.gnuplot, "%s -persist", s);
-      }
+  if (cfg.gnuplot == NULL && "GNUPLOT" && (s = getenv("GNUPLOT"))) { // check for an envvar
+    if ((stat(s, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", s);
     }
   }
   
