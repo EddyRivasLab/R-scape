@@ -1,0 +1,29 @@
+ER, Thu Mar  3 08:59:18 EST 2016
+
+last minute steps to make an R-scape tarball:
+(1) copy the userguide
+(2) distclean
+(3) make tar and zip
+-----------------------------------------------------------------------------------------------------------------
+for v in rscape_v0.1 ; do \
+cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/$v/documentation/. ;\
+cd ~/src/src/mysource/versions/$v ;\
+make distclean ;\
+cd .. ;\
+rm $v.tar.*
+tar cvf $v.tar $v ;\
+gzip $v.tar ;\
+done
+
+in RC:
+------
+for v in rscape_v0.1 ; do \
+cp /n/eddy_lab/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddy_lab/erivas/src/src/mysource/versions/$v/documentation/. ;\
+cd /n/eddy_lab/erivas/src/src/mysource/versions/$v ;\
+make distclean ;\
+cd .. ;\
+rm $v.tar.*
+tar cvf $v.tar $v ;\
+gzip $v.tar ;\
+done
+
