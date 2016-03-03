@@ -749,7 +749,7 @@ PIC_FLAGS'
 ac_subdirs_all='lib/hmmer
 lib/hmmer/lib/easel
 lib/R2R/src
-lib/R2R/NotbyZasha/infernal-0.7
+lib/R2R/NotByZasha/infernal-0.7
 lib/FastTree/src
 src'
 
@@ -7388,7 +7388,7 @@ subdirs="$subdirs lib/hmmer/lib/easel"
 
 subdirs="$subdirs lib/R2R/src"
 
-subdirs="$subdirs lib/R2R/NotbyZasha/infernal-0.7"
+subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7"
 
 subdirs="$subdirs lib/FastTree/src"
 
@@ -7404,7 +7404,7 @@ subdirs="$subdirs src"
 #else
 #  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
 #fi
-ac_config_files="$ac_config_files Makefile documentation/Makefile lib/R2R/NotbyZasha/infernal-0.7/Makefile"
+ac_config_files="$ac_config_files Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -8099,7 +8099,7 @@ do
   case $ac_config_target in
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
-    "lib/R2R/NotbyZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotbyZasha/infernal-0.7/Makefile" ;;
+    "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
