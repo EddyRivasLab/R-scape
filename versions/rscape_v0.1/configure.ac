@@ -644,7 +644,6 @@ AC_CONFIG_SUBDIRS(src)
 #fi
 AC_CONFIG_FILES([
 Makefile
-documentation/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
 ])
 AC_OUTPUT
