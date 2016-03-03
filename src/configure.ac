@@ -397,6 +397,9 @@ AS_IF([test "x$with_gsl" != xno],
            [-lgslcblas]
         )])
 
+# Easel stopwatch high-res timer may try to use clock_gettime,
+# which may be in librt
+AC_SEARCH_LIBS(clock_gettime, [rt posix4])
 
 
 ################################################################

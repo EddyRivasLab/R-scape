@@ -1,41 +1,47 @@
-# Process this file with autoconf to produce the RSCAPE configure script.
-#
+# Autoconf 2.61 has a bug in AC_FUNC_FSEEKO; don't use it.
+# Process this file with autoconf to produce the Easel configuration script.
+# 
 # reminders to save re-reading autoconf manual for the n'th time:
-#    output variables:
-#      -  are defined here as normal shell variables, e.g. FOO="my string"
-#      -  are made into output variables by calling AC_SUBST(FOO)
-#      -  any occurrence of @FOO@ in an output file is then substituted
-#         I think this only happens in files we assign w/ AC_CONFIG_FILES;
-#         that's the Makefile.in's.
+#   output variables:
+#      - are defined here as normal shell variables, e.g. FOO="my string"
+#      - are made into output variables by calling AC_SUBST(FOO)
+#      - any occurrence of @FOO@ in an output file is then substituted
+#        This only happens in files we assign w/ AC_CONFIG_FILES;
+#        such as our Makefile.in's, for example.
 #
 #   C preprocessor symbols:
-#      -  are defined here by calling AC_DEFINE(FOO) or AC_DEFINE(FOO, [42])
-#      -  then #undef FOO in easel.h.in becomes #define FOO, #define FOO 42
-#         I think this only happens in header files that we assign
-#         w/ AC_CONFIG_HEADERS -- which means, easel.h.in
+#      - are defined here by calling AC_DEFINE(FOO) or AC_DEFINE(FOO, [42])
+#      - then #undef FOO lines in easel.h.in become #define FOO or #define FOO 42
+#        This only happens in header files that we assign
+#        w/ AC_CONFIG_HEADERS, such as easel.h.in
 #
-# SRE, Mon Oct  5 14:55:45 1998
-# SVN $Id: configure.ac 3630 2011-08-03 14:09:27Z eddys $
-# xref autoconf macro archive: //www.gnu.org/software/ac-archive/
-#
-# GNU recommends the following order:
+# Contents:
 #   1. autoconf requirements
 #   2. AC_INIT
 #   3. info on the package
-#   4. checks for programs
-#   5. checks for libraries
-#   6. checks for header files
-#   7. checks for types
-#   8. checks for structures
-#   9. checks for compiler characteristics
-#  10. checks for library functions
+#   4. process ./configure commandline options
+#   5. checks for programs, including ${CC}, ${CFLAGS}
+#   6. checks for libraries
+#   7. checks for header files
+#   8. checks for types
+#   9. checks for structures
+#  10. checks for compiler characteristics
+#  11. checks for library functions
 #  11. checks for system services
 #  12. AC_CONFIG_FILES
 #  13. AC_OUTPUT
+#
+# Order obeys autoconf manual, "standard configure.ac layout".
 
 
-# Autoconf 2.61 has a bug in AC_FUNC_FSEEKO; don't use it.
+################################################################
+# 1. autoconf requirements
+################################################################
 AC_PREREQ(2.63)
+
+################################################################
+# 2. AC_INIT
+################################################################
 AC_INIT(R-scape, 0.1, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
@@ -46,27 +52,32 @@ fi
 
 ################################################################
 # 3. Info on the package
-#
-# The four AC_INIT args set these output variables and preprocessor symbols:
-#     PACKAGE_NAME      <package>     e.g. "E2"
-#     PACKAGE_VERSION   <version>     e.g. "3.0"
-#     PACKAGE_BUGREPORT <bug-report>  e.g. "eddys@janelia.hhmi.org"
-#     PACKAGE_TARNAME   <tarname>     e.g. "hmmer"
-# From them, it derives one more:
-#     PACKAGE_STRING    <package> <version>, e.g. "HMMER 3.0"
-# We also define additional variables:
-#     HMMER_DATE        release date: e.g. "January 2007"
-#     HMMER_COPYRIGHT   one-line copyright string
-#     HMMER_LICENSE     one-line license string
-#     HMMER_LICENSETAG  which license to bundle from Licenses/ subdirectory.
-#     HMMER_VERSION     copy of version code, e.g. "3.0"
-#     HMMER_URL         URL home for HMMER.
-# And we have to define the relevant package variables for Easel as well.
-#
-# We avoid using AC_INIT's PACKAGE_ variables anywhere, because we want to be able
-# to use HMMER as a library inside other packages, with no name clashes.
 ################################################################
-
+#
+# The four AC_INIT args above set the following output variables and preprocessor 
+# symbols:
+#     PACKAGE_NAME      <package>     e.g. "Easel"                      
+#     PACKAGE_VERSION   <version>     e.g. "0.2"
+#     PACKAGE_BUGREPORT <bug-report>  e.g. "sean@eddylab.org"
+#     PACKAGE_TARNAME   <tarname>     e.g. "easel"
+# From them, AC_INIT automatically derives one more:
+#     PACKAGE_STRING    <package> <version>, e.g. "Easel 0.2"
+# Then we define some of our own:
+#     EASEL_DATE        release date: e.g. "February 2005"
+#     EASEL_COPYRIGHT   one-line copyright string
+#     EASEL_LICENSE     one-line license string
+#     EASEL_LICENSETAG  which license to bundle from Licenses/ subdirectory.
+#     EASEL_URL         URL home for Easel.
+#
+# Because Easel is designed to be a library and must coexist with
+# packages that include it as a subdirectory (HMMER, Infernal...),
+# we don't want to use AC_INIT's PACKAGE_ variables as preprocessor
+# symbols to put version info into executables; we'll get name clashes,
+# plus we might want to have both Easel version info and main package
+# version info. So, we use the PACKAGE_ stuff to make a
+# new preprocessor symbol of our own:
+#     EASEL_VERSION    e.g. "1.9a"
+#
 E2_DATE="DEC 2011"
 E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
 E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
@@ -97,6 +108,7 @@ AC_SUBST(E2_LICENSE)
 AC_SUBST(E2_VERSION)
 AC_SUBST(E2_URL)
 AC_SUBST(E2_ESLDIR)
+AC_SUBST(E2_SADIR)
 
 AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
@@ -154,7 +166,7 @@ AC_MSG_NOTICE([Full E2 source distribution - using full configuration])
 
 
 ################################################################
-# Process the ./configure command line
+# 4. Process ./configure command line options
 ################################################################
 
 # --enable-debugging      - set basic debugging (level 0)
@@ -179,87 +191,16 @@ case $enable_debugging in
 esac
 
 
-# --enable-gcov      - compile for code coverage testing
-#
-# Replaces CC with "gcc" and CFLAGS with "-g -Wall -fprofile-arcs -ftest-coverage".
-# Running programs (notably the test suite) will then generate .gcda files,
-# which the gcov tool can read.
-#
-AC_ARG_ENABLE(gcov,[AS_HELP_STRING([--enable-gcov],[compile for code coverage testing])], ok=$enableval, ok=no)
-if test "$ok" = "yes"; then
-  AC_MSG_NOTICE([Compiling with gcov instrumentation.])
-  CC="gcc"
-  CFLAGS="-g -Wall -fprofile-arcs -ftest-coverage"
-  sre_cflags_env_set=yes
-fi
-
-
-# --enable-gprof     - compile for gcc code profiling
-#
-# Replaces CC with "gcc" and CFLAGS with "-O -g -pg"
-# Running programs generates a profile data file "gmon.out".
-#
-AC_ARG_ENABLE(gprof,[AS_HELP_STRING([--enable-gprof],[compile for gcc code profiing])], ok=$enableval, ok=no)
-if test "$ok" = "yes"; then
-  AC_MSG_NOTICE([Compiling with gprof instrumentation.])
-  CC="gcc"
-  CFLAGS="-O -g -pg"
-  sre_cflags_env_set=yes
-fi
-
-
-# --enable-sse    Enable the SSE implementation.
-# --enable-vmx    Enable the Altivec/VMX implementation.
-# --enable-dummy  Enable the portable implementation.
-#
-# These set $impl_choice to one of sse, vmx, dummy, or none.
-#
-AC_ARG_ENABLE(sse,[AS_HELP_STRING([--enable-sse],[enable SSE implementation])],          enable_sse=$enableval,   enable_sse=check)
-AC_ARG_ENABLE(vmx,[AS_HELP_STRING([--enable-vmx],[enable Altivec/VMX implementation])],  enable_vmx=$enableval,   enable_vmx=check)
-AC_ARG_ENABLE(dummy,[AS_HELP_STRING([--enable-dummy],[enable portable implementation])], enable_dummy=$enableval, enable_dummy=check)
-if test "$enable_sse" = "yes"; then
-   if test "$enable_vmx" = "yes" || test "$enable_dummy" = "yes"; then
-      AC_MSG_ERROR([Select only one implementation of sse, vmx, or dummy])
-   fi
-   impl_choice=sse
-elif test "$enable_vmx" = "yes"; then
-   if test "$enable_sse" = "yes" || test "$enable_dummy" = "yes"; then
-      AC_MSG_ERROR([Select only one implementation of sse, vmx, or dummy])
-   fi
-   impl_choice=vmx
-elif test "$enable_dummy" = "yes"; then
-   if test "$enable_sse" = "yes" || test "$enable_vmx" = "yes"; then
-      AC_MSG_ERROR([Select only one implementation of sse, vmx, or dummy])
-   fi
-   impl_choice=dummy
-else
-   impl_choice=none   	
-fi
-
-
 # --enable-mpi       Enable MPI parallelization
 AC_ARG_ENABLE(mpi,[AS_HELP_STRING([--enable-mpi],[enable MPI parallelization])], enable_mpi=$enableval, enable_mpi=no)
 
-
-# --enable-xlc-arch  Set the code generation for a particular architecture
-#
-# The xlc compiler on AIX seems to need the -qarch flag to be set for a processor
-# that is VMX enabled.  Otherwise a warning is issued that states the -qenablevmx
-# and -qaltivec flags are ignored.
-AX_COMPILER_VENDOR
-if test "${ax_cv_c_compiler_vendor}" = "ibm"; then
-  AC_ARG_WITH(xlc-arch, 
-              [AC_HELP_STRING([--with-xlc-arch=<arch>], [specify architecture <arch> for xlc -qarch])],
-              XLC_ARCH=$withval, 
-              XLC_ARCH=no)
-fi
 
 # --enable-threads      Enable POSIX multithreading
 #
 # Uses ACX_PTHREAD macro from the GNU macro archive.
 # Back to my code to finish enabling pthreads...
 # Define these preprocessor variables:
-#     E2_THREADS
+#     HAVE_PTHREAD
 #     HAVE_PTHREAD_SETCONCURRENCY
 #     HAVE_PTHREAD_ATTR_SETSCOPE
 #
@@ -282,82 +223,26 @@ case $enable_threads in
 esac
  
 AS_IF([test "x$check_threads" != xno],
-      [ACX_PTHREAD([AC_DEFINE(EHMMER_THREADS)
-		    AC_DEFINE(E2_THREADS)
-                    AC_DEFINE(HAVE_PTHREAD)
+      [ACX_PTHREAD([AC_DEFINE(HAVE_PTHREAD)
                     AC_SUBST(PTHREAD_LIBS)
                     AC_SUBST(PTHREAD_CFLAGS)],
                    [if test "x$enable_threads" != xcheck; then
                       AC_MSG_FAILURE([POSIX multithreading failed])
                     fi])])
 
-#AC_ARG_ENABLE(threads, 
-#[  --enable-threads        enable POSIX multithreading support],
-#[case $enable_threads in 
-#   yes) AC_MSG_NOTICE([enabled POSIX multithreading support])
-#        AC_CHECK_FUNCS(pthread_setconcurrency)
-#        AC_CHECK_FUNCS(pthread_attr_setscope)
-#	ACX_PTHREAD(AC_DEFINE(E2_THREADS))
-#	;;
-#   no)  AC_MSG_NOTICE([POSIX multithreading support disabled])
-#        ;;
-#   *)   echo "Ignoring unknown argument to --disable-threads: $enable_threads"
-#	;;
-#esac])
+AC_ARG_ENABLE(gcov,[AS_HELP_STRING([--enable-gcov],[compile for code coverage testing])], enable_gcov=$enableval,  enable_gcov=no)
+AC_ARG_ENABLE(gprof,[AS_HELP_STRING([--enable-gprof],[compile for gcc code profiling])],  enable_gprof=$enableval, enable_gprof=no)
+AC_ARG_ENABLE(sse,[AS_HELP_STRING([--enable-sse],[enable SSE optimizations])] ,           enable_sse=$enableval,   enable_sse=check)
+AC_ARG_ENABLE(vmx,[AS_HELP_STRING([--enable-vmx],[enable Altivec/VMX optimizations])],    enable_vmx=$enableval,   enable_vmx=check)
+AC_ARG_WITH(gsl,[AS_HELP_STRING([--with-gsl],[use the GSL, GNU Scientific Library])],     with_gsl=$withval,       with_gsl=no)
+AC_ARG_ENABLE(mpi,[AS_HELP_STRING([--enable-mpi],[enable MPI parallelization])],          enable_mpi=$enableval,   enable_mpi=no)
 
-# --with-gsl        - enable hooks into the GSL (GNU Scientific Library)
-#
-# The (action-if-given) is blank: using --with-gsl sets $with_gsl to 'yes',
-# and --without-gsl sets $with_gsl to 'no'. If neither is given,
-# $with_gsl is set to 'check', and we'll try to use GSL anyway if we
-# can find it.
-# 
-# We interpret the $with_gsl setting later, in the "checks for libraries" section.
-AC_ARG_WITH([gsl],
-            [AS_HELP_STRING([--with-gsl],
-                           [use the GSL, GNU Scientific Library (default is no)])],
-            [if test "x$withval" != xno ; then 
-               AC_MSG_NOTICE([Enabling hooks into the GNU Scientific Library (GSL)])
-             fi
-            ],
-	    [with_gsl=no])
 
 
 ################################################################
-# Select the vector implementation we'll use
-# (if user didn't already configure one)
-#
-if test "$impl_choice" = "none"; then
-  case $host in 
-    ia64-*-*)      impl_choice=sse;;
-    i?86-*-*)      impl_choice=sse;;
-    x86*-*-*)      impl_choice=sse;;
-    powerpc*-*-*)  impl_choice=vmx;;
-    *)             impl_choice=dummy;;
-  esac
-fi
-
-if test "$impl_choice" = "dummy"; then
-  AC_MSG_WARN([It appears your platform will not fully support H3.])
-  AC_MSG_WARN([We'll use the 'dummy' implementation, a slow reference implementation.])
-fi
-
-if test "$impl_choice" = "sse" && test "$enable_sse" = "no"; then
-  AC_MSG_WARN([You disabled the SSE implementation: I'll use the dummy impl instead.])
-  impl_choice=dummy
-fi
-if test "$impl_choice" = "vmx" && test "$enable_vmx" = "no"; then
-  AC_MSG_WARN([You disabled the VMX implementation: I'll use the dummy impl instead.])
-  impl_choice=vmx
-fi
-if test "$impl_choice" = "dummy" && test "$enable_dummy" = "no"; then
-  AC_MSG_ERROR([No vector impl configured; and you disabled the dummy implementation.])
-fi
-
-
+# 5. Checks for programs, including ${CC} and its ${CFLAGS}
 ################################################################
-# Checks for programs, including choice of compiler ${CC} and ${CFLAGS}.
-#
+
 AC_PROG_CC
 AC_PROG_INSTALL
 # MPI :  set @CC@ to mpicc, sets @MPILIBS@, defines HAVE_MPI. 
@@ -549,8 +434,9 @@ else
   AC_DEFINE(HAVE_GZIP)
 fi
 
-# 5. Checks for libraries
-#
+################################################################
+# 6. Checks for libraries
+#################################################################
 LIBGSL=
 AS_IF([test "x$with_gsl" != xno],
       [AC_CHECK_LIB([gsl], [gsl_expm1], 
@@ -565,8 +451,13 @@ AS_IF([test "x$with_gsl" != xno],
            [-lgslcblas]
         )])
 
-# Checks for headers
-#
+# Easel stopwatch high-res timer may try to use clock_gettime,
+# which may be in librt
+AC_SEARCH_LIBS(clock_gettime, [rt posix4])
+
+################################################################
+# 7. Checks for headers
+################################################################
 AC_CHECK_HEADERS([sys/types.h sys/sysctl.h unistd.h stdint.h inttypes.h endian.h])
 
 # altivec.h requires the simd cflags
@@ -581,8 +472,16 @@ if test "$impl_choice" = "vmx"; then
    CPPFLAGS="$sre_save_CPPFLAGS"
 fi
 
-# Checks for types
+################################################################
+# 8. Checks for types
+################################################################
+#    - Define WORDS_BIGENDIAN on bigendian platforms.
+#    - Make sure we have C99 exact-size integer types; 
+#      ssi uses 16, 32, and 64-bit ints, and we
+#      use 8-bit unsigned chars for digitized sequence.
+#    - Make sure we have off_t.
 #
+
 AC_C_BIGENDIAN
 AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
@@ -590,8 +489,32 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_OFF_T
 
-# Checks for functions, defining HAVE_FOO when foo is found
+################################################################
+# 9. Checks for structures - currently none
+#################################################################
+
+
+################################################################
+# 10. Checks for compiler characteristics
+#################################################################
+
+# __attribute__() tags on function declarations
+# HAVE_FUNC_ATTRIBUTE_NORETURN 
 #
+#   The clang static analyzer can't figure out that some of our
+#   varargs-dependent fatal error handlers (esl_fatal(), for example)
+#   cannot return. To tell it so, we take advantage of __attribute__
+#   tags on function declarations, a non-ISO gcc extension, when
+#   available. gcc, clang, and other gcc-like compilers support this.
+# 
+AX_GCC_FUNC_ATTRIBUTE(noreturn)
+
+
+
+################################################################
+# 11. Checks for library functions: define HAVE_FOO
+################################################################
+
 AC_CHECK_FUNCS(mkstemp)
 AC_CHECK_FUNCS(popen)
 AC_CHECK_FUNCS(strcasecmp)
@@ -609,45 +532,33 @@ AC_CHECK_FUNCS(htons, , AC_CHECK_LIB(socket, htons))
 AC_CHECK_FUNCS(htonl, , AC_CHECK_LIB(socket, htonl))
 AC_FUNC_FSEEKO
 
-#
-# 11. System services
-#
+#################################################################
+# 12. System services
+#################################################################
 AC_SYS_LARGEFILE
 
 
-# Done.
-# Config subdirs and files (except main Makefile, which we defer)
-#
+#################################################################
+# 13. Write out esl_config.h header and the Makefiles
+#################################################################
 AC_CONFIG_HEADERS([
 ])
 
-AC_CONFIG_SUBDIRS(lib/heasel)
+AC_CONFIG_SUBDIRS(lib/easel)
 AC_CONFIG_SUBDIRS(lib/R2R/src)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
 AC_CONFIG_SUBDIRS(lib/FastTree/src)
 AC_CONFIG_SUBDIRS(src)
 
-
-################################################################
-# 13. AC_OUTPUT
-################################################################
-# remember that sneaky if statement that wraps the source
-# configuration? well, it ends here.
-#else
-#  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
-#fi
 AC_CONFIG_FILES([
 Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
 ])
+
+#################################################################
+# 14. et voila!
+#################################################################
 AC_OUTPUT
-
-
-if test "$impl_choice" = "dummy"; then
-  AC_MSG_WARN([We will compile the "dummy", a portable ANSI C reference implementation.])
-  AC_MSG_WARN([It is slow, about 100x slower than real H3, and is NOT intended for production use!])
-  AC_MSG_WARN([It only intended to show the basics of how E2 works, portably.])
-fi
 
 
 

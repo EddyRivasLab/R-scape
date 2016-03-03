@@ -723,14 +723,12 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debugging
+enable_mpi
+enable_threads
 enable_gcov
 enable_gprof
 enable_sse
 enable_vmx
-enable_dummy
-enable_mpi
-with_xlc_arch
-enable_threads
 with_gsl
 enable_pic
 enable_largefile
@@ -1366,14 +1364,13 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debugging      include debugging code
   --enable-debugging=x    also set diagnostics verbosity level to <x> (1-3)
-  --enable-gcov           compile for code coverage testing
-  --enable-gprof          compile for gcc code profiing
-  --enable-sse            enable SSE implementation
-  --enable-vmx            enable Altivec/VMX implementation
-  --enable-dummy          enable portable implementation
   --enable-mpi            enable MPI parallelization
   --enable-threads        enable POSIX multithreading support (default is
                           check)
+  --enable-gcov           compile for code coverage testing
+  --enable-gprof          compile for gcc code profiling
+  --enable-sse            enable SSE optimizations
+  --enable-vmx            enable Altivec/VMX optimizations
   --disable-pic           compile PIC objects [default=enabled for shared
                           builds on supported platforms]
   --disable-largefile     omit support for large files
@@ -1381,8 +1378,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-xlc-arch=<arch>  specify architecture <arch> for xlc -qarch
-  --with-gsl              use the GSL, GNU Scientific Library (default is no)
+  --with-gsl              use the GSL, GNU Scientific Library
 
 Some influential environment variables:
   CC          C compiler command
@@ -2297,27 +2293,32 @@ fi
 
 ################################################################
 # 3. Info on the package
-#
-# The four AC_INIT args set these output variables and preprocessor symbols:
-#     PACKAGE_NAME      <package>     e.g. "E2"
-#     PACKAGE_VERSION   <version>     e.g. "3.0"
-#     PACKAGE_BUGREPORT <bug-report>  e.g. "eddys@janelia.hhmi.org"
-#     PACKAGE_TARNAME   <tarname>     e.g. "hmmer"
-# From them, it derives one more:
-#     PACKAGE_STRING    <package> <version>, e.g. "HMMER 3.0"
-# We also define additional variables:
-#     HMMER_DATE        release date: e.g. "January 2007"
-#     HMMER_COPYRIGHT   one-line copyright string
-#     HMMER_LICENSE     one-line license string
-#     HMMER_LICENSETAG  which license to bundle from Licenses/ subdirectory.
-#     HMMER_VERSION     copy of version code, e.g. "3.0"
-#     HMMER_URL         URL home for HMMER.
-# And we have to define the relevant package variables for Easel as well.
-#
-# We avoid using AC_INIT's PACKAGE_ variables anywhere, because we want to be able
-# to use HMMER as a library inside other packages, with no name clashes.
 ################################################################
-
+#
+# The four AC_INIT args above set the following output variables and preprocessor
+# symbols:
+#     PACKAGE_NAME      <package>     e.g. "Easel"
+#     PACKAGE_VERSION   <version>     e.g. "0.2"
+#     PACKAGE_BUGREPORT <bug-report>  e.g. "sean@eddylab.org"
+#     PACKAGE_TARNAME   <tarname>     e.g. "easel"
+# From them, AC_INIT automatically derives one more:
+#     PACKAGE_STRING    <package> <version>, e.g. "Easel 0.2"
+# Then we define some of our own:
+#     EASEL_DATE        release date: e.g. "February 2005"
+#     EASEL_COPYRIGHT   one-line copyright string
+#     EASEL_LICENSE     one-line license string
+#     EASEL_LICENSETAG  which license to bundle from Licenses/ subdirectory.
+#     EASEL_URL         URL home for Easel.
+#
+# Because Easel is designed to be a library and must coexist with
+# packages that include it as a subdirectory (HMMER, Infernal...),
+# we don't want to use AC_INIT's PACKAGE_ variables as preprocessor
+# symbols to put version info into executables; we'll get name clashes,
+# plus we might want to have both Easel version info and main package
+# version info. So, we use the PACKAGE_ stuff to make a
+# new preprocessor symbol of our own:
+#     EASEL_VERSION    e.g. "1.9a"
+#
 E2_DATE="DEC 2011"
 E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
 E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
@@ -2546,7 +2547,7 @@ $as_echo "$as_me: Full E2 source distribution - using full configuration" >&6;}
 
 
 ################################################################
-# Process the ./configure command line
+# 4. Process ./configure command line options
 ################################################################
 
 # --enable-debugging      - set basic debugging (level 0)
@@ -2579,96 +2580,6 @@ case $enable_debugging in
 esac
 
 
-# --enable-gcov      - compile for code coverage testing
-#
-# Replaces CC with "gcc" and CFLAGS with "-g -Wall -fprofile-arcs -ftest-coverage".
-# Running programs (notably the test suite) will then generate .gcda files,
-# which the gcov tool can read.
-#
-# Check whether --enable-gcov was given.
-if test "${enable_gcov+set}" = set; then :
-  enableval=$enable_gcov; ok=$enableval
-else
-  ok=no
-fi
-
-if test "$ok" = "yes"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling with gcov instrumentation." >&5
-$as_echo "$as_me: Compiling with gcov instrumentation." >&6;}
-  CC="gcc"
-  CFLAGS="-g -Wall -fprofile-arcs -ftest-coverage"
-  sre_cflags_env_set=yes
-fi
-
-
-# --enable-gprof     - compile for gcc code profiling
-#
-# Replaces CC with "gcc" and CFLAGS with "-O -g -pg"
-# Running programs generates a profile data file "gmon.out".
-#
-# Check whether --enable-gprof was given.
-if test "${enable_gprof+set}" = set; then :
-  enableval=$enable_gprof; ok=$enableval
-else
-  ok=no
-fi
-
-if test "$ok" = "yes"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling with gprof instrumentation." >&5
-$as_echo "$as_me: Compiling with gprof instrumentation." >&6;}
-  CC="gcc"
-  CFLAGS="-O -g -pg"
-  sre_cflags_env_set=yes
-fi
-
-
-# --enable-sse    Enable the SSE implementation.
-# --enable-vmx    Enable the Altivec/VMX implementation.
-# --enable-dummy  Enable the portable implementation.
-#
-# These set $impl_choice to one of sse, vmx, dummy, or none.
-#
-# Check whether --enable-sse was given.
-if test "${enable_sse+set}" = set; then :
-  enableval=$enable_sse; enable_sse=$enableval
-else
-  enable_sse=check
-fi
-
-# Check whether --enable-vmx was given.
-if test "${enable_vmx+set}" = set; then :
-  enableval=$enable_vmx; enable_vmx=$enableval
-else
-  enable_vmx=check
-fi
-
-# Check whether --enable-dummy was given.
-if test "${enable_dummy+set}" = set; then :
-  enableval=$enable_dummy; enable_dummy=$enableval
-else
-  enable_dummy=check
-fi
-
-if test "$enable_sse" = "yes"; then
-   if test "$enable_vmx" = "yes" || test "$enable_dummy" = "yes"; then
-      as_fn_error $? "Select only one implementation of sse, vmx, or dummy" "$LINENO" 5
-   fi
-   impl_choice=sse
-elif test "$enable_vmx" = "yes"; then
-   if test "$enable_sse" = "yes" || test "$enable_dummy" = "yes"; then
-      as_fn_error $? "Select only one implementation of sse, vmx, or dummy" "$LINENO" 5
-   fi
-   impl_choice=vmx
-elif test "$enable_dummy" = "yes"; then
-   if test "$enable_sse" = "yes" || test "$enable_vmx" = "yes"; then
-      as_fn_error $? "Select only one implementation of sse, vmx, or dummy" "$LINENO" 5
-   fi
-   impl_choice=dummy
-else
-   impl_choice=none
-fi
-
-
 # --enable-mpi       Enable MPI parallelization
 # Check whether --enable-mpi was given.
 if test "${enable_mpi+set}" = set; then :
@@ -2679,11 +2590,36 @@ fi
 
 
 
-# --enable-xlc-arch  Set the code generation for a particular architecture
+# --enable-threads      Enable POSIX multithreading
 #
-# The xlc compiler on AIX seems to need the -qarch flag to be set for a processor
-# that is VMX enabled.  Otherwise a warning is issued that states the -qenablevmx
-# and -qaltivec flags are ignored.
+# Uses ACX_PTHREAD macro from the GNU macro archive.
+# Back to my code to finish enabling pthreads...
+# Define these preprocessor variables:
+#     HAVE_PTHREAD
+#     HAVE_PTHREAD_SETCONCURRENCY
+#     HAVE_PTHREAD_ATTR_SETSCOPE
+#
+# Check whether --enable-threads was given.
+if test "${enable_threads+set}" = set; then :
+  enableval=$enable_threads;
+else
+  enable_threads=check
+fi
+
+
+case $enable_threads in
+   yes)   check_threads=yes
+          ;;
+   no)    check_threads=no
+          ;;
+   check) check_threads=yes
+          ;;
+   *)     check_threads=no
+          { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring unknown argument to --enable-threads: $enable_threads" >&5
+$as_echo "$as_me: Ignoring unknown argument to --enable-threads: $enable_threads" >&6;}
+          ;;
+esac
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3474,82 +3410,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler vendor" >&5
-$as_echo_n "checking for C compiler vendor... " >&6; }
-if ${ax_cv_c_compiler_vendor+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ax_cv_c_compiler_vendor=unknown
-  # note: don't check for gcc first since some other compilers define __GNUC__
-  for ventest in intel:__ICC,__ECC,__INTEL_COMPILER ibm:__xlc__,__xlC__,__IBMC__,__IBMCPP__ pathscale:__PATHCC__,__PATHSCALE__ gnu:__GNUC__ sun:__SUNPRO_C,__SUNPRO_CC hp:__HP_cc,__HP_aCC dec:__DECC,__DECCXX,__DECC_VER,__DECCXX_VER borland:__BORLANDC__,__TURBOC__ comeau:__COMO__ cray:_CRAYC kai:__KCC lcc:__LCC__ metrowerks:__MWERKS__ sgi:__sgi,sgi microsoft:_MSC_VER watcom:__WATCOMC__ portland:__PGI; do
-    vencpp="defined("`echo $ventest | cut -d: -f2 | sed 's/,/) || defined(/g'`")"
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-#if !($vencpp)
-      thisisanerror;
-#endif
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_c_compiler_vendor=`echo $ventest | cut -d: -f1`; break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  done
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_c_compiler_vendor" >&5
-$as_echo "$ax_cv_c_compiler_vendor" >&6; }
-
-if test "${ax_cv_c_compiler_vendor}" = "ibm"; then
-
-# Check whether --with-xlc-arch was given.
-if test "${with_xlc_arch+set}" = set; then :
-  withval=$with_xlc_arch; XLC_ARCH=$withval
-else
-  XLC_ARCH=no
-fi
-
-fi
-
-# --enable-threads      Enable POSIX multithreading
-#
-# Uses ACX_PTHREAD macro from the GNU macro archive.
-# Back to my code to finish enabling pthreads...
-# Define these preprocessor variables:
-#     E2_THREADS
-#     HAVE_PTHREAD_SETCONCURRENCY
-#     HAVE_PTHREAD_ATTR_SETSCOPE
-#
-# Check whether --enable-threads was given.
-if test "${enable_threads+set}" = set; then :
-  enableval=$enable_threads;
-else
-  enable_threads=check
-fi
-
-
-case $enable_threads in
-   yes)   check_threads=yes
-          ;;
-   no)    check_threads=no
-          ;;
-   check) check_threads=yes
-          ;;
-   *)     check_threads=no
-          { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring unknown argument to --enable-threads: $enable_threads" >&5
-$as_echo "$as_me: Ignoring unknown argument to --enable-threads: $enable_threads" >&6;}
-          ;;
-esac
-
 if test "x$check_threads" != xno; then :
 
 
@@ -3897,11 +3757,7 @@ fi
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test x"$acx_pthread_ok" = xyes; then
-        $as_echo "#define EHMMER_THREADS 1" >>confdefs.h
-
-		    $as_echo "#define E2_THREADS 1" >>confdefs.h
-
-                    $as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
+        $as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
 
 
 
@@ -3924,81 +3780,56 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 fi
 
-#AC_ARG_ENABLE(threads,
-#[  --enable-threads        enable POSIX multithreading support],
-#[case $enable_threads in
-#   yes) AC_MSG_NOTICE([enabled POSIX multithreading support])
-#        AC_CHECK_FUNCS(pthread_setconcurrency)
-#        AC_CHECK_FUNCS(pthread_attr_setscope)
-#	ACX_PTHREAD(AC_DEFINE(E2_THREADS))
-#	;;
-#   no)  AC_MSG_NOTICE([POSIX multithreading support disabled])
-#        ;;
-#   *)   echo "Ignoring unknown argument to --disable-threads: $enable_threads"
-#	;;
-#esac])
+# Check whether --enable-gcov was given.
+if test "${enable_gcov+set}" = set; then :
+  enableval=$enable_gcov; enable_gcov=$enableval
+else
+  enable_gcov=no
+fi
 
-# --with-gsl        - enable hooks into the GSL (GNU Scientific Library)
-#
-# The (action-if-given) is blank: using --with-gsl sets $with_gsl to 'yes',
-# and --without-gsl sets $with_gsl to 'no'. If neither is given,
-# $with_gsl is set to 'check', and we'll try to use GSL anyway if we
-# can find it.
-#
-# We interpret the $with_gsl setting later, in the "checks for libraries" section.
+# Check whether --enable-gprof was given.
+if test "${enable_gprof+set}" = set; then :
+  enableval=$enable_gprof; enable_gprof=$enableval
+else
+  enable_gprof=no
+fi
+
+# Check whether --enable-sse was given.
+if test "${enable_sse+set}" = set; then :
+  enableval=$enable_sse; enable_sse=$enableval
+else
+  enable_sse=check
+fi
+
+# Check whether --enable-vmx was given.
+if test "${enable_vmx+set}" = set; then :
+  enableval=$enable_vmx; enable_vmx=$enableval
+else
+  enable_vmx=check
+fi
+
 
 # Check whether --with-gsl was given.
 if test "${with_gsl+set}" = set; then :
-  withval=$with_gsl; if test "x$withval" != xno ; then
-               { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling hooks into the GNU Scientific Library (GSL)" >&5
-$as_echo "$as_me: Enabling hooks into the GNU Scientific Library (GSL)" >&6;}
-             fi
-
+  withval=$with_gsl; with_gsl=$withval
 else
   with_gsl=no
 fi
 
+# Check whether --enable-mpi was given.
+if test "${enable_mpi+set}" = set; then :
+  enableval=$enable_mpi; enable_mpi=$enableval
+else
+  enable_mpi=no
+fi
+
+
 
 
 ################################################################
-# Select the vector implementation we'll use
-# (if user didn't already configure one)
-#
-if test "$impl_choice" = "none"; then
-  case $host in
-    ia64-*-*)      impl_choice=sse;;
-    i?86-*-*)      impl_choice=sse;;
-    x86*-*-*)      impl_choice=sse;;
-    powerpc*-*-*)  impl_choice=vmx;;
-    *)             impl_choice=dummy;;
-  esac
-fi
-
-if test "$impl_choice" = "dummy"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: It appears your platform will not fully support H3." >&5
-$as_echo "$as_me: WARNING: It appears your platform will not fully support H3." >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: We'll use the 'dummy' implementation, a slow reference implementation." >&5
-$as_echo "$as_me: WARNING: We'll use the 'dummy' implementation, a slow reference implementation." >&2;}
-fi
-
-if test "$impl_choice" = "sse" && test "$enable_sse" = "no"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You disabled the SSE implementation: I'll use the dummy impl instead." >&5
-$as_echo "$as_me: WARNING: You disabled the SSE implementation: I'll use the dummy impl instead." >&2;}
-  impl_choice=dummy
-fi
-if test "$impl_choice" = "vmx" && test "$enable_vmx" = "no"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You disabled the VMX implementation: I'll use the dummy impl instead." >&5
-$as_echo "$as_me: WARNING: You disabled the VMX implementation: I'll use the dummy impl instead." >&2;}
-  impl_choice=vmx
-fi
-if test "$impl_choice" = "dummy" && test "$enable_dummy" = "no"; then
-  as_fn_error $? "No vector impl configured; and you disabled the dummy implementation." "$LINENO" 5
-fi
-
-
+# 5. Checks for programs, including ${CC} and its ${CFLAGS}
 ################################################################
-# Checks for programs, including choice of compiler ${CC} and ${CFLAGS}.
-#
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -6108,8 +5939,9 @@ else
 
 fi
 
-# 5. Checks for libraries
-#
+################################################################
+# 6. Checks for libraries
+#################################################################
 LIBGSL=
 if test "x$with_gsl" != xno; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gsl_expm1 in -lgsl" >&5
@@ -6168,8 +6000,68 @@ fi
 
 fi
 
-# Checks for headers
-#
+# Easel stopwatch high-res timer may try to use clock_gettime,
+# which may be in librt
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' rt posix4; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+################################################################
+# 7. Checks for headers
+################################################################
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
 $as_echo_n "checking for grep that handles long lines and -e... " >&6; }
@@ -6467,8 +6359,16 @@ done
    CPPFLAGS="$sre_save_CPPFLAGS"
 fi
 
-# Checks for types
+################################################################
+# 8. Checks for types
+################################################################
+#    - Define WORDS_BIGENDIAN on bigendian platforms.
+#    - Make sure we have C99 exact-size integer types;
+#      ssi uses 16, 32, and 64-bit ints, and we
+#      use 8-bit unsigned chars for digitized sequence.
+#    - Make sure we have off_t.
 #
+
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
 if ${ac_cv_c_bigendian+:} false; then :
@@ -6759,8 +6659,81 @@ _ACEOF
 fi
 
 
-# Checks for functions, defining HAVE_FOO when foo is found
+################################################################
+# 9. Checks for structures - currently none
+#################################################################
+
+
+################################################################
+# 10. Checks for compiler characteristics
+#################################################################
+
+# __attribute__() tags on function declarations
+# HAVE_FUNC_ATTRIBUTE_NORETURN
 #
+#   The clang static analyzer can't figure out that some of our
+#   varargs-dependent fatal error handlers (esl_fatal(), for example)
+#   cannot return. To tell it so, we take advantage of __attribute__
+#   tags on function declarations, a non-ISO gcc extension, when
+#   available. gcc, clang, and other gcc-like compilers support this.
+#
+
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for __attribute__((noreturn))" >&5
+$as_echo_n "checking for __attribute__((noreturn))... " >&6; }
+if ${ax_cv_have_func_attribute_noreturn+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+                    void foo( void ) __attribute__((noreturn));
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+                                      if test -s conftest.err; then :
+  ax_cv_have_func_attribute_noreturn=no
+else
+  ax_cv_have_func_attribute_noreturn=yes
+fi
+else
+  ax_cv_have_func_attribute_noreturn=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_have_func_attribute_noreturn" >&5
+$as_echo "$ax_cv_have_func_attribute_noreturn" >&6; }
+
+    if test yes = $ax_cv_have_func_attribute_noreturn; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_FUNC_ATTRIBUTE_NORETURN 1
+_ACEOF
+
+fi
+
+
+
+
+
+
+################################################################
+# 11. Checks for library functions: define HAVE_FOO
+################################################################
+
 for ac_func in mkstemp
 do :
   ac_fn_c_check_func "$LINENO" "mkstemp" "ac_cv_func_mkstemp"
@@ -7169,9 +7142,9 @@ $as_echo "#define HAVE_FSEEKO 1" >>confdefs.h
 fi
 
 
-#
-# 11. System services
-#
+#################################################################
+# 12. System services
+#################################################################
 # Check whether --enable-largefile was given.
 if test "${enable_largefile+set}" = set; then :
   enableval=$enable_largefile;
@@ -7374,9 +7347,9 @@ fi
 
 
 
-# Done.
-# Config subdirs and files (except main Makefile, which we defer)
-#
+#################################################################
+# 13. Write out esl_config.h header and the Makefiles
+#################################################################
 ac_config_headers="$ac_config_headers "
 
 
@@ -7395,17 +7368,12 @@ subdirs="$subdirs lib/FastTree/src"
 subdirs="$subdirs src"
 
 
-
-################################################################
-# 13. AC_OUTPUT
-################################################################
-# remember that sneaky if statement that wraps the source
-# configuration? well, it ends here.
-#else
-#  AC_MSG_NOTICE([This is a precompiled binary distribution - using abbreviated config])
-#fi
 ac_config_files="$ac_config_files Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile"
 
+
+#################################################################
+# 14. et voila!
+#################################################################
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -8831,16 +8799,6 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-
-
-if test "$impl_choice" = "dummy"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: We will compile the \"dummy\", a portable ANSI C reference implementation." >&5
-$as_echo "$as_me: WARNING: We will compile the \"dummy\", a portable ANSI C reference implementation." >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: It is slow, about 100x slower than real H3, and is NOT intended for production use!" >&5
-$as_echo "$as_me: WARNING: It is slow, about 100x slower than real H3, and is NOT intended for production use!" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: It only intended to show the basics of how E2 works, portably." >&5
-$as_echo "$as_me: WARNING: It only intended to show the basics of how E2 works, portably." >&2;}
-fi
 
 
 
