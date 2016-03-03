@@ -16,7 +16,11 @@ and make:\\
 \user{make install}\\
 
 The newly compiled binary (\prog{\rscape}) is in the
-\prog{\rscape\_version/bin} directory. You can run it from there.\\
+\prog{\rscape\_version/bin} directory. You can run it from there,
+as in this example:\\
+
+\user{bin/R-scape tutorial/updated\_Arisong.sto}\\
+
 
 That's it.  You can keep reading if you want to know more about
 customizing a \rscape\ installation, or you can skip ahead to the next
@@ -33,8 +37,8 @@ these are the machines we develop on.
 
 \paragraph{Compiler:} The source code is C conforming to POSIX and ANSI
 C99 standards. It should compile with any ANSI C99 compliant compiler,
-including the GNU C compiler \prog{gcc}. We test the code using both
-the \prog{gcc} and \prog{icc} compilers. 
+including the GNU C compiler \prog{gcc}. We test the code using the
+\prog{gcc} compiler.
 
 \paragraph{Libraries and other installation requirements:} \rscape\ includes
 two software libraries: HMMER~\citep{Eddy11} and Easel (bundled as
