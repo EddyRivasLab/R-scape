@@ -5,11 +5,12 @@
 #ifndef LOGSUM_INCLUDED
 #define LOGSUM_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 /* logsum.c */
+extern int       e2_FLogsumInit(void);
+extern float     e2_FLogsum(float a, float b);
+
 extern int       e2_FLogdiffInit(void);
 extern float     e2_FLogdiffval  (float a, float b);
 extern int       e2_FLogdiffsign (float a, float b);

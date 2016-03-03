@@ -5,8 +5,6 @@
  * ER, Mon Nov  2 13:24:54 EST 2015 [NorthWest] 
  */
 
-#include "p7_config.h"
-
 #include <string.h>
 #include <math.h>
 #include <float.h>

@@ -5,8 +5,6 @@
 #ifndef E1_MODEL_INCLUDED
 #define E1_MODEL_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 #ifdef HAVE_MPI

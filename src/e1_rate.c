@@ -12,8 +12,6 @@
  * 
  */
  
-#include "p7_config.h"
-
 #include <math.h>
 #include <limits.h>
 #include <float.h>
@@ -29,8 +27,6 @@
 #include "esl_rootfinder.h"
 #include "esl_dirichlet.h"
 #include "esl_dmatrix.h"
-
-#include "hmmer.h"
 
 #include "e2.h"
 #include "e1_rate.h"

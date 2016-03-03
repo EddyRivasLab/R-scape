@@ -8,6 +8,7 @@
 #include <stdio.h>		/* FILE */
 
 #include "easel.h"
+#include "esl_alphabet.h"
 #include "esl_dmatrix.h"
 #include "esl_ratematrix.h"
 

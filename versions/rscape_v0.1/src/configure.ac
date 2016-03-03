@@ -100,9 +100,7 @@ RSCAPE_URL="http://selab.org/"
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
-RSCAPE_HMMERDIR="lib/hmmer/src"
-RSCAPE_ESLDIR="lib/hmmer/lib/easel"
-RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+RSCAPE_ESLDIR="lib/easel"
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME

@@ -7,8 +7,6 @@
 
 #include <stdio.h>		/* FILE */
 
-#include "hmmer.h"
-
 #include "easel.h"
 
 struct domain_s {

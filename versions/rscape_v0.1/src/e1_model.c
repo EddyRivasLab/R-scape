@@ -11,8 +11,6 @@
  *   8. Copyright and license.
  * 
  */
-#include "p7_config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,8 +23,6 @@
 #include "esl_dirichlet.h"
 #include "esl_dmatrix.h"
 #include "esl_stats.h"
-
-#include "hmmer.h"
 
 #include "e2.h"
 #include "e1_rate.h"

@@ -5,8 +5,6 @@
 #ifndef COCOCYK_INCLUDED
 #define COCOCYK_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 

@@ -1,6 +1,5 @@
 /* covariation.c */
 
-#include "p7_config.h"
 #include "rscape_config.h"
 
 #include <stdlib.h>
@@ -9,8 +8,6 @@
 #include <math.h>
 #include <float.h>
 #include <limits.h>
-
-#include "hmmer.h"
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -31,6 +28,7 @@
 #include "cococyk.h"
 #include "covgrammars.h"
 #include "cykcov.h"
+#include "logsum.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
@@ -3561,7 +3559,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   int            xr, yr;
   int            status;
   
-  p7_FLogsumInit();    
+  e2_FLogsumInit();    
 
   /* allocate the single and pair probs for theinternal nodes */
   nnodes = (T->N > 1)? T->N-1 : T->N;
@@ -3650,7 +3648,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	      for (yl = 0; yl < K; yl ++) 
 		for (xr = 0; xr < K; xr ++) 
 		  for (yr = 0; yr < K; yr ++) 
-		    sc = p7_FLogsum(sc, lkl->mx[xl][yl] + log(cl->mx[IDX(x,y,K)][IDX(xl,yl,K)]) + lkr->mx[xr][yr] + log(cr->mx[IDX(x,y,K)][IDX(xr,yr,K)]));
+		    sc = e2_FLogsum(sc, lkl->mx[xl][yl] + log(cl->mx[IDX(x,y,K)][IDX(xl,yl,K)]) + lkr->mx[xr][yr] + log(cr->mx[IDX(x,y,K)][IDX(xr,yr,K)]));
 	    lk[v]->mx[x][y] = sc; 
 	  }
 	
@@ -3659,7 +3657,7 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	sum = -eslINFINITY;
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) 
-	    sum = p7_FLogsum(sum, lk[v]->mx[x][y]);
+	    sum = e2_FLogsum(sum, lk[v]->mx[x][y]);
 	for (x = 0; x < K; x ++) 
 	  for (y = 0; y < K; y ++) 
 	    lk[v]->mx[x][y] -= sum;

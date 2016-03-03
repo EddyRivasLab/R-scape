@@ -1,7 +1,5 @@
 /* RateF_matrix.c */
 
-#include "p7_config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

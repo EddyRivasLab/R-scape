@@ -11,8 +11,6 @@
  * SVN $Id:$
  */
 
-#include "p7_config.h"
-
 #include <string.h>
 #include <math.h>
 #include <float.h>
@@ -24,7 +22,6 @@
 #include "esl_rootfinder.h"
 #include "esl_stats.h"
 #include "esl_vectorops.h"
-#include "hmmer.h"
 
 #include "ratematrix.h"
 

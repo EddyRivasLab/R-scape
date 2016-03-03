@@ -1,5 +1,40 @@
 ER, Thu Mar  3 08:59:18 EST 2016
 
+files to copy
+-------------
+for v in rscape_v0.1 ; do \
+cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e1_simulate.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/logsum.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/miscellaneous.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/minimize.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/msatree.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e1_model.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/msatree.h ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/covariation.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/R-scape.c ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/rscape_config.h.in ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/R-scape-sim.c ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/cov_simulate.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/R-scape-sim-nobps.c ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/scorematrix2rate.c ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/ribosum_matrix.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/ribosum.c ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/ratematrix.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/ratebuilder.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/msamanip.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e2_profilesq.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e2_config.h.in ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/e2.h ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/cykcov.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/covgrammars.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/cococyk.* ~/src/src/mysource/versions/$v/src/. ;\
+done
+
+
+
 last minute steps to make an R-scape tarball:
 (1) copy the userguide
 (2) distclean

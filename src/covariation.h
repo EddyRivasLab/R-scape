@@ -5,8 +5,6 @@
 #ifndef COVARIATION_INCLUDED
 #define COVARIATION_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 #include "easel.h"

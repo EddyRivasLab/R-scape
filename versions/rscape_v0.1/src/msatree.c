@@ -9,7 +9,6 @@
  * SVN $Id:$
  */
 
-#include "p7_config.h"
 #include "rscape_config.h"
 
 #include <unistd.h>
@@ -29,8 +28,6 @@
 #include "esl_stack.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
-
-#include "hmmer.h"
 
 #include "msatree.h"
 
@@ -1678,171 +1675,7 @@ tree_fitch_downwards(int dim, int ax, int *S)
   return eslOK;
 }
 
-/*****************************************************************
- * 2. Unit tests
- *****************************************************************/
-#ifdef READTREE_TESTDRIVE
-static void
-utest_readtree(char *treefile, char *errbuf, int verbose)
-{
-  char     *msg = "READTREE unit test failed";
-  FILE     *treefp = NULL;
-  ESL_TREE *T = NULL;
-  double    meantime, mintime, maxtime;
-  double    intertime;
-  int       v = 0;
-  
- /* Open TREE file */
-  treefp = fopen(treefile, "r");
-  if (treefp == NULL) esl_fatal("Failed to open Tree file %s for writing", treefile);
 
-  if (esl_tree_ReadNewick(treefp, errbuf, &T) != eslOK) esl_fatal("Failed to read tree: %s", errbuf);
-  if (esl_tree_WriteNewick(stdout, T)         != eslOK) esl_fatal(msg);
-
-  /* node time */
-  if (verbose) printf("\nTaxa=%d NNODES = %d\n", T->N, T->N-1);
-  for (v = 0; v < T->N-1; v ++) 
-    if (Tree_GetNodeTime(v, T, &meantime, &mintime, &maxtime, errbuf, verbose) != eslOK) esl_fatal(msg);
-  if (Tree_InterLeafMaxDistRooted(T, &intertime, errbuf, verbose)  != eslOK) esl_fatal(msg);
-
-  if (T != NULL) esl_tree_Destroy(T);
-  if (treefp) fclose(treefp);
-}
-#endif /*READTREE_TESTDRIVE*/
-
-#ifdef MSATREE_TESTDRIVE
-static void
-utest_msatree(FILE *treefp, ESL_MSA *msa, char *errbuf, int verbose)
-{
-  char       *msg = "MSATREE unit test failed";
-  ESL_TREE   *T = NULL;
-  int         fmt = eslMSAFILE_STOCKHOLM;
-  
-  if (verbose)
-    if (eslx_msafile_Write(stdout, msa, fmt) != eslOK) esl_fatal(msg);
-
-  if (Tree_CalculateExtFromMSA(msa, &T, errbuf, verbose) != eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
- 
-  if (verbose) 
-    if (esl_tree_WriteNewick(stdout, T) != eslOK) esl_fatal(msg);
-
-  if (Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)!= eslOK) { printf("%s\n", errbuf); esl_fatal(msg); }
-
-  if (verbose) 
-    if (esl_tree_WriteNewick(stdout, T) != eslOK) esl_fatal(msg);
-  if (esl_tree_WriteNewick(treefp, T) != eslOK) esl_fatal(msg);
-
-  if (T != NULL) esl_tree_Destroy(T);
-}
-#endif /*READTREE_TESTDRIVE*/
-
-  
-
-/*****************************************************************
- * 3. Test driver
- *****************************************************************/
-#ifdef READTREE_TESTDRIVE
-/* gcc -o readtree_utest  -g -Wall -I../hmmer/src -I../hmmer/easel -L../hmmer/src -L../hmmer/easel -I. -L. -DREADTREE_TESTDRIVE msatree.c -lhmmer -leasel -lm
- * ./readtree_utest ../data/fn3.nh   
- */
-#include "esl_getopts.h"
-#include "esl_random.h"
-
-static ESL_OPTIONS options[] = {
-  /* name           type       default  env  range toggles reqs incomp  help                                       docgroup*/
-  { "-h",         eslARG_NONE,   FALSE, NULL, NULL,   NULL, NULL, NULL, "show brief help on version and usage",              0 },
-  { "-v",         eslARG_NONE,   FALSE, NULL, NULL,   NULL, NULL, NULL, "be verbose",                                        0 },
-  {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-};
-static char usage[]  = "[-options] <tree>";
-static char banner[] = "test driver for msatree.c";
-
-int
-main(int argc, char **argv)
-{
-  ESL_GETOPTS    *go  = p7_CreateDefaultApp(options, 1, argc, argv, banner, usage);
-  char            errbuf[eslERRBUFSIZE];
-  char           *treefile;
-  long            seed = atoi(argv[1]);
-  ESL_RANDOMNESS *r    = esl_randomness_CreateFast(seed); 
-  int             verbose;
-
-  if (esl_opt_ArgNumber(go) != 1)                  { puts("Incorrect number of command line arguments");        exit(1); }
-  if ((treefile = esl_opt_GetArg(go, 1)) == NULL)  { puts("Failed to get <treefile> argument on command line"); exit(1); }
-
-  /* Options */
-  verbose = esl_opt_GetBoolean(go, "-v");
-
-  utest_readtree(treefile, errbuf, verbose);
-
-  esl_getopts_Destroy(go);
-  esl_randomness_Destroy(r);
-  return 0;
-}
-#endif /*READTREE_TESTDRIVE*/
-
-#ifdef MSATREE_TESTDRIVE
-/* gcc -o msatree_utest  -g -Wall -I../hmmer/src -I../hmmer/easel -L../hmmer/src -L../hmmer/easel -I. -L. -DMSATREE_TESTDRIVE msatree.c -lhmmer -leasel -lm
- * ./msatree_utest ../data/fn3.sto  ../data/fn3.tree  
- */
-#include "esl_getopts.h"
-
-static ESL_OPTIONS options[] = {
-  /* name           type       default  env  range toggles reqs incomp  help                                       docgroup*/
-  { "-h",         eslARG_NONE,   FALSE, NULL, NULL,   NULL, NULL, NULL, "show brief help on version and usage",              0 },
-  { "-v",         eslARG_NONE,   FALSE, NULL, NULL,   NULL, NULL, NULL, "be verbose",                                        0 },
-  {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-};
-static char usage[]  = "[-options] <msa> <tree>";
-static char banner[] = "test driver for msatree.c";
-
-int
-main(int argc, char **argv)
-{
-  ESL_GETOPTS  *go  = p7_CreateDefaultApp(options, 2, argc, argv, banner, usage);
-  char          errbuf[eslERRBUFSIZE];
-  char         *msafile;
-  char         *treefile;
-  FILE         *treefp = NULL; /* Tree output file handle  */
-  ESLX_MSAFILE *afp = NULL;
-  ESL_MSA      *msa = NULL; 
-  ESL_ALPHABET *abc = NULL;
-  int           status = eslOK;
-  int           hstatus = eslOK;
-  int           verbose;
-
-  if (esl_opt_ArgNumber(go) != 2)                  { puts("Incorrect number of command line arguments");        exit(1); }
-  if ((msafile  = esl_opt_GetArg(go, 1)) == NULL)  { puts("Failed to get <msafile> argument on command line");  exit(1); }
-  if ((treefile = esl_opt_GetArg(go, 2)) == NULL)  { puts("Failed to get <treefile> argument on command line"); exit(1); }
-
-  /* Options */
-  verbose = esl_opt_GetBoolean(go, "-v");
-
- /* Open the MSA file */
-  status = eslx_msafile_Open(&abc, msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-
-  /* read the MSA */
-  hstatus = eslx_msafile_Read(afp, &msa);
-  if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
-
- /* Open TREE output file */
-  treefp = fopen(treefile, "w");
-  if (treefp == NULL) p7_Fail("Failed to open Tree file %s for writing", treefile);
-
-  utest_msatree(treefp, msa, errbuf, verbose);
-
-  esl_getopts_Destroy(go);
-  esl_alphabet_Destroy(abc);
-  esl_msa_Destroy(msa);
-  eslx_msafile_Close(afp);
-  if (treefp) fclose(treefp);
-  return 0;
-}
-
-
-
-#endif /*MSATREE_TESTDRIVE*/
 
 
 

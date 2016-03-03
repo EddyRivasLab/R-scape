@@ -11,10 +11,6 @@
 #include "esl_scorematrix.h"
 #include "esl_vectorops.h"
 
-#include "hmmer.h"
-
-#include "evohmmer.h"
-#include "p7_evopipeline.h"
 #include "ratematrix.h"
 #include "ratebuilder.h"
 
@@ -52,7 +48,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, char **ret_qfil
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      p7_banner(stdout, argv[0], banner);
+      esl_banner(stdout, argv[0], banner);
       esl_usage(stdout, argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
@@ -81,7 +77,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, char **ret_qfil
 static int
 output_header(FILE *ofp, ESL_GETOPTS *go)
 {
-  p7_banner(ofp, go->argv[0], banner);
+  easel_banner(ofp, go->argv[0], banner);
   
   if (esl_opt_IsUsed(go, "-o")          && fprintf(ofp, "# output directed to file:         %s\n",             esl_opt_GetString(go, "-o"))          < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (esl_opt_IsUsed(go, "--mx")        && fprintf(ofp, "# subst score matrix (built-in):   %s\n",             esl_opt_GetString(go, "--mx"))        < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
@@ -104,7 +100,7 @@ main(int argc, char **argv)
   ESL_DMATRIX     *P = NULL;
   ESL_DMATRIX     *Pt = NULL;
   ESL_DMATRIX     *Psat = NULL;
-  P7_BG           *bg  = NULL;		  /* null model (copies made of this into threads)    */
+  E1_BG           *bg  = NULL;		  /* null model (copies made of this into threads)    */
   double           subsite;
   double           fsubsite;
   double           entropy;
@@ -119,11 +115,11 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &qfile);    
 
   /* Open output file */
-  if ((fp  = fopen(qfile, "w")) == NULL)  p7_Fail("Failed to open output file %s for writing\n", qfile); 
+  if ((fp  = fopen(qfile, "w")) == NULL)  esl_fail(errbuf, "Failed to open output file %s for writing\n", qfile); 
 
   /* Initializations */
   abc = esl_alphabet_Create(eslAMINO);
-  bg  = p7_bg_Create(abc);
+  bg  = e1_bg_Create(abc);
   time  = esl_opt_GetReal(go, "--time");
 
   /* Initialize a default ratebuilder configuration,
@@ -135,7 +131,7 @@ main(int argc, char **argv)
    /* Default is stored in the --mx option, so it's always IsOn(). Check --mxfile first; then go to the --mx option and the default. */
   if (esl_opt_IsOn(go, "--mxfile")) status = ratebuilder_SetScoreSystem (ratebld, esl_opt_GetString(go, "--mxfile"), NULL, bg);
   else                              status = ratebuilder_LoadScoreSystem(ratebld, esl_opt_GetString(go, "--mx"),           bg, FALSE); 
-  if (status != eslOK) p7_Fail("Failed to set single query seq score system:\n%s\n", ratebld->errbuf);
+  if (status != eslOK) esl_fail(errbuf, "Failed to set single query seq score system:\n%s\n", ratebld->errbuf);
   
   if (1||verbose) {
     esl_dmatrix_Dump(stdout, ratebld->P, NULL, NULL);
@@ -144,19 +140,19 @@ main(int argc, char **argv)
     printf("lambda %f \n", ratebld->lambda);
   }
   status = ratematrix_CreateFromConditionals(ratebld->P, ratebld->p, &(ratebld->Q), &(ratebld->E), tol, errbuf, verbose);
-  if (status != eslOK) p7_Fail("Failed to calculate rate matrix\n%s\n", errbuf);
+  if (status != eslOK) esl_fail(errbuf, "Failed to calculate rate matrix\n%s\n", errbuf);
     
   /* reconstruct the conditional matrix */
   P = ratematrix_ConditionalsFromRate(1.0, ratebld->Q, tol, errbuf, verbose);
   if (esl_dmatrix_CompareAbs(ratebld->P, P, 0.01) != eslOK) {
     esl_dmatrix_Dump(stdout, ratebld->P, NULL, NULL);
     esl_dmatrix_Dump(stdout, P, NULL, NULL);
-    p7_Fail("Failed to reconstruct P\n"); 
+    esl_fail(errbuf, "Failed to reconstruct P\n"); 
   }
 
   if (rescale) {
     rt = ratematrix_Rescale(ratebld->Q, ratebld->E, ratebld->p);
-    if (rt < 0.)  p7_Fail("Failed to rescale rate and exchange:\n%s\n", ratebld->errbuf);
+    if (rt < 0.)  esl_fail(errbuf, "Failed to rescale rate and exchange:\n%s\n", ratebld->errbuf);
     fprintf(stdout, "rescaling factor = %f = 1/%f\n", rt, 1.0/rt);
   }
  
@@ -194,7 +190,7 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   ratebuilder_Destroy(ratebld);
   esl_alphabet_Destroy(abc);
-  p7_bg_Destroy(bg);
+  e1_bg_Destroy(bg);
   esl_dmatrix_Destroy(P);
   esl_dmatrix_Destroy(Pt);
   esl_dmatrix_Destroy(Psat);

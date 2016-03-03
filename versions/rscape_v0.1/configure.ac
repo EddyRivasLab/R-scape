@@ -85,9 +85,7 @@ RSCAPE_URL="http://selab.org/"
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
-RSCAPE_HMMERDIR="lib/hmmer/src"
-RSCAPE_ESLDIR="lib/hmmer/lib/easel"
-RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+RSCAPE_ESLDIR="lib/easel"
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
@@ -99,7 +97,6 @@ AC_SUBST(E2_LICENSE)
 AC_SUBST(E2_VERSION)
 AC_SUBST(E2_URL)
 AC_SUBST(E2_ESLDIR)
-AC_SUBST(E2_SADIR)
 
 AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
@@ -110,9 +107,7 @@ AC_SUBST(RSCAPE_URL)
 AC_SUBST(RSCAPE_FASTTREEDIR)
 AC_SUBST(RSCAPE_R2RDIR)
 AC_SUBST(R2R_INFERNALDIR)
-AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
-AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_HOME)
 
 
@@ -626,8 +621,7 @@ AC_SYS_LARGEFILE
 AC_CONFIG_HEADERS([
 ])
 
-AC_CONFIG_SUBDIRS(lib/hmmer)
-AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
+AC_CONFIG_SUBDIRS(lib/heasel)
 AC_CONFIG_SUBDIRS(lib/R2R/src)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
 AC_CONFIG_SUBDIRS(lib/FastTree/src)

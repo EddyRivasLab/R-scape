@@ -12,16 +12,14 @@
  *     9. Copyright and license.
  */
 
-#include "p7_config.h"		/* must be included first */
 
 #include <string.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"
+#include "esl_fileparser.h"
 #include "esl_hmm.h"
 #include "esl_vectorops.h"
-
-#include "hmmer.h"
 
 #include "e2.h"
 #include "e1_bg.h"
@@ -38,7 +36,7 @@
  *            returns a pointer to it.
  *            
  *            For protein models, default iid background frequencies
- *            are set (by <p7_AminoFrequencies()>) to average
+ *            are set (by <e1_AminoFrequencies()>) to average
  *            Swiss-Prot residue composition. For DNA, RNA and other
  *            alphabets, default frequencies are set to a uniform
  *            distribution.
@@ -66,7 +64,7 @@ e1_bg_Create(const ESL_ALPHABET *abc)
  
   ESL_ALLOC(bg->f, sizeof(float) * abc->K);
   if (abc->type == eslAMINO) {
-    if (p7_AminoFrequencies(bg->f) != eslOK) goto ERROR;
+    if (e1_AminoFrequencies(bg->f) != eslOK) goto ERROR;
   }
   else {
     esl_vec_FSet(bg->f, abc->K, 1. / (float) abc->K);
@@ -325,6 +323,45 @@ e1_bg_Write(FILE *fp, E1_BG *bg)
     { if (fprintf(fp, "%c  %.5f\n", bg->abc->sym[x], bg->f[x]) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "bg model write failed"); }
   return eslOK;
 }
+
+/* Function:  e1_AminoFrequencies() a coy of p7_AminoFrequencies() 
+ *
+ * Purpose:   Fills a vector <f> with amino acid background frequencies,
+ *            in [A..Y] alphabetic order, same order that Easel digital
+ *            alphabet uses. Caller must provide <f> allocated for at
+ *            least 20 floats.
+ *            
+ *            These were updated 4 Sept 2007, from Swiss-Prot 50.8,
+ *            (Oct 2006), counting over 85956127 (86.0M) residues.
+ *
+ * Returns:   <eslOK> on success.
+ */
+int
+e1_AminoFrequencies(float *f)
+{
+  f[0] = 0.0787945;		/* A */
+  f[1] = 0.0151600;		/* C */
+  f[2] = 0.0535222;		/* D */
+  f[3] = 0.0668298;		/* E */
+  f[4] = 0.0397062;		/* F */
+  f[5] = 0.0695071;		/* G */
+  f[6] = 0.0229198;		/* H */
+  f[7] = 0.0590092;		/* I */
+  f[8] = 0.0594422;		/* K */
+  f[9] = 0.0963728;		/* L */
+  f[10]= 0.0237718;		/* M */
+  f[11]= 0.0414386;		/* N */
+  f[12]= 0.0482904;		/* P */
+  f[13]= 0.0395639;		/* Q */
+  f[14]= 0.0540978;		/* R */
+  f[15]= 0.0683364;		/* S */
+  f[16]= 0.0540687;		/* T */
+  f[17]= 0.0673417;		/* V */
+  f[18]= 0.0114135;		/* W */
+  f[19]= 0.0304133;		/* Y */
+  return eslOK;
+}
+
 /*---------------- end, i/o of E1_BG object ---------------------*/
 
 
@@ -360,9 +397,6 @@ e1_bg_NullOne(const E1_BG *bg, const ESL_DSQ *dsq, int L, float *ret_sc)
 
 /*****************************************************************
  * @LICENSE@
- * 
- * SVN $Id: e1_bg.c 3751 2011-11-17 22:46:50Z wheelert $
- * SVN $URL: https://svn.janelia.org/eddylab/eddys/src/hmmer/trunk/src/e1_bg.c $
  *****************************************************************/
 
 

@@ -9,9 +9,6 @@
  * ER, TSun Mar  4 14:30:12 EST 2012 [Janelia] 
  * SVN $Id:$
  */
-
-#include "p7_config.h"
-
 #include <math.h>
 #include <float.h>
 #include <string.h>
@@ -23,8 +20,7 @@
 #include "esl_rootfinder.h"
 #include "esl_vectorops.h"
 
-#include "hmmer.h"
-
+#include "e1_bg.h"
 #include "ratebuilder.h"
 
 /*****************************************************************
@@ -101,7 +97,7 @@ ratebuilder_Create(const ESL_ALPHABET *abc)
  * Throws:    <eslEMEM> on allocation failure.
  */
 int
-ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int scaledrate)
+ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, E1_BG *bg, int scaledrate)
 {
   ESL_DMATRIX *P = NULL;
   double      *f = NULL;
@@ -201,7 +197,7 @@ ratebuilder_LoadScoreSystem(RATEBUILDER *bld, const char *matrix, P7_BG *bg, int
  * Throws:    <eslEMEM> on allocation failure.
  */
 int
-ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env, P7_BG *bg)
+ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env, E1_BG *bg)
 {
   ESL_FILEPARSER  *efp = NULL;
   ESL_DMATRIX     *P = NULL;

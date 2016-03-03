@@ -5,8 +5,6 @@
 #ifndef E1_EMIT_INCLUDED
 #define E1_EMIT_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 #ifdef HAVE_MPI
@@ -22,8 +20,6 @@
 #include "e1_rate.h"
 #include "e1_model.h"
 #include "e1_bg.h"
-
-#include "hmmer.h"
 
 /* e1_emit.c */
 extern int e1_Emit(ESL_RANDOMNESS *r, int m, E1_MODEL **evom, int aidx, int didx, ESL_MSA *msa, char *errbuf, int verbose);

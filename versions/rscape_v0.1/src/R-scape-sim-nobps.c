@@ -124,8 +124,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       exit(0);
     }
 
-  if ((cfg.rscapedir = getenv("RSCAPEDIR")) == NULL) esl_fatal("Failed to find envvar RSCAPEDIR");
-
   cfg.msafile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   

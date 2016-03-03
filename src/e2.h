@@ -1,8 +1,6 @@
 #ifndef E2_INCLUDED
 #define E2_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 

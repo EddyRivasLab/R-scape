@@ -5,8 +5,6 @@
 #ifndef CYKCOV_INCLUDED
 #define CYKCOV_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 

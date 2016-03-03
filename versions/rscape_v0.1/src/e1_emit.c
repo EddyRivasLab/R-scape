@@ -4,8 +4,6 @@
 
 #include <string.h>
 
-#include "p7_config.h"
-
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_msa.h"
@@ -15,7 +13,6 @@
 #include "esl_tree.h"
 #include "esl_vectorops.h"
 
-#include "hmmer.h"
 #include "e2.h"
 #include "e1_emit.h"
 #include "e2_profilesq.h"

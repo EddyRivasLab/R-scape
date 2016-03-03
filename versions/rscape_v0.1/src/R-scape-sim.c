@@ -17,6 +17,8 @@
 
 #include "e1_rate.h"
 
+#include "rscape_config.h"
+
 #include "msamanip.h"
 #include "msatree.h"
 #include "covariation.h"
@@ -156,8 +158,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       exit(0);
     }
 
-  if ((cfg.rscapedir = getenv("RSCAPEDIR")) == NULL) esl_fatal("Failed to find envvar RSCAPEDIR");
-
+  if ((cfg.rscapedir = getenv("RSCAPEDIR")) == NULL) esl_sprintf(&cfg.rscapedir, "%s", RSCAPE_HOME);
+    
   cfg.msafile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   
@@ -234,9 +236,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* the paramfile  */
   cfg.paramfile = NULL;
   if (cfg.evomodel == AIF)
-    esl_sprintf(&cfg.paramfile, "%s/lib/evoparam/Pfam.seed.S1000.trainGD.AIF.param", cfg.rscapedir);
+    esl_sprintf(&cfg.paramfile, "%s/data/evoparam/Pfam.seed.S1000.trainGD.AIF.param", cfg.rscapedir);
   else if (cfg.evomodel == AFG)
-    esl_sprintf(&cfg.paramfile, "%s/lib/evoparam/Pfam.seed.S1000.trainGD.AFG.param", cfg.rscapedir);
+    esl_sprintf(&cfg.paramfile, "%s/data/evoparam/Pfam.seed.S1000.trainGD.AFG.param", cfg.rscapedir);
   else esl_fatal("could not identify evomodel");
   status = e1_rate_ReadParamfile(cfg.paramfile, &cfg.rateparam, &cfg.evomodel, cfg.errbuf, cfg.verbose);
   if (status != eslOK) esl_fatal("Failed to read paramfile %s\n%s", cfg.paramfile, cfg.errbuf);
@@ -245,7 +247,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
   if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
-  else esl_sprintf(&cfg.ribofile, "%s/lib/ribosum/ssu-lsu.final.er.ribosum", cfg.rscapedir);
+  else esl_sprintf(&cfg.ribofile, "%s/data/ribosum/ssu-lsu.final.er.ribosum", cfg.rscapedir);
   cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
   if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
   esl_dmx_Scale(cfg.ribosum->bprsQ, 4.0/3.0);

@@ -5,8 +5,6 @@
 #ifndef E1_RATE_INCLUDED
 #define E1_RATE_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 #ifdef HAVE_MPI

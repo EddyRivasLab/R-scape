@@ -5,8 +5,6 @@
 #ifndef COVGRAMMARS_INCLUDED
 #define COVGRAMMARS_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 

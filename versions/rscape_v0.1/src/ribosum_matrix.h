@@ -5,8 +5,6 @@
 #ifndef RIBOSUM_MATRIX_INCLUDED
 #define RIBOSUM_MATRIX_INCLUDED
 
-#include "p7_config.h"
-
 #include <stdio.h>		/* FILE */
 
 
