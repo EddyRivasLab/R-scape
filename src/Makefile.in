@@ -46,13 +46,13 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 
 
-MYINCDIR = -I../src -I../lib/easel
+MYINCDIR = -I../src -I../lib/hmmer -I../lib/hmmer/lib/easel
 
 LIBS     = -lm
 
-MYLIBS   = -leasel 
-IFLAGS   = -I../src -I../lib/easel 
-LFLAGS   = -L../src -L../lib/easel 
+MYLIBS   = -lhmmer -leasel 
+IFLAGS   = -I../src -I../lib/hmmer -I../lib/hmmer/lib/easel
+LFLAGS   = -L../src -L../lib/hmmer -L../lib/hmmer/lib/easel
 
 # beautification magic stolen from git
 #
