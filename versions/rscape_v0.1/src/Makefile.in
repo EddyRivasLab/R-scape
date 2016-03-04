@@ -46,12 +46,10 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 
 
-MYINCDIR = -I../src -I../lib/easel
-
 LIBS      = -leasel @LIBGSL@ @MPILIBS@ @PTHREAD_LIBS@ @LIBS@ -lm
 
-IFLAGS   = -I../src -I../lib/easel 
-LFLAGS   = -L../src -L../lib/easel 
+IFLAGS   = -I../lib/easel 
+LFLAGS   = -L../lib/easel 
 
 # beautification magic stolen from git
 #
@@ -100,11 +98,11 @@ all: libsrc.a ${PROGS}
 
 
 ${PROGS}: %: %.o ${OBJS}
-	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS}
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS}
 
 
 .c.o:   
-	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} -o $@ -c $<
+	${QUIET_CC}${CC} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
 libsrc.a:  ${OBJS}
 	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
