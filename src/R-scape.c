@@ -303,7 +303,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.gnuplot = NULL;
   path = getenv("PATH"); // chech for an executable in the path
   s = path; 
-  while (s) {
+  while (esl_strcmp(s, "")) {
     esl_strtok(&s, ":", &tok);
     esl_sprintf(&tok, "%s/gnuplot", tok);
     if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
