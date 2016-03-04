@@ -149,10 +149,10 @@ OBJS =	a2m.o\
 all: $(PROGS) libsquid.a
 
 $(PROGS): @EXEC_DEPENDENCY@ ${OBJS} 
-	${CC} ${CFLAGS} ${LDFLAGS} ${PVMLIBDIR} ${DEFS} -o $@ $@_main.o ${OBJS} ${PVMLIBS} ${LIBS}
+	${QUIET_CC}${CC} ${CFLAGS} ${LDFLAGS} ${PVMLIBDIR} ${DEFS} -o $@ $@_main.o ${OBJS} ${PVMLIBS} ${LIBS}
 
 .c.o:
-	${CC} ${CFLAGS} ${CPPFLAGS} ${PVMINCDIR} ${DEFS} -c $<		
+	${QUIET_CC}${CC} ${CFLAGS} ${CPPFLAGS} ${PVMINCDIR} ${DEFS} -c $<		
 
 ################################################################
 

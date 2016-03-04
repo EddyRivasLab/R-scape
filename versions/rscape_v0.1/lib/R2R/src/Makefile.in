@@ -104,10 +104,10 @@ exe : $(EXE)
 OBJFILES : HFILES
 
 $(EXE) : $(OBJFILES)
-	$(LINK) -o $(EXE) $(OBJFILES) $(LFLAGS)
+	${QUIET_CC}$(LINK) -o $(EXE) $(OBJFILES) $(LFLAGS)
 
 %.o : %.cpp
-	$(CC) $(CFLAGS) -o $@ $<
+	${QUIET_CC}$(CC) $(CFLAGS) -o $@ $<
 
 install: 
 	${QUIET}if [ ! -z "${EXE}" ]; then \

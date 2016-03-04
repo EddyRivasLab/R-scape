@@ -62,7 +62,7 @@ REPOSITORY  = https://skynet.wustl.edu:8080/sre/src/
 all: core
 
 core:
-	(cd squid;     make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module)
+	(cd squid;     make CC="${QUIET_CC}$(CC)" CFLAGS="$(CFLAGS)"; make module)
 
 # "make check" runs a set of sqc exercises in the test suite, at level 4.
 # To run faster, reduce the level (level 1 runs a few tests, level 4

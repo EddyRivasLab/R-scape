@@ -65,7 +65,7 @@ all: ${PROGS}
 
 
 ${PROGS}: %: %.o ${OBJS}
-	${CC} ${CFLAGS}  -o $@ $@.o ${LIBS} 
+	${QUIET_CC}${CC} ${CFLAGS}  -o $@ $@.o ${LIBS} 
 
 
 .c.o:   
