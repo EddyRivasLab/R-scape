@@ -1458,7 +1458,7 @@ esl_tree_er_RescaleAverageTotalBL(double target_tbl, ESL_TREE *T, double tol, ch
   
   /* paranoia */
   Tree_GetNodeTime(0, T, &tbl, NULL, NULL, errbuf, verbose);
-  if (abs(tbl - target_tbl) > tol) 
+  if (fabs(tbl - target_tbl) > tol) 
     ESL_XFAIL(eslFAIL, errbuf, "esl_tree_er_RescaleAverageBL(): bad rescaling found total_bl=%f target total_bl=%f \n", tbl, target_tbl); 
   
   return eslOK;
@@ -1482,7 +1482,7 @@ esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE *T, double tol, char *e
   
   /* paranoia */
   abl = esl_tree_er_AverageBL(T);
-  if (abs(abl - target_abl) > tol) 
+  if (fabs(abl - target_abl) > tol) 
     ESL_XFAIL(eslFAIL, errbuf, "esl_tree_er_RescaleAverageBL(): bad rescaling abl=%f target_abl=%f \n", abl, target_abl); 
    
   return eslOK;

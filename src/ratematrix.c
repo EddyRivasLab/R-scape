@@ -1596,7 +1596,7 @@ ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, double *f, EMRA
   int           nmat;
   int           x, y;
 
-  if (name && ! R->abc_r->type == eslAMINO) return eslFAIL;
+  if (name && ! (R->abc_r->type == eslAMINO)) return eslFAIL;
 
   if (name && R->abc_r->type == eslAMINO) {
     nmat = (scaledrate)? 
