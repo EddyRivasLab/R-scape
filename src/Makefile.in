@@ -48,9 +48,8 @@ INSTALL   = @INSTALL@
 
 MYINCDIR = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
 
-LIBS     = @LIBS@
+LIBS      = -lhmmer -leasel @LIBGSL@ @MPILIBS@ @PTHREAD_LIBS@ @LIBS@ -lm
 
-MYLIBS   = -lhmmer -leasel 
 IFLAGS   = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
 LFLAGS   = -L../src -L../lib/hmmer/src -L../lib/hmmer/lib/easel
 
@@ -169,7 +168,7 @@ all: libsrc.a ${PROGS}
 
 
 ${PROGS}: %: %.o ${OBJS}
-	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} ${MYLIBS} 
+	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
 
 
 .c.o:   

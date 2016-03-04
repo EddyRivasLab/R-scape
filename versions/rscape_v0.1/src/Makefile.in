@@ -48,9 +48,8 @@ INSTALL   = @INSTALL@
 
 MYINCDIR = -I../src -I../lib/easel
 
-LIBS     = @LIBS@
+LIBS      = -leasel @LIBGSL@ @MPILIBS@ @PTHREAD_LIBS@ @LIBS@ -lm
 
-MYLIBS   = -leasel 
 IFLAGS   = -I../src -I../lib/easel 
 LFLAGS   = -L../src -L../lib/easel 
 
@@ -101,7 +100,7 @@ all: libsrc.a ${PROGS}
 
 
 ${PROGS}: %: %.o ${OBJS}
-	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} ${MYLIBS} 
+	${CC} ${MYINCDIR} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS}
 
 
 .c.o:   

@@ -77,7 +77,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, char **ret_qfil
 static int
 output_header(FILE *ofp, ESL_GETOPTS *go)
 {
-  easel_banner(ofp, go->argv[0], banner);
+  esl_banner(ofp, go->argv[0], banner);
   
   if (esl_opt_IsUsed(go, "-o")          && fprintf(ofp, "# output directed to file:         %s\n",             esl_opt_GetString(go, "-o"))          < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (esl_opt_IsUsed(go, "--mx")        && fprintf(ofp, "# subst score matrix (built-in):   %s\n",             esl_opt_GetString(go, "--mx"))        < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
