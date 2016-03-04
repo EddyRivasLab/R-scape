@@ -48,7 +48,7 @@ INSTALL   = @INSTALL@
 
 MYINCDIR = -I../src -I../lib/easel
 
-LIBS     = -lm
+LIBS     = -lm -lrt
 
 MYLIBS   = -leasel 
 IFLAGS   = -I../src -I../lib/easel 

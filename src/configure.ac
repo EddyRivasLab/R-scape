@@ -543,7 +543,7 @@ R-scape configuration:
 
      compiler:    ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
      host:        $host
-     libraries:   ${LIBS} ${LIBGSL} ${PTHREAD_LIBS}
+     libraries:   ${LIBGSL} ${MPILIBS} ${PTHREAD_LIBS} ${LIBS}
 "
 
 
