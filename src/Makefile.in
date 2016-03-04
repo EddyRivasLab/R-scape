@@ -48,7 +48,7 @@ INSTALL   = @INSTALL@
 
 MYINCDIR = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
 
-LIBS     = -lm -lrt
+LIBS     = @LIBS@
 
 MYLIBS   = -lhmmer -leasel 
 IFLAGS   = -I../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
