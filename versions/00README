@@ -45,9 +45,14 @@ cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/ver
 cd ~/src/src/mysource/versions/$v ;\
 make distclean ;\
 cd .. ;\
-rm $v.tar.*
-tar cvf $v.tar $v ;\
+cp -rf $v $v_nogit ;\
+cd $v_nogit ;\
+rm -rf lib/easel/.git ;\
+cd .. ;\
+rm $v.tar.* ;\
+tar cvf $v.tar $v_git ;\
 gzip $v.tar ;\
+rm -rf $v_nogit ;\
 done
 
 in RC:
