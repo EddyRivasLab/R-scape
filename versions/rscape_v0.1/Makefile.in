@@ -85,7 +85,6 @@ all:
 	${QUIET_SUBDIR0}${R2RDIR}       ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${ESLDIR}       ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}src             ${QUIET_SUBDIR1} all
-	#${QUIET_SUBDIR0}documentation   ${QUIET_SUBDIR1} pdf
 
 # install: installs the binaries in ${bindir}/
 #          When man pages are done, will install man pages in MANDIR/man1/  (e.g. if MANSUFFIX is 1)

@@ -47,8 +47,8 @@ INSTALL   = @INSTALL@
 
 LIBS      = -lhmmer -leasel @LIBGSL@ @MPILIBS@ @PTHREAD_LIBS@ @LIBS@ -lm
 
-IFLAGS   = -I ../src -I../lib/hmmer/src -I../lib/hmmer/lib/easel
-LFLAGS   = -L ../src -L../lib/hmmer/src -L../lib/hmmer/lib/easel
+IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/lib/easel -I../src
+LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/lib/easel -L../src
 
 # beautification magic stolen from git
 #

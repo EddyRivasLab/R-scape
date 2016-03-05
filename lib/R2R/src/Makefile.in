@@ -24,6 +24,21 @@ CFLAGS_WARN=
 CFLAGS=$(CFLAGS_WARN) -c -I. -I$(CFSQP_PATH) -I$(INFERNAL_PATH)/squid -g $(CFLAGS_OPT) $(CFSQP_CFLAGS) -DDISTRIBUTION $(FONT_CFLAGS)
 LFLAGS=$(CFSQP_LIB) $(INFERNAL_PATH)/squid/libsquid.a
 
+# beautification magic stolen from git
+#
+QUIET_SUBDIR0 = +${MAKE} -C #space separator after -c
+QUIET_SUBDIR1 =
+ifndef V
+	QUIET_CC      = @echo '    ' CC $@;
+	QUIET_CPP     = @echo '    ' CPP $@;
+	QUIET_GEN     = @echo '    ' GEN $@;
+	QUIET_AR      = @echo '    ' AR $@;
+	QUIET_SUBDIR0 = +@subdir=
+	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
+		        ${MAKE} -C $$subdir
+endif
+
+
 CPPFILES=\
 	ParseOneStockholm.cpp\
 	AdobeGraphics.cpp\
@@ -104,10 +119,10 @@ exe : $(EXE)
 OBJFILES : HFILES
 
 $(EXE) : $(OBJFILES)
-	$(LINK) -o $(EXE) $(OBJFILES) $(LFLAGS)
+	${QUIET_CPP}$(LINK) -o $(EXE) $(OBJFILES) $(LFLAGS)
 
 %.o : %.cpp
-	$(CC) $(CFLAGS) -o $@ $<
+	${QUIET_CPP}$(CC) $(CFLAGS) -o $@ $<
 
 install: 
 	${QUIET}if [ ! -z "${EXE}" ]; then \

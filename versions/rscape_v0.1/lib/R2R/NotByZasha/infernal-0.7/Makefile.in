@@ -37,6 +37,20 @@ BINDIR      = @bindir@
 CC     = @CC@
 CFLAGS = @CFLAGS@
 
+# beautification magic stolen from git
+#
+QUIET_SUBDIR0 = +${MAKE} -C #space separator after -c
+QUIET_SUBDIR1 =
+ifndef V
+	QUIET_CC      = @echo '    ' CC $@;
+	QUIET_GCC     = @echo '    ' GCC $@;
+	QUIET_GEN     = @echo '    ' GEN $@;
+	QUIET_AR      = @echo '    ' AR $@;
+	QUIET_SUBDIR0 = +@subdir=
+	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
+		        ${MAKE} -C $$subdir
+endif
+
 #######
 ## You should not need to modify below this line.
 ## Some of it is concerned with maintenance of the development version
@@ -62,7 +76,7 @@ REPOSITORY  = https://skynet.wustl.edu:8080/sre/src/
 all: core
 
 core:
-	(cd squid;     make CC="${QUIET_CC}$(CC)" CFLAGS="$(CFLAGS)"; make module)
+	(cd squid;     make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module)
 
 # "make check" runs a set of sqc exercises in the test suite, at level 4.
 # To run faster, reduce the level (level 1 runs a few tests, level 4
