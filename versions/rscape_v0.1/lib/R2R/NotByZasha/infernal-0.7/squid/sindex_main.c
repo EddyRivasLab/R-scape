@@ -171,7 +171,7 @@ main(int argc, char **argv)
 	    Die("SSI error: %s\n", SSIErrorString(status));
 	}
 	  
-	if (do_pfamseq && sfp->format == SQFILE_FASTA && sqinfo.desc != NULL) {
+	if (do_pfamseq && sfp->format == SQFILE_FASTA && sqinfo.desc) {
 	  char *acc, *s;
 	  
 	  s = sqinfo.desc;

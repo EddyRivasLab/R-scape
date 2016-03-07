@@ -72,10 +72,9 @@ endif
 # all: if we don't have precompiled binaries, compiles all packages, 
 #      and moves the supported executables into binaries/ subdirectory.
 #
-all: core
+all: 
+	${QUIET_SUBDIR0}squid             ${QUIET_SUBDIR1} all
 
-core:
-	(cd squid;     make CC="${QUIET_CC}$(CC)" CFLAGS="$(CFLAGS)"; make module)
 
 # "make check" runs a set of sqc exercises in the test suite, at level 4.
 # To run faster, reduce the level (level 1 runs a few tests, level 4
