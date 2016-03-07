@@ -71,7 +71,7 @@ SvgGraphics::SvgGraphics (const char *fileName,double _width,double _height,cons
 SvgGraphics::~SvgGraphics ()
 {
 	if (out!=NULL) {
-		fprintf(out,trailer);
+	  fprintf(out,"%s",trailer);
 		fclose(out);
 	}
 }

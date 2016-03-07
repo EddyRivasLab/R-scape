@@ -85,3 +85,33 @@ compile C code.
 
 \end{sreitems}
 
+\subsection{Why is the output of 'make' so clean?}
+
+Because we're hiding what's really going on with the compilation with
+a wrapper.  If you want to see what the command lines really look
+like, pass a \ccode{V=1} option (V for ``verbose'') to \ccode{make},
+as in:
+
+\user{make V=1}
+
+\subsection{What gets installed by 'make install', and where?}
+
+The top-level configure file has a variable RSCAPE\_HOME that
+specifies the directory where \ccode{make install} will install
+thingg: \ccode{RSCAPE\_HOME/bin}.\\
+
+By default RSCAPE\_HOME is assigned to the current directory
+R-scape\_version.\\
+
+The best way to change this default is when you use
+\ccode{./configure}, and the most important variable to consider
+changing is \ccode{--prefix}. For example, if you want to install
+\rscape\ in a directory hierarchy all of its own, you might want to do
+something like:
+
+\user{./configure --prefix=/usr/local/rscape}
+
+That would keep \rscape\ out of your system-wide directories like
+\ccode{/usr/local/bin}, which might be desirable. Of course, if you do
+it that way, you'd also want to add \ccode{/usr/local/rscape/bin} to
+your \ccode{\$PATH}.

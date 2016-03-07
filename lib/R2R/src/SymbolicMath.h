@@ -22,10 +22,10 @@ inline double pow2 (double x) {
 inline bool IsNormalNumber (double x)
 {
 #ifdef _MSC_VER
-	return _finite(x)!=0;
+	return _isfinite(x)!=0;
 #else
 	// assume gcc
-	return finite(x)!=0;
+	return isfinite(x)!=0;
 #endif
 }
 

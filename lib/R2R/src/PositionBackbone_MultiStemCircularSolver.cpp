@@ -309,7 +309,7 @@ void DumpNucPosAtEachIterMessageReceiver::PreEvaluateObjectiveFunc (const vector
 	}
 	for (size_t stem=0; stem<stemPosVector.size(); stem++) {
 		double frac=stemPosVector[stem].circleIntersectFraction.Eval(problemVars);
-		fprintf(f,"frac-intersect\t%d\t%lg\n",stem,frac);
+		fprintf(f,"frac-intersect\t%d\t%lg\n",(int)stem,frac);
 	}
 	iter++;
 }

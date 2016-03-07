@@ -250,15 +250,15 @@ void DumpInfoFile(const OtherDrawingStuff& otherDrawingStuff,const DrawingParams
 
 	fprintf(f,"drawingName\t%s\n",otherDrawingStuff.name.c_str());
 
-	fprintf(f,"posToAlignCol\t%u\n",otherDrawingStuff.currPosToOriginalPosMap.size());
+	fprintf(f,"posToAlignCol\t%u\n",(unsigned int)otherDrawingStuff.currPosToOriginalPosMap.size());
 	for (size_t pos=0; pos<otherDrawingStuff.currPosToOriginalPosMap.size(); pos++) {
-		fprintf(f,"%u\t%d\n",pos,otherDrawingStuff.currPosToOriginalPosMap[pos]);
+		fprintf(f,"%u\t%d\n",(unsigned int)pos,otherDrawingStuff.currPosToOriginalPosMap[pos]);
 	}
 
-	fprintf(f,"layout\t%u\n",posInfoVector.size());
+	fprintf(f,"layout\t%u\n",(unsigned int)posInfoVector.size());
 	for (size_t i=0; i<posInfoVector.size(); i++) {
 		const PosInfo& p=posInfoVector[i];
-		fprintf(f,"%u\t%s\t%lg\t%lg\t%d\t%d",i,p.nuc.c_str(),p.pos.GetX(),p.pos.GetY(),p.flipLeftRight?1:0,p.partOfCircleThreePrime.isPartOfCircle?1:0);
+		fprintf(f,"%u\t%s\t%lg\t%lg\t%d\t%d",(unsigned int)i,p.nuc.c_str(),p.pos.GetX(),p.pos.GetY(),p.flipLeftRight?1:0,p.partOfCircleThreePrime.isPartOfCircle?1:0);
 		if (p.partOfCircleThreePrime.isPartOfCircle) {
 			fprintf(f,"\t0\t%lg\t%lg\t%d", // the first hard-coded '0' is for p.dir, which is undefined for circular
 				p.partOfCircleThreePrime.center.GetX(),p.partOfCircleThreePrime.center.GetY(),(!p.partOfCircleThreePrime.circleDoesNotIntersectNextPoint)?1:0);
@@ -3052,7 +3052,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 		if (n>1) {
 			doublyPaired=true;
 			printf("ERROR: position %d (raw %d) belongs to two pairs in different SS_cons lines (%s)\n",
-				FindTextColOfPos(otherDrawingStuff,(int)i),i,ssNames.c_str());
+			       FindTextColOfPos(otherDrawingStuff,(int)i),(int)i,ssNames.c_str());
 		}
 	}
 	if (doublyPaired) {

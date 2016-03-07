@@ -503,8 +503,8 @@ void RnaDrawer::CheckPathError (LineOrArcList& l,size_t i,int lineNum)
 			}
 			printf("WARNING: in %s I had problems with joining the backbone from text alignment column %d (raw %d) to column %d (raw %d).  code %d.  See note above.  (cpp line #%d)\n",
 				otherDrawingStuff.name.c_str(),
-				FindTextColOfPos(otherDrawingStuff,(int)i),i,
-				FindTextColOfPos(otherDrawingStuff,(int)(i+1)),i+1,
+			       FindTextColOfPos(otherDrawingStuff,(int)i),(int)i,
+			       FindTextColOfPos(otherDrawingStuff,(int)(i+1)),(int)i+1,
 				(int)l.joinError,
 				lineNum);
 			l.printedError=true;
@@ -1014,7 +1014,7 @@ void RnaDrawer::ShadeOrOutlineAlongBackbone_CalculateConnectors(const AdobeGraph
 		AdobeGraphics::Point lto=strokeList.GetTo();
 		double magfrom=(lfrom-p1).Magnitude();
 		double magto=(lto-p2).Magnitude();
-		if (!strokeList.joinError!=JoinError_Success
+		if (!(strokeList.joinError!=JoinError_Success)
 			&& !(magfrom<1e-6 && magto<1e-6)) {
 			bool nodie=true;
 #ifdef DISTRIBUTION
