@@ -182,7 +182,7 @@ void ManagedPosInfoVector::SetValid (SsContext ssContext)
 
 std::string SsContext::ToStringOfCoords (const OtherDrawingStuff& otherDrawingStuff) const
 {
-	if (this==NULL) {
+	if (this==nullptr) {
 		return "NULL";
 	}
 	std::string userfirstcol="-,-",userlastcol="-,-";
