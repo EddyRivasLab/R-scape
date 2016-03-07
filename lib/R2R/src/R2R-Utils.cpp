@@ -10,8 +10,6 @@ LICENSE in this directory for details.
 #include "stdafx.h"
 #include "R2R.h"
 
-#define NULL 0 // ER to keep compilers quiet
-
 int FindRelTextColOfPos (const vector<int>& currPosToOriginalPosMap,int pos) {
 	return currPosToOriginalPosMap[pos];
 }
