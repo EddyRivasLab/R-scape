@@ -1040,6 +1040,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.rocfp         = NULL;
   data.sumfp         = NULL;
   data.dplotfile     = NULL;
+  data.cykdplotfile  = NULL;
   data.R2Rfile       = NULL;
   data.R2Rcykfile    = NULL;
   data.R2Rall        = FALSE;
@@ -1137,6 +1138,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.rocfp         = cfg->rocfp;
   data.sumfp         = (cfg->mode == RANSS)? NULL : cfg->sumfp;
   data.dplotfile     = cfg->dplotfile;
+  data.cykdplotfile  = cfg->cykdplotfile;
   data.R2Rfile       = cfg->R2Rfile;
   data.R2Rcykfile    = cfg->R2Rcykfile;
   data.R2Rall        = cfg->R2Rall;

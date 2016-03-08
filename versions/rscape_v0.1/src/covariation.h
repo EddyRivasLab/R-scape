@@ -160,6 +160,7 @@ struct data_s {
   FILE                *sumfp; 
   char                *gnuplot;
   char                *dplotfile;
+  char                *cykdplotfile;
   char                *R2Rfile;
   char                *R2Rcykfile;
   int                  R2Rall;
