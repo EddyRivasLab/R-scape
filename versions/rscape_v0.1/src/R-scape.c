@@ -783,8 +783,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
 
-
-  msa = *omsa;
+  msa = *omsa; 
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -801,17 +800,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;
   }
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
-  
-  msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
-  if (esl_msa_MinimGaps(msa, NULL, "-.~=", FALSE) != eslOK) esl_fatal("Failed to remove minim gaps");
-  if (msa == NULL || msa->nseq < cfg->nseqmin) {
-    if (msa) esl_msa_Destroy(msa); msa = NULL;
-    if (submsaname) free(submsaname);
-    if (type) free(type); type = NULL;
-    if (tok) free(tok); tok = NULL;
-    free(cfg->msaname); cfg->msaname = NULL;
-    return eslOK;
-  }
+    msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
 
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
