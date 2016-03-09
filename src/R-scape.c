@@ -799,8 +799,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
+
+  /* remove columns with gaps.
+   * Important: the mapping is done here; cannot remove any other columns beyond this point.
+   */
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
-    msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
+  msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
 
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);

@@ -2306,6 +2306,8 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *re
   double newmass;
   int    status;
 
+  if (h->expect) return eslOK;
+
   /* set the tail by mass */
   status = esl_histogram_SetTailByMass(h, pmass, &newmass);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not set TailByMass");
