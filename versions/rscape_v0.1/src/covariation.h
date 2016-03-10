@@ -187,6 +187,7 @@ struct data_s {
   double               tau;        // for chi-square fit  of null distribution, effective number of degress of freedom
   double               mu;         // for exponential fit of null distribution
   double               lambda;     // for exponential fit of null distribution
+  ESL_DMATRIX         *allowpair;  // allows to propose a non-WC set pairing rules
   double               tol;
   int                  verbose;
   char                *errbuf;

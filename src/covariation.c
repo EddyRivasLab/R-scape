@@ -33,6 +33,7 @@
 #include "ribosum_matrix.h"
 
 static int    is_wc(int x, int y);
+static int    is_allowed_pair(int x, int y, ESL_DMATRIX *allowpair);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
 static int    number_pairs(int L, int *ct);
 static int    is_cannonical_pair(char nti, char ntj);
@@ -1083,6 +1084,7 @@ int
 cov_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa,  int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
+  ESL_DMATRIX     *allowpair = data->allowpair;
   int              verbose = data->verbose;
   double           psi = 1.0;
   double           cij, qij;
@@ -1103,13 +1105,13 @@ cov_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa,  int anal
 	ai = msa->ax[s1][i+1];
 	aj = msa->ax[s1][j+1];
 
-	if ( !is_wc(ai,aj) ) qij += 1.0;
+	if ( !is_allowed_pair(ai,aj,allowpair) ) qij += 1.0;
 	
 	for (s2 = s1+1; s2 < msa->nseq; s2 ++) {
 	  bi = msa->ax[s2][i+1];
 	  bj = msa->ax[s2][j+1];
 
-	  if ( is_wc(ai,aj) && is_wc(bi,bj) ) 
+	  if ( is_allowed_pair(ai,aj,allowpair) && is_allowed_pair(bi,bj,allowpair) ) 
 	    {
 	      if      (ai != bi && aj != bj) cij += 2.0;
 	      else if (ai != bi || aj != bj) cij += 1.0;
@@ -3319,8 +3321,16 @@ cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
 static int
 is_wc(int x, int y) 
 {
-  if (x+y == 3 || x+y == 5) return TRUE;
+  if (x < 4 && y < 4 && (x+y == 3 || x+y == 5)) return TRUE;
   
+  return FALSE;
+}
+
+
+static int
+is_allowed_pair(int x, int y, ESL_DMATRIX *allowpair) 
+{
+  if (x < 4 && y < 4 && allowpair->mx[x][y] > 0) return TRUE;
   return FALSE;
 }
 

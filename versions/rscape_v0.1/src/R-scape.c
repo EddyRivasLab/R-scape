@@ -57,6 +57,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   COVTYPE          covtype;
   COVCLASS         covclass;
   
+  ESL_DMATRIX     *allowpair;          /* decide on the type of base pairs allowed */
   int              nseqthresh;
   int              alenthresh;
   
@@ -426,6 +427,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;
 
+  /* default is Watson-Crick plus U:G, G:U pairs */
+  cfg.allowpair = esl_dmatrix_Create(4, 4);
+  esl_dmatrix_SetZero(cfg.allowpair);
+  cfg.allowpair->mx[0][3] = cfg.allowpair->mx[3][0] = 1.0;
+  cfg.allowpair->mx[1][2] = cfg.allowpair->mx[2][1] = 1.0;
+  cfg.allowpair->mx[2][3] = cfg.allowpair->mx[3][2] = 1.0;
+
   if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = NAIVE;
   else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
   else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
@@ -706,6 +714,7 @@ main(int argc, char **argv)
   if (cfg.msamap) free(cfg.msamap); 
   if (cfg.omstat) free(cfg.omstat);
   if (cfg.mstat) free(cfg.mstat); 
+  if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
 
   return 0;
 }
@@ -1043,6 +1052,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ranklist_aux  = NULL;
   data.mi            = mi;
   data.covtype       = cfg->covtype;
+  data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
@@ -1141,6 +1151,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.ranklist_aux  = ranklist_aux;
   data.mi            = mi;
   data.covtype       = cfg->covtype;
+  data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
