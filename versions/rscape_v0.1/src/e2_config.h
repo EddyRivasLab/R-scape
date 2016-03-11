@@ -21,11 +21,11 @@
 
 /* Version info - set once for whole package in configure.ac
  */
-#define E2_VERSION "0.1"
-#define E2_DATE "DEC 2011"
-#define E2_COPYRIGHT "Copyright (C) 2011 Howard Hughes Medical Institute."
-#define E2_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define E2_URL "http://selab.org/"
+/* #undef E2_VERSION */
+/* #undef E2_DATE */
+/* #undef E2_COPYRIGHT */
+/* #undef E2_LICENSE */
+/* #undef E2_URL */
 
 /* Large file support (must precede any header file inclusion.)
  */

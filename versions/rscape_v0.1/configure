@@ -661,6 +661,11 @@ build_os
 build_vendor
 build_cpu
 build
+INFERNAL_LICENSETAG
+INFERNAL_LICENSE
+INFERNAL_COPYRIGHT
+INFERNAL_DATE
+INFERNAL_RELCODE
 RSCAPE_HOME
 RSCAPE_ESLDIR
 R2R_INFERNALDIR
@@ -672,13 +677,6 @@ RSCAPE_LICENSE
 RSCAPE_COPYRIGHT
 RSCAPE_DATE
 RSCAPE_NAME
-E2_SADIR
-E2_ESLDIR
-E2_URL
-E2_VERSION
-E2_LICENSE
-E2_COPYRIGHT
-E2_DATE
 target_alias
 host_alias
 build_alias
@@ -743,7 +741,7 @@ MPICC
 CPP
 PIC_FLAGS'
 ac_subdirs_all='lib/easel
-lib/R2R/NotByZasha/infernal-0.7'
+lib/R2R/NotByZasha/infernal-0.7/squid'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -2313,14 +2311,6 @@ fi
 # new preprocessor symbol of our own:
 #     EASEL_VERSION    e.g. "1.9a"
 #
-E2_DATE="DEC 2011"
-E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
-E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://selab.org/"
-E2_ESLDIR="lib/easel"
-E2_SADIR="libdivsufsort"
-
 RSCAPE_NAME="R-scape"
 RSCAPE_DATE="FEB 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
@@ -2332,6 +2322,12 @@ RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_ESLDIR="lib/easel"
+
+INFERNAL_RELCODE="infernal0_7"
+INFERNAL_DATE="December 2005"
+INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
+INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
+INFERNAL_LICENSETAG=gnu
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
@@ -2353,31 +2349,6 @@ RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 
 
 
-
-
-
-
-
-# Preprocessor symbols (replace #undefs in e2_config.h)
-cat >>confdefs.h <<_ACEOF
-#define E2_DATE "$E2_DATE"
-_ACEOF
-
-cat >>confdefs.h <<_ACEOF
-#define E2_COPYRIGHT "$E2_COPYRIGHT"
-_ACEOF
-
-cat >>confdefs.h <<_ACEOF
-#define E2_LICENSE "$E2_LICENSE"
-_ACEOF
-
-cat >>confdefs.h <<_ACEOF
-#define E2_VERSION "$E2_VERSION"
-_ACEOF
-
-cat >>confdefs.h <<_ACEOF
-#define E2_URL "$E2_URL"
-_ACEOF
 
 
 # Preprocessor symbols (replace #undefs in rscape_config.h)
@@ -7347,13 +7318,10 @@ ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h"
 
 subdirs="$subdirs lib/easel"
 
-#AC_CONFIG_SUBDIRS(lib/R2R/src)
-subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7"
+subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
-#AC_CONFIG_SUBDIRS(lib/FastTree/src)
-#AC_CONFIG_SUBDIRS(src)
 
-ac_config_files="$ac_config_files src/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/src/Makefile lib/easel/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/src/Makefile lib/easel/Makefile"
 
 
 #################################################################
@@ -8052,6 +8020,7 @@ do
   case $ac_config_target in
     "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
     "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
+    "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;

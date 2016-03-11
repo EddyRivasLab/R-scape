@@ -661,6 +661,11 @@ build_os
 build_vendor
 build_cpu
 build
+INFERNAL_LICENSETAG
+INFERNAL_LICENSE
+INFERNAL_COPYRIGHT
+INFERNAL_DATE
+INFERNAL_RELCODE
 RSCAPE_HOME
 RSCAPE_SADIR
 RSCAPE_ESLDIR
@@ -746,7 +751,7 @@ CPP
 PIC_FLAGS'
 ac_subdirs_all='lib/hmmer
 lib/hmmer/lib/easel
-lib/R2R/NotByZasha/infernal-0.7'
+lib/R2R/NotByZasha/infernal-0.7/squid'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -2338,10 +2343,23 @@ RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
+INFERNAL_RELCODE="infernal0_7"
+INFERNAL_DATE="December 2005"
+INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
+INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
+INFERNAL_LICENSETAG=gnu
+
+
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+
+
+
+
+
+
 
 
 
@@ -2416,6 +2434,18 @@ cat >>confdefs.h <<_ACEOF
 #define RSCAPE_HOME "$RSCAPE_HOME"
 _ACEOF
 
+
+cat >>confdefs.h <<_ACEOF
+#define INFERNAL_DATE "$INFERNAL_DATE"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define INFERNAL_COPYRIGHT "$INFERNAL_COPYRIGHT"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define INFERNAL_LICENSE "$INFERNAL_LICENSE"
+_ACEOF
 
 
 
@@ -7356,13 +7386,11 @@ subdirs="$subdirs lib/hmmer"
 
 subdirs="$subdirs lib/hmmer/lib/easel"
 
-#AC_CONFIG_SUBDIRS(lib/R2R/src)
-subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7"
+#AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
+subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
-#AC_CONFIG_SUBDIRS(lib/FastTree/src)
-#AC_CONFIG_SUBDIRS(src)
 
-ac_config_files="$ac_config_files src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
 
 
 #################################################################
@@ -8061,10 +8089,13 @@ do
   case $ac_config_target in
     "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
     "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
+    "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
+    "lib/R2R/NotByZasha/infernal-0.7/squid/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/squid/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;
+    "lib/FastTree/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/FastTree/src/Makefile" ;;
     "lib/hmmer/lib/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/lib/easel/Makefile" ;;
     "lib/hmmer/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/Makefile" ;;
 

@@ -2978,7 +2978,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
-  
+ 
   /* convert output to r2rmsa */
   if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_PFAM;
@@ -3122,11 +3122,11 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R pdf */
-  if (RSCAPE_HOME) // look for the installed executable
+  if (RSCAPE_HOME)                         // look for the installed executable
     esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
-
+  
  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
  esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
   system(args);
@@ -3153,7 +3153,7 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R svg */
-  if (RSCAPE_HOME)                         // look for the installed executable
+  if (RSCAPE_HOME)  // look for the installed executable
     esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");

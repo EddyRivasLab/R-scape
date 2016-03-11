@@ -100,6 +100,13 @@ RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
+INFERNAL_RELCODE="infernal0_7"
+INFERNAL_DATE="December 2005"
+INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
+INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
+INFERNAL_LICENSETAG=gnu
+
+
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
 
@@ -126,6 +133,12 @@ AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_HOME)
 
+AC_SUBST(INFERNAL_RELCODE)
+AC_SUBST(INFERNAL_DATE)
+AC_SUBST(INFERNAL_COPYRIGHT)
+AC_SUBST(INFERNAL_LICENSE)
+AC_SUBST(INFERNAL_LICENSETAG)
+
 
 # Preprocessor symbols (replace #undefs in e2_config.h)
 AC_DEFINE_UNQUOTED(E2_DATE,      "$E2_DATE")
@@ -143,6 +156,9 @@ AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 
+AC_DEFINE_UNQUOTED(INFERNAL_DATE, "$INFERNAL_DATE")
+AC_DEFINE_UNQUOTED(INFERNAL_COPYRIGHT, "$INFERNAL_COPYRIGHT")
+AC_DEFINE_UNQUOTED(INFERNAL_LICENSE, "$INFERNAL_LICENSE")
 
 
 # Figure out what host we're compiling on.
@@ -552,16 +568,17 @@ src/rscape_config.h
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
-#AC_CONFIG_SUBDIRS(lib/R2R/src)
-AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
-#AC_CONFIG_SUBDIRS(lib/FastTree/src)
-#AC_CONFIG_SUBDIRS(src)
+#AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
+AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
 
 AC_CONFIG_FILES([
+Makefile
 src/Makefile
 documentation/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
+lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
 lib/R2R/src/Makefile
+lib/FastTree/src/Makefile
 lib/hmmer/lib/easel/Makefile
 lib/hmmer/Makefile
 ])

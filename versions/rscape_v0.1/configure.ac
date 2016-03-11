@@ -78,14 +78,6 @@ fi
 # new preprocessor symbol of our own:
 #     EASEL_VERSION    e.g. "1.9a"
 #
-E2_DATE="DEC 2011"
-E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
-E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://selab.org/"
-E2_ESLDIR="lib/easel"
-E2_SADIR="libdivsufsort"
-
 RSCAPE_NAME="R-scape"
 RSCAPE_DATE="FEB 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
@@ -98,18 +90,16 @@ RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_ESLDIR="lib/easel"
 
+INFERNAL_RELCODE="infernal0_7"
+INFERNAL_DATE="December 2005"
+INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
+INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
+INFERNAL_LICENSETAG=gnu
+
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
-AC_SUBST(E2_DATE)
-AC_SUBST(E2_COPYRIGHT)
-AC_SUBST(E2_LICENSE)
-AC_SUBST(E2_VERSION)
-AC_SUBST(E2_URL)
-AC_SUBST(E2_ESLDIR)
-AC_SUBST(E2_SADIR)
-
 AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
 AC_SUBST(RSCAPE_COPYRIGHT)
@@ -122,13 +112,11 @@ AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_HOME)
 
-
-# Preprocessor symbols (replace #undefs in e2_config.h)
-AC_DEFINE_UNQUOTED(E2_DATE,      "$E2_DATE")
-AC_DEFINE_UNQUOTED(E2_COPYRIGHT, "$E2_COPYRIGHT")
-AC_DEFINE_UNQUOTED(E2_LICENSE,   "$E2_LICENSE")
-AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
-AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
+AC_SUBST(INFERNAL_RELCODE)
+AC_SUBST(INFERNAL_DATE)
+AC_SUBST(INFERNAL_COPYRIGHT)
+AC_SUBST(INFERNAL_LICENSE)
+AC_SUBST(INFERNAL_LICENSETAG)
 
 # Preprocessor symbols (replace #undefs in rscape_config.h)
 AC_DEFINE_UNQUOTED(RSCAPE_NAME,      "$RSCAPE_NAME")
@@ -547,9 +535,10 @@ src/rscape_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/easel)
-AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
+AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
 
 AC_CONFIG_FILES([
+Makefile
 src/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
 lib/R2R/src/Makefile
