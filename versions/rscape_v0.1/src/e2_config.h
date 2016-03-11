@@ -1,4 +1,4 @@
-/* e2_config.h.  Generated from e2_config.h.in by configure.  */
+/* src/e2_config.h.  Generated from e2_config.h.in by configure.  */
 /* @configure_input@
  * e2config.h.in -> e2config.h
  * 
@@ -21,11 +21,11 @@
 
 /* Version info - set once for whole package in configure.ac
  */
-/* #undef E2_VERSION */
-/* #undef E2_DATE */
-/* #undef E2_COPYRIGHT */
-/* #undef E2_LICENSE */
-/* #undef E2_URL */
+#define E2_VERSION "0.1"
+#define E2_DATE "DEC 2011"
+#define E2_COPYRIGHT "Copyright (C) 2011 Howard Hughes Medical Institute."
+#define E2_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
+#define E2_URL "http://selab.org/"
 
 /* Large file support (must precede any header file inclusion.)
  */
@@ -41,7 +41,7 @@
 
 /* Optional parallel implementations
  */
-#define HAVE_SSE2 1
+/* #undef HAVE_SSE2 */
 /* #undef HAVE_MPI */
 /* #undef E2_PVM */
 /* #undef EHMM_THREADS */

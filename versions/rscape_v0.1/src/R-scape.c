@@ -1129,7 +1129,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) {
-    fprintf(cfg->sumfp, "#target_E-val\tMSA\tnseq\talen\tavgid\tmethod\tFP\tTP\tTrue\tFound\tSEN\tPPV\n");
+    fprintf(cfg->sumfp, "#target_E-val\tMSA\tnseq\talen\tavgid\tmethod\tTP\tTrue\tFound\tSEN\tPPV\n");
     fprintf(cfg->sumfp, "%g\t\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat->avgid); 
   }
   

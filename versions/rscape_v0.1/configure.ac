@@ -542,17 +542,18 @@ AC_SYS_LARGEFILE
 # 13. Write out esl_config.h header and the Makefiles
 #################################################################
 AC_CONFIG_HEADERS([
+src/e2_config.h
+src/rscape_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/easel)
-AC_CONFIG_SUBDIRS(lib/R2R/src)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
-AC_CONFIG_SUBDIRS(lib/FastTree/src)
-AC_CONFIG_SUBDIRS(src)
 
 AC_CONFIG_FILES([
-Makefile
+src/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
+lib/R2R/src/Makefile
+lib/easel/Makefile
 ])
 
 #################################################################

@@ -746,10 +746,7 @@ CPP
 PIC_FLAGS'
 ac_subdirs_all='lib/hmmer
 lib/hmmer/lib/easel
-lib/R2R/src
-lib/R2R/NotByZasha/infernal-0.7
-lib/FastTree/src
-src'
+lib/R2R/NotByZasha/infernal-0.7'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -7350,7 +7347,7 @@ fi
 #################################################################
 # 13. Write out esl_config.h header and the Makefiles
 #################################################################
-ac_config_headers="$ac_config_headers "
+ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h"
 
 
 
@@ -7359,16 +7356,13 @@ subdirs="$subdirs lib/hmmer"
 
 subdirs="$subdirs lib/hmmer/lib/easel"
 
-subdirs="$subdirs lib/R2R/src"
-
+#AC_CONFIG_SUBDIRS(lib/R2R/src)
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7"
 
-subdirs="$subdirs lib/FastTree/src"
+#AC_CONFIG_SUBDIRS(lib/FastTree/src)
+#AC_CONFIG_SUBDIRS(src)
 
-subdirs="$subdirs src"
-
-
-ac_config_files="$ac_config_files Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile"
+ac_config_files="$ac_config_files src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
 
 
 #################################################################
@@ -8065,9 +8059,14 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
+    "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
+    "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
+    "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;
+    "lib/hmmer/lib/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/lib/easel/Makefile" ;;
+    "lib/hmmer/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -8800,6 +8799,12 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
+echo "
 
+R-scape configuration:
 
+     compiler:    ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
+     host:        $host
+     libraries:   ${LIBGSL} ${MPILIBS} ${PTHREAD_LIBS} ${LIBS}
+"
 

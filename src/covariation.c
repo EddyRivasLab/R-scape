@@ -2968,15 +2968,13 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   fclose(fp);
   
   /* run R2R */
- if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-
- if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
-    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
-  else if (RSCAPE_HOME)         // look for the installed executable
+  if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
+  
+  if (RSCAPE_HOME)         // look for the installed executable
     esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
-
+  
   esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, tmpinfile, tmpoutfile);
   system(args);
   fclose(fp);
@@ -3124,13 +3122,11 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R pdf */
-  if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
-    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
-  else if (RSCAPE_HOME)                         // look for the installed executable
+  if (RSCAPE_HOME)                         // look for the installed executable
     esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
-
+  
  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
  esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
   system(args);
@@ -3157,9 +3153,7 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R svg */
-  if ("RSCAPEDIR" && (s = getenv("RSCAPEDIR"))) // look for the local executable
-    esl_sprintf(&cmd, "%s/lib/R2R/src/r2r", s);
-  else if (RSCAPE_HOME)                         // look for the installed executable
+  if (RSCAPE_HOME)  // look for the installed executable
     esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");

@@ -552,10 +552,10 @@ src/rscape_config.h
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
-AC_CONFIG_SUBDIRS(lib/R2R/src)
+#AC_CONFIG_SUBDIRS(lib/R2R/src)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
-AC_CONFIG_SUBDIRS(lib/FastTree/src)
-AC_CONFIG_SUBDIRS(src)
+#AC_CONFIG_SUBDIRS(lib/FastTree/src)
+#AC_CONFIG_SUBDIRS(src)
 
 AC_CONFIG_FILES([
 src/Makefile
