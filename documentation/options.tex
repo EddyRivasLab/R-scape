@@ -1,11 +1,11 @@
-
+\clearpage
 \section{Options}
 \label{section:options}
 \setcounter{footnote}{0}
 
 The whole list of options can be found using 
 
-\user{R-scape -h}.\\
+\user{R-scape -h}\\
 
 Some important options are:
 \subsection{Covariation statistic options}
@@ -16,9 +16,11 @@ Some important options are:
 We favor the G-test covariation statistic, but a total of eight
 covariation statistics are currently implemented in \rscape. For each
 covariation statistic (GT, for instance), \rscape\ can also calculate
-its average product correction (GTp) ad its average sum corrections
-(GTa).  Each option \prog{--GT} stands for three independent ones:
-\prog{--GT, --GTp, --GTa}.\\
+its average product correction (GTp) and its average sum corrections
+(GTa). For each option, appending ``p'' or ``a'' chooses one of the
+corrections. For example, \prog{--GT} does the G-test statistic,
+\prog{--GTp} does the APC-corrected G-test statistic, \prog{--GTa}
+does the ASC-corrected G-test statistic.\\
 
 The \rscape\ default is \prog{--GTp}.\\
 
@@ -63,8 +65,8 @@ covariation statistic above $\mathrm{COV}(i,j)$ are,
 %
 \[
 \begin{array}{lrcl}
-  \mbox{\small Average product correction} & \mathrm{COVp}(i,j) & = &  \mathrm{COV}(i,j) - \frac { \mathrm{COV}(i) \mathrm{COV}(j) } { \mathrm{COV} }. \\
-  \mbox{\small Average sum correction}     & \mathrm{COVa}(i,j) & = &  \mathrm{COV}(i,j) - \left( \mathrm{COV}(i) + \mathrm{COV}(j) - \mathrm{COV} \right), \\
+  \mbox{\small Average product correction} & \mathrm{COVp}(i,j) & = &  \mathrm{COV}(i,j) - \frac { \mathrm{COV}(i) \mathrm{COV}(j) } { \mathrm{COV} }, \\
+  \mbox{\small Average sum correction}     & \mathrm{COVa}(i,j) & = &  \mathrm{COV}(i,j) - \left( \mathrm{COV}(i) + \mathrm{COV}(j) - \mathrm{COV} \right). \\
 \end{array}
 \]
 
@@ -97,7 +99,9 @@ The window size is $n>0$.
 
 \subsection{Input alignment options}
 
-\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$ fraction identity are  considered in the analysis.
+\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$ pairwise similarity are considered in the analysis. 
+Sequences more than $x$ similarity to each other are clustered together, and one representative
+of the cluster is randomly selected.
 
 \subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
 
@@ -110,7 +114,7 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Output options}
 
-\subsubsection{\prog{--outmsa <f>}} The actual alignment analyzed can be saved in Stockholm format to file <f>.
+\subsubsection{\prog{--outmsa <f>}} The actual alignment analyzed can be saved in Stockholm format to file $<$f$>$.
 
 
 \subsection{Plotting options}

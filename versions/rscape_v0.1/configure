@@ -2312,7 +2312,7 @@ fi
 #     EASEL_VERSION    e.g. "1.9a"
 #
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="FEB 2016"
+RSCAPE_DATE="February 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -7321,7 +7321,7 @@ subdirs="$subdirs lib/easel"
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/src/Makefile lib/easel/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/FastTree/src/Makefile lib/R2R/src/Makefile lib/easel/Makefile"
 
 
 #################################################################
@@ -8023,6 +8023,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
+    "lib/FastTree/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/FastTree/src/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;
     "lib/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/easel/Makefile" ;;
 
@@ -8757,6 +8758,12 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
+echo "
 
+R-scape configuration:
 
+     compiler:    ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
+     host:        $host
+     libraries:   ${LIBGSL} ${MPILIBS} ${PTHREAD_LIBS} ${LIBS}
+"
 

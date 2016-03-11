@@ -1937,7 +1937,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   if (data->mode != RANSS && data->sumfp) {
     fprintf(data->sumfp, " %s %d %d %d %.2f %.2f ", 
-	    covtype, tf, t, data->onbpairs, (t > 0)? 100.*(double)tf/(double)t:0.0, (data->onbpairs>0)? 100.*(double)tf/(double)data->onbpairs:0.0);
+	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
   }
   if (data->outfp) {
     if (data->mode == CYKSS) {
@@ -1951,6 +1951,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   if (data->outsrtfp) {
     if (data->mode == CYKSS) {
+      fprintf(stdout,         "# cyk-cov structure\n");
       fprintf(data->outsrtfp, "# cyk-cov structure\n");
     }
     fprintf(stdout,         "# Method Target_E-val cov_at_target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
@@ -1979,6 +1980,8 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 
   if (fp == NULL) return eslOK;
 
+  fprintf(fp, "#       left_pos       right_pos        score   E-value\n");
+  fprintf(fp, "#------------------------------------------------------------\n");
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;

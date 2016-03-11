@@ -87,7 +87,7 @@ E2_ESLDIR="lib/hmmer/lib/easel"
 E2_SADIR="libdivsufsort"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="FEB 2016"
+RSCAPE_DATE="February 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION

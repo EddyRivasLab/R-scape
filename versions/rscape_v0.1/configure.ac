@@ -79,7 +79,7 @@ fi
 #     EASEL_VERSION    e.g. "1.9a"
 #
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="FEB 2016"
+RSCAPE_DATE="February 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -541,6 +541,7 @@ AC_CONFIG_FILES([
 Makefile
 src/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
+lib/FastTree/src/Makefile
 lib/R2R/src/Makefile
 lib/easel/Makefile
 ])
@@ -550,6 +551,12 @@ lib/easel/Makefile
 #################################################################
 AC_OUTPUT
 
+echo "
 
+R-scape configuration:
 
+     compiler:    ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
+     host:        $host
+     libraries:   ${LIBGSL} ${MPILIBS} ${PTHREAD_LIBS} ${LIBS}
+"
 

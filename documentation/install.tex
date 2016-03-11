@@ -4,19 +4,19 @@
 
 \subsection{Quick installation instructions}
 
-Download \prog{\rscape\_version.tar.gz} from
+Download \prog{\rscape.tar.gz} from
 \url{http://selab.org/}, or from
-\url{hhps://hithub.com/EddyRivasLab/R-scape}; unpack it, configure,
+\url{https://github.com/EddyRivasLab/R-scape}; unpack it, configure,
 and make:\\
 
-\user{tar xf R-scape\_version.tar.gz}\\
-\user{cd R-scape\_version}\\
+\user{tar xf R-scape.tar.gz}\\
+\user{cd R-scape}\\
 \user{./configure}\\ 
 \user{make}\\
 \user{make install}\\
 
 The newly compiled binary (\prog{\rscape}) is in the
-\prog{\rscape\_version/bin} directory. You can run it from there,
+\prog{\rscape/bin} directory. You can run it from there,
 as in this example:\\
 
 \user{bin/R-scape tutorial/updated\_Arisong.sto}\\
@@ -30,19 +30,20 @@ chapter, the tutorial.
 \subsection{System requirements}
 
 \paragraph{Operating system:} \rscape\ is designed to run on
-POSIX-compatible platforms, including UNIX, Linux and MacOS/X. The
+POSIX-compatible platforms, including UNIX, Linux and Mac OS/X. The
 POSIX standard essentially includes all operating systems except
 Microsoft Windows. We have tested most extensively on Linux and
 MacOS/X because these are the machines we develop on.
 
 \paragraph{Compiler:} The source code is C conforming to POSIX and ANSI
 C99 standards. It should compile with any ANSI C99 compliant compiler,
-including the GNU C compiler \prog{gcc}. We test the code using the
-\prog{gcc} compiler.
+including the GNU C compiler \prog{gcc}, and the C++ compiler
+\prog{g++}. We test the code using the \prog{gcc} and \prog{g++}
+compilers.
 
 \paragraph{Libraries and other installation requirements:} \rscape\ includes
 three software libraries: the Easel library package
-(\url{http://selab.org/}), and two independent programs
+(\url{http://bioeasel.org/}), and two independent programs
 FastTree~\citep{Price10} (for building phylogenetic trees) and
 R2R~\citep{WeinbergBreaker11} (for drawing consensus RNA
 structures). All will automatically compile during \rscape's
@@ -98,10 +99,10 @@ as in:
 
 The top-level configure file has a variable RSCAPE\_HOME that
 specifies the directory where \ccode{make install} will install
-thingg: \ccode{RSCAPE\_HOME/bin}.\\
+things: \ccode{RSCAPE\_HOME/bin}.\\
 
 By default RSCAPE\_HOME is assigned to the current directory
-R-scape\_version.\\
+R-scape.\\
 
 The best way to change this default is when you use
 \ccode{./configure}, and the most important variable to consider
