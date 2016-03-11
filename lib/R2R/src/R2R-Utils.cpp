@@ -181,9 +181,6 @@ void ManagedPosInfoVector::SetValid (SsContext ssContext)
 
 std::string SsContext::ToStringOfCoords (const OtherDrawingStuff& otherDrawingStuff) const
 {
-	if (this==NULL) {
-		return "NULL";
-	}
 	std::string userfirstcol="-,-",userlastcol="-,-";
 	if (FirstSide()==0) {
 		int p=FindTextColOfPos(otherDrawingStuff,outerFirst);

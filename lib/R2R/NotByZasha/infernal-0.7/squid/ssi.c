@@ -474,19 +474,11 @@ clear_ssifile(SSIFILE *sfp)
 int
 SSIRecommendMode(char *file)
 {
-#if HAVE_STAT64
-  struct stat64 s1;
-  if (stat64(file, &s1) == 0) {
-    if (s1.st_size <= 2146483647L) return SSI_OFFSET_I32;
-    else                           return SSI_OFFSET_I64;
-  }
-#else 
   struct stat s2;
   if (stat(file, &s2) == 0) {
     if (s2.st_size <= 2146483647L) return SSI_OFFSET_I32;
     else                           return SSI_OFFSET_I64;
   }
-#endif
   return -1;
 }
  
