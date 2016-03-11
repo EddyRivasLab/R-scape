@@ -2,7 +2,6 @@ Brief installation instructions.
 R-scape v0.1	   Feb 2016
 http://selab.org
 ----------------------------------------------------------------------------
-
 Starting from a source distribution, R-scape_v0.1/:
  move into new directory:   cd R-scape_v0.1
  configure:                 ./configure
@@ -13,10 +12,9 @@ The newly compiled binary "R-scape" is in the R-scape_v0.1/bin directory.
 You can run it from there.
 
 For complete documentation, see the R-scape User's Guide 
-(R-scape_userguide.pdf).
+(R-scape_v0.1/documentation/R-scape_userguide.pdf).
 
-The default installation produces executable: R-scape_v0.1/src/R-scape
-
+The default installation produces executable: R-scape_v0.1/bin/R-scape
 ----------------------------------------------------------------------------
 Elena Rivas
 elenarivas@fas.harvard.edu
