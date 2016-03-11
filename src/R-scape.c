@@ -874,8 +874,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
     
     /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s/%s.cdf",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.cdf", cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
     
    /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, cfg->msaname);
@@ -890,8 +890,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
     
     /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s.cdf",     cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.cdf", cfg->msaname);
+    esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
     
     /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s.qq",     cfg->msaname);

@@ -146,10 +146,10 @@ If the given alignment  has a consensus secondary structure
 \item[\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}] Drawing of the
   \rscape-annotated consensus secondary structure.
 %
-\item[\emprog{rnafile\_msaname.cdf}] A two column file with the 
-cumulative distribution functions (cfg) for the covariation scores.
+\item[\emprog{rnafile\_msaname.surv}] A two column file with the 
+survival functions (surv) for the covariation scores.
 %
-\item[\emprog{rnafile\_msaname.cdf.ps}] Plot of the score's cdf. Drawing this
+\item[\emprog{rnafile\_msaname.surv.ps}] Plot of the score's survival function. Drawing this
 file requires that program \emprog{gnuplot} is installed somewhere in the
 \prog{\$\{PATH\}}, or that the environmental variable GNUPLOT 
 pointing to a gnuplot executable is defined.
@@ -179,9 +179,9 @@ maximal-covariation optimal secondary structure:
 %
 \item[\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}]
 %
-\item[\emprog{rnafile\_msaname.cyk.cdf}]
+\item[\emprog{rnafile\_msaname.cyk.surv}]
 %
-\item[\emprog{rnafile\_msaname.cyk.cdf.\{ps.svg\}}]
+\item[\emprog{rnafile\_msaname.cyk.surv.\{ps.svg\}}]
 %
 \item[\emprog{rnafile\_msaname.cyk.dplot.\{ps,svg\}}]
 %
@@ -204,9 +204,9 @@ consensus structure.
  structure using the R2R documentation, provided in
  \prog{lib/R2R/R2R-manual.pdf}.\\
 
- File \emprog{tutorial/updated\_Arisong\_1.cdf} looks like this:
+ File \emprog{tutorial/updated\_Arisong\_1.surv} looks like this:
 
-\user{more tutorial/updated\_Arisong.cdf}
+\user{more tutorial/updated\_Arisong.surv}
  \begin{sreoutput}
  89.046301       0.000480769
  68.879658       0.000961538
@@ -227,13 +227,13 @@ consensus structure.
  \end{sreoutput}
  The first column is a covariation score (x). The second column is the
  survival function $P(X > x)$, that is the frequency of pairs having
- score larger than x. The file includes three cdfs separated by a
- ``\&'' line. The three cdf correspond to:
+ score larger than x. The file includes three survival functions separated by a
+ ``\&'' line. The three survival functions correspond to:
 
- \begin{sreitems}{\prog{Second cdf}}
- \item[\prog{First cdf}] the given alignment, all possible pairs.
- \item[\prog{Second cdf}] the aggregation of all null alignments, all possible pairs.
- \item[\prog{Third cdf}] the expected null cdf according to the tail Gamma fit.
+ \begin{sreitems}{\prog{Second functions}}
+ \item[\prog{First functions}] the given alignment, all possible pairs.
+ \item[\prog{Second function}] the aggregation of all null alignments, all possible pairs.
+ \item[\prog{Third function}] the expected null survival function according to the tail Gamma fit.
  \end{sreitems}
 
 
@@ -253,17 +253,16 @@ consensus structure.
  \label{fig:r2r}
  \end{figure}
 
- \begin{figure}[h]
-   \includegraphics[scale=0.50]{Arisong_his.pdf} 
- \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.cdf.\{ps,svg\}}:
-     covariation scores cdf.}  The cdf of scores for all
-   pairs in the given alignment is depicted in blue. The cdf for
-   the null alignments is depicted in black. A black line indicates to
-   fit to a truncated Gamma distribution of the tail of the null
-   distribution. In red, we plot the cdf of scores for the pairs
-   in the given alignment excluding those proposed as base pairs.}
- \label{fig:cdf}
- \end{figure}
+ \begin{figure}[h] \includegraphics[scale=0.50]{Arisong_his.pdf} 
+ \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.surv.\{ps,svg\}}:
+ covariation scores survival function $P(X>x)$.}  The survival
+ function of scores for all pairs in the given alignment is depicted
+ in blue. The survival function for the null alignments is depicted in
+ black. A black line indicates to fit to a truncated Gamma
+ distribution of the tail of the null distribution. In red, we plot
+ the survival function of scores for the pairs in the given alignment
+ excluding those proposed as base
+ pairs.}  \label{fig:surv} \end{figure}
 
  \begin{figure}[h] 
 \includegraphics[scale=0.60]{Arisong_dplot.pdf} 
