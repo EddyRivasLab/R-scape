@@ -546,6 +546,8 @@ AC_SYS_LARGEFILE
 # 13. Write out esl_config.h header and the Makefiles
 #################################################################
 AC_CONFIG_HEADERS([
+src/e2_config.h
+src/rscape_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
@@ -556,9 +558,12 @@ AC_CONFIG_SUBDIRS(lib/FastTree/src)
 AC_CONFIG_SUBDIRS(src)
 
 AC_CONFIG_FILES([
-Makefile
+src/Makefile
 documentation/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
+lib/R2R/src/Makefile
+lib/hmmer/lib/easel/Makefile
+lib/hmmer/Makefile
 ])
 
 #################################################################
@@ -566,6 +571,12 @@ lib/R2R/NotByZasha/infernal-0.7/Makefile
 #################################################################
 AC_OUTPUT
 
+echo "
 
+R-scape configuration:
 
+     compiler:    ${CC} ${CFLAGS} ${SIMD_CFLAGS} ${PTHREAD_CFLAGS} ${PIC_FLAGS}
+     host:        $host
+     libraries:   ${LIBGSL} ${MPILIBS} ${PTHREAD_LIBS} ${LIBS}
+"
 
