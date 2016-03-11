@@ -337,7 +337,7 @@ cov_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 int                 
 cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
-  struct mutual_s *mi = data->mi;
+  struct mutual_s *mi = data->mi; 
   char            *errbuf = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
@@ -348,11 +348,11 @@ cov_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateCHI_C16  (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateCHI_C2   (mi, verbose, errbuf);
+    status = cov_CalculateCHI_C2   (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
-      status = cov_CalculateCHI_C2 (mi, verbose, errbuf);
+      status = cov_CalculateCHI_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = cov_CalculateCHI_C16(mi, verbose, errbuf);
     break;
@@ -412,7 +412,7 @@ cov_CalculateCHI_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateCHI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double chi;
   double pij_wc, pij_nwc;
@@ -435,7 +435,7 @@ cov_CalculateCHI_C2(struct mutual_s *mi, int verbose, char *errbuf)
       
       for (x = 0; x < K; x ++) 
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -476,11 +476,11 @@ cov_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
     status = cov_CalculateOMES_C16  (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateOMES_C2   (mi, verbose, errbuf);
+    status = cov_CalculateOMES_C2   (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
    if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
-      status = cov_CalculateOMES_C2 (mi, verbose, errbuf);
+      status = cov_CalculateOMES_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = cov_CalculateOMES_C16(mi, verbose, errbuf);
     break;
@@ -538,7 +538,7 @@ cov_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateOMES_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double omes;
   double pij_wc, pij_nwc;
@@ -561,7 +561,7 @@ cov_CalculateOMES_C2(struct mutual_s *mi, int verbose, char *errbuf)
       
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -601,11 +601,11 @@ cov_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
     status = cov_CalculateGT_C16 (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateGT_C2  (mi, verbose, errbuf);
+    status = cov_CalculateGT_C2  (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh) {
-      status = cov_CalculateGT_C2(mi, verbose, errbuf);
+      status = cov_CalculateGT_C2(mi, data->allowpair, verbose, errbuf);
     }
     else {
       status = cov_CalculateGT_C16(mi, verbose, errbuf);
@@ -667,7 +667,7 @@ cov_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateGT_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double gt;
   double pij_wc, pij_nwc;
@@ -690,7 +690,7 @@ cov_CalculateGT_C2(struct mutual_s *mi, int verbose, char *errbuf)
  
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -732,11 +732,11 @@ cov_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **
     status = cov_CalculateMI_C16  (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateMI_C2   (mi, verbose, errbuf);
+    status = cov_CalculateMI_C2   (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
-      status = cov_CalculateMI_C2 (mi, verbose, errbuf);
+      status = cov_CalculateMI_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = cov_CalculateMI_C16(mi, verbose, errbuf);
     break;
@@ -792,7 +792,7 @@ cov_CalculateMI_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateMI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double mutinf;
   double pij_wc, pij_nwc;
@@ -813,7 +813,7 @@ cov_CalculateMI_C2(struct mutual_s *mi, int verbose, char *errbuf)
       
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -849,11 +849,11 @@ cov_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateMIr_C16  (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateMIr_C2   (mi, verbose, errbuf);
+    status = cov_CalculateMIr_C2   (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
-      status = cov_CalculateMIr_C2 (mi, verbose, errbuf);
+      status = cov_CalculateMIr_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = cov_CalculateMIr_C16(mi, verbose, errbuf);
     break;
@@ -912,7 +912,7 @@ cov_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateMIr_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double mutinf, HH;
   double pij_wc, pij_nwc;
@@ -934,7 +934,7 @@ cov_CalculateMIr_C2(struct mutual_s *mi, int verbose, char *errbuf)
       
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -973,11 +973,11 @@ cov_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
     status = cov_CalculateMIg_C16  (mi, verbose, errbuf);
     break;
   case C2:
-    status = cov_CalculateMIg_C2   (mi, verbose, errbuf);
+    status = cov_CalculateMIg_C2   (mi, data->allowpair, verbose, errbuf);
     break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh)
-      status = cov_CalculateMIg_C2 (mi, verbose, errbuf);
+      status = cov_CalculateMIg_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = cov_CalculateMIg_C16(mi, verbose, errbuf);
     break;
@@ -1035,7 +1035,7 @@ cov_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
+cov_CalculateMIg_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
 {
   double mutinf;
   double pij_wc, pij_nwc;
@@ -1056,7 +1056,7 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
       
       for (x = 0; x < K; x ++)
 	for (y = 0; y < K; y ++) {
-	  if (is_wc(x,y)) {
+	  if (is_allowed_pair(x,y,allowpair)) {
 	    pij_wc  += mi->pp[i][j][IDX(x,y,K)];
 	    qij_wc  += mi->pm[i][x] * mi->pm[j][y];
 	  }
@@ -1081,7 +1081,7 @@ cov_CalculateMIg_C2(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-cov_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa,  int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+cov_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
   struct mutual_s *mi = data->mi;
   ESL_DMATRIX     *allowpair = data->allowpair;
@@ -3323,7 +3323,6 @@ cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
 
 
 /*---------------- internal functions --------------------- */
-
 static int
 is_wc(int x, int y) 
 {
