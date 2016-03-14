@@ -22,11 +22,12 @@ each score value.
 
 \subsection{Tabular output per input file}
 
-The distribution includes examples of output files. If you
-run \rscape, the outputs will go into your current working directory
-(not necessarily tutorials/).
+The distribution includes in the directory tuturials/ examples of
+output files. If you run \rscape, the outputs will go into your
+current working directory (not necessarily tutorials/).
 
 The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
+\user{more tutorial/updated\_Arisong.out}
 
 \begin{sreoutput}
 # MSA updated_Arisong_1 nseq 69 (95) alen 65 (150) avgid 65.16 (64.97) nbpairs 20 (20)
@@ -112,7 +113,7 @@ File \emprog{tutorial/updated\_Arisong.roc} looks like:
 
 \user{more tutorial/updated\_Arisong.roc}
 \begin{sreoutput}
- # MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
+# MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
 # Method: GTp
 #cov_score  FP  TP  Found  True  Negatives   Sen   PPV     F       E-value
 89.04630    0   1       1    20       2060   5.00  100.00  9.52    0
@@ -149,8 +150,10 @@ If the given alignment  has a consensus secondary structure
 \item[\emprog{rnafile\_msaname.surv}] A two column file with the 
 survival functions (surv) for the covariation scores.
 %
-\item[\emprog{rnafile\_msaname.surv.ps}] Plot of the score's survival function. Drawing this
-file requires that program \emprog{gnuplot} is installed somewhere in the
+\item[\emprog{rnafile\_msaname.surv.ps}] Plot of the score's survival function
+$P(X > \mbox{score})$. Drawing this
+file requires that program \emprog{gnuplot} is installed somewhere in
+the
 \prog{\$\{PATH\}}, or that the environmental variable GNUPLOT 
 pointing to a gnuplot executable is defined.
 %
@@ -230,10 +233,10 @@ consensus structure.
  score larger than x. The file includes three survival functions separated by a
  ``\&'' line. The three survival functions correspond to:
 
- \begin{sreitems}{\prog{Second functions}}
- \item[\prog{First functions}] the given alignment, all possible pairs.
- \item[\prog{Second function}] the aggregation of all null alignments, all possible pairs.
- \item[\prog{Third function}] the expected null survival function according to the tail Gamma fit.
+ \begin{sreitems}{\prog{Second function:}}
+ \item[\prog{First functions:}] the given alignment, all possible pairs.
+ \item[\prog{Second function:}] the aggregation of all null alignments, all possible pairs.
+ \item[\prog{Third function:}] the expected null survival function according to the tail Gamma fit.
  \end{sreitems}
 
 

@@ -17,7 +17,7 @@ We favor the G-test covariation statistic, but a total of eight
 covariation statistics are currently implemented in \rscape. For each
 covariation statistic (GT, for instance), \rscape\ can also calculate
 its average product correction (GTp) and its average sum corrections
-(GTa). For each option, appending ``p'' or ``a'' chooses one of the
+(GTa). For each option above, appending ``p'' or ``a'' chooses one of the
 corrections. For example, \prog{--GT} does the G-test statistic,
 \prog{--GTp} does the APC-corrected G-test statistic, \prog{--GTa}
 does the ASC-corrected G-test statistic.\\
@@ -99,9 +99,10 @@ The window size is $n>0$.
 
 \subsection{Input alignment options}
 
-\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$ pairwise similarity are considered in the analysis. 
-Sequences more than $x$ similarity to each other are clustered together, and one representative
-of the cluster is randomly selected.
+\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$
+pairwise similarity are considered in the analysis.  Sequences with at
+least $x$ pairwise similarity are clustered together, and one
+representative of the cluster is randomly selected.
 
 \subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
 
