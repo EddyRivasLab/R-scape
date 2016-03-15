@@ -72,6 +72,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outmsafile;
   FILE            *outmsafp;
  
+  char            *outnullfile;
+  FILE            *outnullfp;
+ 
   char            *outdir;
   char            *outfile;
   char            *outsrtfile;
@@ -213,7 +216,7 @@ static ESL_OPTIONS options[] = {
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
-  { "--CSELECT",     eslARG_NONE,     "TRUE",    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use C2 if nseq <= nseqthresh otherwise use C16",                                                                 1 },
+  { "--CSELECT",     eslARG_NONE,     "TRUE",    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use C2 if nseq <= nseqthresh otherwise use C16",                                            1 },
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "nseqthresh is <n>",                                                                         0 },   
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
    /* phylogenetic method */
@@ -226,6 +229,7 @@ static ESL_OPTIONS options[] = {
   /* Control of output */
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
+  { "--outnull",      eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
   { "--cykLmax",       eslARG_INT,    "1800",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
@@ -483,6 +487,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
   
+  /* file with the null alignments */
+  cfg.outnullfile = NULL;
+  cfg.outnullfp   = NULL;
+  if (esl_opt_IsOn(go, "--outnull")) {
+    esl_sprintf(&cfg.outnullfile, "%s", esl_opt_GetString(go, "--outnull"));
+    if ((cfg.outnullfp = fopen(cfg.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnull file %s", cfg.outnullfile);
+  } 
+  
   /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rcykfile = NULL;
@@ -688,6 +700,7 @@ main(int argc, char **argv)
   fclose(cfg.rocfp);
   fclose(cfg.sumfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
+  if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -706,6 +719,7 @@ main(int argc, char **argv)
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.outmsafile) free(cfg.outmsafile);
+  if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
@@ -1254,17 +1268,20 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     esl_msa_Destroy(shmsa); shmsa = NULL;
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
+
+  /* outout null msas to file if requested */
+  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
   
-   if (cfg->verbose) {
-     printf("null1 distribution - cummulative\n");
-     printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-     //esl_histogram_Plot(stdout, cumranklist->h);
-     //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-   }
-
+  if (cfg->verbose) {
+    printf("null1 distribution - cummulative\n");
+    printf("imin %d imax %d xmax %f xmin %f\n", 
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, cumranklist->h);
+    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
+  }
+  
   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
-
+  
   *ret_cumranklist = cumranklist;
   free(useme);
   return eslOK;
@@ -1314,7 +1331,10 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
      esl_msa_Destroy(shmsa); shmsa = NULL;
      cov_FreeRankList(ranklist); ranklist = NULL;
   }
-  
+
+  /* outout null msas to file if requested */
+  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+    
   if (cfg->verbose) {
     printf("null1b distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1365,6 +1385,9 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
      esl_msa_Destroy(shmsa); shmsa = NULL;
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
+
+   /* outout null msas to file if requested */
+   if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
    
    if (cfg->verbose) {
      printf("null2 distribution - cummulative\n");
@@ -1420,7 +1443,10 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
      esl_msa_Destroy(shmsa); shmsa = NULL;
      cov_FreeRankList(ranklist); ranklist = NULL;
    }
-   
+
+   /* outout null msas to file if requested */
+   if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+    
    if (cfg->verbose) {
      printf("null2b distribution - cummulative\n");
      printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1480,6 +1506,9 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
+  /* outout null msas to file if requested */
+  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+  
   if (cfg->verbose) {
     printf("null3 distribution - cummulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1538,6 +1567,9 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   for (s = 0; s < nshuffle; s ++) {
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
+
+    /* outout null msas to file if requested */
+    if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
     if (cfg->verbose) {
       //msamanip_DumpStats(stdout, msa, cfg->mstat);
