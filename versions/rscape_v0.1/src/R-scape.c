@@ -928,9 +928,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 #endif
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
-  
-  if (1||cfg->verbose) 
-    MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+
+  // Print some alignment information
+  MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   
   nshuffle = cfg->nshuffle;
   if (nshuffle < 0) {

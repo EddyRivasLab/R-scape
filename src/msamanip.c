@@ -1062,6 +1062,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   /* apply those substitutions one at a time randomly along the branch */
 #if 0
   int oldc, newc;
+  int x;
   while (nsubs > 0) {
     x = (int)(esl_random(r) * K2);
     if (nsub[x] > 0) {
@@ -1218,7 +1219,7 @@ shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L
   which = (int)(esl_random(r)*ncol);
   nx[colidx[perm[which]]] = newc;
   
-#if 1
+#if 0
   printf("old %d new %d | ncol %d colidx %d\n", oldc, newc, ncol, colidx[perm[which]]);
   for (n = 1; n <= L; n++) {
     if (n==colidx[perm[which]]) printf("*%d*", nx[n]); 

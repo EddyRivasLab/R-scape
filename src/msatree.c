@@ -31,11 +31,11 @@
 
 #include "msatree.h"
 
-static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, int verbose);
+static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float *frq, int *ret_sc, char *errbuf, int verbose);
 static int     tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc, char *errbuf);
 static int     tree_fitch_check(int dim, int *S);
 static int     tree_fitch_downwards(int dim, int xa, int *Sd);
-static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S);
+static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S);
 
 /*****************************************************************
  * 1. Miscellaneous functions for msatree
@@ -123,12 +123,15 @@ int
 Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, char *errbuf, int verbose)
 {
   ESL_MSA *allmsa = NULL;
+  float   *frq = NULL;
   int      nnodes = (T->N > 1)? T->N-1 : T->N;
   int      sc = 0;
   int      i;
   int      c;
   int      status;
 
+  //msamanip_XBaseComp(msa, NULL, &frq);
+  
   /* allmsa include the ancestral sequences
    * allmsa->ax[0,N-1] = msa->ax[0,N-1]
    * allmsa->ax[N+n] = ancestral sequence at node 0 <= n < N-1 (n=0 is the root)
@@ -147,15 +150,18 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
   }
 
   for (c = 1; c <= allmsa->alen; c ++) {
-    status = tree_fitch_column(c, r, T, allmsa, &sc, errbuf, verbose); 
+    status = tree_fitch_column(c, r, T, allmsa, NULL, &sc, errbuf, verbose); 
     if (status != eslOK) goto ERROR;
   }
+
+  if (frq) free(frq);
   
   *ret_sc = sc;
   *ret_allmsa = allmsa;
   return eslOK;
 
  ERROR:
+  if (frq) free(frq);
   if (allmsa) esl_msa_Destroy(allmsa);
   return status;
 }
@@ -1492,7 +1498,7 @@ esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE *T, double tol, char *e
 /*---- internal functions ---*/
 
 static int
-tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *ret_sc, char *errbuf, int verbose) 
+tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float *frq, int *ret_sc, char *errbuf, int verbose) 
 {
   ESL_STACK  *vs = NULL;
   int       **S  = NULL;
@@ -1555,7 +1561,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
   if (verbose) printf("column %d score %d\n", c, sc);
 
   /* set an arbitrary character at the root */
-  allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, S[T->N]);
+  allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, frq, S[T->N]);
 
   /* go down the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
@@ -1570,7 +1576,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm downwards failed");
  
 	/* now Sl is just a character, assign to the msa sequence */
- 	allmsa->ax[idxl][c] = tree_fitch_choose(r, dim, S[idxl]);
+ 	allmsa->ax[idxl][c] = tree_fitch_choose(r, dim, frq, S[idxl]);
      }
       
       if (T->right[v] > 0) {
@@ -1579,7 +1585,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm downwards failed");
 
 	/* now Sr is just a character, assign to the msa sequence */
-	allmsa->ax[idxr][c] = tree_fitch_choose(r, dim, S[idxr]);
+	allmsa->ax[idxr][c] = tree_fitch_choose(r, dim, frq, S[idxr]);
       }
  
       if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);
@@ -1600,16 +1606,35 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, int *r
 }
 
 static ESL_DSQ
-tree_fitch_choose(ESL_RANDOMNESS *r, int dim, int *S)
+tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
 {
+  float *newf = NULL;
+  float  sum = 0.;
+  int    ichoose;
   int    i;
+  int    status;
 
-  i = (int)(esl_random(r) * (dim-1));
-  
-  while (S[i] == FALSE)
-    i = (int)(esl_random(r) * (dim-1));
-  
-  return (ESL_DSQ)i;
+  if (frq == NULL) { // pick an available residue randomly
+    ichoose = (int)(esl_random(r) * (dim-1));
+    
+    while (S[ichoose] == FALSE)
+      ichoose = (int)(esl_random(r) * (dim-1));
+  }
+  else { // instead of selecting randomly, do it according to the MSA's base composition
+    ESL_ALLOC(newf, sizeof(float) * dim);
+    for   (i = 0; i < dim; i ++) sum    += (S[i])? frq[i]     : 0.0;
+    if (sum > 0)
+      for (i = 0; i < dim; i ++) newf[i] = (S[i])? frq[i]/sum : 0.0;
+
+    ichoose = esl_rnd_FChoose(r, newf, dim);
+  }
+
+  if (newf) free(newf);
+  return (ESL_DSQ)ichoose;
+
+ ERROR:
+  if (newf) free(newf);
+  return -1;
 }
 
 static int
