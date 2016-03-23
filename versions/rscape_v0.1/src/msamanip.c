@@ -55,6 +55,12 @@ msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
     for (j = i+1; j < msa->alen; j ++)
     	if (ct[i+1] == j+1) nbpairs ++;
 
+#if 0
+  printf("%s\n", msa->sqname[0]);
+  for (i = 1; i <= msa->alen-1; i ++)
+    printf("%c %d %d\n", msa->abc->sym[msa->ax[0][i]], i, ct[i]);
+#endif
+  
   if (ret_ct)      *ret_ct      = ct;  else free(ct);
   if (ret_nbpairs) *ret_nbpairs = nbpairs;
   return eslOK;
