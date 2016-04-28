@@ -1,2 +1,2 @@
-0.050000	ar14_1	72	123	63.48	 GTp 22 31 31 70.967742 70.967742 
- GTp 22 36 31 61.111111 70.967742 
+#target_E-val	MSA	nseq	alen	avgid	method	TP	True	Found	SEN	PPV
+0.05		ar14_1	72	123	63.48	 GTp 22 31 22 70.97 100.00 

@@ -199,6 +199,22 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = cov_CalculateRAFS        (covclass, data, msa, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
     break;
+  case CCFa: 
+    status = cov_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(ASC,     data, analyze, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case CCFp: 
+    status = cov_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
+    if (status != eslOK) goto ERROR;
+    status = cov_CalculateCOVCorrected(APC,     data, analyze, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
+  case CCF: 
+    status = cov_CalculateCCF        (covclass, data, analyze, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR;
+    break;
   default:
     ESL_XFAIL(eslFAIL, data->errbuf, "wrong covariation type\n");
     break;
@@ -1198,6 +1214,85 @@ cov_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
   return status;
 }
 
+int                 
+cov_CalculateCCF(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+{
+  struct mutual_s *mi = data->mi; 
+  char            *errbuf = data->errbuf;
+  int              verbose = data->verbose;
+  int              i, j;
+  int              status = eslOK;
+  
+  status = cov_CalculateCCF_C16  (mi, verbose, errbuf);
+  
+  if (verbose) {
+    printf("CCF[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    for (i = 0; i < mi->alen-1; i++) 
+      for (j = i+1; j < mi->alen; j++) {
+	if (i==5&&j==118) printf("CCF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+      } 
+  }
+
+  if (analyze) {
+    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
+    if (status != eslOK) goto ERROR;
+  }
+
+  return status;
+
+ ERROR:
+  return status;
+}
+
+
+int                 
+cov_CalculateCCF_C16(struct mutual_s *mi, int verbose, char *errbuf)
+{
+  double *meanp = NULL;
+  double  ccf;
+  double  cc;
+  int     i, j;
+  int     x, y;
+  int     K = mi->abc->K;
+  int     status = eslOK;
+  
+  cov_ReuseCOV(mi, CCF, C16);
+  
+  // CCF
+  ESL_ALLOC(meanp, sizeof(double) * K);
+  
+  for (x = 0; x < K; x ++) {
+    meanp[x] = 0.0;
+    for (i = 0; i < mi->alen; i++)
+      for (j = i+1; j < mi->alen; j++) 
+	meanp[x] +=  mi->nseff[i][j] * mi->pm[i][x];
+  }
+  esl_vec_DNorm(meanp, K);
+  
+  for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) {
+      ccf = 0.0;
+
+      for (x = 0; x < K; x ++)
+	for (y = 0; y < K; y ++) {
+	  cc   = (mi->nseff[i][j] * mi->pm[i][x] - meanp[x]) * (mi->nseff[i][j] * mi->pm[j][y] - meanp[y]);
+	  ccf += cc * cc;
+	}	  
+
+      ccf = sqrt(ccf);
+      
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = ccf;
+      if (ccf < mi->minCOV) mi->minCOV = ccf;
+      if (ccf > mi->maxCOV) mi->maxCOV = ccf;
+    }
+
+  free(meanp);
+  return status;
+
+ ERROR:
+  if (meanp) free(meanp);
+  return status;
+}
 
 int                 
 cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
@@ -1317,6 +1412,7 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIg:   esl_sprintf(ret_covtype, "MIg");   break; 
   case RAF:   esl_sprintf(ret_covtype, "RAF");   break; 
   case RAFS:  esl_sprintf(ret_covtype, "RAFS");  break; 
+  case CCF:   esl_sprintf(ret_covtype, "CCF");   break; 
 
   case CHIp:  esl_sprintf(ret_covtype, "CHIp");  break;
   case GTp:   esl_sprintf(ret_covtype, "GTp");   break;
@@ -1326,6 +1422,7 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIgp:  esl_sprintf(ret_covtype, "MIgp");  break; 
   case RAFp:  esl_sprintf(ret_covtype, "RAFp");  break; 
   case RAFSp: esl_sprintf(ret_covtype, "RAFSp"); break; 
+  case CCFp:  esl_sprintf(ret_covtype, "CCFp");  break; 
 
   case CHIa:  esl_sprintf(ret_covtype, "CHIa");  break;
   case GTa:   esl_sprintf(ret_covtype, "GTa");   break;
@@ -1335,6 +1432,7 @@ cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIga:  esl_sprintf(ret_covtype, "MIga");  break; 
   case RAFa:  esl_sprintf(ret_covtype, "RAFa");  break; 
   case RAFSa: esl_sprintf(ret_covtype, "RAFSa"); break; 
+  case CCFa:  esl_sprintf(ret_covtype, "CCFa");  break; 
 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE");
   }
@@ -1359,6 +1457,7 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MIg"))    type = MIg;
   else if (!esl_strcmp(covtype, "RAF"))    type = RAF;
   else if (!esl_strcmp(covtype, "RAFS"))   type = RAFS;
+  else if (!esl_strcmp(covtype, "CCF"))    type = CCF;
 
   else if (!esl_strcmp(covtype, "CHIp"))   type = CHIp;
   else if (!esl_strcmp(covtype, "GTp"))    type = GTp;
@@ -1368,6 +1467,7 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MIgp"))   type = MIgp;
   else if (!esl_strcmp(covtype, "RAFp"))   type = RAFp;
   else if (!esl_strcmp(covtype, "RAFSp"))  type = RAFSp;
+  else if (!esl_strcmp(covtype, "CCFp"))   type = CCFp;
 
   else if (!esl_strcmp(covtype, "CHIa"))   type = CHIa;
   else if (!esl_strcmp(covtype, "GTa"))    type = GTa;
@@ -1377,6 +1477,7 @@ cov_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "MIga"))   type = MIga;
   else if (!esl_strcmp(covtype, "RAFa"))   type = RAFa;
   else if (!esl_strcmp(covtype, "RAFSa"))  type = RAFSa;
+  else if (!esl_strcmp(covtype, "CCFa"))   type = CCFa;
 
   else
     ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE %s", covtype);

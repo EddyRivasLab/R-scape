@@ -55,7 +55,11 @@ typedef enum {
   RAFSp = 22,
   RAFSa = 23,
 
-  COVNONE = 24,
+  CCF   = 24,
+  CCFp  = 25,
+  CCFa  = 26,
+
+  COVNONE = 27,
 } COVTYPE;
 
 
@@ -219,6 +223,8 @@ extern int              cov_CalculateMIg_C16 (struct mutual_s *mi,              
 extern int              cov_CalculateMIg_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
 extern int              cov_CalculateRAF     (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_CalculateRAFS    (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              cov_CalculateCCF     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              cov_CalculateCCF_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              cov_CalculateCOVCorrected(CORRTYPE corrtype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
