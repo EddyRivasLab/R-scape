@@ -666,6 +666,7 @@ INFERNAL_LICENSE
 INFERNAL_COPYRIGHT
 INFERNAL_DATE
 INFERNAL_RELCODE
+RSCAPE_BIN
 RSCAPE_HOME
 RSCAPE_ESLDIR
 R2R_INFERNALDIR
@@ -2332,7 +2333,15 @@ INFERNAL_LICENSETAG=gnu
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
 
+if  test "$prefix" = NONE ; then
+  RSCAPE_BIN="`pwd`/bin"
+else
+  RSCAPE_BIN=${prefix}/bin
+fi
+
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+
 
 
 
@@ -2378,6 +2387,10 @@ _ACEOF
 
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_HOME "$RSCAPE_HOME"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define RSCAPE_BIN "$RSCAPE_BIN"
 _ACEOF
 
 

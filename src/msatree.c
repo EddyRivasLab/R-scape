@@ -92,8 +92,8 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
-  if (RSCAPE_HOME)                         // look for the installed executable
-    esl_sprintf(&cmd, "%s/bin/FastTree", RSCAPE_HOME);  
+  if (RSCAPE_BIN)                         // look for the installed executable
+    esl_sprintf(&cmd, "%s/FastTree", RSCAPE_BIN);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 

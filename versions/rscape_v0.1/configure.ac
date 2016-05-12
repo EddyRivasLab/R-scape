@@ -99,6 +99,13 @@ INFERNAL_LICENSETAG=gnu
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
 
+if  test "$prefix" = NONE ; then 
+  RSCAPE_BIN="`pwd`/bin"
+else
+  RSCAPE_BIN=${prefix}/bin
+fi
+
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
@@ -111,6 +118,7 @@ AC_SUBST(RSCAPE_R2RDIR)
 AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_HOME)
+AC_SUBST(RSCAPE_BIN)
 
 AC_SUBST(INFERNAL_RELCODE)
 AC_SUBST(INFERNAL_DATE)
@@ -126,6 +134,7 @@ AC_DEFINE_UNQUOTED(RSCAPE_LICENSE,   "$RSCAPE_LICENSE")
 AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
+AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
 
 
 

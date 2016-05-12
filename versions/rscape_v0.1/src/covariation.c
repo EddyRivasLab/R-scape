@@ -2973,8 +2973,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   /* run R2R */
   if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
   
-  if (RSCAPE_HOME)         // look for the installed executable
-    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  if (RSCAPE_BIN)         // look for the installed executable
+    esl_sprintf(&cmd, "%s/r2r", RSCAPE_BIN);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
@@ -3125,8 +3125,8 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R pdf */
-  if (RSCAPE_HOME)                         // look for the installed executable
-    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  if (RSCAPE_BIN)                         // look for the installed executable
+    esl_sprintf(&cmd, "%s/r2r", RSCAPE_BIN);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
@@ -3156,8 +3156,8 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
   int   status;
 
   /* produce the R2R svg */
-  if (RSCAPE_HOME)  // look for the installed executable
-    esl_sprintf(&cmd, "%s/bin/r2r", RSCAPE_HOME);  
+  if (RSCAPE_BIN)  // look for the installed executable
+    esl_sprintf(&cmd, "%s/r2r", RSCAPE_BIN);  
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
 
