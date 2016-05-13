@@ -2354,7 +2354,11 @@ INFERNAL_LICENSETAG=gnu
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
 
-RSCAPE_BIN=${prefix}/bin
+if  test "$prefix" = NONE ; then
+  RSCAPE_BIN="`pwd`/bin"
+else
+  RSCAPE_BIN=${prefix}/bin
+fi
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 
