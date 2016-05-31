@@ -31,7 +31,7 @@
 int
 MSAProbs_Align(const ESL_MSA *msa, ESL_MSA **ret_msaprobsmsa, char *errbuf, int verbose)
 {
-  ESLX_MSAFILE *afp = NULL;
+  ESL_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
   ESL_MSA      *msaprobsmsa = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
@@ -42,7 +42,7 @@ MSAProbs_Align(const ESL_MSA *msa, ESL_MSA **ret_msaprobsmsa, char *errbuf, int 
   
   /* MSAProbs input and output in AFA format */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(fp);
   
   /* run MSAProbs */
@@ -54,10 +54,10 @@ MSAProbs_Align(const ESL_MSA *msa, ESL_MSA **ret_msaprobsmsa, char *errbuf, int 
   fclose(fp);
   
   /* convert output to msa */
-  if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_AFA;
-  if (eslx_msafile_Read(afp, &msaprobsmsa) != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Read(afp, &msaprobsmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
   
   remove(tmpinfile);
   remove(tmpoutfile);

@@ -315,7 +315,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
 
@@ -531,7 +531,7 @@ main(int argc, char **argv)
   char           *msg = "e2msa failed";
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   ESL_MSA        *msa = NULL;          /* the input alignment  */
   int             seq_cons_len = 0;
   int             nfrags = 0;	  	  /* # of fragments removed */
@@ -543,12 +543,12 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
 
     /* select submsa */
@@ -576,7 +576,7 @@ main(int argc, char **argv)
       esl_sprintf(&cfg.msarfname, "%s.%s", cfg.msaheader, e1_rate_EvomodelType(cfg.evomodel)); 
       fprintf(cfg.outfp, "Given alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
-      if (eslx_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.msarfname); 
+      if (esl_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.msarfname); 
       msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
     }
     
@@ -657,7 +657,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   free(cfg.mstat);
   return 0;
 }
@@ -771,7 +771,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 #if 0
   if (cfg->voutput) { /* write output alignment */
     fprintf(cfg->outfp, "\ne2msa-%s alignment with nodes\n", e1_rate_EvomodelType(cfg->evomodel));
-    eslx_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, alle2mstat);
   }
 #endif
@@ -784,14 +784,14 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->voutput) { /* write output alignment */
     /* print output info */
     fprintf(cfg->outfp, "\ne2msa-%s alignment\n", e1_rate_EvomodelType(cfg->evomodel));
-    eslx_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
 
   if (cfg->voutput) { /* the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname, "%s.e2msa.%s", cfg->msaheader, e1_rate_EvomodelType(cfg->evomodel)); 
     if ((cfg->msaefp = fopen(cfg->msaefname, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg->msaefname);
-    if (eslx_msafile_Write(cfg->msaefp, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msaefname); 
+    if (esl_msafile_Write(cfg->msaefp, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msaefname); 
     fclose (cfg->msaefp);
   }
   
@@ -846,7 +846,7 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
   msamanip_CStats(cfg->abc, phmmermsa, &phmmermstat);
   if (phmmermsa && (cfg->voutput)) {/* the PHMMER output alignment */
     fprintf(cfg->outfp,"\nPHMMER alignment\n");
-    eslx_msafile_Write(cfg->outfp, phmmermsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, phmmermsa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, phmmermsa, phmmermstat);
   }
     
@@ -854,19 +854,19 @@ run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float 
     if (isephmmer) {
       esl_sprintf(&cfg->msaefname_ephmmer,  "%s.ephmmer", cfg->msaheader); 
       if ((cfg->msaefp_phmmer = fopen(cfg->msaefname_ephmmer, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_ephmmer);
-      if (eslx_msafile_Write(cfg->msaefp_ephmmer, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ephmmer);
+      if (esl_msafile_Write(cfg->msaefp_ephmmer, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ephmmer);
       fclose (cfg->msaefp_ephmmer);
     }   
     else if (isphmmer3) {
       esl_sprintf(&cfg->msaefname_phmmer3, "%s.phmmer3", cfg->msaheader); 
       if ((cfg->msaefp_phmmer3 = fopen(cfg->msaefname_phmmer3, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_phmmer3);
-      if (eslx_msafile_Write(cfg->msaefp_phmmer3, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_phmmer3);
+      if (esl_msafile_Write(cfg->msaefp_phmmer3, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_phmmer3);
       fclose (cfg->msaefp_phmmer3);
     }
     else  {
       esl_sprintf(&cfg->msaefname_phmmer,  "%s.phmmer", cfg->msaheader); 
       if ((cfg->msaefp_phmmer = fopen(cfg->msaefname_phmmer, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_phmmer);
-      if (eslx_msafile_Write(cfg->msaefp_phmmer, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_phmmer);
+      if (esl_msafile_Write(cfg->msaefp_phmmer, phmmermsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_phmmer);
       fclose (cfg->msaefp_phmmer);
     }
   }  
@@ -909,14 +909,14 @@ run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa)
   msamanip_CStats(cfg->abc, blastmsa, &blastmstat);
   if (blastmsa && (cfg->voutput)) {/* the BLAST output alignment */
     fprintf(cfg->outfp,"\nBLAST alignment\n");
-    eslx_msafile_Write(cfg->outfp, blastmsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, blastmsa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, blastmsa, blastmstat);
   }
     
   if (cfg->voutput && blastmsa) {/* write the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname_ncbiblast, "%s.ncbiblast", cfg->msaheader); 
     if ((cfg->msaefp_ncbiblast = fopen(cfg->msaefname_ncbiblast, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_ncbiblast);
-    if (eslx_msafile_Write(cfg->msaefp_ncbiblast, blastmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ncbiblast);
+    if (esl_msafile_Write(cfg->msaefp_ncbiblast, blastmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ncbiblast);
     fclose (cfg->msaefp_ncbiblast);
   }  
   
@@ -951,14 +951,14 @@ run_ssearch(struct cfg_s *cfg, ESL_MSA *msa)
   msamanip_CStats(cfg->abc, ssearchmsa, &ssearchmstat);
   if (ssearchmsa && (cfg->voutput)) {/* the SSEARCH output alignment */
     fprintf(cfg->outfp,"\nSSEARCH alignment\n");
-    eslx_msafile_Write(cfg->outfp, ssearchmsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, ssearchmsa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, ssearchmsa, ssearchmstat);
   }
     
   if (cfg->voutput && ssearchmsa) {/* write the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname_ssearch, "%s.ssearch", cfg->msaheader); 
     if ((cfg->msaefp_ssearch = fopen(cfg->msaefname_ssearch, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_ssearch);
-    if (eslx_msafile_Write(cfg->msaefp_ssearch, ssearchmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ssearch);
+    if (esl_msafile_Write(cfg->msaefp_ssearch, ssearchmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_ssearch);
     fclose (cfg->msaefp_ssearch);
   }  
   
@@ -992,14 +992,14 @@ run_muscle(struct cfg_s *cfg, ESL_MSA *msa)
   msamanip_CStats(cfg->abc, musclemsa, &musclemstat);
   if (cfg->voutput) {/* the MUSCLE output alignment */
     fprintf(cfg->outfp,"\nMUSCLE alignment\n");
-    eslx_msafile_Write(cfg->outfp, musclemsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, musclemsa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, musclemsa, musclemstat);
   }
   
   if (cfg->voutput) {/* write the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname_muscle, "%s.muscle", cfg->msaheader); 
     if ((cfg->msaefp_muscle = fopen(cfg->msaefname_muscle, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_muscle);
-    if (eslx_msafile_Write(cfg->msaefp_muscle, musclemsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_muscle);
+    if (esl_msafile_Write(cfg->msaefp_muscle, musclemsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_muscle);
     fclose (cfg->msaefp_muscle);
   }  
 
@@ -1036,14 +1036,14 @@ run_msaprobs(struct cfg_s *cfg, ESL_MSA *msa)
   
   if (cfg->voutput) {/* the MSAProbs output alignment */
     fprintf(cfg->outfp, "\nMSAProbs alignment\n");
-    eslx_msafile_Write(cfg->outfp, msaprobsmsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, msaprobsmsa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, msaprobsmsa, msaprobsmstat);
   }
   
   if (cfg->voutput) {/* write the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname_msaprobs, "%s.msaprobs", cfg->msaheader); 
     if ((cfg->msaefp_msaprobs = fopen(cfg->msaefname_msaprobs, "w")) == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to open output file %s", cfg->msaefname_msaprobs);
-    if (eslx_msafile_Write(cfg->msaefp_msaprobs, msaprobsmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_msaprobs);
+    if (esl_msafile_Write(cfg->msaefp_msaprobs, msaprobsmsa, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "Failed to write to file %s", cfg->msaefname_msaprobs);
     fclose (cfg->msaefp_msaprobs);
   }
   

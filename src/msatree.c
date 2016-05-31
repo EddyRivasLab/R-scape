@@ -89,7 +89,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   int   status;
   
   if ((status = esl_tmpfile_named(tmpmsafile,  &msafp))                    != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
-  if ((status = eslx_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
+  if ((status = esl_msafile_Write(msafp, (ESL_MSA *)msa, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(msafp);
 
   if (RSCAPE_BIN)                         // look for the installed executable

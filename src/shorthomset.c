@@ -163,7 +163,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   cfg.msa  = NULL;
@@ -212,7 +212,7 @@ main(int argc, char **argv)
   char           *msg = "shorthomset failed";
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   int             seq_cons_len = 0;
   int             nfrags = 0;	  	  /* # of fragments removed */
   int             nremoved = 0;	          /* # of identical sequences removed */
@@ -230,12 +230,12 @@ main(int argc, char **argv)
   process_dbfile(&cfg, cfg.dbfile, cfg.dbfmt);
   
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the training MSAs */
-  while ((hstatus = eslx_msafile_Read(afp, &cfg.msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &cfg.msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     
     esl_msa_ConvertDegen2X(cfg.msa); 
     esl_msa_Hash(cfg.msa);
@@ -256,7 +256,7 @@ main(int argc, char **argv)
  
     esl_msa_Destroy(cfg.msa); cfg.msa = NULL;
   }
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   
   printf("found %d/%d homologies\n", nhom, cfg.nmsa);
 
@@ -562,7 +562,7 @@ write_msa(FILE *fp, ESL_MSA *msa, int verbose)
 {
   MSA_STAT *msastat = NULL;
 
-  if (eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
+  if (esl_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
   if (verbose) {
     msamanip_XStats(msa, &msastat); //  msa aveid and avematch 
     msamanip_DumpStats(stdout, msa, msastat); 
@@ -577,7 +577,7 @@ msa_annotate_dompid(struct cfg_s *cfg, ESL_MSA *msa, int d1n, int d2n, int L1, i
 {
   char             tmpmsafile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char             tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  ESLX_MSAFILE   *afp  = NULL;
+  ESL_MSAFILE   *afp  = NULL;
   FILE            *fp  = NULL;
   char            *args = NULL;
   char            *s = NULL;
@@ -590,7 +590,7 @@ msa_annotate_dompid(struct cfg_s *cfg, ESL_MSA *msa, int d1n, int d2n, int L1, i
 
   /* MSA input in stockholm format */
   if ((status = esl_tmpfile_named(tmpmsafile,  &fp)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "failed to create msa file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
   fclose(fp);
 
   /*     1           .. i         = random region 1 (if i==0, there's none); 
@@ -617,10 +617,10 @@ msa_annotate_dompid(struct cfg_s *cfg, ESL_MSA *msa, int d1n, int d2n, int L1, i
   esl_sprintf(&args, "%s/lib/hmmer4/lib/easel/miniapps/esl-alimask -t %s %d-%d > %s", s, tmpmsafile, i+1, i+d1n, tmpoutfile);  
   system(args);
   /* the truncated msa  */
-  status = eslx_msafile_Open(&(cfg->abc), tmpoutfile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  status = eslx_msafile_Read(afp, &msadom);
-  eslx_msafile_Close(afp);
+  status = esl_msafile_Open(&(cfg->abc), tmpoutfile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Read(afp, &msadom);
+  esl_msafile_Close(afp);
   d1pid = 100. * avg_pid_msa(msadom);
 
   if (cfg->ndomains == 2) {
@@ -636,10 +636,10 @@ msa_annotate_dompid(struct cfg_s *cfg, ESL_MSA *msa, int d1n, int d2n, int L1, i
     esl_sprintf(&args, "%s/lib/hmmer4/lib/easel/miniapps/esl-alimask -t %s %d-%d > %s", s, tmpmsafile, j+d1n+1, j+d1n+d2n, tmpoutfile);  
     system(args);
     /* the truncated msa  */
-    status = eslx_msafile_Open(&(cfg->abc), tmpoutfile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-    if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-    status = eslx_msafile_Read(afp, &msadom);
-    eslx_msafile_Close(afp);
+    status = esl_msafile_Open(&(cfg->abc), tmpoutfile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+    if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+    status = esl_msafile_Read(afp, &msadom);
+    esl_msafile_Close(afp);
     d2pid = 100. * avg_pid_msa(msadom);
   }
    

@@ -512,7 +512,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   char         *newfile = NULL;
   ESL_MSA      *new = NULL;
   ESL_MSA      *msa = *omsa;
-  ESLX_MSAFILE *submsafp = NULL;
+  ESL_MSAFILE *submsafp = NULL;
   char         *omsafile = NULL;
   char         *st;
   char         *newacc = NULL;
@@ -536,10 +536,10 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
       free(omsafile);
       *msafile = newfile;
       
-      status = eslx_msafile_Open(&msa->abc, newfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &submsafp);
-      if (status != eslOK) eslx_msafile_OpenFailure(submsafp, status);
-      eslx_msafile_Read(submsafp, &new);
-      eslx_msafile_Close(submsafp); 
+      status = esl_msafile_Open(&msa->abc, newfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &submsafp);
+      if (status != eslOK) esl_msafile_OpenFailure(submsafp, status);
+      esl_msafile_Read(submsafp, &new);
+      esl_msafile_Close(submsafp); 
       esl_msa_Destroy(msa);
       *omsa = new;  
       return eslOK; 
@@ -579,7 +579,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
     esl_sprintf(&newfile, "%s.sto", omsafile);
     
     if ((msafp = fopen(newfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to open %s for writting\n", newfile); 
-    if (eslx_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
+    if (esl_msafile_Write(msafp, new, eslMSAFILE_STOCKHOLM) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to write msa to %s", newfile);
     fclose(msafp);
   }
 
@@ -829,8 +829,8 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 #endif
   
   if (verbose) {
-    eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
-    eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
  }
 
   *ret_shmsa = shmsa;
@@ -933,8 +933,8 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
 #endif
 
   if (verbose) {
-    eslx_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
-    eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
  }
 
   *ret_shmsa = shmsa;

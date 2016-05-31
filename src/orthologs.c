@@ -135,7 +135,7 @@ ortho_BoostrapTrees(ESL_RANDOMNESS *r, ESL_MSA *msa, char *outheader, int nboot,
 {
   char           *msabootfile = NULL;
   FILE           *treebootfp = NULL;
-  ESLX_MSAFILE   *msafp = NULL;
+  ESL_MSAFILE   *msafp = NULL;
   ESL_TREE      **Tlist = NULL;
   ESL_MSA        *bmsa = NULL;
   int             n = 0;
@@ -155,9 +155,9 @@ ortho_BoostrapTrees(ESL_RANDOMNESS *r, ESL_MSA *msa, char *outheader, int nboot,
   for (b = 0; b < nboot; b++) Tlist[b] = NULL;
   
   /* Open the msaboot file */
-  status = eslx_msafile_Open(&(msa->abc), msabootfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &msafp);
-  if (status != eslOK) eslx_msafile_OpenFailure(msafp, status);
-  while ((hstatus = eslx_msafile_Read(msafp, &bmsa)) == eslOK) 
+  status = esl_msafile_Open(&(msa->abc), msabootfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &msafp);
+  if (status != eslOK) esl_msafile_OpenFailure(msafp, status);
+  while ((hstatus = esl_msafile_Read(msafp, &bmsa)) == eslOK) 
     {
       /* bit of hackery to restore seqnames.
        * seqboot shortens them to 10 characters. 
@@ -177,7 +177,7 @@ ortho_BoostrapTrees(ESL_RANDOMNESS *r, ESL_MSA *msa, char *outheader, int nboot,
       esl_msa_Destroy(bmsa); bmsa = NULL;
   }  
   if (n != nboot) { printf("wrong number of boostrapped msas %d, should be %d\n", n, nboot); status = eslFAIL; goto ERROR; }
-  eslx_msafile_Close(msafp); 
+  esl_msafile_Close(msafp); 
 
   /* write the treeboot file */
   remove(treebootfile);
@@ -236,7 +236,7 @@ ortho_RunSEQBOOT(ESL_RANDOMNESS *r, ESL_MSA *msa, char *outheader, int N, char *
   
   /* save msa in phylip format */
   if ((msafp = fopen(phylipin, "w")) == NULL) { printf("failed to open %s for writting\n", phylipin); goto ERROR; }
-  if ((status = eslx_msafile_Write(msafp, msa, eslMSAFILE_PHYLIP)) != eslOK) goto ERROR; 
+  if ((status = esl_msafile_Write(msafp, msa, eslMSAFILE_PHYLIP)) != eslOK) goto ERROR; 
   fclose(msafp);
 
   oddran = (int)(esl_random(r) * 10000.);

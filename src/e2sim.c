@@ -292,7 +292,7 @@ main(int argc, char **argv)
     }
     
     /* write the msa */
-    if (eslx_msafile_Write(cfg.outfp, cfg.msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.outfile); 
+    if (esl_msafile_Write(cfg.outfp, cfg.msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.outfile); 
     
     if (cfg.voutput) run_voutput (&cfg, n);
      
@@ -358,7 +358,7 @@ generate_msa(struct cfg_s  *cfg, ESL_MSA **ret_msa, int incnode)
   if (e2_evolve_Alignment(cfg->r, cfg->R, cfg->T, cfg->bg, &msafull, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
     ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to generate the alignment");
   if (cfg->verbose) 
-    eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM); 
+    esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM); 
   
   /* The leaves-only alignment */
   useme = malloc(msafull->nseq * sizeof(int));
@@ -399,7 +399,7 @@ run_voutput (struct cfg_s *cfg, int n)
   /* stats of the simulated alignment */
   esl_sprintf(&cfg->msaname, "%s.%s.%d", cfg->outheader, e1_rate_EvomodelType(cfg->evomodel), n); 
   fprintf(stdout, "%6d          %s\n", cfg->msa->nseq, cfg->msaname);
-  eslx_msafile_Write(stdout, cfg->msa, eslMSAFILE_STOCKHOLM); 
+  esl_msafile_Write(stdout, cfg->msa, eslMSAFILE_STOCKHOLM); 
   msamanip_CStats(cfg->abc, cfg->msa, &cfg->msastat);
   msamanip_DumpStats(stdout, cfg->msa, cfg->msastat); 
   msamanip_CBaseComp(cfg->abc, cfg->msa, cfg->bg->f, &cfg->msafrq);
@@ -416,7 +416,7 @@ run_voutput (struct cfg_s *cfg, int n)
   msamanip_CStats(cfg->msa->abc, e2msa, &e2msastat);
   e2msastat->anclen = alle2msastat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
   
-  //if (eslx_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
+  //if (esl_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
   
   treeavgt = esl_tree_er_AverageBL(cfg->T);
   status = FastSP_Benchmark(cfg->benchfp, cfg->msaname, cfg->method, cfg->abc, cfg->msa, cfg->msastat, e2msa, e2msastat, sc, treeavgt, 0.0, FALSE, FALSE, cfg->errbuf, cfg->verbose);

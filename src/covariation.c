@@ -3032,7 +3032,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 int
 cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
-  ESLX_MSAFILE *afp = NULL;
+  ESL_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
   ESL_MSA      *r2rmsa = NULL;
   char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
@@ -3068,7 +3068,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                      != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
   fclose(fp);
   
   /* run R2R */
@@ -3084,10 +3084,10 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   fclose(fp);
  
   /* convert output to r2rmsa */
-  if (eslx_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_PFAM;
-  if (eslx_msafile_Read(afp, &r2rmsa) != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Read(afp, &r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
 
   /* modify the cov_cons_ss line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment\n");
@@ -3170,12 +3170,12 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
     if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
     free(r2rmsa->gc[tagidx]); r2rmsa->gc[tagidx] = NULL; 
     esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", prv_covstr);
-    if (verbose) eslx_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
+    if (verbose) esl_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
   
   /* write the R2R annotated to PFAM format */
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
-  eslx_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
+  esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
   
   /* produce the R2R pdf */
@@ -3311,7 +3311,7 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   esl_sprintf(&(msa->ss_cons), "%s", ss);  
 
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
-  eslx_msafile_Write(fp, msa, eslMSAFILE_PFAM);
+  esl_msafile_Write(fp, msa, eslMSAFILE_PFAM);
   fclose(fp);
   
   free(ss);

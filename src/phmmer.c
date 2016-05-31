@@ -56,7 +56,7 @@ PHMMER_Align(const ESL_MSA *msa, int isphmmer3, ESL_MSA **ret_phmmermsa, float *
 	     P7_BG *bg, int EmL, int EmN, int EvL, int EvN, int EfL, int EfN, float Eft, float popen, float pextend, char *mx,
 	     int max, int dostats, char *errbuf, int verbose)
 {
-  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSAFILE    *afp = NULL;
   FILE            *fp = NULL;
   ESL_MSA         *phmmermsa = NULL;
   P7_HMM          *hmm =  NULL;
@@ -123,11 +123,11 @@ PHMMER_Align(const ESL_MSA *msa, int isphmmer3, ESL_MSA **ret_phmmermsa, float *
   system(args);
 
   /* convert to msa */
-  if (eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  if (eslx_msafile_Read(afp, &phmmermsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
-  if (status != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Read(afp, &phmmermsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
+  if (status != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
   
   status = misc_ParseHMMERdomtbl(tmptblfile, &dom, &ndom, errbuf); if (status != eslOK) goto ERROR;
   if (verbose) misc_DomainDump(stdout, dom, ndom);
@@ -185,7 +185,7 @@ EPHMMER_Align(const ESL_MSA *msa, float time, float fixpid, ESL_MSA **ret_phmmer
 	      P7_BG *bg, int EmL, int EmN, int EvL, int EvN, int EfL, int EfN, float Eft, float popen, float pextend, char *mx, 
 	      int max, int dostats, double tol, char *errbuf, int verbose)
 {
-  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSAFILE    *afp = NULL;
   FILE            *fp = NULL;
   ESL_MSA         *phmmermsa = NULL;
   P7_HMM          *hmm =  NULL;
@@ -273,11 +273,11 @@ EPHMMER_Align(const ESL_MSA *msa, float time, float fixpid, ESL_MSA **ret_phmmer
   }
  
   /* convert to msa */
-  if (eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  if (eslx_msafile_Read(afp, &phmmermsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
-  if (status != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Read(afp, &phmmermsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
+  if (status != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
   
   remove(tmpdbfile);
   remove(tmpqueryfile);
@@ -502,7 +502,7 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
   char         *hmmname = NULL;
   char         *s = NULL;
   FILE         *fp = NULL;
-  ESLX_MSAFILE *afp = NULL;
+  ESL_MSAFILE *afp = NULL;
   ESL_MSA      *msa = NULL;
   MSA_STAT      mstat;    
   int           hmmALEN;
@@ -537,10 +537,10 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
 
   /* msa stats */
   /* Open the MSA file */
-  status = eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
   /* read the MSA */
-  eslx_msafile_Read(afp, &msa);
+  esl_msafile_Read(afp, &msa);
   msamanip_CStats(abc, msa, &mstat);
   
   misc_ParseESLalistat(tmpout2file, &hmmALEN, &hmmSQLEN, &hmmPID, &hmmPMATCH, errbuf);
@@ -553,7 +553,7 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
   if (ret_hmmPID)    *ret_hmmPID    = hmmPID;
   if (ret_hmmPMATCH) *ret_hmmPMATCH = mstat.avgmatch;
  
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   remove(tmpmsafile);
   remove(tmpout1file);
   remove(tmpout2file);
@@ -562,7 +562,7 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
   return eslOK;
 
  ERROR:
-  if (afp) eslx_msafile_Close(afp);
+  if (afp) esl_msafile_Close(afp);
   remove(tmpmsafile);
   remove(tmpout1file);
   remove(tmpout2file);

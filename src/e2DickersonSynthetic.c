@@ -372,7 +372,7 @@ msa_generate(ESL_RANDOMNESS *r, ESL_TREE *T, int nr, E1_RATE **R, P7_RATE *R7, E
   }
 
   if (verbose) 
-    eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
   
   /* The leaves-only alignment */
   useme = malloc(msafull->nseq * sizeof(int));

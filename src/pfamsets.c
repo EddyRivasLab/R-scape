@@ -146,7 +146,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   
@@ -206,7 +206,7 @@ main(int argc, char **argv)
   char           *msg = "e2train failed";
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   float           frac;
   int             nali;
   int             seq_cons_len = 0;
@@ -225,13 +225,13 @@ main(int argc, char **argv)
   msamanip_OutfileHeader(cfg.msafile, &cfg.msaheader); 
   
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-    while ((hstatus = eslx_msafile_Read(afp, &cfg.msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+    while ((hstatus = esl_msafile_Read(afp, &cfg.msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
   }
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
 
   nali = cfg.ntrain + cfg.ntest;
   frac = 1.4 * (float)nali/(float)cfg.nmsa;
@@ -239,12 +239,12 @@ main(int argc, char **argv)
   if (cfg.excludefile) exfamname(&cfg);
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the training MSAs */
-  while ((hstatus = eslx_msafile_Read(afp, &cfg.msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &cfg.msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     
     esl_msa_ConvertDegen2X(cfg.msa); 
     esl_msa_Hash(cfg.msa);
@@ -269,7 +269,7 @@ main(int argc, char **argv)
     if (ntrain == cfg.ntrain) break;
   }
  
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   
   if (1||cfg.verbose) {
     printf("train %d/%d\n", ntrain, cfg.nmsa);
@@ -335,7 +335,7 @@ extract_sets(struct cfg_s *cfg, int *ret_n, int *ret_ntrain, int *ret_ntest)
 static int
 write_pwmsa(FILE *fp, ESL_MSA *msa, MSA_STAT *msastat, int verbose)
 {
-  if (eslx_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
+  if (esl_msafile_Write(fp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write train msa to file"); 
   if (msastat) msamanip_DumpStats(stdout, msa, msastat); 
   return eslOK;
 }
@@ -344,16 +344,16 @@ write_pwmsa(FILE *fp, ESL_MSA *msa, MSA_STAT *msastat, int verbose)
 static int
 exfamname(struct cfg_s *cfg)
 {
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   ESL_MSA        *msa = NULL;
   int             status;
 
-  status = eslx_msafile_Open(&(cfg->abc), cfg->excludefile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg->abc), cfg->excludefile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
  
   /* read the training MSAs */
   ESL_ALLOC(cfg->exfamname, sizeof(char *));
-  while ((status = eslx_msafile_Read(afp, &msa)) != eslEOF) {
+  while ((status = esl_msafile_Read(afp, &msa)) != eslEOF) {
     esl_sprintf(&(cfg->exfamname[cfg->nexfam]), msa->acc);
     cfg->nexfam ++;
     ESL_REALLOC(cfg->exfamname, sizeof(char *)*(cfg->nexfam+1));
@@ -361,7 +361,7 @@ exfamname(struct cfg_s *cfg)
   }
   printf("%d families to exclude from file\n%s\n", cfg->nexfam, cfg->excludefile);
 
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   return eslOK;
 
  ERROR:

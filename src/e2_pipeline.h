@@ -25,8 +25,6 @@
 #include "evohmmer.h"
 
 #include "hmmer.h"
-#include "base/p7_hmm.h"
-#include "base/p7_bg.h"
 
 /*****************************************************************
  * 7. E2_PIPELINE: E2 pipeline

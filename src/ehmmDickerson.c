@@ -161,7 +161,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
 
   if      (esl_opt_GetBoolean(go, "--amino"))   cfg.abc = esl_alphabet_Create(eslAMINO);
@@ -280,7 +280,7 @@ main(int argc, char **argv)
   FILE            *statfp   = NULL;	          /* stats output stream                     */
   FILE            *treefp = NULL; 
   FILE            *spfp = NULL; 
-  ESLX_MSAFILE    *msafp = NULL;
+  ESL_MSAFILE    *msafp = NULL;
   ESL_MSA         *msa = NULL;
   ORTHO           *cortho = NULL;         /* clusters of ortholgos */
   ORTHO           *ortho;                 /* pointer to a particular orthlog cluster */
@@ -316,8 +316,8 @@ main(int argc, char **argv)
   }
   
   /* Open the MSA file */
-  status = eslx_msafile_Open(&cfg.abc, cfg.msafile, NULL, cfg.infmt, NULL, &msafp);
-  if (status != eslOK) eslx_msafile_OpenFailure(msafp, status);
+  status = esl_msafile_Open(&cfg.abc, cfg.msafile, NULL, cfg.infmt, NULL, &msafp);
+  if (status != eslOK) esl_msafile_OpenFailure(msafp, status);
   
   /* Create the evolutionary rate model */
   cfg.nr       = 1;
@@ -347,7 +347,7 @@ main(int argc, char **argv)
   
    output_header(cfg.outfp, go);   
     
-    while ((hstatus = eslx_msafile_Read(msafp, &msa)) == eslOK) 
+    while ((hstatus = esl_msafile_Read(msafp, &msa)) == eslOK) 
     {
       esl_msa_ConvertDegen2X(msa); 
       esl_msa_Hash(msa);
@@ -365,7 +365,7 @@ main(int argc, char **argv)
 	if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, &cfg.msafile, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
       }
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
-      if (cfg.verbose) { if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal(msg); }
+      if (cfg.verbose) { if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal(msg); }
       /* outheader for all output files. PFxxxxxx.{seed,full} || PFxxxxxx.{seed,full}.random<n> */
       outfile_header(msa->acc, cfg.full, &cfg.outheader); 
       
@@ -518,12 +518,12 @@ main(int argc, char **argv)
       ortho_Destroy(nc, cortho); cortho = NULL;
       esl_tree_Destroy(T); T = NULL;
     }
-  if (hstatus != eslEOF) eslx_msafile_ReadFailure(msafp, hstatus);
+  if (hstatus != eslEOF) esl_msafile_ReadFailure(msafp, hstatus);
 
   fclose(cfg.outfp);
   if (treefp) fclose(treefp);
   if (spfp) fclose(spfp);      
-  eslx_msafile_Close(msafp); 
+  esl_msafile_Close(msafp); 
 
   /* cleanup */
   if (cfg.R) p7_RateDestroy(cfg.R);

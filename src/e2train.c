@@ -183,7 +183,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
 
@@ -285,7 +285,7 @@ main(int argc, char **argv)
   char           *msg = "e2train failed";
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   int             n;
   int             seq_cons_len = 0;
   int             nfrags = 0;	  	  /* # of fragments removed */
@@ -297,15 +297,15 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* outheader for all msa-output files */
   msamanip_OutfileHeader(cfg.msafile, &cfg.msaheader); 
  
   /* read the training MSAs */
-  while ((hstatus = eslx_msafile_Read(afp, &cfg.msalist[cfg.nmsa])) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &cfg.msalist[cfg.nmsa])) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
 
     esl_msa_ConvertDegen2X(cfg.msalist[cfg.nmsa]); 
     esl_msa_Hash(cfg.msalist[cfg.nmsa]);
@@ -330,7 +330,7 @@ main(int argc, char **argv)
        msamanip_XStats(cfg.msalist[cfg.nmsa], &cfg.mstat); //  msa aveid and avematch 
        fprintf(stdout, "Alignment\n");
        fprintf(stdout, "%6d          %s\n", cfg.msalist[cfg.nmsa]->nseq, cfg.msafile);
-       if (eslx_msafile_Write(stdout, cfg.msalist[cfg.nmsa], eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
+       if (esl_msafile_Write(stdout, cfg.msalist[cfg.nmsa], eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
        msamanip_DumpStats(stdout, cfg.msalist[cfg.nmsa], cfg.mstat); 
      }    
      cfg.nmsa ++;
@@ -376,7 +376,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   if (cfg.R) e1_rate_Destroy(cfg.R);  
   e2_pipeline_Destroy(cfg.pli);
   if (cfg.emR) ratematrix_emrate_Destroy(cfg.emR, 1);
@@ -471,7 +471,7 @@ run_voutput (struct cfg_s *cfg)
     msamanip_CStats(cfg->msalist[n]->abc, e2msa, &e2msastat);
     e2msastat->anclen = alle2msastat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
     
-    //if (eslx_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
+    //if (esl_msafile_Write(stdout, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa to file"); 
     
     status = FastSP_Benchmark(cfg->benchfp, msaname, cfg->method, cfg->abc, cfg->msalist[n], msastat, e2msa, e2msastat, sc, treeavgt, time, FALSE, FALSE, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;

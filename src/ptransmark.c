@@ -243,7 +243,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nqmsa = 0;
   cfg.ntmsa = 0;
@@ -333,7 +333,7 @@ main(int argc, char **argv)
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
   char           *tmsaname = NULL;
-  ESLX_MSAFILE   *afp      = NULL;
+  ESL_MSAFILE   *afp      = NULL;
   ESL_MSA        *qmsa     = NULL;       /* the query alignment             */
   ESL_MSA        *tmsa     = NULL;       /* the given pairwise testmsa      */
   ESL_MSA        *trmsa    = NULL;       /* the referenc pairwise testmsa   */
@@ -349,12 +349,12 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.qmsafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.qmsafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the query MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &qmsa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &qmsa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nqmsa ++;
  
     /* number of tmsas associated to this qmsa */
@@ -380,7 +380,7 @@ main(int argc, char **argv)
       if (tmsa == NULL) esl_fatal("Failed to find test msa %s",tmsaname);
       if (cfg.voutput) {/* the testmsa */
 	fprintf(stdout, "\nORIGINAL TEST alignment\n");
-	eslx_msafile_Write(stdout, tmsa, eslMSAFILE_STOCKHOLM);
+	esl_msafile_Write(stdout, tmsa, eslMSAFILE_STOCKHOLM);
       }
 
       status = doctor_testmsa(go, &cfg, &tmsa, &trmsa);
@@ -388,11 +388,11 @@ main(int argc, char **argv)
  
       if (cfg.voutput) {/* the testmsa */
 	fprintf(stdout, "\nTEST alignment\n");
-	eslx_msafile_Write(stdout, tmsa, eslMSAFILE_STOCKHOLM);
+	esl_msafile_Write(stdout, tmsa, eslMSAFILE_STOCKHOLM);
       }
       if (cfg.voutput) {/* the MSAProbs alignment */
 	fprintf(stdout, "\nMSAProbs alignment\n");
-	eslx_msafile_Write(stdout, trmsa, eslMSAFILE_STOCKHOLM);
+	esl_msafile_Write(stdout, trmsa, eslMSAFILE_STOCKHOLM);
       }
       
       /* fixed-time  transitive pairwise alignment of test sequences */
@@ -438,7 +438,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   if (hmm) p7_hmm_Destroy(hmm);
   if (qmsa) esl_msa_Destroy(qmsa); 
  return 0;
@@ -528,7 +528,7 @@ run_hmmbuild(struct cfg_s *cfg, ESL_MSA *msa, P7_HMM **ret_hmm)
   
   /* MSA input in stockholm format */
   if ((status = esl_tmpfile_named(tmpmsafile,  &fp))                          != eslOK) ESL_XFAIL(status, cfg->errbuf, "failed to create ms file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
   fclose(fp);
   
   /* run hmmbuild */
@@ -571,7 +571,7 @@ read_testmsa(struct cfg_s *cfg, char *tmsafile, char *name, ESL_MSA **ret_msa)
 {
   char          tmpmsafile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char          tmpnamefile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  ESLX_MSAFILE *afp = NULL;
+  ESL_MSAFILE *afp = NULL;
   FILE         *fp  = NULL;
   ESL_MSA      *msa = NULL;
   char         *args = NULL;
@@ -592,10 +592,10 @@ read_testmsa(struct cfg_s *cfg, char *tmsafile, char *name, ESL_MSA **ret_msa)
   fclose(fp);
   
   /* read MSA from tempmsafile */
-  if (eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_STOCKHOLM;
-  if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Read(afp, &msa) != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
 
   *ret_msa = msa;
   
@@ -609,7 +609,7 @@ read_testmsa(struct cfg_s *cfg, char *tmsafile, char *name, ESL_MSA **ret_msa)
   remove(tmpmsafile);
   remove(tmpnamefile); 
 
-  if (afp) eslx_msafile_Close(afp);
+  if (afp) esl_msafile_Close(afp);
   if (args) free(args);
   if (msa) esl_msa_Destroy(msa);
   return status;
@@ -851,9 +851,9 @@ expand_partialmsas(ESL_GETOPTS *go, struct cfg_s *cfg,  ESL_MSA **omsa1, ESL_MSA
   *omsa2 = msa2;
   
   //printf("O1 %d\n", x);
-  //eslx_msafile_Write(stdout, *omsa1, eslMSAFILE_STOCKHOLM);
+  //esl_msafile_Write(stdout, *omsa1, eslMSAFILE_STOCKHOLM);
   //printf("O2 %d\n", x);
-  //eslx_msafile_Write(stdout, *omsa2, eslMSAFILE_STOCKHOLM);
+  //esl_msafile_Write(stdout, *omsa2, eslMSAFILE_STOCKHOLM);
   
   return eslOK;
 
@@ -959,7 +959,7 @@ run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MS
   char             tmptblfile[16]   = "esltmpXXXXXX"; /* tmpfile template */
   char             tmphmmfile[16]   = "esltmpXXXXXX"; /* tmpfile template */
   char             tmpoutfile[16]   = "esltmpXXXXXX"; /* tmpfile template */
-  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSAFILE    *afp = NULL;
   FILE            *fp  = NULL;
   ESL_MSA         *msa = NULL;
   struct domain_s *dom;
@@ -970,7 +970,7 @@ run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MS
 
   /* the rmsa converted to tmpfile */
   if ((status = esl_tmpfile_named(tmprmsafile,  &fp))                          != eslOK) ESL_XFAIL(status, cfg->errbuf, "failed to create rmsa file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)rmsa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)rmsa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
   fclose(fp);
 
   /* run esl-reformat */
@@ -1002,14 +1002,14 @@ run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MS
   system(args);
 
   /* the msa */
-  if (eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) eslx_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_STOCKHOLM, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_STOCKHOLM;
-  if (eslx_msafile_Read(afp, &msa) != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp); afp = NULL;
+  if (esl_msafile_Read(afp, &msa) != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp); afp = NULL;
   if (msa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "failed to create the msa");
 
   esl_msa_MinimGaps(msa, NULL, "-.~", FALSE);
-  if (cfg->voutput) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+  if (cfg->voutput) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
 
   status = parse_edomtbl(tmptblfile, rmsa, &dom, &ndom, cfg->errbuf); if (status != eslOK) goto ERROR;
   if (cfg->voutput) domain_dump(dom, ndom);
@@ -1038,7 +1038,7 @@ run_ehmmsearch(struct cfg_s *cfg, FILE *benchfp, float time, P7_HMM *hmm, ESL_MS
 
   if (args) free(args);
   if (msa)  esl_msa_Destroy(msa);  
-  if (afp) eslx_msafile_Close(afp);
+  if (afp) esl_msafile_Close(afp);
   if (dom) free(dom);
 
   return status;
@@ -1227,7 +1227,7 @@ domain2domain_msa(struct cfg_s *cfg, char *hmmfile, FILE *benchfp, struct domain
       expand_msa(&dmsa, dom2, dmsa->alen);
       if (cfg->voutput) {
 	printf("\nalignment dom %d-%d\n", d1, d2);
-	eslx_msafile_Write(stdout, dmsa, eslMSAFILE_STOCKHOLM);
+	esl_msafile_Write(stdout, dmsa, eslMSAFILE_STOCKHOLM);
       }
    
       msamanip_CStats(cfg->abc, dmsa, &dmsastat);
@@ -1324,7 +1324,7 @@ expand_msa(ESL_MSA **omsa, struct domain_s *dom, int alen)
       }
     }
   }
-  //eslx_msafile_Write(stdout, new, eslMSAFILE_STOCKHOLM);
+  //esl_msafile_Write(stdout, new, eslMSAFILE_STOCKHOLM);
  
   esl_msa_Destroy(msa);
   *omsa = new;

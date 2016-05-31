@@ -33,7 +33,7 @@
 int
 NCBIBLAST_Align(const ESL_MSA *msa, int wordsize, ESL_MSA **ret_blastmsa, char *errbuf, int verbose)
 {
-  ESLX_MSAFILE *afp = NULL;
+  ESL_MSAFILE *afp = NULL;
   FILE         *fp = NULL;
   ESL_MSA      *blastmsa = NULL;
   ESL_SQ       *sq = NULL;
@@ -93,11 +93,11 @@ NCBIBLAST_Align(const ESL_MSA *msa, int wordsize, ESL_MSA **ret_blastmsa, char *
   system(args);
 
   /* convert to msa */
-  if (eslx_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  if (eslx_msafile_Read(afp, &blastmsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
-  if (status != eslOK) eslx_msafile_ReadFailure(afp, status);
-  eslx_msafile_Close(afp);
+  if (esl_msafile_Open(NULL, tmpmsafile, NULL, eslMSAFILE_AFA, NULL, &afp) != eslOK) ESL_XFAIL(status, errbuf, "Failed to open AFA file\n");
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  if (esl_msafile_Read(afp, &blastmsa) != eslOK) ESL_XFAIL(status, errbuf, "Failed to read AFA file\n");
+  if (status != eslOK) esl_msafile_ReadFailure(afp, status);
+  esl_msafile_Close(afp);
   
   remove(tmpdbfile);
   remove(tmpdbfilephr);

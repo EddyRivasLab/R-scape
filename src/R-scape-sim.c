@@ -171,7 +171,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   cfg.msaname = NULL;
@@ -316,7 +316,7 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
-  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
   ESL_MSA         *simsa = NULL;          /* the simulated alignment    */
   int              status = eslOK;
@@ -326,13 +326,13 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  eslx_msafile_SetDigital(afp, cfg.abc);
+  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  esl_msafile_SetDigital(afp, cfg.abc);
 
   /* read the MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
     
@@ -342,7 +342,7 @@ main(int argc, char **argv)
 	printf("%s\n", cfg.errbuf);              
 	esl_fatal("Failed to manipulate original alignment"); 
       }
-      if (cfg.verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+      if (cfg.verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
     }
 
     /* remove degenacies */
@@ -365,11 +365,11 @@ main(int argc, char **argv)
     msamanip_CalculateCT(simsa, NULL, &cfg.simnbpairs, cfg.errbuf);
  
     /* write the simulated msa to file */
-    if (cfg.simsafp && simsa) eslx_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
+    if (cfg.simsafp && simsa) esl_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
     if (1||cfg.verbose) 
       MSA_banner(stdout, cfg.msaname, cfg.simstat, cfg.mstat, cfg.simnbpairs, cfg.nbpairs);
     if (cfg.verbose) 
-      eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
   
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (simsa) esl_msa_Destroy(simsa); simsa = NULL;
@@ -388,7 +388,7 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   if (cfg.ct) free(cfg.ct);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
   free(cfg.outheader);
   if (cfg.e1rate)  e1_rate_Destroy(cfg.e1rate);
@@ -479,7 +479,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   if (cfg->verbose) {
     msamanip_CalculateCT(root, NULL, &root_bp, cfg->errbuf);
     printf("root sequence L = %d nbps = %d \n", (int)root->alen, root_bp);
-    eslx_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
  }
 
   /* Generate the simulated alignment */
@@ -500,7 +500,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
     esl_fatal("failed to remove gaps alignment");
   
  if (cfg->verbose) 
-    eslx_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
 
   *ret_simsa = simsa;
 

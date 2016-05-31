@@ -332,7 +332,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   cfg.msafrq = NULL;
@@ -613,7 +613,7 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   char            *omsaname = NULL;
-  ESLX_MSAFILE    *afp = NULL;
+  ESL_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
   ESL_MSA         *wmsa = NULL;           /* the window alignment   */
   int             *useme = NULL;
@@ -626,13 +626,13 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
-  eslx_msafile_SetDigital(afp, cfg.abc);
+  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+  esl_msafile_SetDigital(afp, cfg.abc);
 
   /* read the MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
  
@@ -713,7 +713,7 @@ main(int argc, char **argv)
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   if (cfg.ct) free(cfg.ct);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   if (cfg.msaname) free(cfg.msaname);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
@@ -801,7 +801,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");
     fprintf(stdout, "%6d %d          %s\n", msa->nseq, (int)msa->alen, cfg->msafile);
-    if (eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
   
@@ -855,7 +855,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->verbose) {
     fprintf(stdout, "Used alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
-    if (msa->alen > 0 && eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
+    if (msa->alen > 0 && esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->mstat); 
   }
 
@@ -886,7 +886,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
  
   /* outmsa file if requested */
-  if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+  if (cfg->outmsafp) esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
 
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->nofigures) {
@@ -1276,7 +1276,7 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   }
 
   /* outout null msas to file if requested */
-  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
   
   if (cfg->verbose) {
     printf("null1 distribution - cummulative\n");
@@ -1339,7 +1339,7 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
   }
 
   /* outout null msas to file if requested */
-  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
   if (cfg->verbose) {
     printf("null1b distribution - cummulative\n");
@@ -1393,7 +1393,7 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
    }
 
    /* outout null msas to file if requested */
-   if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+   if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
    
    if (cfg->verbose) {
      printf("null2 distribution - cummulative\n");
@@ -1451,7 +1451,7 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
    }
 
    /* outout null msas to file if requested */
-   if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+   if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
    if (cfg->verbose) {
      printf("null2b distribution - cummulative\n");
@@ -1513,7 +1513,7 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   }
   
   /* outout null msas to file if requested */
-  if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
   
   if (cfg->verbose) {
     printf("null3 distribution - cummulative\n");
@@ -1566,7 +1566,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   if (cfg->verbose) {
-    eslx_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+    esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
     printf("fitch sc %d\n", sc);
   }
 
@@ -1575,13 +1575,13 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
 
     /* outout null msas to file if requested */
-    if (cfg->outnullfp) eslx_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+    if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
     if (cfg->verbose) {
       //msamanip_DumpStats(stdout, msa, cfg->mstat);
-      //eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
+      //esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
-      eslx_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       msamanip_XStats(shmsa, &shmstat);
       //msamanip_DumpStats(stdout, shmsa, shmstat);
     }

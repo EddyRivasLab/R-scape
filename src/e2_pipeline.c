@@ -376,7 +376,7 @@ hmm_align(P7_HMM *evo7l, P7_HMM *evo7r, PSQ **ret_sql, PSQ **ret_sqr, char *errb
   p7_tracealign_Seqs(sq, tr, totseq, M, msaopts, evo7l, &msa);
   esl_msa_Digitize(abc, msa, NULL);
 
-  if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+  if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
   
   newl = psq_CreateFrom(NULL, NULL, NULL, abc, msa->ax[0], msa->alen);	
   newr = psq_CreateFrom(NULL, NULL, NULL, abc, msa->ax[1], msa->alen);	

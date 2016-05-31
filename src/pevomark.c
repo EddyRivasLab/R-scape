@@ -245,7 +245,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
 
@@ -345,7 +345,7 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp    = NULL;
+  ESL_MSAFILE   *afp    = NULL;
   ESL_MSA        *msa    = NULL;       /* the query alignment             */
   P7_HMM         *hmm    = NULL;
   int             status = eslOK;
@@ -355,12 +355,12 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the query MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the query MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     
     /* outheader for all msa-output files */
@@ -391,7 +391,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   if (hmm) p7_hmm_Destroy(hmm);
   if (msa) esl_msa_Destroy(msa); 
  return 0;
@@ -418,7 +418,7 @@ run_hmmbuild(struct cfg_s *cfg, ESL_MSA *msa, P7_HMM **ret_hmm)
 
   /* MSA input in stockholm format */
   if ((status = esl_tmpfile_named(tmpmsafile,  &fp))                          != eslOK) ESL_XFAIL(status, cfg->errbuf, "failed to create ms file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_STOCKHOLM)) != eslOK) ESL_XFAIL(status, cfg->errbuf, "Failed to write STOCKHOLM file\n");
   fclose(fp);
   
   /* run hmmbuild */

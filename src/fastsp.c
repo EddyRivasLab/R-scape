@@ -54,11 +54,11 @@ FastSP_Run(const ESL_MSA *msar, const ESL_MSA *msae, int *ret_tph, int *ret_true
 
   /* FastSP reference and estimated MSAs in AFA format */
   if ((status = esl_tmpfile_named(tmpmsar,  &fp))                        != eslOK) ESL_XFAIL(status, errbuf, "failed to create msar file");
-  if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msar, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
+  if ((status = esl_msafile_Write(fp, (ESL_MSA *)msar, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
   fclose(fp);
   if (msae) {
     if ((status = esl_tmpfile_named(tmpmsae,  &fp))                        != eslOK) ESL_XFAIL(status, errbuf, "failed to create msae file");
-    if ((status = eslx_msafile_Write(fp, (ESL_MSA *)msae, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
+    if ((status = esl_msafile_Write(fp, (ESL_MSA *)msae, eslMSAFILE_AFA)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write AFA file\n");
     fclose(fp);
   }
   

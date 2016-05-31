@@ -142,7 +142,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
   
@@ -208,7 +208,7 @@ main(int argc, char **argv)
   char                *msg = "rscape-priors failed";
   ESL_GETOPTS         *go;
   struct cfg_s         cfg;
-  ESLX_MSAFILE        *afp = NULL;
+  ESL_MSAFILE        *afp = NULL;
   ESL_MSA             *msa = NULL;                /* the input alignment  */
   double             **xrnaJ = NULL;              // all      positions joint     16 array:     xrnaJ[0..nc-1][IDX(a,b)] = xrnaJ[0..nc-1][IDX(b,a)]
   double             **prnaJ = NULL;              // paired   positions joint     16 array:     prnaJ[0..nc-1][IDX(a,b)] = prnaJ[0..nc-1][IDX(b,a)]
@@ -253,12 +253,12 @@ main(int argc, char **argv)
   for (n = 1; n < nalloc; n ++) urnaM[n] = urnaM[0] + n *  K;
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
   
   /* read the MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (cfg.nmsa == nalloc) {
       nalloc += 10;
@@ -343,7 +343,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   free(xrnaJ[0]);
   free(prnaJ[0]);
   free(urnaJ[0]);

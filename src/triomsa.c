@@ -243,7 +243,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
-      (cfg.infmt = eslx_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
+      (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
 
@@ -370,7 +370,7 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESLX_MSAFILE   *afp = NULL;
+  ESL_MSAFILE   *afp = NULL;
   ESL_MSA        *msa = NULL;             /* the input alignment      */
   ESL_MSA        *msa_ab = NULL;          /* pairwise (a,b)           */
   ESL_MSA        *msa_ac = NULL;          /* pairwise (a,c)           */
@@ -384,12 +384,12 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = eslx_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) eslx_msafile_OpenFailure(afp, status);
+  status = esl_msafile_Open(&(cfg.abc), cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
   /* read the MSA */
-  while ((hstatus = eslx_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) eslx_msafile_ReadFailure(afp, status);
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
     if (msa->nseq != 3) esl_fatal("this works only for 3seq alignments");
 
@@ -405,10 +405,10 @@ main(int argc, char **argv)
     status = doctor_triomsa(go, &cfg, &msa, &msa_ab, &msa_ac, &msa_bc, &rmsa_bc);
     if (1||cfg.verbose) {/* the given trio alignment */
       fprintf(stdout, "\ntrimsa\n");
-      eslx_msafile_Write(stdout, msa,    eslMSAFILE_STOCKHOLM);
-      eslx_msafile_Write(stdout, msa_ab, eslMSAFILE_STOCKHOLM);
-      eslx_msafile_Write(stdout, msa_ac, eslMSAFILE_STOCKHOLM);
-      eslx_msafile_Write(stdout, msa_bc, eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, msa,    eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, msa_ab, eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, msa_ac, eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, msa_bc, eslMSAFILE_STOCKHOLM);
     }
 
     /* reference msa aveid and avematch */
@@ -417,7 +417,7 @@ main(int argc, char **argv)
     
     if (cfg.voutput) {/* the MSAProbs output alignment */
       fprintf(stdout, "\nMSAProbs alignment\n");
-      eslx_msafile_Write(stdout, rmsa_bc, eslMSAFILE_STOCKHOLM);
+      esl_msafile_Write(stdout, rmsa_bc, eslMSAFILE_STOCKHOLM);
     }
 
     /* fixedtime  indirect (b,c) alignment */
@@ -454,7 +454,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  eslx_msafile_Close(afp);
+  esl_msafile_Close(afp);
   return 0;
 }
 
@@ -756,9 +756,9 @@ expand_partialtriomsa(ESL_GETOPTS *go, struct cfg_s *cfg,  ESL_MSA **omsa, ESL_M
   *omsa_bc = msa_bc;
   
   //printf("O1 %d\n", x);
-  //eslx_msafile_Write(stdout, *omsa1, eslMSAFILE_STOCKHOLM);
+  //esl_msafile_Write(stdout, *omsa1, eslMSAFILE_STOCKHOLM);
   //printf("O2 %d\n", x);
-  //eslx_msafile_Write(stdout, *omsa2, eslMSAFILE_STOCKHOLM);
+  //esl_msafile_Write(stdout, *omsa2, eslMSAFILE_STOCKHOLM);
   
   return eslOK;
 
@@ -915,7 +915,7 @@ run_triomsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa1, ES
    if (cfg->voutput) { /* write output alignment */
     /* print output info */
     fprintf(cfg->outfp, "\ntriomsa-%s alignment\n", e1_rate_EvomodelType(cfg->evomodel));
-    eslx_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
   
@@ -951,9 +951,9 @@ merge_alignments(struct cfg_s *cfg, ESL_MSA *msa1, ESL_MSA *msa2, ESL_MSA **ret_
 
   if (1||cfg->verbose) {
     fprintf(stdout, "\n A-B alignment\n");
-    eslx_msafile_Write(stdout, msa1, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msa1, eslMSAFILE_STOCKHOLM);
     fprintf(stdout, "\n A-C alignment\n");
-    eslx_msafile_Write(stdout, msa2, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msa2, eslMSAFILE_STOCKHOLM);
   }
  
   ESL_ALLOC(matassign1, sizeof(int) * (msa1->alen+1));
@@ -998,7 +998,7 @@ merge_alignments(struct cfg_s *cfg, ESL_MSA *msa1, ESL_MSA *msa2, ESL_MSA **ret_
 
   if (1||cfg->verbose) {
     fprintf(stdout, "\n B-C alignment\n");
-    eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
   }
   
   *ret_msa = msa;
@@ -1067,7 +1067,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
   if (cfg->voutput) { /* write output alignment */
     /* print output info */
     fprintf(cfg->outfp, "\ne2msa-%s alignment\n", e1_rate_EvomodelType(cfg->evomodel));
-    eslx_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
 

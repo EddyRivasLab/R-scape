@@ -66,12 +66,12 @@ cov_GenerateAlignment(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double atbl, 
 
   status = cov_GenerateAlignmentUngapped(r, treetype, N, atbl, T, root, e1rate, ribosum, &msafull, &ct, noss, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+  if (verbose) esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
 
   if (!noindels) {
     status = cov_GenerateAlignmentAddGaps(r, treetype, N, atbl, T, msafull, &ct, e1rate, e1rateB, tol, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-    if (verbose) eslx_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
+    if (verbose) esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
   }
   
   *ret_msafull = msafull;

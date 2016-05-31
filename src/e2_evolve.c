@@ -208,7 +208,7 @@ e2_evolve_root(ESL_RANDOMNESS *r, E1_RATE *R, E1_BG *bg, ESL_TREE *T, ESL_MSA *m
     if (e2_evolve_descendant(r, ret_idx, nidx, v, dr, rd, R, bg, T, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "failed to evolve from pparent %d to daughther %d after time %f", v, dr, rd);
 
-    if (verbose) eslx_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
+    if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
   }
 
   return eslOK;

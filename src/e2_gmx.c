@@ -179,7 +179,7 @@ e2_gmx_Reuse(E2_GMX *gx)
   /* not much to do here. The memory rearrangement for a new seq is all in GrowTo(). */
   gx->Lcol = 0;
   gx->L    = 0;
-  gx->type = p7R_UNSET;
+  gx->type = E2_UNSET;
    return eslOK;
 }
 
