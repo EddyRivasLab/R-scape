@@ -56,7 +56,7 @@ endif
 # Compiler configuration
 #
 CC       = @CC@
-CFLAGS   = -O3 -funroll-loops -Wall 
+CFLAGS   = -DNO_SSE -O3 -funroll-loops -Wall 
 LIBS     = @LIBS@ 
 
 # Other tools

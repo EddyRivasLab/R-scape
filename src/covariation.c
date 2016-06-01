@@ -222,14 +222,14 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
   
   if (data->mode == GIVSS) { // do the plots only for GIVSS
-     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
-     if  (status != eslOK) goto ERROR;
- 
-     status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
-    if  (status != eslOK) goto ERROR;
- 
-    status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
-    if  (status != eslOK) goto ERROR;
+    if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
+      if  (status != eslOK) goto ERROR;
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
+      if  (status != eslOK) goto ERROR;
+      status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+      if  (status != eslOK) goto ERROR;
+    }
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);

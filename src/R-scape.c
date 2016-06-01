@@ -48,6 +48,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char             errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS  *r;	               /* random numbers */
   ESL_ALPHABET    *abc;                /* the alphabet */
+  int              abcisRNA;
+  
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
   double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
@@ -227,6 +229,10 @@ static ESL_OPTIONS options[] = {
   { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo statistics",                                                                          0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI statistics",                                              0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
+  /* alphabet type */
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -340,9 +346,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.msamap = NULL;
 
   /* alphabet */
-  cfg.abc = esl_alphabet_Create(eslRNA);
-  esl_alphabet_SetEquiv(cfg.abc, '=', '-');     /* allow = as a gap character too */
-  esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
+  cfg.abc = NULL;
+  cfg.abcisRNA = FALSE;
+  if      (esl_opt_GetBoolean(go, "--rna"))   { cfg.abc = esl_alphabet_Create(eslRNA);   cfg.abcisRNA = TRUE;  }
+  else if (esl_opt_GetBoolean(go, "--dna"))   { cfg.abc = esl_alphabet_Create(eslDNA);   cfg.abcisRNA = TRUE;  }
+  else if (esl_opt_GetBoolean(go, "--amino")) { cfg.abc = esl_alphabet_Create(eslAMINO);                       }
 
   cfg.watch = esl_stopwatch_Create(); 
   
@@ -541,6 +549,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (cfg.method == PHYLO || cfg.method == AKMAEV) {
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
     else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
+
+    if (cfg.abc == NULL) { cfg.abc = esl_alphabet_Create(eslRNA); cfg.abcisRNA = TRUE; }
+    else if (cfg.abcisRNA == FALSE) esl_fatal("alphabet type should be RNA or DNA\n");
     
     cfg.ribosum = Ribosum_matrix_Read(cfg.ribofile, cfg.abc, FALSE, cfg.errbuf);
     if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
@@ -626,13 +637,14 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  status = esl_msafile_Open(&cfg.abc, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
   if (status != eslOK) esl_msafile_OpenFailure(afp, status);
-  esl_msafile_SetDigital(afp, cfg.abc);
+  esl_alphabet_SetEquiv(cfg.abc, '=', '-');     /* allow = as a gap character too */
+  esl_alphabet_SetEquiv(cfg.abc, '.', '-');     /* allow . as a gap character too */
 
   /* read the MSA */
   while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
+    if (hstatus != eslOK) { printf("%s\n", afp->errmsg) ; esl_msafile_ReadFailure(afp, status); }
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
  
@@ -807,10 +819,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* apply msa filters and than select submsa
    */
-  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) { printf("remove_fragments failed\n");     esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) { printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) { printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf);              esl_fatal(msg); }
+  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
+    printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
+    printf("%s\n", cfg->errbuf); printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) {
+    printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
+  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
+    printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
 
   msa = *omsa; 
   if (msa == NULL) {
@@ -832,7 +848,9 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) { printf("RemoveGapColumns\n"); esl_fatal(msg); }
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) {
+    printf("%s\n", cfg->errbuf); esl_fatal(msg);
+  }
   msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
 
   /* given msa aveid and avematch */
@@ -878,7 +896,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
-
+  
   if (msa->nseq <= 1) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -933,6 +951,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
+  if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
 
   // Print some alignment information

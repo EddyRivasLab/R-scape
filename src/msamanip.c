@@ -292,8 +292,10 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
       useme[apos-1] = (gapfreq < gapthresh)? TRUE : FALSE; 
     }
     
-    if ((status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) goto ERROR;
-    if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK) goto ERROR;
+    if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
+       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
+    if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
+      ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }
   
   ESL_ALLOC(map, sizeof(int) * alen);

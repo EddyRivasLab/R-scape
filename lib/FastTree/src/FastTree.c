@@ -2,15 +2,17 @@
  * FastTree -- inferring approximately-maximum-likelihood trees for large
  * multiple sequence alignments.
  *
- * Morgan N. Price, 2008-2011
+ * Morgan N. Price
  * http://www.microbesonline.org/fasttree/
  *
  * Thanks to Jim Hester of the Cleveland Clinic Foundation for
  * providing the first parallel (OpenMP) code, Siavash Mirarab of
- * UT Austin for implementing the WAG option, and Samuel Shepard
- * at the CDC for suggesting and helping with the -quote option.
+ * UT Austin for implementing the WAG option, Samuel Shepard
+ * at the CDC for suggesting and helping with the -quote option, and
+ * Aaron Darling (University of Technology, Sydney) for numerical changes
+ * for wide alignments of closely-related sequences.
  *
- *  Copyright (C) 2008-2011 The Regents of the University of California
+ *  Copyright (C) 2008-2015 The Regents of the University of California
  *  All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -305,7 +307,8 @@
 
 /* By default, tries to compile with SSE instructions for greater speed.
    But if compiled with -DUSE_DOUBLE, uses double precision instead of single-precision
-   floating point (2x memroy required), and does not use SSE.
+   floating point (2x memory required), does not use SSE, and allows much shorter
+   branch lengths.
 */
 #ifdef __SSE__
 #if !defined(NO_SSE) && !defined(USE_DOUBLE)
@@ -340,7 +343,7 @@ typedef float numeric_t;
 
 #endif /* USE_SSE3 */
 
-#define FT_VERSION "2.1.7"
+#define FT_VERSION "2.1.9"
 
 char *usage =
   "  FastTree protein_alignment > tree\n"
@@ -365,6 +368,7 @@ char *usage =
   "        (for faster global bootstrap on huge alignments)\n"
   "  -pseudo to use pseudocounts (recommended for highly gapped sequences)\n"
   "  -gtr -- generalized time-reversible model (nucleotide alignments only)\n"
+  "  -lg -- Le-Gascuel 2008 model (amino acid alignments only)\n"
   "  -wag -- Whelan-And-Goldman 2001 model (amino acid alignments only)\n"
   "  -quote -- allow spaces and other restricted characters (but not ' ) in\n"
   "           sequence names and quote names in the output tree (fasta input only;\n"
@@ -392,7 +396,7 @@ char *expertUsage =
   "           [-slow | -fastest] [-2nd | -no2nd] [-slownni] [-seed 1253] \n"
   "           [-top | -notop] [-topm 1.0 [-close 0.75] [-refresh 0.8]]\n"
   "           [-matrix Matrix | -nomatrix] [-nj | -bionj]\n"
-  "           [-wag] [-nt] [-gtr] [-gtrrates ac ag at cg ct gt] [-gtrfreq A C G T]\n"
+  "           [-lg] [-wag] [-nt] [-gtr] [-gtrrates ac ag at cg ct gt] [-gtrfreq A C G T]\n"
   "           [ -constraints constraintAlignment [ -constraintWeight 100.0 ] ]\n"
   "           [-log logfile]\n"
   "         [ alignment_file ]\n"
@@ -458,6 +462,7 @@ char *expertUsage =
   "       ML and ME NNIs)\n"
   "\n"
   "Maximum likelihood model options:\n"
+  "  -lg -- Le-Gascuel 2008 model instead of (default) Jones-Taylor-Thorton 1992 model (a.a. only)\n"
   "  -wag -- Whelan-And-Goldman 2001 model instead of (default) Jones-Taylor-Thorton 1992 model (a.a. only)\n"
   "  -gtr -- generalized time-reversible instead of (default) Jukes-Cantor (nt only)\n"
   "  -cat # -- specify the number of rate categories of sites (default 20)\n"
@@ -848,14 +853,24 @@ const double LogLkUnderflow = 9.21034037197618; /* -log(LkUnderflowInv) */
 const double Log2 = 0.693147180559945;
 /* These are used to limit the optimization of branch lengths.
    Also very short branch lengths can create numerical problems.
-   In version 2.1.7., the minimum branch lengths (MLMinBranchLength and MLMinRelBranchLength)
+   In version 2.1.7, the minimum branch lengths (MLMinBranchLength and MLMinRelBranchLength)
    were increased to prevent numerical problems in rare cases.
-   If compiled with -DUSE_DOUBLE then these minimums could be decreased.
+   In version 2.1.8, to provide useful branch lengths for genome-wide alignments,
+   the minimum branch lengths were dramatically decreased if USE_DOUBLE is defined.
 */
+#ifndef USE_DOUBLE
 const double MLMinBranchLengthTolerance = 1.0e-4; /* absolute tolerance for optimizing branch lengths */
 const double MLFTolBranchLength = 0.001; /* fractional tolerance for optimizing branch lengths */
-const double MLMinBranchLength = 5.0e-4;
+const double MLMinBranchLength = 5.0e-4; /* minimum value for branch length */
 const double MLMinRelBranchLength = 2.5e-4; /* minimum of rate * length */
+const double fPostTotalTolerance = 1.0e-10; /* posterior vector must sum to at least this before rescaling */
+#else
+const double MLMinBranchLengthTolerance = 1.0e-9;
+const double MLFTolBranchLength = 0.001;
+const double MLMinBranchLength = 5.0e-9;
+const double MLMinRelBranchLength = 2.5e-9;
+const double fPostTotalTolerance = 1.0e-20;
+#endif
 
 int mlAccuracy = 1;		/* Rounds of optimization of branch lengths; 1 means do 2nd round only if close */
 double closeLogLkLimit = 5.0;	/* If partial optimization of an NNI looks like it would decrease the log likelihood
@@ -1619,6 +1634,10 @@ distance_matrix_t matrixBLOSUM45;
 double matrixJTT92[MAXCODES][MAXCODES];
 double statJTT92[MAXCODES];
 
+/* The Le-Gascuel 2008 amino acid transition matrix */
+double matrixLG08[MAXCODES][MAXCODES];
+double statLG08[MAXCODES];
+
 /* The WAG amino acid transition matrix (Whelan-And-Goldman 2001) */
 double matrixWAG01[MAXCODES][MAXCODES];
 double statWAG01[MAXCODES];
@@ -1642,6 +1661,7 @@ int main(int argc, char **argv) {
   int nRateCats = nDefaultRateCats;
   char *logfile = NULL;
   bool bUseGtr = false;
+  bool bUseLg = false;
   bool bUseWag = false;
   bool bUseGtrRates = false;
   double gtrrates[6] = {1,1,1,1,1,1};
@@ -1822,6 +1842,8 @@ int main(int argc, char **argv) {
       }
     } else if (strcmp(argv[iArg],"-nocat") == 0) {
       nRateCats = 1;
+    } else if (strcmp(argv[iArg], "-lg") == 0) {
+        bUseLg = true;
     } else if (strcmp(argv[iArg], "-wag") == 0) {
         bUseWag = true;
     } else if (strcmp(argv[iArg], "-gtr") == 0) {
@@ -1972,7 +1994,11 @@ int main(int argc, char **argv) {
       
       if (MLnni != 0 || MLlen) {
 	fprintf(fp, "ML Model: %s,",
-		(nCodes == 4) ? (bUseGtr ? "Generalized Time-Reversible" : "Jukes-Cantor") : (bUseWag ? "Whelan-And-Goldman" : "Jones-Taylor-Thorton"));
+		(nCodes == 4) ? 
+			(bUseGtr ? "Generalized Time-Reversible" : "Jukes-Cantor") : 
+			(bUseLg ? "Le-Gascuel 2008" : (bUseWag ? "Whelan-And-Goldman" : "Jones-Taylor-Thorton"))
+			
+	);
 	if (nRateCats == 1)
 	  fprintf(fp, " No rate variation across sites");
 	else
@@ -2120,7 +2146,9 @@ int main(int argc, char **argv) {
 
       transition_matrix_t *transmat = NULL;
       if (nCodes == 20) {
-	transmat = bUseWag? CreateTransitionMatrix(matrixWAG01,statWAG01) : CreateTransitionMatrix(matrixJTT92,statJTT92);
+			transmat = bUseLg? CreateTransitionMatrix(matrixLG08,statLG08) : 
+                          (bUseWag? CreateTransitionMatrix(matrixWAG01,statWAG01) :
+                           CreateTransitionMatrix(matrixJTT92,statJTT92));
       } else if (nCodes == 4 && bUseGtr && (bUseGtrRates || bUseGtrFreq)) {
 	transmat = CreateGTR(gtrrates,gtrfreq);
       }
@@ -2211,21 +2239,20 @@ int main(int argc, char **argv) {
       UpdateBranchLengths(/*IN/OUT*/NJ);
       LogTree("ME_Lengths",0, fpLog, NJ, aln->names, unique, bQuote);
 
-      if(verbose>0 || fpLog) {
-	double total_len = 0;
-	int iNode;
-	for (iNode = 0; iNode < NJ->maxnode; iNode++)
-	  total_len += fabs(NJ->branchlength[iNode]);
-	if (verbose>0) {
-	  fprintf(stderr, "Total branch-length %.3f after %.2f sec\n",
-		  total_len, clockDiff(&clock_start));
-	  fflush(stderr);
-	}
-	if (fpLog) {
-	  fprintf(fpLog, "Total branch-length %.3f after %.2f sec\n",
-		  total_len, clockDiff(&clock_start));
-	  fflush(stderr);
-	}
+      double total_len = 0;
+      int iNode;
+      for (iNode = 0; iNode < NJ->maxnode; iNode++)
+	total_len += fabs(NJ->branchlength[iNode]);
+
+      if (verbose>0) {
+	fprintf(stderr, "Total branch-length %.3f after %.2f sec\n",
+		total_len, clockDiff(&clock_start));
+	fflush(stderr);
+      }
+      if (fpLog) {
+	fprintf(fpLog, "Total branch-length %.3f after %.2f sec\n",
+		total_len, clockDiff(&clock_start));
+	fflush(stderr);
       }
 
 #ifdef TRACK_MEMORY
@@ -2238,7 +2265,27 @@ int main(int argc, char **argv) {
 #endif
 
       SplitCount_t splitcount = {0,0,0,0,0.0,0.0};
+
       if (MLnniToDo > 0 || MLlen) {
+	bool warn_len = total_len/NJ->maxnode < 0.001 && MLMinBranchLengthTolerance > 1.0/aln->nPos;
+	bool warn = warn_len || (total_len/NJ->maxnode < 0.001 && aln->nPos >= 10000);
+	if (warn)
+	  fprintf(stderr, "\nWARNING! This alignment consists of closely-related and very-long sequences.\n");
+	if (warn_len)
+	  fprintf(stderr,
+		  "This version of FastTree may not report reasonable branch lengths!\n"
+#ifdef USE_DOUBLE
+		  "Consider changing MLMinBranchLengthTolerance.\n"
+#else
+		  "Consider recompiling FastTree with -DUSE_DOUBLE.\n"
+#endif
+		  "For more information, visit\n"
+		  "http://www.microbesonline.org/fasttree/#BranchLen\n\n");
+	if (warn)
+	  fprintf(stderr, "WARNING! FastTree (or other standard maximum-likelihood tools)\n"
+		  "may not be appropriate for aligments of very closely-related sequences\n"
+		  "like this one, as FastTree does not account for recombination or gene conversion\n\n");
+
 	/* Do maximum-likelihood computations */
 	/* Convert profiles to use the transition matrix */
 	distance_matrix_t *tmatAsDist = TransMatToDistanceMat(/*OPTIONAL*/NJ->transmat);
@@ -3561,14 +3608,19 @@ void PrintNJ(FILE *fp, NJ_t *NJ, char **names, uniquify_t *unique, bool bShowSup
 	fprintf(fp,")");
       }
       /* Print the branch length */
-      fprintf(fp, ":%.5f", NJ->branchlength[node]);
+#ifdef USE_DOUBLE
+#define FP_FORMAT "%.9f"
+#else
+#define FP_FORMAT "%.5f"
+#endif
+      fprintf(fp, ":" FP_FORMAT, NJ->branchlength[node]);
     } else if (end) {
       if (node == NJ->root)
 	fprintf(fp, ")");
       else if (bShowSupport)
-	fprintf(fp, ")%.3f:%.5f", NJ->support[node], NJ->branchlength[node]);
+	fprintf(fp, ")%.3f:" FP_FORMAT, NJ->support[node], NJ->branchlength[node]);
       else
-	fprintf(fp, "):%.5f", NJ->branchlength[node]);
+	fprintf(fp, "):" FP_FORMAT, NJ->branchlength[node]);
     } else {
       if (node != NJ->root && NJ->child[NJ->parent[node]].child[0] != node) fprintf(fp, ",");
       fprintf(fp, "(");
@@ -4370,7 +4422,7 @@ void NormalizeFreq(/*IN/OUT*/numeric_t *freq, distance_matrix_t *dmat) {
     for (k = 0; k < nCodes; k++)
       total_freq += freq[k];
   }
-  if (total_freq > 1e-10) {
+  if (total_freq > fPostTotalTolerance) {
     numeric_t inverse_weight = 1.0/total_freq;
     vector_multiply_by(/*IN/OUT*/freq, inverse_weight, nCodes);
   } else {
@@ -4381,7 +4433,7 @@ void NormalizeFreq(/*IN/OUT*/numeric_t *freq, distance_matrix_t *dmat) {
 	freq[k] = 1.0/nCodes;
     } else {
       for (k = 0; k < nCodes; k++)
-	freq[k] = dmat->codeFreq[0][k];/*XXX gapFreq[k];*/
+	freq[k] = dmat->codeFreq[0][k];
     }
   }
 }
@@ -4797,13 +4849,6 @@ profile_t *PosteriorProfile(profile_t *p1, profile_t *p2,
   if (transmat == NULL) {	/* Jukes-Cantor */
     assert(nCodes == 4);
 
-    numeric_t fAll[128][4];
-    for (j = 0; j < 4; j++)
-      for (k = 0; k < 4; k++)
-	fAll[j][k] = (j==k) ? 1.0 : 0.0;
-    for (k = 0; k < 4; k++)
-      fAll[NOCODE][k] = 0.25;
-    
     double *PSame1 = PSameVector(len1, rates);
     double *PDiff1 = PDiffVector(PSame1, rates);
     double *PSame2 = PSameVector(len2, rates);
@@ -4962,7 +5007,7 @@ profile_t *PosteriorProfile(profile_t *p1, profile_t *p2,
       double fPostTot = 0;
       for (j = 0; j < 4; j++)
 	fPostTot += fPost[j];
-      assert(fPostTot > 1e-10);
+      assert(fPostTot > fPostTotalTolerance);
       double fPostInv = 1.0/fPostTot;
 #if 0 /* SSE3 is slower */
       vector_multiply_by(fPost, fPostInv, 4);
@@ -5025,7 +5070,7 @@ profile_t *PosteriorProfile(profile_t *p1, profile_t *p2,
 	fPost[j] = value >= 0 ? value : 0;
       }
       double fPostTot = vector_sum(fPost, 20);
-      assert(fPostTot > 1e-10);
+      assert(fPostTot > fPostTotalTolerance);
       double fPostInv = 1.0/fPostTot;
       vector_multiply_by(/*IN/OUT*/fPost, fPostInv, 20);
       int ch = -1;		/* the dominant character, if any */
@@ -5133,7 +5178,7 @@ double PairLogLk(profile_t *pA, profile_t *pB, double length, int nPos,
 		 /*OPTIONAL IN/OUT*/double *site_likelihoods) {
   double lk = 1.0;
   double loglk = 0.0;		/* stores underflow of lk during the loop over positions */
-  int i,j,k;
+  int i,j;
   assert(rates != NULL && rates->nRateCategories > 0);
   numeric_t *expeigenRates = NULL;
   if (transmat != NULL)
@@ -5143,12 +5188,6 @@ double PairLogLk(profile_t *pA, profile_t *pB, double length, int nPos,
     assert (nCodes == 4);
     double *pSame = PSameVector(length, rates);
     double *pDiff = PDiffVector(pSame, rates);
-    numeric_t fAll[128][4];
-    for (j = 0; j < 4; j++)
-      for (k = 0; k < 4; k++)
-	fAll[j][k] = (j==k) ? 1.0 : 0.0;
-    for (k = 0; k < 4; k++)
-      fAll[NOCODE][k] = 0.25;
     
     int iFreqA = 0;
     int iFreqB = 0;
@@ -5240,6 +5279,7 @@ double PairLogLk(profile_t *pA, profile_t *pB, double length, int nPos,
       }
       /* SSE3 instructions do not speed this step up:
 	 numeric_t lkAB = vector_multiply3_sum(expeigen, fA, fB); */
+		// dsp this is where check for <=0 was added in 2.1.1.LG
       double lkAB = 0;
       for (j = 0; j < 4; j++)
 	lkAB += expeigen[j]*fA[j]*fB[j];
@@ -6096,9 +6136,6 @@ double RescaleGammaLogLk(int nPos, int nRateCats, /*IN*/numeric_t *rates, /*IN*/
 double MLPairOptimize(profile_t *pA, profile_t *pB,
 		      int nPos, /*OPTIONAL*/transition_matrix_t *transmat, rates_t *rates,
 		      /*IN/OUT*/double *branch_length) {
-  double len5[5];
-  int j;
-  for (j=0;j<5;j++) len5[j] = *branch_length;
   quartet_opt_t qopt = { nPos, transmat, rates,
 			 /*nEval*/0, /*pair1*/pA, /*pair2*/pB };
   double f2x,negloglk;
@@ -10091,4 +10128,32 @@ double matrixWAG01[MAXCODES][MAXCODES] = {
 	{0.001708, 0.017573, 0.001086, 0.001959, 0.010826, 0.003257, 0.002364, 0.005088, 0.003964, 0.003208, 0.010045, 0.002076, 0.007786, 0.023095, 0.002105, 0.007908, 0.001674, -0.466694, 0.037525, 0.005516},
 	{0.008912, 0.014125, 0.040205, 0.012058, 0.020133, 0.008430, 0.007267, 0.003836, 0.143398, 0.015555, 0.014757, 0.004934, 0.015861, 0.238943, 0.007998, 0.029135, 0.010779, 0.092011, -0.726275, 0.011652},
 	{0.149259, 0.018739, 0.014602, 0.011335, 0.074565, 0.022417, 0.043805, 0.013932, 0.008807, 0.581952, 0.133956, 0.022726, 0.153161, 0.048356, 0.023429, 0.017317, 0.103293, 0.027186, 0.023418, -1.085487},
+};
+
+/* Le-Gascuel 2008 model data from Harry Yoo
+   https://github.com/hyoo/FastTree
+*/
+double statLG08[MAXCODES] = {0.079066, 0.055941, 0.041977, 0.053052, 0.012937, 0.040767, 0.071586, 0.057337, 0.022355, 0.062157, 0.099081, 0.0646, 0.022951, 0.042302, 0.04404, 0.061197, 0.053287, 0.012066, 0.034155, 0.069147};
+
+double matrixLG08[MAXCODES][MAXCODES] = {
+   {-1.08959879,0.03361031,0.02188683,0.03124237,0.19680136,0.07668542,0.08211337,0.16335306,0.02837339,0.01184642,0.03125763,0.04242021,0.08887270,0.02005907,0.09311189,0.37375830,0.16916131,0.01428853,0.01731216,0.20144931},
+   {0.02378006,-0.88334349,0.04206069,0.00693409,0.02990323,0.15707674,0.02036079,0.02182767,0.13574610,0.00710398,0.01688563,0.35388551,0.02708281,0.00294931,0.01860218,0.04800569,0.03238902,0.03320688,0.01759004,0.00955956},
+   {0.01161996,0.03156149,-1.18705869,0.21308090,0.02219603,0.07118238,0.02273938,0.06034785,0.18928374,0.00803870,0.00287235,0.09004368,0.01557359,0.00375798,0.00679131,0.16825837,0.08398226,0.00190474,0.02569090,0.00351296},
+   {0.02096312,0.00657599,0.26929909,-0.86328733,0.00331871,0.02776660,0.27819699,0.04482489,0.04918511,0.00056712,0.00079981,0.01501150,0.00135537,0.00092395,0.02092662,0.06579888,0.02259266,0.00158572,0.00716768,0.00201422},
+   {0.03220119,0.00691547,0.00684065,0.00080928,-0.86781864,0.00109716,0.00004527,0.00736456,0.00828668,0.00414794,0.00768465,0.00017162,0.01156150,0.01429859,0.00097521,0.03602269,0.01479316,0.00866942,0.01507844,0.02534728},
+   {0.03953956,0.11446966,0.06913053,0.02133682,0.00345736,-1.24953177,0.16830979,0.01092385,0.19623161,0.00297003,0.02374496,0.13185209,0.06818543,0.00146170,0.02545052,0.04989165,0.04403378,0.00962910,0.01049079,0.00857458},
+   {0.07434507,0.02605508,0.03877888,0.37538659,0.00025048,0.29554848,-0.84254259,0.02497249,0.03034386,0.00316875,0.00498760,0.12936820,0.01243696,0.00134660,0.03002373,0.04380857,0.04327684,0.00557310,0.00859294,0.01754095},
+   {0.11846020,0.02237238,0.08243001,0.04844538,0.03263985,0.01536392,0.02000178,-0.50414422,0.01785951,0.00049912,0.00253779,0.01700817,0.00800067,0.00513658,0.01129312,0.09976552,0.00744439,0.01539442,0.00313512,0.00439779},
+   {0.00802225,0.05424651,0.10080372,0.02072557,0.01431930,0.10760560,0.00947583,0.00696321,-1.09324335,0.00243405,0.00818899,0.01558729,0.00989143,0.01524917,0.01137533,0.02213166,0.01306114,0.01334710,0.11863394,0.00266053},
+   {0.00931296,0.00789336,0.01190322,0.00066446,0.01992916,0.00452837,0.00275137,0.00054108,0.00676776,-1.41499789,0.25764421,0.00988722,0.26563382,0.06916358,0.00486570,0.00398456,0.06425393,0.00694043,0.01445289,0.66191466},
+   {0.03917027,0.02990732,0.00677980,0.00149374,0.05885464,0.05771026,0.00690325,0.00438541,0.03629495,0.41069624,-0.79375308,0.01362360,0.62543296,0.25688578,0.02467704,0.01806113,0.03001512,0.06139358,0.02968934,0.16870919},
+   {0.03465896,0.40866276,0.13857164,0.01827910,0.00085698,0.20893479,0.11674330,0.01916263,0.04504313,0.01027583,0.00888247,-0.97644156,0.04241650,0.00154510,0.02521473,0.04836478,0.07344114,0.00322392,0.00852278,0.01196402},
+   {0.02579765,0.01111131,0.00851489,0.00058635,0.02051079,0.03838702,0.00398738,0.00320253,0.01015515,0.09808327,0.14487451,0.01506968,-1.54195698,0.04128536,0.00229163,0.00796306,0.04636929,0.01597787,0.01104642,0.04357735},
+   {0.01073203,0.00223024,0.00378708,0.00073673,0.04675419,0.00151673,0.00079574,0.00378966,0.02885576,0.04707045,0.10967574,0.00101178,0.07609486,-0.81061579,0.00399600,0.01530562,0.00697985,0.10394083,0.33011973,0.02769432},
+   {0.05186360,0.01464471,0.00712508,0.01737179,0.00331981,0.02749383,0.01847072,0.00867414,0.02240973,0.00344749,0.01096857,0.01718973,0.00439734,0.00416018,-0.41664685,0.05893117,0.02516738,0.00418956,0.00394655,0.01305787},
+   {0.28928853,0.05251612,0.24529879,0.07590089,0.17040121,0.07489439,0.03745080,0.10648187,0.06058559,0.00392302,0.01115539,0.04581702,0.02123285,0.02214217,0.08188943,-1.42842431,0.39608294,0.01522956,0.02451220,0.00601987},
+   {0.11400727,0.03085239,0.10660988,0.02269274,0.06093244,0.05755704,0.03221430,0.00691855,0.03113348,0.05508469,0.01614250,0.06057985,0.10765893,0.00879238,0.03045173,0.34488735,-1.23444419,0.00750412,0.01310009,0.11660005},
+   {0.00218053,0.00716244,0.00054751,0.00036065,0.00808574,0.00284997,0.00093936,0.00323960,0.00720403,0.00134729,0.00747646,0.00060216,0.00840002,0.02964754,0.00114785,0.00300276,0.00169919,-0.44275283,0.03802969,0.00228662},
+   {0.00747852,0.01073967,0.02090366,0.00461457,0.03980863,0.00878929,0.00409985,0.00186756,0.18125441,0.00794180,0.01023445,0.00450612,0.01643896,0.26654152,0.00306072,0.01368064,0.00839668,0.10764993,-0.71435091,0.00851526},
+   {0.17617706,0.01181629,0.00578676,0.00262530,0.13547871,0.01454379,0.01694332,0.00530363,0.00822937,0.73635171,0.11773937,0.01280613,0.13129028,0.04526924,0.02050210,0.00680190,0.15130413,0.01310401,0.01723920,-1.33539639}
 };
