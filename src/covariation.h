@@ -17,8 +17,9 @@
 
 #include "covgrammars.h"
 
-#define BMIN -10.0     // minimum COV value 
-#define HPTS 200      // number of point in histogram
+#define BMIN -100.0     // minimum COV value (-10.0 is sensible)
+#define HPTS  200       // number of point in histogram
+#define W     0.5       // default histogram with
 
 #define NCOVTYPE = 5;
 
@@ -75,10 +76,10 @@ typedef enum {
 } CORRTYPE;
 
 typedef enum{
-  NAIVE  = 0,
-  PHYLO  = 1,
-  DCA    = 2,
-  AKMAEV = 3,
+  NAIVE      = 0,
+  NULLPHYLO  = 1,
+  DCA        = 2,
+  AKMAEV     = 3,
 } METHOD;
 
 struct mutual_s {

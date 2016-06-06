@@ -28,7 +28,7 @@
 #include "ribosum_matrix.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
-#define METHODOPTS   "--naive,--phylo,--dca,--akmaev"              
+#define METHODOPTS   "--nullphylo,--naive,--dca,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
@@ -225,8 +225,8 @@ static ESL_OPTIONS options[] = {
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "nseqthresh is <n>",                                                                         0 },   
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
    /* phylogenetic method */
-  { "--naive",        eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive statistics",                                                                          0 },
-  { "--phylo",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "phylo statistics",                                                                          0 },
+  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive statistics",                                                                          0 },
+  { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "nullphylo  statistics",                                                                          0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI statistics",                                              0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
@@ -452,15 +452,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.allowpair->mx[1][2] = cfg.allowpair->mx[2][1] = 1.0;
   cfg.allowpair->mx[2][3] = cfg.allowpair->mx[3][2] = 1.0;
 
-  if      (esl_opt_GetBoolean(go, "--naive"))  cfg.method = NAIVE;
-  else if (esl_opt_GetBoolean(go, "--phylo"))  cfg.method = PHYLO;
-  else if (esl_opt_GetBoolean(go, "--dca"))    cfg.method = DCA;
-  else if (esl_opt_GetBoolean(go, "--akmaev")) cfg.method = AKMAEV;
+  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
+  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
+  else if (esl_opt_GetBoolean(go, "--dca"))       cfg.method = DCA;
+  else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
  
   /* for the cov histograms */
   cfg.hpts  = HPTS; /* number of points in the histogram */
   cfg.bmin  = BMIN; /* a guess for lowest cov score */
-  cfg.w     = -1;   /* histogram step, will be determined for each msa */
+  cfg.w     = W;   /* default. histogram step, will be determined for each msa */
   cfg.pmass = esl_opt_GetReal(go, "--pmass");
   cfg.Nfit  = esl_opt_GetInteger(go, "--Nfit");
 
@@ -546,7 +546,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
-  if (cfg.method == PHYLO || cfg.method == AKMAEV) {
+  if (cfg.method == AKMAEV) {
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
     else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
 
@@ -965,37 +965,39 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   /* the null model first */
-  cfg->mode = RANSS;
-  if (cfg->nulltype == Null1) {
-    status = null1_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1 rscape", cfg->errbuf);
+  if (cfg->method == NULLPHYLO) {
+    cfg->mode = RANSS;
+    if (cfg->nulltype == Null1) {
+      status = null1_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1 rscape", cfg->errbuf);
+    }
+    else if (cfg->nulltype == Null1b) {
+      status = null1b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1b rscape", cfg->errbuf);
+    }
+    else if (cfg->nulltype == Null2) {
+      status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
+    }
+    else if (cfg->nulltype == Null2b) {
+      cfg->nulltype = Null2;
+      status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_aux);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
+      cfg->nulltype = Null2b;
+      status = null2b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2b rscape", cfg->errbuf);
+    }
+    else if (cfg->nulltype == Null3) {
+      status = null3_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rscape", cfg->errbuf);
+    }
+    else if (cfg->nulltype == Null4) {
+      cfg->nulltype = Null4;
+      status = null4_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
+    }
   }
-  else if (cfg->nulltype == Null1b) {
-    status = null1b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1b rscape", cfg->errbuf);
-  }
-  else if (cfg->nulltype == Null2) {
-    status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-  }
-  else if (cfg->nulltype == Null2b) {
-    cfg->nulltype = Null2;
-    status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_aux);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-    cfg->nulltype = Null2b;
-    status = null2b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2b rscape", cfg->errbuf);
-  }
-  else if (cfg->nulltype == Null3) {
-    status = null3_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rscape", cfg->errbuf);
-  }
-  else if (cfg->nulltype == Null4) {
-    cfg->nulltype = Null4;
-    status = null4_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
-  }
-  
+
   /* main function */
   cfg->mode = GIVSS;
   analyze = (cfg->nbpairs == 0 && cfg->docyk)? FALSE : TRUE;
@@ -1155,9 +1157,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
 
-  /* produce a tree
+ /* produce a tree
    */
-  if (cfg->method != NAIVE) {
+  if (cfg->method == AKMAEV) {
     status = create_tree(go, cfg, msa);
     if (status != eslOK)  { esl_fatal(cfg->errbuf); }
     nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
@@ -1165,7 +1167,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   /* create the MI structure */
   mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
-  
+
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) {
     fprintf(cfg->sumfp, "#target_E-val\tMSA\tnseq\talen\tavgid\tmethod\tTP\tTrue\tFound\tSEN\tPPV\n");
@@ -1216,7 +1218,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
-    
+
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
       printf("score total distribution\n");
@@ -1227,7 +1229,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
-  
+ 
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
@@ -1242,7 +1244,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cykranklist, title);
     if (status != eslOK) goto ERROR; 
   }
- 
+
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
