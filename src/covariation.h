@@ -17,7 +17,7 @@
 
 #include "covgrammars.h"
 
-#define BMIN -100.0     // minimum COV value (-10.0 is sensible)
+#define BMIN  -10.0     // minimum COV value (-10.0 is sensible)
 #define HPTS  200       // number of point in histogram
 #define W     0.5       // default histogram with
 

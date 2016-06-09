@@ -70,6 +70,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = cov_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
+
   switch(data->covtype) {
   case CHIa: 
     status = cov_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);

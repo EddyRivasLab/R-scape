@@ -39,7 +39,7 @@
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
  * 
  * This structure is passed to routines within main.c, as a means of semi-encapsulation
- * of shared data amongst different parallel processes (threads or MPI processes).
+* of shared data amongst different parallel processes (threads or MPI processes).
  */
 struct cfg_s { /* Shared configuration in masters & workers */
   int              argc;
@@ -70,6 +70,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *msaname;
   int             *msamap;
   int              firstpos;
+  int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
 
   char            *outmsafile;
   FILE            *outmsafp;
@@ -369,6 +370,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else { cfg.submsa = 0; }
     
   /* other options */
+  cfg.maxsq_gsc   = 1000;
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.alenthresh  = esl_opt_GetInteger(go, "--alenthresh");
@@ -942,7 +944,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* the ct vector */
   status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, cfg->errbuf);
-
+  
   if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
@@ -953,19 +955,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
-
+  
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-  
-  nshuffle = cfg->nshuffle;
-  if (nshuffle < 0) {
-    nshuffle = 20;
-    if (msa->nseq*msa->alen < 1e4) nshuffle = 50;
-    if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
-  }
 
   /* the null model first */
   if (cfg->method == NULLPHYLO) {
+    nshuffle = cfg->nshuffle;
+    if (nshuffle < 0) {
+      nshuffle = 20;
+      if (msa->nseq*msa->alen < 1e4) nshuffle = 50;
+      if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
+    }
+    
     cfg->mode = RANSS;
     if (cfg->nulltype == Null1) {
       status = null1_rscape(go, cfg, nshuffle, msa, &ranklist_null);
@@ -1072,7 +1074,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int              status;
 
   /* weigth the sequences */
-  esl_msaweight_GSC(msa);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+  else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
   mi = cov_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
@@ -1117,9 +1120,11 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (status != eslOK) goto ERROR; 
   if (mi->maxCOV <= cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
 
+  if (cfg->method == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
+  
   if (cfg->w < cfg->tol) cfg->w = cfg->tol;
-  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (1||cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
   if (cfg->w <= 0) return eslFAIL;
 
   return eslOK;
@@ -1144,7 +1149,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   esl_stopwatch_Start(cfg->watch);
 
   /* weigth the sequences */
-  esl_msaweight_GSC(msa);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+  else                             esl_msaweight_PB(msa);
 
   /* print to stdout */
   if (cfg->verbose) 
@@ -1222,9 +1228,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
       printf("score total distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin, ranklist->ha->w);
+      printf("imin %d imax %d xmax %f xmin %f width %f\n",
+	     ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin, ranklist->ha->w);
       printf("score truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f width %f\n", ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
+      printf("imin %d imax %d xmax %f xmin %f width %f\n",
+	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, ranklist, title);
     if (status != eslOK) goto ERROR; 
