@@ -17,6 +17,7 @@
 #include "esl_distance.h"
 #include "esl_msa.h"
 #include "esl_msacluster.h"
+#include "esl_msaweight.h"
 #include "esl_sq.h"
 #include "esl_sqio.h"
 #include "esl_stack.h"
@@ -393,35 +394,41 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   if (idthresh == 1.0) return eslOK;
 
   omsa = *msa;
-  
-  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  esl_vec_ISet(useme, omsa->nseq, 0);
-  
-  if ((status = esl_msacluster_SingleLinkage(omsa, idthresh, &assignment, &nin, &nc)) != eslOK) goto ERROR;
-  
-  for (c = 0; c < nc; c++)
-    {
-      nskip = esl_rnd_Roll(r, nin[c]); /* pick a random seq in this cluster to be the test. */
-      for (i = 0; i < omsa->nseq; i++)
-	if (assignment[i] == c) {
-	  if (nskip == 0) {
-	    nused ++;
-	    useme[i] = 1;
-	    break;
-	  } else nskip--; 
-	}
-    }
-  *ret_nremoved = omsa->nseq - nused;
 
-  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-
+  if (1||omsa->nseq < 1000) {
+    ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
+    esl_vec_ISet(useme, omsa->nseq, 0);
+    
+    if ((status = esl_msacluster_SingleLinkage(omsa, idthresh, &assignment, &nin, &nc)) != eslOK) goto ERROR;
+    for (c = 0; c < nc; c++)
+      {
+	nskip = esl_rnd_Roll(r, nin[c]); /* pick a random seq in this cluster to be the test. */
+	for (i = 0; i < omsa->nseq; i++)
+	  if (assignment[i] == c) {
+	    if (nskip == 0) {
+	      nused ++;
+	      useme[i] = 1;
+	      break;
+	    } else nskip--; 
+	  }
+      }
+    
+    if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
+  }
+  else {
+    printf("\nIDFilter\n");
+    if ((status = esl_msaweight_IDFilter(omsa, idthresh, &new)) != eslOK) goto ERROR;
+  }
+  
+  *ret_nremoved = omsa->nseq - new->nseq;
+  
   /* replace msa */
   esl_msa_Destroy(omsa);
   *msa = new;
   
-  free(useme);
-  free(nin);
-  free(assignment);
+  if (useme      != NULL) free(useme);
+  if (assignment != NULL) free(assignment);
+  if (nin        != NULL) free(nin);
   
   return eslOK;
   
@@ -985,7 +992,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
     if (T->right[v] <= 0) useme[-T->right[v]] = TRUE;
     
     //printf("\nnode_%d -> node_%d\n", v, T->left[v]);
-    status = shuffle_tree_substitutions(r, idx, idxl,  ax, axl, shallmsa, usecol, errbuf, verbose);
+    status = shuffle_tree_substitutions(r, idx, idxl, ax, axl, shallmsa, usecol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - left descendant", errbuf);
     
     //printf("\nnode_%d -> node_%d\n", v, T->right[v]);
@@ -996,7 +1003,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
   status = esl_msa_SequenceSubset(shallmsa, useme, &shmsa);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Error in ShuffleTreeSubstitutions - could not create leaves' msa");
 
-#if 0
+#if 1
   // check msa and shmsa sequences have the same basecompositions
   status = msamanip_CompareBasecomp(msa, shmsa, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions", errbuf);
@@ -1045,11 +1052,11 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   /* calculate the substitutions for this branch */
   ESL_ALLOC(nsub, sizeof(int) * K2);
   esl_vec_ISet(nsub, K2, 0);
-  
+
   for (n = 1; n <= L; n++) {
     if (usecol[n] &&
-	( esl_abc_XIsCanonical(abc, axa[n]) || esl_abc_XIsGap(abc, axa[n]) ) && 
-	( esl_abc_XIsCanonical(abc, axd[n]) || esl_abc_XIsGap(abc, axd[n]) ) &&
+	( esl_abc_XIsCanonical(abc, axa[n]) || esl_abc_XIsGap(abc, axa[n])) && 
+	( esl_abc_XIsCanonical(abc, axd[n]) || esl_abc_XIsGap(abc, axd[n])) &&
 	axa[n] != axd[n])
       {
 	nsub[axa[n]*K+axd[n]] ++;
@@ -1136,7 +1143,8 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
     }
     if (ncol == 0) {
       free(useme);
-      return eslOK;
+      printf("substitute all failed\n");
+      return eslFAIL;
     }
     
     ESL_ALLOC(colidx, sizeof(int) * ncol);

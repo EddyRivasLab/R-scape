@@ -227,7 +227,7 @@ static ESL_OPTIONS options[] = {
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
    /* phylogenetic method */
   { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive statistics",                                                                          0 },
-  { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "nullphylo  statistics",                                                                          0 },
+  { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "nullphylo  statistics",                                                                     0 },
   { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI statistics",                                              0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
@@ -247,7 +247,7 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--Nfit",          eslARG_INT,       "4",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--Nfit",          eslARG_INT,    "4000",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   { "--pmass",        eslARG_REAL,    "0.01",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
@@ -352,7 +352,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--rna"))   { cfg.abc = esl_alphabet_Create(eslRNA);   cfg.abcisRNA = TRUE;  }
   else if (esl_opt_GetBoolean(go, "--dna"))   { cfg.abc = esl_alphabet_Create(eslDNA);   cfg.abcisRNA = TRUE;  }
   else if (esl_opt_GetBoolean(go, "--amino")) { cfg.abc = esl_alphabet_Create(eslAMINO);                       }
-
+  
   cfg.watch = esl_stopwatch_Create(); 
   
   cfg.outdir = NULL;
@@ -446,7 +446,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;
-
+  if (!cfg.abcisRNA) cfg.covclass = C16; // C16/C2 applies only for RNA covariations; C16 means all letters in the given alphabet
+ 
   /* default is Watson-Crick plus U:G, G:U pairs */
   cfg.allowpair = esl_dmatrix_Create(4, 4);
   esl_dmatrix_SetZero(cfg.allowpair);
@@ -1124,7 +1125,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
   
   if (cfg->w < cfg->tol) cfg->w = cfg->tol;
-  if (1||cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
   if (cfg->w <= 0) return eslFAIL;
 
   return eslOK;
@@ -1599,7 +1600,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     printf("fitch sc %d\n", sc);
   }
 
-  for (s = 0; s < nshuffle; s ++) {
+  for (s = 0; s < nshuffle; s ++) {    
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
 
@@ -1610,9 +1611,9 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
       //msamanip_DumpStats(stdout, msa, cfg->mstat);
       //esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
-      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       msamanip_XStats(shmsa, &shmstat);
-      //msamanip_DumpStats(stdout, shmsa, shmstat);
+      msamanip_DumpStats(stdout, shmsa, shmstat);
     }
 
     if (s == 0) {
@@ -1643,7 +1644,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   
   *ret_cumranklist = cumranklist;
 
-  esl_msa_Destroy(allmsa);
+  if (allmsa) esl_msa_Destroy(allmsa);
   free(usecol);
   free(shmstat);
   return eslOK;
@@ -1680,11 +1681,16 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
     cumranklist = *ocumranklist;
     cumranklist->scthresh  = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
     cumranklist->ha->n    += ranklist->ha->n;
+    cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin ,ranklist->ha->xmin);
+    cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax ,ranklist->ha->xmax);
+    cumranklist->ha->imin  = ESL_MIN(cumranklist->ha->imin, ranklist->ha->imin);
+    cumranklist->ha->imax  = ESL_MAX(cumranklist->ha->imax, ranklist->ha->imax);
+    
   }
  
   for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
-    
+
     if (cumb >= cumranklist->ha->imin && cumb <= cumranklist->ha->imax) {
       if (b >= ranklist->ha->imin && b <= ranklist->ha->imax) {
 	cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
@@ -1696,8 +1702,9 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   
   if (verbose) {
     printf("null distribution \n");
-    printf("imin %d imax %d xmax %f xmin %f\n", 
-	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin);
+    printf("imin %d imax %d xmax %f xmin %f | imin %d imax %d xmax %f xmin %f\n", 
+	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin,
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
     //esl_histogram_Plot(stdout, ranklist->h);
     //esl_histogram_PlotSurvival(stdout, ranklist->h);
   }

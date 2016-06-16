@@ -1706,6 +1706,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           bmax;
   double           add;
   double           tol = 1e-2;
+  int              nsample;
   int              usenull = TRUE; // otherwise use ranklist->ht (the non_SS covariations)
   int              fp, tf, t, f, neg;
   int              i, j;
@@ -1782,6 +1783,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
 
   /* ranklist from histogram ha */
+  nsample = (data->nbpairs > 0)? data->nbpairs : ranklist->ha->Nc;
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
     cov = esl_histogram_Bin2LBound(ranklist->ha, b);
     
@@ -1800,10 +1802,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg  = mi->alen * (mi->alen-1) / 2 - t;
     if (data->ranklist_null) {
-      eval = cov2evalue(data, cov, ranklist->ha->Nc, data->ranklist_null->ha);
+      eval = cov2evalue(data, cov, nsample, data->ranklist_null->ha);
     }
     else {
-      eval = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
+      eval = cov2evalue(data, cov, nsample, ranklist->ha);
     }
     if (data->rocfp && (data->mode == GIVSS || data->mode == CYKSS)) 
       fprintf(data->rocfp, "%.5f\t%8d\t%8d\t%8d\t%8d\t%8d\t%.2f\t%.2f\t%.2f\t%g\n", cov, fp, tf, f, t, neg, sen, ppv, F, eval);
@@ -2479,6 +2481,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   double    cov;
   double    expsurv;
   double    offx, offy;
+  int       nsample = (data->nbpairs > 0)? data->nbpairs : ranklist->ha->Nc;
   int       subsample;
   int       linespoints;
   int       i;
@@ -2549,14 +2552,14 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
   // the ymax and xmax values
   xmax = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-  ymax = 50.;
+  ymax = 0.5;
   cov = xmax;
-  eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
-  en = cov2evalue(data, cov, ranklist->ha->Nc, (ranklist_null)?ranklist_null->ha:ranklist->ha);
+  eo = cov2evalue(data, cov, nsample, ranklist->ha);
+  en = cov2evalue(data, cov, nsample, (ranklist_null)?ranklist_null->ha:ranklist->ha);
   while(eo - en > tol && cov > ranklist->ha->cmin) {
     cov -= ranklist->ha->w;
-    eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
-    en = cov2evalue(data, cov, ranklist->ha->Nc, (ranklist_null)?ranklist_null->ha:ranklist->ha);
+    eo = cov2evalue(data, cov, nsample, ranklist->ha);
+    en = cov2evalue(data, cov, nsample, (ranklist_null)?ranklist_null->ha:ranklist->ha);
   }
   while (en > ymax) { // ymax = 100 or 1000, or 10000 or ...
     ymax *= 10;
@@ -2564,9 +2567,9 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   //ymax = en; // for a variable ymax right at the intersction point of both distributions
 
   // the ymin and xmin values
-  ymin = 0.1*ranklist->ha->Nc/ranklist_null->ha->Nc;
+  ymin = 0.1*nsample/ranklist_null->ha->Nc;
   ymin = 1e-6;
-  xmin = ESL_MIN(evalue2cov(data, ymax, ranklist->ha->Nc, ranklist->ha), evalue2cov(data, ymax, ranklist->ha->Nc, (ranklist_null)?ranklist_null->ha:ranklist->ha));
+  xmin = ESL_MIN(evalue2cov(data, ymax, nsample, ranklist->ha), evalue2cov(data, ymax, nsample, (ranklist_null)?ranklist_null->ha:ranklist->ha));
  
   incx = (xmax-xmin)/12.;
   incy = (ymax-ymin)/26.;
@@ -2586,35 +2589,36 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
   if (ranklist_null) {
     expsurv = 1e-5;
-    cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 1e-5", offx, offy, 1);
+    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 1e-5", offx, offy, 1);
     
     expsurv = 1.0;
     offy = incy * 11;
-    cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 1.00", offx, offy, 1);
+    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 1.00", offx, offy, 1);
     
     expsurv = 10.0;
     offy = incy * 6;
-    cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ymin, ymax, "E 10.0", offx, offy, 1);
+    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 10.0", offx, offy, 1);
     
-    if (ranklist_null) {
-      linespoints = FALSE;
-      status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
-      if (status != eslOK) goto ERROR;
-    }
+    linespoints = FALSE;
+    status = cov_histogram_plotexpectsurv(pipe, nsample, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
+    if (status != eslOK) goto ERROR;
+    
     if (ranklist_aux) {
       linespoints = FALSE;
-      status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, linespoints, 11, 7);
+      status = cov_histogram_plotexpectsurv(pipe, nsample, ranklist_aux->ha,  key4, posx, posy-16.*incy, FALSE, subsample, linespoints, 11, 7);
       if (status != eslOK) goto ERROR;
     }
     linespoints = TRUE;
   }
-  
+
+  if (data->nbpairs > 0) {
 #if 1
-  // the distribution of not-base-pairs pairs
-  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
-  if (status != eslOK) goto ERROR;
+    // the distribution of not-base-pairs pairs
+    status = cov_histogram_plotexpectsurv  (pipe, nsample, ranklist->ht, key2, posx, posy-8*incy,        FALSE, 1, linespoints, 44, 2);
+    if (status != eslOK) goto ERROR;
 #endif
-  status = cov_histogram_plotexpectsurv  (pipe, ranklist->ha->Nc, ranklist->ha, key1, posx, posy,               FALSE, 1, linespoints, 99, 2);
+  }
+  status = cov_histogram_plotexpectsurv  (pipe, nsample, ranklist->ha, key1, posx, posy,                 FALSE, 1, linespoints, 99, 2);
   if (status != eslOK) goto ERROR;
   
 
@@ -2659,6 +2663,7 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   int       subsample;
   int       linespoints = TRUE;
   double    tol = 0.01;
+  int       nsample = (data->nbpairs > 0)? data->nbpairs : ranklist->ha->Nc;
   int       status;
 
   if (gnuplot    == NULL) return eslOK;
@@ -2723,8 +2728,8 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   // the max values
   max = 50.;
   cov = (ranklist_null)? ESL_MAX(ranklist->ha->xmax,ranklist_null->ha->xmax) : ranklist->ha->xmax;
-  eo = cov2evalue(data, cov, ranklist->ha->Nc, ranklist->ha);
-  en = cov2evalue(data, cov, ranklist->ha->Nc, ranklist_null->ha);
+  eo = cov2evalue(data, cov, nsample, ranklist->ha);
+  en = cov2evalue(data, cov, nsample, ranklist_null->ha);
 
   fprintf(pipe, "set logscale x\n");
   //fprintf(pipe, "set logscale y\n");
@@ -3447,26 +3452,6 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
       mi->nseff[i][j] += 1.0; 
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
-#if 0
-    else if (esl_abc_XIsCanonical(msa->abc, resi)) { 
-      mi->nseff[i][j] +=  msa->wgt[s]; 
-      mi->ngap[i][j]  +=  msa->wgt[s]; 
-      for (y = 0; y < K; y ++) mi->pp[i][j][IDX(resi,y,K)] += msa->wgt[s] / (double)K; 
-    }
-    else if (esl_abc_XIsCanonical(msa->abc, resj)) { 
-      mi->nseff[i][j] += msa->wgt[s]; 
-      mi->ngap[i][j]  += msa->wgt[s]; 
-      for (x = 0; x < K; x ++) mi->pp[i][j][IDX(x,resj,K)] += msa->wgt[s] / (double)K; 
-    }
-#endif
-#if 0
-    else { 
-      mi->nseff[i][j] += 1.0; 
-      for (x = 0; x < K; x ++)
-	for (y = 0; y < K; y ++) 
-	  mi->pp[i][j][IDX(x,y,K)] += msa->wgt[s] / (double)K2;
-    }
-#endif
   }
 
   // normalize
