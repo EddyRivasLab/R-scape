@@ -1771,7 +1771,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       if (!usenull) status = cov_NullFitGamma(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
       else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
      if (status != eslOK) goto ERROR;
-     if (data->verbose) {
+     if (1||data->verbose) {
 	if (!usenull) 
 	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
 	else {       

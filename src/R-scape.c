@@ -246,9 +246,9 @@ static ESL_OPTIONS options[] = {
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
-  { "--Nfit",          eslARG_INT,    "4000",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.01",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       1},
+  { "--Nfit",          eslARG_INT, "1000000",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.03",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -447,7 +447,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;
   if (!cfg.abcisRNA) cfg.covclass = C16; // C16/C2 applies only for RNA covariations; C16 means all letters in the given alphabet
- 
+     
   /* default is Watson-Crick plus U:G, G:U pairs */
   cfg.allowpair = esl_dmatrix_Create(4, 4);
   esl_dmatrix_SetZero(cfg.allowpair);
@@ -654,7 +654,10 @@ main(int argc, char **argv)
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
-	
+    cfg.abcisRNA = FALSE;
+    if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) { cfg.abcisRNA = TRUE; }
+   
+    
     if (cfg.window > 0) {
  
       esl_sprintf(&omsaname, "%s", cfg.msaname);
