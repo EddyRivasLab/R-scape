@@ -21,7 +21,7 @@
 
 /* Version info - set once for whole package in configure.ac
  */
-#define E2_VERSION "0.1"
+#define E2_VERSION "0.2"
 #define E2_DATE "DEC 2011"
 #define E2_COPYRIGHT "Copyright (C) 2011 Howard Hughes Medical Institute."
 #define E2_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."

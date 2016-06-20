@@ -246,7 +246,7 @@ static ESL_OPTIONS options[] = {
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       1},
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1},
   { "--Nfit",          eslARG_INT, "1000000",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   { "--pmass",        eslARG_REAL,    "0.03",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -313,7 +313,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
-  
+  printf("seed  = %" PRIu32 "\n", cfg.r->seed);      
+
   /* find gnuplot */
   cfg.gnuplot = NULL;
   path = getenv("PATH"); // chech for an executable in the path
@@ -968,7 +969,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
-      if (msa->nseq*msa->alen < 1e4) nshuffle = 50;
+      if (msa->nseq*msa->alen < 1e4) nshuffle = 7;
       if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
     }
     
@@ -1008,7 +1009,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->mode = GIVSS;
   analyze = (cfg->nbpairs == 0 && cfg->docyk)? FALSE : TRUE;
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run rscape", cfg->errbuf);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;

@@ -30,15 +30,17 @@ The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
 \user{more tutorial/updated\_Arisong.out}
 
 \begin{sreoutput}
-# MSA updated_Arisong_1 nseq 69 (95) alen 65 (150) avgid 65.16 (64.97) nbpairs 20 (20)
+# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
+# GammaFIT: pmass 0.030701 mu 24.007524 lambda 0.153011 tau 1.256706
 # Method Target_E-val cov_at_target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         41.31               [-9.74,89.08]     [2 | 9 20 11 | 45.00 81.82 58.06] 
+# GTp    0.05         43.97               [-9.63,121.98]     [3 | 11 20 14 | 55.00 78.57 64.71] 
 #       left_pos       right_pos        score   E-value
 #------------------------------------------------------------
-                93             104      43.65   6.01567e-06
-*               94             110      43.17   4.29923e-05
-*               96             108      65.95   0
-*               98             106      89.08   0
+                93             104      58.99   0.00563123
+~               93             130      47.91   0.0282835
+*               94             110      56.89   0.00738228
+*               96             108      89.19   6.25194e-05
+*               97             107      52.27   0.0148803
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:
@@ -91,7 +93,7 @@ The output file is a tabular list of significant pairs sorted by sequence positi
 \user{more tutorial/updated\_Arisong.sum}
  \begin{sreoutput}
  #target_E-val   MSA                     nseq    alen    avgid    method  TP      True    Found   SEN     PPV
- 0.050000        updated_Arisong_1       69      65      65.16    GTp      9        20       11   45.00   81.82 
+ 0.05            updated_Arisong_1       95      65      66.35    GTp     11      20      14      55.00   78.57 
  \end{sreoutput}
  This file produces a one line output per alignment in the file.
  \begin{sreitems}{\prog{Second column}}
@@ -113,12 +115,12 @@ File \emprog{tutorial/updated\_Arisong.roc} looks like:
 
 \user{more tutorial/updated\_Arisong.roc}
 \begin{sreoutput}
-# MSA nseq 69 alen 65 avgid 65.163163 nbpairs 20 (20)
+# MSA nseq 95 alen 65 avgid 66.352419 nbpairs 20 (20)
 # Method: GTp
-#cov_score  FP  TP  Found  True  Negatives   Sen   PPV     F       E-value
-89.04630    0   1       1    20       2060   5.00  100.00  9.52    0
-88.79103    0   1       1    20       2060   5.00  100.00  9.52    0
-88.53575    0   1       1    20       2060   5.00  100.00  9.52    0
+#cov_score  FP  TP Found  True  Negatives  Sen   PPV     F       E-value
+121.96398   0   1      1    20       2060  5.00  100.00  9.52    4.76088e-08
+121.59433   0   1      1    20       2060  5.00  100.00  9.52    7.34732e-08
+121.22469   0   1      1    20       2060  5.00  100.00  9.52    7.34732e-08
 ...
 \end{sreoutput}
 
@@ -211,21 +213,21 @@ consensus structure.
 
 \user{more tutorial/updated\_Arisong.surv}
  \begin{sreoutput}
- 89.046301       0.000480769
- 68.879658       0.000961538
- 65.816370       0.00144231
- 56.115959       0.00192308
+ 121.963981      0.000480769
+ 95.719043       0.000961538
+ 89.065397       0.00144231
+ 76.867046       0.00192308
  ...
  &
- 41.054795       9.61538e-06
- 40.799521       3.84615e-05
- 40.288973       6.73077e-05
+ 77.606340       6.86813e-05
+ 63.559754       0.000137363
+ 60.972225       0.000274725
  ...
  &
- 49.478836       2.13504e-20
- 49.223562       4.27009e-20
- 48.968288       1.06752e-19
- ...
+ 121.963981      1.15715e-09
+ 121.594334      2.38044e-09
+ 121.224687      3.67366e-09
+...
  &
  \end{sreoutput}
  The first column is a covariation score (x). The second column is the
@@ -256,7 +258,7 @@ consensus structure.
  \label{fig:r2r}
  \end{figure}
 
- \begin{figure}[h] \includegraphics[scale=0.50]{Arisong_his.pdf} 
+ \begin{figure}[h] \includegraphics[scale=0.50]{Arisong_surv.pdf} 
  \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.surv.\{ps,svg\}}:
  covariation scores survival function $P(X>x)$.}  The survival
  function of scores for all pairs in the given alignment is depicted

@@ -1757,7 +1757,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (data->doexpfit) {
       if (!usenull) status = cov_NullFitExponential(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       else          status = cov_NullFitExponential(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
-      if (status != eslOK) goto ERROR;
+      if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad exponential fit.");
       if (1||data->verbose) {
 	if (!usenull) 
 	  printf("ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
@@ -1769,9 +1769,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
     else { // a gamma fit
       if (!usenull) status = cov_NullFitGamma(ranklist->ht,            pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
-      else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);
-     if (status != eslOK) goto ERROR;
-     if (1||data->verbose) {
+      else          status = cov_NullFitGamma(data->ranklist_null->ha, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
+      if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
+      if (1||data->verbose) {
 	if (!usenull) 
 	  printf("GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
 	else {       
@@ -2437,6 +2437,7 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *re
   status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do a Gamma fit");
   if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
+  if (isinf(ep[1])) { status = eslFAIL; goto ERROR; }
 
   /* add the expected data to the histogram */
   if (ep[1] < eslINFINITY) {  

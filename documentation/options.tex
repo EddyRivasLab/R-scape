@@ -102,7 +102,8 @@ The window size is $n>0$.
 \subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$
 pairwise similarity are considered in the analysis.  Sequences with at
 least $x$ pairwise similarity are clustered together, and one
-representative of the cluster is randomly selected.
+representative of the cluster is randomly selected. If this option is
+not used all sequences are used in the analysis.
 
 \subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
 
@@ -128,7 +129,9 @@ those that are more than 50\% occupied or are base paired are
 depicted.
 
 
+\subsection{Other options}
 
+\subsubsection{\prog{--seed <n>}} Sets the seed of the random number generator to $<$n$>$. Use n = 0 for a random seed.
 
 
 

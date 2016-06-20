@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape_v0.1 ; do \
+for v in rscape_v0.2 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -40,7 +40,7 @@ last minute steps to make an R-scape tarball:
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v0.1 ; do \
+for v in rscape_v0.2 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/$v ;\
 make distclean ;\
@@ -57,9 +57,9 @@ done
 
 in RC:
 ------
-for v in rscape_v0.1 ; do \
-cp /n/eddy_lab/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddy_lab/erivas/src/src/mysource/versions/$v/documentation/. ;\
-cd /n/eddy_lab/erivas/src/src/mysource/versions/$v ;\
+for v in rscape_v0.2 ; do \
+cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/$v/documentation/. ;\
+cd /n/eddyfs01/home/erivas/src/src/mysource/versions/$v ;\
 make distclean ;\
 cd .. ;\
 cp -rf $v rscape ;\
