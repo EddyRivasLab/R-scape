@@ -2467,6 +2467,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   char     *key2 = NULL;
   char     *key3 = NULL;
   char     *key4 = NULL;
+  char     *key  = NULL;
   double    minphi;
   double    minmass = 0.005;
   int       pointype;
@@ -2586,18 +2587,15 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   posy = ymax - 8*incy;
   offx = incx * 1/2;
   offy = incy * 16;
-
+  
   if (ranklist_null) {
     expsurv = 1e-5;
     cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 1e-5", offx, offy, 1);
     
-    expsurv = 1.0;
+    expsurv = data->thresh->val;
+    esl_sprintf(&key, "E %.3f", expsurv);
     offy = incy * 11;
-    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 1.00", offx, offy, 1);
-    
-    expsurv = 10.0;
-    offy = incy * 6;
-    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, "E 10.0", offx, offy, 1);
+    cov_plot_lineatexpcov(pipe, data, expsurv, nsample, ranklist_null->ha, ymin, ymax, key, offx, offy, 1);
     
     linespoints = FALSE;
     status = cov_histogram_plotexpectsurv(pipe, nsample, ranklist_null->ha, key3, posx, posy-12.*incy, FALSE, subsample, linespoints, 77, 7);
@@ -2628,6 +2626,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   free(key2);
   free(key3);
   free(key4);
+  free(key);
   free(outplot);
   free(filename);
   return eslOK;
@@ -2637,6 +2636,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   if (key2) free(key2);
   if (key3) free(key3);
   if (key4) free(key4);
+  if (key)  free(key);
   if (outplot) free(outplot);
   if (filename) free(filename);
   return status;
@@ -3778,18 +3778,7 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
   
   esl_histogram_Score2Bin(h, cov, &icov);
 
-  /* use the sampled distribution if possible */
-  if (icov <= h->imax) {
-
-    if (icov < h->imin) icov = h->imin;
-    if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc;
-    
-    for (i = h->imax; i >= icov; i--) c += h->obs[i];
-    eval = (double)c * (double)Nc / (double)h->Nc;
-    return eval;
-  }
-
-  /* otherwise use the fit */
+  /* use the fit */
   if (h->expect) {  
     for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
     eval = expect * (double)Nc / (double)h->Nc;
@@ -3810,19 +3799,7 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
   int    maxit = 100;
   int    it = 0;
   
-  /* use the sampled distribution if possible */
-  if (eval >= (double)Nc / (double)h->Nc) {
-
-    for (i = h->imax; i >= h->imin; i--) {
-      c += h->obs[i];
-      if ((double)c * (double)Nc / (double)h->Nc > eval) break;
-    }    
-    cov = esl_histogram_Bin2UBound(h, i+1); 
-    
-    return cov;
-  }
-
-  /* otherwise use the fit */
+  /* use the fit */
   if (h->expect) {
     for (b = h->nb-1; b >= 0; b--) {
       exp += h->expect[b];
@@ -3830,7 +3807,20 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
     }    
     cov = esl_histogram_Bin2LBound(h, b+1); 
   }
- 
+  else {
+    /* use the sampled distribution otherwise */
+    if (eval >= (double)Nc / (double)h->Nc) {
+      
+      for (i = h->imax; i >= h->imin; i--) {
+	c += h->obs[i];
+	if ((double)c * (double)Nc / (double)h->Nc > eval) break;
+      }    
+      cov = esl_histogram_Bin2UBound(h, i+1); 
+      
+      return cov;
+    }
+  }
+  
   return cov;
 }
 
