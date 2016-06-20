@@ -3783,6 +3783,18 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
     for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
     eval = expect * (double)Nc / (double)h->Nc;
   }
+  else { /* use the sampled distribution otherwise */
+    if (icov <= h->imax) {
+      
+      if (icov < h->imin) icov = h->imin;
+      if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc;
+      
+      for (i = h->imax; i >= icov; i--) c += h->obs[i];
+      eval = (double)c * (double)Nc / (double)h->Nc;
+      return eval;
+    }
+  }
+  
   return eval;
 }
  
