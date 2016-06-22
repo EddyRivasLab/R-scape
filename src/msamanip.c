@@ -1003,7 +1003,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
   status = esl_msa_SequenceSubset(shallmsa, useme, &shmsa);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Error in ShuffleTreeSubstitutions - could not create leaves' msa");
 
-#if 1
+#if 0
   // check msa and shmsa sequences have the same basecompositions
   status = msamanip_CompareBasecomp(msa, shmsa, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions", errbuf);
@@ -1077,7 +1077,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   /* apply those substitutions one at a time randomly along the branch */
 #if 0
   int oldc, newc;
-  int x;
+  //int x;
   while (nsubs > 0) {
     x = (int)(esl_random(r) * K2);
     if (nsub[x] > 0) {

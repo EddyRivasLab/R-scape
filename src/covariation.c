@@ -1724,7 +1724,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     else               fprintf(data->rocfp, "#cov_score            FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
   }  
   
-  bmax = mi->maxCOV+data->w;
+  bmax = mi->maxCOV+5*data->w;
   while (fabs(bmax-data->bmin) < tol) bmax += data->w;
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
 
@@ -1732,7 +1732,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     for (j = i+1; j < mi->alen; j ++) {
 
       /* add to the ha histogram  */
-      add = ESL_MAX(mtx->mx[i][j], data->bmin+data->w);
+      add = ESL_MAX(mtx->mx[i][j], data->bmin+data->w);	     
       esl_histogram_Add(ranklist->ha, add);
 
       /* add to the ht histogram if not a real basepair */
@@ -1961,6 +1961,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 {
   HITLIST  *hitlist = NULL;
   double    sen, ppv, F;
+  double    cov;
+  double    tol = 0.01;
   int       alloc_nhit = 5;
   int       bin;
   int       tf = 0;
@@ -2008,7 +2010,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].is_compatible = FALSE;
 	
 	for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
-	  if (mi->COV->mx[i][j] <= ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w) {
+	  cov = ranklist->ha->bmin+(double)(b+1)*ranklist->ha->w;
+	  if (mi->COV->mx[i][j] <= cov || ( b == ranklist->ha->imax && mi->COV->mx[i][j] <= cov+tol) ) {
 	    hitlist->hit[h].Eval = ranklist->eval[b];
 	  }
 	  else break;
@@ -2572,11 +2575,13 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   ymin = 0.1*nsample/ranklist_null->ha->Nc;
   ymin = 1e-6;
   xmin = ESL_MIN(evalue2cov(data, ymax, nsample, ranklist->ha), evalue2cov(data, ymax, nsample, (ranklist_null)?ranklist_null->ha:ranklist->ha));
+  printf("^^ xmin %f xmax %f ymin %f ymax %f | %f %f\n",
+	 xmin, xmax, ymin, ymax, evalue2cov(data, ymax, nsample, ranklist->ha), evalue2cov(data, ymax, nsample, (ranklist_null)?ranklist_null->ha:ranklist->ha));
  
   incx = (xmax-xmin)/12.;
   incy = (ymax-ymin)/26.;
   xmax += incx;
-
+  
   fprintf(pipe, "set yrange [%g:%f]\n", ymin, ymax);
   fprintf(pipe, "set xrange [%f:%f]\n", xmin, xmax);
 
@@ -3324,10 +3329,10 @@ cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
   int    newb;
   int    status;
   
-  x = esl_histogram_Bin2UBound(h, b);
+  x = esl_histogram_Bin2LBound(h, b);
   if (! isfinite(x)) ESL_XEXCEPTION(eslERANGE, "value added to histogram is not finite");
 
-  x = round( ((x - new->bmin) / new->w) - 1.); 
+  x = round( ((x - new->bmin) / new->w)); 
 
   /* x is now the bin number as a double, which we will convert to
    * int. Because x is a double (64-bit), we know all ints are exactly
@@ -3605,14 +3610,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	esl_dmatrix_Set(lk[idx], -eslINFINITY);
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
-#if 1
-	if (i==5&&j==118) {
-	  printf("v=%d parent %d lk l time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
-		 v, T->parent[v], T->ld[v], idx, which, 
-		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
-		 j, resj, esl_abc_XIsCanonical(msa->abc, resj));
-	}
-#endif
 
 	if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
 	  lk[idx]->mx[resi][resj] = 0.0;
@@ -3636,14 +3633,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	esl_dmatrix_Set(lk[idx], -eslINFINITY); 
 	resi = msa->ax[which][i+1];
 	resj = msa->ax[which][j+1];
-#if 1
-	if (i==5&&j==118) {
-	  printf("v=%d parent %d lk r time %f %d which %d i %d %d (%d) j %d %d (%d)\n", 
-		 v, T->parent[v], T->rd[v], idx, which, 
-		 i, resi, esl_abc_XIsCanonical(msa->abc, resi), 
-		 j, resj, esl_abc_XIsCanonical(msa->abc, resj));
-	}
-#endif
 
 	if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
 	  lk[idx]->mx[resi][resj] = 0.0;
@@ -3687,16 +3676,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
 	    lk[v]->mx[x][y] -= sum;
 #endif
 
-#if 1
-	if (i==5&&j==118) {
-	  printf("l %d r %d v %d\n", T->left[v], T->right[v], v);
-	  esl_dmatrix_Dump(stdout, cl,    NULL,   NULL);
-	  esl_dmatrix_Dump(stdout, cr,    NULL,   NULL);
-	  esl_dmatrix_Dump(stdout, lkl,   "ACGU", "ACGU");
-	  esl_dmatrix_Dump(stdout, lkr,   "ACGU", "ACGU");
-	  esl_dmatrix_Dump(stdout, lk[v], "ACGU", "ACGU");
-	}
-#endif
 
 	/* push parent into stack unless already at the root */
 	if (v > 0 && esl_stack_IPush(vs, T->parent[v]) != eslOK) { status = eslFAIL; goto ERROR; }; 
@@ -3772,6 +3751,7 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
 {
   double eval = +eslINFINITY;
   double expect = 0.0;
+  int    nuse = 0;
   int    c = 0;
   int    icov;
   int    i;
@@ -3779,8 +3759,10 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
   
   esl_histogram_Score2Bin(h, cov, &icov);
 
+  for (i = h->imax; i >= h->imin; i--) { if (h->obs[i] > 0) nuse ++; }
+
   /* use the fit if possible */
-  if (h->expect && cov >= h->phi) {  
+  if (h->expect && cov >= h->phi && nuse > 10) {  
     for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
     eval = expect * (double)Nc / (double)h->Nc;
   }
@@ -3805,28 +3787,29 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h)
   double p;
   double val;
   double exp = 0.0;
+  int    nuse = 0;
   int    c = 0;
   int    i;
   int    b = 0; 
   int    maxit = 100;
   int    it = 0;
 
-    /* use the fit if possible */
-  if (h->expect) {
-    for (b = h->nb-1; b >= 0; b--) {
+  for (i = h->imax; i >= h->imin; i--) { if (h->obs[i] > 0) nuse ++; }
+  
+  /* use the fit if possible */
+  if (h->expect && nuse > 10) {
+    for (b = h->imax; b >= h->imin; b--) {
       exp += h->expect[b];
       if (exp * (double)Nc / (double)h->Nc > eval) break;
     }
     cov = esl_histogram_Bin2LBound(h, b+1); 
   }
   if (b == 0) { /* otherwise, use the sampled distribution  */
-    if (eval >= (double)Nc / (double)h->Nc) {      
-      for (i = h->imax; i >= h->imin; i--) {
-	c += h->obs[i];
-	if ((double)c * (double)Nc / (double)h->Nc > eval) break;
-      }    
-      cov = esl_histogram_Bin2UBound(h, i+1); 
-    }
+    for (i = h->nb-1; i >= 0; i--) {
+      c += h->obs[i];
+      if ((double)c * (double)Nc / (double)h->Nc > eval) break;
+    }    
+    cov = esl_histogram_Bin2LBound(h, i+1); 
   }
   
   return cov;
@@ -4050,8 +4033,8 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, char *key, do
       esum = 0.;
       for (i = h->nb-1; i >= 0; i--)
 	{
-	    esum += h->expect[i];        /* some worry about 1+eps=1 problem here */
-
+	  esum += h->expect[i];        /* some worry about 1+eps=1 problem here */
+	  
 	  if (h->expect[i] > 0. && (i-h->imin)%subsample == 0) { 
 	    ai = esl_histogram_Bin2LBound(h, i);
 	    if (fprintf(pipe, "%f\t%f\n", 

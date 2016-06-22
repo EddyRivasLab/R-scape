@@ -1132,7 +1132,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
   
   if (cfg->w < cfg->tol) cfg->w = cfg->tol;
-  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (1||cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
   if (cfg->w <= 0) return eslFAIL;
 
   return eslOK;
@@ -1614,32 +1614,36 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     /* outout null msas to file if requested */
     if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
-    if (cfg->verbose) {
+    if (1||cfg->verbose) {
       //msamanip_DumpStats(stdout, msa, cfg->mstat);
       //esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM); 
  
-      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
-      msamanip_XStats(shmsa, &shmstat);
-      msamanip_DumpStats(stdout, shmsa, shmstat);
+      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      //msamanip_XStats(shmsa, &shmstat);
+      //msamanip_DumpStats(stdout, shmsa, shmstat);
     }
 
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
-
     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
    
+    //esl_histogram_Plot(stdout, ranklist->ha);
+    //esl_histogram_PlotSurvival(stdout, ranklist->ha);
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
+
+    //esl_histogram_Plot(stdout, cumranklist->ha);
+    //esl_histogram_PlotSurvival(stdout, cumranklist->ha);
     if (status != eslOK) goto ERROR;
-  
+    
     esl_msa_Destroy(shmsa); shmsa = NULL;
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
   
-  if (cfg->verbose) {
+  if (1||cfg->verbose) {
     printf("null4 distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
@@ -1688,26 +1692,23 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
     cumranklist = *ocumranklist;
     cumranklist->scthresh  = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
     cumranklist->ha->n    += ranklist->ha->n;
-    cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin ,ranklist->ha->xmin);
-    cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax ,ranklist->ha->xmax);
+    cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin, ranklist->ha->xmin);
+    cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax, ranklist->ha->xmax);
     cumranklist->ha->imin  = ESL_MIN(cumranklist->ha->imin, ranklist->ha->imin);
     cumranklist->ha->imax  = ESL_MAX(cumranklist->ha->imax, ranklist->ha->imax);
-    
   }
  
-  for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
+  for (b = 0; b < ranklist->ha->nb; b ++) {
     cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
 
-    if (cumb >= cumranklist->ha->imin && cumb <= cumranklist->ha->imax) {
-      if (b >= ranklist->ha->imin && b <= ranklist->ha->imax) {
-	cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
-	cumranklist->ha->Nc        += ranklist->ha->obs[b];
-	cumranklist->ha->No        += ranklist->ha->obs[b];
-      }
+    if (cumb < cumranklist->ha->nb) {
+      cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
+      cumranklist->ha->Nc        += ranklist->ha->obs[b];
+      cumranklist->ha->No        += ranklist->ha->obs[b];
     }
   }
   
-  if (verbose) {
+  if (1||verbose) {
     printf("null distribution \n");
     printf("imin %d imax %d xmax %f xmin %f | imin %d imax %d xmax %f xmin %f\n", 
 	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin,
