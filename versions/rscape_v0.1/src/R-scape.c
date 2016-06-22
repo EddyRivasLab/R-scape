@@ -882,14 +882,21 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* outmsa file if requested */
   if (cfg->outmsafp) eslx_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
 
+  if (cfg->outdir) {
+    /* covhis file */
+    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
+  }
+  else {
+    /* covhis file */
+    esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
+  }
+  
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
-    
-    /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
     
    /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, cfg->msaname);
@@ -902,10 +909,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else if (!cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
     esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
-    
-    /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
     
     /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s.qq",     cfg->msaname);

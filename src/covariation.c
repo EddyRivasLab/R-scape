@@ -3779,7 +3779,6 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h)
   
   esl_histogram_Score2Bin(h, cov, &icov);
 
-
   /* use the fit if possible */
   if (h->expect && cov >= h->phi) {  
     for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
