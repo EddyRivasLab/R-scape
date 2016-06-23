@@ -1562,7 +1562,12 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 
   /* set an arbitrary character at the root */
   allmsa->ax[T->N][c] = tree_fitch_choose(r, dim, frq, S[T->N]);
-
+  #if 0
+  // to select the tree of Figure 1
+  if (c == 5)  allmsa->ax[T->N][c] = 0;
+  if (c == 10) allmsa->ax[T->N][c] = 3;
+  #endif
+  
   /* go down the tree */
   if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
   while (esl_stack_IPop(vs, &v) == eslOK) 
@@ -1577,6 +1582,19 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
  
 	/* now Sl is just a character, assign to the msa sequence */
  	allmsa->ax[idxl][c] = tree_fitch_choose(r, dim, frq, S[idxl]);
+	#if 0
+	// to select the tree of Figure 1
+	if (c == 5) {
+	  if (T->left[v] == 1) { allmsa->ax[idxl][c] = 0; }
+	  if (T->left[v] == 2) { allmsa->ax[idxl][c] = 2; }
+	  if (T->left[v] == 3) { allmsa->ax[idxl][c] = 1; }
+	  if (T->left[v] == 6) { allmsa->ax[idxl][c] = 2; }
+	}
+	if (c == 10) {
+	  if (T->left[v] == 1) { allmsa->ax[idxl][c] = 1; }
+	  if (T->left[v] == 2) { allmsa->ax[idxl][c] = 2; }
+	}
+	#endif
      }
       
       if (T->right[v] > 0) {
@@ -1586,7 +1604,17 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 
 	/* now Sr is just a character, assign to the msa sequence */
 	allmsa->ax[idxr][c] = tree_fitch_choose(r, dim, frq, S[idxr]);
-      }
+	#if 0
+	// to select the tree of Figure 1
+	if (c == 5) {
+	  if (T->right[v] == 5) { allmsa->ax[idxr][c] = 0; }
+	}
+	if (c == 10) {
+	  if (T->right[v] == 0) { allmsa->ax[idxr][c] = 0; }
+	  if (T->right[v] == 5) { allmsa->ax[idxr][c] = 3; }
+	}
+	#endif
+       }
  
       if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);
       if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); 

@@ -972,14 +972,18 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
   int         idx, idxl, idxr;
   int         status = eslOK;
 
-  /* copy the original alignemt */
-  shallmsa = esl_msa_Clone(allmsa);
-  if (shallmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+  /* copy a shuffled by columns version of the original alignemt */
+  msamanip_ShuffleColumns(r, allmsa, &shallmsa, usecol, errbuf, verbose);
+  if (shallmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad shuffled msa");
 
-  /* vector to mark residues in a column */
-  ESL_ALLOC(useme, sizeof(int) * shallmsa->nseq);
+  if (1||verbose) {
+      esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
+    }
+
+    /* vector to mark residues in a column */
+  ESL_ALLOC(useme, sizeof(int) * allmsa->nseq);
   esl_vec_ISet(useme, shallmsa->nseq, FALSE);
-  
+
   for (v = 0; v < T->N-1; v++) {
     idx  = T->N + v;
     idxl = (T->left[v]  <= 0)? -T->left[v]  : T->N + T->left[v];
@@ -1052,7 +1056,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   /* calculate the substitutions for this branch */
   ESL_ALLOC(nsub, sizeof(int) * K2);
   esl_vec_ISet(nsub, K2, 0);
-
+  
   for (n = 1; n <= L; n++) {
     if (usecol[n] &&
 	( esl_abc_XIsCanonical(abc, axa[n]) || esl_abc_XIsGap(abc, axa[n])) && 
@@ -1064,7 +1068,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
       }
     dxash[n] = axash[n];
   }
-
+  
 #if 0
   int x;
   if (1||verbose) {
@@ -1073,7 +1077,7 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
       printf("%d %d %d %d %d\n", nsub[x*K+0], nsub[x*K+1], nsub[x*K+2], nsub[x*K+3], nsub[x*K+4]);
   }
 #endif
-
+  
   /* apply those substitutions one at a time randomly along the branch */
 #if 0
   int oldc, newc;
@@ -1116,7 +1120,7 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
   int       *useme  = NULL;
   int       *colidx = NULL;
   int       *perm   = NULL;
-  int        ncol = 0;
+  int        ncol;
   int        ns;
   int        n;
   int        c;
@@ -1139,12 +1143,10 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
     esl_vec_ISet(useme, L+1, FALSE);
     ncol = 0;
     for (n = 1; n <= L; n++) {
-      if (usecol[n] && ax[n] == oldc) { useme[n] = TRUE; ncol++; }
-    }
-    if (ncol == 0) {
-      free(useme);
-      printf("substitute all failed\n");
-      return eslFAIL;
+      if (usecol[n] && ax[n] == oldc) {
+	useme[n] = TRUE;
+	ncol ++;
+      }
     }
     
     ESL_ALLOC(colidx, sizeof(int) * ncol);
