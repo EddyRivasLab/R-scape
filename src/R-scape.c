@@ -972,8 +972,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
-      if (msa->nseq*msa->alen < 1e3) { nshuffle = 100; cfg->fracfit = 0.5; }
+      if (msa->nseq*msa->alen < 1e4) { nshuffle = 200; }
     }
+    if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
     
     cfg->mode = RANSS;
     if (cfg->nulltype == Null1) {

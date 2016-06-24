@@ -3818,31 +3818,36 @@ cov2evalue(struct data_s *data, double cov, int Nc, ESL_HISTOGRAM *h, double *su
   double eval = +eslINFINITY;
   double expect = 0.0;
   int    icov;
-  int    min_nobs = 4;
+  int    min_nobs = 10;
   int    nobs = 0;
   int    c = 0;
   int    i;
   int    b;
-  
+
   for (i = h->nb-1; i >= 0; i--) { if (h->obs[i] > 0.) nobs ++; }
   
   esl_histogram_Score2Bin(h, cov, &icov);
   /* use the fit if possible */
-  if (nobs > min_nobs && survfit && cov >= h->phi) {  
+  if (nobs >= min_nobs && survfit && cov >= h->phi) {  
     eval = survfit[icov+1] * (double)Nc;
   }
-  else if (nobs > min_nobs && h->expect && cov >= h->phi) {  
+  else if (nobs >= min_nobs && h->expect && cov >= h->phi) {  
     for (b = h->nb-1; b >= icov; b--) expect += h->expect[b];
     eval = expect * (double)Nc / (double)h->Nc;
   }
   else { /* otherwise, the sampled distribution  */
-    if (icov <= h->imax) {
-      
-      if (icov < h->imin) icov = h->imin;
-      if (icov == h->imax && h->obs[h->imax] > 1) eval = (double)Nc;
-      
-      for (i = h->imax; i >= icov; i--) c += h->obs[i];
-      eval = (double)c * (double)Nc / (double)h->Nc;
+    if (cov >= h->xmax) { return 1.0; }
+
+    if (icov <= h->imax) {      
+      if (icov < h->imin)    icov = h->imin;
+      if (icov >= h->imax-1) eval = 1.0;
+      else {
+	for (i = h->imax; i >= icov; i--) c += h->obs[i];
+	eval = (double)c * (double)Nc / (double)h->Nc;
+      }
+    }
+    else {
+      printf("cannot find evalue for covariation %f\n", cov); exit(1);
     }
   }
 
@@ -3856,20 +3861,24 @@ evalue2cov(struct data_s *data, double eval, int Nc, ESL_HISTOGRAM *h, double *s
   double p;
   double val;
   double exp = 0.0;
+  int    min_nobs = 10;
+  int    nobs = 0;
   int    c = 0;
   int    i;
   int    b = 0; 
   int    it = 0;
 
+  for (i = h->nb-1; i >= 0; i--) { if (h->obs[i] > 0.) nobs ++; }
+
   /* use the fit if possible */
-  if (survfit) {
+  if (nobs >= min_nobs && survfit) {
     for (b = h->nb-1; b >= h->imin; b--) {
       exp = survfit[b];
       if (exp * (double)Nc / (double)h->Nc > eval) break;
     }
     cov = esl_histogram_Bin2LBound(h, b+1);
   }
-  else if (h->expect) {
+  else if (nobs >= min_nobs && h->expect) {
     for (b = h->nb-1; b >= h->imin; b--) {
       exp += h->expect[b];
       if (exp * (double)Nc / (double)h->Nc > eval) break;
@@ -3905,9 +3914,9 @@ cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit
       if (h->obs[i] > 0) {
 	nfit ++;
 	pmass = (double)c / (double)h->Nc;
-	if ((double)nfit/(double)tp > target_fracfit || pmass > target_pmass) break;
+	if ((double)nfit/(double)tp >= target_fracfit || pmass >= target_pmass) break;
       }
-    } 
+    }
   return pmass;
 }
 
