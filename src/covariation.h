@@ -187,8 +187,8 @@ struct data_s {
   int                  firstpos;
   double               bmin;
   double               w;
-  int                  Nfit;       // minimum number of point to fit
-  double               pmass;      // actual_pmass = MIN(Nfit/Nc,pmass)
+  double               fracfit;    // minimum fraction r of point to fit
+  double               pmass;      // actual_pmass = MIN(fracfit/pmass)
   int                  doexpfit;   // TRUE for an exponential fit, default is chi-square
   double               tau;        // for chi-square fit  of null distribution, effective number of degress of freedom
   double               mu;         // for exponential fit of null distribution

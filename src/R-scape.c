@@ -142,7 +142,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
-  int              Nfit;
+  double           fracfit;
   int              doexpfit; // do an exponential fit, defautl is chi-square
 
   THRESH          *thresh;
@@ -247,7 +247,7 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1},
-  { "--Nfit",          eslARG_INT, "1000000",    NULL,      "n>0",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   { "--pmass",        eslARG_REAL,    "0.50",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
@@ -462,11 +462,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
  
   /* for the cov histograms */
-  cfg.hpts  = HPTS; /* number of points in the histogram */
-  cfg.bmin  = BMIN; /* a guess for lowest cov score */
-  cfg.w     = W;   /* default. histogram step, will be determined for each msa */
-  cfg.pmass = esl_opt_GetReal(go, "--pmass");
-  cfg.Nfit  = esl_opt_GetInteger(go, "--Nfit");
+  cfg.hpts    = HPTS; /* number of points in the histogram */
+  cfg.bmin    = BMIN; /* a guess for lowest cov score */
+  cfg.w       = W;   /* default. histogram step, will be determined for each msa */
+  cfg.pmass   = esl_opt_GetReal(go, "--pmass");
+  cfg.fracfit = esl_opt_GetReal(go, "--fracfit");
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
@@ -972,8 +972,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
-      if (msa->nseq*msa->alen < 1e4) nshuffle = 7;
-      if (msa->nseq*msa->alen < 1e3) nshuffle = 100;
+      if (msa->nseq*msa->alen < 1e3) { nshuffle = 100; cfg->fracfit = 0.5; }
     }
     
     cfg->mode = RANSS;
@@ -1116,7 +1115,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
-  data.Nfit          = cfg->Nfit;
+  data.fracfit       = cfg->fracfit;
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
@@ -1221,7 +1220,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
-  data.Nfit          = cfg->Nfit;
+  data.fracfit       = cfg->fracfit;
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
