@@ -119,6 +119,7 @@ typedef enum {
 typedef struct ranklist_s {
   ESL_HISTOGRAM *ha;             /* histogram of scores (all pairs) */
   ESL_HISTOGRAM *ht;             /* histogram of scores (truncated pairs == no ss pairs) */
+  double        *survfit;
   double        *eval;
   double         scthresh;
 } RANKLIST;
@@ -251,8 +252,10 @@ extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
 extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int minloop, enum grammar_e G, double covthresh);
-extern int              cov_NullFitGamma(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf);
-extern int              cov_NullFitExponential(ESL_HISTOGRAM *h, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
+extern int              cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf);
+extern int              cov_NullFitExponential(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, int verbose, char *errbuf);
+extern int              cov_histogram_PlotSurvival(FILE *fp, ESL_HISTOGRAM *h, double *survfit);
+extern int              cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double (*surv)(double x, void *params), void *params);
 extern int              cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, RANKLIST *ranklist, char *title);
 extern int              cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg);
 extern int              cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covqqfile, RANKLIST *ranklist, char *title, int dosvg);

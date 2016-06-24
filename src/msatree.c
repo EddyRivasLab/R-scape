@@ -1591,8 +1591,8 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 	  if (T->left[v] == 6) { allmsa->ax[idxl][c] = 2; }
 	}
 	if (c == 10) {
-	  if (T->left[v] == 1) { allmsa->ax[idxl][c] = 1; }
-	  if (T->left[v] == 2) { allmsa->ax[idxl][c] = 2; }
+	  if (T->left[v] == 2) { allmsa->ax[idxl][c] = 1; }
+	  if (T->left[v] == 3) { allmsa->ax[idxl][c] = 2; }
 	}
 	#endif
      }
