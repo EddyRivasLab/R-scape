@@ -2773,7 +2773,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   xmin = ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) -10;
   ymax = 1.0;
   ymin = cov2evalue(xmax, 1, ranklist_null->ha, NULL);
-  if (ymin <= 1e-10) ymin = 1e-10;
+  if (ymin <= 1e-15) ymin = 1e-15;
+  if (ymin == ymax) ymin = 1e-5;
   
   incx = (xmax-xmin)/12.;
   incy = (ymax-ymin)/10.;
