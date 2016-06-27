@@ -976,7 +976,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
   msamanip_ShuffleColumns(r, allmsa, &shallmsa, usecol, errbuf, verbose);
   if (shallmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad shuffled msa");
 
-  if (1||verbose) {
+  if (verbose) {
       esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
     }
 

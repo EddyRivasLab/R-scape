@@ -131,6 +131,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int             *ct;
   int              onbpairs;
   int              nbpairs;
+  int              nbpairs_cyk;
 
   int              voutput;
   char            *rocfile;
@@ -143,8 +144,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           w;
   double           pmass;
   double           fracfit;
-  int              doexpfit; // do an exponential fit, defautl is chi-square
-
+  int              doexpfit;  // do an exponential fit, defautl is chi-square
+  
   THRESH          *thresh;
   MODE             mode;
 
@@ -248,7 +249,7 @@ static ESL_OPTIONS options[] = {
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1},
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.50",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.20",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -392,7 +393,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
-
+  
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
@@ -542,6 +543,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ct = NULL;
   cfg.onbpairs = 0;
   cfg.nbpairs  = 0;
+  cfg.nbpairs_cyk = 0;
 
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
@@ -1010,7 +1012,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* main function */
   cfg->mode = GIVSS;
-  analyze = (cfg->nbpairs == 0 && cfg->docyk)? FALSE : TRUE;
+  analyze = TRUE;
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
@@ -1110,6 +1112,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.mode          = cfg->mode;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
+  data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1213,7 +1216,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.method        = cfg->method;
   data.mode          = cfg->mode;
   data.onbpairs      = cfg->onbpairs;
-  data.nbpairs       = cfg->onbpairs;
+  data.nbpairs       = cfg->nbpairs;
+  data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1615,7 +1619,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     /* output null msas to file if requested */
     if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
-    if (1||cfg->verbose) {
+    if (cfg->verbose) {
        esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       //msamanip_XStats(shmsa, &shmstat);
       //msamanip_DumpStats(stdout, shmsa, shmstat);
@@ -1679,12 +1683,10 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
     cumranklist->ha->xmax  = ranklist->ha->xmax;
     cumranklist->ha->imin  = ranklist->ha->imin;
     cumranklist->ha->imax  = ranklist->ha->imax;
-    cumranklist->scthresh  = ranklist->scthresh;
   }
   else {                    
     cov_GrowRankList(ocumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
     cumranklist = *ocumranklist;
-    cumranklist->scthresh  = ESL_MIN(cumranklist->scthresh, ranklist->scthresh);
     cumranklist->ha->n    += ranklist->ha->n;
     cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin, ranklist->ha->xmin);
     cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax, ranklist->ha->xmax);
