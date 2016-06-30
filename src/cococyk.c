@@ -1681,22 +1681,8 @@ emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP])
  
   cdx = dsq[ip]*NB + dsq[jp];
 
-  if (dsq[i] >= NB && dsq[j] >= NB) { // ignore double gaps
+  if (dsq[i] >= NB || dsq[j] >= NB) { // ignore gaps
     sc = -eslINFINITY;
-  }
-  else if (dsq[i] >= NB) { // single gaps treat as missing data
-    sc = 0.0;
-    for (x = 0; x < NB; x++) {
-      idx = x*NB + dsq[j];
-      sc += e_stck[cdx][idx];
-    }
-  }
-  else if (dsq[j] >= NB) {  // single gaps treat as missing data
-    sc = 0.0;
-    for (x = 0; x < NB; x++) {
-      idx = dsq[i]*NB + x;
-      sc += e_stck[cdx][idx];
-    }
   }
   else {
     idx = dsq[i]*NB + dsq[j];
@@ -1713,25 +1699,11 @@ emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP])
   int   idx;
   int   x;
 
-  if (dsq[i] >= NB && dsq[j] >= NB) { // ignore double gaps
+  if (dsq[i] >= NB || dsq[j] >= NB) { // ignore gaps
     sc = -eslINFINITY;
   }
-  else if (dsq[i] >= NB) { // single gaps treat as missing data
-    sc = 0.0;
-    for (x = 0; x < NB; x++) {
-      idx = x*NB + dsq[j];
-      sc += e_pair[idx];
-    }
-  }
-  else if (dsq[j] >= NB) {  // single gaps treat as missing data
-    sc = 0.0;
-    for (x = 0; x < NB; x++) {
-      idx = dsq[i]*NB + x;
-      sc += e_pair[idx];
-    }
-  }
   else {
-    idx = dsq[i] *NB + dsq[j];
+    idx = dsq[i]*NB + dsq[j];
     sc = e_pair[idx];
   }
 

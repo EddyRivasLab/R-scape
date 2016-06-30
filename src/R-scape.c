@@ -134,6 +134,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nbpairs_cyk;
 
   int              voutput;
+  int              doroc;
   char            *rocfile;
   FILE            *rocfp; 
   char            *sumfile;
@@ -168,7 +169,8 @@ static ESL_OPTIONS options[] = {
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
-  { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .out .roc and .sum files only",                                                       1 },
+  { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .out and .sum files only",                                                            1 },
+  { "--roc",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc file",                                                            1 },
   { "--expo",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to do an exponential fit (default is gamma)",                                          0},
   /* E-values to assess significance */
   { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
@@ -249,7 +251,7 @@ static ESL_OPTIONS options[] = {
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1},
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.20",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.05",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -391,6 +393,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
+  cfg.doroc       = esl_opt_IsOn(go, "--roc")?        esl_opt_GetBoolean(go, "--roc")       : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   
@@ -489,9 +492,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   /*  rocplot file */
-  if (cfg.window <= 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
-  else                 esl_sprintf(&cfg.rocfile, "%s.w%d.s%d.roc", cfg.outheader, cfg.window, cfg.slide);
-  if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
+  cfg.rocfile = NULL;
+  cfg.rocfp = NULL;
+  if (cfg.doroc) {
+    if (cfg.window <= 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
+    else                 esl_sprintf(&cfg.rocfile, "%s.w%d.s%d.roc", cfg.outheader, cfg.window, cfg.slide);
+    if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
+  }
   
   /*  summary file */
   if (cfg.window <= 0) esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
@@ -724,7 +731,7 @@ main(int argc, char **argv)
   /* cleanup */
   fclose(cfg.outfp);
   fclose(cfg.outsrtfp);
-  fclose(cfg.rocfp);
+  if (cfg.rocfp) fclose(cfg.rocfp);
   fclose(cfg.sumfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outnullfp) fclose(cfg.outnullfp);
@@ -741,7 +748,7 @@ main(int argc, char **argv)
   if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
-  free(cfg.rocfile);
+  if (cfg.rocfile) free(cfg.rocfile);
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
@@ -787,9 +794,9 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     }
   }
   if      (msa->acc && msa->name) esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name, type);
-  else if (msa->name)             esl_sprintf(&cfg->msaname, "%s",    msa->name, type);
-  else if (msa->acc)              esl_sprintf(&cfg->msaname, "%s",    msa->acc);
-  else if (cfg->onemsa)           esl_sprintf(&cfg->msaname, "%s",    cfg->filename);
+  else if (msa->name)             esl_sprintf(&cfg->msaname, "%s",      msa->name, type);
+  else if (msa->acc)              esl_sprintf(&cfg->msaname, "%s",      msa->acc);
+  else if (cfg->onemsa)           esl_sprintf(&cfg->msaname, "%s",      cfg->filename);
   else                            esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
   if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
@@ -1192,8 +1199,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   }
   
   /* write MSA info to the rocfile */
-  if (cfg->mode == GIVSS || cfg->mode == CYKSS)
-  fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n", msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);  
+  if (cfg->doroc) {
+    if (cfg->mode == GIVSS || cfg->mode == CYKSS)
+      fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n",
+	      msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);
+  }
   
   /* main function */
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
@@ -1258,8 +1268,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     
     if (cfg->verbose) {
       printf("score cyk truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
-      //esl_histogram_Plot(stdout, ranklist->ht);
+      printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ha->imin, cykranklist->ha->imax, cykranklist->ha->xmax, cykranklist->ha->xmin);
+      //esl_histogram_Plot(stdout, ranklist->ha);
     }
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cykranklist, title);
     if (status != eslOK) goto ERROR; 

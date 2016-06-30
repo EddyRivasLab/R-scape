@@ -1212,7 +1212,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     status = cov_CYKCOVCT(&data, msa, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
     
-    if (cfg->verbose) {
+    if (1||cfg->verbose) {
       printf("score cyk truncated distribution\n");
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ht->imin, cykranklist->ht->imax, cykranklist->ht->xmax, cykranklist->ht->xmin);
       //esl_histogram_Plot(stdout, ranklist->ht);
