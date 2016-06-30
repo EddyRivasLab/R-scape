@@ -2655,7 +2655,6 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set yrange   [%g:%g]\n", ymin, ymax);
   if (has_bpairs) {
     fprintf(pipe, "set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
-    printf("set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
   }
   
   posx = xmin + 2.2*incx;
