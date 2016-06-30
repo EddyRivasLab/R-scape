@@ -54,7 +54,7 @@ static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h,
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, 
-				    char *axes, char *key, double xmax, int style1, int style2);
+				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
 
 int                 
@@ -2182,9 +2182,9 @@ cov_FreeRankList(RANKLIST *ranklist)
 {
   if (ranklist == NULL) return;
 
-  if (ranklist->ha)   esl_histogram_Destroy(ranklist->ha);
-  if (ranklist->ht)   esl_histogram_Destroy(ranklist->ht);
-  if (ranklist->hb)   esl_histogram_Destroy(ranklist->hb);
+  if (ranklist->ha)      esl_histogram_Destroy(ranklist->ha);
+  if (ranklist->ht)      esl_histogram_Destroy(ranklist->ht);
+  if (ranklist->hb)      esl_histogram_Destroy(ranklist->hb);
   if (ranklist->survfit) free(ranklist->survfit);
   free(ranklist);
 }
@@ -2443,8 +2443,10 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
   if (ranklist == NULL) return eslOK;
 
   if (covhisfile) {
+    /* write the survival for the given alignment (all pairs) */
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
     cov_histogram_PlotSurvival(fp, ranklist->ha, NULL);
+    /* write the survival for the null alignments */
     if (ranklist_null) cov_histogram_PlotSurvival(fp, ranklist_null->ha, ranklist_null->survfit);
     fclose(fp);
     
@@ -2484,11 +2486,12 @@ cov_NullFitExponential(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, dou
   /* exponential fit to tail */
   status = esl_exp_FitCompleteBinned(h, &ep[0], &ep[1]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do exponential fit");
-  if (isinf(ep[1])) { status = eslFAIL; goto ERROR; }
-
+  
   /* the expected survival */
-  cov_histogram_SetSurvFitTail(h, ret_survfit, newmass, &esl_exp_generic_surv, ep);
-
+  if (!isinf(ep[1])) {
+    cov_histogram_SetSurvFitTail(h, ret_survfit, newmass, &esl_exp_generic_surv, ep);
+  }
+  
   *ret_mu      = ep[0];
   *ret_lambda  = ep[1];
   *ret_newmass = newmass;
@@ -2512,11 +2515,12 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *r
   /* Gamma fit to tail */
   status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do a Gamma fit");
-  if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
-  if (isinf(ep[1])) { status = eslFAIL; goto ERROR; }
+  if (1||verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
 
-  /* the expected survival */
-  cov_histogram_SetSurvFitTail(h, ret_survfit, newmass, &esl_gam_generic_surv, ep);
+  /* the expected survival, if we do have a fit */
+  if (!isinf(ep[1])) {
+    cov_histogram_SetSurvFitTail(h, ret_survfit, newmass, &esl_gam_generic_surv, ep);
+  }
 
   *ret_mu     = ep[0];
   *ret_lambda = ep[1];
@@ -2652,11 +2656,9 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   y2min = ymin * ranklist->ht->Nc;
   y2max = ymax * ranklist->ht->Nc;
   fprintf(pipe, "set xrange   [%f:%f]\n", xmin, xmax);
-  printf("set yrange   [%g:%g]\n", ymin, ymax);
   fprintf(pipe, "set yrange   [%g:%g]\n", ymin, ymax);
   if (has_bpairs) {
     fprintf(pipe, "set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
-    printf("set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
   }
   
   posx = xmin + 2.2*incx;
@@ -2665,10 +2667,10 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     expsurv = data->thresh->val;
     esl_sprintf(&key, "E %.3f", expsurv);
     cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ht, "x1y1",
-			    key, xmax, 1, 111);
+			    key, ymax, ymin, xmax, xmin, 1, 111);
     if (has_bpairs)
       cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->hb, "x1y1",
-			    key, xmax, 3, 333);
+			    key, ymax, ymin, xmax, xmin, 3, 333);
     
     linespoints = FALSE;
     posy = ymin*exp(1.0*incy);
@@ -3824,10 +3826,10 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if (icov >= h->nb-1)
-    eval = survfit[h->nb-1] * (double)Nc;
-  else if (h->No >= min_nobs && survfit && cov >= h->phi)   
-    eval = survfit[icov+1] * (double)Nc;
+  if (survfit) {
+    if (icov >= h->nb-1)                         eval = survfit[h->nb-1] * (double)Nc;
+    else if (h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]  * (double)Nc;
+  }
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 
@@ -4123,7 +4125,7 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
 
 static int
 cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, char *axes, char *key, 
-		      double xmax, int style1, int style2)
+		      double ymax, double ymin, double xmax, double xmin, int style1, int style2)
 {
   double cov;
   double eval;
@@ -4145,25 +4147,25 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
 
   posx = cov + 1.4*ex;
   posy = eval2 * exp(-8.*ey);
-  
+
   /* The vertical line */
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %g,%g '%s' center tc ls %d\n", posx, posy, key, style1);
   fprintf(pipe, "plot '-' using 1:2 axes %s with lines ls %d \n", axes, style1);
-  fprintf(pipe, "%g\t%g\n", cov, eval*ey);
-  fprintf(pipe, "%g\t%g\n", cov, eval2*dy);
+  fprintf(pipe, "%g\t%g\n", cov, (eval*ey >ymin)? eval*ey :ymin);
+  fprintf(pipe, "%g\t%g\n", cov, (eval2*dy<ymax)? eval2*dy:ymax);
   fprintf(pipe, "e\n");
 
   /* The horizontal line */
+  if (eval <= ymin) eval = ymin*exp(3.0*ey);
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "plot '-' using 1:2 axes %s with lines ls %d \n", axes, style2);
-
-  fprintf(pipe, "%g\t%g\n", cov-ex,  eval);
-  fprintf(pipe, "%g\t%g\n", xmax,    eval);
+  fprintf(pipe, "%g\t%g\n", (cov-ex > xmin)? cov-ex:xmin, eval);
+  fprintf(pipe, "%g\t%g\n", xmax,                         eval);
   fprintf(pipe, "e\n");
   
   return eslOK;

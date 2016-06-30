@@ -1655,7 +1655,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     printf("null4 distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    esl_histogram_Plot(stdout, cumranklist->ha);
+    //esl_histogram_Plot(stdout, cumranklist->ha);
     esl_histogram_PlotSurvival(stdout, cumranklist->ha);
   }
   
