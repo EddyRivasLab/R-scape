@@ -2630,10 +2630,12 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set format y   '%s'\n", "10^{%T}");
   fprintf(pipe, "set format y2  '%s' \n", "10^{%T}");
   fprintf(pipe, "set ytics nomirror \n");
-  fprintf(pipe, "set y2tics textcolor ls 3 \n");
   fprintf(pipe, "set ylabel  'Distribution of pairs with covariation score > t'\n");
-  fprintf(pipe, "set y2label 'Expected # proposed pairs with score > t' offset -1,0 textcolor ls 3 \n");
   fprintf(pipe, "set xlabel 'covariation score t'\n");
+  if (has_bpairs) {
+    fprintf(pipe, "set y2tics textcolor ls 3 \n");
+    fprintf(pipe, "set y2label 'Expected # proposed pairs with score > t' offset -1,0 textcolor ls 3 \n");
+  }
   
   // the ymax and xmax values
   xmax = ESL_MAX(ranklist->hb->xmax, ranklist->ht->xmax) + 10;
@@ -2649,9 +2651,12 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   
   y2min = ymin * ranklist->ht->Nc;
   y2max = ymax * ranklist->ht->Nc;
-  fprintf(pipe, "set yrange   [%g:%f]\n", ymin, ymax);
-  fprintf(pipe, "set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
   fprintf(pipe, "set xrange   [%f:%f]\n", xmin, xmax);
+  fprintf(pipe, "set yrange   [%g:%g]\n", ymin, ymax);
+  if (has_bpairs) {
+    fprintf(pipe, "set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
+    printf("set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
+  }
   
   posx = xmin + 2.2*incx;
 
