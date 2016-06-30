@@ -2652,9 +2652,11 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   y2min = ymin * ranklist->ht->Nc;
   y2max = ymax * ranklist->ht->Nc;
   fprintf(pipe, "set xrange   [%f:%f]\n", xmin, xmax);
+  printf("set yrange   [%g:%g]\n", ymin, ymax);
   fprintf(pipe, "set yrange   [%g:%g]\n", ymin, ymax);
   if (has_bpairs) {
     fprintf(pipe, "set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
+    printf("set y2range  [%g:%g]\n", (double)ranklist->hb->Nc*ymin, (double)ranklist->hb->Nc*ymax);
   }
   
   posx = xmin + 2.2*incx;
@@ -3822,7 +3824,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if (icov >= h->nb)
+  if (icov >= h->nb-1)
     eval = survfit[h->nb-1] * (double)Nc;
   else if (h->No >= min_nobs && survfit && cov >= h->phi)   
     eval = survfit[icov+1] * (double)Nc;
