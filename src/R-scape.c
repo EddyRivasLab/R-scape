@@ -1130,6 +1130,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
+  data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = FALSE;
@@ -1239,6 +1240,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.pmass         = cfg->pmass;
   data.doexpfit      = cfg->doexpfit;
   data.tol           = cfg->tol;
+  data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;

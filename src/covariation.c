@@ -2449,11 +2449,13 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
     /* write the survival for the null alignments */
     if (ranklist_null) cov_histogram_PlotSurvival(fp, ranklist_null->ha, ranklist_null->survfit);
     fclose(fp);
-    
-    status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE);
-    if (status != eslOK) goto ERROR;
-    status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE);
-    if (status != eslOK) goto ERROR;
+
+    if (!data->nofigures) {
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE);
+      if (status != eslOK) goto ERROR;
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE);
+      if (status != eslOK) goto ERROR;
+    }
   }
 
 #if 0

@@ -194,6 +194,7 @@ struct data_s {
   double               lambda;     // for exponential fit of null distribution
   ESL_DMATRIX         *allowpair;  // allows to propose a non-WC set pairing rules
   double               tol;
+  int                  nofigures;
   int                  verbose;
   char                *errbuf;
   int                  donull2b;
