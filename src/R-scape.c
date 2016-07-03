@@ -451,7 +451,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;
-  if (!cfg.abcisRNA) cfg.covclass = C16; // C16/C2 applies only for RNA covariations; C16 means all letters in the given alphabet
      
   /* default is Watson-Crick plus U:G, G:U pairs */
   cfg.allowpair = esl_dmatrix_Create(4, 4);
@@ -660,14 +659,18 @@ main(int argc, char **argv)
     if (hstatus != eslOK) { printf("%s\n", afp->errmsg) ; esl_msafile_ReadFailure(afp, status); }
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
- 
+
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     cfg.abcisRNA = FALSE;
     if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) { cfg.abcisRNA = TRUE; }
-   
-    
+
+    /* C16/C2 applies only for RNA covariations; 
+     * C16 means all letters in the given alphabet
+     */
+    if (!cfg.abcisRNA) cfg.covclass = C16; 
+
     if (cfg.window > 0) {
  
       esl_sprintf(&omsaname, "%s", cfg.msaname);

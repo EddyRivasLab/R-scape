@@ -64,7 +64,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   HITLIST       *hitlist = NULL;
   COVCLASS       covclass = data->mi->class;
   int            status;
-  
+
   /* Calculate the covariation matrix */
   if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
 	 data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
