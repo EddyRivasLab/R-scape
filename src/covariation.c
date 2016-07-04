@@ -2646,7 +2646,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   // the ymax and xmax values
   xmax = ESL_MAX(ranklist->hb->xmax, ranklist->ht->xmax) + 10;
   xmin = ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1;
-  ymax = 2.0;
+
+  ymax = cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7;
   ymin = cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit);
   if (ymin <= 1e-15) ymin = 1e-15;
   if (ymin == ymax) ymin = 1e-5;
@@ -3828,10 +3829,8 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if (survfit) {
-    if (icov >= h->nb-1)                         eval = survfit[h->nb-1] * (double)Nc;
-    else if (h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]  * (double)Nc;
-  }
+  if      (survfit && icov >= h->nb-1)                   eval = survfit[h->nb-1] * (double)Nc;
+  else if (survfit &&h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]  * (double)Nc;
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 
@@ -3861,18 +3860,18 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
   int    min_nobs = 10;
   int    c = 0;
   int    i;
-  int    b = 0; 
+  int    b; 
   int    it = 0;
 
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {
-    for (b = h->nb-1; b >= h->imin; b--) {
+    for (b = h->nb-1; b >= h->cmin; b--) {
       exp = survfit[b];
       if (exp * (double)Nc >= eval) break;
     }
     cov = esl_histogram_Bin2LBound(h, b+1);
   }
-  if (b == 0) { /* otherwise, use the sampled distribution  */
+  if (b == h->cmin-1) { /* otherwise, use the sampled distribution  */
     for (i = h->imax; i >= h->imin; i--) {
       c += h->obs[i];
       if ((double)c * (double)Nc / (double)h->Nc > eval) break;
