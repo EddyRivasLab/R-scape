@@ -2561,7 +2561,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   double    posx, posy;
   double    incx, incy;
   double    cov;
-  double    expsurv;
+  double    expsurv = data->thresh->val;
   int       has_bpairs = FALSE;
   int       linespoints;
   int       i;
@@ -2644,9 +2644,12 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   }
   
   // the ymax and xmax values
-  xmax = ESL_MAX(ranklist->hb->xmax, ranklist->ht->xmax) + 10;
+  xmax = ESL_MAX(ranklist->hb->xmax, ranklist->ht->xmax);
+  xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit));
+  xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit));
+  xmax += 10;
   xmin = ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1;
-
+    
   ymax = cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7;
   ymin = cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit);
   if (ymin <= 1e-15) ymin = 1e-15;
@@ -2667,7 +2670,6 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   posx = xmin + 2.2*incx;
 
   if (ranklist_null) { 
-    expsurv = data->thresh->val;
     esl_sprintf(&key, "E %.3f", expsurv);
     cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ht, "x1y1",
 			    key, ymax, ymin, xmax, xmin, 1, 111);
