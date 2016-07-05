@@ -12,8 +12,6 @@ following output files:
 \item[\emprog{rnafile.sorted.out}] Tabular output sorted from highest to
   lowest E-value.
 %
-\item[\emprog{rnafile.roc}] Tabular output that provides statistics for 
-each score value.
 %
 \item[\emprog{rnafile.sum}] Tabular output with a line summary statistics
   per alignment in the file.
@@ -31,16 +29,14 @@ The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
 
 \begin{sreoutput}
 # MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
-# GammaFIT: pmass 0.030701 mu 24.007524 lambda 0.153011 tau 1.256706
-# Method Target_E-val cov_at_target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         43.97               [-9.63,121.98]     [3 | 11 20 14 | 55.00 78.57 64.71] 
+# GammaFIT: pmass 0.050024 mu 19.840474 lambda 0.152973 tau 1.281689
+# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05           [-9.64,121.98]    [0 | 11 20 11 | 55.00 100.00 70.97] 
 #       left_pos       right_pos        score   E-value
 #------------------------------------------------------------
-                93             104      58.99   0.00563123
-~               93             130      47.91   0.0282835
-*               94             110      56.89   0.00738228
-*               96             108      89.19   6.25194e-05
-*               97             107      52.27   0.0148803
+*               94             110      56.89   0.00598452
+*               96             108      89.19   4.97828e-05
+*               97             107      52.27   0.0117527
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:
@@ -71,16 +67,15 @@ The output file is a tabular list of significant pairs sorted by sequence positi
  correspond to the analyzed alignment after the filters (for redundant
  sequences and gapped columns) have been applied.
 
- \item[\prog{Second comment line}]describes properties of the
-   \rscape\ search: the covariation method (GTp), the E-value threshold
-   (0.05), the score at that E-value (41.3), the range of scores for all
-   pairs in the alignments (from -9.7 to 89.1), the number of covarying
-   non base pairs (2), the number of covarying base pairs (9), the
-   number of base pairs (20), and the total number of covarying pairs
-   (11). Lastly we provide the sensitivity (SEN=45.0=9/20), positive
-   predictive value (PPV=81.8=9/11), and F-measure (F=58.1 = 2 * SEN *
-   PPV / (SEN+PPV)).
- \end{sreitems}
+ \item[\prog{Second comment line}]describes properties of the \rscape\
+   search: the covariation method (GTp), the E-value threshold (0.05),
+   the range of scores for all pairs in the alignments (from -9.7 to
+   89.1), the number of covarying non base pairs (0), the number of
+   covarying base pairs (11), the number of base pairs (20), and the
+   total number of covarying pairs (11). Lastly we provide the
+   sensitivity (SEN=55.00=11/20), positive predictive value
+   (PPV=100.00=11/11), and F-measure (F=70.97 = 2 * SEN * PPV /
+   (SEN+PPV)).  \end{sreitems}
 
 
 \subsection{Other tabular outputs}
@@ -93,8 +88,8 @@ The output file is a tabular list of significant pairs sorted by sequence positi
 \user{more tutorial/updated\_Arisong.sum}
  \begin{sreoutput}
  #target_E-val   MSA                     nseq    alen    avgid    method  TP      True    Found   SEN     PPV
- 0.05            updated_Arisong_1       95      65      66.35    GTp     11      20      14      55.00   78.57 
- \end{sreoutput}
+ 0.05            updated_Arisong_1       95      65      66.35    GTp     11      20      11      55.00 100.00 
+\end{sreoutput}
  This file produces a one line output per alignment in the file.
  \begin{sreitems}{\prog{Second column}}
  \item[\prog{Column 1}] Target E-value.
@@ -110,25 +105,6 @@ The output file is a tabular list of significant pairs sorted by sequence positi
  \item[\prog{Column 11}] Positive predictive value = TP/F.
 
  \end{sreitems}
-
-File \emprog{tutorial/updated\_Arisong.roc} looks like:
-
-\user{more tutorial/updated\_Arisong.roc}
-\begin{sreoutput}
-# MSA nseq 95 alen 65 avgid 66.352419 nbpairs 20 (20)
-# Method: GTp
-#cov_score  FP  TP Found  True  Negatives  Sen   PPV     F       E-value
-121.96398   0   1      1    20       2060  5.00  100.00  9.52    4.76088e-08
-121.59433   0   1      1    20       2060  5.00  100.00  9.52    7.34732e-08
-121.22469   0   1      1    20       2060  5.00  100.00  9.52    7.34732e-08
-...
-\end{sreoutput}
-
-This file produces a tabular output for each alignment as a function
-of the covariation score, for plotting ROC curves. The values in the
-file are described by the comment line. Notice that the number of
-Trues (column 5) and Negatives (column 6) are fixed for a given
-secondary structure and do not change.
 
 \subsection{Outputs per alignment}
 
@@ -213,32 +189,26 @@ consensus structure.
 
 \user{more tutorial/updated\_Arisong.surv}
  \begin{sreoutput}
- 121.963981      0.000480769
- 95.719043       0.000961538
- 89.065397       0.00144231
- 76.867046       0.00192308
  ...
  &
- 77.606340       6.86813e-05
- 63.559754       0.000137363
- 60.972225       0.000274725
  ...
  &
- 121.963981      1.15715e-09
- 121.594334      2.38044e-09
- 121.224687      3.67366e-09
-...
+ ...
+ &
+ ...
  &
  \end{sreoutput}
  The first column is a covariation score (x). The second column is the
  survival function $P(X > x)$, that is the frequency of pairs having
- score larger than x. The file includes three survival functions separated by a
+ score larger than x. The file includes four survival functions separated by a
  ``\&'' line. The three survival functions correspond to:
 
  \begin{sreitems}{\prog{Second function:}}
- \item[\prog{First functions:}] the given alignment, all possible pairs.
- \item[\prog{Second function:}] the aggregation of all null alignments, all possible pairs.
- \item[\prog{Third function:}] the expected null survival function according to the tail Gamma fit.
+ \item[\prog{First functions:}] the given alignment, proposed base pairs.
+ (This section is empty if no secondary structure is proposed.)
+ \item[\prog{Second functions:}] the given alignment, not proposed pairs.
+ \item[\prog{Third function:}] the aggregation of all null alignments, all possible pairs.
+ \item[\prog{Fourth function:}] the expected null survival function according to the tail Gamma fit.
  \end{sreitems}
 
 

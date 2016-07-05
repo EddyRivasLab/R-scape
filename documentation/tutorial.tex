@@ -54,7 +54,7 @@ To run \rscape\ with default parameters on alignment file
 \user{bin/R-scape tutorial/updated\_Arisong.sto}\\
 
 \noindent
-The output is a list of the signifcantly covarying positions
+The output is a list of the significantly covarying positions
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
@@ -63,25 +63,22 @@ The output is a list of the signifcantly covarying positions
 # Freely distributed under the GNU General Public License (GPLv3).
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
-# GammaFIT: pmass 0.030701 mu 24.007524 lambda 0.153011 tau 1.256706
-# Method Target_E-val cov_at_target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         43.97               [-9.63,121.98]      [3 | 11 20 14 | 55.00 78.57 64.71] 
+# GammaFIT: pmass 0.050024 mu 19.840474 lambda 0.152973 tau 1.281689
+# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.64,121.98]     [0 | 11 20 11 | 55.00 100.00 70.97] 
 #       left_pos       right_pos        score   E-value
 #------------------------------------------------------------
-*	      98	     106	121.98	4.76088e-08
-*	     122	     137	95.92	2.2859e-05
-*	      96	     108	89.19	6.25194e-05
-*	     120	     139	77.12	0.000366434
- 	     104	     130	64.22	0.00263112
-*	     119	     140	59.65	0.00505242
-*	     121	     138	59.15	0.00533404
- 	      93	     104	58.99	0.00563123
-*	     124	     134	58.40	0.00594484
-*	     123	     135	58.24	0.00627579
-*	      94	     110	56.89	0.00738228
-*	      99	     105	55.36	0.00967195
-*	      97	     107	52.27	0.0148803
-~	      93	     130	47.91	0.0282835
+*	      98	     106	121.98	3.71083e-07
+*	     122	     137	95.92	1.81573e-05
+*	      96	     108	89.19	4.97828e-05
+*	     120	     139	77.12	0.000300864
+*	     119	     140	59.65	0.00394406
+*	     121	     138	59.15	0.00437784
+*	     124	     134	58.40	0.00485901
+*	     123	     135	58.24	0.00485901
+*	      94	     110	56.89	0.00598452
+*	      99	     105	55.36	0.00776149
+*	      97	     107	52.27	0.0117527
 \end{sreoutput}
 A star ``*'' in the first column indicates that the pair is part of
 the annotated structure in the \prog{updated\_Arisong.sto} file. A
@@ -99,12 +96,12 @@ Default parameters are:
   target value.  The target E-value can be changed with option
   \emprog{-E <x>}, $x >= 0$.
 
-\item[\emprog{Pairwise percent identity:}]Sequences with at least
-  97\% similarity to each other are removed.  Pairwise \% identity is
-  defined as the ratio of identical positions divided by the minimum
-  length of the two sequences. The maximum pairwise percentage
-  identity in the alignment can be changed with option \emprog{-I
-    <x>}, $0<x<=1$.
+\item[\emprog{Sequence weighting:}]Sequences are weighted according to
+  the Gerstein/Sonnhammer/Chothia (GSC)
+  algorithm~\citep{Gerstein94}. This algorithm is time consuming. For
+  alignments with more than 1000 sequences, we use the faster
+  position-based weighting algorithm~\citep{Henikoff94b}. Both
+  weighting algorithms are implemented as part of the easel library.
 
 \item[\emprog{Gaps in columns:}]Columns with more than 50\% gaps are
   removed. The gap threshold for removing columns can be modified

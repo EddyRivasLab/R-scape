@@ -1742,7 +1742,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     if (data->doexpfit) {
       status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad exponential fit.");
-      if (1||data->verbose) {
+      if (data->verbose) {
 	fprintf(data->outfp, "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
 	fprintf(stdout,      "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
       }
@@ -1750,7 +1750,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     else { // a gamma fit
       status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
-      if (1||data->verbose) {
+      if (data->verbose) {
 	fprintf(data->outfp, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
 	fprintf(stdout,      "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
       }
@@ -2378,8 +2378,9 @@ cov_histogram_PlotSurvival(FILE *fp, ESL_HISTOGRAM *h, double *survfit)
   
   /* The observed binned counts:
    */
-  if (h->obs[h->imax] > 1) 
-  if (fprintf(fp, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+  if (h->obs[h->imax] > 1) {
+    if (fprintf(fp, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
+  }
   for (i = h->imax; i >= h->imin; i--)
     {
       if (h->obs[i] > 0) {
@@ -2394,7 +2395,7 @@ cov_histogram_PlotSurvival(FILE *fp, ESL_HISTOGRAM *h, double *survfit)
    */
   if (survfit != NULL) 
     {
-      for (i = h->nb-1; i >= 0; i--)
+      for (i = 2*h->nb-1; i >= 0; i--)
 	{
 	  if (survfit[i] > 0.) {
 	    esum = survfit[i];
@@ -2415,10 +2416,10 @@ cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmas
   int b;
   double ai, bi;
 
-  ESL_ALLOC(survfit, sizeof(double) * h->nb);
-  esl_vec_DSet(survfit, h->nb, 0.);
+  ESL_ALLOC(survfit, sizeof(double) * 2*h->nb);
+  esl_vec_DSet(survfit, 2*h->nb, 0.);
   
-  for (b = h->cmin; b < h->nb; b++)
+  for (b = h->cmin; b < 2*h->nb; b++)
     {
       ai = esl_histogram_Bin2LBound(h, b);
       bi = esl_histogram_Bin2UBound(h, b);
@@ -2443,9 +2444,11 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
   if (ranklist == NULL) return eslOK;
 
   if (covhisfile) {
-    /* write the survival for the given alignment (all pairs) */
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
-    cov_histogram_PlotSurvival(fp, ranklist->ha, NULL);
+    /* write the survival for the given alignment (base pairs) */
+    cov_histogram_PlotSurvival(fp, ranklist->hb, NULL);
+    /* write the survival for the given alignment (not pairs) */
+    cov_histogram_PlotSurvival(fp, ranklist->ht, NULL);
     /* write the survival for the null alignments */
     if (ranklist_null) cov_histogram_PlotSurvival(fp, ranklist_null->ha, ranklist_null->survfit);
     fclose(fp);
@@ -2517,7 +2520,7 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *r
   /* Gamma fit to tail */
   status = esl_gam_FitCompleteBinned(h, &ep[0], &ep[1], &ep[2]);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "could not do a Gamma fit");
-  if (1||verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
+  if (verbose) printf("GammaFit mu = %f lambda = %f tau = %f (mass %f)\n", ep[0], ep[1], ep[2], newmass);
 
   /* the expected survival, if we do have a fit */
   if (!isinf(ep[1])) {
@@ -2649,9 +2652,13 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit));
   xmax += 10;
   xmin = ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1;
-    
+   
   ymax = cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7;
   ymin = cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit);
+  ymin = ESL_MIN(ymin, expsurv/(double)ranklist->ht->Nc);
+  ymin = ESL_MIN(ymin, expsurv/(double)ranklist->hb->Nc);
+  ymin *= exp(-0.1*(fabs(log(ymax) - log(ymin))));
+
   if (ymin <= 1e-15) ymin = 1e-15;
   if (ymin == ymax) ymin = 1e-5;
 
@@ -3831,7 +3838,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if      (survfit && icov >= h->nb-1)                   eval = survfit[h->nb-1] * (double)Nc;
+  if      (survfit && icov >= 2*h->nb-1)                 eval = survfit[2*h->nb-1] * (double)Nc;
   else if (survfit &&h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]  * (double)Nc;
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
@@ -3867,7 +3874,7 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
 
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {
-    for (b = h->nb-1; b >= h->cmin; b--) {
+    for (b = 2*h->nb-1; b >= h->cmin; b--) {
       exp = survfit[b];
       if (exp * (double)Nc >= eval) break;
     }
@@ -4080,11 +4087,6 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
     else             fprintf(pipe, "plot '-' using 1:2 axes %s with points ls %d \n", axes, style1);
   }
 
-  if (h->obs[h->imax] > 1) 
-    if (fprintf(pipe, "%f\t%g\t%g\n", 
-		h->xmax,
-		(logval)? : 1.0,
-		(logval)? -log((double)h->Nc) : 1.0/(double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
   for (i = h->imax; i >= h->imin; i--)
     {
       c += h->obs[i];
@@ -4108,7 +4110,7 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
       fprintf(pipe, "set key off\n");
       fprintf(pipe, "plot '-' using 1:2 with lines ls %d \n", style2);
       
-      for (i = h->nb-1; i >= 0; i--)
+      for (i = 2*h->nb-1; i >= 0; i--)
 	{
 	  esum = survfit[i];
 	  if (esum > 0.) { 
@@ -4162,7 +4164,6 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
   fprintf(pipe, "e\n");
 
   /* The horizontal line */
-  if (eval <= ymin) eval = ymin*exp(3.0*ey);
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");

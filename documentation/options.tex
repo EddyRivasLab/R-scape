@@ -116,6 +116,29 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Output options}
 
+\subsubsection{\prog{--roc }} Tabular output that provides statistics for 
+each score value.
+
+File \emprog{tutorial/updated\_Arisong.roc} looks like:
+
+\user{more tutorial/updated\_Arisong.roc}
+\begin{sreoutput}
+# MSA nseq 95 alen 65 avgid 66.352419 nbpairs 20 (20)
+# Method: GTp
+#cov_score  FP  TP Found  True  Negatives  Sen   PPV     F       E-value
+121.79543   0   2  2      20    2060       10.00 100.00  18.18   4.07104e-05
+121.44018   0   2  2      20    2060       10.00 100.00  18.18   4.29443e-05
+121.08494   0   2  2      20    2060       10.00 100.00  18.18   4.53006e-05
+120.72970   0   2  2      20    2060       10.00 100.00  18.18   4.53006e-05
+...
+\end{sreoutput}
+
+This file produces a tabular output for each alignment as a function
+of the covariation score, for plotting ROC curves. The values in the
+file are described by the comment line. Notice that the number of
+Trues (column 5) and Negatives (column 6) are fixed for a given
+secondary structure and do not change.
+
 \subsubsection{\prog{--outmsa <f>}} The actual alignment analyzed can be saved in Stockholm format to file $<$f$>$.
 
 
