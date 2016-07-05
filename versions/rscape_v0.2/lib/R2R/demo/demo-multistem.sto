@@ -1,0 +1,25 @@
+# STOCKHOLM 1.0
+earther        GCCAAAGCUACGUACAUU...GGC
+martian        GUAUCGCGUGCAUGUAUUACCUAC
+#=GC SS_cons   <<<..<<>>..<<>>......>>>
+#=GC R2R_LABEL ..M...<>....[]....1.2...
+#=GF R2R var_backbone_range 1 2
+
+#=GF R2R ifdef circle multistem_junction_circular M allstems-any-angle draw_circ
+#=GF R2R ifdef flipstem multistem_junction_circular M allstems-any-angle flipstem 1
+#=GF R2R ifdef manual multistem_junction_bulgey M J0 -45 2 0 -1 0 -90 J1 -45 2 0 +1 0 -90
+
+#=GF R2R ifndef domanual
+#=GF R2R ifdef solver1 multistem_junction_circular_solver M s0 0 m s1 -90 m s2 0 m draw_circ
+#=GF R2R ifdef solver2 multistem_junction_circular_solver M s0 0 ai=0 s1 -90 ai=0 s2 0 ai=0 draw_circ
+#=GF R2R else
+#=GF R2R ifdef solver1 multistem_junction_bulgey M J0/base 0 2.11262 -2.05908 0 0 -90 J1/base 0 5.84203 0.00232421 0 0 -360 bspecifyendpoints0 0 0.0116683 0.00657448 0.227388 -0.205772 bspecifyendpoints1 0 0.386221 -0.205718 0.601797 0.00677378 bspecifyendpoints2 0 0.604148 0.165556 0.00920929 0.165351 backbonelen 1 3.69871
+#=GF R2R ifdef solver2 multistem_junction_bulgey M J0/base 0 2.04345 -2.03852 0 0 -90 J1/base 0 5.70321 0.0027544 0 0 -360 bspecifyendpoints0 0 0.000100119 4.80744e-05 0.214542 -0.214086 bspecifyendpoints1 0 0.384547 -0.214013 0.598805 0.000304294 bspecifyendpoints2 0 0.598837 0.170289 -7.59502e-05 0.170036 backbonelen 1 3.63929
+#=GF R2R endif
+
+#=GF Makefile define circle 1
+#=GF Makefile define flipstem 1
+#=GF Makefile define manual 1
+#=GF Makefile define solver1 1
+#=GF Makefile define solver2 1
+//

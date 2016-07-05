@@ -1,0 +1,14 @@
+# STOCKHOLM 1.0
+seq1              AAAAAAAAAAAAAAA
+#=GC SS_cons      ...<<.<<...>>>>
+
+#=GF R2R ifndef skeleton
+#=GF R2R shade_along_backbone all rgb:0,0,255
+#=GF R2R endif
+
+#=GF R2R ifdef skeleton
+#=GF R2R SetDrawingParam scaleMeasurementsBy 1
+#=GF R2R endif
+
+#=GF Makefile skeleton-with-pairbonds
+//

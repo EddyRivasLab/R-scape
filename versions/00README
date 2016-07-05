@@ -55,8 +55,8 @@ gzip $v.tar ;\
 rm -rf rscape ;\
 done
 
-in RC:
-------
+in eddyfs01:
+------------
 for v in rscape_v0.2 ; do \
 cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/$v/documentation/. ;\
 cd /n/eddyfs01/home/erivas/src/src/mysource/versions/$v ;\

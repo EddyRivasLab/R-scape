@@ -1,0 +1,22 @@
+# STOCKHOLM 1.0
+Bsu-1                       AGCAAGGGGAGAGACCUGACCGAAAACCUCGGGAUA.CAGGCGCCGAAGGAGCAA.ACU.....GCGG........AGUGAAUCUCUCAGGCAAAAGAACUCUUGCU
+Bsu-2                       ---CUCUGGAGAGUGUUUGUGCGGAUGCGC------.AAACCACCUUUGGGGACGUCUUUGC..GUAU.....GCAAAGUAAACUUUCAGGUGCCAGGACAGAG...
+Bsomething-2                ...CUCUGGAGAGUGUUCACGGCCAGU..........GAACCACCAAAGAGGAAACCU.AUU..GCCA.....AAUAGGGAAACUUUCAGGUGCCAGGACAGAG...
+Bsomething-1                ...CUCUGGAGAGAGUUUGUAUCAUAUUAUGUUUUGCAAACCACCAAAGGGGACAUCUUUGC..UUUUGAU..GCAAAGUAAACUUUCAGGUGCCAGGACAGAG...
+Bpu-1                       ...CUCUGGAGAGUGUUUGCUCAUCGUUUUUUAGC..AAACCACCAAAGGGGAAAACG.CACAAUGAUG..UUGUGCUGUAAACUUUCAGGUGCAAGGACAGAG...
+#=GC SS_cons                ((((((((,,,,<-<<<<__________________.>>>>><<<---<<<<--.-<<<<<<<<_.__...>>>>>>>>---->>>>-->>>,,,,,,,))))))))
+#=GC R2R_LABEL              kkk....j................................................................................................kkk
+
+#=GF R2R multistem_junction_circular_solver j s0 0 ai s1 -45 ai s2 0 ai align_stem_horiz 0 2
+
+#=GF R2R SetDrawingParam defaultOneseqLabeling false
+#=GF R2R SetDrawingParam indicateOneseqWobblesAndNonCanonicals false
+
+#=GF R2R delcols k
+
+
+#=GF R2R shade_along_backbone all rgb:152,199,222
+
+#=GF Makefile oneseq Bsu-1
+#=GF Makefile oneseq Bsu-2
+//

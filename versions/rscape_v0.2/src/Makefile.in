@@ -1,0 +1,142 @@
+# VPATH and shell configuration
+#
+top_srcdir     = @top_srcdir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+SHELL          = /bin/sh
+
+
+# Package information
+#
+PACKAGE         = @PACKAGE_NAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+
+RSCAPE         = @RSCAPE_NAME@
+RSCAPE_VERSION = @RSCAPE_VERSION@
+RSCAPE_DATE    = @RSCAPE_DATE@
+
+# Installation targets
+#
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir      = @bindir@
+libdir      = @libdir@
+includedir  = @includedir@
+mandir      = @mandir@
+docdir      = @docdir@
+pdfdir      = @pdfdir@
+mandir      = @mandir@
+man1dir     = ${mandir}/man1
+man1ext     = .1
+
+# Compiler configuration
+#
+CC        = @CC@
+CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ 
+LDFLAGS   = -static @LDFLAGS@
+SIMDFLAGS = @SIMD_CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+
+# Other tools
+#
+AR        = @AR@ 
+RANLIB    = @RANLIB@
+INSTALL   = @INSTALL@
+
+
+LIBS      = -leasel @LIBGSL@ @MPILIBS@ @PTHREAD_LIBS@ @LIBS@ -lm
+
+IFLAGS   = -I../lib/easel 
+LFLAGS   = -L../lib/easel 
+
+# beautification magic stolen from git
+#
+QUIET_SUBDIR0 = +${MAKE} -C #space separator after -c
+QUIET_SUBDIR1 =
+ifndef V
+	QUIET_CC      = @echo '    ' CC $@;
+	QUIET_GEN     = @echo '    ' GEN $@;
+	QUIET_AR      = @echo '    ' AR $@;
+	QUIET_SUBDIR0 = +@subdir=
+	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
+		        ${MAKE} -C $$subdir
+endif
+
+
+# Code manifests
+#
+SUBDIRS = ../src
+
+PROGS    = R-scape\
+	   R-scape-sim\
+	   R-scape-sim-nobps\
+
+
+OBJS     = e1_bg.o\
+	   e1_model.o\
+	   e1_rate.o\
+	   e1_emit.o\
+	   e1_simulate.o\
+	   e2_profilesq.o\
+           cococyk.o\
+	   covgrammars.o\
+	   covariation.o\
+	   cykcov.o\
+           logsum.o\
+           minimize.o\
+           miscellaneous.o\
+           msamanip.o\
+           msatree.o\
+           ratematrix.o\
+           ratebuilder.o\
+           ribosum_matrix.o\
+	   cov_simulate.o\
+
+all: libsrc.a ${PROGS} 
+
+
+${PROGS}: %: %.o ${OBJS}
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS}
+
+
+.c.o:   
+	${QUIET_CC}${CC} ${IFLAGS} ${CFLAGS} -o $@ -c $<
+
+libsrc.a:  ${OBJS}
+	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} libsrc.a
+
+install:
+	${QUIET}if [ ! -z "${PROGS}" ]; then \
+	   for file in ${PROGS}; do \
+	      echo '    ' INSTALL $$file ;\
+	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
+	   done ;\
+	fi
+
+
+clean:
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+
+distclean:
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
+	-rm -f *.gcno *.gcda *.gcov
+	-rm -f core.[0-9]*
+	-rm -f config.log config.status
+	-rm -rf autom4te.cache
+	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
+	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
+	-rm Makefile
+
+
+
+################################################################
+# @LICENSE@
+################################################################

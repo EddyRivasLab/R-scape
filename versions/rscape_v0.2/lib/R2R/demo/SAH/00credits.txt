@@ -1,0 +1,4 @@
+The files in this directory correspond to motifs published in (Wang, et al., 2008)
+
+http://www.ncbi.nlm.nih.gov/pubmed/18374645
+

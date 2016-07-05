@@ -1,0 +1,13 @@
+# STOCKHOLM 1.0
+a             ACCCGUUGAGUG
+#=GC SS_cons  ............
+
+#=GF R2R no5
+#=GF R2R set_dir pos0 -45
+#=GF R2R place_explicit #:1 pos0 0 0 0 4 5 0
+#=GF R2R place_explicit #:2 pos0 0 0 0 5 5 0
+#=GF R2R place_explicit #:3 pos0 0 0 0 6 5 0
+#=GF R2R bulge #:4
+#=GF R2R place_explicit #:10 pos0 0 0 0 10 7 0
+#=GF R2R place_explicit #:11 pos0 0 0 0 12 7 0
+//
