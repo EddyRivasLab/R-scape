@@ -100,10 +100,12 @@ The window size is $n>0$.
 \subsection{Input alignment options}
 
 \subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$
-pairwise similarity are considered in the analysis.  Sequences with at
-least $x$ pairwise similarity are clustered together, and one
-representative of the cluster is randomly selected. If this option is
-not used all sequences are used in the analysis.
+pairwise similarity are considered in the analysis.  Pairwise \%
+identity is defined as the ratio of identical positions divided by the
+minimum length of the two sequences.  Sequences with at least $x$
+pairwise similarity are clustered together, and one representative of
+the cluster is randomly selected. If this option is not used all
+(weighted) sequences are used in the analysis.
 
 \subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
 
@@ -116,8 +118,9 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Output options}
 
-\subsubsection{\prog{--roc }} Tabular output that provides statistics for 
-each score value.
+\subsubsection{\prog{--roc}}
+
+Produces a tabular output that provides statistics for each score value.
 
 File \emprog{tutorial/updated\_Arisong.roc} looks like:
 

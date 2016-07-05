@@ -2012,12 +2012,12 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
    for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       
-      if (data->ct[i+1] == j+1) { is_bpair = TRUE;  }
-      else { 
-	is_bpair = FALSE; 
-	if (data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
-      } 	 
+      is_bpair      = FALSE; 
+      is_compatible = FALSE;
       
+      if      (data->ct[i+1] == j+1)                     is_bpair      = TRUE;
+      else if (data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
+     
       cov = mi->COV->mx[i][j];
       if (is_bpair)
 	eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
