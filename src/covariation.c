@@ -233,7 +233,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       if  (status != eslOK) goto ERROR;
     }
   }
-
+ 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
@@ -1719,7 +1719,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       esl_histogram_Add(ranklist->ha, add);
  
       /* add to the histogram of base pairs (hb) and not bps (ht) */
-      if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS)) {
+      if (data->mode == GIVSS || data->mode == CYKSS) {
 	if (data->ct[i+1] == j+1) 
 	  esl_histogram_Add(ranklist->hb, add);
 	else 
@@ -1728,13 +1728,11 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
   
   /* histogram and exponential fit */
-  if (data->mode == GIVSS || data->mode == CYKSS) {
-    if (data->ranklist_null) {
-      if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
-	ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
-	for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
-	data->ranklist_null->ha->nb = ranklist->ha->nb;
-      }
+  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS) ) {
+    if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
+      ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
+      for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
+      data->ranklist_null->ha->nb = ranklist->ha->nb;
     }
     
     /* censor the histogram and do an exponential fit to the tail */
@@ -1756,7 +1754,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       }
     }
   }
-
+  
   // assign the covthresh from ha, to be used with cyk
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
     cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
@@ -1774,12 +1772,13 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype);
     if (status != eslOK) goto ERROR;
   }    
-
+ 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
 
   if (threshtype) free(threshtype); 
-  if (covtype)    free(covtype); 
+  if (covtype)    free(covtype);
+
   return eslOK;
   
  ERROR:
@@ -2019,13 +2018,15 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       else if (data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
      
       cov = mi->COV->mx[i][j];
-      if (is_bpair)
-	eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-      else 
-	eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-	       
-      if (eval < data->thresh->val) {
-	
+      if (data->ranklist_null == NULL) eval = h+1;
+      else {
+	if (is_bpair)
+	  eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	else 
+	  eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+      }
+      
+      if (eval < data->thresh->val) {	
 	if (h == nhit - 1) {
  	  nhit += alloc_nhit;
 	  
@@ -2648,13 +2649,15 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   
   // the ymax and xmax values
   xmax = ESL_MAX(ranklist->hb->xmax, ranklist->ht->xmax);
-  xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit));
-  xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit));
-  xmax += 10;
-  xmin = ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1;
-   
-  ymax = cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7;
-  ymin = cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit);
+  if (ranklist_null) {
+    xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit));
+    xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit));
+  }
+  xmax += 10.;
+  xmin = (ranklist_null)? ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1. : ranklist->ht->xmin - 1.;
+ 
+  ymax = (ranklist_null)? cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7 : 1.7;
+  ymin = (ranklist_null)? cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit)       : 1.0/(double)ranklist->ha->Nc;
   ymin = ESL_MIN(ymin, expsurv/(double)ranklist->ht->Nc);
   ymin = ESL_MIN(ymin, expsurv/(double)ranklist->hb->Nc);
   ymin *= exp(-0.1*(fabs(log(ymax) - log(ymin))));

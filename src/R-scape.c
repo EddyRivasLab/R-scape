@@ -81,7 +81,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outdir;
   char            *outfile;
   char            *outsrtfile;
-  FILE            *outfp; 
+  FILE            *outfp;
   FILE            *outsrtfp; 
   char            *outheader;          /* header for all output files */
   int              infmt;
