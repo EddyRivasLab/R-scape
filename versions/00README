@@ -1,7 +1,7 @@
 ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
--------------
+-------------m
 for v in rscape_v0.2 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
