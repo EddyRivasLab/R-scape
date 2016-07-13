@@ -281,9 +281,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS  *go = esl_getopts_Create(options);
   struct cfg_s  cfg;
-  char         *path = NULL;
+  char         *path;
   char         *s;
   char         *tok;
+  char         *tok1 = NULL;
   struct stat  info;
   char         *outname = NULL;
   int           status;
@@ -316,7 +317,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
-  //printf("seed  = %" PRIu32 "\n", cfg.r->seed);      
 
   /* find gnuplot */
   cfg.gnuplot = NULL;
@@ -324,11 +324,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   s = path; 
   while (esl_strcmp(s, "")) {
     esl_strtok(&s, ":", &tok);
-    esl_sprintf(&tok, "%s/gnuplot", tok);
-    if ((stat(tok, &info) == 0) && (info.st_mode & S_IXOTH)) {
-      esl_sprintf(&cfg.gnuplot, "%s -persist", tok);    
+    esl_sprintf(&tok1, "%s/gnuplot", tok);
+    if ((stat(tok1, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);    
       break;
     }
+    free(tok1); tok1 = NULL;
   }
   if (cfg.gnuplot == NULL && "GNUPLOT" && (s = getenv("GNUPLOT"))) { // check for an envvar
     if ((stat(s, &info) == 0) && (info.st_mode & S_IXOTH)) {
@@ -574,6 +575,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   *ret_cfg = cfg;
 
   if (outname) free(outname);
+  if (tok1) free(tok1);
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
@@ -582,13 +584,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
   if (outname) free(outname);
-  if (path) free(path);
+  if (tok1) free(tok1);
   exit(1);  
 
  ERROR:
   if (go) esl_getopts_Destroy(go);
   if (outname) free(outname);
-  if (path) free(path);
+  if (tok1) free(tok1);
   exit(status);
 }
 
@@ -925,16 +927,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* outmsa file if requested */
   if (cfg->outmsafp) esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
 
-    if (cfg->outdir) {
+  if (cfg->outdir) {
     /* covhis file */
-      esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
-      esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
-    }
-    else {
-      /* covhis file */
-      esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
-      esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
-    }
+    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
+  }
+  else {
+    /* covhis file */
+    esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
+    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
+  }
   
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->nofigures) {
@@ -1149,6 +1151,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
   if (cfg->w <= 0) return eslFAIL;
 
+  cov_Destroy(mi);
   return eslOK;
 
  ERROR:

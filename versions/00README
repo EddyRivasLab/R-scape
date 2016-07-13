@@ -41,33 +41,37 @@ last minute steps to make an R-scape tarball:
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
 for v in rscape_v0.2 ; do \
+for x in 1 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/$v ;\
 make distclean ;\
 cd .. ;\
-cp -rf $v rscape ;\
-cd rscape ;\
+cp -rf $v $v.$x ;\
+cd $v.$x ;\
 rm -rf lib/easel/.git ;\
 cd .. ;\
-rm $v.tar.* ;\
-tar cvf $v.tar rscape ;\
-gzip $v.tar ;\
-rm -rf rscape ;\
+rm $v.$x.tar.* ;\
+tar cvf $v.$x.tar $v.$x ;\
+gzip $v.$x.tar ;\
+rm -rf $v.$x ;\
+done
 done
 
 in eddyfs01:
 ------------
 for v in rscape_v0.2 ; do \
+for x in 1 ; do \
 cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/$v/documentation/. ;\
 cd /n/eddyfs01/home/erivas/src/src/mysource/versions/$v ;\
 make distclean ;\
 cd .. ;\
-cp -rf $v rscape ;\
-cd rscape ;\
+cp -rf $v $v.$x ;\
+cd $v.$x;\
 rm -rf lib/easel/.git ;\
 cd .. ;\
-rm $v.tar.* ;\
-tar cvf $v.tar rscape ;\
-gzip $v.tar ;\
-rm -rf rscape ;\
+rm $v.$x.tar.* ;\
+tar cvf $v.$x.tar $v.$x ;\
+gzip $v.$x.tar ;\
+rm -rf $v.$x ;\
+done
 done

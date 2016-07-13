@@ -1521,7 +1521,7 @@ cov_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenth
     }
   }
    
-  mi->COV  = esl_dmatrix_Create(alen, alen);
+  mi->COV = esl_dmatrix_Create(alen, alen);
  
   /* initialize for adding counts */
   for (i = 0; i < alen; i++) {
@@ -1549,7 +1549,7 @@ cov_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS miclass)
   mi->type  = mitype;
   mi->class = miclass;
 
-  if (mi->COV)  esl_dmatrix_SetZero(mi->COV);
+  if (mi->COV) esl_dmatrix_SetZero(mi->COV);
 
   mi->besthreshCOV = -eslINFINITY;
   mi->minCOV       =  eslINFINITY;
@@ -2452,7 +2452,7 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
     /* write the survival for the null alignments */
     if (ranklist_null) cov_histogram_PlotSurvival(fp, ranklist_null->ha, ranklist_null->survfit);
     fclose(fp);
-
+    
     if (!data->nofigures) {
       status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE);
       if (status != eslOK) goto ERROR;
