@@ -186,6 +186,22 @@ msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa)
 }
 
 int
+msamanip_ConvertDegen2N(ESL_MSA *msa)
+{ 
+  int     n;
+  int64_t i;
+
+  if (! (msa->flags & eslMSA_DIGITAL)) ESL_EXCEPTION(eslEINVAL, "msamanip_ConvertDegen2RandomCanonical only works on digital sequences");
+  
+  for (n = 0; n < msa->nseq; n++) {
+    for (i = 1; msa->ax[n][i] != eslDSQ_SENTINEL; i++)  
+      if (esl_abc_XIsDegenerate(msa->abc, msa->ax[n][i]))
+	msa->ax[n][i] = msa->abc->Kp-3;
+  }
+  return eslOK;
+}
+
+int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)
 {
   ESL_SQ *rsq  = NULL;
