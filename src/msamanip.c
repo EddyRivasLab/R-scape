@@ -196,7 +196,7 @@ msamanip_ConvertDegen2N(ESL_MSA *msa)
   for (n = 0; n < msa->nseq; n++) {
     for (i = 1; msa->ax[n][i] != eslDSQ_SENTINEL; i++)  
       if (esl_abc_XIsDegenerate(msa->abc, msa->ax[n][i]))
-	msa->ax[n][i] = msa->abc->Kp-3;
+	msa->ax[n][i] = esl_abc_XGetUnknown(msa->abc);
   }
   return eslOK;
 }
