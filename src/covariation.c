@@ -1738,7 +1738,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     /* censor the histogram and do an exponential fit to the tail */
     pmass = cov_histogram_pmass(data->ranklist_null->ha, data->pmass, data->fracfit);
     if (data->doexpfit) {
-      status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass, &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
+      status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
+				      &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad exponential fit.");
       if (data->verbose) {
 	fprintf(data->outfp, "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
@@ -1746,7 +1747,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       }
     }
     else { // a gamma fit
-      status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass, &newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
+      status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
+				&newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
       if (data->verbose) {
 	fprintf(data->outfp, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
@@ -2025,7 +2027,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	else 
 	  eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
       }
-      
+
       if (eval < data->thresh->val) {	
 	if (h == nhit - 1) {
  	  nhit += alloc_nhit;
