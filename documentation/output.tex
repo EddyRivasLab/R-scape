@@ -240,7 +240,7 @@ consensus structure.
  \label{fig:r2r}
  \end{figure}
 
- \begin{figure}[h] \includegraphics[scale=0.50]{Arisong_surv.pdf} 
+ \begin{figure}[h] \includegraphics[scale=0.50]{Arisong_surv.pdf}
  \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.surv.\{ps,svg\}}:
  covariation scores survival function $P(X>x)$.}  The survival
  function of scores for all pairs in the given alignment is depicted
@@ -248,8 +248,15 @@ consensus structure.
  black. A black line indicates to fit to a truncated Gamma
  distribution of the tail of the null distribution. In red, we plot
  the survival function of scores for the pairs in the given alignment
- excluding those proposed as base
- pairs.}  \label{fig:surv} \end{figure}
+ excluding those proposed as base pairs. For a particular pair, as an
+ example the highest scoring one from the distribution of proposed
+ pairs (blue), we obtain its E-value by drawing a vertical (gray) line
+ from the point to the null distribution (black). The corresponding
+ value in the blue scale gives us the E-value for that pair (in this
+ example, 3.7 $\cdot$10$^{-7}$).
+ }
+ \label{fig:surv}
+ \end{figure}
 
  \begin{figure}[h] 
 \includegraphics[scale=0.60]{Arisong_dplot.pdf} 
