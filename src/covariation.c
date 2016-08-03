@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include <math.h>s
 #include <float.h>
 #include <limits.h>
 
@@ -2632,9 +2632,11 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set lmargin 5\n");  
   if (dosvg) fprintf(pipe, "set lmargin 10\n");
   fprintf(pipe, "set bmargin 1\n");  
+  if (dosvg) fprintf(pipe, "set bmargin 4\n");
   fprintf(pipe, "set rmargin 6\n");
   if (dosvg) fprintf(pipe, "set rmargin 9\n");
   fprintf(pipe, "set tmargin 1\n");  
+  if (dosvg) fprintf(pipe, "set tmargin 4\n");
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");  
   fprintf(pipe, "set logscale y\n");

@@ -319,6 +319,11 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
   if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in RemoveGapColumns");
+
+  if (verbose) {
+    for (newpos = 0; newpos < msa->alen; newpos++)
+      printf("%d %d\n", newpos, map[newpos]);
+  }
   
   if (ret_map) *ret_map = map; else free(map);
   free(useme);
