@@ -123,6 +123,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *gnuplot;
   
   int              nseqmin;
+  int              consensus;           /* if TRUE, analyze only consensus positions in the alignment */
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
   MSA_STAT        *omstat;              /* statistics of the original alignment */
@@ -178,6 +179,7 @@ static ESL_OPTIONS options[] = {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
+  { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
   { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
@@ -376,6 +378,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else { cfg.submsa = 0; }
     
   /* other options */
+  cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
@@ -824,6 +827,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *type = NULL;
   char    *tok = NULL;
   char    *submsaname = NULL;
+  int      alen = msa->alen;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
@@ -839,8 +843,11 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
   
-  /* apply msa filters and than select submsa
+  /* apply msa filters and then select submsa
+   * none of these functions reduce the number of columns in the alignemnt
    */
+  if (cfg->consensus && msamanip_SelectConsensus(omsa)                                                            != eslOK) {
+    printf("%s\nconsensus selection fails\n", cfg->errbuf);               esl_fatal(msg); }
   if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
@@ -849,8 +856,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-
-  msa = *omsa; 
+  
+  msa = *omsa;
+  if (msa->alen != alen) {
+    printf("filtering altered the length of the alignemnt!\n");
+    esl_fatal(msg);
+  }
+  
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -874,7 +886,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
-
+  
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   

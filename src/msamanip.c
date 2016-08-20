@@ -395,6 +395,33 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   return status;
 }
 
+int
+msamanip_SelectConsensus(ESL_MSA **msa)
+{
+  ESL_MSA   *omsa  = *msa;
+  ESL_MSA   *new   = NULL;
+  int       *useme = NULL;
+  int        status;
+  
+  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
+  esl_vec_ISet(useme, omsa->nseq, 1);
+
+  if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+ 
+ /* replace msa */
+  esl_msa_Destroy(omsa);
+  *msa = new;
+  
+  if (useme != NULL) free(useme);
+  
+  return eslOK;
+  
+ ERROR:
+  if (useme != NULL) free(useme);
+  if (new   != NULL) esl_msa_Destroy(new);
+ return status;
+}
+
 /* Extract subset with sequences no more than idthesh similar to each other
  */
 int
@@ -416,7 +443,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 
   omsa = *msa;
 
-  if (1||omsa->nseq < 1000) {
+  #if 0
     ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
     esl_vec_ISet(useme, omsa->nseq, 0);
     
@@ -435,11 +462,9 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
       }
     
     if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  }
-  else {
-    printf("\nIDFilter\n");
+#else
     if ((status = esl_msaweight_IDFilter(omsa, idthresh, &new)) != eslOK) goto ERROR;
-  }
+#endif
   
   *ret_nremoved = omsa->nseq - new->nseq;
   
