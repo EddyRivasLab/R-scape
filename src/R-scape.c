@@ -468,7 +468,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
   else if (esl_opt_GetBoolean(go, "--dca"))       cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
- 
+
+  if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
+
   /* for the cov histograms */
   cfg.hpts    = HPTS;                                                               /* number of points in the histogram */
   cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin") : BMIN; /* lowest cov score to bound the histogram */
