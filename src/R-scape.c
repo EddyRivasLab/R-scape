@@ -825,6 +825,7 @@ static int
 original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 {
   ESL_MSA *msa = *omsa;
+  int     *useme = NULL;
   char    *msg = "original_msa_manipulate failed";
   char    *type = NULL;
   char    *tok = NULL;
@@ -848,8 +849,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
    */
-  if (cfg->consensus && msamanip_SelectConsensus(omsa)                                                            != eslOK) {
-    printf("%s\nconsensus selection fails\n", cfg->errbuf);               esl_fatal(msg); }
   if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
@@ -884,7 +883,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (cfg->consensus) {
+    if (msamanip_SelectConsensus(msa, &useme) != eslOK) {
+      printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
+    }
+  }
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
@@ -916,6 +920,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
+  if (useme) free(useme);
   return eslOK;
 }
 

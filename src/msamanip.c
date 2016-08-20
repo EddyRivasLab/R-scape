@@ -282,9 +282,8 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *useme, char *errbuf, int verbose)
 {
-  int     *useme = NULL;
   int     *map = NULL;
   double   gapfreq;
   int      alen = (int)msa->alen;
@@ -292,12 +291,18 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   int      apos;
   int      newpos = 0;
   int      i;
+  int      dofilter = FALSE;
   int      status;
+
+  if (gapthresh < 1.0 || useme) dofilter = TRUE;
   
-  ESL_ALLOC(useme, sizeof(int) * alen);
-  esl_vec_ISet(useme, alen, TRUE);
+  if (useme == NULL) {
+    ESL_ALLOC(useme, sizeof(int) * alen);
+    esl_vec_ISet(useme, alen, TRUE);
+  }
  
-  if (gapthresh < 1.0) {
+  if (dofilter) {
+    printf("\n FILTER\n");
     for (apos = 1; apos <= alen; apos++) {
       /* count the gaps in apos */
       ngaps = 0;
@@ -306,19 +311,19 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
       
       /* apply gapthresh */   
       gapfreq = (double)ngaps / (double) msa->nseq;
-      useme[apos-1] = (gapfreq < gapthresh)? TRUE : FALSE; 
+      if (gapfreq >= gapthresh) useme[apos-1] = FALSE; 
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
        ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
     if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
-  }
+  }  
   
   ESL_ALLOC(map, sizeof(int) * alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
-  if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in RemoveGapColumns");
+  //if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in RemoveGapColumns: %d should be %d", newpos, msa->alen);
 
   if (verbose) {
     for (newpos = 0; newpos < msa->alen; newpos++)
@@ -326,7 +331,6 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   }
   
   if (ret_map) *ret_map = map; else free(map);
-  free(useme);
   return eslOK;
   
  ERROR:
@@ -336,7 +340,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
 }
 
  int
-msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
+ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
   ESL_MSA *omsa;
   ESL_MSA *new = NULL;
@@ -373,9 +377,13 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
     for (x = 1; dsq[x] != eslDSQ_SENTINEL; x++) { 
       if (esl_abc_XIsResidue(omsa->abc, dsq[x]) && esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) len ++;
     }
-    useme[i] = (len < flen) ? 0 : 1;
+    useme[i] = (len < flen)? FALSE : TRUE;
   }
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+  /* Transfer the GC comments */
+  for(n = 0; n < omsa->ngc; n++) {
+    if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+  }
 
   *ret_seq_cons_len = clen;
   *ret_nfrags = omsa->nseq - esl_vec_ISum(useme, omsa->nseq);
@@ -396,29 +404,31 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 }
 
 int
-msamanip_SelectConsensus(ESL_MSA **msa)
+msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme)
 {
-  ESL_MSA   *omsa  = *msa;
-  ESL_MSA   *new   = NULL;
+  char      *seq_cons = NULL;
   int       *useme = NULL;
+  int        tagidx;
+  int        j;
   int        status;
-  
-  ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  esl_vec_ISet(useme, omsa->nseq, 1);
 
-  if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
- 
- /* replace msa */
-  esl_msa_Destroy(omsa);
-  *msa = new;
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], "seq_cons") == 0) seq_cons = msa->gc[tagidx];
   
-  if (useme != NULL) free(useme);
+  if (seq_cons == NULL) return eslOK;
+  printf("seq_cons\n%s\n", seq_cons);
   
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  esl_vec_ISet(useme, msa->alen, TRUE);
+  for (j = 0; j < msa->alen; j++) {
+    if (seq_cons[j] == '.') { useme[j] = FALSE; }
+  }
+  
+  *ret_useme = useme;
   return eslOK;
   
  ERROR:
   if (useme != NULL) free(useme);
-  if (new   != NULL) esl_msa_Destroy(new);
  return status;
 }
 
@@ -437,6 +447,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   int        c;
   int        nskip;
   int        i;
+  int        n;
   int        status;
 
   if (idthresh == 1.0) return eslOK;
@@ -465,8 +476,13 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 #else
     if ((status = esl_msaweight_IDFilter(omsa, idthresh, &new)) != eslOK) goto ERROR;
 #endif
-  
-  *ret_nremoved = omsa->nseq - new->nseq;
+    
+    /* Transfer the GC comments */
+    for(n = 0; n < omsa->ngc; n++) {
+      if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+    }
+    
+    *ret_nremoved = omsa->nseq - new->nseq;
   
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -500,6 +516,7 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   int        nc         = 0;
   int        cmax;
   int        i;
+  int        n;
   int        status;
 
   omsa = *msa;
@@ -539,6 +556,10 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
+  /* Transfer the GC comments */
+  for(n = 0; n < omsa->ngc; n++) {
+    if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+  }
 
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -618,7 +639,11 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   for (s = 1; s <= nseq; s ++) useme[array[s]] = 1;
   
   if ((status = esl_msa_SequenceSubset(msa, useme, &new)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create msa subset");
-
+  /* Transfer the GC comments */
+  for(n = 0; n < msa->ngc; n++) {
+    if (msa->gc[n] && (status = esl_msa_AppendGC(new, msa->gc_tag[n], msa->gc[n])) != eslOK) goto ERROR;
+  }
+  
   /* change the accession of the msa to reflect that it is a subset of the original */
   if (msa->acc) {
     if (new->acc) free(new->acc); new->acc = NULL;
