@@ -884,7 +884,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
   if (cfg->consensus) {
-    if (msamanip_SelectConsensus(msa, &useme) != eslOK) {
+    if (msamanip_SelectConsensus(msa, &useme, cfg->verbose) != eslOK) {
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }

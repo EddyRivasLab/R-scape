@@ -75,6 +75,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_TREE        *T;
   double           treeavgt;
  
+  int              consensus;           /* if TRUE, analyze only consensus positions in the alignment */
+
   int              nseqmin;
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
@@ -101,6 +103,7 @@ static ESL_OPTIONS options[] = {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
+  { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
   { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
@@ -202,6 +205,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
  
   /* other options */
+  cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : -1.0;
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          : -1.0;
@@ -488,6 +492,7 @@ static int
 msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 {
   ESL_MSA *msa = *omsa;
+  int     *useme = NULL;
   char    *msg = "original_msa_manipulate failed";
   char    *type = NULL;
   char    *tok = NULL;
@@ -545,7 +550,12 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (cfg->consensus) {
+    if (msamanip_SelectConsensus(msa, &useme, cfg->verbose) != eslOK) {
+      printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
+    }
+  }
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
@@ -588,6 +598,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
+  if (useme) free(useme);
   return eslOK;
 }
 

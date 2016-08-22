@@ -302,7 +302,6 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *us
   }
  
   if (dofilter) {
-    printf("\n FILTER\n");
     for (apos = 1; apos <= alen; apos++) {
       /* count the gaps in apos */
       ngaps = 0;
@@ -323,7 +322,6 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *us
   ESL_ALLOC(map, sizeof(int) * alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
-  //if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in RemoveGapColumns: %d should be %d", newpos, msa->alen);
 
   if (verbose) {
     for (newpos = 0; newpos < msa->alen; newpos++)
@@ -404,7 +402,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *us
 }
 
 int
-msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme)
+msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose)
 {
   char      *seq_cons = NULL;
   int       *useme = NULL;
@@ -416,7 +414,7 @@ msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme)
     if (strcmp(msa->gc_tag[tagidx], "seq_cons") == 0) seq_cons = msa->gc[tagidx];
   
   if (seq_cons == NULL) return eslOK;
-  printf("seq_cons\n%s\n", seq_cons);
+  if (verbose) printf("seq_cons\n%s\n", seq_cons);
   
   ESL_ALLOC(useme, sizeof(int) * msa->alen);
   esl_vec_ISet(useme, msa->alen, TRUE);
@@ -1840,4 +1838,136 @@ reorder_msa(ESL_MSA *msa, int *order, char *errbuf)
 
  ERROR: 
   return status;
+}
+
+int
+esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA **ret_newmsa)
+{
+  int     *list   = NULL;               /* array of seqs in new msa */
+  int     *useme  = NULL;               /* TRUE if seq is kept in new msa */
+  int      nnew;			/* number of seqs in new alignment */
+  double   ident;                       /* pairwise percentage id */
+  int      i,j;                         /* seqs counters*/
+  int      remove;                      /* TRUE if sq is to be removed */
+  int      status;
+  
+  /* Contract checks
+   */
+  ESL_DASSERT1( (msa       != NULL) );
+  ESL_DASSERT1( (msa->nseq >= 1)    );
+  ESL_DASSERT1( (msa->alen >= 1)    );
+
+  /* allocate */
+  ESL_ALLOC(list,  sizeof(int) * msa->nseq);
+  ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+  esl_vec_ISet(useme, msa->nseq, 0); /* initialize array */
+
+  /* find which seqs to keep (list) */
+  nnew = 0;
+  for (i = 0; i < msa->nseq; i++)
+    {
+      remove = FALSE;
+      for (j = 0; j < nnew; j++)
+	{
+	  if (! (msa->flags & eslMSA_DIGITAL)) {
+	    if (esl_dst_CPairId_Overmaxid(msa->aseq[i], msa->aseq[list[j]], maxid)) {
+	      remove = TRUE; 
+	      break; 
+	    }
+	  } 
+#ifdef eslAUGMENT_ALPHABET
+	  else {
+	    if (esl_dst_XPairId_Overmaxid(msa->abc, msa->ax[i], msa->ax[list[j]], maxid)) {
+	      remove = TRUE; 
+	      break; 
+	    }
+	  }
+#endif
+	}
+      if (remove == FALSE) {
+	list[nnew++] = i;
+	useme[i]     = TRUE;
+      }
+    }
+  if ((status = esl_msa_SequenceSubset(msa, useme, ret_newmsa)) != eslOK) goto ERROR;
+ 
+  free(list);
+  free(useme);
+  return eslOK;
+
+ ERROR:
+  if (list  != NULL) free(list);
+  if (useme != NULL) free(useme);
+  return status;
+}
+
+int
+esl_dst_CPairId_Overmaxid(const char *asq1, const char *asq2, double maxid)
+{
+  int     status;
+  double  minlen;
+  int     idents;               /* total identical positions  */
+  int     len1, len2;           /* lengths of seqs            */
+  int     i;                    /* position in aligned seqs   */
+
+  idents = len1 = len2 = 0;
+  for (i = 0; asq1[i] != '\0' && asq2[i] != '\0'; i++) 
+    {
+      if (isalpha(asq1[i])) len1++;
+      if (isalpha(asq2[i])) len2++;
+    }
+  minlen = (double)ESL_MIN(len1,len2);
+
+  for (i = 0; asq1[i] != '\0' && asq2[i] != '\0'; i++) 
+    {
+      if (isalpha(asq1[i]) && isalpha(asq2[i])
+	  && toupper(asq1[i]) == toupper(asq2[i]))
+	{
+	  idents++;
+	  if ((double) idents / minlen >= maxid) return TRUE;
+	}
+    }
+  if (asq1[i] != '\0' || asq2[i] != '\0') 
+    ESL_XEXCEPTION(eslEINVAL, "strings not same length, not aligned");
+
+  return FALSE;
+  
+ ERROR:
+  return FALSE;
+}
+
+int
+esl_dst_XPairId_Overmaxid(const ESL_ALPHABET *abc, const ESL_DSQ *ax1, const ESL_DSQ *ax2, double maxid)
+{
+  int     status;
+  double  minlen;
+  int     idents;               /* total identical positions  */
+  int     len1, len2;           /* lengths of seqs            */
+  int     i;                    /* position in aligned seqs   */
+
+  idents = len1 = len2 = 0;
+  for (i = 1; ax1[i] != eslDSQ_SENTINEL && ax2[i] != eslDSQ_SENTINEL; i++) 
+    {
+      if (esl_abc_XIsCanonical(abc, ax1[i])) len1++;
+      if (esl_abc_XIsCanonical(abc, ax2[i])) len2++;
+    }
+  minlen = (double)ESL_MIN(len1,len2);
+
+  for (i = 1; ax1[i] != eslDSQ_SENTINEL && ax2[i] != eslDSQ_SENTINEL; i++) 
+    {
+      if (esl_abc_XIsCanonical(abc, ax1[i]) && esl_abc_XIsCanonical(abc, ax2[i])
+	  && ax1[i] == ax2[i])
+	{
+	  idents++;
+	  if ((double) idents / minlen >= maxid) return TRUE;
+	}
+    }
+  
+  if (ax1[i] != eslDSQ_SENTINEL || ax2[i] != eslDSQ_SENTINEL) 
+    ESL_XEXCEPTION(eslEINVAL, "strings not same length, not aligned");
+
+  return FALSE;
+
+ ERROR:
+  return FALSE;
 }
