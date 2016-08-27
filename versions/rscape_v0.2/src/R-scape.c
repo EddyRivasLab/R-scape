@@ -81,7 +81,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outdir;
   char            *outfile;
   char            *outsrtfile;
-  FILE            *outfp; 
+  FILE            *outfp;
   FILE            *outsrtfp; 
   char            *outheader;          /* header for all output files */
   int              infmt;
@@ -123,6 +123,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *gnuplot;
   
   int              nseqmin;
+  int              consensus;           /* if TRUE, analyze only consensus positions in the alignment */
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
   MSA_STAT        *omstat;              /* statistics of the original alignment */
@@ -170,7 +171,7 @@ static ESL_OPTIONS options[] = {
   { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
   { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .out and .sum files only",                                                            1 },
-  { "--roc",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc file",                                                            1 },
+  { "--roc",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc file",                                                                           1 },
   { "--expo",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to do an exponential fit (default is gamma)",                                          0},
   /* E-values to assess significance */
   { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
@@ -178,6 +179,7 @@ static ESL_OPTIONS options[] = {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
+  { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
   { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
@@ -189,9 +191,9 @@ static ESL_OPTIONS options[] = {
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
-  { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bpaired_columns and nonbpaired_columns independently",                      0 },
-  { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle residues within a column",                                                  0 },
-  { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle residues within a column that appear to be canonical (i,j) pairs ",         0 },
+  { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bp_columns and nonbp_columns independently",                                0 },
+  { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle res within a column",                                                       0 },
+  { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle res within a column that appear canonical (i,j) pairs ",                    0 },
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
   { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
   /* covariation measures */
@@ -249,9 +251,10 @@ static ESL_OPTIONS options[] = {
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1},
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   { "--pmass",        eslARG_REAL,    "0.05",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                            0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -305,7 +308,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     {
       esl_usage(stdout,  cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-      esl_opt_DisplayHelp(stdout, go, 1, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
+      esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
      exit(0);
     }
 
@@ -375,6 +378,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else { cfg.submsa = 0; }
     
   /* other options */
+  cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
@@ -464,11 +468,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
   else if (esl_opt_GetBoolean(go, "--dca"))       cfg.method = DCA;
   else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
- 
+
+  if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
+
   /* for the cov histograms */
-  cfg.hpts    = HPTS; /* number of points in the histogram */
-  cfg.bmin    = BMIN; /* a guess for lowest cov score */
-  cfg.w       = W;   /* default. histogram step, will be determined for each msa */
+  cfg.hpts    = HPTS;                                                               /* number of points in the histogram */
+  cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin") : BMIN; /* lowest cov score to bound the histogram */
+  cfg.w       = W;                                                                  /* default. histogram step, will be determined for each msa */
   cfg.pmass   = esl_opt_GetReal(go, "--pmass");
   cfg.fracfit = esl_opt_GetReal(go, "--fracfit");
 
@@ -677,10 +683,10 @@ main(int argc, char **argv)
  
       esl_sprintf(&omsaname, "%s", cfg.msaname);
 
-      useme = malloc(sizeof(int)*(msa->alen+1));
-      for (first = 1; first <= ESL_MAX(1,msa->alen); first += cfg.slide) {
+      useme = malloc(sizeof(int)*(msa->alen));
+      for (first = 1; first <= ESL_MAX(1, msa->alen); first += cfg.slide) {
 
-	esl_vec_ISet(useme, msa->alen+1, FALSE);
+	esl_vec_ISet(useme, msa->alen, FALSE);
 	wmsa = esl_msa_Clone(msa);
 
 	last = ESL_MIN(first+cfg.window-1, msa->alen);	
@@ -692,7 +698,7 @@ main(int argc, char **argv)
 	free(cfg.msaname); cfg.msaname = NULL;
 	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
 	esl_msa_SetName(wmsa, cfg.msaname, -1);
-  
+
 	status = original_msa_manipulate(go, &cfg, &wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
 	if (wmsa == NULL) continue;
@@ -819,10 +825,12 @@ static int
 original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 {
   ESL_MSA *msa = *omsa;
+  int     *useme = NULL;
   char    *msg = "original_msa_manipulate failed";
   char    *type = NULL;
   char    *tok = NULL;
   char    *submsaname = NULL;
+  int      alen = msa->alen;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
@@ -838,7 +846,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
   
-  /* apply msa filters and than select submsa
+  /* apply msa filters and then select submsa
+   * none of these functions reduce the number of columns in the alignemnt
    */
   if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
@@ -848,8 +857,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-
-  msa = *omsa; 
+  
+  msa = *omsa;
+  if (msa->alen != alen) {
+    printf("filtering altered the length of the alignemnt!\n");
+    esl_fatal(msg);
+  }
+  
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -869,11 +883,16 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (cfg->consensus) {
+    if (msamanip_SelectConsensus(msa, &useme, cfg->verbose) != eslOK) {
+      printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
+    }
+  }
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
-  msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
-
+  msamanip_ConvertDegen2N(msa);
+  
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   
@@ -901,6 +920,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
+  if (useme) free(useme);
   return eslOK;
 }
 

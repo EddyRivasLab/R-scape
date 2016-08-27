@@ -1,7 +1,7 @@
 ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
--------------m
+-------------
 for v in rscape_v0.2 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -31,6 +31,7 @@ cp ~/src/src/mysource/src/e2.h ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/cykcov.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/covgrammars.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/cococyk.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/msafilter.* ~/src/src/mysource/versions/$v/src/. ;\
 done
 
 
@@ -41,7 +42,7 @@ last minute steps to make an R-scape tarball:
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
 for v in rscape_v0.2 ; do \
-for x in 1 ; do \
+for x in 2 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/$v ;\
 make distclean ;\
@@ -60,7 +61,7 @@ done
 in eddyfs01:
 ------------
 for v in rscape_v0.2 ; do \
-for x in 1 ; do \
+for x in 2 ; do \
 cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/$v/documentation/. ;\
 cd /n/eddyfs01/home/erivas/src/src/mysource/versions/$v ;\
 make distclean ;\

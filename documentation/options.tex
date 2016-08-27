@@ -91,6 +91,10 @@ maximum-covariation optimal structure all include the suffix
 \prog{.cyk.}
 
 
+\subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
+associated to them. No null alignments are created.
+
+
 \subsubsection{\prog{--window <n>}} \rscape\ can be run in a window scanning version for long alignments.
 The window size is $n>0$.
 
@@ -102,12 +106,12 @@ The window size is $n>0$.
 \subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$
 pairwise similarity are considered in the analysis.  Pairwise \%
 identity is defined as the ratio of identical positions divided by the
-minimum length of the two sequences.  Sequences with at least $x$
-pairwise similarity are clustered together, and one representative of
-the cluster is randomly selected. If this option is not used all
+minimum length of the two sequences. If this option is not used all
 (weighted) sequences are used in the analysis.
 
 \subsubsection{\prog{--gapthresh <x>}} Only columns with less than $0<x\leq 1$ fraction of gaps are considered in the analysis.
+
+\subsubsection{\prog{--consensus}} If the alignment has a GC ``seq\_cons'' field, only consensus positions will be analyzed.
 
 \subsubsection{\prog{--submsa <n>}} Analyzes a random subset of the input alignment.
 

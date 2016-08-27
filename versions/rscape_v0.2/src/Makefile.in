@@ -69,7 +69,8 @@ endif
 #
 SUBDIRS = ../src
 
-PROGS    = R-scape\
+PROGS    = msafilter\
+	   R-scape\
 	   R-scape-sim\
 	   R-scape-sim-nobps\
 

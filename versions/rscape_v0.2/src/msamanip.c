@@ -186,6 +186,22 @@ msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa)
 }
 
 int
+msamanip_ConvertDegen2N(ESL_MSA *msa)
+{ 
+  int     n;
+  int64_t i;
+
+  if (! (msa->flags & eslMSA_DIGITAL)) ESL_EXCEPTION(eslEINVAL, "msamanip_ConvertDegen2RandomCanonical only works on digital sequences");
+  
+  for (n = 0; n < msa->nseq; n++) {
+    for (i = 1; msa->ax[n][i] != eslDSQ_SENTINEL; i++)  
+      if (esl_abc_XIsDegenerate(msa->abc, msa->ax[n][i]))
+	msa->ax[n][i] = esl_abc_XGetUnknown(msa->abc);
+  }
+  return eslOK;
+}
+
+int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)
 {
   ESL_SQ *rsq  = NULL;
@@ -266,9 +282,8 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *useme, char *errbuf, int verbose)
 {
-  int     *useme = NULL;
   int     *map = NULL;
   double   gapfreq;
   int      alen = (int)msa->alen;
@@ -276,12 +291,17 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
   int      apos;
   int      newpos = 0;
   int      i;
+  int      dofilter = FALSE;
   int      status;
+
+  if (gapthresh < 1.0 || useme) dofilter = TRUE;
   
-  ESL_ALLOC(useme, sizeof(int) * alen);
-  esl_vec_ISet(useme, alen, TRUE);
+  if (useme == NULL) {
+    ESL_ALLOC(useme, sizeof(int) * alen);
+    esl_vec_ISet(useme, alen, TRUE);
+  }
  
-  if (gapthresh < 1.0) {
+  if (dofilter) {
     for (apos = 1; apos <= alen; apos++) {
       /* count the gaps in apos */
       ngaps = 0;
@@ -290,22 +310,25 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
       
       /* apply gapthresh */   
       gapfreq = (double)ngaps / (double) msa->nseq;
-      useme[apos-1] = (gapfreq < gapthresh)? TRUE : FALSE; 
+      if (gapfreq >= gapthresh) useme[apos-1] = FALSE; 
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
        ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
     if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
-  }
+  }  
   
   ESL_ALLOC(map, sizeof(int) * alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
-  if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in RemoveGapColumns");
+
+  if (verbose) {
+    for (newpos = 0; newpos < msa->alen; newpos++)
+      printf("%d %d\n", newpos, map[newpos]);
+  }
   
   if (ret_map) *ret_map = map; else free(map);
-  free(useme);
   return eslOK;
   
  ERROR:
@@ -315,7 +338,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, char *e
 }
 
  int
-msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
+ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
   ESL_MSA *omsa;
   ESL_MSA *new = NULL;
@@ -352,9 +375,13 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
     for (x = 1; dsq[x] != eslDSQ_SENTINEL; x++) { 
       if (esl_abc_XIsResidue(omsa->abc, dsq[x]) && esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) len ++;
     }
-    useme[i] = (len < flen) ? 0 : 1;
+    useme[i] = (len < flen)? FALSE : TRUE;
   }
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+  /* Transfer the GC comments */
+  for(n = 0; n < omsa->ngc; n++) {
+    if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+  }
 
   *ret_seq_cons_len = clen;
   *ret_nfrags = omsa->nseq - esl_vec_ISum(useme, omsa->nseq);
@@ -374,6 +401,35 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   return status;
 }
 
+int
+msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose)
+{
+  char      *seq_cons = NULL;
+  int       *useme = NULL;
+  int        tagidx;
+  int        j;
+  int        status;
+
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+    if (strcmp(msa->gc_tag[tagidx], "seq_cons") == 0) seq_cons = msa->gc[tagidx];
+  
+  if (seq_cons == NULL) return eslOK;
+  if (verbose) printf("seq_cons\n%s\n", seq_cons);
+  
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  esl_vec_ISet(useme, msa->alen, TRUE);
+  for (j = 0; j < msa->alen; j++) {
+    if (seq_cons[j] == '.') { useme[j] = FALSE; }
+  }
+  
+  *ret_useme = useme;
+  return eslOK;
+  
+ ERROR:
+  if (useme != NULL) free(useme);
+ return status;
+}
+
 /* Extract subset with sequences no more than idthesh similar to each other
  */
 int
@@ -389,13 +445,14 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   int        c;
   int        nskip;
   int        i;
+  int        n;
   int        status;
 
   if (idthresh == 1.0) return eslOK;
 
   omsa = *msa;
 
-  if (1||omsa->nseq < 1000) {
+  #if 0
     ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
     esl_vec_ISet(useme, omsa->nseq, 0);
     
@@ -414,13 +471,16 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
       }
     
     if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  }
-  else {
-    printf("\nIDFilter\n");
+#else
     if ((status = esl_msaweight_IDFilter(omsa, idthresh, &new)) != eslOK) goto ERROR;
-  }
-  
-  *ret_nremoved = omsa->nseq - new->nseq;
+#endif
+    
+    /* Transfer the GC comments */
+    for(n = 0; n < omsa->ngc; n++) {
+      if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+    }
+    
+    *ret_nremoved = omsa->nseq - new->nseq;
   
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -454,6 +514,7 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   int        nc         = 0;
   int        cmax;
   int        i;
+  int        n;
   int        status;
 
   omsa = *msa;
@@ -493,6 +554,10 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
   *ret_nremoved = omsa->nseq - nused;
 
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
+  /* Transfer the GC comments */
+  for(n = 0; n < omsa->ngc; n++) {
+    if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+  }
 
   /* replace msa */
   esl_msa_Destroy(omsa);
@@ -572,7 +637,11 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   for (s = 1; s <= nseq; s ++) useme[array[s]] = 1;
   
   if ((status = esl_msa_SequenceSubset(msa, useme, &new)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create msa subset");
-
+  /* Transfer the GC comments */
+  for(n = 0; n < msa->ngc; n++) {
+    if (msa->gc[n] && (status = esl_msa_AppendGC(new, msa->gc_tag[n], msa->gc[n])) != eslOK) goto ERROR;
+  }
+  
   /* change the accession of the msa to reflect that it is a subset of the original */
   if (msa->acc) {
     if (new->acc) free(new->acc); new->acc = NULL;
@@ -1769,4 +1838,136 @@ reorder_msa(ESL_MSA *msa, int *order, char *errbuf)
 
  ERROR: 
   return status;
+}
+
+int
+esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA **ret_newmsa)
+{
+  int     *list   = NULL;               /* array of seqs in new msa */
+  int     *useme  = NULL;               /* TRUE if seq is kept in new msa */
+  int      nnew;			/* number of seqs in new alignment */
+  double   ident;                       /* pairwise percentage id */
+  int      i,j;                         /* seqs counters*/
+  int      remove;                      /* TRUE if sq is to be removed */
+  int      status;
+  
+  /* Contract checks
+   */
+  ESL_DASSERT1( (msa       != NULL) );
+  ESL_DASSERT1( (msa->nseq >= 1)    );
+  ESL_DASSERT1( (msa->alen >= 1)    );
+
+  /* allocate */
+  ESL_ALLOC(list,  sizeof(int) * msa->nseq);
+  ESL_ALLOC(useme, sizeof(int) * msa->nseq);
+  esl_vec_ISet(useme, msa->nseq, 0); /* initialize array */
+
+  /* find which seqs to keep (list) */
+  nnew = 0;
+  for (i = 0; i < msa->nseq; i++)
+    {
+      remove = FALSE;
+      for (j = 0; j < nnew; j++)
+	{
+	  if (! (msa->flags & eslMSA_DIGITAL)) {
+	    if (esl_dst_CPairId_Overmaxid(msa->aseq[i], msa->aseq[list[j]], maxid)) {
+	      remove = TRUE; 
+	      break; 
+	    }
+	  } 
+#ifdef eslAUGMENT_ALPHABET
+	  else {
+	    if (esl_dst_XPairId_Overmaxid(msa->abc, msa->ax[i], msa->ax[list[j]], maxid)) {
+	      remove = TRUE; 
+	      break; 
+	    }
+	  }
+#endif
+	}
+      if (remove == FALSE) {
+	list[nnew++] = i;
+	useme[i]     = TRUE;
+      }
+    }
+  if ((status = esl_msa_SequenceSubset(msa, useme, ret_newmsa)) != eslOK) goto ERROR;
+ 
+  free(list);
+  free(useme);
+  return eslOK;
+
+ ERROR:
+  if (list  != NULL) free(list);
+  if (useme != NULL) free(useme);
+  return status;
+}
+
+int
+esl_dst_CPairId_Overmaxid(const char *asq1, const char *asq2, double maxid)
+{
+  int     status;
+  double  minlen;
+  int     idents;               /* total identical positions  */
+  int     len1, len2;           /* lengths of seqs            */
+  int     i;                    /* position in aligned seqs   */
+
+  idents = len1 = len2 = 0;
+  for (i = 0; asq1[i] != '\0' && asq2[i] != '\0'; i++) 
+    {
+      if (isalpha(asq1[i])) len1++;
+      if (isalpha(asq2[i])) len2++;
+    }
+  minlen = (double)ESL_MIN(len1,len2);
+
+  for (i = 0; asq1[i] != '\0' && asq2[i] != '\0'; i++) 
+    {
+      if (isalpha(asq1[i]) && isalpha(asq2[i])
+	  && toupper(asq1[i]) == toupper(asq2[i]))
+	{
+	  idents++;
+	  if ((double) idents / minlen >= maxid) return TRUE;
+	}
+    }
+  if (asq1[i] != '\0' || asq2[i] != '\0') 
+    ESL_XEXCEPTION(eslEINVAL, "strings not same length, not aligned");
+
+  return FALSE;
+  
+ ERROR:
+  return FALSE;
+}
+
+int
+esl_dst_XPairId_Overmaxid(const ESL_ALPHABET *abc, const ESL_DSQ *ax1, const ESL_DSQ *ax2, double maxid)
+{
+  int     status;
+  double  minlen;
+  int     idents;               /* total identical positions  */
+  int     len1, len2;           /* lengths of seqs            */
+  int     i;                    /* position in aligned seqs   */
+
+  idents = len1 = len2 = 0;
+  for (i = 1; ax1[i] != eslDSQ_SENTINEL && ax2[i] != eslDSQ_SENTINEL; i++) 
+    {
+      if (esl_abc_XIsCanonical(abc, ax1[i])) len1++;
+      if (esl_abc_XIsCanonical(abc, ax2[i])) len2++;
+    }
+  minlen = (double)ESL_MIN(len1,len2);
+
+  for (i = 1; ax1[i] != eslDSQ_SENTINEL && ax2[i] != eslDSQ_SENTINEL; i++) 
+    {
+      if (esl_abc_XIsCanonical(abc, ax1[i]) && esl_abc_XIsCanonical(abc, ax2[i])
+	  && ax1[i] == ax2[i])
+	{
+	  idents++;
+	  if ((double) idents / minlen >= maxid) return TRUE;
+	}
+    }
+  
+  if (ax1[i] != eslDSQ_SENTINEL || ax2[i] != eslDSQ_SENTINEL) 
+    ESL_XEXCEPTION(eslEINVAL, "strings not same length, not aligned");
+
+  return FALSE;
+
+ ERROR:
+  return FALSE;
 }

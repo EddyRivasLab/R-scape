@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>s
+#include <math.h>
 #include <float.h>
 #include <limits.h>
 
