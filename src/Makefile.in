@@ -96,6 +96,7 @@ PROGS    = scorematrix2rate\
 	   R-scape-sim\
 	   R-scape-sim-nobps\
 	   msafilter\
+	   appcov\
 
 
 OBJS     = e1_bg.o\
