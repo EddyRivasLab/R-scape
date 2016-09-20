@@ -4,8 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-
+#include <sys/types.h> 
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -66,6 +65,12 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outmapfile;
   FILE            *outmapfp;
   
+  char            *pairfile;
+  FILE            *pairfp;
+
+  int              makeplot;
+  char            *plotfile;
+  
   double          *ft;
   double          *fbp;
   double          *fnbp;
@@ -87,52 +92,62 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              window;
   int              slide;
 
-  double           app_gapthresh;
   double           app_varthresh;
   double           app_nowcthresh;
   double           app_guthresh;
   double           app_notsthresh;
+  int              app_minhelix;
+  int              app_helix;
   
   float            tol;
   int              verbose;
 };
 
 typedef enum {
-  TS  = 0, // transition   A <-> G
-  TV  = 1, // transversion U <-> C
+  TS  = 0, // transition   G<->A or U<->C
+  TV  = 1, // transversion 
 } PAIRTYPE;
 
 typedef enum {
-  GAorUC    = 0, // transition   
-  GmAorUmC  = 1, // transition   
-  GmAandUmC  = 2, // transition   
+  GmAorUmC   = 0, // TS pair && ( G>A ||  U>C ) 
+  GmAandUmC  = 1, // TS pair &&   G>A && U>C
 } PAIRSUBTYPE;
 
+typedef enum {
+  NONE   = 0, // not in helix
+  START  = 1, // start if a helix
+  MID    = 2, // middle of a helix
+  END    = 3, // end of a helix
+ } HELIXTYPE;
 
 struct pair_s {
-  int      N;
-  int      i;
-  int      j;
-  ESL_DSQ *sqi;
-  ESL_DSQ *sqj;
-  int      gai;
-  int      gaj;
-  int      uci;
-  int      ucj;
-  int      gmai;
-  int      gmaj;
-  int      umci;
-  int      umcj;
-  int      otheri;
-  int      otherj;
-  PAIRTYPE type;
-  int      is_bp;
+  int       K;
+  int       N;
+  int       i;
+  int       j;
+  ESL_DSQ  *sqi;
+  ESL_DSQ  *sqj;
+  double   *frqi;
+  double   *frqj;
+  int       gai;
+  int       gaj;
+  int       uci;
+  int       ucj;
+  int       gmai;
+  int       gmaj;
+  int       umci;
+  int       umcj;
+  int       otheri;
+  int       otherj;
+  PAIRTYPE  ptype;
+  int       is_bp;
+  HELIXTYPE htype;
 };
 
 struct summary_s {
-  int N;         // number of sequences
-  int ncol;      // number of columns
-  int ncol_use;  // number of columns after removing gaps
+  int N;          // number of sequences
+  int ncol_total; // number of columns in the input alignment
+  int ncol;       // number of columns after removing gaps
   int ncol_GA;
   int ncol_UC;
   int ncol_GmA;
@@ -145,10 +160,13 @@ struct summary_s {
   int nwc_no;
   int nwc_ts;
   int nwc_tv;
-  int nwc_GAorUC;
   int nwc_GmAorUmC;
   int nwc_GmAandUmC;
   int nGA;
+
+  int    helix;
+  double h_mean;
+  double h_stdv;
 
   int maxgap;
   int minvar;
@@ -158,19 +176,21 @@ struct summary_s {
 };
   
 static ESL_OPTIONS options[] = {
-  /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
-  { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
-  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
-  { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
-  { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
-  { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
-  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
+  /* name             type             default   env         range   toggles  reqs   incomp              help                                                                                  docgroup*/
+  { "-h",             eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
+  { "--outdir",     eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
+  { "-v",             eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  { "--window",        eslARG_INT,      NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
+  { "--slide",         eslARG_INT,      "50",    NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
+  { "--onemsa",       eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
+  { "--helix",        eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "find helices",                                                                              1 },
  /* options  */
   { "--appgap",       eslARG_REAL,     "0.1",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of gaps per column",                                                           1 },
-  { "--appvar",       eslARG_REAL,     "0.01",   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "minimum fraction of changes per column required",                                           1 },
-  { "--appnowc",      eslARG_REAL,     "0.01",   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of non-WC allowed",                                                            1 },
+  { "--appvar",       eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "minimum fraction of changes per column required",                                           1 },
+  { "--appnowc",      eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of non-WC allowed",                                                            1 },
   { "--appgu",        eslARG_REAL,     "1.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of GU's allowed [default: allows all]",                                            1 },
   { "--appnots",      eslARG_REAL,     "0.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of not transitions to still call a pair ts [default: allows non]",                 1 },
+  { "--minhelix",      eslARG_INT,       "4",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min lenght of a helix [default: 4]",                                                        1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -182,14 +202,16 @@ static ESL_OPTIONS options[] = {
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   /* alphabet type */
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
-  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      0 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* Control of output */
-  { "--outmsa",     eslARG_OUTFILE,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write msa used to file <f>,",                                                                1 },
-  { "--outmap",    eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write map file to <f>",                                                                      1 },
+  { "-p",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produce plots",                                                                             1 },
+  { "--outpair",    eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pairs to <f> (default is standar output)",                                            1 },
+  { "--outmsa",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write msa used to file <f>,",                                                               1 },
+  { "--outmap",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write map file to <f>",                                                                     1 },
  /* other options */  
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
@@ -207,6 +229,7 @@ static int         col_freq(int N, ESL_DSQ *col, int K, int *frq);
 static int         col_ngap(ESL_ALPHABET *a, int N, ESL_DSQ *col);
 static int         col_nunk(ESL_ALPHABET *a, int N, ESL_DSQ *col);
 static int         col_nvar(int K, int *frq);
+static int         is_pair(int i, int j, int np, struct pair_s *pair);
 static int         is_GA (int K, int *frq);
 static int         is_UC (int K, int *frq);
 static int         is_GmA(int K, int *frq);
@@ -217,13 +240,17 @@ static int         GminusA(int *frq);
 static int         UminusC(int *frq);
 static int         pair_is_wc(ESL_DSQ sqi, ESL_DSQ sqj);
 static int         pair_is_gu(ESL_DSQ sqi, ESL_DSQ sqj);
-static int         select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
-static int         select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj);
 static PAIRTYPE    pair_type   (ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
 static PAIRSUBTYPE pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
-static int         plot_pairs(FILE *fp, int np, struct pair_s *pair);
-static int         write_pairs(FILE *fp, int np, struct pair_s *pair);
-static void        write_summary(FILE *fp, struct summary_s *s);
+static int         pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix);
+static int         pairs_in_helix_status (int i, int j, int **S, int ncol, HELIXTYPE *ret_htype);
+static int         pairs_plot(FILE *fp, int np, struct pair_s *pair);
+static int         pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV);
+static int         pairs_write_plotfile(char *plotfile, int np, struct pair_s *pair);
+static int         select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
+static int         select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
+static int         select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj);
+static void        summary_write(FILE *fp, struct summary_s *s);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -297,12 +324,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
 
   /* appcov options */
-  cfg.app_gapthresh  = esl_opt_GetReal(go, "--appgap");
-  cfg.app_varthresh  = esl_opt_GetReal(go, "--appvar");
-  cfg.app_nowcthresh = esl_opt_GetReal(go, "--appnowc");
-  cfg.app_guthresh   = esl_opt_GetReal(go, "--appgu");
-  cfg.app_notsthresh = esl_opt_GetReal(go, "--appnots");
-
+  cfg.app_varthresh  = esl_opt_GetReal   (go, "--appvar");
+  cfg.app_nowcthresh = esl_opt_GetReal   (go, "--appnowc");
+  cfg.app_guthresh   = esl_opt_GetReal   (go, "--appgu");
+  cfg.app_notsthresh = esl_opt_GetReal   (go, "--appnots");
+  cfg.app_minhelix   = esl_opt_GetInteger(go, "--minhelix");
+  cfg.app_helix      = esl_opt_GetBoolean(go, "--helix");
+  
   /* other options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
@@ -316,9 +344,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
+  cfg.makeplot    = esl_opt_GetBoolean(go, "-p");
   
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
-  
+
   esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
   if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.filter", cfg.outdir, cfg.filename);
   else            esl_sprintf( &cfg.outheader, "%s.filter", cfg.outheader);
@@ -355,7 +384,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     else                 esl_sprintf(&cfg.outmapfile, "%s.w%d.s%d.map", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outmapfp  = fopen(cfg.outmapfile, "w")) == NULL) esl_fatal("Failed to open map file %s", cfg.outmapfile);
   }
-  
+
+  cfg.pairfile = NULL;
+  cfg.pairfp = stdout;
+  if ( esl_opt_IsOn(go, "--outpair") ) {
+    esl_sprintf(&cfg.pairfile, "%s", esl_opt_GetString(go, "--outpair"));
+    if ((cfg.pairfp  = fopen(cfg.pairfile, "w")) == NULL) esl_fatal("Failed to open pair file %s", cfg.pairfile);
+  }
+  cfg.plotfile = NULL;
+
   cfg.treefile  = NULL;
   cfg.treefp    = NULL;
   cfg.T         = NULL;
@@ -487,7 +524,13 @@ main(int argc, char **argv)
 	}
 
 	cfg.firstpos = first;
-
+	if (cfg.makeplot) {
+	  if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.plot", cfg.outdir, cfg.msaname);
+	  else            esl_sprintf( &cfg.outheader, "%s.plot", cfg.msaname);
+	}
+	status = appcov(go, &cfg, wmsa);
+	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate apparent covariations"); }
+	
 	esl_msa_Destroy(wmsa); wmsa = NULL;
 	if (last >= msa->alen) break;
       }
@@ -502,11 +545,15 @@ main(int argc, char **argv)
       }
 
       cfg.firstpos = 1;
+      if (cfg.makeplot) {
+	if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.plot", cfg.outdir, cfg.msaname);
+	else            esl_sprintf( &cfg.outheader, "%s.plot", cfg.msaname);
+      }
+      status = appcov(go, &cfg, msa);
+      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate apparent covariations"); }
     }
 
-    status = appcov(go, &cfg, msa);
-    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate apparent covariations"); }
-   
+    
     if (omsaname) free(omsaname); omsaname = NULL;
     if (useme) free(useme); useme = NULL;
     if (msa) esl_msa_Destroy(msa); msa = NULL;
@@ -519,6 +566,7 @@ main(int argc, char **argv)
   /* cleanup */
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outmapfp) fclose(cfg.outmapfp);
+  if (cfg.pairfp) fclose(cfg.pairfp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -531,6 +579,8 @@ main(int argc, char **argv)
   free(cfg.outheader);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outmapfile) free(cfg.outmapfile);
+  if (cfg.pairfile)   free(cfg.pairfile);
+  if (cfg.plotfile)   free(cfg.plotfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
@@ -710,13 +760,14 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int              *ct   = NULL;
   int              *frqi = NULL;
   int              *frqj = NULL;
-  int              *useme = NULL;
-  PAIRSUBTYPE       subtype;
+  PAIRSUBTYPE       subptype;
+  double            sum;
   int               K = msa->abc->K;
   int               isbp = 0;
   int               n;
   int               w;
   int               i, j;
+  int               x;
   int               allocp = 10;
   int               status;
   
@@ -726,8 +777,8 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* Initializations */
   ESL_ALLOC(s,  sizeof(struct summary_s));
   s->N             = msa->nseq;
+  s->ncol_total    = cfg->omstat->alen;
   s->ncol          = msa->alen;
-  s->ncol_use      = s->ncol;
   s->ncol_GA       = 0;
   s->ncol_UC       = 0;
   s->ncol_GmA      = 0;
@@ -739,26 +790,27 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   s->nwc_tv        = 0;
   s->nwc_bp        = 0;
   s->nwc_no        = 0;
-  s->nwc_GAorUC    = 0;
   s->nwc_GmAorUmC  = 0;
   s->nwc_GmAandUmC = 0;
+  s->helix         = 0;
+  s->h_mean        = 0.0;
+  s->h_stdv        = 0.0;
   ESL_ALLOC(pair,  sizeof(struct pair_s) * allocp);
-  ESL_ALLOC(useme, sizeof(int) * s->ncol);
   ESL_ALLOC(coli,  sizeof(int) * s->N);
   ESL_ALLOC(colj,  sizeof(int) * s->N);
   ESL_ALLOC(frqi,  sizeof(int) * K);
   ESL_ALLOC(frqj,  sizeof(int) * K);
   
-  s->maxgap  = ceil(s->N * cfg->app_gapthresh);
+  s->maxgap  = ceil(s->N * cfg->gapthresh);
   s->minvar  = ceil(s->N * cfg->app_varthresh);
   s->maxnowc = ceil(s->N * cfg->app_nowcthresh);
   s->maxgu   = ceil(s->N * cfg->app_guthresh); if (s->maxgu > s->N || s->maxgu < 0) s->maxgu = s->N; 
   s->maxnots = ceil(s->N * cfg->app_notsthresh);
-  printf("MAX # gaps %5d  (%.2f %%)\n", s->maxgap,  cfg->app_gapthresh);
-  printf("MIN # var  %5d  (%.2f %%)\n", s->minvar,  cfg->app_varthresh);
-  printf("MAX # noWC %5d  (%.2f %%)\n", s->maxnowc, cfg->app_nowcthresh);
-  printf("MAX # noTS %5d  (%.2f %%)\n", s->maxnots, cfg->app_notsthresh);
-  if (s->maxgu < s->N) printf("MAX # GU       %d  (%.2f %%)\n", s->maxgu, cfg->app_guthresh);
+  printf("MAX # gaps %5d  (%2.4f %%)\n", s->maxgap,  100*cfg->gapthresh);
+  printf("MIN # var  %5d  (%2.4f %%)\n", s->minvar,  100*cfg->app_varthresh);
+  printf("MAX # noWC %5d  (%2.4f %%)\n", s->maxnowc, 100*cfg->app_nowcthresh);
+  printf("MAX # noTS %5d  (%2.4f %%)\n", s->maxnots, 100*cfg->app_notsthresh);
+  if (s->maxgu < s->N) printf("MAX # GU   %5d  (%2.4f %%)\n", s->maxgu, 100*cfg->app_guthresh);
   else           printf("MAX # GU       all\n");
   
   for (i = 1; i < s->ncol; i ++) {
@@ -767,17 +819,10 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     status = col_freq(s->N, coli, K, frqi);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "col_frqi() failed");
     
-    useme[i] = 1;
-    if (col_ngap(msa->abc, s->N, coli) > s->maxgap) {
-      useme[i] = 0; 
-      s->ncol_use --; 
-    }
-    else { 
-      s->ncol_GA  += is_GA (K, frqi); 
-      s->ncol_UC  += is_UC (K, frqi); 
-      s->ncol_GmA += is_GmA(K, frqi); 
-      s->ncol_UmC += is_UmC(K, frqi); 
-    }
+    s->ncol_GA  += is_GA (K, frqi); 
+    s->ncol_UC  += is_UC (K, frqi); 
+    s->ncol_GmA += is_GmA(K, frqi); 
+    s->ncol_UmC += is_UmC(K, frqi); 
     
     for (j = i+1; j <= s->ncol; j ++) {
       s->np ++;
@@ -786,7 +831,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
       status = col_freq(s->N, colj, K, frqj);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "col_frqj() failed");
       
-     if (select_pair_by_gaps_and_variability(msa->abc, s->maxgap, s->minvar, s->N, coli, colj, K, frqi, frqj)) {
+     if (select_pair_by_variability(msa->abc, s->minvar, s->N, coli, colj, K, frqi, frqj)) {
 	
 	s->np_use ++;
 
@@ -796,25 +841,42 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	    ESL_REALLOC(pair, sizeof(struct pair_s) * allocp);
 	  }
 
-	  pair[s->nwc].N = s->N;
-	  pair[s->nwc].i = i;
-	  pair[s->nwc].j = j;
-	  ESL_ALLOC(pair[s->nwc].sqi, sizeof(int) * s->N);
-	  ESL_ALLOC(pair[s->nwc].sqj, sizeof(int) * s->N);
+	  /* write one more pair */
+	  pair[s->nwc].K     = K;
+	  pair[s->nwc].N     = s->N;
+	  pair[s->nwc].i     = cfg->msamap[i];
+	  pair[s->nwc].j     = cfg->msamap[j];
+	  pair[s->nwc].is_bp = FALSE;
+	  pair[s->nwc].htype = NONE;
+	  
+	  ESL_ALLOC(pair[s->nwc].sqi,  sizeof(int)    * s->N);
+	  ESL_ALLOC(pair[s->nwc].sqj,  sizeof(int)    * s->N);
+	  ESL_ALLOC(pair[s->nwc].frqi, sizeof(double) * K);
+	  ESL_ALLOC(pair[s->nwc].frqj, sizeof(double) * K);
 	  for (n = 0; n < s->N; n++) pair[s->nwc].sqi[n] = coli[n];
 	  for (n = 0; n < s->N; n++) pair[s->nwc].sqj[n] = colj[n];
+	  sum = esl_vec_ISum(frqi, K);
+	  for (x = 0; x < K; x++) pair[s->nwc].frqi[x] = (sum > 0)? (double)frqi[x]/(double)sum : 0.0;
+	  sum = esl_vec_ISum(frqj, K);
+	  for (x = 0; x < K; x++) pair[s->nwc].frqj[x] = (sum > 0)? (double)frqj[x]/(double)sum : 0.0;
 
-	  pair[s->nwc].type = pair_type(msa->abc, frqi, frqj, s->maxnots);
-	  pair[s->nwc].is_bp = FALSE;
+	  pair[s->nwc].ptype = pair_type(msa->abc, frqi, frqj, s->maxnots);
 	  if (msa->ss_cons) {
 	    ESL_ALLOC(ct, sizeof(int) * (s->ncol+1));
 	    esl_wuss2ct(msa->ss_cons, s->ncol, ct);
 	    if (ct[i] == j && ct[j] == i) pair[s->nwc].is_bp = TRUE;
 	  }
-	  if (pair[s->nwc].is_bp) { if (cfg->verbose) { printf("\npair* %d: %d-%d %s\n", s->nwc, i, j, (pair[s->nwc].type==TV)? "TV":"TS"); } s->nwc_bp ++; }
-	  else                    { if (cfg->verbose) { printf("\npair  %d: %d-%d %s\n", s->nwc, i, j, (pair[s->nwc].type==TV)? "TV":"TS"); } s->nwc_no ++; }
+	  
+	  if (pair[s->nwc].is_bp) {
+	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n", s->nwc, pair[s->nwc].i, pair[s->nwc].j, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
+	    s->nwc_bp ++;
+	  }
+	  else {
+	    if (cfg->verbose) printf("\npair  %d: %d-%d %s\n", s->nwc, pair[s->nwc].i, pair[s->nwc].j, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
+	    s->nwc_no ++;
+	  }
 
-	  switch(pair[s->nwc].type) {
+	  switch(pair[s->nwc].ptype) {
 	  case TS:
 	    pair[s->nwc].gai    = GA(frqi);
 	    pair[s->nwc].gaj    = GA(frqj);
@@ -839,10 +901,9 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	      printf("\n");
 	    }
 	    s->nwc_ts ++;
-	    subtype = pair_subtype(msa->abc, frqi, frqj, s->maxnots);
-	    if (subtype == GAorUC)    { s->nwc_GAorUC ++;                      }
-	    if (subtype == GmAandUmC) { s->nwc_GAorUC ++; s->nwc_GmAandUmC ++; }
-	    if (subtype == GmAorUmC)  { s->nwc_GAorUC ++; s->nwc_GmAorUmC  ++; }
+	    subptype = pair_subtype(msa->abc, frqi, frqj, s->maxnots);
+	    if (subptype == GmAandUmC) { s->nwc_GmAandUmC ++; s->nwc_GmAorUmC ++; }
+	    if (subptype == GmAorUmC)  {                      s->nwc_GmAorUmC ++; }
 	    
 	    break;
 	  case TV:
@@ -863,9 +924,8 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	    }
 	    s->nwc_tv ++; 
 	    break;
-	  default: printf("which pairtype? %d\n", pair[s->nwc].type); exit(1);
+	  default: printf("which pairtype? %d\n", pair[s->nwc].ptype); exit(1);
 	  }
-
 	  
 	  s->nwc ++;
 	}
@@ -873,15 +933,24 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     }
   }
 
-  write_pairs  (stdout, s->nwc, pair);
-  write_summary(stdout, s);
+  /* figure out if the pairs form a helix */
+  if (cfg->app_helix) pairs_in_helix(s, pair, cfg->app_minhelix);
+  
+  pairs_write  (cfg->pairfp, s->nwc, pair, 0);
+  summary_write(cfg->pairfp, s);
+  MSA_banner   (cfg->pairfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  if (cfg->pairfile) {
+    summary_write(stdout, s);
+    MSA_banner   (stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  }
+  pairs_write_plotfile(cfg->plotfile, s->nwc, pair);
 
   free(coli);
   free(colj);
   free(frqi);
   free(frqj);
-  free(useme);
-  for (w = 0; w < s->nwc; w++) { free(pair[w].sqi); free(pair[w].sqj); }
+  for (w = 0; w < s->nwc; w++) { free(pair[w].sqi);  free(pair[w].sqj);  }
+  for (w = 0; w < s->nwc; w++) { free(pair[w].frqi); free(pair[w].frqj); }
   free(pair);
   if (ct) free(ct);
   free(s);
@@ -892,7 +961,6 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (colj)  free(colj);
   if (frqi)  free(frqi);
   if (frqj)  free(frqj);
-  if (useme) free(useme);
   if (pair)  free(pair);
   if (ct)    free(ct);
   if (s)     free(s);
@@ -949,6 +1017,17 @@ col_nvar(int K, int *frq)
   for (i = 0; i < K; i++) sum += frq[i];
   for (i = 0; i < K; i++) if (frq[i] > max) max = frq[i];
   return sum-max;
+}
+
+int
+is_pair(int i, int j, int np, struct pair_s *pair)
+{
+  int p;
+  
+  for (p = 0; p < np; p ++) {	
+    if (i == pair[p].i && j == pair[p].j) { return TRUE; }
+  }
+  return FALSE;
 }
 
 int
@@ -1039,7 +1118,7 @@ int pair_is_gu(ESL_DSQ sqi, ESL_DSQ sqj)
 PAIRTYPE
 pair_type(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 {
-  PAIRTYPE type = TV;
+  PAIRTYPE ptype = TV;
   double   sum = 0;
   double   sumi_ga;
   double   sumi_uc;
@@ -1055,15 +1134,16 @@ pair_type(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
   sumj_ga = (frqj[0] > 0 && frqj[2] > 0)? frqj[0] + frqj[2] : 0;
   sumj_uc = (frqj[1] > 0 && frqj[3] > 0)? frqj[1] + frqj[3] : 0;
   
-  if (sumi_ga + sumj_uc >= sum-maxnots) { type = TS; }
-  if (sumi_uc + sumj_ga >= sum-maxnots) { type = TS; }
+  if (sumi_ga + sumj_uc >= sum-maxnots) { ptype = TS; }
+  if (sumi_uc + sumj_ga >= sum-maxnots) { ptype = TS; }
   
-  return type;
+  return ptype;
 }
+
 PAIRSUBTYPE
 pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 {
-  PAIRSUBTYPE subtype;
+  PAIRSUBTYPE subptype;
   double   sum = 0;
   double   sumi_ga;
   double   sumi_uc;
@@ -1074,17 +1154,190 @@ pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 
   if (pair_type(a, frqi, frqj, maxnots) != TS) { printf("you should not be here\n"); exit(1); }
   
-  if (   (frqi[2] > 0        && frqi[0] > 0) &&
-         (frqj[3] > 0        && frqj[1] > 0)      ) { subtype = GAorUC;
-    if (  frqi[2] >= frqi[0] || frqj[3] >= frqj[1]) { subtype = GmAorUmC;
-      if (frqi[2] >= frqi[0] && frqj[3] >= frqj[1])   subtype = GmAandUmC; } }
+  if ( (frqi[2] > 0 && frqi[0] > 0) &&
+       (frqj[3] > 0 && frqj[1] > 0)    )
+    { // i=GA and j=UC      
+      if      (frqi[2] >= frqi[0] && frqj[3] >= frqj[1]) subptype = GmAandUmC;
+      else if (frqi[2] >= frqi[0] || frqj[3] >= frqj[1]) subptype = GmAorUmC; 
+    }
+  if ( (frqi[3] > 0 && frqi[1] > 0) &&
+       (frqj[2] > 0 && frqj[0] > 0 )  )
+    {
+      // i=UC and j=GA
+      if      (frqi[3] >= frqi[1] && frqj[2] >= frqj[0]) subptype = GmAandUmC; 
+      else if (frqi[3] >= frqi[1] || frqj[2] >= frqj[0]) subptype = GmAorUmC;
+    } 
   
-  if (   (frqi[3] > 0        && frqi[1] > 0) &&
-	 (frqj[2] > 0        && frqj[0] > 0 )     ) { subtype = GAorUC;
-    if (  frqi[3] >= frqi[1] || frqj[2] >= frqj[0]) { subtype = GmAorUmC;
-      if (frqi[3] >= frqi[1] && frqj[2] >= frqj[0])   subtype = GmAandUmC; } } 
+  return subptype;
+}
+
+int
+pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
+{
+  HELIXTYPE  htype;     // NONE  =0 no helix
+                        // START =1 helix starts
+                        // MID   =2 helix continues
+                        // END   =3 helix ends
+  int      **S = NULL;
+  int        dim = s->ncol * (s->ncol+1) / 2;
+  int        i, j, d;
+  int        p;
+  int        hlen;
+  int        status;
+
+  ESL_ALLOC(S,    sizeof(int *) * s->ncol);
+  ESL_ALLOC(S[0], sizeof(int)   * dim);
+  for (i = 1; i < s->ncol; i ++) S[i] = S[0] + i*(i+1)/2;
+    
+  for (j = 0; j < s->ncol; j ++) {
+    for (d = 0; d <= j; d ++) {
+      if (is_pair(j-d, j, s->nwc, pair)) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
+      else                               S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;      
+    }
+  }
+
+  for (p = 0; p < s->nwc; p ++) {    
+    i = pair[p].i;
+    j = pair[p].j;
+    
+    hlen = pairs_in_helix_status(i, j, S, s->ncol, &htype);
+    if (hlen >= minhelix) {
+      pair[p].htype = htype;
+      
+      if (htype == START) {
+	s->helix ++;
+	s->h_mean += hlen;
+	s->h_stdv += hlen*hlen;
+      }
+    }
+  }
   
-  return subtype;
+  s->h_mean /= s->np;
+  s->h_stdv -= s->h_mean*s->h_mean*s->np;
+  s->h_stdv /= s->np;
+  if (s->h_stdv < 0. && s->h_stdv > -0.00001) { s->h_stdv = 0.0; }
+  s->h_stdv  = sqrt(s->h_stdv);
+  
+  free(S[0]);
+  free(S);
+  return eslOK;
+  
+ ERROR:
+  if (S) free(S);
+  return status;
+}
+
+int
+pairs_in_helix_status (int i, int j, int **S, int ncol, HELIXTYPE *ret_htype)
+{
+  HELIXTYPE htype = NONE;
+  int       hlen  = 0;
+  int       val;
+  int       val_d;
+  int       val_u;
+  int       val_dd;
+  int       currval;
+  int       upval;
+  int       downval;
+  int       d;
+  int       x;
+  
+  d = j - i;
+  val    =                        S[j]  [d];
+  val_u  = (j < ncol-1 && j-d>1)? S[j+1][d+2] : 0;
+  val_d  = (j > 0 && d > 1)?      S[j-1][d-2] : 0;
+  val_dd = (j > 1 && d > 3)?      S[j-2][d-4] : 0;
+  
+  if (val == val_d+1) { 
+    htype = MID;                            // helix continues
+    if (val_d == val_dd) { htype = START; } // helix starts 
+    if (val   == val_u)  { htype = END; }   // helix ends 
+  }
+  if (htype != NONE) {
+    // go up
+    x = 1;
+    currval = val;
+    upval = (j+x < ncol && j-d >= x)? S[j+x][d+2*x] : 0;
+    while (upval == currval+1) {
+      hlen ++;
+      currval = upval;
+      x ++;
+      upval = (j+x < ncol && j-d >= x)? S[j+x][d+2*x] : 0;
+    }
+    
+    // go down
+    x = -1;
+    currval = val;
+    downval = (j+x >= 0 && d+2*x >= 0)? S[j+x][d+2*x] : 0;
+    while (downval == currval-1) {
+      hlen ++;
+      currval = downval;
+      x --;
+      downval = (j+x >= 0 && d+2*x >= 0)? S[j+x][d+2*x] : 0;
+    }
+  }
+  
+  *ret_htype = htype;
+  return hlen;
+}
+
+
+int
+pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV)
+{
+  int p;
+  int n;
+  
+  fprintf(fp, "%d pairs\n", np);
+  for (p = 0; p < np; p ++) {
+    
+    switch(pair[p].ptype) {
+    case TS:
+      if (!onlyTV) {
+	if (pair[p].is_bp) fprintf(fp, "\npair* %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TS"); 
+	else               fprintf(fp, "\npair  %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TS"); 
+
+	for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqi[n]);
+	if (pair[p].uci < 0) { fprintf(fp, " | G %s A %.2f %.2f ",         (pair[p].frqi[2]>pair[p].frqi[0])? ">":"<", 100*pair[p].frqi[2], 100*pair[p].frqi[0]); }
+	if (pair[p].gai < 0) { fprintf(fp, " |         U %s C %.2f %.2f ", (pair[p].frqi[3]>pair[p].frqi[1])? ">":"<", 100*pair[p].frqi[3], 100*pair[p].frqi[1]); }
+	fprintf(fp, "\n");
+	for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqj[n]);
+	if (pair[p].ucj < 0) { fprintf(fp, " | G %s A %.2f %.2f ",          (pair[p].frqj[2]>pair[p].frqj[0])? ">":"<", 100*pair[p].frqj[2], 100*pair[p].frqj[0]); }
+	if (pair[p].gaj < 0) { fprintf(fp, " |          U %s C %.2f %.2f ", (pair[p].frqj[3]>pair[p].frqj[1])? ">":"<", 100*pair[p].frqj[3], 100*pair[p].frqj[1]); } 
+	fprintf(fp, "\n");
+      }
+      break;
+    case TV:
+      if (pair[p].is_bp) fprintf(fp, "\npair* %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TV"); 
+      else               fprintf(fp, "\npair  %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TV"); 
+      
+      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqi[n]);
+      fprintf(fp, " | OTHER %d\n", pair[p].otheri); 
+      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqj[n]);
+      fprintf(fp, " | OTHER %d\n", pair[p].otherj); 
+      break;
+    default:
+      break;
+    }
+  }
+  return eslOK;
+}
+
+int
+pairs_write_plotfile(char *plotfile, int np, struct pair_s *pair)
+{
+  FILE *fp = NULL;
+  int   p;
+  
+  for (p = 0; p < np; p ++) {
+  }
+  return eslOK;
+}
+
+int
+pairs_plot()
+{
+  return eslOK;
 }
 
 int
@@ -1129,6 +1382,41 @@ select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int
 }
 
 int
+select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj)
+{
+  int select = 0;
+  int frqmaxi;
+  int frqmaxj;
+  int vari;
+  int varj;
+  int n;
+  
+  vari  = col_nvar(K, frqi);
+  varj  = col_nvar(K, frqj);
+
+  if (vari >= minvar && varj >= minvar) {
+    select = 1;
+
+    /* remove variables that pair with a gap or N */
+    frqmaxi = esl_vec_IMax(frqi, a->K);
+    frqmaxj = esl_vec_IMax(frqj, a->K);
+    
+    for (n = 0; n < N; n ++) {
+      if (coli[n] < a->K && frqi[coli[n]] < frqmaxi && colj[n] >= a->K) { vari --; }
+    }
+    if (vari < minvar) return 0;
+    
+    for (n = 0; n < N; n ++) {
+      if (colj[n] < a->K && frqj[colj[n]] < frqmaxj && coli[n] >= a->K) { varj --; }
+    }
+    if (varj < minvar) return 0;
+    
+  }
+
+  return select;
+}
+
+int
 select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj)
 {
   int select = 1;
@@ -1144,94 +1432,48 @@ select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli,
       if (gu   > maxgu)   return 0;
     }
   }
-
   
   return select;
 }
 
-
-
-int
-plot_pairs(FILE *fp, int np, struct pair_s *pair)
-{
-  int p;
-  int n;
-
-  return eslOK;
-}
-
-int
-write_pairs(FILE *fp, int np, struct pair_s *pair)
-{
-  int p;
-  int n;
-  
-  fprintf(fp, "%d pairs\n", np);
-  for (p = 0; p < np; p ++) {
-    if (pair[p].is_bp) fprintf(fp, "\npair* %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, (pair[p].type==TV)? "TV":"TS"); 
-    else               fprintf(fp, "\npair  %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, (pair[p].type==TV)? "TV":"TS"); 
-    
-    switch(pair[p].type) {
-    case TS:
-      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqi[n]);
-      if (pair[p].uci < 0) { fprintf(fp, " | G > A %d ", pair[p].gmai); }
-      if (pair[p].gai < 0) { fprintf(fp, " |         U > C %d ", pair[p].umci); }
-      fprintf(fp, "\n");
-      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqj[n]);
-      if (pair[p].ucj < 0) { fprintf(fp, " | G > A %d ", pair[p].gmaj); }
-      if (pair[p].gaj < 0) { fprintf(fp, " |          U > C %d ", pair[p].umcj); } 
-      fprintf(fp, "\n");
-      break;
-    case TV:
-      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqi[n]);
-      fprintf(fp, " | OTHER %d\n", pair[p].otheri); 
-      for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqj[n]);
-      fprintf(fp, " | OTHER %d\n", pair[p].otherj); 
-      break;
-    default:
-      break;
-    }
-  }
-  return eslOK;
-}
-
 void
-write_summary(FILE *fp, struct summary_s *s)
+summary_write(FILE *fp, struct summary_s *s)
 {
   double npp;
 
-  npp = (double)s->ncol_use * ((double)s->ncol_use-1.) / 2.;
+  npp = (double)s->ncol * ((double)s->ncol-1.) / 2.;
 		       
   fprintf(fp, "\nnseq %d\n", s->N);
   if (s->N > 0) {
-    fprintf(fp, "MAX # gaps       %8d/%d  (%.2f %%)\n", s->maxgap,  s->N, (double)s->maxgap/(double)s->N);
-    fprintf(fp, "MIN # var        %8d/%d  (%.2f %%)\n", s->minvar,  s->N, (double)s->minvar/(double)s->N);
-    fprintf(fp, "MAX # noWC       %8d/%d  (%.2f %%)\n", s->maxnowc, s->N, (double)s->maxnowc/(double)s->N);
-    fprintf(fp, "MAX # noTS       %8d/%d  (%.2f %%)\n", s->maxnots, s->N, (double)s->maxnots/(double)s->N);
-    if (s->maxgu < s->N) fprintf(fp, "MAX # GU                %8d/%d  (%.2f %%)\n", s->maxgu, s->N, (double)s->maxgu/(double)s->N);
-    else                 fprintf(fp, "MAX # GU                all\n");
+    fprintf(fp, "MAX # gaps       %8d/%d  (%2.4f %%)\n", s->maxgap,  s->N, 100*(double)s->maxgap/(double)s->N);
+    fprintf(fp, "MIN # var        %8d/%d  (%2.4f %%)\n", s->minvar,  s->N, 100*(double)s->minvar/(double)s->N);
+    fprintf(fp, "MAX # noWC       %8d/%d  (%2.4f %%)\n", s->maxnowc, s->N, 100*(double)s->maxnowc/(double)s->N);
+    fprintf(fp, "MAX # noTS       %8d/%d  (%2.4f %%)\n", s->maxnots, s->N, 100*(double)s->maxnots/(double)s->N);
+    if (s->maxgu < s->N) fprintf(fp, "MAX # GU         %8d/%d  (%2.4f %%)\n", s->maxgu, s->N, 100*(double)s->maxgu/(double)s->N);
+    else                 fprintf(fp, "MAX # GU         all\n");
   }  
 
-  fprintf(fp, "ncol %d/%d\n", s->ncol_use, s->ncol);
-  if(s->ncol_use > 0) {
-    fprintf(fp, "GA         cols  %8d/%d (%.2f %%)\n", s->ncol_GA,              s->ncol_use, 100 *  (double)s->ncol_GA/(double)s->ncol_use);
-    fprintf(fp, "UC         cols  %8d/%d (%.2f %%)\n", s->ncol_UC,              s->ncol_use, 100 *  (double)s->ncol_UC/(double)s->ncol_use);
-    fprintf(fp, "GA or UC   cols  %8d/%d (%.2f %%)\n", s->ncol_GA+s->ncol_UC,   s->ncol_use, 100 * ((double)s->ncol_GA+(double)s->ncol_UC)/(double)s->ncol_use);
-    fprintf(fp, "GmA        cols  %8d/%d (%.2f %%)\n", s->ncol_GmA,             s->ncol_use, 100 *  (double)s->ncol_GmA/(double)s->ncol_use);
-    fprintf(fp, "UmC        cols  %8d/%d (%.2f %%)\n", s->ncol_UmC,             s->ncol_use, 100 *  (double)s->ncol_UmC/(double)s->ncol_use);
-    fprintf(fp, "GmA or UmC cols  %8d/%d (%.2f %%)\n", s->ncol_GmA+s->ncol_UmC, s->ncol_use, 100 * ((double)s->ncol_GmA+(double)s->ncol_UmC)/(double)s->ncol_use);
+  fprintf(fp, "ncol %d/%d\n", s->ncol, s->ncol_total);
+  if(s->ncol_total > 0) {
+    fprintf(fp, "GA         cols  %8d/%d (%.4f %%)\n", s->ncol_GA,              s->ncol_total, 100 *  (double)s->ncol_GA/(double)s->ncol_total);
+    fprintf(fp, "UC         cols  %8d/%d (%.4f %%)\n", s->ncol_UC,              s->ncol_total, 100 *  (double)s->ncol_UC/(double)s->ncol_total);
+    fprintf(fp, "GA or UC   cols  %8d/%d (%.4f %%)\n", s->ncol_GA+s->ncol_UC,   s->ncol_total, 100 * ((double)s->ncol_GA+(double)s->ncol_UC)/(double)s->ncol_total);
+    fprintf(fp, "GmA        cols  %8d/%d (%.4f %%)\n", s->ncol_GmA,             s->ncol_total, 100 *  (double)s->ncol_GmA/(double)s->ncol_total);
+    fprintf(fp, "UmC        cols  %8d/%d (%.4f %%)\n", s->ncol_UmC,             s->ncol_total, 100 *  (double)s->ncol_UmC/(double)s->ncol_total);
+    fprintf(fp, "GmA or UmC cols  %8d/%d (%.4f %%)\n", s->ncol_GmA+s->ncol_UmC, s->ncol_total, 100 * ((double)s->ncol_GmA+(double)s->ncol_UmC)/(double)s->ncol_total);
   }
   
-  fprintf(fp, "nwc                  %8d\n", s->nwc);
+  fprintf(fp, "nwc                   %8d/%d (%.4f %%)\n", s->nwc, (int)npp, 100*(double)s->nwc/npp);
   if (s->nwc > 0) {
-    fprintf(fp, "nwc_bp           %8d/%d (%.2f %%)\n", s->nwc_bp, s->nwc, 100*(double)s->nwc_bp/(double)s->nwc);
-    fprintf(fp, "nwc_not          %8d/%d (%.2f %%)\n", s->nwc_no, s->nwc, 100*(double)s->nwc_no/(double)s->nwc);
-    fprintf(fp, "nwc_transtions   %8d/%d (%.2f %%)\n", s->nwc_ts, s->nwc, 100*(double)s->nwc_ts/(double)s->nwc);
-    fprintf(fp, "nwc_transversion %8d/%d (%.2f %%)  ", s->nwc_tv, s->nwc, 100*(double)s->nwc_tv/(double)s->nwc);
-    fprintf(fp, "ratio (ts/tv) %.2f\n", (s->nwc_tv>0)?(double)s->nwc_ts/(double)s->nwc_tv:0.);
+    fprintf(fp, "nwc_bp           %8d/%d (%.4f %%)\n", s->nwc_bp, s->nwc, 100*(double)s->nwc_bp/(double)s->nwc);
+    fprintf(fp, "nwc_not          %8d/%d (%.4f %%)\n", s->nwc_no, s->nwc, 100*(double)s->nwc_no/(double)s->nwc);
+    fprintf(fp, "nwc_transtions   %8d/%d (%.4f %%)\n", s->nwc_ts, s->nwc, 100*(double)s->nwc_ts/(double)s->nwc);
+    fprintf(fp, "nwc_transversion %8d/%d (%.4f %%)  ", s->nwc_tv, s->nwc, 100*(double)s->nwc_tv/(double)s->nwc);
+    fprintf(fp, "ratio (ts/tv) %.4f\n", (s->nwc_tv>0)?(double)s->nwc_ts/(double)s->nwc_tv:0.);
     
-    fprintf(fp, "nwc_GAorUC       %8d/%d (%.2f %%)\n", s->nwc_GAorUC,    s->nwc, 100*(double)s->nwc_GAorUC/(double)s->nwc);
-    fprintf(fp, "nwc_GmAorUmC     %8d/%d (%.2f %%)\n", s->nwc_GmAorUmC,  s->nwc, 100*(double)s->nwc_GmAorUmC/(double)s->nwc);
-    fprintf(fp, "nwc_GmAandUmC    %8d/%d (%.2f %%)\n", s->nwc_GmAandUmC, s->nwc, 100*(double)s->nwc_GmAandUmC/(double)s->nwc);
+    fprintf(fp, "nwc_GmAorUmC     %8d/%d (%.4f %%)\n", s->nwc_GmAorUmC,  s->nwc, 100*(double)s->nwc_GmAorUmC/(double)s->nwc);
+    fprintf(fp, "nwc_GmAandUmC    %8d/%d (%.4f %%)\n", s->nwc_GmAandUmC, s->nwc, 100*(double)s->nwc_GmAandUmC/(double)s->nwc);
   }
+  if (s->helix > 0)
+    fprintf(fp, "helices          %8d (%.4f =/- %.4f)\n", s->helix, s->h_mean, s->h_stdv);
 }

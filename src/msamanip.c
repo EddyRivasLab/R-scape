@@ -285,9 +285,9 @@ int
 msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *useme, char *errbuf, int verbose)
 {
   int     *map = NULL;
-  double   gapfreq;
+  int      expgap;
   int      alen = (int)msa->alen;
-  int      ngaps;
+  int      ngap;
   int      apos;
   int      newpos = 0;
   int      i;
@@ -304,13 +304,13 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *us
   if (dofilter) {
     for (apos = 1; apos <= alen; apos++) {
       /* count the gaps in apos */
-      ngaps = 0;
+      ngap = 0;
       for (i = 0; i < msa->nseq; i++) 
-	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngaps ++;
+	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngap ++;
       
-      /* apply gapthresh */   
-      gapfreq = (double)ngaps / (double) msa->nseq;
-      if (gapfreq >= gapthresh) useme[apos-1] = FALSE; 
+      /* apply gapthresh */
+      expgap = ceil(gapthresh*(double)msa->nseq);
+      if (ngap > expgap) useme[apos-1] = FALSE;
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
