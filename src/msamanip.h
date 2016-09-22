@@ -43,7 +43,7 @@ extern int msamanip_CompareBasecomp(ESL_MSA *msa1, ESL_MSA *msa2, char *errbuf);
 extern int msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa);
 extern int msamanip_ConvertDegen2N(ESL_MSA *msa);
 extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf);
-extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *useme, char *errbuf, int verbose);
+extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose);
 extern int msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len);
 extern int msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose);
 extern int msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved);

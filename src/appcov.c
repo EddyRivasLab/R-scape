@@ -37,6 +37,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_RANDOMNESS  *r;	               /* random numbers */
   ESL_ALPHABET    *abc;                /* the alphabet */
   int              abcisRNA;
+
+  char            *gnuplot;
   
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
@@ -50,6 +52,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *filename;
   char            *msaname;
   int             *msamap;
+  int             *msarevmap;
   int              firstpos;
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
 
@@ -70,7 +73,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              makeplot;
   char            *plotfile;
-  
   double          *ft;
   double          *fbp;
   double          *fnbp;
@@ -125,6 +127,8 @@ struct pair_s {
   int       N;
   int       i;
   int       j;
+  int       iabs;
+  int       jabs;
   ESL_DSQ  *sqi;
   ESL_DSQ  *sqj;
   double   *frqi;
@@ -190,7 +194,7 @@ static ESL_OPTIONS options[] = {
   { "--appnowc",      eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of non-WC allowed",                                                            1 },
   { "--appgu",        eslARG_REAL,     "1.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of GU's allowed [default: allows all]",                                            1 },
   { "--appnots",      eslARG_REAL,     "0.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of not transitions to still call a pair ts [default: allows non]",                 1 },
-  { "--minhelix",      eslARG_INT,       "4",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min lenght of a helix [default: 4]",                                                        1 },
+  { "--minhelix",      eslARG_INT,       "3",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min lenght of a helix [default: 4]",                                                        1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -243,10 +247,10 @@ static int         pair_is_gu(ESL_DSQ sqi, ESL_DSQ sqj);
 static PAIRTYPE    pair_type   (ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
 static PAIRSUBTYPE pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
 static int         pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix);
-static int         pairs_in_helix_status (int i, int j, int **S, int ncol, HELIXTYPE *ret_htype);
-static int         pairs_plot(FILE *fp, int np, struct pair_s *pair);
+static int         pairs_in_helix_status (int i, int j, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype);
+static int         pairs_plot(char *gnuplot, char *plotfile, int alen, char *file1, char *file2, char *file3, char *file4, char *file5);
 static int         pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV);
-static int         pairs_write_plotfile(char *plotfile, int np, struct pair_s *pair);
+static int         pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_s *s, struct pair_s *pair);
 static int         select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
 static int         select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
 static int         select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj);
@@ -292,10 +296,28 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_ArgNumber(go) != 1) { 
     if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
-
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+
+  /* find gnuplot */
+  cfg.gnuplot = NULL;
+  path = getenv("PATH"); // chech for an executable in the path
+  s = path; 
+  while (esl_strcmp(s, "")) {
+    esl_strtok(&s, ":", &tok);
+    esl_sprintf(&tok1, "%s/gnuplot", tok);
+    if ((stat(tok1, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);    
+      break;
+    }
+    free(tok1); tok1 = NULL;
+  }
+  if (cfg.gnuplot == NULL && "GNUPLOT" && (s = getenv("GNUPLOT"))) { // check for an envvar
+    if ((stat(s, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", s);
+    }
+  }
 
   /* outheader for all output files */
   cfg.outheader = NULL;
@@ -310,6 +332,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.msafrq = NULL;
   cfg.msaname = NULL;
   cfg.msamap = NULL;
+  cfg.msarevmap = NULL;
 
   /* alphabet */
   cfg.abc = NULL;
@@ -525,8 +548,8 @@ main(int argc, char **argv)
 
 	cfg.firstpos = first;
 	if (cfg.makeplot) {
-	  if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.plot", cfg.outdir, cfg.msaname);
-	  else            esl_sprintf( &cfg.outheader, "%s.plot", cfg.msaname);
+	  if (cfg.outdir) esl_sprintf( &cfg.plotfile, "%s/%s.plot", cfg.outdir, cfg.msaname);
+	  else            esl_sprintf( &cfg.plotfile, "%s.plot", cfg.msaname);
 	}
 	status = appcov(go, &cfg, wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate apparent covariations"); }
@@ -546,8 +569,8 @@ main(int argc, char **argv)
 
       cfg.firstpos = 1;
       if (cfg.makeplot) {
-	if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.plot", cfg.outdir, cfg.msaname);
-	else            esl_sprintf( &cfg.outheader, "%s.plot", cfg.msaname);
+	if (cfg.outdir) esl_sprintf( &cfg.plotfile, "%s/%s", cfg.outdir, cfg.msaname);
+	else            esl_sprintf( &cfg.plotfile, "%s", cfg.msaname);
       }
       status = appcov(go, &cfg, msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate apparent covariations"); }
@@ -559,6 +582,7 @@ main(int argc, char **argv)
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
+    if (cfg.msarevmap) free(cfg.msarevmap); cfg.msarevmap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
   }
@@ -567,6 +591,7 @@ main(int argc, char **argv)
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outmapfp) fclose(cfg.outmapfp);
   if (cfg.pairfp) fclose(cfg.pairfp);
+  free(cfg.gnuplot);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -586,8 +611,9 @@ main(int argc, char **argv)
   if (cfg.fnbp) free(cfg.fnbp);
   if (useme) free(useme);
   if (cfg.msamap) free(cfg.msamap); 
+  if (cfg.msarevmap) free(cfg.msarevmap); 
   if (cfg.omstat) free(cfg.omstat);
-  if (cfg.mstat) free(cfg.mstat); 
+  if (cfg.mstat) free(cfg.mstat);
 
   return 0;
 }
@@ -702,7 +728,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, &cfg->msarevmap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
@@ -842,10 +868,13 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	  }
 
 	  /* write one more pair */
+	  /* i,j [1,..,alen] */
 	  pair[s->nwc].K     = K;
 	  pair[s->nwc].N     = s->N;
-	  pair[s->nwc].i     = cfg->msamap[i];
-	  pair[s->nwc].j     = cfg->msamap[j];
+	  pair[s->nwc].i     = i;
+	  pair[s->nwc].j     = j;
+	  pair[s->nwc].iabs  = cfg->msamap[i-1]+1; // msamap uses [0,..,alen-1]
+	  pair[s->nwc].jabs  = cfg->msamap[j-1]+1;
 	  pair[s->nwc].is_bp = FALSE;
 	  pair[s->nwc].htype = NONE;
 	  
@@ -866,13 +895,13 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	    esl_wuss2ct(msa->ss_cons, s->ncol, ct);
 	    if (ct[i] == j && ct[j] == i) pair[s->nwc].is_bp = TRUE;
 	  }
-	  
+
 	  if (pair[s->nwc].is_bp) {
-	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n", s->nwc, pair[s->nwc].i, pair[s->nwc].j, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
+	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n", s->nwc, pair[s->nwc].iabs, pair[s->nwc].jabs, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
 	    s->nwc_bp ++;
 	  }
 	  else {
-	    if (cfg->verbose) printf("\npair  %d: %d-%d %s\n", s->nwc, pair[s->nwc].i, pair[s->nwc].j, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
+	    if (cfg->verbose) printf("\npair  %d: %d-%d %s\n", s->nwc, pair[s->nwc].iabs, pair[s->nwc].jabs, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
 	    s->nwc_no ++;
 	  }
 
@@ -943,7 +972,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     summary_write(stdout, s);
     MSA_banner   (stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   }
-  pairs_write_plotfile(cfg->plotfile, s->nwc, pair);
+  if (cfg->makeplot) pairs_write_plotfile(cfg->gnuplot, cfg->plotfile, cfg->msarevmap, s, pair);
 
   free(coli);
   free(colj);
@@ -1025,7 +1054,7 @@ is_pair(int i, int j, int np, struct pair_s *pair)
   int p;
   
   for (p = 0; p < np; p ++) {	
-    if (i == pair[p].i && j == pair[p].j) { return TRUE; }
+    if (i == pair[p].i && j == pair[p].j) return TRUE;
   }
   return FALSE;
 }
@@ -1180,27 +1209,24 @@ pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
                         // END   =3 helix ends
   int      **S = NULL;
   int        dim = s->ncol * (s->ncol+1) / 2;
-  int        i, j, d;
+  int        j, d;
   int        p;
   int        hlen;
   int        status;
 
   ESL_ALLOC(S,    sizeof(int *) * s->ncol);
   ESL_ALLOC(S[0], sizeof(int)   * dim);
-  for (i = 1; i < s->ncol; i ++) S[i] = S[0] + i*(i+1)/2;
+  for (j = 1; j < s->ncol; j ++) S[j] = S[0] + j*(j+1)/2;
     
-  for (j = 0; j < s->ncol; j ++) {
+  for (j = 0; j < s->ncol; j ++) 
     for (d = 0; d <= j; d ++) {
-      if (is_pair(j-d, j, s->nwc, pair)) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
-      else                               S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;      
+      if (is_pair(j-d+1, j+1, s->nwc, pair)) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
+      else                                   S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;
     }
-  }
 
   for (p = 0; p < s->nwc; p ++) {    
-    i = pair[p].i;
-    j = pair[p].j;
-    
-    hlen = pairs_in_helix_status(i, j, S, s->ncol, &htype);
+    hlen = pairs_in_helix_status(pair[p].i-1, pair[p].j-1, S, s->nwc, pair, s->ncol, &htype);
+ 
     if (hlen >= minhelix) {
       pair[p].htype = htype;
       
@@ -1211,72 +1237,46 @@ pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
       }
     }
   }
-  
-  s->h_mean /= s->np;
-  s->h_stdv -= s->h_mean*s->h_mean*s->np;
-  s->h_stdv /= s->np;
-  if (s->h_stdv < 0. && s->h_stdv > -0.00001) { s->h_stdv = 0.0; }
-  s->h_stdv  = sqrt(s->h_stdv);
+
+  if (s->helix > 0) {
+    s->h_mean /= s->helix;
+    s->h_stdv -= s->h_mean*s->h_mean*s->helix;
+    s->h_stdv /= s->helix;
+    s->h_stdv  = sqrt(s->h_stdv);
+  }
   
   free(S[0]);
   free(S);
   return eslOK;
   
  ERROR:
+  if (S[0]) free(S[0]);
   if (S) free(S);
   return status;
 }
 
 int
-pairs_in_helix_status (int i, int j, int **S, int ncol, HELIXTYPE *ret_htype)
+pairs_in_helix_status(int i, int j, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype)
 {
-  HELIXTYPE htype = NONE;
-  int       hlen  = 0;
+  HELIXTYPE htype;
+  int       hlen;
   int       val;
-  int       val_d;
   int       val_u;
-  int       val_dd;
-  int       currval;
-  int       upval;
-  int       downval;
   int       d;
   int       x;
   
   d = j - i;
-  val    =                        S[j]  [d];
-  val_u  = (j < ncol-1 && j-d>1)? S[j+1][d+2] : 0;
-  val_d  = (j > 0 && d > 1)?      S[j-1][d-2] : 0;
-  val_dd = (j > 1 && d > 3)?      S[j-2][d-4] : 0;
-  
-  if (val == val_d+1) { 
-    htype = MID;                            // helix continues
-    if (val_d == val_dd) { htype = START; } // helix starts 
-    if (val   == val_u)  { htype = END; }   // helix ends 
-  }
-  if (htype != NONE) {
-    // go up
-    x = 1;
-    currval = val;
-    upval = (j+x < ncol && j-d >= x)? S[j+x][d+2*x] : 0;
-    while (upval == currval+1) {
-      hlen ++;
-      currval = upval;
-      x ++;
-      upval = (j+x < ncol && j-d >= x)? S[j+x][d+2*x] : 0;
-    }
-    
-    // go down
-    x = -1;
-    currval = val;
-    downval = (j+x >= 0 && d+2*x >= 0)? S[j+x][d+2*x] : 0;
-    while (downval == currval-1) {
-      hlen ++;
-      currval = downval;
-      x --;
-      downval = (j+x >= 0 && d+2*x >= 0)? S[j+x][d+2*x] : 0;
-    }
-  }
-  
+  val =  S[j][d];
+
+  x = 1;
+  while (!is_pair(j-x-d, j+x, np, pair) && j+x < ncol-1 && j-x-d > 0) x ++;
+  val_u = (j+x < ncol && j-x-d >= 0)? S[j+x][d+2*x] : val;
+
+  if      (val == 1)     htype = START;  // helix starts 
+  else if (val == val_u) htype = END;    // helix ends 
+  else                   htype = MID;    // helix continues
+  hlen = val_u;
+ 
   *ret_htype = htype;
   return hlen;
 }
@@ -1294,8 +1294,8 @@ pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV)
     switch(pair[p].ptype) {
     case TS:
       if (!onlyTV) {
-	if (pair[p].is_bp) fprintf(fp, "\npair* %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TS"); 
-	else               fprintf(fp, "\npair  %d: %d-%d %s\n", p+1, pair[p].i, pair[p].j, "TS"); 
+	if (pair[p].is_bp) fprintf(fp, "\npair* %d: %d-%d %s\n", p+1, pair[p].iabs, pair[p].jabs, "TS"); 
+	else               fprintf(fp, "\npair  %d: %d-%d %s\n", p+1, pair[p].iabs, pair[p].jabs, "TS"); 
 
 	for (n = 0; n < pair[p].N; n++) fprintf(fp, "%d", pair[p].sqi[n]);
 	if (pair[p].uci < 0) { fprintf(fp, " | G %s A %.2f %.2f ",         (pair[p].frqi[2]>pair[p].frqi[0])? ">":"<", 100*pair[p].frqi[2], 100*pair[p].frqi[0]); }
@@ -1324,19 +1324,111 @@ pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV)
 }
 
 int
-pairs_write_plotfile(char *plotfile, int np, struct pair_s *pair)
+pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_s *s, struct pair_s *pair)
 {
-  FILE *fp = NULL;
+  char *file1 = NULL;
+  char *file2 = NULL;
+  char *file3 = NULL;
+  char *file4 = NULL;
+  char *file5 = NULL;
+  FILE *fp1 = NULL;
+  FILE *fp2 = NULL;
+  FILE *fp3 = NULL;
+  FILE *fp4 = NULL;
+  FILE *fp5 = NULL;
+  int   iabs, jabs;
   int   p;
   
-  for (p = 0; p < np; p ++) {
+  esl_sprintf(&file1, "%s.ts.plot",    plotfile);
+  esl_sprintf(&file2, "%s.tv.plot",    plotfile);
+  esl_sprintf(&file3, "%s.bp.plot",    plotfile);
+  esl_sprintf(&file4, "%s.helix.plot", plotfile);
+  esl_sprintf(&file5, "%s.gap.plot",   plotfile);
+
+  if ((fp1 = fopen(file1, "w")) == NULL) esl_fatal("Failed to open ts    file %s", file1);
+  if ((fp2 = fopen(file2, "w")) == NULL) esl_fatal("Failed to open tv    file %s", file2);
+  if ((fp3 = fopen(file3, "w")) == NULL) esl_fatal("Failed to open bp    file %s", file3);
+  if ((fp4 = fopen(file4, "w")) == NULL) esl_fatal("Failed to open helix file %s", file4);
+  for (p = 0; p < s->nwc; p ++) {
+    iabs  = pair[p].iabs;
+    jabs  = pair[p].jabs;
+    if (pair[p].ptype == TS)   fprintf(fp1, "%d %d\n", iabs, jabs);
+    else                       fprintf(fp2, "%d %d\n", iabs, jabs);
+    if (pair[p].is_bp)         fprintf(fp3, "%d %d\n", iabs, jabs);  
+    if (pair[p].htype != NONE) fprintf(fp4, "%d %d\n", jabs, iabs);  
   }
+  fclose(fp1);
+  fclose(fp2);
+  fclose(fp3);
+  fclose(fp4);
+
+  if ((fp5  = fopen(file5, "w")) == NULL) esl_fatal("Failed to open gap file %s", file5);
+  for (iabs = 0; iabs < s->ncol_total-1; iabs ++) {
+    for (jabs = iabs+1; jabs < s->ncol_total; jabs ++) {
+      if (revmap[iabs] < 0 || revmap[jabs] < 0) {
+	fprintf(fp5, "%d %d\n", iabs, jabs); fprintf(fp5, "%d %d\n", jabs, iabs); 
+      }
+    }
+  }
+  fclose(fp5);
+
+  pairs_plot(gnuplot, plotfile, s->ncol_total, file1, file2, file3, file4, file5);
+  
+  free(file1);
+  free(file2);
+  free(file3);
+  free(file4);
+  free(file5);
   return eslOK;
 }
 
 int
-pairs_plot()
+pairs_plot(char *gnuplot, char *plotfile, int alen, char *file1, char *file2, char *file3, char *file4, char *file5)
 {
+  FILE     *pipe;
+  char     *outplot;
+  char     *title = NULL;
+  char     *cmd = NULL;
+  int       pointype;
+  double    pointintbox;
+  int       linew;
+  double    pointsize;
+  
+  if (gnuplot == NULL) return eslOK;
+
+  esl_sprintf(&title, "%s", plotfile);
+  esl_sprintf(&outplot, "%s.ps", plotfile);
+  pointype    = 65;
+  pointsize   = 0.7;
+  pointintbox = 1.0;
+  linew       = 2;
+
+  /* do the plotting */
+  pipe = popen(gnuplot, "w");
+  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set output '%s'\n", outplot);
+  fprintf(pipe, "set title '%s' noenhanced\n", title);
+  fprintf(pipe, "set size square\n");
+  fprintf(pipe, "set xrange [1:%d]\n", alen);
+  fprintf(pipe, "set yrange [1:%d]\n", alen);
+
+  fprintf(pipe, "set style line 3     lt 1 lc rgb '#DCDCDC' pt 1 ps 0.4 lw 0.5\n");
+  fprintf(pipe, "set style line 111   lt 1 lc rgb 'grey'      pt 7 ps 0.4 lw 0.5\n");
+  fprintf(pipe, "set style line 213   lt 1 lc rgb 'brown'     pt 7 ps 0.4 lw 0.1\n");
+  fprintf(pipe, "set style line 613   lt 1 lc rgb 'turquoise' pt 7 ps 0.4 lw 0.1\n");
+  fprintf(pipe, "set style line 413   lt 1 lc rgb 'red'       pt 7 ps 0.4 lw 0.1\n");
+  fprintf(pipe, "set style line 713   lt 1 lc rgb 'black'     pt 7 ps 0.4 lw 0.1\n");
+    
+  esl_sprintf(&cmd, "'%s'    using 1:2 title'' with points ls 3, ",        file5);
+  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file2);
+  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 213, ", cmd, file1);
+  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 613, ", cmd, file3);
+  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 613",   cmd, file4);
+  fprintf(pipe, "plot x title '' ls 111, %s\n", cmd);
+  pclose(pipe);
+
+  free(title);
+  free(cmd);
   return eslOK;
 }
 
@@ -1475,5 +1567,5 @@ summary_write(FILE *fp, struct summary_s *s)
     fprintf(fp, "nwc_GmAandUmC    %8d/%d (%.4f %%)\n", s->nwc_GmAandUmC, s->nwc, 100*(double)s->nwc_GmAandUmC/(double)s->nwc);
   }
   if (s->helix > 0)
-    fprintf(fp, "helices          %8d (%.4f =/- %.4f)\n", s->helix, s->h_mean, s->h_stdv);
+    fprintf(fp, "helices          %8d (%.2f =/- %.2f)\n", s->helix, s->h_mean, s->h_stdv);
 }

@@ -888,7 +888,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);

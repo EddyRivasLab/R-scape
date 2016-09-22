@@ -282,11 +282,12 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *useme, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
 {
-  int     *map = NULL;
+  int     *map    = NULL;
+  int     *revmap = NULL;
   int      expgap;
-  int      alen = (int)msa->alen;
+  int      alen = (int)msa->alen; //alen before removing gaps
   int      ngap;
   int      apos;
   int      newpos = 0;
@@ -319,21 +320,30 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int *us
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }  
   
-  ESL_ALLOC(map, sizeof(int) * alen);
+  ESL_ALLOC(map, sizeof(int) * msa->alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos;
+
+  if (ret_revmap) {
+    newpos = 0;
+    ESL_ALLOC(revmap, sizeof(int) * alen);
+      for (apos = 0; apos < alen; apos++)
+	revmap[apos] = (useme[apos])? newpos++ : -1;
+  }
 
   if (verbose) {
     for (newpos = 0; newpos < msa->alen; newpos++)
       printf("%d %d\n", newpos, map[newpos]);
   }
   
-  if (ret_map) *ret_map = map; else free(map);
+  if (ret_map)    *ret_map    = map;    else free(map);
+  if (ret_revmap) *ret_revmap = revmap; else free(revmap);
   return eslOK;
   
  ERROR:
   if (useme) free(useme); 
-  if (map)   free(map); 
+  if (map)    free(map); 
+  if (revmap) free(map); 
   return status;
 }
 
