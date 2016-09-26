@@ -55,6 +55,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int             *msarevmap;
   int              firstpos;
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
+  int              tstart;
+  int              tend;
 
   int              onbpairs;
   int              nbpairs;
@@ -73,6 +75,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              makeplot;
   char            *plotfile;
+  int              pmin;
+  int              pmax;
+  
   double          *ft;
   double          *fbp;
   double          *fnbp;
@@ -158,14 +163,14 @@ struct summary_s {
   int ncol_UmC;
   
   int np;       // total number of pairs
-  int np_use;   // number of pairs after gap/variability trimming
-  int nwc;      // "basepaired" pairs
-  int nwc_bp;
-  int nwc_no;
-  int nwc_ts;
-  int nwc_tv;
-  int nwc_GmAorUmC;
-  int nwc_GmAandUmC;
+  int nwc;      // number of pairs that are WC+G:U
+  int napp;     // wc pair with covariation
+  int napp_bp;
+  int napp_no;
+  int napp_ts;
+  int napp_tv;
+  int napp_GmAorUmC;
+  int napp_GmAandUmC;
   int nGA;
 
   int    helix;
@@ -199,6 +204,8 @@ static ESL_OPTIONS options[] = {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
+  { "--tstart",        eslARG_INT,      FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "min alignment position to analyze [1..alen]",                                               1 },
+  { "--tend",          eslARG_INT,      FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "max alignment position to analyze [1..alen]",                                               1 },
   { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
@@ -213,6 +220,8 @@ static ESL_OPTIONS options[] = {
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* Control of output */
   { "-p",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produce plots",                                                                             1 },
+  { "--pmin",          eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "min alignment position to plot",                                                            0 },
+  { "--pmax",          eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "max alignment position to plot",                                                            0 },
   { "--outpair",    eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pairs to <f> (default is standar output)",                                            1 },
   { "--outmsa",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write msa used to file <f>,",                                                               1 },
   { "--outmap",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write map file to <f>",                                                                     1 },
@@ -246,11 +255,12 @@ static int         pair_is_wc(ESL_DSQ sqi, ESL_DSQ sqj);
 static int         pair_is_gu(ESL_DSQ sqi, ESL_DSQ sqj);
 static PAIRTYPE    pair_type   (ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
 static PAIRSUBTYPE pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int nots);
-static int         pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix);
-static int         pairs_in_helix_status (int i, int j, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype);
-static int         pairs_plot(char *gnuplot, char *plotfile, int alen, char *file1, char *file2, char *file3, char *file4, char *file5);
+static int         pairs_in_helix(struct summary_s *s, int **WC, struct pair_s *pair, int minhelix);
+static int         pairs_in_helix_status (int i, int j, int **WC, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype);
+static int         pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s,
+			      int pmin, int pmax, char *file1, char *file2, char *file3, char *file4, char *file5, char *file6);
 static int         pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV);
-static int         pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_s *s, struct pair_s *pair);
+static int         pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struct summary_s *s, struct pair_s *pair, int **WC, int pmin, int pmax);
 static int         select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
 static int         select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
 static int         select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj);
@@ -362,12 +372,21 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
   cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
+  cfg.tstart      = esl_opt_IsOn(go, "--tstart")?     esl_opt_GetInteger(go, "--tstart")    : 0;
+  cfg.tend        = esl_opt_IsOn(go, "--tend")?       esl_opt_GetInteger(go, "--tend")      : 0;
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
   cfg.makeplot    = esl_opt_GetBoolean(go, "-p");
+  cfg.pmin        = esl_opt_IsOn(go, "--pmin")?       esl_opt_GetInteger(go, "--pmin")      : 0;
+  cfg.pmax        = esl_opt_IsOn(go, "--pmax")?       esl_opt_GetInteger(go, "--pmax")      : 0;
+
+  if (cfg.tstart > 0 && cfg.pmin == 0) cfg.pmin = cfg.tstart;
+  if (cfg.tend   > 0 && cfg.pmax == 0) cfg.pmax = cfg.tend;
+  if (cfg.tstart > 0 && cfg.tstart > cfg.pmin) cfg.pmin = cfg.tstart;
+  if (cfg.tend   > 0 && cfg.tend   < cfg.pmax) cfg.pmax = cfg.tend;
   
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
@@ -389,24 +408,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.omstat = NULL;
 
   /* output files */
+  cfg.outmsafile = NULL;
+  cfg.outmsafp   = NULL;
   if ( esl_opt_IsOn(go, "--outmsa") ) {
-    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "-outmsa"));
-    if ((cfg.outmsafp  = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open msa file %s", cfg.outmsafile);
-  } 
-  else {
-    if (cfg.window <= 0) esl_sprintf(&cfg.outmsafile, "%s.sto", cfg.outheader);
-    else                 esl_sprintf(&cfg.outmsafile, "%s.w%d.s%d.sto", cfg.outheader, cfg.window, cfg.slide);
+    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
     if ((cfg.outmsafp  = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open msa file %s", cfg.outmsafile);
   }
+  cfg.outmapfile = NULL;
+  cfg.outmapfp   = NULL;
   if ( esl_opt_IsOn(go, "--outmap") ) {
     esl_sprintf(&cfg.outmapfile, "%s", esl_opt_GetString(go, "-outmap"));
     if ((cfg.outmapfp  = fopen(cfg.outmapfile, "w")) == NULL) esl_fatal("Failed to open map file %s", cfg.outmapfile);
   } 
-  else {
-    if (cfg.window <= 0) esl_sprintf(&cfg.outmapfile, "%s.map", cfg.outheader);
-    else                 esl_sprintf(&cfg.outmapfile, "%s.w%d.s%d.map", cfg.outheader, cfg.window, cfg.slide);
-    if ((cfg.outmapfp  = fopen(cfg.outmapfile, "w")) == NULL) esl_fatal("Failed to open map file %s", cfg.outmapfile);
-  }
 
   cfg.pairfile = NULL;
   cfg.pairfp = stdout;
@@ -655,6 +668,10 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->msaname, "%s", submsaname);
   }
 
+  /* add tstat..tend information */
+  if (cfg->tstart > 0 || cfg->tend > 0) 
+    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, cfg->tstart, cfg->tend);
+  
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
@@ -671,13 +688,14 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *tok = NULL;
   char    *submsaname = NULL;
   int64_t  alen = (*omsa)->alen;
+  int64_t  startpos, endpos;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
   int      pos;
 
   printf("MSA          %s (alen = %" PRIu64 " nseq = %d)\n", cfg->filename, alen, (*omsa)->nseq);
-  printf("ID  %.2f G   %.2f ", cfg->idthresh, cfg->gapthresh);
+  printf("ID  %.4f G   %.4f ", cfg->idthresh, cfg->gapthresh);
   if (cfg->fragfrac > 0) printf("F   %.2f\n", cfg->fragfrac); else printf("\n");
 
   /* stats of the original alignment */
@@ -701,9 +719,10 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-  
-  msa = *omsa;
-  
+
+  /* What is left after all the filtering?
+   */
+  msa = *omsa;  
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -720,6 +739,11 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;
   }
 
+  /* Now apply [tstart,tend] restriction if given
+   */
+  if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
+    printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
+
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
@@ -728,21 +752,24 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, &cfg->msarevmap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, &cfg->msarevmap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
 
   /* write the msa */
-  esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-  printf("MSA filtered %s (alen=%" PRIu64 " nseq = %d)\n", cfg->outmsafile, msa->alen, msa->nseq);
-
-  /* write the map to the original alignment */
-  fprintf(cfg->outmapfp, "# maping alignment\n# %s (alen=%" PRIu64 ")\n# to alignment\n# %s (alen=%" PRIu64 ")\n",
-	  cfg->outmsafile, msa->alen, cfg->filename, alen);
-  fprintf(cfg->outmapfp, "# 0..alen-1\n");
-  for (pos = 0; pos < msa->alen; pos++)
-    fprintf(cfg->outmapfp, "%d\t%d\n", pos, cfg->msamap[pos]);
+  if (cfg->outmsafile) {
+    esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+    printf("MSA filtered %s (alen=%" PRIu64 " nseq = %d)\n", cfg->outmsafile, msa->alen, msa->nseq);
+  }
+  if (cfg->outmapfile) {
+    /* write the map to the original alignment */
+    fprintf(cfg->outmapfp, "# maping alignment\n# %s (alen=%" PRIu64 ")\n# to alignment\n# %s (alen=%" PRIu64 ")\n",
+	    cfg->outmsafile, msa->alen, cfg->filename, alen);
+    fprintf(cfg->outmapfp, "# 0..alen-1\n");
+    for (pos = 0; pos < msa->alen; pos++)
+      fprintf(cfg->outmapfp, "%d\t%d\n", pos, cfg->msamap[pos]);
+  }
   
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
@@ -783,6 +810,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   struct pair_s    *pair = NULL;
   ESL_DSQ          *coli = NULL;
   ESL_DSQ          *colj = NULL;
+  int             **WC   = NULL;
   int              *ct   = NULL;
   int              *frqi = NULL;
   int              *frqj = NULL;
@@ -802,22 +830,22 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   /* Initializations */
   ESL_ALLOC(s,  sizeof(struct summary_s));
-  s->N             = msa->nseq;
-  s->ncol_total    = cfg->omstat->alen;
-  s->ncol          = msa->alen;
-  s->ncol_GA       = 0;
-  s->ncol_UC       = 0;
-  s->ncol_GmA      = 0;
-  s->ncol_UmC      = 0;
-  s->np            = 0;
-  s->np_use        = 0;
-  s->nwc           = 0;
-  s->nwc_ts        = 0;
-  s->nwc_tv        = 0;
-  s->nwc_bp        = 0;
-  s->nwc_no        = 0;
-  s->nwc_GmAorUmC  = 0;
-  s->nwc_GmAandUmC = 0;
+  s->N              = msa->nseq;
+  s->ncol_total     = cfg->omstat->alen;
+  s->ncol           = msa->alen;
+  s->ncol_GA        = 0;
+  s->ncol_UC        = 0;
+  s->ncol_GmA       = 0;
+  s->ncol_UmC       = 0;
+  s->np             = 0;
+  s->nwc            = 0;
+  s->napp           = 0;
+  s->napp_ts        = 0;
+  s->napp_tv        = 0;
+  s->napp_bp        = 0;
+  s->napp_no        = 0;
+  s->napp_GmAorUmC  = 0;
+  s->napp_GmAandUmC = 0;
   s->helix         = 0;
   s->h_mean        = 0.0;
   s->h_stdv        = 0.0;
@@ -826,7 +854,11 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   ESL_ALLOC(colj,  sizeof(int) * s->N);
   ESL_ALLOC(frqi,  sizeof(int) * K);
   ESL_ALLOC(frqj,  sizeof(int) * K);
-  
+  if (cfg->app_helix) {
+    ESL_ALLOC(WC,     sizeof(int *) * s->ncol);
+    ESL_ALLOC(WC[0],  sizeof(int)   * s->ncol*(s->ncol+1)/2);
+    for (j = 1; j < s->ncol; j ++) WC[j] = WC[0] + j*(j+1)/2;
+  }
   s->maxgap  = ceil(s->N * cfg->gapthresh);
   s->minvar  = ceil(s->N * cfg->app_varthresh);
   s->maxnowc = ceil(s->N * cfg->app_nowcthresh);
@@ -852,135 +884,137 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     
     for (j = i+1; j <= s->ncol; j ++) {
       s->np ++;
+      if (cfg->app_helix) WC[j-1][j-i] = FALSE;
       
       for (n = 0; n < s->N; n ++) colj[n] = msa->ax[n][j];
       status = col_freq(s->N, colj, K, frqj);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "col_frqj() failed");
-      
-     if (select_pair_by_variability(msa->abc, s->minvar, s->N, coli, colj, K, frqi, frqj)) {
-	
-	s->np_use ++;
-
-	if (select_pair_by_wc(msa->abc, s->maxnowc, s->maxgu, s->N, coli, colj)) { // a pair to record
-	  if (s->nwc == allocp-1) {
+     
+	if (select_pair_by_wc(msa->abc, s->maxnowc, s->maxgu, s->N, coli, colj)) { // a WC+G:U pair
+	  s->nwc ++;
+	  if (cfg->app_helix) WC[j-1][j-i] = TRUE;
+	      
+	  if (select_pair_by_variability(msa->abc, s->minvar, s->N, coli, colj, K, frqi, frqj)) { // a wc pair with covariation
+	    if (s->napp == allocp-1) {
 	    allocp += 10;
 	    ESL_REALLOC(pair, sizeof(struct pair_s) * allocp);
 	  }
 
 	  /* write one more pair */
 	  /* i,j [1,..,alen] */
-	  pair[s->nwc].K     = K;
-	  pair[s->nwc].N     = s->N;
-	  pair[s->nwc].i     = i;
-	  pair[s->nwc].j     = j;
-	  pair[s->nwc].iabs  = cfg->msamap[i-1]+1; // msamap uses [0,..,alen-1]
-	  pair[s->nwc].jabs  = cfg->msamap[j-1]+1;
-	  pair[s->nwc].is_bp = FALSE;
-	  pair[s->nwc].htype = NONE;
+	  pair[s->napp].K     = K;
+	  pair[s->napp].N     = s->N;
+	  pair[s->napp].i     = i;
+	  pair[s->napp].j     = j;
+	  pair[s->napp].iabs  = cfg->msamap[i-1]+1; // msamap uses [0,..,alen-1]
+	  pair[s->napp].jabs  = cfg->msamap[j-1]+1;
+	  pair[s->napp].is_bp = FALSE;
+	  pair[s->napp].htype = NONE;
 	  
-	  ESL_ALLOC(pair[s->nwc].sqi,  sizeof(int)    * s->N);
-	  ESL_ALLOC(pair[s->nwc].sqj,  sizeof(int)    * s->N);
-	  ESL_ALLOC(pair[s->nwc].frqi, sizeof(double) * K);
-	  ESL_ALLOC(pair[s->nwc].frqj, sizeof(double) * K);
-	  for (n = 0; n < s->N; n++) pair[s->nwc].sqi[n] = coli[n];
-	  for (n = 0; n < s->N; n++) pair[s->nwc].sqj[n] = colj[n];
+	  ESL_ALLOC(pair[s->napp].sqi,  sizeof(int)    * s->N);
+	  ESL_ALLOC(pair[s->napp].sqj,  sizeof(int)    * s->N);
+	  ESL_ALLOC(pair[s->napp].frqi, sizeof(double) * K);
+	  ESL_ALLOC(pair[s->napp].frqj, sizeof(double) * K);
+	  for (n = 0; n < s->N; n++) pair[s->napp].sqi[n] = coli[n];
+	  for (n = 0; n < s->N; n++) pair[s->napp].sqj[n] = colj[n];
 	  sum = esl_vec_ISum(frqi, K);
-	  for (x = 0; x < K; x++) pair[s->nwc].frqi[x] = (sum > 0)? (double)frqi[x]/(double)sum : 0.0;
+	  for (x = 0; x < K; x++) pair[s->napp].frqi[x] = (sum > 0)? (double)frqi[x]/(double)sum : 0.0;
 	  sum = esl_vec_ISum(frqj, K);
-	  for (x = 0; x < K; x++) pair[s->nwc].frqj[x] = (sum > 0)? (double)frqj[x]/(double)sum : 0.0;
+	  for (x = 0; x < K; x++) pair[s->napp].frqj[x] = (sum > 0)? (double)frqj[x]/(double)sum : 0.0;
 
-	  pair[s->nwc].ptype = pair_type(msa->abc, frqi, frqj, s->maxnots);
+	  pair[s->napp].ptype = pair_type(msa->abc, frqi, frqj, s->maxnots);
 	  if (msa->ss_cons) {
 	    ESL_ALLOC(ct, sizeof(int) * (s->ncol+1));
 	    esl_wuss2ct(msa->ss_cons, s->ncol, ct);
-	    if (ct[i] == j && ct[j] == i) pair[s->nwc].is_bp = TRUE;
+	    if (ct[i] == j && ct[j] == i) pair[s->napp].is_bp = TRUE;
 	  }
 
-	  if (pair[s->nwc].is_bp) {
-	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n", s->nwc, pair[s->nwc].iabs, pair[s->nwc].jabs, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
-	    s->nwc_bp ++;
+	  if (pair[s->napp].is_bp) {
+	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n", s->napp, pair[s->napp].iabs, pair[s->napp].jabs, (pair[s->napp].ptype==TV)? "TV":"TS"); 
+	    s->napp_bp ++;
 	  }
 	  else {
-	    if (cfg->verbose) printf("\npair  %d: %d-%d %s\n", s->nwc, pair[s->nwc].iabs, pair[s->nwc].jabs, (pair[s->nwc].ptype==TV)? "TV":"TS"); 
-	    s->nwc_no ++;
+	    if (cfg->verbose) printf("\npair  %d: %d-%d %s\n", s->napp, pair[s->napp].iabs, pair[s->napp].jabs, (pair[s->napp].ptype==TV)? "TV":"TS"); 
+	    s->napp_no ++;
 	  }
 
-	  switch(pair[s->nwc].ptype) {
+	  switch(pair[s->napp].ptype) {
 	  case TS:
-	    pair[s->nwc].gai    = GA(frqi);
-	    pair[s->nwc].gaj    = GA(frqj);
-	    pair[s->nwc].uci    = UC(frqi);
-	    pair[s->nwc].ucj    = UC(frqj);
-	    pair[s->nwc].gmai   = GminusA(frqi);
-	    pair[s->nwc].gmaj   = GminusA(frqj);
-	    pair[s->nwc].umci   = UminusC(frqi);
-	    pair[s->nwc].umcj   = UminusC(frqj);
-	    pair[s->nwc].otheri = -1;
-	    pair[s->nwc].otherj = -1;
+	    pair[s->napp].gai    = GA(frqi);
+	    pair[s->napp].gaj    = GA(frqj);
+	    pair[s->napp].uci    = UC(frqi);
+	    pair[s->napp].ucj    = UC(frqj);
+	    pair[s->napp].gmai   = GminusA(frqi);
+	    pair[s->napp].gmaj   = GminusA(frqj);
+	    pair[s->napp].umci   = UminusC(frqi);
+	    pair[s->napp].umcj   = UminusC(frqj);
+	    pair[s->napp].otheri = -1;
+	    pair[s->napp].otherj = -1;
 
 	    if (cfg->verbose) {
-	      for (n = 0; n < pair[s->nwc].N; n ++) printf("%d", pair[s->nwc].sqi[n]);
-	      if (pair[s->nwc].uci < 0) { printf(" | G > A %d ", pair[s->nwc].gmai); }
-	      if (pair[s->nwc].gai < 0) { printf(" |         U > C %d ", pair[s->nwc].umci); }
+	      for (n = 0; n < pair[s->napp].N; n ++) printf("%d", pair[s->napp].sqi[n]);
+	      if (pair[s->napp].uci < 0) { printf(" | G > A %d ", pair[s->napp].gmai); }
+	      if (pair[s->napp].gai < 0) { printf(" |         U > C %d ", pair[s->napp].umci); }
 	      printf("\n");
 	      
-	      for (n = 0; n < pair[s->nwc].N; n ++) printf("%d", pair[s->nwc].sqj[n]); 
-	      if (pair[s->nwc].ucj < 0) { printf(" | G > A %d ", pair[s->nwc].gmaj); }
-	      if (pair[s->nwc].gaj < 0) { printf(" |          U > C %d ", pair[s->nwc].umcj); } 
+	      for (n = 0; n < pair[s->napp].N; n ++) printf("%d", pair[s->napp].sqj[n]); 
+	      if (pair[s->napp].ucj < 0) { printf(" | G > A %d ", pair[s->napp].gmaj); }
+	      if (pair[s->napp].gaj < 0) { printf(" |          U > C %d ", pair[s->napp].umcj); } 
 	      printf("\n");
 	    }
-	    s->nwc_ts ++;
+	    s->napp_ts ++;
 	    subptype = pair_subtype(msa->abc, frqi, frqj, s->maxnots);
-	    if (subptype == GmAandUmC) { s->nwc_GmAandUmC ++; s->nwc_GmAorUmC ++; }
-	    if (subptype == GmAorUmC)  {                      s->nwc_GmAorUmC ++; }
+	    if (subptype == GmAandUmC) { s->napp_GmAandUmC ++; s->napp_GmAorUmC ++; }
+	    if (subptype == GmAorUmC)  {                      s->napp_GmAorUmC ++; }
 	    
 	    break;
 	  case TV:
-	    pair[s->nwc].gai    = -1;
-	    pair[s->nwc].gaj    = -1;
-	    pair[s->nwc].uci    = -1;
-	    pair[s->nwc].ucj    = -1;
-	    pair[s->nwc].gmai   = -1;
-	    pair[s->nwc].gmaj   = -1;
-	    pair[s->nwc].umci   = -1;
-	    pair[s->nwc].umcj   = -1;
-	    pair[s->nwc].otheri = col_nvar(K, frqi);
-	    pair[s->nwc].otherj = col_nvar(K, frqj);
+	    pair[s->napp].gai    = -1;
+	    pair[s->napp].gaj    = -1;
+	    pair[s->napp].uci    = -1;
+	    pair[s->napp].ucj    = -1;
+	    pair[s->napp].gmai   = -1;
+	    pair[s->napp].gmaj   = -1;
+	    pair[s->napp].umci   = -1;
+	    pair[s->napp].umcj   = -1;
+	    pair[s->napp].otheri = col_nvar(K, frqi);
+	    pair[s->napp].otherj = col_nvar(K, frqj);
 	    
 	    if (cfg->verbose) {
-	      for (n = 0; n < pair[s->nwc].N; n ++) printf("%d", pair[s->nwc].sqi[n]); printf(" | OTHER %d\n", pair[s->nwc].otheri); 
-	      for (n = 0; n < pair[s->nwc].N; n ++) printf("%d", pair[s->nwc].sqj[n]); printf(" | OTHER %d\n", pair[s->nwc].otherj); 
+	      for (n = 0; n < pair[s->napp].N; n ++) printf("%d", pair[s->napp].sqi[n]); printf(" | OTHER %d\n", pair[s->napp].otheri); 
+	      for (n = 0; n < pair[s->napp].N; n ++) printf("%d", pair[s->napp].sqj[n]); printf(" | OTHER %d\n", pair[s->napp].otherj); 
 	    }
-	    s->nwc_tv ++; 
+	    s->napp_tv ++; 
 	    break;
-	  default: printf("which pairtype? %d\n", pair[s->nwc].ptype); exit(1);
+	  default: printf("which pairtype? %d\n", pair[s->napp].ptype); exit(1);
 	  }
 	  
-	  s->nwc ++;
+	  s->napp ++;
 	}
       }      
     }
   }
 
   /* figure out if the pairs form a helix */
-  if (cfg->app_helix) pairs_in_helix(s, pair, cfg->app_minhelix);
+  if (cfg->app_helix) pairs_in_helix(s, WC, pair, cfg->app_minhelix);
   
-  pairs_write  (cfg->pairfp, s->nwc, pair, 0);
+  pairs_write  (cfg->pairfp, s->napp, pair, 0);
   summary_write(cfg->pairfp, s);
   MSA_banner   (cfg->pairfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   if (cfg->pairfile) {
     summary_write(stdout, s);
     MSA_banner   (stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   }
-  if (cfg->makeplot) pairs_write_plotfile(cfg->gnuplot, cfg->plotfile, cfg->msarevmap, s, pair);
+  if (cfg->makeplot) pairs_write_plotfile(cfg->gnuplot, cfg->plotfile, cfg->msamap, cfg->msarevmap, s, pair, WC, cfg->pmin, cfg->pmax);
 
   free(coli);
   free(colj);
   free(frqi);
   free(frqj);
-  for (w = 0; w < s->nwc; w++) { free(pair[w].sqi);  free(pair[w].sqj);  }
-  for (w = 0; w < s->nwc; w++) { free(pair[w].frqi); free(pair[w].frqj); }
+  for (w = 0; w < s->napp; w++) { free(pair[w].sqi);  free(pair[w].sqj);  }
+  for (w = 0; w < s->napp; w++) { free(pair[w].frqi); free(pair[w].frqj); }
   free(pair);
+  if (cfg->app_helix){ free(WC[0]); free(WC); }
   if (ct) free(ct);
   free(s);
   return eslOK;
@@ -1201,7 +1235,7 @@ pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 }
 
 int
-pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
+pairs_in_helix(struct summary_s *s, int **WC, struct pair_s *pair, int minhelix)
 {
   HELIXTYPE  htype;     // NONE  =0 no helix
                         // START =1 helix starts
@@ -1220,12 +1254,12 @@ pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
     
   for (j = 0; j < s->ncol; j ++) 
     for (d = 0; d <= j; d ++) {
-      if (is_pair(j-d+1, j+1, s->nwc, pair)) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
-      else                                   S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;
+      if (WC[j][d]) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
+      else          S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;
     }
 
-  for (p = 0; p < s->nwc; p ++) {    
-    hlen = pairs_in_helix_status(pair[p].i-1, pair[p].j-1, S, s->nwc, pair, s->ncol, &htype);
+  for (p = 0; p < s->napp; p ++) {    
+    hlen = pairs_in_helix_status(pair[p].i-1, pair[p].j-1, WC, S, s->napp, pair, s->ncol, &htype);
  
     if (hlen >= minhelix) {
       pair[p].htype = htype;
@@ -1256,26 +1290,31 @@ pairs_in_helix(struct summary_s *s, struct pair_s *pair, int minhelix)
 }
 
 int
-pairs_in_helix_status(int i, int j, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype)
+pairs_in_helix_status(int i, int j, int **WC, int **S, int np, struct pair_s *pair, int ncol, HELIXTYPE *ret_htype)
 {
   HELIXTYPE htype;
   int       hlen;
   int       val;
   int       val_u;
+  int       val_d;
   int       d;
-  int       x;
+  int       up, down;
   
   d = j - i;
-  val =  S[j][d];
+  val = S[j][d];
 
-  x = 1;
-  while (!is_pair(j-x-d, j+x, np, pair) && j+x < ncol-1 && j-x-d > 0) x ++;
-  val_u = (j+x < ncol && j-x-d >= 0)? S[j+x][d+2*x] : val;
+  up = 1;
+  while (j+up < ncol-1 && j-up-d > 0) if (WC[j+up][d+2*up]) up ++; else break;
+  val_u = (j+up < ncol && j-up-d >= 0)? S[j+up][d+2*up] : val;
+  
+  down = -1;
+  while (j+down < ncol-1 && j-down-d > 0) if (WC[j+down][d+2*down]) down --; else break;
+  val_d = (j+down < ncol && j-down-d >= 0)? S[j+down][d+2*down] : val;
 
   if      (val == 1)     htype = START;  // helix starts 
   else if (val == val_u) htype = END;    // helix ends 
   else                   htype = MID;    // helix continues
-  hlen = val_u;
+  hlen = val_u - val_d;
  
   *ret_htype = htype;
   return hlen;
@@ -1324,19 +1363,22 @@ pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV)
 }
 
 int
-pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_s *s, struct pair_s *pair)
+pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struct summary_s *s, struct pair_s *pair, int **WC, int pmin, int pmax)
 {
   char *file1 = NULL;
   char *file2 = NULL;
   char *file3 = NULL;
   char *file4 = NULL;
   char *file5 = NULL;
+  char *file6 = NULL;
   FILE *fp1 = NULL;
   FILE *fp2 = NULL;
   FILE *fp3 = NULL;
   FILE *fp4 = NULL;
   FILE *fp5 = NULL;
+  FILE *fp6 = NULL;
   int   iabs, jabs;
+  int   i, j;
   int   p;
   
   esl_sprintf(&file1, "%s.ts.plot",    plotfile);
@@ -1344,12 +1386,13 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_
   esl_sprintf(&file3, "%s.bp.plot",    plotfile);
   esl_sprintf(&file4, "%s.helix.plot", plotfile);
   esl_sprintf(&file5, "%s.gap.plot",   plotfile);
+  if (WC) esl_sprintf(&file6, "%s.wc.plot",   plotfile);
 
   if ((fp1 = fopen(file1, "w")) == NULL) esl_fatal("Failed to open ts    file %s", file1);
   if ((fp2 = fopen(file2, "w")) == NULL) esl_fatal("Failed to open tv    file %s", file2);
   if ((fp3 = fopen(file3, "w")) == NULL) esl_fatal("Failed to open bp    file %s", file3);
   if ((fp4 = fopen(file4, "w")) == NULL) esl_fatal("Failed to open helix file %s", file4);
-  for (p = 0; p < s->nwc; p ++) {
+  for (p = 0; p < s->napp; p ++) {
     iabs  = pair[p].iabs;
     jabs  = pair[p].jabs;
     if (pair[p].ptype == TS)   fprintf(fp1, "%d %d\n", iabs, jabs);
@@ -1366,65 +1409,84 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *revmap, struct summary_
   for (iabs = 0; iabs < s->ncol_total-1; iabs ++) {
     for (jabs = iabs+1; jabs < s->ncol_total; jabs ++) {
       if (revmap[iabs] < 0 || revmap[jabs] < 0) {
-	fprintf(fp5, "%d %d\n", iabs, jabs); fprintf(fp5, "%d %d\n", jabs, iabs); 
+	fprintf(fp5, "%d %d\n", iabs, jabs); if (WC) fprintf(fp5, "%d %d\n", jabs, iabs); 
       }
     }
   }
   fclose(fp5);
 
-  pairs_plot(gnuplot, plotfile, s->ncol_total, file1, file2, file3, file4, file5);
+  if (WC) {
+    if ((fp6  = fopen(file6, "w")) == NULL) esl_fatal("Failed to open wc file %s", file6);
+    for (i = 0; i < s->ncol-1; i ++) {
+      for (j = i+1; j < s->ncol; j ++) {
+	if (WC[j][j-i]) fprintf(fp6, "%d %d\n", map[j]+1, map[i]+1); 
+      }
+    }
+    fclose(fp6);
+  }
+  
+  pairs_plot(gnuplot, plotfile, s, pmin, pmax, file1, file2, file3, file4, file5, file6);
   
   free(file1);
   free(file2);
   free(file3);
   free(file4);
   free(file5);
+  free(file6);
   return eslOK;
 }
 
 int
-pairs_plot(char *gnuplot, char *plotfile, int alen, char *file1, char *file2, char *file3, char *file4, char *file5)
+pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s, int pmin, int pmax, char *file1, char *file2, char *file3, char *file4, char *file5, char *file6)
 {
   FILE     *pipe;
   char     *outplot;
   char     *title = NULL;
   char     *cmd = NULL;
-  int       pointype;
-  double    pointintbox;
-  int       linew;
-  double    pointsize;
+  int       ngap = s->ncol_total-s->ncol;
+  int       min;
+  int       max;
   
   if (gnuplot == NULL) return eslOK;
 
   esl_sprintf(&title, "%s", plotfile);
-  esl_sprintf(&outplot, "%s.ps", plotfile);
-  pointype    = 65;
-  pointsize   = 0.7;
-  pointintbox = 1.0;
-  linew       = 2;
+  esl_sprintf(&outplot, "%s.appcov.ps", plotfile);
+
+  min = (pmin == 0)? 1             : pmin;
+  max = (pmax == 0)? s->ncol_total : pmax;
 
   /* do the plotting */
   pipe = popen(gnuplot, "w");
   fprintf(pipe, "set terminal postscript color 14\n");
   fprintf(pipe, "set output '%s'\n", outplot);
+  //fprintf(pipe, "set output '| ps2pdf - %s'\n", outplot);
   fprintf(pipe, "set title '%s' noenhanced\n", title);
   fprintf(pipe, "set size square\n");
-  fprintf(pipe, "set xrange [1:%d]\n", alen);
-  fprintf(pipe, "set yrange [1:%d]\n", alen);
+  fprintf(pipe, "set xrange [%d:%d]\n", min, max);
+  fprintf(pipe, "set yrange [%d:%d]\n", min, max);
 
-  fprintf(pipe, "set style line 3     lt 1 lc rgb '#DCDCDC' pt 1 ps 0.4 lw 0.5\n");
-  fprintf(pipe, "set style line 111   lt 1 lc rgb 'grey'      pt 7 ps 0.4 lw 0.5\n");
+  fprintf(pipe, "set style line 3     lt 1 lc rgb '#F5F5F5'   pt 1 ps 0.4 lw 0.5\n");
+  fprintf(pipe, "set style line 111   lt 1 lc rgb 'grey'      pt 7 ps 0.4 lw 1\n");
   fprintf(pipe, "set style line 213   lt 1 lc rgb 'brown'     pt 7 ps 0.4 lw 0.1\n");
   fprintf(pipe, "set style line 613   lt 1 lc rgb 'turquoise' pt 7 ps 0.4 lw 0.1\n");
   fprintf(pipe, "set style line 413   lt 1 lc rgb 'red'       pt 7 ps 0.4 lw 0.1\n");
   fprintf(pipe, "set style line 713   lt 1 lc rgb 'black'     pt 7 ps 0.4 lw 0.1\n");
-    
-  esl_sprintf(&cmd, "'%s'    using 1:2 title'' with points ls 3, ",        file5);
-  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file2);
-  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 213, ", cmd, file1);
-  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 613, ", cmd, file3);
-  esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 613",   cmd, file4);
-  fprintf(pipe, "plot x title '' ls 111, %s\n", cmd);
+
+  esl_sprintf(&cmd, "");
+  if (ngap > 0)
+    esl_sprintf(&cmd, "'%s'    using 1:2 title'' with points ls 3,   ",      file5);
+  if (s->napp_tv > 0)
+    esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file2);
+  if (s->napp_ts > 0)
+    esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 213, ", cmd, file1);
+  if (s->napp_bp > 0)
+    esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 613, ", cmd, file3);
+  if (s->helix) {
+    esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 111, ", cmd, file6);
+    esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 413, ", cmd, file4);
+  }  
+  esl_sprintf(&cmd, "%s  x             title ''            ls 111",   cmd);
+  fprintf(pipe, "plot %s\n", cmd);
   pclose(pipe);
 
   free(title);
@@ -1531,10 +1593,6 @@ select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli,
 void
 summary_write(FILE *fp, struct summary_s *s)
 {
-  double npp;
-
-  npp = (double)s->ncol * ((double)s->ncol-1.) / 2.;
-		       
   fprintf(fp, "\nnseq %d\n", s->N);
   if (s->N > 0) {
     fprintf(fp, "MAX # gaps       %8d/%d  (%2.4f %%)\n", s->maxgap,  s->N, 100*(double)s->maxgap/(double)s->N);
@@ -1544,8 +1602,8 @@ summary_write(FILE *fp, struct summary_s *s)
     if (s->maxgu < s->N) fprintf(fp, "MAX # GU         %8d/%d  (%2.4f %%)\n", s->maxgu, s->N, 100*(double)s->maxgu/(double)s->N);
     else                 fprintf(fp, "MAX # GU         all\n");
   }  
-
-  fprintf(fp, "ncol %d/%d\n", s->ncol, s->ncol_total);
+  
+  fprintf(fp, "\nncol %d/%d\n", s->ncol, s->ncol_total);
   if(s->ncol_total > 0) {
     fprintf(fp, "GA         cols  %8d/%d (%.4f %%)\n", s->ncol_GA,              s->ncol_total, 100 *  (double)s->ncol_GA/(double)s->ncol_total);
     fprintf(fp, "UC         cols  %8d/%d (%.4f %%)\n", s->ncol_UC,              s->ncol_total, 100 *  (double)s->ncol_UC/(double)s->ncol_total);
@@ -1555,16 +1613,17 @@ summary_write(FILE *fp, struct summary_s *s)
     fprintf(fp, "GmA or UmC cols  %8d/%d (%.4f %%)\n", s->ncol_GmA+s->ncol_UmC, s->ncol_total, 100 * ((double)s->ncol_GmA+(double)s->ncol_UmC)/(double)s->ncol_total);
   }
   
-  fprintf(fp, "nwc                   %8d/%d (%.4f %%)\n", s->nwc, (int)npp, 100*(double)s->nwc/npp);
-  if (s->nwc > 0) {
-    fprintf(fp, "nwc_bp           %8d/%d (%.4f %%)\n", s->nwc_bp, s->nwc, 100*(double)s->nwc_bp/(double)s->nwc);
-    fprintf(fp, "nwc_not          %8d/%d (%.4f %%)\n", s->nwc_no, s->nwc, 100*(double)s->nwc_no/(double)s->nwc);
-    fprintf(fp, "nwc_transtions   %8d/%d (%.4f %%)\n", s->nwc_ts, s->nwc, 100*(double)s->nwc_ts/(double)s->nwc);
-    fprintf(fp, "nwc_transversion %8d/%d (%.4f %%)  ", s->nwc_tv, s->nwc, 100*(double)s->nwc_tv/(double)s->nwc);
-    fprintf(fp, "ratio (ts/tv) %.4f\n", (s->nwc_tv>0)?(double)s->nwc_ts/(double)s->nwc_tv:0.);
+  fprintf(fp, "\nnwc               %8d/%d (%.4f %%)\n", s->nwc , s->np,  (s->np >0)?100*(double)s->nwc/s->np:0.);
+  fprintf(fp, "napp              %8d/%d (%.4f %%)\n", s->napp, s->nwc, (s->nwc>0)?100*(double)s->napp/s->nwc:0.);
+  if (s->napp > 0) {
+    fprintf(fp, "napp_bp           %8d/%d (%.4f %%)\n", s->napp_bp, s->napp, 100*(double)s->napp_bp/(double)s->napp);
+    fprintf(fp, "napp_not          %8d/%d (%.4f %%)\n", s->napp_no, s->napp, 100*(double)s->napp_no/(double)s->napp);
+    fprintf(fp, "napp_transtions   %8d/%d (%.4f %%)\n", s->napp_ts, s->napp, 100*(double)s->napp_ts/(double)s->napp);
+    fprintf(fp, "napp_transversion %8d/%d (%.4f %%)  ", s->napp_tv, s->napp, 100*(double)s->napp_tv/(double)s->napp);
+    fprintf(fp, "ratio (ts/tv) %.4f\n", (s->napp_tv>0)?(double)s->napp_ts/(double)s->napp_tv:0.);
     
-    fprintf(fp, "nwc_GmAorUmC     %8d/%d (%.4f %%)\n", s->nwc_GmAorUmC,  s->nwc, 100*(double)s->nwc_GmAorUmC/(double)s->nwc);
-    fprintf(fp, "nwc_GmAandUmC    %8d/%d (%.4f %%)\n", s->nwc_GmAandUmC, s->nwc, 100*(double)s->nwc_GmAandUmC/(double)s->nwc);
+    fprintf(fp, "napp_GmAorUmC     %8d/%d (%.4f %%)\n", s->napp_GmAorUmC,  s->napp, 100*(double)s->napp_GmAorUmC/(double)s->napp);
+    fprintf(fp, "napp_GmAandUmC    %8d/%d (%.4f %%)\n", s->napp_GmAandUmC, s->napp, 100*(double)s->napp_GmAandUmC/(double)s->napp);
   }
   if (s->helix > 0)
     fprintf(fp, "helices          %8d (%.2f =/- %.2f)\n", s->helix, s->h_mean, s->h_stdv);

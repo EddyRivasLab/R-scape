@@ -36,15 +36,16 @@ typedef struct msa_stat_s {
 
 } MSA_STAT;
 
-
 extern int msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf);
 extern int msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, double **ret_fnbp, char *errbuf);
 extern int msamanip_CompareBasecomp(ESL_MSA *msa1, ESL_MSA *msa2, char *errbuf);
 extern int msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa);
 extern int msamanip_ConvertDegen2N(ESL_MSA *msa);
 extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf);
-extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose);
+extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, 
+				     int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose);
 extern int msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len);
+extern int msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_startpos, int64_t *ret_endpos, char *errbuf);
 extern int msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose);
 extern int msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved);
 extern int msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved);

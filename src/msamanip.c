@@ -282,12 +282,12 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
 {
   int     *map    = NULL;
   int     *revmap = NULL;
   int      expgap;
-  int      alen = (int)msa->alen; //alen before removing gaps
+  int64_t  alen = msa->alen; //alen of the truncated alignment
   int      ngap;
   int      apos;
   int      newpos = 0;
@@ -296,7 +296,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **r
   int      status;
 
   if (gapthresh < 1.0 || useme) dofilter = TRUE;
-  
+
   if (useme == NULL) {
     ESL_ALLOC(useme, sizeof(int) * alen);
     esl_vec_ISet(useme, alen, TRUE);
@@ -319,16 +319,18 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **r
     if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }  
-  
+ 
   ESL_ALLOC(map, sizeof(int) * msa->alen);
   for (apos = 0; apos < alen; apos++) 
-    if (useme[apos]) map[newpos++] = apos;
+    if (useme[apos]) map[newpos++] = apos + startpos;
+  if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): truncation error tstart %d tend %d; is %d should be %d", startpos, endpos, newpos, msa->alen);
 
   if (ret_revmap) {
     newpos = 0;
-    ESL_ALLOC(revmap, sizeof(int) * alen);
-      for (apos = 0; apos < alen; apos++)
-	revmap[apos] = (useme[apos])? newpos++ : -1;
+    ESL_ALLOC(revmap, sizeof(int) * oalen);
+    for (apos = 0;        apos < startpos; apos++) revmap[apos] = -1;
+    for (apos = startpos; apos <= endpos;  apos++) revmap[apos] = (useme[apos])? newpos++ : -1;
+    for (apos = endpos+1; apos <  oalen;   apos++) revmap[apos] = -1;
   }
 
   if (verbose) {
@@ -347,7 +349,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **r
   return status;
 }
 
- int
+int
  msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
   ESL_MSA *omsa;
@@ -410,6 +412,48 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int **ret_map, int **r
   if (useme != NULL) free(useme); 
   return status;
 }
+
+int
+msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_startpos, int64_t *ret_endpos, char *errbuf)
+{
+  int      *useme = NULL;
+  int64_t   from;          // range [0..alen-1]
+  int64_t   to;            // range [0..alen-1]
+  int64_t   apos;
+  int       status;
+  
+  if (tstart == 0 && tend == 0) { if (ret_startpos) *ret_startpos = 0; if (ret_endpos) *ret_endpos = msa->alen-1; return eslOK; }
+
+  if (tstart > msa->alen || tend > msa->alen)
+    ESL_XFAIL(eslFAIL, errbuf, "Truncation error tstart %d or tend %d > alen %d\n", tstart, tend, msa->alen);
+  
+  /* remember: user provided coords are 1..alen or 1..rflen, 
+   * whereas all internal arrays use 0..alen-1 and 0..rflen-1 
+   */
+  from = (tstart == 0)? 0           : tstart-1;
+  to   = (tend   == 0)? msa->alen-1 : tend-1;
+  if (from >= to) ESL_XFAIL(eslFAIL, errbuf, "Truncation error from %d >= to %d\n", from+1, to+1);
+
+  /* create the truncation mask */
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  for(apos = 0;    apos <  from;     apos++) useme[apos] = FALSE; 
+  for(apos = from; apos <= to;       apos++) useme[apos] = TRUE; 
+  for(apos = to+1; apos < msa->alen; apos++) useme[apos] = FALSE;
+
+  if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK)
+    ESL_XFAIL(eslFAIL, errbuf, "Truncation failed\n");
+
+  if (ret_startpos) *ret_startpos = from;
+  if (ret_endpos)   *ret_endpos   = to;
+  
+  free(useme);
+  return eslOK;
+  
+ ERROR:
+  if (useme != NULL) free(useme); 
+  return status;
+}
+
 
 int
 msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose)

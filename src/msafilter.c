@@ -53,6 +53,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int             *msamap;
   int              firstpos;
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
+  int              tstart;
+  int              tend;
 
   int              onbpairs;
   int              nbpairs;
@@ -103,6 +105,8 @@ static ESL_OPTIONS options[] = {
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
   { "-i",             eslARG_REAL,      NULL,    NULL, "0<=x<1.0",   NULL,    NULL,  NULL,               "require seqs to have >= <x> id",                                                            1 },
+  { "--tstart",        eslARG_INT,      FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "min alignment position to analyze [1..alen]",                                               1 },
+  { "--tend",          eslARG_INT,      FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "max alignment position to analyze [1..alen]",                                               1 },
   { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
@@ -212,6 +216,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
   cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
+  cfg.tstart      = esl_opt_IsOn(go, "--tstart")?     esl_opt_GetInteger(go, "--tstart")    : 0;
+  cfg.tend        = esl_opt_IsOn(go, "--tend")?       esl_opt_GetInteger(go, "--tend")      : 0;
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
@@ -482,6 +488,10 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->msaname, "%s", submsaname);
   }
 
+  /* add tstat..tend information */
+  if (cfg->tstart > 0 || cfg->tend > 0) 
+    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, cfg->tstart, cfg->tend);
+  
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
@@ -498,6 +508,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *tok = NULL;
   char    *submsaname = NULL;
   int64_t  alen = (*omsa)->alen;
+  int64_t  startpos, endpos;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
@@ -546,7 +557,12 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-
+  
+  /* Now apply [tstart,tend] restriction if given
+   */
+  if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
+    printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
+  
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
@@ -555,7 +571,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
