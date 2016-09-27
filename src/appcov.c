@@ -1485,7 +1485,7 @@ pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s, int pmin, int pma
     esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 111, ", cmd, file6);
     esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 413, ", cmd, file4);
   }  
-  esl_sprintf(&cmd, "%s  x             title ''            ls 111",   cmd);
+  esl_sprintf(&cmd, "%s  x              title ''             ls 111",   cmd);
   fprintf(pipe, "plot %s\n", cmd);
   pclose(pipe);
 

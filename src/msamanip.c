@@ -350,45 +350,58 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
 }
 
 int
- msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
+msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
   ESL_MSA *omsa;
   ESL_MSA *new = NULL;
   ESL_DSQ *dsq = NULL;
   int     *useme = NULL;
   double   flen;
-  int64_t  clen;           // seq_cons length 
+  int64_t  clen = 0;           // seq_cons length 
   int64_t  alen;
-  int      len;
+  int64_t  len;
   int      n;
   int      i;
   int      x;
-  int      nfrags;
   int      status;
 
   omsa = *msa; /* pointer to original msa */
-  if (omsa->ngc == 0) { *ret_seq_cons_len = omsa->alen; return eslOK; }
-
+  
   for (n = 0; n < omsa->ngc; n++) {
     if (strcmp(omsa->gc_tag[n], "seq_cons") == 0) {
       esl_abc_CreateDsq(omsa->abc, omsa->gc[n], &dsq);
       clen = esl_abc_dsqrlen(omsa->abc, dsq);
       alen = esl_abc_dsqlen(dsq);
-      //printf("%s: len %d alen %d\n%s\n\n", omsa->gc_tag[n], (int)clen, (int)alen, omsa->gc[n]);
+      break;
     }
   }
-  if (clen == 0.) { printf("couldn't find 'seq_cons'\n"); status = eslFAIL; goto ERROR; } 
-  flen = (double)clen * fragfrac;
-
-  /* for each seq in msa, calculate number of residues that match the seq_cons */
+  
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  for (nfrags = 0, i = 0; i < omsa->nseq; i++)  {
-    len = 0;
-    for (x = 1; dsq[x] != eslDSQ_SENTINEL; x++) { 
-      if (esl_abc_XIsResidue(omsa->abc, dsq[x]) && esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) len ++;
+  if (clen == 0) { /* calculate fragments relative to the largest sequence*/
+    for (i = 0; i < omsa->nseq; i++)  {
+      useme[i] = 0;
+      for (x = 1; x < omsa->alen; x++) { 
+	if (esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) useme[i] ++;
+      }
+      if (useme[i] > clen) clen = useme[i];
     }
-    useme[i] = (len < flen)? FALSE : TRUE;
+    flen = (double)clen * fragfrac;
+    for (i = 0; i < omsa->nseq; i++)  {
+       useme[i] = (useme[i] <= flen)? FALSE : TRUE;
+    }
+  } 
+  else { /* for each seq in msa, calculate number of residues that match the seq_cons */
+    flen = (double)clen * fragfrac;
+    
+    for (i = 0; i < omsa->nseq; i++)  {
+      len = 0;
+      for (x = 1; dsq[x] != eslDSQ_SENTINEL; x++) { 
+	if (esl_abc_XIsResidue(omsa->abc, dsq[x]) && esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) len ++;
+      }
+      useme[i] = (len <= flen)? FALSE : TRUE;
+    }
   }
+  
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
   /* Transfer the GC comments */
   for(n = 0; n < omsa->ngc; n++) {
@@ -402,14 +415,14 @@ int
   esl_msa_Destroy(omsa);
   *msa = new;
 
-  free(dsq);
+  if (dsq) free(dsq);
   free(useme);
   return eslOK;
 
  ERROR:
-  if (new) esl_msa_Destroy(new);
-  if (dsq   != NULL) free(dsq);
-  if (useme != NULL) free(useme); 
+  if (new)   esl_msa_Destroy(new);
+  if (dsq)   free(dsq);
+  if (useme) free(useme); 
   return status;
 }
 
