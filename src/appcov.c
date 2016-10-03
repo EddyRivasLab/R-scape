@@ -1460,18 +1460,6 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
   }
   
   if (appwc) {
-    if (s->nhelix > 0) {
-      if ((fp8  = fopen(file8, "w")) == NULL) esl_fatal("Failed to open helix file %s", file8);
-      for (i = 1; i < s->ncol; i ++) {
-	for (j = i+1; j <= s->ncol; j ++) {
-	  if (appwc[j-1][j-i] == START ||
-	      appwc[j-1][j-i] == MID   ||
-	      appwc[j-1][j-i] == END     ) fprintf(fp8, "%d %d\n", map[j-1]+1, map[i-1]+1);
-	}
-      }
-      fclose(fp8);
-    }
-    
     if ((fp6  = fopen(file6, "w")) == NULL) esl_fatal("Failed to open appwc file %s", file6);
     for (i = 0; i < s->ncol-1; i ++) {
       for (j = i+1; j < s->ncol; j ++) {
@@ -1488,6 +1476,17 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
     }
     fclose(fp7);
     
+    if (s->nhelix > 0) {
+      if ((fp8  = fopen(file8, "w")) == NULL) esl_fatal("Failed to open helix file %s", file8);
+      for (i = 1; i < s->ncol; i ++) {
+	for (j = i+1; j <= s->ncol; j ++) {
+	  if (appwc[j-1][j-i] == START ||
+	      appwc[j-1][j-i] == MID   ||
+	      appwc[j-1][j-i] == END     ) fprintf(fp8, "%d %d\n", map[j-1]+1, map[i-1]+1);
+	}
+      }
+      fclose(fp8);
+    }
   }
   
   pairs_plot(gnuplot, plotfile, s, pmin, pmax, file1, file2, file3, file4, file5, file6, file7, file8);
@@ -1550,17 +1549,17 @@ pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s, int pmin, int pma
     esl_sprintf(&cmd,   "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file2);
   if (s->napp_cov_ts > 0)
     esl_sprintf(&cmd,   "%s '%s' using 1:2 title'' with points ls 213, ", cmd, file1);
-  if (s->napp_cov_bp > 0)
-    esl_sprintf(&cmd,   "%s '%s' using 1:2 title'' with points ls 613, ", cmd, file3);
   if (s->plotwc && s->napp_wc > 0) {
     esl_sprintf(&cmd,   "%s '%s' using 1:2 title'' with points ls 111, ", cmd, file6);
+    if (s->nhelix > 0)
+      esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file8);
     if (s->nbp > 0) 
       esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 413, ", cmd, file5);
     if (s->napp_wc_bp > 0)
       esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 513, ", cmd, file7);
   }
-  if (s->nhelix > 0)
-      esl_sprintf(&cmd, "%s '%s' using 1:2 title'' with points ls 713, ", cmd, file8);
+  if (s->napp_cov_bp > 0)
+    esl_sprintf(&cmd,   "%s '%s' using 1:2 title'' with points ls 613, ", cmd, file3);
  
   esl_sprintf(&cmd, "%s  x              title ''             ls 111",   cmd);
   fprintf(pipe, "plot %s\n", cmd);
