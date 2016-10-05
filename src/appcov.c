@@ -100,6 +100,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              slide;
 
   double           app_varthresh;
+  double           app_vartthresh;
   double           app_nowcthresh;
   double           app_guthresh;
   double           app_notsthresh;
@@ -184,7 +185,8 @@ struct summary_s {
   int    minhelix;
 
   int maxgap;
-  int minvar;
+  int minvar;   // min var per column
+  int minvart;  // min var total
   int maxnowc;
   int maxgu;
   int maxnots;
@@ -203,6 +205,7 @@ static ESL_OPTIONS options[] = {
  /* options  */
   { "--appgap",       eslARG_REAL,     "0.1",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of gaps per column",                                                           1 },
   { "--appvar",       eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "minimum fraction of changes per column required",                                           1 },
+  { "--appvart",      eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "minimum fraction of changes per pair required",                                           1 },
   { "--appnowc",      eslARG_REAL,    "0.01",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "max fraction of non-WC allowed",                                                            1 },
   { "--appgu",        eslARG_REAL,     "1.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of GU's allowed [default: allows all]",                                            1 },
   { "--appnots",      eslARG_REAL,     "0.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "fraction of not transitions to still call a pair ts [default: allows non]",                 1 },
@@ -270,8 +273,7 @@ static int         pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s
 static int         pairs_write(FILE *fp, int np, struct pair_s *pair, int onlyTV);
 static int         pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struct summary_s *s,
 					int *ct, struct pair_s *pair, HELIXTYPE **appwc, int pmin, int pmax);
-static int         select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
-static int         select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
+static int         select_pair_by_variability(ESL_ALPHABET *a, int minvar, int minvart, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj);
 static int         select_pair_by_wc(ESL_ALPHABET *a, int maxnowc, int maxgu, int N, ESL_DSQ *coli, ESL_DSQ *colj);
 static void        summary_write(FILE *fp, struct summary_s *s);
 
@@ -367,6 +369,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* appcov options */
   cfg.app_varthresh  = esl_opt_GetReal   (go, "--appvar");
+  cfg.app_vartthresh = esl_opt_GetReal   (go, "--appvart");
   cfg.app_nowcthresh = esl_opt_GetReal   (go, "--appnowc");
   cfg.app_guthresh   = esl_opt_GetReal   (go, "--appgu");
   cfg.app_notsthresh = esl_opt_GetReal   (go, "--appnots");
@@ -874,16 +877,20 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
   s->maxgap  = ceil(s->N * cfg->gapthresh);
   s->minvar  = ceil(s->N * cfg->app_varthresh);
+  s->minvart = ceil(s->N * cfg->app_vartthresh) * 2;
   s->maxnowc = ceil(s->N * cfg->app_nowcthresh);
   s->maxgu   = ceil(s->N * cfg->app_guthresh); if (s->maxgu > s->N || s->maxgu < 0) s->maxgu = s->N; 
   s->maxnots = ceil(s->N * cfg->app_notsthresh);
-  printf("MAX # gaps %5d  (%2.4f %%)\n", s->maxgap,  100*cfg->gapthresh);
-  printf("MIN # var  %5d  (%2.4f %%)\n", s->minvar,  100*cfg->app_varthresh);
-  printf("MAX # noWC %5d  (%2.4f %%)\n", s->maxnowc, 100*cfg->app_nowcthresh);
-  printf("MAX # noTS %5d  (%2.4f %%)\n", s->maxnots, 100*cfg->app_notsthresh);
+    
+  printf("MAX # gaps     %5d  (%2.4f %%)\n", s->maxgap,  100*cfg->gapthresh);
+  printf("MIN # var_pos  %5d  (%2.4f %%)\n", s->minvar,  100*cfg->app_varthresh);
+  printf("MIN # var_pair %5d  (%2.4f %%)\n", s->minvart, 200*cfg->app_vartthresh);
+  printf("MAX # noWC     %5d  (%2.4f %%)\n", s->maxnowc, 100*cfg->app_nowcthresh);
+  printf("MAX # noTS     %5d  (%2.4f %%)\n", s->maxnots, 100*cfg->app_notsthresh);
   if (s->maxgu < s->N) printf("MAX # GU   %5d  (%2.4f %%)\n", s->maxgu, 100*cfg->app_guthresh);
   else                 printf("MAX # GU       all\n");
-  
+  if (2*s->minvar > s->minvart) ESL_XFAIL(eslFAIL, cfg->errbuf, "minvart %d has to be at least %d", s->minvart, 2*s->minvar);
+
   if (msa->ss_cons) {
     ESL_ALLOC(ct,   sizeof(int) * (s->ncol+1));
     esl_wuss2ct(msa->ss_cons, s->ncol, ct);
@@ -919,7 +926,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	
 	if (cfg->app_helix || cfg->app_plotwc) appwc[j-1][j-i] = PAIR;
 	
-	if (select_pair_by_variability(msa->abc, s->minvar, s->N, coli, colj, K, frqi, frqj)) { // a wc pair with covariation
+	if (select_pair_by_variability(msa->abc, s->minvar, s->minvart, s->N, coli, colj, K, frqi, frqj)) { // a wc pair with covariation
 	  if (s->napp_cov == allocp-1) {
 	    allocp += 10;
 	    ESL_REALLOC(paircov, sizeof(struct pair_s) * allocp);
@@ -1570,49 +1577,9 @@ pairs_plot(char *gnuplot, char *plotfile, struct summary_s *s, int pmin, int pma
   return eslOK;
 }
 
-int
-select_pair_by_gaps_and_variability(ESL_ALPHABET *a, int maxgap, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj)
-{
-  int select = 0;
-  int frqmaxi;
-  int frqmaxj;
-  int gapi;
-  int gapj;
-  int vari;
-  int varj;
-  int n;
-  
-  gapi  = col_ngap(a, N, coli);
-  gapj  = col_ngap(a, N, colj);
-  gapi += col_nunk(a, N, coli); // count Ns and degenerates as gaps
-  gapj += col_nunk(a, N, colj);
-  vari  = col_nvar(K, frqi);
-  varj  = col_nvar(K, frqj);
-
-  if (gapi <= maxgap && gapj <= maxgap && vari >= minvar && varj >= minvar) {
-    select = 1;
-
-    /* remove variables that pair with a gap or N */
-    frqmaxi = esl_vec_IMax(frqi, a->K);
-    frqmaxj = esl_vec_IMax(frqj, a->K);
-    
-    for (n = 0; n < N; n ++) {
-      if (coli[n] < a->K && frqi[coli[n]] < frqmaxi && colj[n] >= a->K) { vari --; }
-    }
-    if (vari < minvar) return 0;
-    
-    for (n = 0; n < N; n ++) {
-      if (colj[n] < a->K && frqj[colj[n]] < frqmaxj && coli[n] >= a->K) { varj --; }
-    }
-    if (varj < minvar) return 0;
-    
-  }
-
-  return select;
-}
 
 int
-select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj)
+select_pair_by_variability(ESL_ALPHABET *a, int minvar, int minvart, int N, ESL_DSQ *coli, ESL_DSQ *colj, int K, int *frqi, int *frqj)
 {
   int select = 0;
   int frqmaxi;
@@ -1640,6 +1607,8 @@ select_pair_by_variability(ESL_ALPHABET *a, int minvar, int N, ESL_DSQ *coli, ES
       if (colj[n] < a->K && frqj[colj[n]] < frqmaxj && coli[n] >= a->K) { varj --; }
     }
     if (varj < minvar) return 0;
+
+    if (vari + varj < minvart) return 0;
     
   }
 
@@ -1672,7 +1641,8 @@ summary_write(FILE *fp, struct summary_s *s)
   fprintf(fp, "\nnseq %d\n", s->N);
   if (s->N > 0) {
     fprintf(fp, "MAX # gaps       %8d/%d  (%2.4f %%)\n", s->maxgap,  s->N, 100*(double)s->maxgap/(double)s->N);
-    fprintf(fp, "MIN # var        %8d/%d  (%2.4f %%)\n", s->minvar,  s->N, 100*(double)s->minvar/(double)s->N);
+    fprintf(fp, "MIN # var_col    %8d/%d  (%2.4f %%)\n", s->minvar,  s->N, 100*(double)s->minvar/(double)s->N);
+    fprintf(fp, "MIN # var_pair   %8d/%d  (%2.4f %%)\n", s->minvart, s->N, 200*(double)s->minvart/(double)s->N);
     fprintf(fp, "MAX # noWC       %8d/%d  (%2.4f %%)\n", s->maxnowc, s->N, 100*(double)s->maxnowc/(double)s->N);
     fprintf(fp, "MAX # noTS       %8d/%d  (%2.4f %%)\n", s->maxnots, s->N, 100*(double)s->maxnots/(double)s->N);
     if (s->maxgu < s->N) fprintf(fp, "MAX # GU         %8d/%d  (%2.4f %%)\n", s->maxgu, s->N, 100*(double)s->maxgu/(double)s->N);
