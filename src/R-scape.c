@@ -387,7 +387,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
   cfg.alenthresh  = esl_opt_GetInteger(go, "--alenthresh");
-  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : -1.0;
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          :  0.0; // remove sequences with no residues always
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
@@ -860,7 +860,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
    */
-  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
+  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
@@ -894,8 +894,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* Now apply [tstart,tend] restriction if given
    */
   if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
-    printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
-  
+    printf("%s\nTruncate failed\n", cfg->errbuf);        esl_fatal(msg); }
+  // check if empty sequences can be removed after the truncation
+  if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
+    printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
+
+  msa = *omsa;
    /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */

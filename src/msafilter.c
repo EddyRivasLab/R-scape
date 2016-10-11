@@ -405,6 +405,7 @@ main(int argc, char **argv)
       }
     }
     else {      
+      esl_msa_SetName(msa, cfg.msaname, -1);
       status = msa_manipulate(go, &cfg, &msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;

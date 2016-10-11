@@ -957,7 +957,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	  paircov[s->napp_cov].ptype = pair_type(msa->abc, frqi, frqj, s->maxnots);
 	  
 	  if (paircov[s->napp_cov].is_bp) {
-	    if (cfg->verbose) printf("\npair* %d: %d-%d %s\n",
+	    if (1||cfg->verbose) printf("\npair* %d: %d-%d %s\n",
 				     s->napp_cov, paircov[s->napp_cov].iabs, paircov[s->napp_cov].jabs, (paircov[s->napp_cov].ptype==TV)? "TV":"TS"); 
 	    s->napp_cov_bp ++;
 	  }
@@ -1028,7 +1028,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->app_helix) status = pairs_in_helix(s, appwc, paircov, cfg->app_minhelix);
   if (status != eslOK) { printf("pairs_in_helix error\n"); return status; }
   
-  pairs_write  (cfg->pairfp, s->napp_cov, paircov, 0);
+  if (cfg->verbose) pairs_write  (cfg->pairfp, s->napp_cov, paircov, 0);
   summary_write(cfg->pairfp, s);
   MSA_banner   (cfg->pairfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   if (cfg->pairfile) {
@@ -1645,8 +1645,8 @@ summary_write(FILE *fp, struct summary_s *s)
     fprintf(fp, "MIN # var_pair   %8d/%d  (%2.4f %%)\n", s->minvart, s->N, 200*(double)s->minvart/(double)s->N);
     fprintf(fp, "MAX # noWC       %8d/%d  (%2.4f %%)\n", s->maxnowc, s->N, 100*(double)s->maxnowc/(double)s->N);
     fprintf(fp, "MAX # noTS       %8d/%d  (%2.4f %%)\n", s->maxnots, s->N, 100*(double)s->maxnots/(double)s->N);
-    if (s->maxgu < s->N) fprintf(fp, "MAX # GU         %8d/%d  (%2.4f %%)\n", s->maxgu, s->N, 100*(double)s->maxgu/(double)s->N);
-    else                 fprintf(fp, "MAX # GU         all\n");
+    if (s->maxgu < s->N) fprintf(fp, "MAX # GU             %8d/%d  (%2.4f %%)\n", s->maxgu, s->N, 100*(double)s->maxgu/(double)s->N);
+    else                 fprintf(fp, "MAX # GU             all\n");
   }  
   
   fprintf(fp, "\nncol %d/%d\n", s->ncol, s->ncol_total);
@@ -1661,8 +1661,8 @@ summary_write(FILE *fp, struct summary_s *s)
   fprintf  (fp, "nbp              %8d\n",              s->nbp);
   
   fprintf(fp, "\nnapp_wc               %8d/%d (%.4f %%)\n", s->napp_wc,     s->np,       (s->np      >0)?100*(double)s->napp_wc   /s->np:0.);
-  fprintf(fp, "napp_wc_bp            %8d/%d (%.4f %%)\n",   s->napp_wc_bp,  s->napp_wc,  (s->napp_wc >0)?100*(double)s->napp_wc_bp/s->nbp:0.);
-  fprintf(fp, "napp_cov              %8d/%d (%.4f %%)\n",   s->napp_cov,    s->napp_wc,  (s->napp_wc >0)?100*(double)s->napp_wc   /s->napp_wc:0.);
+  fprintf(fp, "napp_wc_bp            %8d/%d (%.4f %%)\n",   s->napp_wc_bp,  s->napp_wc,  (s->napp_wc >0)?100*(double)s->napp_wc_bp/s->napp_wc:0.);
+  fprintf(fp, "napp_cov              %8d/%d (%.4f %%)\n",   s->napp_cov,    s->napp_wc,  (s->napp_wc >0)?100*(double)s->napp_cov  /s->napp_wc:0.);
   if (s->napp_cov > 0) {
     fprintf(fp, "napp_cov_bp           %8d/%d (%.4f %%)\n", s->napp_cov_bp, s->napp_cov, 100*(double)s->napp_cov_bp/(double)s->napp_cov);
     fprintf(fp, "napp_cov_not          %8d/%d (%.4f %%)\n", s->napp_cov_no, s->napp_cov, 100*(double)s->napp_cov_no/(double)s->napp_cov);

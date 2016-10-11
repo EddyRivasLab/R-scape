@@ -319,7 +319,8 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
     if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }  
- 
+
+  if (msa->alen == 0) ESL_XFAIL(eslFAIL, errbuf, "no positions left after grap trimming");
   ESL_ALLOC(map, sizeof(int) * msa->alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos + startpos;
@@ -377,7 +378,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   }
   
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  if (clen == 0) { /* calculate fragments relative to the largest sequence*/
+  if (clen == 0) { /* calculate fragments relative to the largest sequence */
     for (i = 0; i < omsa->nseq; i++)  {
       useme[i] = 0;
       for (x = 1; x < omsa->alen; x++) { 
