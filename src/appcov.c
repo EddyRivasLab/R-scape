@@ -219,7 +219,7 @@ static ESL_OPTIONS options[] = {
   { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
-  { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
+  { "--gapthresh",    eslARG_REAL,     "1.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   /* alphabet type */
@@ -380,11 +380,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* other options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
-  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : -1.0;
+  cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : 0.0;
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
-  cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
+  cfg.gapthresh   = esl_opt_GetReal(go, "--gapthresh");
   cfg.tstart      = esl_opt_IsOn(go, "--tstart")?     esl_opt_GetInteger(go, "--tstart")    : 0;
   cfg.tend        = esl_opt_IsOn(go, "--tend")?       esl_opt_GetInteger(go, "--tend")      : 0;
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
@@ -724,7 +724,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* apply msa filters and than select submsa
    */
-  if (cfg->fragfrac > 0.     && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
+  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
   if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
@@ -837,7 +837,10 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int               allocp = 10;
   int               status;
   
-  // Print some alignment information
+  /* the ct vector  */
+  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, cfg->errbuf);
+
+  /* Print some alignment information */
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
   
   /* Initializations */
@@ -890,11 +893,9 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (s->maxgu < s->N) printf("MAX # GU   %5d  (%2.4f %%)\n", s->maxgu, 100*cfg->app_guthresh);
   else                 printf("MAX # GU       all\n");
   if (2*s->minvar > s->minvart) ESL_XFAIL(eslFAIL, cfg->errbuf, "minvart %d has to be at least %d", s->minvart, 2*s->minvar);
-
-  if (msa->ss_cons) {
-    ESL_ALLOC(ct,   sizeof(int) * (s->ncol+1));
-    esl_wuss2ct(msa->ss_cons, s->ncol, ct);
-  }
+  
+  for (j = 0; j < s->ncol; j ++) { appwc[j][0] = NONE; }
+  
   for (i = 1; i < s->ncol; i ++) {
     
     for (n = 0; n < s->N; n ++) coli[n] = msa->ax[n][i];
@@ -905,6 +906,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     s->ncol_UC  += is_UC (K, frqi); 
     s->ncol_GmA += is_GmA(K, frqi); 
     s->ncol_UmC += is_UmC(K, frqi); 
+    
     
     for (j = i+1; j <= s->ncol; j ++) {
       s->np ++;
@@ -1286,7 +1288,7 @@ pairs_in_helix(struct summary_s *s, HELIXTYPE **appwc, struct pair_s *pair, int 
   int        p;
   int        hlen;
   int        status;
-
+  
   ESL_ALLOC(S,    sizeof(int *) * s->ncol);
   ESL_ALLOC(S[0], sizeof(int)   * dim);
   for (j = 1; j < s->ncol; j ++) S[j] = S[0] + j*(j+1)/2;
@@ -1458,11 +1460,12 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
   }
   fclose(fp4);
   
-  if (s->plotwc) {
+  if (s->plotwc && ct) {
     if ((fp5 = fopen(file5, "w")) == NULL) esl_fatal("Failed to open ss    file %s", file5);
     for (i = 1; i < s->ncol; i ++) 
-      for (j = i+1; j <= s->ncol; j ++) 
+      for (j = i+1; j <= s->ncol; j ++) {
 	if (ct[i] == j && ct[j] == i) fprintf(fp5, "%d %d\n", map[j-1]+1, map[i-1]+1);
+      }
     fclose(fp5);
   }
   
@@ -1474,14 +1477,16 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
       }
     }
     fclose(fp6);
-    
-    if ((fp7  = fopen(file7, "w")) == NULL) esl_fatal("Failed to open appwc_bp file %s", file7);
-    for (i = 1; i < s->ncol; i ++) {
-      for (j = i+1; j <= s->ncol; j ++) {
-	if (appwc[j-1][j-i] != NONE && ct[i] == j && ct[j] == i) fprintf(fp7, "%d %d\n", map[j-1]+1, map[i-1]+1);
+
+    if (ct) {
+      if ((fp7  = fopen(file7, "w")) == NULL) esl_fatal("Failed to open appwc_bp file %s", file7);
+      for (i = 1; i < s->ncol; i ++) {
+	for (j = i+1; j <= s->ncol; j ++) {
+	  if (appwc[j-1][j-i] != NONE && ct[i] == j && ct[j] == i) fprintf(fp7, "%d %d\n", map[j-1]+1, map[i-1]+1);
+	}
       }
+      fclose(fp7);
     }
-    fclose(fp7);
     
     if (s->nhelix > 0) {
       if ((fp8  = fopen(file8, "w")) == NULL) esl_fatal("Failed to open helix file %s", file8);

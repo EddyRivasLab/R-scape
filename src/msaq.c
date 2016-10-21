@@ -1,11 +1,10 @@
-/* msafilter
+/* msaq
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-
+#include <sys/types.h> 
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -21,7 +20,7 @@
 #include "msamanip.h"
 #include "msatree.h"
 
-#define ALPHOPTS     "--amino,-dna,--rna"                      /* Exclusive options for alphabet choice */
+#define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 
 /* Exclusive options for evolutionary model choice */
 
@@ -38,6 +37,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_RANDOMNESS  *r;	               /* random numbers */
   ESL_ALPHABET    *abc;                /* the alphabet */
   int              abcisRNA;
+
+  char            *gnuplot;
   
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
@@ -51,6 +52,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *filename;
   char            *msaname;
   int             *msamap;
+  int             *msarevmap;
   int              firstpos;
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
   int              tstart;
@@ -68,6 +70,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outmapfile;
   FILE            *outmapfp;
   
+  char            *pairfile;
+  FILE            *pairfp;
+
   double          *ft;
   double          *fbp;
   double          *fnbp;
@@ -86,21 +91,17 @@ struct cfg_s { /* Shared configuration in masters & workers */
   MSA_STAT        *mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
 
-  int              window;
-  int              slide;
-
   float            tol;
   int              verbose;
 };
 
+
 static ESL_OPTIONS options[] = {
-  /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
-  { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
-  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
-  { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
-  { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
-  { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
-  { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
+  /* name             type             default   env         range   toggles  reqs   incomp              help                                                                                  docgroup*/
+  { "-h",             eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
+  { "--outdir",     eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
+  { "-v",             eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  { "--onemsa",       eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -113,29 +114,32 @@ static ESL_OPTIONS options[] = {
   { "--gapthresh",    eslARG_REAL,     "1.0",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
-  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              0 },
   /* alphabet type */
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
-  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      0 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* Control of output */
-  { "--outmsa",     eslARG_OUTFILE,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write msa used to file <f>,",                                                                1 },
-  { "--outmap",    eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write map file to <f>",                                                                      1 },
+  { "-p",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produce plots",                                                                             1 },
+  { "--pmin",          eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "min alignment position to plot",                                                            0 },
+  { "--pmax",          eslARG_INT,      FALSE,   NULL,     "n>=0",   NULL,    NULL,  NULL,               "max alignment position to plot",                                                            0 },
+  { "--outpair",    eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pairs to <f> (default is standar output)",                                            1 },
+  { "--outmsa",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write msa used to file <f>,",                                                               1 },
+  { "--outmap",     eslARG_OUTFILE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write map file to <f>",                                                                     1 },
  /* other options */  
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
-static char banner[] = "msafilter by fragments(-F)/avgid(-I)/gaps(--gapthresh)";
+static char banner[] = "msaq";
 
-static int msafilter_banner(FILE *fp, char *progname, char *banner);
-static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
-static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
-static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int         msaq_banner(FILE *fp, char *progname, char *banner);
+static int         MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
+static int         get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_msa);
+static int         msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int         msaq(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -162,7 +166,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.argv = argv;
  
   /* banner */
-  msafilter_banner(stdout, cfg.argv[0], banner);
+  msaq_banner(stdout, cfg.argv[0], banner);
 
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
@@ -177,10 +181,28 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_ArgNumber(go) != 1) { 
     if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
-
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+
+  /* find gnuplot */
+  cfg.gnuplot = NULL;
+  path = getenv("PATH"); // chech for an executable in the path
+  s = path; 
+  while (esl_strcmp(s, "")) {
+    esl_strtok(&s, ":", &tok);
+    esl_sprintf(&tok1, "%s/gnuplot", tok);
+    if ((stat(tok1, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);    
+      break;
+    }
+    free(tok1); tok1 = NULL;
+  }
+  if (cfg.gnuplot == NULL && "GNUPLOT" && (s = getenv("GNUPLOT"))) { // check for an envvar
+    if ((stat(s, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", s);
+    }
+  }
 
   /* outheader for all output files */
   cfg.outheader = NULL;
@@ -195,6 +217,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.msafrq = NULL;
   cfg.msaname = NULL;
   cfg.msamap = NULL;
+  cfg.msarevmap = NULL;
 
   /* alphabet */
   cfg.abc = NULL;
@@ -207,25 +230,28 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   cfg.outdir = NULL;
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
- 
-  /* other options */
+
+  /* options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          : 0.0;
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          : -1.0;
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
-  cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
+  cfg.gapthresh   = esl_opt_GetReal(go, "--gapthresh");
   cfg.tstart      = esl_opt_IsOn(go, "--tstart")?     esl_opt_GetInteger(go, "--tstart")    : 0;
   cfg.tend        = esl_opt_IsOn(go, "--tend")?       esl_opt_GetInteger(go, "--tend")      : 0;
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
-  cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
-  cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
+
+  if (cfg.tstart > 0 && cfg.pmin == 0) cfg.pmin = cfg.tstart;
+  if (cfg.tend   > 0 && cfg.pmax == 0) cfg.pmax = cfg.tend;
+  if (cfg.tstart > 0 && cfg.tstart > cfg.pmin) cfg.pmin = cfg.tstart;
+  if (cfg.tend   > 0 && cfg.tend   < cfg.pmax) cfg.pmax = cfg.tend;
   
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
-  
+
   esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
   if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s.filter", cfg.outdir, cfg.filename);
   else            esl_sprintf( &cfg.outheader, "%s.filter", cfg.outheader);
@@ -244,33 +270,30 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.omstat = NULL;
 
   /* output files */
+  cfg.outmsafile = NULL;
+  cfg.outmsafp   = NULL;
   if ( esl_opt_IsOn(go, "--outmsa") ) {
-    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "-outmsa"));
-    if ((cfg.outmsafp  = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open msa file %s", cfg.outmsafile);
-  } 
-  else {
-    if (cfg.window <= 0) esl_sprintf(&cfg.outmsafile, "%s.sto", cfg.outheader);
-    else                 esl_sprintf(&cfg.outmsafile, "%s.w%d.s%d.sto", cfg.outheader, cfg.window, cfg.slide);
+    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
     if ((cfg.outmsafp  = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open msa file %s", cfg.outmsafile);
   }
+  cfg.outmapfile = NULL;
+  cfg.outmapfp   = NULL;
   if ( esl_opt_IsOn(go, "--outmap") ) {
     esl_sprintf(&cfg.outmapfile, "%s", esl_opt_GetString(go, "-outmap"));
     if ((cfg.outmapfp  = fopen(cfg.outmapfile, "w")) == NULL) esl_fatal("Failed to open map file %s", cfg.outmapfile);
   } 
-  else {
-    if (cfg.window <= 0) esl_sprintf(&cfg.outmapfile, "%s.map", cfg.outheader);
-    else                 esl_sprintf(&cfg.outmapfile, "%s.w%d.s%d.map", cfg.outheader, cfg.window, cfg.slide);
-    if ((cfg.outmapfp  = fopen(cfg.outmapfile, "w")) == NULL) esl_fatal("Failed to open map file %s", cfg.outmapfile);
+
+  cfg.pairfile = NULL;
+  cfg.pairfp = stdout;
+  if ( esl_opt_IsOn(go, "--outpair") ) {
+    esl_sprintf(&cfg.pairfile, "%s", esl_opt_GetString(go, "--outpair"));
+    if ((cfg.pairfp  = fopen(cfg.pairfile, "w")) == NULL) esl_fatal("Failed to open pair file %s", cfg.pairfile);
   }
-  
+  cfg.plotfile = NULL;
+
   cfg.treefile  = NULL;
   cfg.treefp    = NULL;
   cfg.T         = NULL;
-  if (esl_opt_IsOn(go, "--treefile")) {
-    esl_sprintf( &cfg.treefile, esl_opt_GetString(go, "--treefile"));
-    if ((cfg.treefp = fopen(cfg.treefile, "r")) == NULL) esl_fatal("Failed to open tree file %s", cfg.treefile);
-    if (esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T) != eslOK) esl_fatal("Failed to read tree file %s", cfg.treefile);
-  }
 
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
@@ -301,21 +324,21 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
 
 static int
-msafilter_banner(FILE *fp, char *progname, char *banner)
+msaq_banner(FILE *fp, char *progname, char *banner)
 {
-  char *appname = NULL;
+  char *name = NULL;
   int   status;
 
-  if ((status = esl_FileTail(progname, FALSE, &appname)) != eslOK) return status;
+  if ((status = esl_FileTail(progname, FALSE, &name)) != eslOK) return status;
 
-  if (fprintf(fp, "# %s :: %s\n", appname, banner)                                               < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# %s :: %s\n", name, banner)                                               < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   if (fprintf(fp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
 
-  if (appname) free(appname);
+  if (name) free(name);
   return eslOK;
 
  ERROR:
-  if (appname) free(appname);
+  if (name) free(name);
   return status;
 }
 
@@ -342,7 +365,7 @@ main(int argc, char **argv)
   char            *omsaname = NULL;
   ESL_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
-  ESL_MSA         *wmsa = NULL;           /* the window alignment   */
+  ESL_MSA         *nmsa = NULL;           /* the new alignment      */
   int             *useme = NULL;
   int              first, last;
   int              i;
@@ -363,65 +386,36 @@ main(int argc, char **argv)
     if (hstatus != eslOK) { printf("%s\n", afp->errmsg) ; esl_msafile_ReadFailure(afp, status); }
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
-
+    
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     cfg.abcisRNA = FALSE;
     if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) { cfg.abcisRNA = TRUE; }
-
-    if (cfg.window > 0) {
- 
-      esl_sprintf(&omsaname, "%s", cfg.msaname);
-
-      useme = malloc(sizeof(int)*(msa->alen));
-      for (first = 1; first <= ESL_MAX(1, msa->alen); first += cfg.slide) {
-
-	esl_vec_ISet(useme, msa->alen, FALSE);
-	wmsa = esl_msa_Clone(msa);
-
-	last = ESL_MIN(first+cfg.window-1, msa->alen);	
-	for (i = first-1; i < last; i ++) useme[i] = TRUE;
-	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
-	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
-
-	/* add the name including the from-to information */
-	free(cfg.msaname); cfg.msaname = NULL;
-	esl_sprintf(&cfg.msaname, "%s_%d-%d", omsaname, first, last);
-	esl_msa_SetName(wmsa, cfg.msaname, -1);
-
-	status = msa_manipulate(go, &cfg, &wmsa);
-	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
-	if (wmsa == NULL) continue;
-	if (wmsa->alen <= 0) {
-	  MSA_banner(stdout, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
-	  continue;
-	}
-
-	cfg.firstpos = first;
-
-	esl_msa_Destroy(wmsa); wmsa = NULL;
-	if (last >= msa->alen) break;
+    
+    status = msa_manipulate(go, &cfg, &msa);
+    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
+    if (nmsa == NULL) continue;
+    if (nmsa->alen == 0) {
+      MSA_banner(stdout, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
+      continue;
       }
+    
+    cfg.firstpos = 1;
+    if (cfg.makeplot) {
+      if (cfg.outdir) esl_sprintf( &cfg.plotfile, "%s/%s", cfg.outdir, cfg.msaname);
+      else            esl_sprintf( &cfg.plotfile, "%s", cfg.msaname);
     }
-    else {      
-      esl_msa_SetName(msa, cfg.msaname, -1);
-      status = msa_manipulate(go, &cfg, &msa);
-      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
-      if (msa == NULL) continue;
-      if (msa->alen == 0) {
-	MSA_banner(stdout, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
-	continue;
-      }
-
-      cfg.firstpos = 1;
-    }
-
+    status = msaq(go, &cfg, msa, &nmsa);
+    if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to calculate msaq"); }
+    if (nmsa) esl_msa_Destroy(nmsa); nmsa = NULL;
+    
     if (omsaname) free(omsaname); omsaname = NULL;
     if (useme) free(useme); useme = NULL;
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
+    if (cfg.msarevmap) free(cfg.msarevmap); cfg.msarevmap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
   }
@@ -429,6 +423,8 @@ main(int argc, char **argv)
   /* cleanup */
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outmapfp) fclose(cfg.outmapfp);
+  if (cfg.pairfp) fclose(cfg.pairfp);
+  free(cfg.gnuplot);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -441,13 +437,16 @@ main(int argc, char **argv)
   free(cfg.outheader);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outmapfile) free(cfg.outmapfile);
+  if (cfg.pairfile)   free(cfg.pairfile);
+  if (cfg.plotfile)   free(cfg.plotfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (useme) free(useme);
   if (cfg.msamap) free(cfg.msamap); 
+  if (cfg.msarevmap) free(cfg.msarevmap); 
   if (cfg.omstat) free(cfg.omstat);
-  if (cfg.mstat) free(cfg.mstat); 
+  if (cfg.mstat) free(cfg.mstat);
 
   return 0;
 }
@@ -516,7 +515,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   int      pos;
 
   printf("MSA          %s (alen = %" PRIu64 " nseq = %d)\n", cfg->filename, alen, (*omsa)->nseq);
-  printf("ID  %.2f G   %.2f ", cfg->idthresh, cfg->gapthresh);
+  printf("ID  %.4f G   %.4f ", cfg->idthresh, cfg->gapthresh);
   if (cfg->fragfrac > 0) printf("F   %.2f\n", cfg->fragfrac); else printf("\n");
 
   /* stats of the original alignment */
@@ -540,9 +539,10 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-  
-  msa = *omsa;
-  
+
+  /* What is left after all the filtering?
+   */
+  msa = *omsa;  
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -558,12 +558,12 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  
+
   /* Now apply [tstart,tend] restriction if given
    */
   if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
     printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
-  
+
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
@@ -572,21 +572,24 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, &cfg->msarevmap, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   msamanip_ConvertDegen2N(msa);
 
   /* write the msa */
-  esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-  printf("MSA filtered %s (alen=%" PRIu64 " nseq = %d)\n", cfg->outmsafile, msa->alen, msa->nseq);
-
-  /* write the map to the original alignment */
-  fprintf(cfg->outmapfp, "# maping alignment\n# %s (alen=%" PRIu64 ")\n# to alignment\n# %s (alen=%" PRIu64 ")\n",
-	  cfg->outmsafile, msa->alen, cfg->filename, alen);
-  fprintf(cfg->outmapfp, "# 0..alen-1\n");
-  for (pos = 0; pos < msa->alen; pos++)
-    fprintf(cfg->outmapfp, "%d\t%d\n", pos, cfg->msamap[pos]);
+  if (cfg->outmsafile) {
+    esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+    printf("MSA filtered %s (alen=%" PRIu64 " nseq = %d)\n", cfg->outmsafile, msa->alen, msa->nseq);
+  }
+  if (cfg->outmapfile) {
+    /* write the map to the original alignment */
+    fprintf(cfg->outmapfp, "# maping alignment\n# %s (alen=%" PRIu64 ")\n# to alignment\n# %s (alen=%" PRIu64 ")\n",
+	    cfg->outmsafile, msa->alen, cfg->filename, alen);
+    fprintf(cfg->outmapfp, "# 0..alen-1\n");
+    for (pos = 0; pos < msa->alen; pos++)
+      fprintf(cfg->outmapfp, "%d\t%d\n", pos, cfg->msamap[pos]);
+  }
   
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
@@ -621,27 +624,24 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
 
 static int
-create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+msaq(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_nmsa)
 {
-  int  status; 
- 
-  /* create tree from MSA */
-  if (cfg->T == NULL) {
-    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) esl_fatal(cfg->errbuf); 
-  }
-
-  /* match the tree leaves to the msa names */
-  status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) esl_fatal(cfg->errbuf); 
-
-  if (cfg->T) {
-    cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-    if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
-  }
-  if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+  ESL_MSA *msa = NULL;
+  int      K = msa->abc->K;
+  int      status;
   
-  return eslOK;
-}
+  /* the ct vector  */
+  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, cfg->errbuf);
 
+  /* Print some alignment information */
+  MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  
+  /* Initializations */
+  *ret_msa = msa;
+  return eslOK;
+  
+ ERROR:
+  if (msa) esl_msa_Destroy(msa);
+  return status;
+}
 
