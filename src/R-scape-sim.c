@@ -354,7 +354,7 @@ main(int argc, char **argv)
     
     /* stats of the given alignment */
     msamanip_XStats(msa, &cfg.mstat);
-    msamanip_CalculateCT(msa, NULL, &cfg.nbpairs, cfg.errbuf);
+    msamanip_CalculateCT(msa, NULL, &cfg.nbpairs, -1., cfg.errbuf);
  
     status = simulate_msa(go, &cfg, msa, &simsa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to simulate msa"); }
@@ -362,7 +362,7 @@ main(int argc, char **argv)
     
     /* stats of the simulated alignment */
     msamanip_XStats(simsa, &cfg.simstat);
-    msamanip_CalculateCT(simsa, NULL, &cfg.simnbpairs, cfg.errbuf);
+    msamanip_CalculateCT(simsa, NULL, &cfg.simnbpairs, -1., cfg.errbuf);
  
     /* write the simulated msa to file */
     if (cfg.simsafp && simsa) esl_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
@@ -477,7 +477,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   free(useme); useme = NULL;
  
   if (cfg->verbose) {
-    msamanip_CalculateCT(root, NULL, &root_bp, cfg->errbuf);
+    msamanip_CalculateCT(root, NULL, &root_bp, -1., cfg->errbuf);
     printf("root sequence L = %d nbps = %d \n", (int)root->alen, root_bp);
     esl_msafile_Write(stdout, root, eslMSAFILE_STOCKHOLM);
  }

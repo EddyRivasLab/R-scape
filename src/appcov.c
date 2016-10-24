@@ -43,6 +43,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
   double           gapthresh;          /* only keep columns with <= gapthresh fraction of gaps in them */
+  int              singlelink;         /* if TRUE use single linkage clustering to remove highly identical sequences */
   
   double           minidthresh;	       /* fractional minimal identity threshold for selecting subset of sequences */
     
@@ -226,6 +227,7 @@ static ESL_OPTIONS options[] = {
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          0 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  { "--singlelink",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to use single linkage clustering (default is esl_msaweight_IDFilter)",                 0},
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* Control of output */
@@ -395,6 +397,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.makeplot    = esl_opt_GetBoolean(go, "-p");
   cfg.pmin        = esl_opt_IsOn(go, "--pmin")?       esl_opt_GetInteger(go, "--pmin")      : 0;
   cfg.pmax        = esl_opt_IsOn(go, "--pmax")?       esl_opt_GetInteger(go, "--pmax")      : 0;
+  cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
 
   if (cfg.tstart > 0 && cfg.pmin == 0) cfg.pmin = cfg.tstart;
   if (cfg.tend   > 0 && cfg.pmax == 0) cfg.pmax = cfg.tend;
@@ -713,7 +716,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
-  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, cfg->errbuf);
+  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, -1., cfg->errbuf);
   /* print some info */
   if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");
@@ -724,13 +727,13 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* apply msa filters and than select submsa
    */
-  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)             != eslOK) {
+  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)                 != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, &nremoved)              != eslOK) {
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, cfg->singlelink, &nremoved) != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)           != eslOK) {
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)               != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
 
   /* What is left after all the filtering?
@@ -838,7 +841,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int               status;
   
   /* the ct vector  */
-  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, cfg->errbuf);
+  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, -1., cfg->errbuf);
 
   /* Print some alignment information */
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);

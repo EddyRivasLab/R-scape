@@ -39,29 +39,62 @@ static int shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int 
 static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *new, int *usecol, char *errbuf);
 
 int 
-msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, char *errbuf)
+msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnowc, char *errbuf)
 {
-  int *ct = NULL;
-  int  nbpairs = 0;
-  int  i, j;
-  int  status;
+  int  *ct = NULL;
+  int   nowc;
+  int   expnowc;
+  int   axi, axj;
+  int   nbpairs = 0;
+  int   i, j;
+  int   s;
+  int   status;
   
   if (msa == NULL) return eslOK;
 
   ESL_ALLOC(ct, sizeof(int) * (msa->alen+1));
   if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct);
   else              esl_vec_ISet(ct, msa->alen+1, 0);
+
+  /* remove basepair with too many non-wc basepairs */
+  if (maxnowc >= 0) {
+    for (i = 0; i < msa->alen-1; i ++)
+      for (j = i+1; j < msa->alen; j ++) {
+	nowc = 0;
+	
+	/* count the gaps per position */
+	if (ct[i] == j) {
+	  for (s = 0; s < msa->nseq; s++) {
+	    axi = msa->ax[s][i];
+	    axj = msa->ax[s][j];
+	    if (esl_abc_XIsCanonical(msa->abc, axi) && esl_abc_XIsCanonical(msa->abc, axj))
+	      {
+		if (axi+axj == 3 || axi+axj == 5) ; else nowc ++;
+	      }
+	  }
+	  
+	  /* apply maxnowc */
+	  expnowc = ceil(maxnowc*(double)msa->nseq);
+	  if (nowc > expnowc) { ct[i] = 0; ct[j] = 0; }
+	}	
+      }
+  }
   
   for (i = 0; i < msa->alen-1; i ++)
     for (j = i+1; j < msa->alen; j ++)
     	if (ct[i+1] == j+1) nbpairs ++;
 
+  /* modify the SS_cons in the alignment */
+  if (msa->ss_cons) free(msa->ss_cons); 
+  ESL_ALLOC(msa->ss_cons, sizeof(char)*(msa->alen+1));
+  esl_ct2wuss(ct, msa->alen, msa->ss_cons);
+    
 #if 0
-  printf("%s\n", msa->sqname[0]);
+  printf("%s nbp %d\n", msa->sqname[0], nbpairs);
   for (i = 1; i <= msa->alen-1; i ++)
     printf("%c %d %d\n", msa->abc->sym[msa->ax[0][i]], i, ct[i]);
 #endif
-  
+
   if (ret_ct)      *ret_ct      = ct;  else free(ct);
   if (ret_nbpairs) *ret_nbpairs = nbpairs;
   return eslOK;
@@ -282,7 +315,8 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 
 int
-msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
+msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen,
+			  int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
 {
   int     *map    = NULL;
   int     *revmap = NULL;
@@ -501,7 +535,7 @@ msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose)
 /* Extract subset with sequences no more than idthesh similar to each other
  */
 int
-msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int *ret_nremoved)
+msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int singlelink, int *ret_nremoved)
 {      
   ESL_MSA   *omsa  = NULL;
   ESL_MSA   *new  = NULL;
@@ -520,7 +554,7 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 
   omsa = *msa;
 
-  #if 0
+  if (singlelink) {
     ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
     esl_vec_ISet(useme, omsa->nseq, 0);
     
@@ -539,16 +573,17 @@ msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
       }
     
     if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-#else
+  }
+  else { // faster algorithm
     if ((status = esl_msaweight_IDFilter(omsa, idthresh, &new)) != eslOK) goto ERROR;
-#endif
-    
-    /* Transfer the GC comments */
-    for(n = 0; n < omsa->ngc; n++) {
-      if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
-    }
-    
-    *ret_nremoved = omsa->nseq - new->nseq;
+  }
+  
+  /* Transfer the GC comments */
+  for(n = 0; n < omsa->ngc; n++) {
+    if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
+  }
+  
+  *ret_nremoved = omsa->nseq - new->nseq;
   
   /* replace msa */
   esl_msa_Destroy(omsa);

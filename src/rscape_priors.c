@@ -293,7 +293,7 @@ main(int argc, char **argv)
     esl_msa_Hash(msa);
     
     if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, &nremoved);
+    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, TRUE, &nremoved);
     
     /* given msa aveid and avematch */
     msamanip_CStats(cfg.abc, msa, &cfg.mstat);
