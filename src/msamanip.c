@@ -235,6 +235,22 @@ msamanip_ConvertDegen2N(ESL_MSA *msa)
 }
 
 int
+msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa)
+{ 
+  int     n;
+  int64_t i;
+
+  if (! (msa->flags & eslMSA_DIGITAL)) ESL_EXCEPTION(eslEINVAL, "msamanip_ConvertDegen2RandomCanonical only works on digital sequences");
+  
+  for (n = 0; n < msa->nseq; n++) {
+    for (i = 1; msa->ax[n][i] != eslDSQ_SENTINEL; i++)  
+      if (esl_abc_XIsMissing(msa->abc, msa->ax[n][i]) || esl_abc_XIsNonresidue(msa->abc, msa->ax[n][i]))
+	msa->ax[n][i] = esl_abc_XGetGap(msa->abc);
+  }
+  return eslOK;
+}
+
+int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)
 {
   ESL_SQ *rsq  = NULL;
@@ -514,6 +530,10 @@ msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose)
 
   for (tagidx = 0; tagidx < msa->ngc; tagidx++)
     if (strcmp(msa->gc_tag[tagidx], "seq_cons") == 0) seq_cons = msa->gc[tagidx];
+  if (tagidx == msa->ngc) {
+    for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+      if (strcmp(msa->gc_tag[tagidx], "RF") == 0)     seq_cons = msa->gc[tagidx];
+  }
   
   if (seq_cons == NULL) return eslOK;
   if (verbose) printf("seq_cons\n%s\n", seq_cons);

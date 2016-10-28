@@ -914,7 +914,9 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
+  /* convert degenerates to N, and Missing/Nonresidues to Gap */
   msamanip_ConvertDegen2N(msa);
+  msamanip_ConvertMissingNonresidue2Gap(msa);
   
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);

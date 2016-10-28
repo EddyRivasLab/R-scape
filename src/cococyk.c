@@ -1716,7 +1716,7 @@ emitsc_sing(int i, ESL_DSQ *dsq, SCVAL e_sing[NB])
   SCVAL sc;
   
   if (dsq[i] < NB) sc = e_sing[dsq[i]];
-  else             sc = 0.0;
+  else             sc = -eslINFINITY;
 
   return sc;
 }

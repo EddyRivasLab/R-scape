@@ -1758,13 +1758,14 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   }
   
   // assign the covthresh from ha, to be used with cyk
-  for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
+  data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
+  for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
     cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
     eval = (data->ranklist_null)? cov2evalue(cov, ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
     
     if (data->mode == GIVSS || data->mode == CYKSS)         
       if (eval > 0.0 && eval <= data->thresh->val)  
-	data->thresh->sc = cov; 
+	data->thresh->sc = cov;
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -3373,15 +3374,16 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   int     *ct = *ret_ct;
   int     *cct = NULL;
   SCVAL    sc;
-  float    idthresh = 0.30;
+  float    idthresh = 0.50;
   int      status;
-  
+ 
   /* create an RF sequence */
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
+  
   sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
- 
+  
   cykcov_remove_inconsistencies(sq, ct, minloop);
 
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
