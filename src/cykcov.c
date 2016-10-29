@@ -27,7 +27,6 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   int   *ct  = NULL;
   int    status;
 
-  printf("^^ thres %f max %f\n", covthresh, mi->maxCOV);
   if (covthresh > mi->maxCOV) {
     ESL_ALLOC(ct, sizeof(int) * (mi->alen+1));
     esl_vec_ISet(ct, mi->alen+1, 0);
