@@ -1763,8 +1763,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
       cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
       eval = (data->ranklist_null)? cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
-      if (eval <= data->thresh->val) data->thresh->sc = cov;
-    }
+      if (eval > 0.0 &&eval <= data->thresh->val) data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, b-1);
+   }
+ 
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -2323,7 +2324,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, int min
 
   /* impose the ct on the msa GC line 'cons_ss' */
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
-  esl_ct2simplewuss(cykct, msa->alen, ss);
+  esl_ct2wuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);
   if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
@@ -3061,7 +3062,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   int           i;
   int           h;
   int           ih, jh;
-  int           tagidx;
+  int           tagidx, tagidx2;
   int           idx;
   int           do_r2rcovmarkup = FALSE;
   int           status;
@@ -3185,6 +3186,20 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
     if (verbose) esl_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
   
+  /* remove any 'SS_cons_<n>' markup. Only consider 'SS_cons' */
+  for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++) {
+    if (strncmp("SS_cons_", r2rmsa->gc_tag[tagidx],      8) == 0 ||
+	strncmp("cov_SS_cons_", r2rmsa->gc_tag[tagidx], 12) == 0)
+      {
+	for (tagidx2 = tagidx+1; tagidx2 < r2rmsa->ngc; tagidx2++) {
+	  r2rmsa->gc_tag[tagidx2-1] = r2rmsa->gc_tag[tagidx2]; 
+	  r2rmsa->gc[tagidx2-1]     = r2rmsa->gc[tagidx2]; 
+	}
+	tagidx --;
+	r2rmsa->ngc --;
+      }
+  }
+  
   /* write the R2R annotated to PFAM format */
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
@@ -3243,10 +3258,10 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
- esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
- esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
+  esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
+  esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
   system(args);
-
+  
   free(cmd);
   free(args);
   free(r2rpdf);
@@ -3369,6 +3384,7 @@ int
 cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf)
 {
   char    *rfline = NULL;
+  char    *newss = NULL;
   ESL_SQ  *sq = NULL;
   int     *ct = *ret_ct;
   int     *cct = NULL;
@@ -3379,6 +3395,7 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   /* create an RF sequence */
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
+  if (verbose) printf("\nrfline:\n%s\nss_cons\n%s\n", rfline, msa->ss_cons);
   
   sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
   esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
@@ -3388,7 +3405,11 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) printf("coco-cyk score = %f\n", sc);
+  if (verbose) {
+    ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
+    esl_ct2wuss(cct, msa->alen, newss);
+    printf("coco-cyk score = %f\n%s\n", sc, newss);
+  }
 
   if (cct) {
     free(ct); ct = NULL;
@@ -3398,12 +3419,14 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
     *ret_ct = ct;
     
   if (rfline) free(rfline);
+  if (newss) free(newss);
   esl_sq_Destroy(sq);
   return eslOK;
 
  ERROR:
   if (sq) esl_sq_Destroy(sq);
   if (rfline) free(rfline);
+  if (newss) free(newss);
   if (cct) free(cct);
   return status;
 }

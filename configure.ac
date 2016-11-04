@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 0.2.2, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 0.3, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -87,7 +87,7 @@ E2_ESLDIR="lib/hmmer/lib/easel"
 E2_SADIR="libdivsufsort"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="July 2016"
+RSCAPE_DATE="November 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -589,6 +589,7 @@ lib/R2R/src/Makefile
 lib/FastTree/src/Makefile
 lib/hmmer/lib/easel/Makefile
 lib/hmmer/Makefile
+documentation/titlepage.tex
 ])
 
 #################################################################

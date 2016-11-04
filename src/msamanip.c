@@ -354,10 +354,10 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
  
   if (dofilter) {
     for (apos = 1; apos <= alen; apos++) {
-      /* count the gaps in apos */
+      /* count the gaps/missing in apos */
       ngap = 0;
       for (i = 0; i < msa->nseq; i++) 
-	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos])) ngap ++;
+	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos]) || esl_abc_XIsMissing(msa->abc, msa->ax[i][apos])) ngap ++;
       
       /* apply gapthresh */
       expgap = ceil(gapthresh*(double)msa->nseq);
@@ -486,7 +486,7 @@ msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_start
   int64_t   apos;
   int       status;
   
-  if (tstart == 0 && tend == 0) { if (ret_startpos) *ret_startpos = 0; if (ret_endpos) *ret_endpos = msa->alen-1; return eslOK; }
+  if (tstart == 1 && tend == msa->alen) { if (ret_startpos) *ret_startpos = 0; if (ret_endpos) *ret_endpos = msa->alen-1; return eslOK; }
 
   if (tstart > msa->alen || tend > msa->alen)
     ESL_XFAIL(eslFAIL, errbuf, "Truncation error tstart %d or tend %d > alen %d\n", tstart, tend, msa->alen);
@@ -494,8 +494,8 @@ msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_start
   /* remember: user provided coords are 1..alen or 1..rflen, 
    * whereas all internal arrays use 0..alen-1 and 0..rflen-1 
    */
-  from = (tstart == 0)? 0           : tstart-1;
-  to   = (tend   == 0)? msa->alen-1 : tend-1;
+  from = tstart-1;
+  to   = tend-1;
   if (from >= to) ESL_XFAIL(eslFAIL, errbuf, "Truncation error from %d >= to %d\n", from+1, to+1);
 
   /* create the truncation mask */

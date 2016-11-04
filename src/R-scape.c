@@ -253,7 +253,7 @@ static ESL_OPTIONS options[] = {
   { "--outnull",      eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>,",                                                        1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
-  { "--cykLmax",       eslARG_INT,    "1800",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
+  { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
@@ -844,6 +844,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *tok = NULL;
   char    *submsaname = NULL;
   int      alen = msa->alen;
+  int64_t  tstart, tend;
   int64_t  startpos, endpos;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
@@ -896,7 +897,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   
   /* Now apply [tstart,tend] restriction if given
    */
-  if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
+  if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
+  else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
+  else if (cfg->tstart == 0 && cfg->tend >  0) { tstart = 1;           tend = cfg->tend; }
+  else                                         { tstart = cfg->tstart; tend = cfg->tend; }
+  cfg->omstat->alen = tend - tstart + 1;
+  if (msamanip_Truncate(msa, tstart, tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
     printf("%s\nTruncate failed\n", cfg->errbuf);        esl_fatal(msg); }
   // check if empty sequences can be removed after the truncation
   if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
@@ -1022,6 +1028,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
+  
   
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);

@@ -94,11 +94,15 @@ maximum-covariation optimal structure all include the suffix
 \subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
 associated to them. No null alignments are created.
 
+\subsubsection{\prog{--tstart <n>}} Analyze starting from position $n >= 1$ in the alignment.
+
+\subsubsection{\prog{--tend <n>}} Analyze ending at position $n <= L$ in the alignment.
 
 \subsubsection{\prog{--window <n>}} \rscape\ can be run in a window scanning version for long alignments.
 The window size is $n>0$.
 
 \subsubsection{\prog{--slide <n>}} In scanning mode, this options sets the number of positions to move from window to window, $n >0$.
+
 
 
 \subsection{Input alignment options}

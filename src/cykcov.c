@@ -48,8 +48,8 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int 
   return eslOK;
   
  ERROR:
-  if (ct)    free(ct);
-   if (cyk)   GMX_Destroy(cyk);
+  if (ct)  free(ct);
+  if (cyk) GMX_Destroy(cyk);
   return status;
 }
 
