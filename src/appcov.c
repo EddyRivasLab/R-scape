@@ -684,10 +684,6 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->msaname, "%s", submsaname);
   }
 
-  /* add tstat..tend information */
-  if (cfg->tstart > 0 || cfg->tend > 0) 
-    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, cfg->tstart, cfg->tend);
-  
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
@@ -704,6 +700,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *tok = NULL;
   char    *submsaname = NULL;
   int64_t  alen = (*omsa)->alen;
+  int64_t  tstart, tend;
   int64_t  startpos, endpos;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
@@ -755,8 +752,17 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;
   }
 
-  /* Now apply [tstart,tend] restriction if given
-   */
+  /* define [tstart,tend]  */
+  if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
+  else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
+  else if (cfg->tstart == 0 && cfg->tend >  0) { tstart = 1;           tend = cfg->tend; }
+  else                                         { tstart = cfg->tstart; tend = cfg->tend; }
+  
+  /* add tstat..tend information */
+  if (tstart > 1 || tend < msa->alen) 
+    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, tstart, tend);
+  
+  /* Now apply [tstart,tend] restriction if given */
   if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
     printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
 

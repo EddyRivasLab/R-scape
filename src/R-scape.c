@@ -824,10 +824,6 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->msaname, "%s", submsaname);
   }
 
-  /* add tstat..tend information */
-  if (cfg->tstart > 0 || cfg->tend > 0) 
-    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, cfg->tstart, cfg->tend);
-
   if (tok) free(tok);
   if (type) free(type);
   if (submsaname) free(submsaname);
@@ -895,12 +891,17 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;
   }
   
-  /* Now apply [tstart,tend] restriction if given
-   */
+  /* define [tstart,tend]  */
   if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
   else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
   else if (cfg->tstart == 0 && cfg->tend >  0) { tstart = 1;           tend = cfg->tend; }
   else                                         { tstart = cfg->tstart; tend = cfg->tend; }
+  
+  /* add tstat..tend information */
+  if (tstart > 1 || tend < msa->alen) 
+    esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, tstart, tend);
+  
+  /* Now apply [tstart,tend] restriction if given */
   cfg->omstat->alen = tend - tstart + 1;
   if (msamanip_Truncate(msa, tstart, tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
     printf("%s\nTruncate failed\n", cfg->errbuf);        esl_fatal(msg); }
@@ -1028,7 +1029,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
-  
   
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
