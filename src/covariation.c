@@ -3564,7 +3564,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     resj = (donull2b)? shcolj[s] : colj[s];
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { 
-      mi->nseff[i][j] += 1.0; 
+      mi->nseff[i][j]                += msa->wgt[s];
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
   }

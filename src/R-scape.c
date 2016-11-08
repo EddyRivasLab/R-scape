@@ -1038,7 +1038,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
-      if (msa->nseq*msa->alen < 1e4) { nshuffle = 200; }
+      if (msa->nseq*msa->alen < 1e3) { nshuffle = 200; }
     }
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
     
@@ -1148,7 +1148,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int              status;
 
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
@@ -1226,12 +1226,15 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   esl_stopwatch_Start(cfg->watch);
 
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, &cfg->T);
   else                             esl_msaweight_PB(msa);
 
   /* print to stdout */
-  if (cfg->verbose) 
+  if (cfg->verbose) {
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    //int i;
+    //for (i = 0; i < msa->nseq; i ++) printf("w %f\n", msa->wgt[i]);
+  }
    
   if (cfg->mode != RANSS) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);

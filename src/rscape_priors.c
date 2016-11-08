@@ -317,7 +317,7 @@ main(int argc, char **argv)
     puts("");
     fflush(stdout);
  
-    status = esl_msaweight_GSC(msa);
+    status = esl_msaweight_GSC(msa, NULL);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg.errbuf, "failed msaweight_GSC");
  
     add_counts(cfg.abc, msa, xrnaJ[cfg.nmsa-1], prnaJ[cfg.nmsa-1], urnaJ[cfg.nmsa-1], xrnaM[cfg.nmsa-1], prnaM[cfg.nmsa-1], urnaM[cfg.nmsa-1], cfg.errbuf);
