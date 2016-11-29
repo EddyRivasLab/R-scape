@@ -1172,33 +1172,47 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
       esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
     }
 
-    /* vector to mark residues in a column */
+  /* vector to mark residues in a column */
   ESL_ALLOC(useme, sizeof(int) * allmsa->nseq);
-  esl_vec_ISet(useme, shallmsa->nseq, FALSE);
+    esl_vec_ISet(useme, shallmsa->nseq, FALSE);
 
-  for (v = 0; v < T->N-1; v++) {
-    idx  = T->N + v;
-    idxl = (T->left[v]  <= 0)? -T->left[v]  : T->N + T->left[v];
-    idxr = (T->right[v] <= 0)? -T->right[v] : T->N + T->right[v];
-
+  if (T == NULL) { // a star topology
+    idx = shallmsa->nseq-1;
     ax  = allmsa->ax[idx];
-    axl = allmsa->ax[idxl];
-    axr = allmsa->ax[idxr];
-    if (T->left[v]  <= 0) useme[-T->left[v]]  = TRUE;
-    if (T->right[v] <= 0) useme[-T->right[v]] = TRUE;
-    
-    //printf("\nnode_%d -> node_%d\n", v, T->left[v]);
-    status = shuffle_tree_substitutions(r, idx, idxl, ax, axl, shallmsa, usecol, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - left descendant", errbuf);
-    
-    //printf("\nnode_%d -> node_%d\n", v, T->right[v]);
-    status = shuffle_tree_substitutions(r, idx, idxr, ax, axr, shallmsa, usecol, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - right descendant", errbuf);
+    for (idxl = 0; idxl < shallmsa->nseq-1; idxl ++) {
+      useme[idxl] = TRUE;
+      axl = allmsa->ax[idxl];
+      
+      //printf("\nroot_%d -> leave_%d\n", idx, idxl);
+      status = shuffle_tree_substitutions(r, idx, idxl, ax, axl, shallmsa, usecol, errbuf, verbose);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - at leave %d", errbuf, idxl);       
+    }
   }
-
+  else {
+    for (v = 0; v < T->N-1; v++) {
+      idx  = T->N + v;
+      idxl = (T->left[v]  <= 0)? -T->left[v]  : T->N + T->left[v];
+      idxr = (T->right[v] <= 0)? -T->right[v] : T->N + T->right[v];
+      
+      ax  = allmsa->ax[idx];
+      axl = allmsa->ax[idxl];
+      axr = allmsa->ax[idxr];
+      if (T->left[v]  <= 0) useme[-T->left[v]]  = TRUE;
+      if (T->right[v] <= 0) useme[-T->right[v]] = TRUE;
+      
+      //printf("\nnode_%d -> node_%d\n", v, T->left[v]);
+      status = shuffle_tree_substitutions(r, idx, idxl, ax, axl, shallmsa, usecol, errbuf, verbose);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - left descendant", errbuf);
+      
+      //printf("\nnode_%d -> node_%d\n", v, T->right[v]);
+      status = shuffle_tree_substitutions(r, idx, idxr, ax, axr, shallmsa, usecol, errbuf, verbose);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - right descendant", errbuf);
+    }
+  }
+  
   status = esl_msa_SequenceSubset(shallmsa, useme, &shmsa);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Error in ShuffleTreeSubstitutions - could not create leaves' msa");
-
+  
 #if 0
   // check msa and shmsa sequences have the same basecompositions
   status = msamanip_CompareBasecomp(msa, shmsa, errbuf);

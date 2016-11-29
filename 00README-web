@@ -8,7 +8,8 @@ Instructions for installing rscape and R-scape-web on eddylab.org
    so the web server knows where to find it. My instructions here will
    put the new one in your home dir.)
 
-  scp rscape_v0.2.2.tar.gz erivas@archangel.eddylab.org
+  scp rscape_v0.2.2.tar.gz erivas@archangel.eddylab.org:
+  
   ssh erivas@archangel.eddylab.org
   # now on remote eddylab.org host...
   tar zxf rscape_v0.2.2.tar.gz
@@ -75,10 +76,15 @@ all:
 7. Now you have to restart the webserver on archangel
 
    ssh erivas@archangel.eddylab.org
-   sudo service restart starman-rscape
+   sudo service starman-rscape restart
 
 
-In the future, to update rscape code, you only have to follow instructions (1) and (2). The web server will always be looking for /home/erivas/rscape, so by changing that symlink, that's all you have to do; the web server itself doesn't need any updating (the only reason we did it here is to change the path from /home/seddy/rscape to /home/erivas/rscape).
+In the future, to update rscape code, you only have to follow
+instructions (1) and (2). The web server will always be looking for
+/home/erivas/rscape, so by changing that symlink, that's all you have
+to do; the web server itself doesn't need any updating (the only
+reason we did it here is to change the path from /home/seddy/rscape to
+/home/erivas/rscape).
 
 In fact, you don't really have to do steps (3)-(6) at all; you don't need to be able to push new R-scape-web code to update the rscape binary. All you have to do is change where the web server is looking for that binary. You could:
 
@@ -86,7 +92,7 @@ In fact, you don't really have to do steps (3)-(6) at all; you don't need to be 
   cd /var/www/eddylab.org/public_html/R-scape
   emacs rscape.conf
   # edit the `rscape_dir` variable, as above, to /home/erivas/rscape
-  sudo service restart starman-rscape
+  sudo service starman-rscape restart
 
 but if you have the R-scape-web git repo checked out and you know how to push changes to eddylab.org, you can change other things on the site yourself, not just update the rscape binary.
 

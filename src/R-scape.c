@@ -1226,15 +1226,13 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   esl_stopwatch_Start(cfg->watch);
 
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, &cfg->T);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
   else                             esl_msaweight_PB(msa);
 
   /* print to stdout */
   if (cfg->verbose) {
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    //int i;
-    //for (i = 0; i < msa->nseq; i ++) printf("w %f\n", msa->wgt[i]);
-  }
+   }
    
   if (cfg->mode != RANSS) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -1308,7 +1306,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
-  if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
+  if (cfg->mode == GIVSS && (1||cfg->verbose)) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {

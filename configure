@@ -7398,11 +7398,10 @@ subdirs="$subdirs lib/hmmer"
 
 subdirs="$subdirs lib/hmmer/lib/easel"
 
-#AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile documentation/titlepage.tex"
+ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
 
 
 #################################################################
@@ -8110,7 +8109,6 @@ do
     "lib/FastTree/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/FastTree/src/Makefile" ;;
     "lib/hmmer/lib/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/lib/easel/Makefile" ;;
     "lib/hmmer/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/Makefile" ;;
-    "documentation/titlepage.tex") CONFIG_FILES="$CONFIG_FILES documentation/titlepage.tex" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

@@ -576,7 +576,6 @@ src/rscape_config.h
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
-#AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
 
 AC_CONFIG_FILES([
@@ -589,7 +588,6 @@ lib/R2R/src/Makefile
 lib/FastTree/src/Makefile
 lib/hmmer/lib/easel/Makefile
 lib/hmmer/Makefile
-documentation/titlepage.tex
 ])
 
 #################################################################

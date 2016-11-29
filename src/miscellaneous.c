@@ -131,7 +131,6 @@ misc_ParseESLalistat(char *file, int *ret_hmmALEN, float *ret_hmmSQLEN, float *r
     }
   
   if (alen < 0    || avgsqlen < 0.   || avgpid < 0.)    ESL_XFAIL(eslFAIL, errbuf, "failed to extract parameters from file %s\n", file);
-  if (isnan(alen) || isnan(avgsqlen) || isnan(avgpid) ) ESL_XFAIL(eslFAIL, errbuf, "failed to extract parameters from file %s\n", file);
   
   if (ret_hmmALEN)   *ret_hmmALEN   = alen;
   if (ret_hmmSQLEN)  *ret_hmmSQLEN  = avgsqlen;

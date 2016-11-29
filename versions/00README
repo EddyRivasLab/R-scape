@@ -83,16 +83,26 @@ done
 ================================================================================================================================================================
 To update the software distribution for rscape, copy new tarball to the software/rscape directory, update the permanent rscape.tar.gz symlink, and commit:
 ================================================================================================================================================================
+--in laptop:
 
-  cd eddylab.org/site/software/rscape
-  cp ~/src/src/mysource/versions/rscape_vx.x.tar.gz .
-  cp ~/src/src/mysource/versions/rscape_vx.x/documentation/R-scape_userguide.pdf .
-  git add rscape_vx.x.tar.gz
-  rm rscape.tar.gz
-  ln -s rscape_vx.x.tar.gz rscape.tar.gz
-  git commit -a
+ cd /Users/rivase/eddylab-web/eddylab.org/site/software/rscape  ;\
+ for v in rscape_v0.3; do \
+ for x in 1; do \
+ cp ~/src/src/mysource/versions/$v.$x.tar.gz .  ;\
+ cp ~/src/src/mysource/versions/$v/documentation/R-scape_userguide.pdf .  ;\
+ git add $v.$x.tar.gz  ;\
+ rm rscape.tar.gz  ;\
+ ln -s $v.$x.tar.gz rscape.tar.gz  ;\
+ done
+ done
+ git commit -a 
+ 
+  
+--then to push changes to eddylab.org, go up to the `eddylab.org` main directory with the Makefile in it, and:
 
-then to push changes to eddylab.org, go up to the `eddylab.org` main directory with the Makefile in it, and:
+cd /Users/rivase/eddylab-web/eddylab.org
+make
 
-  make
+
 ================================================================================================================================================================
+

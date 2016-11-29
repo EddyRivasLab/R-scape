@@ -2833,7 +2833,7 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   if (ranklist_null) {
     status = cov_histogram_plotqq(pipe, data, ranklist->ha, ranklist_null->ha, key1, FALSE, linespoints, 99, 2);
     if (status != eslOK) goto ERROR;
-#if 1
+#if 0
     status = cov_histogram_plotqq(pipe, data, ranklist->ht, ranklist_null->ha, key2, FALSE, linespoints, 44, 2);
     if (status != eslOK) goto ERROR;
 #endif
