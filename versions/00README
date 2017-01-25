@@ -42,7 +42,7 @@ last minute steps to make an R-scape tarball:
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
 for v in rscape_v0.3 ; do \
-for x in 1 ; do \
+for x in 2 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/$v ;\
 make distclean ;\
@@ -61,7 +61,7 @@ done
 in eddyfs01:
 ------------
 for v in rscape_v0.3 ; do \
-for x in 1 ; do \
+for x in 2 ; do \
 cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/$v/documentation/. ;\
 cd /n/eddyfs01/home/erivas/src/src/mysource/versions/$v ;\
 make distclean ;\
@@ -87,7 +87,7 @@ To update the software distribution for rscape, copy new tarball to the software
 
  cd /Users/rivase/eddylab-web/eddylab.org/site/software/rscape  ;\
  for v in rscape_v0.3; do \
- for x in 1; do \
+ for x in 2; do \
  cp ~/src/src/mysource/versions/$v.$x.tar.gz .  ;\
  cp ~/src/src/mysource/versions/$v/documentation/R-scape_userguide.pdf .  ;\
  git add $v.$x.tar.gz  ;\

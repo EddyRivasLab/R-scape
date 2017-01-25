@@ -79,8 +79,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *outmsafp;
  
   char            *outnullfile;
-  FILE            *outnullfp;
- 
+  FILE            *outnullfp; 
   char            *outdir;
   char            *outfile;
   char            *outsrtfile;
@@ -93,6 +92,10 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *R2Rfile;
 
   int              docyk;
+  ESL_MSA         *omsa;
+  int             *ocykct;
+  char            *omsacykfile;
+  FILE            *omsacykfp;
   int              cykLmax;
   char            *R2Rcykfile;
   FILE            *R2Rcykfp;
@@ -195,7 +198,7 @@ static ESL_OPTIONS options[] = {
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
-  { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled sequences",                                                              1 },   
+  { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled alignments",                                                             1 },   
   { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
   { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bp_columns and nonbp_columns independently",                                0 },
   { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle res within a column",                                                       0 },
@@ -281,7 +284,8 @@ static int null2b_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_
 static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
-
+static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
+			 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
  * display help/usage info.
@@ -487,8 +491,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.pmass   = esl_opt_GetReal(go, "--pmass");
   cfg.fracfit = esl_opt_GetReal(go, "--fracfit");
 
+  cfg.omsa   = NULL;
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
+  cfg.ocykct = NULL;
 
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
@@ -520,6 +526,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
+  /* if docyk write original alignment with cykstructure */
+  cfg.omsacykfile = NULL;
+  cfg.omsacykfp   = NULL;
+  if (cfg.docyk) {
+    esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
+    if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
+  } 
+
   /* file with the msa actually used */
   cfg.outmsafile = NULL;
   cfg.outmsafp   = NULL;
@@ -677,6 +691,8 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
+    if (cfg.docyk) cfg.omsa = esl_msa_Clone(msa); // save original msa to output the cyk structure with it
+     
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
@@ -753,6 +769,7 @@ main(int argc, char **argv)
   fclose(cfg.outsrtfp);
   if (cfg.rocfp) fclose(cfg.rocfp);
   fclose(cfg.sumfp);
+  if (cfg.omsacykfp) fclose(cfg.omsacykfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
@@ -762,6 +779,8 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   if (cfg.ct) free(cfg.ct);
   esl_msafile_Close(afp);
+  if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
+  if (cfg.ocykct) free(cfg.ocykct);
   if (cfg.msaname) free(cfg.msaname);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
@@ -772,6 +791,7 @@ main(int argc, char **argv)
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
+  if (cfg.omsacykfile) free(cfg.omsacykfile);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.ft) free(cfg.ft);
@@ -1018,8 +1038,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   /* the ct vector */
   status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, -1.0, cfg->errbuf);
-  
   if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
+  
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
   esl_vec_DDump(stdout, cfg->ft,   cfg->abc->K, "total BC");
@@ -1191,6 +1211,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = FALSE;
+  data.ignorebps     = FALSE;
 
   status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
@@ -1198,10 +1219,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   if (cfg->method == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
+  if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
-  if (cfg->w < cfg->tol) cfg->w = cfg->tol;
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
-  if (cfg->w <= 0) return eslFAIL;
 
   cov_Destroy(mi);
   return eslOK;
@@ -1217,6 +1237,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   char            *title = NULL;
   struct data_s    data;
   struct mutual_s *mi   = NULL;
+  int             *cykct = NULL;
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
   HITLIST         *hitlist = NULL;
@@ -1240,7 +1261,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
-
+  
  /* produce a tree
    */
   if (cfg->method == AKMAEV) {
@@ -1249,15 +1270,15 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
   }
 
-  /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
-
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) {
     fprintf(cfg->sumfp, "#target_E-val\tMSA\tnseq\talen\tavgid\tmethod\tTP\tTrue\tFound\tSEN\tPPV\n");
     fprintf(cfg->sumfp, "%g\t\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat->avgid); 
   }
   
+  /* create the MI structure */
+  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
     if (cfg->mode == GIVSS || cfg->mode == CYKSS)
@@ -1303,10 +1324,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
   data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
+  data.ignorebps     = FALSE;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
-  if (cfg->mode == GIVSS && (1||cfg->verbose)) cov_DumpRankList(stdout, ranklist);
+  if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
@@ -1324,7 +1346,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
     data.mode = CYKSS;
-    status = cov_CYKCOVCT(&data, msa, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    status = cov_CYKCOVCT(&data, msa, &cykct, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    if (status != eslOK) goto ERROR;
+
+    status = write_omsacyk(cfg, msa->alen, cykct);
     if (status != eslOK) goto ERROR;
     
     if (cfg->verbose) {
@@ -1338,6 +1363,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
+  if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   cov_Destroy(mi); mi = NULL;
@@ -1346,6 +1372,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   
  ERROR:
   if (mi)          cov_Destroy(mi);
+  if (cykct)       free(cykct);
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
@@ -1698,7 +1725,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
 
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the widt of the histogram", cfg->errbuf);
     }
     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
@@ -1745,6 +1772,8 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   RANKLIST *cumranklist = *ocumranklist;
   int       b;
   int       cumb;
+
+  if (ranklist == NULL) return eslOK;
   
   if (*ocumranklist == NULL) {
     *ocumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
@@ -1788,4 +1817,27 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
 }
 
 
+static int
+write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
+{
+  ESL_MSA *omsa = cfg->omsa;
+  int *ct = NULL;
+  int  i;
+  int  status;
 
+  ESL_ALLOC(ct, sizeof(int)*(omsa->alen+1));
+  esl_vec_ISet(ct, omsa->alen+1, 0);
+  
+  for (i = 0; i < L; i++) 
+    if (cykct[i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykct[i+1]-1]+1;
+  
+  esl_ct2wuss(ct, omsa->alen, omsa->ss_cons);
+  esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
+
+  free(ct);
+  return eslOK;
+
+ ERROR:
+  if (ct) free(ct);
+  return status;
+}

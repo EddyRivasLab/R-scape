@@ -13,6 +13,7 @@
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
 #include "esl_msaweight.h"
+#include "esl_randomseq.h"
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
@@ -70,9 +71,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outmsafile;
   FILE            *outmsafp;
  
+  char            *smsafile;
+  FILE            *smsafp;
+ 
   char            *outnullfile;
   FILE            *outnullfp;
  
+  int              R2Rall;
+  char            *R2Rfile;
+
   char            *outdir;
   char            *outfile;
   char            *outsrtfile;
@@ -82,6 +89,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              infmt;
    
   char            *covhisfile;
+  char            *dplotfile;
 
   int              nshuffle;
 
@@ -94,6 +102,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   MSA_STAT        *omstat;              /* statistics of the original alignment */
   MSA_STAT        *mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
+  int             *ct;
   int              onbpairs;
   int              nbpairs;
 
@@ -119,6 +128,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              nofigures;
 
+  ESL_MSA         *smsa;
+  
   float            tol;
   int              verbose;
 };
@@ -128,6 +139,7 @@ static ESL_OPTIONS options[] = {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
@@ -185,7 +197,10 @@ static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int null_phcar (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null2_phcar (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
+static int create_msa_significant(struct cfg_s *cfg, ESL_MSA *msa, HITLIST *hitlist, ESL_MSA **ret_smsa);
+static int msa_pid(int idx, ESL_MSA *msa, double **ret_pid, int **ret_nid, int **ret_n);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -308,6 +323,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
   cfg.doroc       = esl_opt_IsOn(go, "--roc")?        esl_opt_GetBoolean(go, "--roc")       : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
+  cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
   cfg.method      = NULLPHYLO;
   
@@ -329,6 +345,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
+  cfg.smsa   = NULL;
 
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
@@ -367,7 +384,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
-  
+  esl_sprintf(&cfg.smsafile, "%s.smsa.sto", cfg.outheader);
+  if ((cfg.smsafp = fopen(cfg.smsafile, "w")) == NULL) esl_fatal("Failed to open smsa file %s", cfg.smsafile);
+    
   /* file with the null alignments */
   cfg.outnullfile = NULL;
   cfg.outnullfp   = NULL;
@@ -377,6 +396,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   } 
   
   /* msa-specific files */
+  cfg.R2Rfile    = NULL;
+
+  /* covhis file */
+  cfg.covhisfile    = NULL;
+  
+  /* dotplot file */
+  cfg.dplotfile    = NULL;
+
   cfg.onbpairs = 0;
   cfg.nbpairs  = 0;
   cfg.covhisfile = NULL;
@@ -537,6 +564,7 @@ main(int argc, char **argv)
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
+    if (cfg.smsa) esl_msa_Destroy(cfg.smsa); cfg.smsa = NULL;
   }
 
   /* cleanup */
@@ -545,6 +573,7 @@ main(int argc, char **argv)
   if (cfg.rocfp) fclose(cfg.rocfp);
   fclose(cfg.sumfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
+  fclose(cfg.smsafp);
   if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
@@ -561,12 +590,14 @@ main(int argc, char **argv)
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.outmsafile) free(cfg.outmsafile);
+   free(cfg.smsafile);
   if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.thresh) free(cfg.thresh);
   if (useme) free(useme);
   if (cfg.msamap) free(cfg.msamap); 
   if (cfg.omstat) free(cfg.omstat);
-  if (cfg.mstat) free(cfg.mstat); 
+  if (cfg.mstat) free(cfg.mstat);
+  if (cfg.smsa) esl_msa_Destroy(cfg.smsa);
 
   return 0;
 }
@@ -769,6 +800,24 @@ phcar_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
   }
   
+  /* R2R annotated sto file */
+  if (cfg->outdir && !cfg->nofigures) {
+    esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
+    
+    /* dotplot file */
+    esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
+  }
+  else if (!cfg->nofigures) {
+    esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
+        
+    /* dotplot file */
+    esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
+  }
+
+  /* the ct vector */
+  status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, -1.0, cfg->errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
+
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
   esl_vec_DDump(stdout, cfg->ft,   cfg->abc->K, "total BC");
@@ -797,20 +846,26 @@ phcar_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   status = run_phcar(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
-   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
+  if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
+  if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   
   if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->dplotfile) free(cfg->dplotfile);
+  if (cfg->R2Rfile) free(cfg->R2Rfile);
  
   return eslOK;
 
  ERROR:
+  if (cfg->ct) free(cfg->ct); 
   if (cfg->msafrq) free(cfg->msafrq); 
   if (cfg->msaname) free(cfg->msaname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   if (cfg->covhisfile) free(cfg->covhisfile); 
+  if (cfg->dplotfile) free(cfg->dplotfile);
+  if (cfg->R2Rfile) free(cfg->R2Rfile);
   return status;
 }
 
@@ -833,6 +888,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.outsrtfp      = NULL;
   data.rocfp         = NULL;
   data.sumfp         = NULL;
+  data.dplotfile     = NULL;
+  data.R2Rfile       = NULL;
+  data.R2Rall        = FALSE;
   data.gnuplot       = NULL;
   data.r             = cfg->r;
   data.ranklist_null = NULL;
@@ -842,6 +900,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
+  data.ct            = cfg->ct;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.msamap        = cfg->msamap;
@@ -854,6 +913,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
+  data.donull2b      = FALSE;
+  data.ignorebps     = TRUE;
 
   status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
@@ -881,6 +942,9 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   struct mutual_s *mi   = NULL;
   RANKLIST        *ranklist = NULL;
   HITLIST         *hitlist = NULL;
+  double          *pid = NULL;
+  int             *nid = NULL;
+  int             *n = NULL;
   int              nnodes;
   int              status;
 
@@ -923,6 +987,9 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
   data.rocfp         = cfg->rocfp;
   data.sumfp         = (cfg->mode == RANSS)? NULL : cfg->sumfp;
+  data.dplotfile     = cfg->dplotfile;
+  data.R2Rfile       = cfg->R2Rfile;
+  data.R2Rall        = cfg->R2Rall;
   data.gnuplot       = cfg->gnuplot;
   data.r             = cfg->r;
   data.ranklist_null = ranklist_null;
@@ -932,6 +999,7 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
+  data.ct            = cfg->ct;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.msamap        = cfg->msamap;
@@ -945,10 +1013,12 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
+  data.donull2b      = FALSE;
+  data.ignorebps     = TRUE;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
-  if (cfg->mode == GIVSS && (1||cfg->verbose)) cov_DumpRankList(stdout, ranklist);
+  if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS) {
     if (cfg->verbose) {
@@ -960,27 +1030,39 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
 	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, NULL, ranklist, title);
-    if (status != eslOK) goto ERROR; 
+    if (status != eslOK) goto ERROR;
+
+    status = create_msa_significant(cfg, msa, hitlist, &cfg->smsa);
+    if (status != eslOK) goto ERROR;
+    esl_msafile_Write(stdout, cfg->smsa, eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(cfg->smsafp, cfg->smsa, eslMSAFILE_STOCKHOLM);
+    msa_pid(0, cfg->smsa, &pid, &nid, &n);
   }
  
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
+  if (pid) free(pid);
+  if (nid) free(nid);
+  if (n) free(n);
   cov_Destroy(mi); mi = NULL;
 
   return eslOK;
   
  ERROR:
-  if (mi)          cov_Destroy(mi);
-  if (ranklist)    cov_FreeRankList(ranklist);
-  if (hitlist)     cov_FreeHitList(hitlist);
-  if (title)       free(title);
+  if (mi)       cov_Destroy(mi);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (hitlist)  cov_FreeHitList(hitlist);
+  if (title)    free(title);
+  if (pid)      free(pid);
+  if (nid)      free(nid);
+  if (n)        free(n);
   return status;
 }
 
-/* use a tree to generate residues independently for each alignment column */
+/* Fitch algorithm on a star topology */
 static int
-null_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null2_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *allmsa = NULL;
   ESL_MSA   *shmsa = NULL;
@@ -1022,7 +1104,7 @@ null_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKL
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
     status = run_phcar(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null phcar", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null2 phcar", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
    
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -1054,6 +1136,73 @@ null_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKL
   if (allmsa) esl_msa_Destroy(allmsa);
   if (shmsa) esl_msa_Destroy(shmsa);
   if (usecol) free(usecol);
+  if (shmstat) free(shmstat);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
+  return status;
+}
+
+/* suffle the residues in each sequence independently */
+static int
+null_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+{
+  ESL_MSA   *shmsa = NULL;
+  MSA_STAT  *shmstat = NULL;
+  RANKLIST  *cumranklist = NULL;
+  RANKLIST  *ranklist = NULL;
+  int        n;
+  int        sc;
+  int        s;
+  int        status;
+  
+  for (s = 0; s < nshuffle; s ++) {
+
+    shmsa = esl_msa_Clone(msa);
+    for (n = 0; n < msa->nseq; n ++) {
+      esl_rsq_XShuffle(cfg->r, shmsa->ax[n], shmsa->alen, shmsa->ax[n]);
+    }
+
+    /* output null msas to file if requested */
+    if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+    
+    if (cfg->verbose) {
+      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      //msamanip_XStats(shmsa, &shmstat);
+      //msamanip_DumpStats(stdout, shmsa, shmstat);
+    }
+
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+    status = run_phcar(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null phcar", cfg->errbuf);
+    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
+   
+    status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR;
+
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
+  }
+  
+  if (cfg->verbose) {
+    printf("null distribution - cumulative\n");
+    printf("imin %d imax %d xmax %f xmin %f\n", 
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, cumranklist->ha);
+    esl_histogram_PlotSurvival(stdout, cumranklist->ha);
+  }
+  
+  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
+  
+  *ret_cumranklist = cumranklist;
+
+  free(shmstat);
+  return eslOK;
+  
+ ERROR:
+  if (shmsa) esl_msa_Destroy(shmsa);
   if (shmstat) free(shmstat);
   if (ranklist) cov_FreeRankList(ranklist);
   if (cumranklist) cov_FreeRankList(cumranklist);
@@ -1109,4 +1258,85 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
 }
 
 
+static int
+create_msa_significant(struct cfg_s *cfg, ESL_MSA *msa, HITLIST *hitlist, ESL_MSA **ret_smsa)
+{
+  ESL_MSA *smsa = NULL;
+  int     *useme = NULL;
+  int      h;
+  int      status;
 
+  ESL_ALLOC(useme, sizeof(int)*msa->alen);
+  esl_vec_ISet(useme, msa->alen, FALSE);
+
+  for (h = 0; h < hitlist->nhit; h++) {
+    useme[hitlist->hit[h].i-1] = TRUE;
+    useme[hitlist->hit[h].j-1] = TRUE;
+  }
+  smsa = esl_msa_Clone(msa);
+  esl_msa_ColumnSubset(smsa, cfg->errbuf, useme);
+ 
+  free(useme);
+  *ret_smsa = smsa;
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+static int
+msa_pid(int idx, ESL_MSA *msa, double **ret_pid, int **ret_nid, int **ret_n)
+{
+  ESL_DSQ *ref;
+  double  *pid = NULL;
+  double  *cid = NULL;
+  int     *nid = NULL;
+  int     *n = NULL;
+  int     *useme = NULL;
+  int     *perm = NULL;
+  int      s, s1, s2;
+  int      status;
+
+  ESL_ALLOC(pid,   sizeof(double)*msa->nseq);
+  ESL_ALLOC(cid,   sizeof(double)*msa->nseq);
+  ESL_ALLOC(nid,   sizeof(int)   *msa->nseq);
+  ESL_ALLOC(n,     sizeof(int)   *msa->nseq);
+  ESL_ALLOC(perm,  sizeof(int)   *msa->nseq);
+  ESL_ALLOC(useme, sizeof(int)   *msa->nseq);
+  ref = msa->ax[idx];
+  printf("reference: %s\n", msa->sqname[idx]);
+  for (s = 0; s < msa->nseq; s ++) {
+    perm[s] = s;
+    useme[s] = TRUE;
+    esl_dst_XPairId(msa->abc, ref, msa->ax[s], &pid[s], &nid[s], &n[s]);
+  }
+  esl_vec_DCopy(pid, msa->nseq, cid);
+  esl_vec_DSortDecreasing(cid, msa->nseq);
+ 
+  for (s1 = 0; s1 < msa->nseq; s1 ++) {
+    for (s2 = 0; s2 < msa->nseq; s2 ++) {
+      if (pid[s1] == cid[s2] && useme[s2]) { perm[s2] = s1; useme[s2] = FALSE; break; }
+    }
+  }
+  for (s = 0; s < msa->nseq; s ++) {
+    if (s != idx) {
+      printf(" pid %.2f nid %d n %d | %s\n", 100*cid[s], nid[perm[s]], n[perm[s]], msa->sqname[perm[s]]);
+    }
+  }
+  *ret_pid = pid;
+  *ret_nid = nid;
+  *ret_n   = n;
+  free(cid);
+  free(perm);
+  free(useme);
+  return eslOK;
+
+ ERROR:
+  if (pid)  free(pid);
+  if (cid)  free(pid);
+  if (nid)  free(nid);
+  if (n)    free(n);
+  if (perm) free(perm);
+  if (useme) free(useme);
+  return status;
+}
