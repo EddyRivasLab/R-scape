@@ -1,0 +1,9 @@
+# STOCKHOLM 1.0
+martian        CAGGGAAACCUGAUUUUAGGA
+venusian       CGU.UUCG.ACGUA...AGGA
+#=GC SS_cons   <<<<....>>>>.........
+#=GC R2R_LABEL ...[....]...1...2T...
+#=GF R2R var_hairpin [ ]
+#=GF R2R var_backbone_range 1 2
+#=GF R2R turn_ss T -90
+//
