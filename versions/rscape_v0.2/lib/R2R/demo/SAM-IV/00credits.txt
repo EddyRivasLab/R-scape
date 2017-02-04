@@ -1,3 +1,0 @@
-The files in this directory correspond to data published in (Weinberg, et al., 2008)
-
-http://www.ncbi.nlm.nih.gov/pubmed/18369181

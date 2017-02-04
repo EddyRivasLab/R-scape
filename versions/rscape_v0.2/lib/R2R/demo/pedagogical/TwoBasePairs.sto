@@ -1,7 +1,0 @@
-# STOCKHOLM 1.0
-seq                  GAUC
-#=GC SS_cons         <<>>
-#=GC R2R_LABEL       ....
-#=GF R2R set_dir pos0 +90 f
-#=GF Makefile oneseq seq
-//

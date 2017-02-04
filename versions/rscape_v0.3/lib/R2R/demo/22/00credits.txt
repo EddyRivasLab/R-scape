@@ -1,3 +1,0 @@
-The files in this directory correspond to motifs published in (Weinberg, et al., 2007)
-
-http://www.ncbi.nlm.nih.gov/pubmed/17621584
