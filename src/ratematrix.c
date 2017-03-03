@@ -872,7 +872,7 @@ ratematrix_specialDump(ESL_DMATRIX *Q)
   printf(    "Q            R          S           T         V          W          Y                 */\n");
   for (n = 0; n < Q->n; n ++) {
     printf("{  ");
-    for (m = 0; m < Q->n; m ++) {
+    for (m = 0; m < Q->m; m ++) {
       printf("%f,  ", Q->mx[n][m]);
     }
     if (n == 0)   printf("  },  /* A */\n");
@@ -1628,14 +1628,13 @@ ratematrix_emrate_Set(const char *name, const ESL_DMATRIX *rate, double *f, EMRA
     /* the background frequencies */
     for (x = 0; x < R->E->n; x++)
       R->f[x] = f[x];  
-  
-    /* the exchangeabilities (in logspace) */
-    ratematrix_ExchangeFromRate(R->Qstar, R->f, R->E);
- }
+  }
   else if (name && R->abc_r->type == eslAMINO) {
     for (x = 0; x < R->E->n; x++) R->f[x] = (scaledrate)? SCALED_RATEMATRIX_AA_PRELOADS[which].pmarg[x] : RATEMATRIX_AA_PRELOADS[which].pmarg[x];
   }
- 
+  /* the exchangeabilities (in logspace) */
+  ratematrix_ExchangeFromRate(R->Qstar, R->f, R->E);
+
   /* Use <outorder> */
   R->nc = strlen(R->outorder);
   if (R->nc != R->E->n) return eslEMEM;

@@ -174,7 +174,7 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
   /* new msa */
   if (e2_Tracealign(msa->name, T, sqn, tr, ret_msa, e2ali, errbuf, verbose) != eslOK) { status = eslFAIL; goto ERROR; };
   if (ret_sc) *ret_sc = totsc;
-
+  
   /* clean up */
   if (tr) {
     for (v = 0; v < nnodes;      v ++) e2_trace_Destroy(tr[v]);

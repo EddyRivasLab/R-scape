@@ -586,6 +586,7 @@ PACKAGE_BUGREPORT='elenarivas@fas.harvard.edu'
 PACKAGE_URL=''
 
 ac_default_prefix="`pwd`"
+ac_default_prefix="`pwd`"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -680,13 +681,14 @@ RSCAPE_LICENSE
 RSCAPE_COPYRIGHT
 RSCAPE_DATE
 RSCAPE_NAME
-E2_SADIR
-E2_ESLDIR
-E2_URL
-E2_VERSION
-E2_LICENSE
-E2_COPYRIGHT
-E2_DATE
+E2MSA_HMMERDIR
+E2MSA_SADIR
+E2MSA_ESLDIR
+E2MSA_URL
+E2MSA_VERSION
+E2MSA_LICENSE
+E2MSA_COPYRIGHT
+E2MSA_DATE
 target_alias
 host_alias
 build_alias
@@ -2322,16 +2324,18 @@ fi
 # new preprocessor symbol of our own:
 #     EASEL_VERSION    e.g. "1.9a"
 #
-E2_DATE="DEC 2011"
-E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
-E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://selab.org/"
-E2_ESLDIR="lib/hmmer/lib/easel"
-E2_SADIR="libdivsufsort"
+E2MSA_DATE="MARCH 2017"
+E2MSA_COPYRIGHT="Copyright (C) 2017 Howard Hughes Medical Institute."
+E2MSA_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+E2MSA_VERSION="0.1.0"
+E2MSA_URL="http://selab.org/"
+E2MSA_ESLDIR="lib/hmmer/lib/easel"
+E2MSA_SADIR="libdivsufsort"
+
+E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="November 2016"
+RSCAPE_DATE="December 2016"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -2344,12 +2348,6 @@ RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
-INFERNAL_RELCODE="infernal0_7"
-INFERNAL_DATE="December 2005"
-INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
-INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
-INFERNAL_LICENSETAG=gnu
-
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
  #changes the prefix default from /usr/bin to RSCAPE_HOME
@@ -2358,6 +2356,15 @@ if  test "$prefix" = NONE ; then
   RSCAPE_BIN="`pwd`/bin"
 else
   RSCAPE_BIN=${prefix}/bin
+fi
+
+E2MSA_HOME="`pwd`"        #magic to get full path to current directory
+ #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then
+  E2MSA_BIN="`pwd`/bin"
+else
+  E2MSA_BIN=${prefix}/bin
 fi
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
@@ -2391,25 +2398,26 @@ fi
 
 
 
+
 # Preprocessor symbols (replace #undefs in e2_config.h)
 cat >>confdefs.h <<_ACEOF
-#define E2_DATE "$E2_DATE"
+#define E2MSA_DATE "$E2MSA_DATE"
 _ACEOF
 
 cat >>confdefs.h <<_ACEOF
-#define E2_COPYRIGHT "$E2_COPYRIGHT"
+#define E2MSA_COPYRIGHT "$E2MSA_COPYRIGHT"
 _ACEOF
 
 cat >>confdefs.h <<_ACEOF
-#define E2_LICENSE "$E2_LICENSE"
+#define E2MSA_LICENSE "$E2MSA_LICENSE"
 _ACEOF
 
 cat >>confdefs.h <<_ACEOF
-#define E2_VERSION "$E2_VERSION"
+#define E2MSA_VERSION "$E2MSA_VERSION"
 _ACEOF
 
 cat >>confdefs.h <<_ACEOF
-#define E2_URL "$E2_URL"
+#define E2MSA_URL "$E2MSA_URL"
 _ACEOF
 
 
@@ -7401,7 +7409,7 @@ subdirs="$subdirs lib/hmmer/lib/easel"
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile documentation/e2msa/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
 
 
 #################################################################
@@ -8103,6 +8111,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
+    "documentation/e2msa/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/e2msa/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/Makefile" ;;
     "lib/R2R/NotByZasha/infernal-0.7/squid/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/squid/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;

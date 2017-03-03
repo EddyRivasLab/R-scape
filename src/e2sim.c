@@ -21,6 +21,7 @@
 #include "e2_tree.h"
 #include "msamanip.h"
 #include "msatree.h"
+#include "fastsp.h"
 
 #define ALPHOPTS "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 
@@ -118,7 +119,7 @@ static ESL_OPTIONS options[] = {
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
  /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
+  { "--amino",        eslARG_NONE,     "TRUE",    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
    /* other options */

@@ -549,7 +549,7 @@ p7_RateCalculate(FILE *statfp, const P7_HMM *hmm, const P7_BG *bg, const EMRATE 
     status = p7_CalculatePinfy(R, hmm, bg, errbuf, verbose);
 
     if (statfp) {
-      fprintf(statfp, "%*s time\tME\tMRE\n", strlen(hmm->name), "#anchor hmm");
+      fprintf(statfp, "%*s time\tME\tMRE\n", (int)strlen(hmm->name), "#anchor hmm");
       fprintf(statfp, "%s %4.4f\t%2.4f\t%2.4f \n", hmm->name, 0.0,         er_MeanEntropy(R->pzero, R->M, R->abc_r->K), er_MeanRelativeEntropy(R->pzero, R->M, bg->f, R->abc_r->K));
       fprintf(statfp, "%s %4.4f\t%2.4f\t%2.4f \n", hmm->name, 1.0,         p7_MeanMatchEntropy(hmm),                    p7_MeanMatchRelativeEntropy(hmm, bg));
       fprintf(statfp, "%s %4.4f\t%2.4f\t%2.4f \n", hmm->name, eslINFINITY, er_MeanEntropy(R->pinfy, R->M, R->abc_r->K), er_MeanRelativeEntropy(R->pinfy, R->M, bg->f, R->abc_r->K));
@@ -845,7 +845,7 @@ p7_EvolveFromRate(FILE *statfp, P7_HMM *hmm, const P7_RATE *R, const P7_BG *bg, 
   }
 
   if (statfp) {
-    fprintf(statfp, "%*s time\tME\tMRE\n", strlen(hmm->name), "#ehmm");
+    fprintf(statfp, "%*s time\tME\tMRE\n", (int)strlen(hmm->name), "#ehmm");
     fprintf(statfp, "%s %4.4f\t%2.4f\t%2.4f \n", hmm->name, time, p7_MeanMatchEntropy(hmm), p7_MeanMatchRelativeEntropy(hmm, bg));
   }
   

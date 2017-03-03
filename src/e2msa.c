@@ -90,6 +90,7 @@ struct cfg_s {
   
   double           treeavgt;
   ESL_TREE        *T;
+  int              upgma;
 
   P7_HMMFILE      *hfp;          /* input HMM file */
   P7_HMM          *hmm;          /* HMM            */
@@ -109,6 +110,7 @@ struct cfg_s {
   
   E2_ALI             e2ali;
   EVOM               evomodel;
+  char              *evomodeltype;
   struct rateparam_s rateparam;
   double             popen;
   double             pextend;
@@ -167,8 +169,8 @@ struct cfg_s {
 
  static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
-  { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      0 },
-  { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                0 },
+  { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
+  { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   { "--ephmmer",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE to run ephmmer    at the end to compare alignments",                                   0 }, 
   { "--phmmer",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE to run phmmer     at the end to compare alignments",                                   0 }, 
   { "--phmmer3",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE to run phmmer3    at the end to compare alignments",                                   0 }, 
@@ -184,23 +186,23 @@ struct cfg_s {
   { "--onlymuscle",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE to run muscle alone",                                                                  0 }, 
   { "--onlymsaprobs", eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE to run MSAProbs alone",                                                                0 }, 
   /* options for input msa (if seqs are given as a reference msa) */
-  { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      0 },
-  { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               0 },
-  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   0 },
+  { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
+  { "-I",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < x id",                                                               1 },
+  { "--submsa",       eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--minid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      0 },
   { "--maxid",        eslARG_REAL,      FALSE,   NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      0 },
   /* options for msa */
   { "--local",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "--e2f,--e2fhmmer", "TRUE for a local alignment, default is global",                                             0 }, 
   { "--viterbi",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "--e2f,--e2fhmmer", "TRUE for getting the alignment by a viterbi path, default is optimal accuracy",             0 }, 
-  { "--e2",           eslARG_NONE,       TRUE,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, realign pairs of sequences",                                          0 }, 
+  { "--e2",           eslARG_NONE,     "TRUE",   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, realign pairs of sequences",                                          0 }, 
   { "--e2f",          eslARG_NONE,      FALSE,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, use alignment as is, do not realign",                                 0 }, 
-  { "--e2hmmer",      eslARG_STRING,    FALSE,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, realign pairs of sequences, use position-specific evomodel",          0 }, 
-  { "--e2fhmmer",     eslARG_STRING,    FALSE,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, use alignment as is, do not realign, use position-specific evomodel", 0 }, 
-  /* options for evolutionary method */
+  { "--e2hmmer",      eslARG_STRING,     NULL,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, realign pairs of sequences, use position-specific evomodel",          0 }, 
+  { "--e2fhmmer",     eslARG_STRING,     NULL,   NULL,       NULL,   ALIOPTS, NULL,  NULL,               "for the e2 algorithm, use alignment as is, do not realign, use position-specific evomodel", 0 }, 
+    /* options for evolutionary method */
   { "--fixpid",       eslARG_REAL,       NULL,   NULL,"0<=x<=100",   NULL,    NULL,  NULL,               "TRUE for using a fix pid for the ehmm model",                                               0 },
-  { "--fixtime",      eslARG_REAL,       NULL,   NULL,     "x>=0",      NULL, NULL,  NULL,               "TRUE for using a fix time for the evolutionary models of a pair",                           0 },
+  { "--fixtime",      eslARG_REAL,       NULL,   NULL,     "x>=0",      NULL, NULL,  NULL,               "TRUE for using a fix time for the evolutionary models of a pair",                           1 },
     /* options for optimization */
-  { "--optnone",      eslARG_NONE,       TRUE,   NULL,       NULL,   OPTOPTS, NULL,  NULL,               "TRUE for no optimization of parameters or time",                                            0 }, 
+  { "--optnone",      eslARG_NONE,     "TRUE",   NULL,       NULL,   OPTOPTS, NULL,  NULL,               "TRUE for no optimization of parameters or time",                                            0 }, 
   { "--opttime",      eslARG_NONE,      FALSE,   NULL,       NULL,   OPTOPTS, NULL,  NULL,               "TRUE for optimization of time",                                                             0 }, 
   { "--optpara",      eslARG_NONE,      FALSE,   NULL,       NULL,   OPTOPTS, NULL,  NULL,               "TRUE for optimization of parameters",                                                       0 }, 
   { "--optboth",      eslARG_NONE,      FALSE,   NULL,       NULL,   OPTOPTS, NULL,  NULL,               "TRUE for optimization of time and parameters",                                              0 }, 
@@ -209,53 +211,54 @@ struct cfg_s {
   { "--mxfile",       eslARG_INFILE,      NULL,  NULL,       NULL,   NULL,    NULL,  "--mx",             "read substitution rate matrix from file <f>",                                               0 },
   /* Control ncbiblast */
   { "--wordsize",     eslARG_INT,       FALSE,   NULL,      "n>0",   NULL,    NULL,  NULL,               "ncbiblast wordsize, if wordsize < 0, use default",                                          0 },
-  /* Control fasta/ssearch */
-  { "--fastaversion", eslARG_STRING,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fasta version: fasta-36.3.6d, or ...",                                                      0 },
+    /* Control fasta/ssearch */
+  { "--fastaversion", eslARG_STRING,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "fasta version: fasta-36.3.6d, or ...",                                                      0 },
   { "-f",             eslARG_INT,       FALSE,   NULL,      "n<0",   NULL,    NULL,  NULL,               "gap-open penalty",                                                                          0 },
   { "-g",             eslARG_INT,       FALSE,   NULL,      "n<0",   NULL,    NULL,  NULL,               "gap-extend penalty",                                                                        0 },
-  { "-s",             eslARG_STRING,    FALSE,   NULL,       NULL,   NULL, "-f,-g",  NULL,               "Scoring matrix: (protein) BL50, BP62 (sets -f -11 -g -1); P250, OPT5, VT200,VT160, P120, VT120, BL80, VT80, MD40, VT40, MD20, VT20, MD10, VT10; scoring matrix file name; -s ?BL50 adjusts matrix for short queries;",                                          0 },
+  { "-s",             eslARG_STRING,     NULL,   NULL,       NULL,   NULL, "-f,-g",  NULL,               "Scoring matrix: (protein) BL50, BP62, P250, OPT5, VT200,VT160, P120, VT120, BL80, VT80, MD40, VT40, MD20, VT20, MD10, VT10", 0 },
   /* Control phmmer/hmmsearch */
   { "--max",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use --max option for phmmer or hmmsearch",                                                  0 },
   { "--dostats",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use --max option for phmmer or hmmsearch",                                                  0 },
   /* Control of scoring system - indels */ 
-  { "--evomodel",     eslARG_STRING,    "AFG",   NULL,       NULL,   NULL,    NULL,  NULL,               "evolutionary model used",                                                                   0 },
-  { "--paramfile",    eslARG_STRING,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "file with rate parameters (overrides the individual options below)",                        0 },
+  { "--evomodel",     eslARG_STRING,    "AFG",   NULL,       NULL,   NULL,    NULL,  NULL,               "evolutionary model used",                                                                   1 },
+  { "--paramfile",    eslARG_STRING,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "file with rate parameters (overrides the individual options below)",                        1 },
   { "--muAM",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
   { "--muAD",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
   { "--muAI",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
   { "--muEM",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     0 },
-  { "--ldEM",         eslARG_REAL,     "0.176",   NULL,     "x>=0",   NULL,    NULL,  NULL,              "rate of adding a res to an insert",                                                         0 },
+  { "--ldEM",         eslARG_REAL,     "0.176",  NULL,     "x>=0",  NULL,    NULL,  NULL,                "rate of adding a res to an insert",                                                         0 },
   { "--muED",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     0 },
-  { "--ldED",         eslARG_REAL,     "0.176",   NULL,     "x>=0",   NULL,    NULL,  NULL,              "rate of adding a res to an insert",                                                         0 },
+  { "--ldED",         eslARG_REAL,     "0.176",  NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a res to an insert",                                                         0 },
   { "--muI",          eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted sequences",                                                    0 },
   { "--ldI",          eslARG_REAL,     "0.07",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a whole insert",                                                             0 },
   { "--rI",           eslARG_REAL,     "0.89",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for I",                                                                  0 },
   { "--rM",           eslARG_REAL,     "0.90",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for M",                                                                  0 },
   { "--rD",           eslARG_REAL,     "0.55",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for D",                                                                  0 },
-  { "--userates",     eslARG_NONE,      TRUE,    NULL,       NULL,   NULL,    NULL,  NULL,               "if true start with raw rates, phmmer style otherwise",                                      0 },
+  { "--userates",     eslARG_NONE,     "TRUE",   NULL,       NULL,   NULL,    NULL,  NULL,               "if true start with raw rates, phmmer style otherwise",                                      0 },
   { "--popen",        eslARG_REAL,    "0.020",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "popen in phmmer",                                                                           0 },
   { "--pextend",      eslARG_REAL,    "0.400",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "pextend in phmmer",                                                                         0 },
   { "--pcross",       eslARG_REAL,    "0.001",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "pcross, zero in phmm",                                                                      0 },
-  /* Control of running options */
-  { "--nofastsp",     eslARG_NONE,       TRUE,   NULL,       NULL,   NULL,    NULL,  NULL,               "compare to original alignment using FastSP",                                                0 },
+   /* Control of running options */
+  { "--nofastsp",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "compare to original alignment using FastSP",                                                0 },
   { "--lcur",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE for lower case in reference msa unaligned using FastSP",                               0 },
   { "--lcue",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE for lower case in inferred msa unaligned using FastSP",                                0 },
   { "--probdist",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "probability distribution landscape",                                                        0 },
   { "--train",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "train on msas",                                                                             0 },
   /* Control of output */
-  { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
-  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
- /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
+  { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
+  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
+  /* Selecting the alphabet rather than autoguessing it */
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      0 },
   /* msa format */
-  { "--informat",  eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                             0 },
+  { "--informat",  eslARG_STRING,        NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* other options */
-  { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
-  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       5 },
+  { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
+  { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       1 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
+
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "progressive alignment using e2 evolutionary model";
 
@@ -281,7 +284,6 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   struct cfg_s cfg;
   int          status;
 
-
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_VerifyConfig(go)               != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
@@ -292,13 +294,12 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      p7_banner(stdout, cfg.argv[0], banner);
-      esl_usage(stdout, cfg.argv[0], usage);
+      esl_usage(stdout,  cfg.argv[0], usage);
       if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-      esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 1= group; 2 = indentation; 120=textwidth*/
-     exit(0);
+      esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
+      exit(0);
     }
-
+  
   cfg.msafile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
@@ -416,6 +417,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.do_viterbi = esl_opt_IsOn(go, "--viterbi")? TRUE : FALSE;
 
   cfg.evomodel       = e1_rate_Evomodel(esl_opt_GetString(go, "--evomodel"));
+  cfg.evomodeltype   = e1_rate_EvomodelType(cfg.evomodel);
   cfg.rateparam.muAM = esl_opt_GetReal  (go, "--muAM");
   cfg.rateparam.muAD = esl_opt_GetReal  (go, "--muAD");
   cfg.rateparam.muAI = esl_opt_GetReal  (go, "--muAI");
@@ -428,7 +430,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.rateparam.rI   = esl_opt_GetReal  (go, "--rI");
   cfg.rateparam.rM   = esl_opt_GetReal  (go, "--rM");
   cfg.rateparam.rD   = esl_opt_GetReal  (go, "--rD");
-  esl_sprintf(&cfg.method, "e2msa.%s", e1_rate_EvomodelType(cfg.evomodel)); 
+  esl_sprintf(&cfg.method, "e2msa.%s", cfg.evomodeltype); 
 
   /* the paramfile takes precedent over individually feed values above */
   cfg.paramfile = NULL;
@@ -461,9 +463,11 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   /* open outfile with benchmarking results */
   cfg.benchfile = NULL;
   cfg.benchfp   = NULL;
-  esl_sprintf(&cfg.benchfile, "%s.%s.bench", cfg.outheader, e1_rate_EvomodelType(cfg.evomodel)); 
-  if ((cfg.benchfp = fopen(cfg.benchfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.benchfile);
-  fprintf(cfg.benchfp, "#MSA_NAME           TP_hom   TRUE_hom  FOUND_hom      \n");
+  if (cfg.dofastsp) {
+    esl_sprintf(&cfg.benchfile, "%s.%s.bench", cfg.outheader, cfg.evomodeltype); 
+    if ((cfg.benchfp = fopen(cfg.benchfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.benchfile);
+    fprintf(cfg.benchfp, "#MSA_NAME           TP_hom   TRUE_hom  FOUND_hom      \n");
+  }
 
   cfg.msarfname           = NULL;
   cfg.msaefname           = NULL;
@@ -476,6 +480,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.msaefname_msaprobs  = NULL;
   
   cfg.T = NULL;
+  cfg.upgma = TRUE;
 
   /* if e2hmmer or e2fhmmer, read the input HMM */
   if (cfg.e2ali == E2FHMMER &&
@@ -487,8 +492,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   cfg.R7 = NULL;
   cfg.bg  = NULL;
   cfg.bg7 = NULL;
-  cfg.bg  = e1_bg_Create(cfg.abc);
-  cfg.bg7 = p7_bg_Create(cfg.abc);
+  if (cfg.abc) {
+    cfg.bg  = e1_bg_Create(cfg.abc);
+    cfg.bg7 = p7_bg_Create(cfg.abc);
+  }
  
   cfg.hfp = NULL;
   cfg.hmm = NULL;
@@ -513,10 +520,9 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
-  esl_usage(stdout, cfg.argv[0], usage);
-  if (puts("\nwhere options are:")                                                 < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  esl_opt_DisplayHelp(stdout, go, 0, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
-  if (printf("\nTo see more help on available options, do %s -h\n\n", cfg.argv[0]) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  esl_usage(stdout, banner, usage);
+  if (puts("\nwhere options are:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
   exit(1);  
 
@@ -543,14 +549,17 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = esl_msafile_Open(NULL, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  status = esl_msafile_Open(&cfg.abc, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
   if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
+  if (cfg.bg  == NULL) cfg.bg  = e1_bg_Create(cfg.abc);
+  if (cfg.bg7 == NULL) cfg.bg7 = p7_bg_Create(cfg.abc);
+ 
   /* read the MSA */
   while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
     if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
     cfg.nmsa ++;
-
+ 
     /* select submsa */
     if (cfg.submsa) {
       if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
@@ -565,19 +574,19 @@ main(int argc, char **argv)
     if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, TRUE, &nremoved);
     
     /* given msa aveid and avematch */
-    msamanip_CStats(cfg.abc, msa, &cfg.mstat);
-    msamanip_CBaseComp(cfg.abc, msa, cfg.bg->f, &cfg.msafrq);
+    msamanip_XStats(msa, &cfg.mstat);
+    msamanip_XBaseComp(msa, cfg.bg->f, &cfg.msafrq);
 
     if (esl_opt_IsOn(go, "--minid") && cfg.mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
     if (esl_opt_IsOn(go, "--maxid") && cfg.mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
 
     /* print some info */
     if (cfg.voutput) {
-      esl_sprintf(&cfg.msarfname, "%s.%s", cfg.msaheader, e1_rate_EvomodelType(cfg.evomodel)); 
+      esl_sprintf(&cfg.msarfname, "%s.%s", cfg.evomodeltype); 
       fprintf(cfg.outfp, "Given alignment\n");
       fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
       if (esl_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.msarfname); 
-      msamanip_DumpStats(cfg.outfp, msa, cfg.mstat); 
+      msamanip_DumpStats(cfg.outfp, msa, cfg.mstat);
     }
     
     if (cfg.train) {
@@ -644,6 +653,9 @@ main(int argc, char **argv)
     
     esl_msa_Destroy(msa); msa = NULL;
     free(cfg.msafrq); cfg.msafrq = NULL;
+    free(cfg.method); cfg.method = NULL;
+    if (cfg.msarfname) free(cfg.msarfname); cfg.msarfname = NULL;
+    free(cfg.msaheader); cfg.msaheader = NULL;
   }
 
   /* cleanup */
@@ -652,13 +664,17 @@ main(int argc, char **argv)
   if (cfg.bg7) p7_bg_Destroy(cfg.bg7);     
   fclose(cfg.outfp);
   free(cfg.outheader);
-  fclose(cfg.benchfp);
-  free(cfg.benchfile);
+  if (cfg.benchfp) fclose(cfg.benchfp);
+  if (cfg.benchfile) free(cfg.benchfile);
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
   esl_msafile_Close(afp);
   free(cfg.mstat);
+  free(cfg.mx);
+  free(cfg.fastaversion);
+  free(cfg.fasta_s);
+  free(cfg.evomodeltype);
   return 0;
 }
 
@@ -668,13 +684,28 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   int      status;
   
-  /* the TREE */
-  status = e2_tree_UPGMA(&cfg->T, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0,
-			 cfg->tol, cfg->errbuf, cfg->verbose);
+  /* create tree from MSA */
+  if (cfg->T == NULL) {
+    if (cfg->upgma) {
+      status = e2_tree_UPGMA(&cfg->T, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0,
+			     cfg->tol, cfg->errbuf, cfg->verbose);
+    }
+    else { // use fasttree
+      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+      /* match the tree leaves to the msa names */
+      status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
+    }
+    if (status != eslOK) esl_fatal(cfg->errbuf); 
+  }
   if (cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
-  cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
-  
+
+  if (cfg->T) {
+    cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
+    if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
+  }
+  if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+
   return eslOK;
 }
 
@@ -694,8 +725,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   esl_stopwatch_Start(cfg->w);
 
   dmsa = esl_msa_Clone(msa);
-  esl_msa_Digitize(cfg->abc, dmsa, NULL);
-
+		     
   /* Create the evolutionary rate model */
   cfg->nr    = 1;
   cfg->R1    = malloc(sizeof(E1_RATE) * cfg->nr);
@@ -706,12 +736,14 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
       else               cfg->R1[r] = e1_rate_CreateFromCosts(cfg->abc, cfg->evomodel, cfg->popen, cfg->pextend, cfg->pcross, cfg->subsmx, 
 							      NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       if (cfg->R1[r] == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg->errbuf); }
-      if (1||cfg->verbose)   printf("rI %f rM %f rD %f | ldEM %f muEM %f ldED %f muED %f ldI %f muI %f muA %f %f %f| model %s\n",  
-				    cfg->R1[r]->rI, cfg->R1[r]->rM, cfg->R1[r]->rD, 
-				    cfg->R1[r]->ldE[e1R_S], cfg->R1[r]->muE[e1R_S], cfg->R1[r]->ldE[e1R_D], cfg->R1[r]->muE[e1R_D], 
-				    cfg->R1[r]->ldE[e1R_I], cfg->R1[r]->muE[e1R_I], 
-				    cfg->R1[r]->muA[e1R_S], cfg->R1[r]->muA[e1R_D], cfg->R1[r]->muA[e1R_I], 
-				    e1_rate_EvomodelType(cfg->R1[r]->evomodel));
+      if (cfg->verbose) {
+	printf("rI %f rM %f rD %f | ldEM %f muEM %f ldED %f muED %f ldI %f muI %f muA %f %f %f| model %s\n",  
+				 cfg->R1[r]->rI, cfg->R1[r]->rM, cfg->R1[r]->rD, 
+				 cfg->R1[r]->ldE[e1R_S], cfg->R1[r]->muE[e1R_S], cfg->R1[r]->ldE[e1R_D], cfg->R1[r]->muE[e1R_D], 
+				 cfg->R1[r]->ldE[e1R_I], cfg->R1[r]->muE[e1R_I], 
+				 cfg->R1[r]->muA[e1R_S], cfg->R1[r]->muA[e1R_D], cfg->R1[r]->muA[e1R_I], 
+				 cfg->evomodeltype);
+      }
     }
   }
   else {  
@@ -727,7 +759,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     
     /* Calculate the hmm rate */
     cfg->emR = ratematrix_emrate_Create(cfg->abc, 1);
-    ratematrix_emrate_Set(cfg->subsmx, NULL, cfg->bg7->f, cfg->emR, TRUE, cfg->tol, cfg->errbuf, FALSE);
+    ratematrix_emrate_Set(cfg->subsmx, NULL, (double *)cfg->bg7->f, cfg->emR, TRUE, cfg->tol, cfg->errbuf, FALSE);
 
     int betainf;
     int etainf;
@@ -766,11 +798,12 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   esl_stopwatch_Stop(cfg->w);
+
   msamanip_CStats(cfg->abc, e2msa, &alle2mstat);
   
 #if 0
-  if (cfg->voutput) { /* write output alignment */
-    fprintf(cfg->outfp, "\ne2msa-%s alignment with nodes\n", e1_rate_EvomodelType(cfg->evomodel));
+  if (1||cfg->voutput) { /* write output alignment */
+    fprintf(cfg->outfp, "\ne2msa-%s alignment with nodes\n", cfg->evomodeltype);
     esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, alle2mstat);
   }
@@ -781,15 +814,15 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   msamanip_CStats(cfg->abc, e2msa, &e2mstat);
   e2mstat->anclen = alle2mstat->anclen; // transfer the len of the ancestral sequence (cannot be calculated from the leaves-only msa)
 
-  if (cfg->voutput) { /* write output alignment */
+  if (1||cfg->voutput) { /* write output alignment */
     /* print output info */
-    fprintf(cfg->outfp, "\ne2msa-%s alignment\n", e1_rate_EvomodelType(cfg->evomodel));
+    fprintf(cfg->outfp, "\ne2msa-%s alignment\n", cfg->evomodeltype);
     esl_msafile_Write(cfg->outfp, e2msa, eslMSAFILE_STOCKHOLM);
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
 
   if (cfg->voutput) { /* the output alignment to an independent file */
-    esl_sprintf(&cfg->msaefname, "%s.e2msa.%s", cfg->msaheader, e1_rate_EvomodelType(cfg->evomodel)); 
+    esl_sprintf(&cfg->msaefname, "%s.e2msa.%s", cfg->msaheader, cfg->evomodeltype); 
     if ((cfg->msaefp = fopen(cfg->msaefname, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg->msaefname);
     if (esl_msafile_Write(cfg->msaefp, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msaefname); 
     fclose (cfg->msaefp);
@@ -805,8 +838,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     free(cfg->R1);
   }
   if (cfg->R7) p7_RateDestroy(cfg->R7);
-  if (cfg->msarfname)          free(cfg->msarfname);
-  if (cfg->msaefname)          free(cfg->msaefname);
+  if (cfg->msarfname) free(cfg->msarfname); cfg->msarfname = NULL;
+  if (cfg->msaefname) free(cfg->msaefname); cfg->msaefname = NULL;
   
   e2_pipeline_Destroy(cfg->pli);
   if (cfg->hmm) p7_hmm_Destroy(cfg->hmm); 
@@ -817,8 +850,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (e2msa)  esl_msa_Destroy(e2msa);
   if (e2mstat) free(e2mstat);
   if (alle2mstat) free(alle2mstat);
-  if (cfg->T) esl_tree_Destroy(cfg->T);
-  
+  if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
+
   return eslOK;
 
  ERROR:

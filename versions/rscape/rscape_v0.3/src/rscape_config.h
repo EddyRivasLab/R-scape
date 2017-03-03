@@ -18,8 +18,8 @@
 #define RSCAPE_DATE "December 2016"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define RSCAPE_HOME "/Users/rivase/src/src/mysource/versions/rscape_v0.3"
-#define RSCAPE_BIN "/Users/rivase/src/src/mysource/versions/rscape_v0.3/bin"
+#define RSCAPE_HOME "/Users/rivase/src/src/mysource/versions/rscape/rscape_v0.3"
+#define RSCAPE_BIN "/Users/rivase/src/src/mysource/versions/rscape/rscape_v0.3/bin"
 
 /* Large file support
  * Must precede any header file inclusion.

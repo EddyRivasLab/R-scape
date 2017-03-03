@@ -28,7 +28,7 @@ static int AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, in
 static int AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld, double gaposc, double gapesc, double betainf, double rM, double tol, char *errbuf, int verbose);
 static int AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gape, double *ret_gapo, 
 				  double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double *ret_go6, double tol, char *errbuf, int verbose);
-static int e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, P7_BG *bg, RATEBUILDER **ret_ratebld, int scaled, double tol, char *errbuf, int verbose);
+static int e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, E1_BG *bg, RATEBUILDER **ret_ratebld, int scaled, double tol, char *errbuf, int verbose);
 
 static ESL_OPTIONS options[] = {
   /* name           type              default  env  range        toggles     reqs        incomp             help                                                                  docgroup*/
@@ -71,7 +71,7 @@ main(int argc, char **argv)
   int           scaledrate = FALSE;
   int           mode = e2_JOINT;
   int           N;
-  int           L = 1e+20;
+  int           L = (int)1e+20;
   int           verbose;
   
   if (esl_opt_ArgNumber(go) != 1)                  { puts("Incorrect number of command line arguments");          exit(1); }
@@ -303,7 +303,7 @@ AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, i
 
 
 static int
-e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, P7_BG *bg, RATEBUILDER **ret_ratebld, int scaledrate, double tol, char *errbuf, int verbose)
+e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, E1_BG *bg, RATEBUILDER **ret_ratebld, int scaledrate, double tol, char *errbuf, int verbose)
 {
   RATEBUILDER  *ratebld = NULL;           /* construction configuration   */
   int           status;

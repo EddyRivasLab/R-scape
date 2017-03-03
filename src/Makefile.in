@@ -16,6 +16,10 @@ RSCAPE         = @RSCAPE_NAME@
 RSCAPE_VERSION = @RSCAPE_VERSION@
 RSCAPE_DATE    = @RSCAPE_DATE@
 
+E2MSA         = @E2MSA_NAME@
+E2MSA_VERSION = @E2MSA_VERSION@
+E2MSA_DATE    = @E2MSA_DATE@
+
 # Installation targets
 #
 prefix      = @prefix@

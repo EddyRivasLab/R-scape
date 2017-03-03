@@ -78,13 +78,15 @@ fi
 # new preprocessor symbol of our own:
 #     EASEL_VERSION    e.g. "1.9a"
 #
-E2_DATE="DEC 2011"
-E2_COPYRIGHT="Copyright (C) 2011 Howard Hughes Medical Institute."
-E2_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-E2_VERSION=$PACKAGE_VERSION
-E2_URL="http://selab.org/"
-E2_ESLDIR="lib/hmmer/lib/easel"
-E2_SADIR="libdivsufsort"
+E2MSA_DATE="MARCH 2017"
+E2MSA_COPYRIGHT="Copyright (C) 2017 Howard Hughes Medical Institute."
+E2MSA_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+E2MSA_VERSION="0.1.0"
+E2MSA_URL="http://selab.org/"
+E2MSA_ESLDIR="lib/hmmer/lib/easel"
+E2MSA_SADIR="lib/hmmer/lib/libdivsufsort"
+
+E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
 RSCAPE_DATE="December 2016"
@@ -100,12 +102,6 @@ RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/lib/easel"
 RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
 
-INFERNAL_RELCODE="infernal0_7"
-INFERNAL_DATE="December 2005"
-INFERNAL_COPYRIGHT="Copyright (C) 2001-2005 HHMI/Washington University School of Medicine"
-INFERNAL_LICENSE="Freely distributed under the GNU General Public License (GPL)"
-INFERNAL_LICENSETAG=gnu
-
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
@@ -116,14 +112,24 @@ else
   RSCAPE_BIN=${prefix}/bin
 fi
 
+E2MSA_HOME="`pwd`"        #magic to get full path to current directory
+AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then 
+  E2MSA_BIN="`pwd`/bin"
+else
+  E2MSA_BIN=${prefix}/bin
+fi
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
-AC_SUBST(E2_DATE)
-AC_SUBST(E2_COPYRIGHT)
-AC_SUBST(E2_LICENSE)
-AC_SUBST(E2_VERSION)
-AC_SUBST(E2_URL)
-AC_SUBST(E2_ESLDIR)
-AC_SUBST(E2_SADIR)
+AC_SUBST(E2MSA_DATE)
+AC_SUBST(E2MSA_COPYRIGHT)
+AC_SUBST(E2MSA_LICENSE)
+AC_SUBST(E2MSA_VERSION)
+AC_SUBST(E2MSA_URL)
+AC_SUBST(E2MSA_ESLDIR)
+AC_SUBST(E2MSA_SADIR)
+AC_SUBST(E2MSA_HMMERDIR)
 
 AC_SUBST(RSCAPE_NAME)
 AC_SUBST(RSCAPE_DATE)
@@ -148,11 +154,11 @@ AC_SUBST(INFERNAL_LICENSETAG)
 
 
 # Preprocessor symbols (replace #undefs in e2_config.h)
-AC_DEFINE_UNQUOTED(E2_DATE,      "$E2_DATE")
-AC_DEFINE_UNQUOTED(E2_COPYRIGHT, "$E2_COPYRIGHT")
-AC_DEFINE_UNQUOTED(E2_LICENSE,   "$E2_LICENSE")
-AC_DEFINE_UNQUOTED(E2_VERSION,   "$E2_VERSION")
-AC_DEFINE_UNQUOTED(E2_URL,       "$E2_URL")
+AC_DEFINE_UNQUOTED(E2MSA_DATE,      "$E2MSA_DATE")
+AC_DEFINE_UNQUOTED(E2MSA_COPYRIGHT, "$E2MSA_COPYRIGHT")
+AC_DEFINE_UNQUOTED(E2MSA_LICENSE,   "$E2MSA_LICENSE")
+AC_DEFINE_UNQUOTED(E2MSA_VERSION,   "$E2MSA_VERSION")
+AC_DEFINE_UNQUOTED(E2MSA_URL,       "$E2MSA_URL")
 
 # Preprocessor symbols (replace #undefs in rscape_config.h)
 AC_DEFINE_UNQUOTED(RSCAPE_NAME,      "$RSCAPE_NAME")
@@ -582,6 +588,7 @@ AC_CONFIG_FILES([
 Makefile
 src/Makefile
 documentation/Makefile
+documentation/e2msa/Makefile
 lib/R2R/NotByZasha/infernal-0.7/Makefile
 lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
 lib/R2R/src/Makefile

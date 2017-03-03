@@ -298,7 +298,7 @@ e2_TracealignSeqs(E2_TRACE *tr, PSQ *sql, PSQ *sqr, int a_idx, int dl_idx, int d
       strlen(msa->aseq[dl_idx]) != strlen(msa->aseq[a_idx])    )
     {      
       printf("not an alignment for seqs %s (alen=%d) %s (alen=%d). ancestral  %s (alen=%d)\n", 
-	     msa->sqname[dl_idx], strlen(msa->aseq[dl_idx]), msa->sqname[dr_idx], strlen(msa->aseq[dr_idx]), msa->sqname[a_idx], strlen(msa->aseq[a_idx]));
+	     msa->sqname[dl_idx], (int)strlen(msa->aseq[dl_idx]), msa->sqname[dr_idx], (int)strlen(msa->aseq[dr_idx]), msa->sqname[a_idx], (int)strlen(msa->aseq[a_idx]));
       status = eslFAIL; goto ERROR;
     }
 
@@ -437,7 +437,7 @@ insert(PSQ *psq, int sqidx, int i, int pos, int l, ESL_MSA *msa, int lc, int ver
   int   status;
 
   newalen = msa->alen + l;
-  
+
   for (x = 0; x < msa->nseq; x ++) {
     if (msa->aseq[x] == NULL) continue;
     
@@ -447,7 +447,7 @@ insert(PSQ *psq, int sqidx, int i, int pos, int l, ESL_MSA *msa, int lc, int ver
     /* copy residues before 'pos' */
     for (n = 0; n < pos; n ++) new[n] = msa->aseq[x][n];
     /* move over residues past 'pos' */
-    for (n = pos; msa->aseq[x][n] != '\0'; n ++)
+    for (n = pos; n < msa->alen; n ++)
       new[n+l] = msa->aseq[x][n];
      
     /* the insertion */

@@ -85,7 +85,7 @@ SHELL      = /bin/sh
 
 # Installation targets
 #
-prefix      = /Users/rivase/src/src/mysource/versions/rscape_v0.3
+prefix      = /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.3
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 bindir      = ${exec_prefix}/bin
