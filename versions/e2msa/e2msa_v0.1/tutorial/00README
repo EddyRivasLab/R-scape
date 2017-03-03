@@ -1,0 +1,34 @@
+ER, Tue Dec  9 09:13:15 EST 2014
+
+
+Benchmark sets for the manuscript  "Parameterizing sequence alignment with an explicit evolutionary model
+reduces homologous overextension" by E. Rivas and S. R. Eddy.
+
+Global Homology Set
+====================================================================================================
+
+global_homology_set.sto
+
+includes files:
+  1682 prefab4.ref.sto                       (PREFAB  4.0)
+ 19092 sup.sto                               (SABmark 1.65)
+ 10667 twi.sto                               (SABmark 1.65)
+  5043 Pfam.seed.S1000.conserved.test.sto    (Pfam    27.0)
+-------------------------------------------------------------------
+36484  pairwise alignments
+
+
+Local Homology Set (created from the Global Homology Set using program src/src/shorthom)
+=====================================================================================================
+
+local_homology_set.sto
+
+
+includes files:
+    prefab4_shorthom.set.sto             found  1682/1682  msas
+    Pfam_shorthom.set.sto                found  4966/5043  msas
+    sup_shorthom.set.sto                 found 19091/19092 msas
+    twi_shorthom.set.sto                 found 10665/10667 msas
+========================================================================
+total                                          36404/36484 msas
+
