@@ -147,7 +147,7 @@ e2BranchInference(FILE *outfp, char *gnuplot, char *distfile, char *histofile, c
   }
   
   /* infer the branch lengths for the tree */
-  status = e2_tree_UPGMA(&Ti, msa, msafrq, r, pli, R, R7, bg, bg7, e2ali, mode, do_viterbi, -1.0, -1.0, tol, errbuf, verbose);
+  status = e2_tree_UPGMA(&Ti, 0, NULL, msa, msafrq, r, pli, R, R7, bg, bg7, e2ali, mode, do_viterbi, -1.0, -1.0, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR; 
   if (1||verbose) Tree_Dump(stdout, Ti, "Infered Tree");
 

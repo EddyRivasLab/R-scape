@@ -20,7 +20,8 @@
 #include "e2_pipeline.h"
 #include "evohmmer.h"
 
-extern int e2_tree_UPGMA(ESL_TREE **ret_T, ESL_MSA *msa, float *frq, ESL_RANDOMNESS *r, E2_PIPELINE *pli, E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7, 
+extern int e2_tree_UPGMA(ESL_TREE **ret_T, int n, ESL_SQ **seq, ESL_MSA *msa, float *frq, ESL_RANDOMNESS *r, E2_PIPELINE *pli,
+			 E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7, 
 			 E2_ALI e2ali, int mode, int do_viterbi, float fixtime, float tinit, double tol, char *errbuf, int verbose);
 #endif /*E2_TREE_INCLUDED*/
 

@@ -123,6 +123,7 @@ e2_GForward(const PSQ *psql, const PSQ *psqr, const E2_PROFILE *gm, E2_GMX *fwd,
       Sjsc = p7_FLogsum(Sjsc, gm->ssc[b][1-rowsq] + pj[b]);
       Ijsc = p7_FLogsum(Ijsc, gm->isc[b][1-rowsq] + pj[b]);
       Fjsc = p7_FLogsum(Fjsc, gm->fsc[b][1-rowsq] + pj[b]);
+      //printf("^^j %d pj %f | %f %f %f\n", j, pj[b], Sjsc, Ijsc, Fjsc);
     }
     
     /* linear-memory equivalents of the indices we'll need for the dp */
@@ -231,7 +232,7 @@ e2_GForward(const PSQ *psql, const PSQ *psqr, const E2_PROFILE *gm, E2_GMX *fwd,
     BBMX(ijx) = p7_FLogsum(gm->xsc[e2P_N2][e2P_MOVE] + E2G_XMX(fwd, ijx, e2G_N2),
 			   gm->xsc[e2P_J2][e2P_MOVE] + E2G_XMX(fwd, ijx, e2G_J2));
 
-#if 0
+#if 1
 	  if (j == 1)
 	    printf("FWD i %d j %d ijx %d  BB %f IB %f SS %f DS %f IS %f SD %f DD %f ID %f BI %f SI %f DI %f II %f  EE %f\n", 
 		   0, j, ijx, 

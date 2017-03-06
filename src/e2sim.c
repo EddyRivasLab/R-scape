@@ -407,7 +407,7 @@ run_voutput (struct cfg_s *cfg, int n)
   
   /* rum e2msa */
   esl_msa_Digitize(cfg->abc, cfg->msa, cfg->errbuf);
-  status = e2_msa(cfg->r, cfg->R, NULL, cfg->msa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
+  status = e2_msa(cfg->r, cfg->R, NULL, 0, NULL, cfg->msa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
     
   msamanip_CStats(cfg->msa->abc, e2msa, &alle2msastat); //  optimal   msa aveid and avematch (with ancestral sequences) 

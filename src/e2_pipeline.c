@@ -168,7 +168,7 @@ e2_Pipeline(ESL_RANDOMNESS *r, E2_PIPELINE *pli, const PSQ *psql, const PSQ *psq
     
     ancf = (float *)frq; // residue distribution for ancestral sequence
     insf = (float *)frq; // residue distribution for insertions
-
+    
     evol = e1_model_Create(R, (timel==0.0)? 1e-5:timel, ancf, insf, mode, L, abc, tol, errbuf, FALSE); if (evol == NULL) {status = eslFAIL; goto ERROR; }
     evor = e1_model_Create(R, (timer==0.0)? 1e-5:timer, ancf, insf, mode, L, abc, tol, errbuf, FALSE); if (evor == NULL) {status = eslFAIL; goto ERROR; } 
 
@@ -220,8 +220,10 @@ e2_Pipeline(ESL_RANDOMNESS *r, E2_PIPELINE *pli, const PSQ *psql, const PSQ *psq
       else {
 	status = e2_GForward (sql, sqr, gm, pli->gx1, &fsc);
 	if (status != eslOK) goto ERROR;
+	printf("fsc %f\n", fsc);
 	status = e2_GBackward(sql, sqr, gm, pli->gx2, &bsc);
 	if (status != eslOK) goto ERROR;
+	printf("bsc %f\n", bsc);
 	status = e2_GDecoding(gm, pli->gx1, pli->gx2, pli->gx2);                                    /* <gx2> is now the posterior decoding matrix */
       }
       if (status != eslOK) goto ERROR;

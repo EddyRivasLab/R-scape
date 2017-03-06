@@ -9,6 +9,7 @@
 
 #include "easel.h"
 #include "esl_msa.h"
+#include "esl_sq.h"
 #include "esl_random.h"
 #include "esl_tree.h"
 
@@ -47,7 +48,7 @@ struct e2_data {
   int             verbose;
 };
 
-extern int e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, ESL_TREE *T, ESL_MSA **ret_omsa, float *ret_sc, E2_PIPELINE *pli, 
+extern int e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, int n, ESL_SQ **seq, ESL_MSA *msa, float *msafrq, ESL_TREE *T, ESL_MSA **ret_omsa, float *ret_sc, E2_PIPELINE *pli, 
 		  E1_BG *bg, P7_BG *bg7, E2_ALI e2ali, E2_OPT optimize, int mode, int do_viterbi, double tol, char *errbuf, int verbose);
 extern int e2_Optimize(ESL_RANDOMNESS *r, E2_PIPELINE *pli, PSQ *sql, PSQ *sqr, float *msafrq, E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7,
 		       double *ret_timel, double *ret_timer, PSQ **ret_sqa, E2_TRACE **ret_tr, float *ret_sc, E2_ALI e2ali, E2_OPT e2optimize, 

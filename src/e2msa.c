@@ -9,6 +9,8 @@
 #include "esl_msa.h"
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
@@ -121,6 +123,7 @@ struct cfg_s {
 					   * Set to 0 if we are taking all */
   MSA_STAT          *mstat;               /* statistics of the input alignment */
   float             *msafrq;
+  float             *sqfrq;
 
   int                infmt;
   E2_OPT             e2optimize;          /* type of optimization (parameters and/or time) */
@@ -262,8 +265,10 @@ struct cfg_s {
 static char usage[]  = "[-options] <msa>";
 static char banner[] = "progressive alignment using e2 evolutionary model";
 
-static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int e2msa_alimode(ESL_GETOPTS *go, struct cfg_s *cfg);
+static int e2msa_seqmode(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_SQFILE *sfp);
+static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, int n, ESL_SQ **seq, ESL_MSA *msa);
+static int run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, int n, ESL_SQ **seq, ESL_MSA *msa);
 static int run_phmmer(struct cfg_s *cfg, ESL_MSA *msa, int isphmmer3, int isephmmer, float time);
 static int run_ncbiblast(struct cfg_s *cfg, ESL_MSA *msa);
 static int run_ssearch(struct cfg_s *cfg, ESL_MSA *msa);
@@ -413,6 +418,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   cfg.subsmx     = esl_opt_GetString(go, "--mx");
   cfg.msafrq     = NULL;
+  cfg.sqfrq      = NULL;
   cfg.mode       = esl_opt_IsOn(go, "--local")? e2_LOCAL : e2_GLOBAL;
   cfg.do_viterbi = esl_opt_IsOn(go, "--viterbi")? TRUE : FALSE;
 
@@ -537,131 +543,38 @@ main(int argc, char **argv)
   char           *msg = "e2msa failed";
   ESL_GETOPTS    *go;
   struct cfg_s    cfg;
-  ESL_MSAFILE   *afp = NULL;
-  ESL_MSA        *msa = NULL;          /* the input alignment  */
-  int             seq_cons_len = 0;
-  int             nfrags = 0;	  	  /* # of fragments removed */
-  int             nremoved = 0;	          /* # of identical sequences removed */
+  ESL_SQFILE     *sfp = NULL;
+  int             abctype;
   int             status = eslOK;
-  int             hstatus = eslOK;
 
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = esl_msafile_Open(&cfg.abc, cfg.msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
-  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
-
-  if (cfg.bg  == NULL) cfg.bg  = e1_bg_Create(cfg.abc);
-  if (cfg.bg7 == NULL) cfg.bg7 = p7_bg_Create(cfg.abc);
- 
-  /* read the MSA */
-  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
-    cfg.nmsa ++;
- 
-    /* select submsa */
-    if (cfg.submsa) {
-      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
-    }
-    
-    /* outheader for all msa-output files */
-    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg.msafile, &cfg.msaheader); 
-   
-    esl_msa_Hash(msa);
-   
-    if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg.fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) { printf("remove_fragments failed\n"); esl_fatal(msg); }
-    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetBymaxID(cfg.r, &msa, cfg.idthresh, TRUE, &nremoved);
-    
-    /* given msa aveid and avematch */
-    msamanip_XStats(msa, &cfg.mstat);
-    msamanip_XBaseComp(msa, cfg.bg->f, &cfg.msafrq);
-
-    if (esl_opt_IsOn(go, "--minid") && cfg.mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
-    if (esl_opt_IsOn(go, "--maxid") && cfg.mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
-
-    /* print some info */
-    if (cfg.voutput) {
-      esl_sprintf(&cfg.msarfname, "%s.%s", cfg.evomodeltype); 
-      fprintf(cfg.outfp, "Given alignment\n");
-      fprintf(cfg.outfp, "%6d          %s\n", msa->nseq, cfg.msafile);
-      if (esl_msafile_Write(cfg.outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg.msarfname); 
-      msamanip_DumpStats(cfg.outfp, msa, cfg.mstat);
-    }
-    
-    if (cfg.train) {
-      cfg.doe2msa     = FALSE;
-      cfg.doephmmer   = FALSE;
-      cfg.dophmmer    = FALSE;
-      cfg.dophmmer3   = FALSE;
-      cfg.doncbiblast = FALSE;
-      cfg.dossearch   = FALSE;
-      cfg.domuscle    = FALSE;
-      cfg.domsaprobs  = FALSE;
-      status = train(&cfg, msa);
-      if (status != eslOK)  { esl_fatal(cfg.errbuf); }
-      continue;
-    }
-
-    /* the main function */
-    if (cfg.doe2msa) {
-      status = run_e2msa(go, &cfg, msa);
-      if (status != eslOK) esl_fatal("%s Failed to run e2msa", cfg.errbuf);
-    }
-    
-    /* run ephmmer */
-    if (cfg.doephmmer) {
-      status = run_phmmer(&cfg, msa, FALSE, TRUE, cfg.fixtime);
-      if (status != eslOK) esl_fatal("%s Failed to run ephmmer", cfg.errbuf);
-    }
-
-    /* run phmmer */
-    if (cfg.dophmmer) {
-      status = run_phmmer(&cfg, msa, FALSE, FALSE, -1.0);
-      if (status != eslOK) esl_fatal("%s Failed to run phmmer", cfg.errbuf);
-    }
-
-    /* run phmmer3 */
-    if (cfg.dophmmer3) {
-      status = run_phmmer(&cfg, msa, TRUE, FALSE, -1.0);
-      if (status != eslOK) esl_fatal("%s Failed to run phmmer3", cfg.errbuf);
-    }
-    
-    /* run ncbiblast */
-    if (cfg.doncbiblast) {
-      status = run_ncbiblast(&cfg, msa);
-      if (status != eslOK) esl_fatal("%s Failed to run ncbiblast", cfg.errbuf);
-    }
-    
-    /* run ssearch */
-    if (cfg.dossearch) {
-      status = run_ssearch(&cfg, msa);
-      if (status != eslOK) esl_fatal("%s Failed to run ssearch", cfg.errbuf);
-    }
-    
-    /* run muscle */
-    if (cfg.domuscle) {
-      status = run_muscle(&cfg, msa);
-      if (status != eslOK) esl_fatal("%s Failed to run muscle", cfg.errbuf);
-    }
-    
-    /* run msaprobs */
-    if (cfg.domsaprobs) {
-      status = run_msaprobs(&cfg, msa);
-      if (status != eslOK) esl_fatal("%s\nFailed to run msaprobs", cfg.errbuf);
-    }
-    
-    esl_msa_Destroy(msa); msa = NULL;
-    free(cfg.msafrq); cfg.msafrq = NULL;
-    free(cfg.method); cfg.method = NULL;
-    if (cfg.msarfname) free(cfg.msarfname); cfg.msarfname = NULL;
-    free(cfg.msaheader); cfg.msaheader = NULL;
+  status = esl_sqfile_Open(cfg.msafile, eslSQFILE_UNKNOWN, NULL, &sfp);
+  if (status != eslOK)  esl_fatal("%s Failed to open sqfile", cfg.errbuf);
+  esl_sqfile_GuessAlphabet(sfp, &abctype);
+  
+  if (cfg.abc == NULL) {
+    cfg.abc = esl_alphabet_Create(abctype);
+    if (cfg.bg  == NULL) cfg.bg  = e1_bg_Create(cfg.abc);
+    if (cfg.bg7 == NULL) cfg.bg7 = p7_bg_Create(cfg.abc);
   }
+  
+  if (esl_sqio_IsAlignment(sfp->format)) {
+    esl_sqfile_Close(sfp); sfp = NULL;
+    status = e2msa_alimode(go, &cfg);
+  }
+  else {
+    status = e2msa_seqmode(go, &cfg, sfp);
+  }
+   if (status != eslOK)  esl_fatal("%s Failed to run e2msa", cfg.errbuf);
 
   /* cleanup */
   esl_stopwatch_Destroy(cfg.w);
   if (cfg.bg)  e1_bg_Destroy(cfg.bg);     
   if (cfg.bg7) p7_bg_Destroy(cfg.bg7);     
+  if (cfg.sqfrq) free(cfg.sqfrq); 
   fclose(cfg.outfp);
   free(cfg.outheader);
   if (cfg.benchfp) fclose(cfg.benchfp);
@@ -669,7 +582,7 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(cfg.abc);
   esl_getopts_Destroy(go);
   esl_randomness_Destroy(cfg.r);
-  esl_msafile_Close(afp);
+  if (sfp) esl_sqfile_Close(sfp);
   free(cfg.mstat);
   free(cfg.mx);
   free(cfg.fastaversion);
@@ -678,16 +591,196 @@ main(int argc, char **argv)
   return 0;
 }
 
+static int
+e2msa_alimode(ESL_GETOPTS *go, struct cfg_s *cfg)
+{
+  char           *msg = "e2msa failed";
+  ESL_MSAFILE    *afp = NULL;
+  ESL_MSA        *msa = NULL;          /* the input alignment  */
+  int             seq_cons_len = 0;
+  int             nfrags = 0;	  	  /* # of fragments removed */
+  int             nremoved = 0;	          /* # of identical sequences removed */
+  int             hstatus = eslOK;
+  int             status = eslOK;
+
+  status = esl_msafile_Open(&cfg->abc, cfg->msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  if (status != eslOK) esl_msafile_OpenFailure(afp, status);
+
+
+  /* read the MSA */
+  while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    if (hstatus != eslOK) esl_msafile_ReadFailure(afp, status);
+    cfg->nmsa ++;
+ 
+    /* select submsa */
+    if (cfg->submsa) {
+      if (msamanip_SelectSubset(cfg->r, cfg->submsa, &msa, NULL, cfg->errbuf, cfg->verbose) != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(msg); }
+    }
+    
+    /* outheader for all msa-output files */
+    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg->msafile, &cfg->msaheader); 
+   
+    esl_msa_Hash(msa);
+   
+    if (esl_opt_IsOn(go, "-F") && msamanip_RemoveFragments(cfg->fragfrac, &msa, &nfrags, &seq_cons_len) != eslOK) {
+      printf("remove_fragments failed\n"); esl_fatal(msg); }
+    if (esl_opt_IsOn(go, "-I"))   msamanip_SelectSubsetBymaxID(cfg->r, &msa, cfg->idthresh, TRUE, &nremoved);
+    
+    /* given msa aveid and avematch */
+    msamanip_XStats(msa, &cfg->mstat);
+    msamanip_XBaseComp(msa, cfg->bg->f, &cfg->msafrq);
+
+    if (esl_opt_IsOn(go, "--minid") && cfg->mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) continue;
+    if (esl_opt_IsOn(go, "--maxid") && cfg->mstat->avgid > 100.*esl_opt_GetReal(go, "--maxid")) continue;
+
+    /* print some info */
+    if (cfg->voutput) {
+      esl_sprintf(&cfg->msarfname, "%s.%s", cfg->evomodeltype); 
+      fprintf(cfg->outfp, "Given alignment\n");
+      fprintf(cfg->outfp, "%6d          %s\n", msa->nseq, cfg->msafile);
+      if (esl_msafile_Write(cfg->outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msarfname); 
+      msamanip_DumpStats(cfg->outfp, msa, cfg->mstat);
+    }
+    
+    if (cfg->train) {
+      cfg->doe2msa     = FALSE;
+      cfg->doephmmer   = FALSE;
+      cfg->dophmmer    = FALSE;
+      cfg->dophmmer3   = FALSE;
+      cfg->doncbiblast = FALSE;
+      cfg->dossearch   = FALSE;
+      cfg->domuscle    = FALSE;
+      cfg->domsaprobs  = FALSE;
+      status = train(cfg, msa);
+      if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+      continue;
+    }
+
+    /* the main function */
+    if (cfg->doe2msa) {
+      status = run_e2msa(go, cfg, 0, NULL, msa);
+      if (status != eslOK) esl_fatal("%s Failed to run e2msa", cfg->errbuf);
+    }
+    
+    /* run ephmmer */
+    if (cfg->doephmmer) {
+      status = run_phmmer(cfg, msa, FALSE, TRUE, cfg->fixtime);
+      if (status != eslOK) esl_fatal("%s Failed to run ephmmer", cfg->errbuf);
+    }
+
+    /* run phmmer */
+    if (cfg->dophmmer) {
+      status = run_phmmer(cfg, msa, FALSE, FALSE, -1.0);
+      if (status != eslOK) esl_fatal("%s Failed to run phmmer", cfg->errbuf);
+    }
+
+    /* run phmmer3 */
+    if (cfg->dophmmer3) {
+      status = run_phmmer(cfg, msa, TRUE, FALSE, -1.0);
+      if (status != eslOK) esl_fatal("%s Failed to run phmmer3", cfg->errbuf);
+    }
+    
+    /* run ncbiblast */
+    if (cfg->doncbiblast) {
+      status = run_ncbiblast(cfg, msa);
+      if (status != eslOK) esl_fatal("%s Failed to run ncbiblast", cfg->errbuf);
+    }
+    
+    /* run ssearch */
+    if (cfg->dossearch) {
+      status = run_ssearch(cfg, msa);
+      if (status != eslOK) esl_fatal("%s Failed to run ssearch", cfg->errbuf);
+    }
+    
+    /* run muscle */
+    if (cfg->domuscle) {
+      status = run_muscle(cfg, msa);
+      if (status != eslOK) esl_fatal("%s Failed to run muscle", cfg->errbuf);
+    }
+    
+    /* run msaprobs */
+    if (cfg->domsaprobs) {
+      status = run_msaprobs(cfg, msa);
+      if (status != eslOK) esl_fatal("%s\nFailed to run msaprobs", cfg->errbuf);
+    }
+    
+    esl_msa_Destroy(msa); msa = NULL;
+    free(cfg->msafrq); cfg->msafrq = NULL;
+    free(cfg->method); cfg->method = NULL;
+    if (cfg->msarfname) free(cfg->msarfname); cfg->msarfname = NULL;
+    free(cfg->msaheader); cfg->msaheader = NULL;
+  }
+  
+  if (afp) esl_msafile_Close(afp);
+  return status;
+}
+
 
 static int
-create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+e2msa_seqmode(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_SQFILE *sfp)
+{
+  ESL_SQ **sq = NULL;
+  ESL_SQ   *s = NULL;
+  float  *frq = NULL;
+  int     K = cfg->abc->K;
+  int      n = 0;
+  int      x;
+  int      status = eslOK;
+
+  ESL_ALLOC(cfg->sqfrq, sizeof(float)*K);
+  ESL_ALLOC(frq, sizeof(float)*K);
+  esl_vec_FSet(cfg->sqfrq, K, 0.);
+
+  s = esl_sq_CreateDigital(cfg->abc);
+  while ((status = esl_sqio_Read(sfp, s)) == eslOK) {
+    if (n == 0)   ESL_ALLOC  (sq, sizeof(ESL_SQ *));
+    else          ESL_REALLOC(sq, sizeof(ESL_SQ *)*(n+1));
+    sq[n] = esl_sq_CreateDigital(cfg->abc);
+    esl_sq_Copy(s, sq[n]);
+    
+    esl_vec_FSet(frq, K, 0.);
+    esl_sq_CountResidues(s, 1, s->n, frq);
+    esl_vec_FAdd(cfg->sqfrq, frq, K);
+
+    esl_sq_Reuse(s);
+    n++;
+    printf("N %d %s\n", n, sq[n-1]->name);
+  }
+  if (status != eslEOF) goto ERROR;
+
+  /* the frequencies */
+  esl_vec_FNorm(cfg->sqfrq, K);
+  
+  printf("N %d\n", n);
+  status = run_e2msa(go, cfg, n, sq, NULL);
+  if (status != eslOK) esl_fatal("%s Failed to run e2msa_seqmode", cfg->errbuf);
+
+  free(frq);
+  esl_sq_Destroy(s);
+  for (x = 0; x < n; x++) esl_sq_Destroy(sq[x]);
+  free(sq);
+  return status;
+
+ ERROR:
+  if (frq) free(frq);
+  if (s) esl_sq_Destroy(s);
+  if (sq) {
+    for (x = 0; x < n; x++) if (sq[x]) esl_sq_Destroy(sq[x]);
+    free(sq);
+  }
+  return status;
+}
+
+static int
+create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, int n, ESL_SQ **seq, ESL_MSA *msa)
 {
   int      status;
   
   /* create tree from MSA */
   if (cfg->T == NULL) {
     if (cfg->upgma) {
-      status = e2_tree_UPGMA(&cfg->T, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0,
+      status = e2_tree_UPGMA(&cfg->T, n, seq, msa, (msa)?cfg->msafrq:cfg->sqfrq, cfg->r, cfg->pli,
+			     cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0,
 			     cfg->tol, cfg->errbuf, cfg->verbose);
     }
     else { // use fasttree
@@ -704,14 +797,17 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
   }
-  if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+  
+  if (msa && cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+  if (seq && cfg->T->N != n)          { printf("Tree cannot not be used for this sqfile. T->N = %d nseq = %d\n", cfg->T->N, n);      esl_fatal(cfg->errbuf); }
 
   return eslOK;
 }
 
 
+
 static int
-run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, int n, ESL_SQ **seq, ESL_MSA *msa)
 {
   ESL_MSA   *dmsa  = NULL;
   ESL_MSA   *e2msa = NULL;
@@ -724,7 +820,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   esl_stopwatch_Start(cfg->w);
 
-  dmsa = esl_msa_Clone(msa);
+  if (msa) dmsa = esl_msa_Clone(msa);
 		     
   /* Create the evolutionary rate model */
   cfg->nr    = 1;
@@ -732,7 +828,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->R1[0] = NULL;
   if (cfg->e2ali == E2 || cfg->e2ali == E2F) {
     for (r = 0; r < cfg->nr; r ++) {
-      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
+      if (cfg->userates) cfg->R1[r] = e1_rate_CreateWithValues(cfg->abc, cfg->evomodel, cfg->rateparam, cfg->subsmx, NULL, NULL,
+							       TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       else               cfg->R1[r] = e1_rate_CreateFromCosts(cfg->abc, cfg->evomodel, cfg->popen, cfg->pextend, cfg->pcross, cfg->subsmx, 
 							      NULL, TRUE, cfg->tol, cfg->errbuf, cfg->verbose);
       if (cfg->R1[r] == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg->errbuf); }
@@ -774,7 +871,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* Initializations */
   cfg->pli = e2_pipeline_Create(go, (cfg->hmm)? cfg->hmm->M:1, 100, 100);
   
-  if (cfg->probdist) {
+  if (msa && cfg->probdist) {
     cfg->doephmmer   = FALSE;
     cfg->dophmmer    = FALSE;
     cfg->dophmmer3   = FALSE;
@@ -789,12 +886,13 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   /* get the tree
    */
-  status = create_tree(go, cfg, dmsa);
+  status = create_tree(go, cfg, n, seq, dmsa);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
 
  /* main function */
-  status = e2_msa(cfg->r, cfg->R1[0], cfg->R7, dmsa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, cfg->bg7, cfg->e2ali, cfg->e2optimize, 
+  status = e2_msa(cfg->r, cfg->R1[0], cfg->R7, n, seq, dmsa, (msa)?cfg->msafrq:cfg->sqfrq, cfg->T, &e2msa,
+		  &sc, cfg->pli, cfg->bg, cfg->bg7, cfg->e2ali, cfg->e2optimize, 
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   esl_stopwatch_Stop(cfg->w);
@@ -821,8 +919,8 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
 
-  if (cfg->voutput) { /* the output alignment to an independent file */
-    esl_sprintf(&cfg->msaefname, "%s.e2msa.%s", cfg->msaheader, cfg->evomodeltype); 
+  if (1||cfg->voutput) { /* the output alignment to an independent file */
+    esl_sprintf(&cfg->msaefname, "%s.e2msa.%s.sto", cfg->msaheader, cfg->evomodeltype); 
     if ((cfg->msaefp = fopen(cfg->msaefname, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg->msaefname);
     if (esl_msafile_Write(cfg->msaefp, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msaefname); 
     fclose (cfg->msaefp);
@@ -1145,7 +1243,8 @@ train(struct cfg_s *cfg, ESL_MSA *msa)
    	useme[j] = TRUE; 
     	esl_msa_SequenceSubset(msa, useme, &pairmsa); 
    	msamanip_XStats(pairmsa, &pairmstat); 
-	printf("# id %f match %f alen %" PRId64 "  inserts %d ilen %d\n", pairmstat->avgid, pairmstat->avgmatch, pairmsa->alen, pairmstat->totinum, pairmstat->totilen);
+	printf("# id %f match %f alen %" PRId64 "  inserts %d ilen %d\n",
+	       pairmstat->avgid, pairmstat->avgmatch, pairmsa->alen, pairmstat->totinum, pairmstat->totilen);
 
 	useme[j] = FALSE;
 	esl_msa_Destroy(pairmsa); pairmsa = NULL;
@@ -1230,7 +1329,8 @@ explore_distribution(struct cfg_s *cfg, ESL_MSA *msa)
 	
    	/* optimal P(s1,s2|t) */ 
    	timel = timer = 0.5; 
-   	status = e2_Optimize(cfg->r, cfg->pli, psq[i], psq[j], cfg->msafrq, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7, &timel, &timer, NULL, NULL, &sc, cfg->e2ali, OPTTIME, 
+   	status = e2_Optimize(cfg->r, cfg->pli, psq[i], psq[j], (msa)?cfg->msafrq:cfg->sqfrq, cfg->R1[0], cfg->R7, cfg->bg, cfg->bg7,
+			     &timel, &timer, NULL, NULL, &sc, cfg->e2ali, OPTTIME, 
    			     cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose); 
    	optime = timel+timer; 
    	printf("# id %f match %f L %" PRId64 " optime %f optsc %f\n", pairmstat->avgid, pairmstat->avgmatch, pairmsa->alen, optime, sc); 

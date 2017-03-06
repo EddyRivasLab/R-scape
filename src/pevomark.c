@@ -149,11 +149,11 @@ struct hmmpid_data {
   { "--dout",         eslARG_STRING,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output directory",                                                                          0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
   /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
+  { "--amino",        eslARG_NONE,    "TRUE",    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
   /* Selecting method */
-  { "--ehmmsearch",   eslARG_NONE,      TRUE,    NULL,       NULL, METHOPTS,  NULL,  NULL,               "search method",                                                                             2 },
+  { "--ehmmsearch",   eslARG_NONE,    "TRUE",    NULL,       NULL, METHOPTS,  NULL,  NULL,               "search method",                                                                             2 },
   { "--hmmsearch",    eslARG_NONE,      FALSE,   NULL,       NULL, METHOPTS,  NULL,  NULL,               "search method",                                                                             2 },
   { "--hmmsearch3",   eslARG_NONE,      FALSE,   NULL,       NULL, METHOPTS,  NULL,  NULL,               "search method",                                                                             2 },
   { "--ephmmer",      eslARG_NONE,      FALSE,   NULL,       NULL, METHOPTS,  NULL,  NULL,               "search method",                                                                             2 },

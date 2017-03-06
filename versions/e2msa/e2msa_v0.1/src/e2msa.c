@@ -821,7 +821,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     msamanip_DumpStats(cfg->outfp, e2msa, e2mstat);
   }
 
-  if (cfg->voutput) { /* the output alignment to an independent file */
+  if (1||cfg->voutput) { /* the output alignment to an independent file */
     esl_sprintf(&cfg->msaefname, "%s.e2msa.%s", cfg->msaheader, cfg->evomodeltype); 
     if ((cfg->msaefp = fopen(cfg->msaefname, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg->msaefname);
     if (esl_msafile_Write(cfg->msaefp, e2msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msaefname); 

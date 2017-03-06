@@ -23,10 +23,10 @@
 #include "ratebuilder.h"
 
 
-static int AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, 
+static int AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, E1_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, 
 		    double betainf, double rM, int scaledrate, int N, double tol, char *errbuf, int verbose);
 static int AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld, double gaposc, double gapesc, double betainf, double rM, double tol, char *errbuf, int verbose);
-static int AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gape, double *ret_gapo, 
+static int AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, E1_BG *bg, int mode, int L, double gapscale, double *ret_gape, double *ret_gapo, 
 				  double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double *ret_go6, double tol, char *errbuf, int verbose);
 static int e1model_calculate_subrate(ESL_GETOPTS *go, ESL_ALPHABET *abc, E1_BG *bg, RATEBUILDER **ret_ratebld, int scaled, double tol, char *errbuf, int verbose);
 
@@ -58,7 +58,7 @@ main(int argc, char **argv)
   char         *evomfile;
   FILE         *fp = NULL;                /* output file handle  */
   ESL_ALPHABET *abc = NULL;               /* digital alphabet    */
-  P7_BG        *bg  = NULL;		  /* null model (copies made of this into threads)    */
+  E1_BG        *bg  = NULL;		  /* null model (copies made of this into threads)    */
   double        gapo;
   double        gape;
   double        gaposc;
@@ -79,7 +79,7 @@ main(int argc, char **argv)
   
   /* Initializations */
   abc = esl_alphabet_Create(eslAMINO);
-  bg  = p7_bg_Create(abc);
+  bg  = e1_bg_Create(abc);
   
   /* Open evom output file */
   fp = fopen(evomfile, "w");
@@ -113,14 +113,14 @@ main(int argc, char **argv)
   
   esl_getopts_Destroy(go);
   esl_alphabet_Destroy(abc);
-  p7_bg_Destroy(bg);
+  e1_bg_Destroy(bg);
   fclose(fp);
   return 0;
 }
 
 
 static int
-AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, 
+AFRmodel(ESL_GETOPTS  *go, FILE *fp, ESL_ALPHABET *abc, E1_BG *bg, int mode, int L, double gapscale, double gapo, double gape, EVOM evomodel, 
 	 double betainf, double rM, int scaledrate, int N, double tol, char *errbuf, int verbose)
 {
   char               *msg = "e1model unit test failed";
@@ -234,7 +234,7 @@ AFR_calculate_insrate(FILE *fp, double *ret_rI, double *ret_muA, double *ret_ld,
 }
 
 static int
-AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, P7_BG *bg, int mode, int L, double gapscale, double *ret_gapet, double *ret_gapot,
+AFR_calculate_gapcosts(E1_RATE *R1, double time, ESL_ALPHABET *abc, E1_BG *bg, int mode, int L, double gapscale, double *ret_gapet, double *ret_gapot,
 		       double *ret_go1, double *ret_go2, double *ret_go3, double *ret_go4, double *ret_go5, double *ret_go6,
 		       double tol, char *errbuf, int verbose)
 {

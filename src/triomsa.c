@@ -158,7 +158,7 @@ struct cfg_s {
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
  /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
+  { "--amino",        eslARG_NONE,    "TRUE",    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
   /* msa format */
@@ -862,7 +862,8 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int status;
 
   /* the TREE */
-  status = e2_tree_UPGMA(&cfg->T, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], NULL, cfg->bg, NULL, cfg->e2ali, cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0, cfg->tol, cfg->errbuf, cfg->verbose);
+  status = e2_tree_UPGMA(&cfg->T, 0, NULL, msa, cfg->msafrq, cfg->r, cfg->pli, cfg->R1[0], NULL, cfg->bg, NULL, cfg->e2ali,
+			 cfg->mode, cfg->do_viterbi, cfg->fixtime, -1.0, cfg->tol, cfg->errbuf, cfg->verbose);
   if (1||cfg->verbose) Tree_Dump(cfg->outfp, cfg->T, "Tree");
   
   cfg->treeavgt = esl_tree_er_AverageBL(cfg->T);
@@ -891,10 +892,10 @@ run_triomsa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa1, ES
   status = create_tree(go, cfg, msa1);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
   
-  status = e2_msa(cfg->r, cfg->R1[0], NULL, msa1, cfg->msafrq, cfg->T, &e2msa1, &sc1, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
+  status = e2_msa(cfg->r, cfg->R1[0], NULL, 0, NULL, msa1, cfg->msafrq, cfg->T, &e2msa1, &sc1, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
   
-  status = e2_msa(cfg->r, cfg->R1[0], NULL, msa2, cfg->msafrq, cfg->T, &e2msa2, &sc2, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
+  status = e2_msa(cfg->r, cfg->R1[0], NULL, 0, NULL, msa2, cfg->msafrq, cfg->T, &e2msa2, &sc2, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose); 
      
   msamanip_CStats(cfg->abc, e2msa1, &m1stat);
@@ -1049,7 +1050,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *rmsa, ESL_MSA *msa)
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 
  /* main function */
-  status = e2_msa(cfg->r, cfg->R1[0], NULL, msa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
+  status = e2_msa(cfg->r, cfg->R1[0], NULL, 0, NULL, msa, cfg->msafrq, cfg->T, &e2msa, &sc, cfg->pli, cfg->bg, NULL, cfg->e2ali, cfg->e2optimize, 
 		  cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
   if (status != eslOK)  { esl_fatal(cfg->errbuf); }
 

@@ -36,7 +36,8 @@
 #include "evohmmer.h"
 
 int
-e2_tree_UPGMA(ESL_TREE **ret_T, ESL_MSA *msa, float *frq, ESL_RANDOMNESS *r, E2_PIPELINE *pli, E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7, E2_ALI e2ali, 
+e2_tree_UPGMA(ESL_TREE **ret_T, int n, ESL_SQ **seq, ESL_MSA *msa, float *frq, ESL_RANDOMNESS *r, E2_PIPELINE *pli,
+	      E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7, E2_ALI e2ali, 
 	      int mode, int do_viterbi, float fixtime, float tinit, double tol, char *errbuf, int verbose)
 {
   ESL_TREE     *T    = NULL;
@@ -46,33 +47,38 @@ e2_tree_UPGMA(ESL_TREE **ret_T, ESL_MSA *msa, float *frq, ESL_RANDOMNESS *r, E2_
   double        dis;
   float         sc;
   double        timel, timer;
-  int           N = msa->nseq;
+  int           N = (msa)? msa->nseq : n;
   int           i, j;
   int           status;
+
   
   ESL_ALLOC(psq, sizeof(PSQ *) * N);
   for (i = 0; i < N; i++) {
 
-    status = esl_sq_FetchFromMSA(msa, i, &sq); /* extract the seqs from the msa */
-
+    if (msa) status = esl_sq_FetchFromMSA(msa, i, &sq); /* extract the seqs from the msa */
+    else sq = seq[i];
+  esl_vec_FDump(stdout, frq, sq->abc->K, NULL);
+    
     switch(e2ali) {
     case E2:
-      psq[i] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);	
+      psq[i] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);	
       break;
     case E2HMMER:
-      psq[i] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);	
+      psq[i] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);	
       break;
     case E2F:
-      psq[i] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, msa->ax[i], msa->alen);
+      if (msa)
+	psq[i] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, msa->ax[i], msa->alen);
+      else goto ERROR;
       break;
     case E2FHMMER:
-      psq[i] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);
+      psq[i] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "unknown alicase\n"); goto ERROR;
     }	
     
-    esl_sq_Destroy(sq); sq = NULL;
+    if (msa) { esl_sq_Destroy(sq); sq = NULL; }
   }	
   
   /* distances */

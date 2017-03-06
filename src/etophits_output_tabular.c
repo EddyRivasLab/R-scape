@@ -152,7 +152,7 @@ p7_etophits_TabularDomains(FILE *ofp, char *qname, char *qacc, P7_TOPHITS *th, P
 		  tnamew-1, " target name",        taccw, "accession",  "tlen",  qnamew, "query name",           qaccw, "accession",  "qlen",  "E-value",   "score",  "bias",  "fwdsc", "spfwdsc", "time", "#",   "of",  "c-Evalue",  "i-Evalue",  "score",  "bias",  "from",  "to",    "from",  "to",   "from",   "to",    "acc",  "description of target") < 0)
         ESL_EXCEPTION_SYS(eslEWRITE, "tabular per-domain hit list: write failed");
       if (fprintf(ofp, "#%*s %*s %5s %*s %*s %5s %9s %6s %5s %5s %5s %3s %3s %9s %9s %6s %5s %5s %5s %5s %5s %5s %4s %s\n", 
-      tnamew-1, "-------------------", taccw, "----------", "-----", qnamew, "--------------------", qaccw, "----------", "-----", "---------", "------", "-----", "-----", "-----", "-----", "---", "---", "---------", "---------", "-----", "-----", "-----", "-----", "-----", "-----", "-----", "-----", "----", "---------------------") < 0)
+      tnamew-1, "-------------------", taccw, "----------", "-----", qnamew, "--------------------", qaccw, "----------", "-----", "---------", "------", "-----", "-----", "-----", "-----", "---", "---", "---------", "---------", "-----", "-----", "-----", "-----", "-----", "-----", "-----", "-----") < 0)
         ESL_EXCEPTION_SYS(eslEWRITE, "tabular per-domain hit list: write failed");
     }
 

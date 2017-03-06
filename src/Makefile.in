@@ -93,7 +93,6 @@ PROGS    = scorematrix2rate\
 	   pevomark\
 	   e2Dickerson\
 	   e2DickersonSynthetic\
-	   ehmmDickerson\
 	   ribosum\
 	   rscape_priors\
 	   R-scape\

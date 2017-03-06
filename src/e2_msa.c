@@ -49,7 +49,8 @@ static void   e2hmm_unpack_paramvector      (double *p, long np, struct e2_data 
 static double e2_func                       (double *p, long np, void *dptr);
 
 int
-e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, ESL_TREE *T, ESL_MSA **ret_msa, float *ret_sc, E2_PIPELINE *pli, 
+e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, int n, ESL_SQ **seq, ESL_MSA *msa, float *msafrq,
+       ESL_TREE *T, ESL_MSA **ret_msa, float *ret_sc, E2_PIPELINE *pli, 
        E1_BG *bg, P7_BG *bg7, E2_ALI e2ali, E2_OPT e2optimize, int mode, int do_viterbi, double tol, char *errbuf, int verbose)
 {
   E1_RATE     *Rv   = NULL;	                            /* node index stack */
@@ -92,22 +93,25 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
   while (esl_stack_IPop(vs, &v) == eslOK)
     {
       if (T->left[v] <= 0) { /* dealign seq and convert to a psq */
-	which = -T->left[v];	
-	status = esl_sq_FetchFromMSA(msa, which, &sq); /* extract the seqs from the msa */
+	which = -T->left[v];
+
+	if (msa) status = esl_sq_FetchFromMSA(msa, which, &sq); /* extract the seqs from the msa */
+	else sq = seq[which];
 	if (status != eslOK) { printf("esl_sq_FetchFromMSA() failed\n");  goto ERROR; }	
   
 	switch(e2ali) {
 	case E2:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);	
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);	
 	  break;
 	case E2HMMER:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);	
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);	
 	  break;
 	case E2F:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, msa->ax[which], msa->alen);
+	  if (msa)
+	    sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, msa->ax[which], msa->alen);
 	  break;
 	case E2FHMMER:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);
 	  break;
 	default:
 	  status = eslFAIL; printf("unknown alicase\n"); goto ERROR;
@@ -119,22 +123,23 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
         
       if (T->right[v] <= 0) { /* dealign seq and convert to a psq */
 	which = -T->right[v];
-	status = esl_sq_FetchFromMSA(msa, which, &sq); /* extract the seqs from the msa */
+	if (msa) status = esl_sq_FetchFromMSA(msa, which, &sq); /* extract the seqs from the msa */
+	else sq = seq[which];
 	if (status != eslOK) { printf("esl_sq_FetchFromMSA() failed\n");  goto ERROR; }
 	
 	switch(e2ali) {
 	case E2:
 	if (e2ali == E2 || e2ali == E2HMMER) 
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);
 	  break;
 	case E2HMMER:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);
 	  break;
 	case E2F:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, msa->ax[which], msa->alen);
+	  if (msa) sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, msa->ax[which], msa->alen);
 	  break;
 	case E2FHMMER:
-	  sqn[nnodes+which] = psq_CreateFrom(sq->name, msa->desc, msa->acc, msa->abc, sq->dsq, sq->n);
+	  sqn[nnodes+which] = psq_CreateFrom(sq->name, sq->desc, sq->acc, sq->abc, sq->dsq, sq->n);
 	  break;
 	default:
 	  status = eslFAIL; printf("unknown alicase\n"); goto ERROR;
@@ -154,8 +159,8 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
 	if (R)  e1_rate_Copy(R,  Rv);
 	if (R7) p7_RateCopy(R7, R7v);
 
-	status = e2_Optimize(r, pli, sql, sqr, msafrq, Rv, R7v, bg, bg7, &(T->ld[v]), &(T->rd[v]), &(sqn[v]), &(tr[v]), &sc, e2ali, e2optimize, mode, do_viterbi,
-			     tol, errbuf, verbose);
+	status = e2_Optimize(r, pli, sql, sqr, msafrq, Rv, R7v, bg, bg7, &(T->ld[v]), &(T->rd[v]), &(sqn[v]), &(tr[v]),
+			     &sc, e2ali, e2optimize, mode, do_viterbi, tol, errbuf, verbose);
 	if (status != eslOK) goto ERROR;
 	
 	/* push parent into stack unless already at the root */
@@ -172,7 +177,7 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
     }
 
   /* new msa */
-  if (e2_Tracealign(msa->name, T, sqn, tr, ret_msa, e2ali, errbuf, verbose) != eslOK) { status = eslFAIL; goto ERROR; };
+  if (e2_Tracealign((msa)?msa->name:seq[0]->name, T, sqn, tr, ret_msa, e2ali, errbuf, verbose) != eslOK) { status = eslFAIL; goto ERROR; };
   if (ret_sc) *ret_sc = totsc;
   
   /* clean up */
@@ -206,7 +211,7 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, ESL_MSA *msa, float *msafrq, 
 }
 
 int
-e2_Optimize(ESL_RANDOMNESS *r, E2_PIPELINE *pli, PSQ *sql, PSQ *sqr, float *msafrq, E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7,
+e2_Optimize(ESL_RANDOMNESS *r, E2_PIPELINE *pli, PSQ *sql, PSQ *sqr, float *frq, E1_RATE *R, P7_RATE *R7, E1_BG *bg, P7_BG *bg7,
 	    double *ret_timel, double *ret_timer, PSQ **ret_sqa, E2_TRACE **ret_tr, float *ret_sc, E2_ALI e2ali, E2_OPT e2optimize,  
 	    int mode, int do_viterbi, double tol, char *errbuf, int verbose)
 {
@@ -225,7 +230,7 @@ e2_Optimize(ESL_RANDOMNESS *r, E2_PIPELINE *pli, PSQ *sql, PSQ *sqr, float *msaf
   data.r           = r;
   data.sql         = sql;
   data.sqr         = sqr;
-  data.frq         = msafrq;
+  data.frq         = frq;
   data.timel       = *ret_timel;
   data.timer       = *ret_timer;
   data.pli         = pli;

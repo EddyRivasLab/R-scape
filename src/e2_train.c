@@ -633,11 +633,13 @@ e2_train_func(double *p, long np, void *dptr)
     if (data->it % jump == jump-1) {
       tinit = esl_tree_er_AverageBL(data->Tlist[n]);
       if (data->Tlist[n]) esl_tree_Destroy(data->Tlist[n]); data->Tlist[n] = NULL;
-      e2_tree_UPGMA(&data->Tlist[n], data->msalist[n], data->msafrq[n], data->r, data->pli, data->R, NULL, data->bg, NULL, data->e2ali, data->mode, data->do_viterbi, -1.0, tinit, 
+      e2_tree_UPGMA(&data->Tlist[n], 0, NULL, data->msalist[n], data->msafrq[n], data->r, data->pli,
+		    data->R, NULL, data->bg, NULL, data->e2ali, data->mode, data->do_viterbi, -1.0, tinit, 
 		    data->tol, data->errbuf, data->verbose);
     }
     
-    status = e2_msa(data->r, data->R, NULL, data->msalist[n], data->msafrq[n], data->Tlist[n], NULL, &sc, data->pli, data->bg, NULL, data->e2ali, OPTNONE, 
+    status = e2_msa(data->r, data->R, NULL, 0, NULL, data->msalist[n], data->msafrq[n], data->Tlist[n], NULL,
+		    &sc, data->pli, data->bg, NULL, data->e2ali, OPTNONE, 
 		    data->mode, data->do_viterbi, data->tol, data->errbuf, data->verbose);
     if (status != eslOK) { printf("error at e2_train_func()\n%s\n", data->errbuf); exit(1); }
     

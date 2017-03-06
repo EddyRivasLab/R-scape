@@ -21,6 +21,7 @@
 #include "e2_tree.h"
 #include "msamanip.h"
 #include "msatree.h"
+#include "fastsp.h"
 
 #define ALPHOPTS "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 
@@ -118,7 +119,7 @@ struct cfg_s {
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       0 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            0 },
  /* Selecting the alphabet rather than autoguessing it */
-  { "--amino",        eslARG_NONE,      TRUE,    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
+  { "--amino",        eslARG_NONE,    "TRUE",    NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is protein sequence data",                                                  2 },
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is DNA sequence data",                                                      2 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL, ALPHOPTS,  NULL,  NULL,               "input alignment is RNA sequence data",                                                      2 },
   /* msa format */
@@ -323,7 +324,8 @@ main(int argc, char **argv)
      if (cfg.R == NULL) { printf("Bad rate model.\n"); esl_fatal(cfg.errbuf); }
  
      /* calculate the tree */
-     e2_tree_UPGMA(&cfg.Tlist[cfg.nmsa], cfg.msalist[cfg.nmsa], cfg.msafrq[cfg.nmsa], cfg.r, cfg.pli, cfg.R, NULL, cfg.bg, NULL, E2F, cfg.mode, cfg.do_viterbi, -1.0, -1.0, cfg.tol, cfg.errbuf, cfg.verbose);
+     e2_tree_UPGMA(&cfg.Tlist[cfg.nmsa], 0, NULL, cfg.msalist[cfg.nmsa], cfg.msafrq[cfg.nmsa], cfg.r, cfg.pli,
+		   cfg.R, NULL, cfg.bg, NULL, E2F, cfg.mode, cfg.do_viterbi, -1.0, -1.0, cfg.tol, cfg.errbuf, cfg.verbose);
      
      /* print some info */
      if (0&&cfg.voutput) {
@@ -454,7 +456,7 @@ run_voutput (struct cfg_s *cfg)
     esl_sprintf(&msaname, "%s.%d", cfg->msaheader, n); 
 
     esl_stopwatch_Start(cfg->w);
-    status = e2_msa(cfg->r, cfg->R, NULL, cfg->msalist[n], cfg->msafrq[n], cfg->Tlist[n], &e2msa, &sc, cfg->pli, cfg->bg, NULL, E2, OPTNONE, 
+    status = e2_msa(cfg->r, cfg->R, NULL, 0, NULL, cfg->msalist[n], cfg->msafrq[n], cfg->Tlist[n], &e2msa, &sc, cfg->pli, cfg->bg, NULL, E2, OPTNONE, 
 		    cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
     esl_stopwatch_Stop(cfg->w);
     
@@ -551,11 +553,12 @@ move_rate(int which, int idx, int np, double *param, struct cfg_s *cfg)
     
     tinit = esl_tree_er_AverageBL(cfg->Tlist[which]);
     if (cfg->Tlist[which]) { esl_tree_Destroy(cfg->Tlist[which]); cfg->Tlist[which] = NULL; }
-    status = e2_tree_UPGMA(&cfg->Tlist[which], cfg->msalist[which], cfg->msafrq[which], cfg->r, cfg->pli, cfg->R, NULL, cfg->bg, NULL, E2F, 
+    status = e2_tree_UPGMA(&cfg->Tlist[which], 0, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->r, cfg->pli, cfg->R, NULL, cfg->bg, NULL, E2F, 
 			   cfg->mode, cfg->do_viterbi, -1.0, tinit, cfg->tol, cfg->errbuf, cfg->verbose);     
     if (status != eslOK) goto ERROR;
     
-    status = e2_msa(cfg->r, cfg->R, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->Tlist[which], NULL, &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
+    status = e2_msa(cfg->r, cfg->R, NULL, 0, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->Tlist[which], NULL,
+		    &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
 		    cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     
@@ -592,11 +595,12 @@ move_bernoulli(int which, int idx, int np, double *param, struct cfg_s *cfg)
     
     tinit = esl_tree_er_AverageBL(cfg->Tlist[which]);
     if (cfg->Tlist[which]) { esl_tree_Destroy(cfg->Tlist[which]); cfg->Tlist[which] = NULL; }
-    status = e2_tree_UPGMA(&cfg->Tlist[which], cfg->msalist[which], cfg->msafrq[which], cfg->r, cfg->pli, cfg->R, NULL, cfg->bg, NULL, E2F, 
+    status = e2_tree_UPGMA(&cfg->Tlist[which], 0, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->r, cfg->pli, cfg->R, NULL, cfg->bg, NULL, E2F, 
 			   cfg->mode, cfg->do_viterbi, -1.0, tinit, cfg->tol, cfg->errbuf, cfg->verbose);     
     if (status != eslOK) goto ERROR;
     
-    status = e2_msa(cfg->r, cfg->R, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->Tlist[which], NULL, &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
+    status = e2_msa(cfg->r, cfg->R, NULL, 0, NULL, cfg->msalist[which], cfg->msafrq[which], cfg->Tlist[which], NULL,
+		    &sc, cfg->pli, cfg->bg, NULL, E2F, OPTNONE, 
 		    cfg->mode, cfg->do_viterbi, cfg->tol, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     
