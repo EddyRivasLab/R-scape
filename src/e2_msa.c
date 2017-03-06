@@ -117,7 +117,7 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, int n, ESL_SQ **seq, ESL_MSA 
 	  status = eslFAIL; printf("unknown alicase\n"); goto ERROR;
 	}	
 	sql = sqn[nnodes+which];
-	esl_sq_Destroy(sq); sq = NULL;
+	if (msa) { esl_sq_Destroy(sq); sq = NULL; }
      }
       else sql = sqn[T->left[v]];
         
@@ -146,7 +146,7 @@ e2_msa(ESL_RANDOMNESS *r, E1_RATE *R, P7_RATE *R7, int n, ESL_SQ **seq, ESL_MSA 
 	}
 	
 	sqr = sqn[nnodes+which];
-	esl_sq_Destroy(sq); sq = NULL;
+	if (msa) { esl_sq_Destroy(sq); sq = NULL; }
       }
       else sqr = sqn[T->right[v]];
       

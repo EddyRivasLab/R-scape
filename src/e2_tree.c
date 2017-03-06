@@ -57,7 +57,6 @@ e2_tree_UPGMA(ESL_TREE **ret_T, int n, ESL_SQ **seq, ESL_MSA *msa, float *frq, E
 
     if (msa) status = esl_sq_FetchFromMSA(msa, i, &sq); /* extract the seqs from the msa */
     else sq = seq[i];
-  esl_vec_FDump(stdout, frq, sq->abc->K, NULL);
     
     switch(e2ali) {
     case E2:
