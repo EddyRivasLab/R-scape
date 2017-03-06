@@ -35,7 +35,7 @@
 #define ALPHOPTS "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define ALIOPTS  "--e2,--e2f,--e2hmmer,--e2fhmmer"          /* Exclusive options for alignment choice */
 #define OPTOPTS  "--optnone,--opttime,--optpara,--optboth"   /* Exclusive options for msa optimization */
-#define EVOMOPTS "--LI,--LR,--AFG,--AFGR,--AFR,--AIF,-GG,--G2,--TKF91,--TKF92,--FID,--GTKF92,--GRTKF92,--ITKF92"              
+#define EVOMOPTS "--LI,--LR,--AFG,--AIF,--AGA,--AFGR,--AIF,--TKF91,--TKF92"              
 /* Exclusive options for evolutionary model choice */
 
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
@@ -64,7 +64,7 @@ struct cfg_s {
   int              voutput;             /* TRUE for verbose output */
 
   int              nmsa;
-  char            *msafile;
+  char            *infile;
   char            *gnuplot;
   FILE            *outfp; 
   char            *outheader;          /* header for all output files */
@@ -82,7 +82,7 @@ struct cfg_s {
   FILE            *msaefp; 
   FILE            *msaefp_ephmmer; 
   FILE            *msaefp_phmmer; 
-  FILE            *msaefp_phmmer3; 
+  FILE            *msaefp_phmmer3;
   FILE            *msaefp_ncbiblast; 
   FILE            *msaefp_ssearch; 
   FILE            *msaefp_muscle; 
@@ -225,24 +225,24 @@ struct cfg_s {
   /* Control of scoring system - indels */ 
   { "--evomodel",     eslARG_STRING,    "AFG",   NULL,       NULL,   NULL,    NULL,  NULL,               "evolutionary model used",                                                                   1 },
   { "--paramfile",    eslARG_STRING,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "file with rate parameters (overrides the individual options below)",                        1 },
-  { "--muAM",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
-  { "--muAD",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
-  { "--muAI",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   0 },
-  { "--muEM",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     0 },
-  { "--ldEM",         eslARG_REAL,     "0.176",  NULL,     "x>=0",  NULL,    NULL,  NULL,                "rate of adding a res to an insert",                                                         0 },
-  { "--muED",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     0 },
-  { "--ldED",         eslARG_REAL,     "0.176",  NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a res to an insert",                                                         0 },
-  { "--muI",          eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted sequences",                                                    0 },
-  { "--ldI",          eslARG_REAL,     "0.07",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a whole insert",                                                             0 },
-  { "--rI",           eslARG_REAL,     "0.89",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for I",                                                                  0 },
-  { "--rM",           eslARG_REAL,     "0.90",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for M",                                                                  0 },
-  { "--rD",           eslARG_REAL,     "0.55",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for D",                                                                  0 },
+  { "--muAM",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   1 },
+  { "--muAD",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   1 },
+  { "--muAI",         eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of ancestral sequences",                                                   1 },
+  { "--muEM",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     1 },
+  { "--ldEM",         eslARG_REAL,     "0.176",  NULL,     "x>=0",  NULL,    NULL,  NULL,                "rate of adding a res to an insert",                                                         1 },
+  { "--muED",         eslARG_REAL,     "0.18",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted residues",                                                     1 },
+  { "--ldED",         eslARG_REAL,     "0.176",  NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a res to an insert",                                                         1 },
+  { "--muI",          eslARG_REAL,     "0.08",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of deletion of inserted sequences",                                                    1 },
+  { "--ldI",          eslARG_REAL,     "0.07",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "rate of adding a whole insert",                                                             1 },
+  { "--rI",           eslARG_REAL,     "0.89",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for I",                                                                  1 },
+  { "--rM",           eslARG_REAL,     "0.90",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for M",                                                                  1 },
+  { "--rD",           eslARG_REAL,     "0.55",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "fragment parameter for D",                                                                  1 },
   { "--userates",     eslARG_NONE,     "TRUE",   NULL,       NULL,   NULL,    NULL,  NULL,               "if true start with raw rates, phmmer style otherwise",                                      0 },
   { "--popen",        eslARG_REAL,    "0.020",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "popen in phmmer",                                                                           0 },
   { "--pextend",      eslARG_REAL,    "0.400",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "pextend in phmmer",                                                                         0 },
   { "--pcross",       eslARG_REAL,    "0.001",   NULL,"0<=x<=1.0",   NULL,    NULL,  NULL,               "pcross, zero in phmm",                                                                      0 },
    /* Control of running options */
-  { "--nofastsp",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "compare to original alignment using FastSP",                                                0 },
+  { "--nofastsp",     eslARG_NONE,     "TRUE",   NULL,       NULL,   NULL,    NULL,  NULL,               "compare to original alignment using FastSP",                                                0 },
   { "--lcur",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE for lower case in reference msa unaligned using FastSP",                               0 },
   { "--lcue",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "TRUE for lower case in inferred msa unaligned using FastSP",                                0 },
   { "--probdist",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "probability distribution landscape",                                                        0 },
@@ -251,9 +251,9 @@ struct cfg_s {
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* Selecting the alphabet rather than autoguessing it */
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          0 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          0 },
-  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use DNA alphabet",                                                                          1 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use RNA alphabet",                                                                          1 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "use protein alphabet",                                                                      1 },
   /* msa format */
   { "--informat",  eslARG_STRING,        NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* other options */
@@ -305,10 +305,10 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
       exit(0);
     }
   
-  cfg.msafile = NULL;
+  cfg.infile = NULL;
   if (esl_opt_ArgNumber(go) != 1) { if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
-  if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
+  if ((cfg.infile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
     cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
   
@@ -316,7 +316,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, struct cfg_s *r
 
   /* outheader for all output files */
   cfg.outheader = NULL;
-  msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
+  msamanip_OutfileHeader(cfg.infile, &cfg.outheader); 
   
    /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
@@ -551,7 +551,7 @@ main(int argc, char **argv)
   process_commandline(argc, argv, &go, &cfg);    
 
   /* Open the MSA file */
-  status = esl_sqfile_Open(cfg.msafile, eslSQFILE_UNKNOWN, NULL, &sfp);
+  status = esl_sqfile_Open(cfg.infile, eslSQFILE_UNKNOWN, NULL, &sfp);
   if (status != eslOK)  esl_fatal("%s Failed to open sqfile", cfg.errbuf);
   esl_sqfile_GuessAlphabet(sfp, &abctype);
   
@@ -603,7 +603,7 @@ e2msa_alimode(ESL_GETOPTS *go, struct cfg_s *cfg)
   int             hstatus = eslOK;
   int             status = eslOK;
 
-  status = esl_msafile_Open(&cfg->abc, cfg->msafile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
+  status = esl_msafile_Open(&cfg->abc, cfg->infile, NULL, eslMSAFILE_UNKNOWN, NULL, &afp);
   if (status != eslOK) esl_msafile_OpenFailure(afp, status);
 
 
@@ -618,7 +618,7 @@ e2msa_alimode(ESL_GETOPTS *go, struct cfg_s *cfg)
     }
     
     /* outheader for all msa-output files */
-    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg->msafile, &cfg->msaheader); 
+    msamanip_OutfileHeader((msa->acc)?msa->acc:cfg->infile, &cfg->msaheader); 
    
     esl_msa_Hash(msa);
    
@@ -637,7 +637,7 @@ e2msa_alimode(ESL_GETOPTS *go, struct cfg_s *cfg)
     if (cfg->voutput) {
       esl_sprintf(&cfg->msarfname, "%s.%s", cfg->evomodeltype); 
       fprintf(cfg->outfp, "Given alignment\n");
-      fprintf(cfg->outfp, "%6d          %s\n", msa->nseq, cfg->msafile);
+      fprintf(cfg->outfp, "%6d          %s\n", msa->nseq, cfg->infile);
       if (esl_msafile_Write(cfg->outfp, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write to file %s", cfg->msarfname); 
       msamanip_DumpStats(cfg->outfp, msa, cfg->mstat);
     }
@@ -731,6 +731,9 @@ e2msa_seqmode(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_SQFILE *sfp)
   ESL_ALLOC(frq, sizeof(float)*K);
   esl_vec_FSet(cfg->sqfrq, K, 0.);
 
+  /* outheader for all msa-output files */
+  msamanip_OutfileHeader(cfg->infile, &cfg->msaheader);
+  
   s = esl_sq_CreateDigital(cfg->abc);
   while ((status = esl_sqio_Read(sfp, s)) == eslOK) {
     if (n == 0)   ESL_ALLOC  (sq, sizeof(ESL_SQ *));
@@ -744,7 +747,6 @@ e2msa_seqmode(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_SQFILE *sfp)
 
     esl_sq_Reuse(s);
     n++;
-    printf("N %d %s\n", n, sq[n-1]->name);
   }
   if (status != eslEOF) goto ERROR;
 
@@ -926,7 +928,7 @@ run_e2msa(ESL_GETOPTS *go, struct cfg_s *cfg, int n, ESL_SQ **seq, ESL_MSA *msa)
     fclose (cfg->msaefp);
   }
   
-  if (cfg->dofastsp) {
+  if (msa && cfg->dofastsp) {
     if ((status = run_benchmark(cfg, cfg->method, msa, cfg->mstat, e2msa, e2mstat, sc)) != eslOK) goto ERROR;
   }
   

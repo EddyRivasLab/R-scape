@@ -1,0 +1,62 @@
+
+\section{Tutorial}
+\label{section:tutorial}
+\setcounter{footnote}{0}
+
+Here's a tutorial walk-through of how to use \etwomsa. This should
+suffice to get you started.
+
+\subsection{Running \etwomsa}
+To run \etwomsa\ with default parameters on an aligned file
+\prog{tutorial/globins4.sto} or an unaligned file \prog{tutorial/globins4.fa} use:\\
+
+\user{bin/e2msa tutorial/globins4.sto}\\
+\user{bin/e2msa tutorial/globins4.fa}\\
+
+\noindent
+The output is an alignment, followed by some statistical information about the aligment.
+
+\begin{sreoutput}
+2msa-AFG alignment
+# STOCKHOLM 1.0
+#=GF ID HBB_HUMAN
+#=GF AC HBB_HUMAN
+
+HBB_HUMAN  ........VHLTPEEKSAVTALWGKVN--VDEVGGEALGRLLVVYPWTQRFFESF------GDLSTPDAVM------GNPKVKAHGKKVLGAFSDGLAHLDNLKGT
+HBA_HUMAN  ........V-LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHF------------DLSH------GSAQVKGHGKKVADALTNAVAHVDDMPNA
+MYG_PHYCA  ........-VLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRF------------KHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAE
+GLB5_PETMA pivdtgsvAPLSAAEKTKIRSAWAPVYSTYETSGVDILVKFFTSTPAAQEFFPKFKGLTTA------DQLK------KSADVRWHAERIINAVNDAVASMDDTEKM
+//
+name        %id     %match     alen    avg_indel_num    avg_indel_len    max_indel_len  ancestral_len      avd_seq_len
+HBB_HUMAN    28%     81%       186     5.8 +/- 1.5     6.7 +/- 2.9      12           133                147.2 +/- 5.1 
+\end{sreoutput}
+
+A file  \prog{globins4.e2msa.AFG.sto} with the resulting alignment in Stochkholm format is also produced.
+
+\subsection{Default parameters}
+
+Default parameters are:
+
+\begin{sreitems}{\emprog{Evolutionary model:}}
+\item[\emprog{Evolutionary model:}] By default \etwomsa\ uses the AFG evolutionary model described in the paper.
+  Based on our benckmarks, it is the evolutionary model that performs most favorably.
+  Other alternative models that can be used are: AIF, AGA, AFGR, AALI, TKF91, and TKF92. All models are described
+  in the \etwomsa\ publication.
+  
+\item[\emprog{Model parameters:}] The default parameters can be obtained using \user{\etwomsa\ -h}.
+  We recommend that you use the trained parameters specific for each evolutionary model that have been
+  obtained as described in the  \etwomsa\ publication, and provided with this package.
+
+  We recommend to use:
+  
+  \user{bin/e2msa --paramfile data/training/Pfam.seed.S1000.trainGD.AFG.param tutorial/globins4.fa}\\
+
+  Trained parameters for the following evolutionary models are also provided: AALI, AFGR, AGA, AIF, TKF92, TKF91.
+
+\end{sreitems}
+
+ A full list of the \etwomsa\ options is found by using
+
+ \user{\etwomsa\ -h}
+
+ 

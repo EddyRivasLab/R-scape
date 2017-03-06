@@ -1,0 +1,53 @@
+\label{section:outputs}
+\setcounter{footnote}{0}
+\section{Outputs}
+
+For each inout file, \etwomsa\, produces the
+following output files:
+
+\begin{sreitems}{}
+
+\item[\emprog{file.e2msa.AFG.sto}]
+%
+The resulting alignment in Stockholm format.
+
+\item[\emprog{file.AFG.bench}] 
+%
+If the input file is an alignment, it also producds file and option \emprog{file.AFG.bench}. This file
+provides information about the comparison of the input alignment with the \etwomsa\ alignment
+
+\begin{sreoutput}
+#MSA_NAME  TP_hom TRUE_hom FOUND_hom      
+globins4.1 760 827 804 0 0 29.06 29.06 88.11 83.68 0.48 7.36 e2msa.AFG 171 174 147.25 5.06 147.25 5.06 6.0 1.41 4.5 1.91 3.96 2.71 5.94 3.04 -2288.18 0 0 0
+\end{sreoutput}
+
+ This file produces a one line output per alignment in the file.
+ \begin{sreitems}{\prog{Second column}}
+ \item[\prog{Column 1}]  MSA name.
+ \item[\prog{Column 2}]  Number of true homologies found in the \etwomsa\ alignment (TP=true positives).
+ \item[\prog{Column 3}]  Number of homologies in the input alignment (T=true homologies).
+ \item[\prog{Column 4}]  Number of true homologies found in the \etwomsa\ alignment (F=found).
+ \item[\prog{Column 5}]  Number of nonhomologous  positions in \etwomsa\ alignment.
+ \item[\prog{Column 6}]  Number of nonhomologous  positions in input alignment.
+ \item[\prog{Column 7}]  Average \% identity in input alignment.
+ \item[\prog{Column 8}]  Average \% identity in \etwomsa\ alignment.
+ \item[\prog{Column 9}]  Average number of matches in input alignment.
+ \item[\prog{Column 10}] Average number of matches in \etwomsa\ alignment.
+ \item[\prog{Column 11}] Average time of inferred tree.
+ \item[\prog{Column 12}] Time used to run the \etwomsa\ program.
+ \item[\prog{Column 13}] Evolutionary model used.
+ \item[\prog{Column 14}] Length of input alignment.
+ \item[\prog{Column 15}] Length of \etwomsa\ alignment.
+ \item[\prog{Column 16-17}] Avg/standard-deviation of length of seqs in input alignment.
+ \item[\prog{Column 18-19}] Avg/standard-deviation of length of seqs in \etwomsa\ alignment.
+ \item[\prog{Column 20-21}] Avg/standard-deviation of number of gaps in input alignment.
+ \item[\prog{Column 22-23}] Avg/standard-deviation of number of gaps in \etwomsa\ alignment.
+ \item[\prog{Column 24-25}] Avg/standard-deviation of length of gaps in input alignment.
+ \item[\prog{Column 26-27}] Avg/standard-deviation of length of gaps in \etwomsa\ alignment.
+ \item[\prog{Column 28}]    Aignment score.
+ \item[\prog{Column 29}]    Number of homologous  positions in input alignment.
+ \item[\prog{Column 30}]    Number of homologous  positions in \etwomsa\ alignment.
+ \item[\prog{Column 31}]    number of homologous  positions both in input alignment and \etwomsa\ alignment.
+ \end{sreitems}
+
+\end{sreitems}

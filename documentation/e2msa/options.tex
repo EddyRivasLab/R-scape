@@ -1,0 +1,59 @@
+\clearpage
+\section{Options}
+\label{section:options}
+\setcounter{footnote}{0}
+
+The whole list of options can be found using 
+
+\user{e2msa -h}\\
+
+Some important options are:
+
+\subsubsection{Evolutionary model options: \prog{--AFG,--AIF,--AGA,--AFGR,--AALI,--TKF91,--TKF92}}
+We favor the AFG model, but a total of seven
+are currently implemented in \etwomsa. 
+
+The \etwomsa\ default is \prog{--AFG}.\\
+
+\subsubsection{\prog{--paramfile <f>}}
+
+We recomend to read the parameters of the above models from those provided in the
+\prog{data/training} directory.
+
+\subsection{Search options}
+
+\subsubsection{\prog{--fixtime <f>}}
+
+It fixes the time at which the evolutionary models are calculated. By default
+the program optimizes in a pairwise manner the evolutionary time of each branch in the tree.
+
+\subsection{Input options}
+
+\subsubsection{\prog{-I <x>}} Only sequences with less than $0<x\leq 1$
+pairwise similarity are considered in the analysis.  Pairwise \%
+identity is defined as the ratio of identical positions divided by the
+minimum length of the two sequences. If this option is not used all
+sequences are used in the analysis.
+
+\subsubsection{\prog{--submsa <n>}} Analyzes a random subset of the input alignment with <n> sequences.
+
+
+
+\subsection{Output options}
+
+\subsubsection{\prog{--voutput}}
+
+
+\subsection{Other options}
+
+\subsubsection{\prog{--seed <n>}} Sets the seed of the random number generator to $<$n$>$. Use n = 0 for a random seed.
+
+
+
+
+
+
+
+
+
+
