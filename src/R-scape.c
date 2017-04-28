@@ -23,6 +23,7 @@
 
 #include "msamanip.h"
 #include "msatree.h"
+#include "allbranchmsa.h"
 #include "covariation.h"
 #include "covgrammars.h"
 #include "ribosum_matrix.h"
@@ -108,6 +109,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *cykcovqqfile;
   char            *dplotfile;
   char            *cykdplotfile;
+  
+  char            *allbranchfile;
 
   int              nshuffle;
 
@@ -254,6 +257,7 @@ static ESL_OPTIONS options[] = {
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   { "--outmsa",       eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>,",                                                        1 },
   { "--outnull",      eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>,",                                                        1 },
+  { "--allbranch",    eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>,",                                                                   1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
  /* other options */  
   { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
@@ -275,7 +279,9 @@ static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
+static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist,
+		      int analyze);
+static int run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
 static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
@@ -550,6 +556,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outnullfp = fopen(cfg.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnull file %s", cfg.outnullfile);
   } 
   
+  /* file with the null alignments */
+  cfg.allbranchfile = NULL;
+   if (esl_opt_IsOn(go, "--allbranch")) {
+    esl_sprintf(&cfg.allbranchfile, "%s", esl_opt_GetString(go, "--allbranch"));
+  } 
+ 
   /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rcykfile = NULL;
@@ -981,6 +993,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
+  RANKLIST *ranklist_allbranch  = NULL;
   int       nshuffle;
   int       analyze;
   int       status;
@@ -1094,6 +1107,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     }
   }
 
+  if (cfg->allbranchfile) {
+    status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run allbranch", cfg->errbuf);
+  }
+
   /* main function */
   cfg->mode = GIVSS;
   analyze = TRUE;
@@ -1105,6 +1123,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
+  if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); ranklist_allbranch = NULL;
   
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
@@ -1124,6 +1143,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->msaname) free(cfg->msaname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
+  if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); 
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
   if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
@@ -1377,6 +1397,42 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
   if (title)       free(title);
+  return status;
+}
+
+
+static int
+run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+{
+  ESL_MSA   *allmsa = NULL;
+  RANKLIST  *ranklist = NULL;
+  double     sc;
+  int        status;
+
+  if (cfg->allbranchfile == NULL) return eslOK;
+  
+  status = create_tree(go, cfg, msa);
+   if (status != eslOK) goto ERROR;
+  if (cfg->T == NULL) {
+    if (msa->nseq == 1) return eslOK;
+    else                return eslFAIL;
+  }
+
+  status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, NULL, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) goto ERROR;
+  status = AllBranchMSA_Plot(cfg->allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ct, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) goto ERROR;
+
+  if (cfg->verbose) {
+    esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+    printf("allbranch sc %f\n", sc);
+  }
+  
+  if (allmsa) esl_msa_Destroy(allmsa);
+  return eslOK;
+  
+ ERROR:
+  if (allmsa) esl_msa_Destroy(allmsa);
   return status;
 }
 

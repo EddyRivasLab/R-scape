@@ -29,6 +29,7 @@
 #include "esl_tree.h"
 #include "esl_vectorops.h"
 
+#include "allbranchmsa.h"
 #include "msatree.h"
 
 static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float *frq, int *ret_sc, char *errbuf, int verbose);
@@ -160,7 +161,7 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
 
   if (frq) free(frq);
   
-  *ret_sc = sc;
+  if (ret_sc) *ret_sc = sc;
   *ret_allmsa = allmsa;
   return eslOK;
 
@@ -169,6 +170,7 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
   if (allmsa) esl_msa_Destroy(allmsa);
   return status;
 }
+
 
 
 int
@@ -325,7 +327,8 @@ Tree_InterLeafMaxDistRooted(ESL_TREE *T, double *ret_time, char *errbuf, int ver
 }
 
 int 
-Tree_FindMidPoint(ESL_TREE *T, float *ret_midp, int *ret_rootup, int *ret_rootdown, float *ret_rootupd, float *ret_rootdownd, float **ret_Mx, char *errbuf, int verbose)
+Tree_FindMidPoint(ESL_TREE *T, float *ret_midp, int *ret_rootup, int *ret_rootdown, float *ret_rootupd, float *ret_rootdownd, float **ret_Mx,
+		  char *errbuf, int verbose)
 {
   ESL_STACK *vs = NULL;
   float     *Mx = NULL;
