@@ -19,7 +19,8 @@ typedef struct chit_s {
   int64_t posi;
   int64_t posj;
 
-  int     cont;
+  int     isbp;
+  double  D;
   
   double sc;
 } CHIT;
@@ -31,7 +32,8 @@ typedef struct clist_s{
 } CLIST;
 
 
-extern int       AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa, int *ct, char *errbuf, int verbose);
+extern int AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa,
+			     int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
 
 #endif /*ALLBRANCHMSA_INCLUDED*/
 

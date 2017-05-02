@@ -40,7 +40,7 @@
 /* struct cfg_s : "Global" application configuration shared by all threads/processes.
  * 
  * This structure is passed to routines within main.c, as a means of semi-encapsulation
-* of shared data amongst different parallel processes (threads or MPI processes).
+ * of shared data amongst different parallel processes (threads or MPI processes).
  */
 struct cfg_s { /* Shared configuration in masters & workers */
   int              argc;
@@ -71,6 +71,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *filename;
   char            *msaname;
   int             *msamap;
+  int             *msarevmap;
   int              firstpos;
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
   int              tstart;
@@ -142,7 +143,13 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
   int              nbpairs_cyk;
-
+  
+  char            *pdbfile;             /* pdfb file */
+  char            *pdbcfile;            /* file with pdb contact list */
+  int              ncont;
+  double           contD;
+  CLIST           *clist; 
+  
   int              voutput;
   int              doroc;
   char            *rocfile;
@@ -251,6 +258,11 @@ static ESL_OPTIONS options[] = {
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
+   /* Control of pdf contacts */
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbcfile",       "read pdb file from file <f>",                                                               0 },
+  { "--pdbcfile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbfile",        "read pdb contacts from file <f>",                                                           0 },
+  { "--contD",        eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
+ 
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -277,6 +289,7 @@ static int rscape_banner(FILE *fp, char *progname, char *banner);
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int find_contacts(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist,
@@ -291,7 +304,8 @@ static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
-			 
+static int read_pdfcontants(char *pdbcfile, int *revmap, int **ret_ct, int *ret_ncont, CLIST **ret_clist, char *errbuf);
+
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
  * display help/usage info.
@@ -369,6 +383,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.msafrq = NULL;
   cfg.msaname = NULL;
   cfg.msamap = NULL;
+  cfg.msarevmap = NULL;
 
   /* alphabet */
   cfg.abc = NULL;
@@ -597,6 +612,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.fbp  = NULL;
   cfg.fnbp = NULL;
 
+  /* the pdb contacts */
+  cfg.pdbfile = NULL;
+  if ( esl_opt_IsOn(go, "--pdbfile") ) { cfg.pdbfile = esl_opt_GetString(go, "--pdbfile"); }
+  cfg.pdbcfile = NULL;
+  if ( esl_opt_IsOn(go, "--pdbcfile") ) { cfg.pdbcfile = esl_opt_GetString(go, "--pdbcfile"); }
+  cfg.contD = esl_opt_GetReal(go, "--contD");
+  cfg.ncont = 0;
+  cfg.clist = NULL;
+  
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
@@ -772,6 +796,7 @@ main(int argc, char **argv)
     if (msa) esl_msa_Destroy(msa); msa = NULL;
     if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
     if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
+    if (cfg.msarevmap) free(cfg.msarevmap); cfg.msarevmap = NULL;
     if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
     if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
   }
@@ -794,6 +819,9 @@ main(int argc, char **argv)
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
   if (cfg.ocykct) free(cfg.ocykct);
   if (cfg.msaname) free(cfg.msaname);
+  if (cfg.pdbfile) free(cfg.pdbfile);
+  if (cfg.pdbcfile) free(cfg.pdbcfile);
+  if (cfg.ribofile) free(cfg.ribofile);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outsrtfile) free(cfg.outsrtfile);
@@ -812,6 +840,7 @@ main(int argc, char **argv)
   if (cfg.thresh) free(cfg.thresh);
   if (useme) free(useme);
   if (cfg.msamap) free(cfg.msamap); 
+  if (cfg.msarevmap) free(cfg.msarevmap); 
   if (cfg.omstat) free(cfg.omstat);
   if (cfg.mstat) free(cfg.mstat); 
   if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
@@ -950,7 +979,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, (cfg->pdbfile||cfg->pdbcfile)?&cfg->msarevmap:NULL,
+				useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
@@ -999,7 +1029,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int       status;
   
   if (msa == NULL) return eslOK;
-
+  
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
   
@@ -1008,10 +1038,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     return eslOK; 
   }
- 
+  
   /* outmsa file if requested */
   if (cfg->outmsafp) esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-
+  
   if (cfg->outdir) {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
@@ -1049,9 +1079,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
   }
 
-  /* the ct vector */
-  status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, -1.0, cfg->errbuf);
-  if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
+  /* the structure */
+  status = find_contacts(go, cfg, msa);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
   
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
@@ -1059,13 +1089,14 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
+  
   if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
   if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
   if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
   
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-
+  
   /* the null model first */
   if (cfg->method == NULLPHYLO) {
     nshuffle = cfg->nshuffle;
@@ -1106,19 +1137,20 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
       if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     }
   }
-
+  
   if (cfg->allbranchfile) {
     status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run allbranch", cfg->errbuf);
   }
-
+  
   /* main function */
   cfg->mode = GIVSS;
   analyze = TRUE;
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
+  
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
+  if (cfg->clist) free(cfg->clist); cfg->clist = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
@@ -1138,6 +1170,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
  ERROR:
   if (cfg->ct) free(cfg->ct);
+  if (cfg->clist) free(cfg->clist);
   if (cfg->msafrq) free(cfg->msafrq); 
   if (cfg->T) esl_tree_Destroy(cfg->T); 
   if (cfg->msaname) free(cfg->msaname);
@@ -1402,10 +1435,102 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
 
 static int
-run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+find_contacts(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+{
+  char   tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char  *cmd  = NULL;
+  char  *args = NULL;
+  FILE  *pdbfp = NULL;
+  int    L = msa->alen;
+  int    alloc_nhit = 5;
+  int    nhit;
+  int    h = 0;
+  int    i, j;
+  int    status;
+  
+  status = msamanip_CalculateCT(msa, &cfg->ct, &cfg->nbpairs, -1.0, cfg->errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to calculate ct vector", cfg->errbuf);
+  
+  ESL_ALLOC(cfg->clist, sizeof(CLIST));
+  cfg->clist->hit    = NULL;
+  nhit = alloc_nhit;
+  h    = 0;
+  ESL_ALLOC(cfg->clist->hit,    sizeof(CHIT)   * nhit);
+  ESL_ALLOC(cfg->clist->srthit, sizeof(CHIT *) * nhit);
+  cfg->clist->srthit[0] = cfg->clist->hit;
+  
+  if (cfg->ct != NULL && cfg->pdbfile == NULL)
+    {
+      for (i = 0; i < L; i ++) {
+	
+	if (h == nhit - 1) {
+	  nhit += alloc_nhit;
+	  ESL_REALLOC(cfg->clist->hit,    sizeof(CHIT)   * nhit);
+	  ESL_REALLOC(cfg->clist->srthit, sizeof(CHIT *) * nhit);
+	}
+	
+	if (cfg->ct[i] > i) {
+	  /* assign */
+	  cfg->clist->hit[h].i    = i+1;
+	  cfg->clist->hit[h].j    = cfg->ct[i]+1;
+	  cfg->clist->hit[h].posi = cfg->msamap[i]+1;
+	  cfg->clist->hit[h].posj = cfg->msamap[cfg->ct[i]]+1;
+	  cfg->clist->hit[h].isbp = TRUE;
+	  cfg->clist->hit[h].D    = +eslINFINITY;
+	  cfg->clist->hit[h].sc   = -eslINFINITY;
+	  h ++;
+	}
+      }
+      
+    }
+  else if (cfg->ct == NULL && cfg->pdbfile != NULL)
+    {
+      if ((pdbfp = fopen(cfg->pdbfile, "r")) == NULL) esl_fatal("Failed to open tree file %s", cfg->pdbfile);
+      
+      if (RSCAPE_BIN)                         // look for the installed executable
+	esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
+      else
+	ESL_XFAIL(status, cfg->errbuf, "Failed to find pdb_parse.pl file\n");
+      esl_sprintf(&args, "%s -D %f -W ALL > %s", cmd, cfg->contD, tmpfile);
+      system(args);
+
+      read_pdfcontants(tmpfile, cfg->msarevmap, &cfg->ct, &cfg->ncont, &cfg->clist, cfg->errbuf);
+      
+      fclose(pdbfp);
+      remove(tmpfile);
+    }
+  else if (cfg->ct == NULL && cfg->pdbcfile != NULL)
+    {
+      read_pdfcontants(cfg->pdbcfile, cfg->msarevmap, &cfg->ct, &cfg->ncont, &cfg->clist, cfg->errbuf);
+    }
+  else ESL_XFAIL(eslFAIL, cfg->errbuf, "could not create contact map");
+
+  nhit = h;
+  cfg->ncont = nhit;
+  cfg->clist->nhit = nhit;
+  printf("NC %d\n", nhit);
+  
+#if 0
+  for (h = 0; h < nhit; h++) cfg->clist->srthit[h] = cfg->clist->hit + h;
+  if (nhit > 1) qsort(cfg->clist->srthit, nhit, sizeof(CHIT *), hit_sorted_by_sc);
+#endif
+  
+  if (cmd  != NULL) free(cmd);
+  if (args != NULL) free(args);
+  return eslOK;
+  
+ ERROR:
+  if (cmd  != NULL) free(cmd);
+  if (args != NULL) free(args);
+  if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
+  if (cfg->clist) free(cfg->clist); cfg->clist = NULL;
+  return status;
+}
+
+static int
+run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_list)
 {
   ESL_MSA   *allmsa = NULL;
-  RANKLIST  *ranklist = NULL;
   double     sc;
   int        status;
 
@@ -1417,12 +1542,12 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_c
     if (msa->nseq == 1) return eslOK;
     else                return eslFAIL;
   }
-
+  
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  status = AllBranchMSA_Plot(cfg->allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ct, cfg->errbuf, cfg->verbose);
+  status = AllBranchMSA_Plot(cfg->allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ct, cfg->ncont, cfg->clist, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-
+  
   if (cfg->verbose) {
     esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
     printf("allbranch sc %f\n", sc);
@@ -1870,6 +1995,67 @@ null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, c
   }
 
  return eslOK;
+}
+
+static int
+read_pdfcontants(char *pdbcfile, int *revmap, int **ret_ct, int *ret_ncont, CLIST **ret_clist, char *errbuf)
+{
+  ESL_FILEPARSER  *efp   = NULL;
+  CLIST           *clist = NULL;
+  int             *ct    = NULL;
+  char            *tok;
+  int              ncont = 0;
+  int              alloc_nhit = 5;
+  int              nhit;
+  int              h = 0;
+  int              status;
+  
+  if (esl_fileparser_Open(pdbcfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+
+  ESL_ALLOC(clist, sizeof(CLIST));
+  clist->hit    = NULL;
+  nhit = alloc_nhit;
+  h    = 0;
+  ESL_ALLOC(clist->hit,    sizeof(CHIT)   * nhit);
+  ESL_ALLOC(clist->srthit, sizeof(CHIT *) * nhit);
+  clist->srthit[0] = clist->hit;
+
+  while (esl_fileparser_NextLine(efp) == eslOK)
+    {
+      if (h == nhit - 1) {
+	nhit += alloc_nhit;
+	ESL_REALLOC(clist->hit,    sizeof(CHIT)   * nhit);
+	ESL_REALLOC(clist->srthit, sizeof(CHIT *) * nhit);
+      }
+      
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      clist->hit[h].posi = atoi(tok);
+      clist->hit[h].i    = revmap[clist->hit[h].posi-1]+1;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      clist->hit[h].posj = atoi(tok);
+      clist->hit[h].j    = revmap[clist->hit[h].posj-1]+1;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      clist->hit[h].D = atof(tok);
+      h ++;
+    }
+  ncont = h;
+
+  esl_fileparser_Close(efp);
+
+  *ret_ncont = ncont;
+  *ret_ct    = ct;
+  *ret_clist = clist;
+  return eslOK;
+
+ ERROR:
+  if (clist) free(clist);
+  if (ct) free(ct);
+  return status;
 }
 
 

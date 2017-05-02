@@ -28,30 +28,32 @@
 #include "allbranchmsa.h"
 #include "plot.h"
 
+static int     allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
+static int     allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
+static int     allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa,
+				   int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
 static int     hit_sorted_by_sc(const void *vh1, const void *vh2);
-static double  score(int c1, int c2, int dim, int **val);
+static double  score(int c1, int c2, int K, int dim, int **val);
+static int     ismut(int val, int K);
 
 /* Plots where the changes happen in the tree branches */
 int
-AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa, int *ct, char *errbuf, int verbose)
+AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
 {
-  FILE           *plotfp = NULL;
   char           *psfile = NULL;
+  FILE           *plotfp = NULL;
   FILE           *pipe = NULL;
-  int           **mutb = NULL;
   ESL_DSQ        *ax;
   ESL_DSQ        *axl;
   ESL_DSQ        *axr;
   ESL_DSQ         cc;
   ESL_DSQ         cl, cr;
-  CLIST          *clist = NULL;
-  int             alloc_nhit = 5;
-  int             nhit;
-  int             nhit_cutoff;
-  int             h;
+  int           **mutb = NULL;
+  int             K = allmsa->abc->K;
+  double          sc;
+  int             K2 = K*K;
   int             L = allmsa->alen;
   int             nnodes;
-  int             mutbl, mutbr;
   int             v, vl, vr;
   int             c;
   int             ci, cj;
@@ -59,19 +61,15 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   int             posi, posj;
   int             dim;
   int             i;
-  double          sc;
-  int           **pmut = NULL;
-  int             K = allmsa->abc->K;
   int             k, k1;
+  int             nhit;
   int             bidx;
-  int             tt = 0;
-  int             tc = 0;
   int             status;
 
   if (plotfile == NULL) return eslOK;
   if ((plotfp = fopen(plotfile, "w")) == NULL) esl_fatal("Failed to open plotfile %s", plotfile);
 
-  /* allmsa include the ancestral sequences
+ /* allmsa include the ancestral sequences
    * allmsa->ax[0,N-1] = msa->ax[0,N-1]
    * allmsa->ax[N+n] = ancestral sequence at node 0 <= n < N-1 (n=0 is the root)
    */
@@ -80,9 +78,6 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   dim = nnodes + T->N;
   if (allmsa->nseq != dim) esl_fatal("Tree_AllBranchMSAPlot() not a all-branch msa");
 
-  if (ct) {
-  }
-  
   pipe = popen(gnuplot, "w");
   fprintf(pipe, "set terminal postscript color 14\n");
   esl_sprintf(&psfile, "%s.ps", plotfile);
@@ -101,27 +96,14 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   fprintf(pipe, "set style line 107  lt 1 lc rgb 'black'     pt 5 lw 2 ps 0.7\n");
   fprintf(pipe, "set style line 108  lt 1 lc rgb 'black'     pt 5 lw 2 ps 0.5\n");
   
-  fprintf(pipe, "set ylabel 'Tree Branch'\n");
-  fprintf(pipe, "set xlabel 'Alignment position'\n");
-  fprintf(pipe, "set xrange [%d:%d]\n", 1, L);
-  fprintf(pipe, "set yrange [%d:%d]\n", 1, dim);
-  fprintf(pipe, "unset title\n");
-  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 107 palette\n");
-
   ESL_ALLOC(mutb,    sizeof(int *)*(L+1));
   ESL_ALLOC(mutb[0], sizeof(int)  *(L+1)*dim);
   for (c = 1; c <= L; c ++) {
     mutb[c] = mutb[0]  + c*dim;
-    for (i = 0; i < dim; i ++) mutb[c][i] = 0;
+    for (i = 0; i < dim; i ++) mutb[c][i] = -1;
   }
 
   bidx = 1;
-  ESL_ALLOC(pmut,    sizeof(int *)*K);
-  ESL_ALLOC(pmut[0], sizeof(int)  *K*K);
-  for (k = 0; k < K; k ++) {
-    pmut[k] = pmut[0]  + k*K;
-    for (k1 = 0; k1 < K; k1 ++) pmut[k][k1] = 0;
-  }
   for (v = 0; v < nnodes; v ++) {
     vl = T->left[v];
     vr = T->right[v];
@@ -129,7 +111,7 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
     axl = (vl >= 0)? allmsa->ax[T->N+vl] : allmsa->ax[-vl-1];
     axr = (vr >= 0)? allmsa->ax[T->N+vr] : allmsa->ax[-vr-1];
 
-    // now test
+    // changes per branch and position
     for (c = 1; c <= L; c ++) {
       cc = ax[c];
       cl = axl[c];
@@ -137,35 +119,231 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
      
       pos = (msamap)? msamap[c-1]+1 : c;
       
-      mutbl = FALSE;
       if (esl_abc_XIsCanonical(allmsa->abc, cc) && esl_abc_XIsCanonical(allmsa->abc, cl)) {
-	if (cc != cl) {
-	  if (ct && ct[c] > 0) pmut[cc][cl] ++;
-	  mutbl = TRUE;
-	}
+	mutb[c][bidx] = cc*K + cl;
       }
-      mutb[c][bidx] = mutbl;
       
-      mutbr = FALSE;
       if (esl_abc_XIsCanonical(allmsa->abc, cc) && esl_abc_XIsCanonical(allmsa->abc, cr)) {
-	if (cc != cr) {
-	  if (ct && ct[c] > 0) pmut[cc][cr] ++;
-	  mutbr = TRUE;
-	}
+	mutb[c][bidx+1] = cc*K + cr;
       }
-      mutb[c][bidx+1] = mutbr;
 
-      if (ct && ct[c] > 0 ) {
-	fprintf(plotfp, "%d %d %d\n", c, bidx,   mutbl); 	
-	fprintf(pipe,   "%d %d %d\n", c, bidx,   mutbl);
-	fprintf(plotfp, "%d %d %d\n", c, bidx+1, mutbr);
-	fprintf(pipe,   "%d %d %d\n", c, bidx+1, mutbr);
-      }
     }
     bidx += 2;
   }
+
+  status = allbranch_branchcol(pipe, L, K, dim, mutb, ct, ncont, clist, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+  
+  status = allbranch_pmutation(pipe, L, K, dim, mutb, ct, ncont, clist, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  status = allbranch_columncov(pipe, dim, mutb, msamap, allmsa, ct, ncont, clist, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+    
+  fclose(plotfp);
+  pclose(pipe);
+  
+  //plot_file_ps2pdf(psfile);
+
+  free(mutb[0]);
+  free(mutb);
+  return eslOK;
+
+ ERROR:
+  if (mutb[0]) free(mutb[0]);
+  if (mutb)    free(mutb);
+
+  return status;
+}
+
+
+
+/*--- internal functions ---*/
+
+
+static int
+allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+{
+  int mut;
+  int val;
+  int b;
+  int c;
+  
+  fprintf(pipe, "set ylabel 'Tree Branch'\n");
+  fprintf(pipe, "set xlabel 'Alignment position'\n");
+  fprintf(pipe, "set xrange [%d:%d]\n", 1, L);
+  fprintf(pipe, "set yrange [%d:%d]\n", 1, dim);
+  fprintf(pipe, "unset title\n");
+  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 107 palette\n");
+
+  for (b = 0; b < dim; b ++) {
+    for (c = 0; c < L; c ++) {
+      
+      mut = mutb[c][b];
+
+      val = (ct && ct[c] > 0 && ismut(mut,K))? TRUE: FALSE;
+      fprintf(pipe,   "%d %d %d\n", c, b, val);
+    }
+  }
+
   fprintf(pipe, "e\n");
 
+  return eslOK;
+}
+
+static int
+allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+{
+  int **pmut = NULL;
+  int   K2 = K*K;
+  int   kx, ky;
+  int   muti, mutj;
+  int   b;
+  int   n;
+  int   i, j;
+  int   xi, xj;
+  int   yi, yj;
+  int   status;
+
+  if (ct == NULL || clist == NULL) return eslOK;
+
+  ESL_ALLOC(pmut,    sizeof(int *)*K2);
+  ESL_ALLOC(pmut[0], sizeof(int)  *K2*K2);
+  for (kx = 0; kx < K2; kx ++) {
+    pmut[kx] = pmut[0]  + kx*K2;
+    for (ky = 0; ky < K2; ky ++) pmut[kx][ky] = 0;
+  }
+
+  for (n = 0; n < ncont; n ++) {
+    i = clist->hit[n].i;
+    j = clist->hit[n].j;
+
+    for (b = 0; b < dim; b ++) {
+      muti = mutb[i][b];
+      mutj = mutb[j][b];
+
+      if (ismut(muti,K) && ismut(mutj,K)) {
+	xi = muti/K;
+	xj = mutj/K;
+	yi = muti%K;
+	yj = mutj%K;
+	printf("^^ i %d (%d %d) j %d (%d %d) b %d %d %d\n", i, xi, yi, j, xj, yj, b, muti, mutj);
+	pmut[muti][mutj] ++;
+      }
+    }
+  }
+  
+  fprintf(pipe, "set xlabel 'residue pair'\n");
+  fprintf(pipe, "set ylabel 'residue pair'\n");     
+  fprintf(pipe, "set size square\n");
+  fprintf(pipe, "set xrange [-0.2:%f]\n", K2-0.8);
+  fprintf(pipe, "set yrange [-0.2:%f]\n", K2-0.8);
+  
+  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 108 palette\n");
+  for (kx = 0; kx < K2; kx ++) 
+    for (ky = 0; ky < K2; ky ++) 
+      if (pmut[kx][ky] > 50) fprintf(pipe,   "%d %d %d\n", kx, ky, pmut[kx][ky]);
+      else                   fprintf(pipe,   "%d %d 0\n", kx, ky);
+  fprintf(pipe, "e\n");
+
+  free(pmut[0]);
+  free(pmut);
+  return eslOK;
+
+ ERROR:
+  if (pmut[0]) free(pmut[0]);
+  if (pmut)    free(pmut);
+  return status;
+}
+
+static int
+allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+{
+  CLIST          *list = NULL;
+  int             K = allmsa->abc->K;
+  int             L = allmsa->alen;
+  int             alloc_nhit = 5;
+  int             nhit;
+  int             nhit_cutoff;
+  int             posi, posj;
+  int             h;
+  int             tt = 0;
+  int             tc = 0;
+  int             ci, cj;
+  int             status;
+
+  ESL_ALLOC(list, sizeof(CLIST));
+  list->hit    = NULL;
+  nhit = alloc_nhit;
+  h    = 0;
+  ESL_ALLOC(list->hit,    sizeof(CHIT)   * nhit);
+  ESL_ALLOC(list->srthit, sizeof(CHIT *) * nhit);
+  list->srthit[0] = list->hit;
+
+  for (ci = 1; ci <= L; ci ++) {
+    posi = (msamap)? msamap[ci-1]+1 : ci;    
+    for (cj = ci+1; cj <= L; cj ++) {
+      posj = (msamap)? msamap[cj-1]+1 : cj;
+
+      if (h == nhit - 1) {
+	nhit += alloc_nhit;
+	ESL_REALLOC(list->hit,    sizeof(CHIT)   * nhit);
+	ESL_REALLOC(list->srthit, sizeof(CHIT *) * nhit);
+     }
+      /* assign */
+      list->hit[h].i    = ci;
+      list->hit[h].j    = cj;
+      list->hit[h].posi = posi;
+      list->hit[h].posj = posj;
+      list->hit[h].isbp = FALSE;
+      if (ct && ct[ci] == cj) list->hit[h].isbp = TRUE;
+      list->hit[h].sc   = score(ci, cj, K, dim, mutb);
+      h ++;
+    }
+  }
+  nhit = h;
+  list->nhit = nhit;
+  for (h = 0; h < nhit; h++) list->srthit[h] = list->hit + h;
+  if (nhit > 1) qsort(list->srthit, nhit, sizeof(CHIT *), hit_sorted_by_sc);
+
+  nhit_cutoff = ESL_MIN(nhit, 0.30*L);
+  fprintf(pipe, "set title 'N = %d'\n", nhit_cutoff);
+  fprintf(pipe, "set xlabel 'Alignment position'\n");
+  fprintf(pipe, "set ylabel 'Alignment position'\n");     
+  fprintf(pipe, "set size square\n");
+  fprintf(pipe, "set xrange [%d:%d]\n", 1, msamap[L-1]+1);
+  fprintf(pipe, "set yrange [%d:%d]\n", 1, msamap[L-1]+1);
+  fprintf(pipe, "plot '-' u 1:2 title '' with point ls 108\n");
+  
+  for (h = 0; h < nhit_cutoff; h ++) {
+    posi = list->srthit[h]->posi;
+    posj = list->srthit[h]->posj;
+    
+    if (list->srthit[h]->isbp) { fprintf(stdout, "*%d %d %f\n", posi, posj, list->srthit[h]->sc); tt ++; tc ++; }
+    else                       { fprintf(stdout, " %d %d %f\n", posi, posj, list->srthit[h]->sc); tt ++; }
+    fprintf(pipe,   "%d %d %d\n", posi, posj, 1);
+    fprintf(pipe,   "%d %d %d\n", posj, posi, 1);
+  }
+  fprintf(pipe, "e\n");
+  printf("%d/%d\n", tc, tt);
+
+  free(list);
+  return eslOK;
+
+ ERROR:
+  if (list) free(list);
+  return status;
+}
+
+static int
+create_contactlist(int L, int K, int dim, int **mutb, int *msamap, int *ct, char *pdbfile, int *ret_ncont, CLIST **ret_clist, char *errbuf, int verbose)
+{
+  CLIST *clist = NULL;
+  int    alloc_nhit = 5;
+  int    nhit;
+  int    h = 0;
+  int    i, j;
+  int    status;
 
   ESL_ALLOC(clist, sizeof(CLIST));
   clist->hit    = NULL;
@@ -175,92 +353,50 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   ESL_ALLOC(clist->srthit, sizeof(CHIT *) * nhit);
   clist->srthit[0] = clist->hit;
 
-  for (ci = 1; ci <= L; ci ++) {
-    posi = (msamap)? msamap[ci-1]+1 : ci;    
-    for (cj = ci+1; cj <= L; cj ++) {
-      posj = (msamap)? msamap[cj-1]+1 : cj;
+  if (ct != NULL && pdbfile == NULL) {
+    for (i = 0; i < L; i ++) {
 
       if (h == nhit - 1) {
 	nhit += alloc_nhit;
 	ESL_REALLOC(clist->hit,    sizeof(CHIT)   * nhit);
 	ESL_REALLOC(clist->srthit, sizeof(CHIT *) * nhit);
-     }
-      /* assign */
-      clist->hit[h].i    = ci;
-      clist->hit[h].j    = cj;
-      clist->hit[h].posi = posi;
-      clist->hit[h].posj = posj;
-      clist->hit[h].cont = FALSE;
-      if (ct && ct[ci] == cj) clist->hit[h].cont = TRUE;
-      clist->hit[h].sc   = score(ci, cj, dim, mutb);
-      h ++;
+      }
+      
+      if (ct[i] > i) {
+	/* assign */
+	clist->hit[h].i    = i+1;
+	clist->hit[h].j    = ct[i]+1;
+	clist->hit[h].posi = msamap[i]+1;
+	clist->hit[h].posj = msamap[ct[i]]+1;
+	clist->hit[h].isbp = TRUE;
+	clist->hit[h].D    = +eslINFINITY;
+	clist->hit[h].sc   = -eslINFINITY;
+	h ++;
+      }
+      
     }
+    
   }
+  else if (ct == NULL && pdbfile != NULL) {
+  }
+  else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
+  
   nhit = h;
   clist->nhit = nhit;
+  printf("NC %d\n", nhit);
+  #if 0
   for (h = 0; h < nhit; h++) clist->srthit[h] = clist->hit + h;
   if (nhit > 1) qsort(clist->srthit, nhit, sizeof(CHIT *), hit_sorted_by_sc);
+  #endif
 
-  
-  nhit_cutoff = ESL_MIN(nhit, 0.30*L);
-  
-  fprintf(pipe, "set title 'N = %d'\n", nhit_cutoff);
-  fprintf(pipe, "set xlabel 'Alignment position'\n");
-  fprintf(pipe, "set ylabel 'Alignment position'\n");     
-  fprintf(pipe, "set size square\n");
-  fprintf(pipe, "set xrange [%d:%d]\n", 1, msamap[L-1]+1);
-  fprintf(pipe, "set yrange [%d:%d]\n", 1, msamap[L-1]+1);
-  fprintf(pipe, "plot '-' u 1:2 title '' with point ls 108\n");
-  for (h = 0; h < nhit_cutoff; h ++) {
-    posi = clist->srthit[h]->posi;
-    posj = clist->srthit[h]->posj;
-
-    if (clist->srthit[h]->cont) { fprintf(stdout, "*%d %d %f\n", posi, posj, clist->srthit[h]->sc); tt ++; tc ++; }
-      else                      { fprintf(stdout, " %d %d %f\n", posi, posj, clist->srthit[h]->sc); tt ++; }
-    fprintf(pipe,   "%d %d %d\n", posi, posj, 1);
-    fprintf(pipe,   "%d %d %d\n", posj, posi, 1);
-  }
-  fprintf(pipe, "e\n");
-  printf("%d/%d\n", tc, tt);
-  
-  fprintf(pipe, "set xlabel 'residue'\n");
-  fprintf(pipe, "set ylabel 'residue'\n");     
-  fprintf(pipe, "set size square\n");
-  fprintf(pipe, "set xrange [-0.1:%f]\n", K-0.9);
-  fprintf(pipe, "set yrange [-0.1:%f]\n", K-0.9);
-  //fprintf(pipe, "unset yrange\n");
-  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 108 palette\n");
-  for (k = 0; k < K; k ++) {
-    for (k1 = 0; k1 < K; k1 ++) {
- 	fprintf(pipe,   "%d %d %d\n", k, k1, pmut[k][k1]);
-      }
-  }
-  fprintf(pipe, "e\n");
-  
-  
-  fclose(plotfp);
-  pclose(pipe);
-  
-  //plot_file_ps2pdf(psfile);
-
-  free(mutb[0]);
-  free(mutb);
-  free(pmut[0]);
-  free(pmut);
+  *ret_ncont = nhit;
+  *ret_clist = clist;
   return eslOK;
 
  ERROR:
-  if (mutb[0]) free(mutb[0]);
-  if (mutb)    free(mutb);
-  if (pmut[0]) free(pmut[0]);
-  if (pmut)    free(pmut);
-
+  if (clist) free(clist);
   return status;
 }
-
-
-
-/*--- internal functions ---*/
 
 static int
 hit_sorted_by_sc(const void *vh1, const void *vh2)
@@ -282,21 +418,29 @@ hit_sorted_by_sc(const void *vh1, const void *vh2)
 }
 
 static double
-score(int c1, int c2, int dim, int **val)
+score(int c1, int c2, int K, int dim, int **mutb)
 {
   double sc = 0.;
-  int    val1;
-  int    val2;  
+  int    mut1;
+  int    mut2;  
   int    i;
 
   for (i = 0; i < dim; i ++) {
-    val1 = val[c1][i];
-    val2 = val[c2][i];
-    if      (val1 == 1 && val2 == 1) sc += 2.;
-    else if (val1 == 0 && val2 == 0) sc += 1.;
-    else                             sc -= 0.;
+    mut1 = mutb[c1][i];
+    mut2 = mutb[c2][i];
+    
+    if      ( ismut(mut1, K) &&  ismut(mut2, K)) sc += 2.;
+    else if (!ismut(mut1, K) && !ismut(mut2, K)) sc += 1.;
+    else                                         sc -= 0.;
   }
   
   return sc;
 }
 
+static int
+ismut(int val, int K)
+{
+  int ismut = FALSE;
+  if (val >= 0 && val/K != val%K) ismut = TRUE;
+  return ismut;
+}

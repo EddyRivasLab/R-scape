@@ -132,6 +132,7 @@ OBJS     = e1_bg.o\
            e2fhmmer_generic_fwdback.o\
            e2fhmmer_generic_optacc.o\
            e2tracealign.o\
+	   allbranchmsa.o\
            branchinference.o\
 	   cococyk.o\
 	   covgrammars.o\
@@ -168,6 +169,8 @@ OBJS     = e1_bg.o\
 	   ribosum_matrix.o\
 	   cov_simulate.o\
 
+SCRIPTS   = ../scripts/pdb_parse.pl\
+
 all: libsrc.a ${PROGS} 
 
 
@@ -184,12 +187,12 @@ libsrc.a:  ${OBJS}
 
 install:
 	${QUIET}if [ ! -z "${PROGS}" ]; then \
-	   for file in ${PROGS}; do \
+	   for file in ${PROGS}  ; do \
 	      echo '    ' INSTALL $$file ;\
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\
 	fi
-
+	cp ${SCRIPTS} ${DESTDIR}${bindir}/ 
 
 clean:
 	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
