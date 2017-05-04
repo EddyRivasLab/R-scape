@@ -44,7 +44,7 @@ extern int msamanip_ConvertDegen2N(ESL_MSA *msa);
 extern int msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa);
 extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf);
 extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, 
-				     int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose);
+				     int **ret_map, int **ret_revmap, int **ret_useme, char *errbuf, int verbose);
 extern int msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len);
 extern int msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_startpos, int64_t *ret_endpos, char *errbuf);
 extern int msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose);

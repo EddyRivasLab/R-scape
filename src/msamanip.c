@@ -332,10 +332,11 @@ msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret
 
 int
 msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen,
-			  int **ret_map, int **ret_revmap, int *useme, char *errbuf, int verbose)
+			  int **ret_map, int **ret_revmap, int **ret_useme, char *errbuf, int verbose)
 {
   int     *map    = NULL;
   int     *revmap = NULL;
+  int     *useme  = *ret_useme;
   int      expgap;
   int64_t  alen = msa->alen; //alen of the truncated alignment
   int      ngap;
@@ -391,6 +392,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
   
   if (ret_map)    *ret_map    = map;    else free(map);
   if (ret_revmap) *ret_revmap = revmap; else free(revmap);
+  *ret_useme = useme;
   return eslOK;
   
  ERROR:

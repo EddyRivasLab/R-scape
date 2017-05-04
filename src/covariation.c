@@ -2393,7 +2393,7 @@ cov_histogram_PlotSurvival(FILE *fp, ESL_HISTOGRAM *h, double *survfit)
   
   /* The observed binned counts:
    */
-  if (h->obs[h->imax] > 1) {
+  if (h->imax >= 0 && h->obs[h->imax] > 1) {
     if (fprintf(fp, "%f\t%g\n", h->xmax, 1.0 / (double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
   }
   for (i = h->imax; i >= h->imin; i--)

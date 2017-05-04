@@ -28,17 +28,17 @@
 #include "allbranchmsa.h"
 #include "plot.h"
 
-static int     allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
-static int     allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
+static int     allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose);
+static int     allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose);
 static int     allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa,
-				   int *ct, int ncont, CLIST *clist, char *errbuf, int verbose);
-static int     hit_sorted_by_sc(const void *vh1, const void *vh2);
+				   int *ct, CLIST *clist, char *errbuf, int verbose);
+static int     cnt_sorted_by_sc(const void *vh1, const void *vh2);
 static double  score(int c1, int c2, int K, int dim, int **val);
 static int     ismut(int val, int K);
 
 /* Plots where the changes happen in the tree branches */
 int
-AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_MSA *allmsa, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
   char           *psfile = NULL;
   FILE           *plotfp = NULL;
@@ -62,7 +62,7 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   int             dim;
   int             i;
   int             k, k1;
-  int             nhit;
+  int             ncnt;
   int             bidx;
   int             status;
 
@@ -131,13 +131,13 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
     bidx += 2;
   }
 
-  status = allbranch_branchcol(pipe, L, K, dim, mutb, ct, ncont, clist, errbuf, verbose);
+  status = allbranch_branchcol(pipe, L, K, dim, mutb, ct, clist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   
-  status = allbranch_pmutation(pipe, L, K, dim, mutb, ct, ncont, clist, errbuf, verbose);
+  status = allbranch_pmutation(pipe, L, K, dim, mutb, ct, clist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
-  status = allbranch_columncov(pipe, dim, mutb, msamap, allmsa, ct, ncont, clist, errbuf, verbose);
+  status = allbranch_columncov(pipe, dim, mutb, msamap, allmsa, ct, clist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
   fclose(plotfp);
@@ -162,7 +162,7 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
 
 
 static int
-allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
   int mut;
   int val;
@@ -192,7 +192,7 @@ allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int 
 }
 
 static int
-allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
   int **pmut = NULL;
   int   K2 = K*K;
@@ -214,9 +214,9 @@ allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int 
     for (ky = 0; ky < K2; ky ++) pmut[kx][ky] = 0;
   }
 
-  for (n = 0; n < ncont; n ++) {
-    i = clist->hit[n].i;
-    j = clist->hit[n].j;
+  for (n = 0; n < clist->ncnt; n ++) {
+    i = clist->cnt[n].i;
+    j = clist->cnt[n].j;
 
     for (b = 0; b < dim; b ++) {
       muti = mutb[i][b];
@@ -257,14 +257,14 @@ allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, int 
 }
 
 static int
-allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa, int *ct, int ncont, CLIST *clist, char *errbuf, int verbose)
+allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
   CLIST          *list = NULL;
   int             K = allmsa->abc->K;
   int             L = allmsa->alen;
-  int             alloc_nhit = 5;
-  int             nhit;
-  int             nhit_cutoff;
+  int             alloc_ncnt = 5;
+  int             ncnt;
+  int             ncnt_cutoff;
   int             posi, posj;
   int             h;
   int             tt = 0;
@@ -272,42 +272,39 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
   int             ci, cj;
   int             status;
 
-  ESL_ALLOC(list, sizeof(CLIST));
-  list->hit    = NULL;
-  nhit = alloc_nhit;
+  clist = CMAP_CreateCList(alloc_ncnt);
+  if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
+  ncnt = alloc_ncnt;
   h    = 0;
-  ESL_ALLOC(list->hit,    sizeof(CHIT)   * nhit);
-  ESL_ALLOC(list->srthit, sizeof(CHIT *) * nhit);
-  list->srthit[0] = list->hit;
 
   for (ci = 1; ci <= L; ci ++) {
     posi = (msamap)? msamap[ci-1]+1 : ci;    
     for (cj = ci+1; cj <= L; cj ++) {
       posj = (msamap)? msamap[cj-1]+1 : cj;
 
-      if (h == nhit - 1) {
-	nhit += alloc_nhit;
-	ESL_REALLOC(list->hit,    sizeof(CHIT)   * nhit);
-	ESL_REALLOC(list->srthit, sizeof(CHIT *) * nhit);
+      if (h == ncnt - 1) {
+	ncnt += alloc_ncnt;
+	ESL_REALLOC(list->cnt,    sizeof(CNT)   * ncnt);
+	ESL_REALLOC(list->srtcnt, sizeof(CNT *) * ncnt);
      }
       /* assign */
-      list->hit[h].i    = ci;
-      list->hit[h].j    = cj;
-      list->hit[h].posi = posi;
-      list->hit[h].posj = posj;
-      list->hit[h].isbp = FALSE;
-      if (ct && ct[ci] == cj) list->hit[h].isbp = TRUE;
-      list->hit[h].sc   = score(ci, cj, K, dim, mutb);
+      list->cnt[h].i    = ci;
+      list->cnt[h].j    = cj;
+      list->cnt[h].posi = posi;
+      list->cnt[h].posj = posj;
+      list->cnt[h].isbp = FALSE;
+      if (ct && ct[ci] == cj) list->cnt[h].isbp = TRUE;
+      list->cnt[h].sc   = score(ci, cj, K, dim, mutb);
       h ++;
     }
   }
-  nhit = h;
-  list->nhit = nhit;
-  for (h = 0; h < nhit; h++) list->srthit[h] = list->hit + h;
-  if (nhit > 1) qsort(list->srthit, nhit, sizeof(CHIT *), hit_sorted_by_sc);
+  ncnt = h;
+  list->ncnt = ncnt;
+  for (h = 0; h < ncnt; h++) list->srtcnt[h] = list->cnt + h;
+  if (ncnt > 1) qsort(list->srtcnt, ncnt, sizeof(CNT *), cnt_sorted_by_sc);
 
-  nhit_cutoff = ESL_MIN(nhit, 0.30*L);
-  fprintf(pipe, "set title 'N = %d'\n", nhit_cutoff);
+  ncnt_cutoff = ESL_MIN(ncnt, 0.30*L);
+  fprintf(pipe, "set title 'N = %d'\n", ncnt_cutoff);
   fprintf(pipe, "set xlabel 'Alignment position'\n");
   fprintf(pipe, "set ylabel 'Alignment position'\n");     
   fprintf(pipe, "set size square\n");
@@ -315,12 +312,12 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
   fprintf(pipe, "set yrange [%d:%d]\n", 1, msamap[L-1]+1);
   fprintf(pipe, "plot '-' u 1:2 title '' with point ls 108\n");
   
-  for (h = 0; h < nhit_cutoff; h ++) {
-    posi = list->srthit[h]->posi;
-    posj = list->srthit[h]->posj;
+  for (h = 0; h < ncnt_cutoff; h ++) {
+    posi = list->srtcnt[h]->posi;
+    posj = list->srtcnt[h]->posj;
     
-    if (list->srthit[h]->isbp) { fprintf(stdout, "*%d %d %f\n", posi, posj, list->srthit[h]->sc); tt ++; tc ++; }
-    else                       { fprintf(stdout, " %d %d %f\n", posi, posj, list->srthit[h]->sc); tt ++; }
+    if (list->srtcnt[h]->isbp) { fprintf(stdout, "*%d %d %f\n", posi, posj, list->srtcnt[h]->sc); tt ++; tc ++; }
+    else                       { fprintf(stdout, " %d %d %f\n", posi, posj, list->srtcnt[h]->sc); tt ++; }
     fprintf(pipe,   "%d %d %d\n", posi, posj, 1);
     fprintf(pipe,   "%d %d %d\n", posj, posi, 1);
   }
@@ -335,74 +332,12 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
   return status;
 }
 
-static int
-create_contactlist(int L, int K, int dim, int **mutb, int *msamap, int *ct, char *pdbfile, int *ret_ncont, CLIST **ret_clist, char *errbuf, int verbose)
-{
-  CLIST *clist = NULL;
-  int    alloc_nhit = 5;
-  int    nhit;
-  int    h = 0;
-  int    i, j;
-  int    status;
-
-  ESL_ALLOC(clist, sizeof(CLIST));
-  clist->hit    = NULL;
-  nhit = alloc_nhit;
-  h    = 0;
-  ESL_ALLOC(clist->hit,    sizeof(CHIT)   * nhit);
-  ESL_ALLOC(clist->srthit, sizeof(CHIT *) * nhit);
-  clist->srthit[0] = clist->hit;
-
-  if (ct != NULL && pdbfile == NULL) {
-    for (i = 0; i < L; i ++) {
-
-      if (h == nhit - 1) {
-	nhit += alloc_nhit;
-	ESL_REALLOC(clist->hit,    sizeof(CHIT)   * nhit);
-	ESL_REALLOC(clist->srthit, sizeof(CHIT *) * nhit);
-      }
-      
-      if (ct[i] > i) {
-	/* assign */
-	clist->hit[h].i    = i+1;
-	clist->hit[h].j    = ct[i]+1;
-	clist->hit[h].posi = msamap[i]+1;
-	clist->hit[h].posj = msamap[ct[i]]+1;
-	clist->hit[h].isbp = TRUE;
-	clist->hit[h].D    = +eslINFINITY;
-	clist->hit[h].sc   = -eslINFINITY;
-	h ++;
-      }
-      
-    }
-    
-  }
-  else if (ct == NULL && pdbfile != NULL) {
-  }
-  else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
-  
-  nhit = h;
-  clist->nhit = nhit;
-  printf("NC %d\n", nhit);
-  #if 0
-  for (h = 0; h < nhit; h++) clist->srthit[h] = clist->hit + h;
-  if (nhit > 1) qsort(clist->srthit, nhit, sizeof(CHIT *), hit_sorted_by_sc);
-  #endif
-
-  *ret_ncont = nhit;
-  *ret_clist = clist;
-  return eslOK;
-
- ERROR:
-  if (clist) free(clist);
-  return status;
-}
 
 static int
-hit_sorted_by_sc(const void *vh1, const void *vh2)
+cnt_sorted_by_sc(const void *vh1, const void *vh2)
 {
-  CHIT *h1 = *((CHIT **) vh1);  /* don't ask. don't change. Don't Panic. */
-  CHIT *h2 = *((CHIT **) vh2);
+  CNT *h1 = *((CNT **) vh1);  /* don't ask. don't change. Don't Panic. */
+  CNT *h2 = *((CNT **) vh2);
 
   if      (h1->sc < h2->sc) return  1;
   else if (h1->sc > h2->sc) return -1;

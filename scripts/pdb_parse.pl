@@ -3,11 +3,6 @@
 
 use strict;
 use Class::Struct;
-#use lib '/Users/erivas/projects/R-scape/scripts';
-use lib '/Users/rivase/projects/R-scape/scripts';
-use FUNCS;
-#use constant GNUPLOT => '/usr/bin/gnuplot';
-use constant GNUPLOT => '/opt/local/bin/gnuplot';
 
 use vars qw ($opt_W $opt_D $opt_L $opt_v);  # required if strict used
 use Getopt::Std;
@@ -22,18 +17,22 @@ if (!@ARGV) {
 
 my $pdbfile = shift;
 my $stofile = shift;
+my $gnuplot = shift;
+use constant GNUPLOT => '$gnuplot';
+
+my $currdir = $ENV{PWD};
 
 my $stoname = $stofile;
-if ($stoname =~ /^(\S+)\.\S+$/) { $stoname = $1; }
+if ($stoname =~ /\/([^\/]+)\.\S+$/) { $stoname = $1; }
 my $pfamname = $stofile;
 if ($pfamname =~ /\/([^\/]+)\.\S+$/) { $pfamname = $1; }
 
-my $hmmer       = "~/src/src/mysource/lib/hmmer";
+my $hmmer       = "lib/hmmer";
 my $hmmbuild    = "$hmmer/src/programs/hmmbuild";
 my $hmmersearch = "$hmmer/src/programs/hmmsearch";
 
-my $easel = "$hmmer/lib/easel";
-my $sfetch = "$easel/miniapps/esl-sfetch";
+my $easel    = "$hmmer/lib/easel";
+my $sfetch   = "$easel/miniapps/esl-sfetch";
 my $reformat = "$easel/miniapps/esl-reformat";
 
 my $maxD = 8;
@@ -55,26 +54,28 @@ my $alen;
 my $seeplots = 1;
 
 my $pdbname = parse_pdb($pdbfile, \$nch, \@chname, \@sq);
-print     "# PFAM: $stofile\n";
-print     "# PDB:  $pdbname\n$nch chains\n";
+#print     "# PFAM: $stofile\n";
+#print     "# PDB:  $pdbname\n# $nch chains\n";
 
 for (my $n = 0; $n < $nch; $n ++) {
     my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
     my $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
-    my $mapfile  = "$stoname.chain$chname[$n].maxD$maxD.map";
-    my $corfile  = "$stoname.chain$chname[$n].maxD$maxD.cor";
+    my $mapfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.map";
+    my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
+
+    print "$mapfile\n";
     
     open(COR,  ">$corfile")  || die;
     open(MAP,  ">$mapfile")  || die;
     open(MAP0, ">$map0file") || die;
     open(MAP1, ">$map1file") || die;
     
-    print      "# PDB: $pdbname\n";
+    #print      "# PDB: $pdbname\n";
     print COR  "# PDB: $pdbname\n";
     print MAP  "# PDB: $pdbname\n";
     print MAP0 "# PDB: $pdbname\n";
     print MAP1 "# PDB: $pdbname\n";
-    print      "# chain $chname[$n]\n$sq[$n]\n";
+    #print      "# chain $chname[$n]\n# $sq[$n]\n";
     print COR  "# chain $chname[$n]\n";
     print MAP  "# chain $chname[$n]\n";
     print MAP0 "# chain $chname[$n]\n";
@@ -89,9 +90,9 @@ for (my $n = 0; $n < $nch; $n ++) {
     close(MAP1);
     if ($alen == 0) { next; }
     
-    FUNCS::plot_contact_map($map0file, $len,  $seeplots);
-    FUNCS::plot_contact_map($map1file, -1,    $seeplots);
-    FUNCS::plot_contact_map($mapfile,  $alen, $seeplots);
+    plot_contact_map($map0file, $len,  $seeplots);
+    plot_contact_map($map1file, -1,    $seeplots);
+    plot_contact_map($mapfile,  $alen, $seeplots);
 }
 
 
@@ -165,13 +166,13 @@ sub map_sq {
 	    $name = $1;
 	    $i    = $2;
 	    $j    = $3;
-	    print "$name $i $j\n";
+	    #print "# $name $i $j\n";
 	}
 	elsif (/^\#\=GS\s+(\S+)\s+AC\s+\S*$pdbname\S*\s*$/) {
 	    $name = $1;
 	    $i    = 1;
 	    $j    = -1;
-	    print "$name\n";
+	    #print "# $name\n";
 	}
 	elsif (/^$name\s+(\S+)\s*$/) {
 	    $asq .= uc $1;
@@ -194,24 +195,24 @@ sub map_sq {
     my $y = 0;
     while ($x < $len && $y < length($asq)) {
 	if ($asq[$y] =~ /^\.$/  || $asq[$y] =~ /^\-$/) { 
-	    #print "gap $y $asq[$y]\n"; 
+	    #print "# gap $y $asq[$y]\n"; 
 	    $y ++; 
 	}
 	elsif ($exactsq && $sq[$x] =~ /^$asq[$y]$/)  { 
 	    $map_ref->[$x] = $y;  
-	    print "match $x $sq[$x] | $y $asq[$y]\n"; 
+	    #print "# match $x $sq[$x] | $y $asq[$y]\n"; 
 	    $x ++; $y ++; 
 	}
 	elsif ($exactsq == 0)               { 
 	    $map_ref->[$x] = $y;  
-	    #print "match $x $sq[$x] | $y $asq[$y]\n"; 
+	    #print "# match $x $sq[$x] | $y $asq[$y]\n"; 
 	    $x ++; $y ++;
 	}
 
 	else {
 	    # print "uh? $x $sq[$x] | $y $asq[$y]\n"; die;
 	    $map_ref->[$x] = $y;  
-	    print "mismach $x $sq[$x] | $y $asq[$y]\n"; 
+	    #print "# mismach $x $sq[$x] | $y $asq[$y]\n"; 
 	    $x ++; $y ++;
 	} 
     }
@@ -229,14 +230,14 @@ sub find_pdbsq_in_pfam {
     my $from;
     my $to;
 
-    my $pdbsqfile = "pdbsqfile";
+    my $pdbsqfile = "$currdir/pdbsqfile";
     
     open(F, ">$pdbsqfile") || die;
     print F ">pdbsq\n$pdbsq\n";
     close(F);
      
-    my $hmm    = "hmmfile";
-    my $hmmout = "hmmout";
+    my $hmm    = "$currdir/hmmfile";
+    my $hmmout = "$currdir/hmmout";
  
     system("$hmmbuild             $hmm $pdbsqfile >  $hmmout\n");
     system("$hmmersearch -E 1e-15 $hmm $stofile   >  $hmmout\n");
@@ -249,7 +250,7 @@ sub find_pdbsq_in_pfam {
     parse_hmmout_for_besthit($hmmout, \$name, \$from_pdb, \$to_pdb, \$from, \$to, \$pdbasq, \$asq);
   
     $pfam_asq = get_asq_from_sto($stofile, $name, $from, $to);
-    print "pfamseq $name $from-$to\n$pfam_asq";
+    #print "# pfamseq $name $from-$to\n# $pfam_asq";
 
     
     $$ret_pfam_asq = $pfam_asq;
@@ -361,21 +362,21 @@ sub first_pos_in_pdbsq {
     $sq =~ s/\.//g;
     $sq =~ s/\-//g;
 
-    print "$pdbsq\n$asq\n$sq\n";
+    #print "# $pdbsq\n# $asq\n# $sq\n";
  
-    my $pdbsqfile = "pdbsqfile";
-    my $sqfile    = "sqfile";
+    my $pdbsqfile = "$currdir/pdbsqfile";
+    my $sqfile    = "$currdir/sqfile";
     
     open(F, ">$pdbsqfile") || die;
     print F ">pdbsq\n$pdbsq\n";
     close(F);
-    open(F, ">sqfile") || die;
+    open(F, ">$sqfile") || die;
     print F ">sq\n$sq\n";
     close(F);
     
-    my $hmm    = "hmmfile";
-    my $hmmout = "hmmout";
-    my $hmmtbl = "hmmtbl";
+    my $hmm    = "$currdir/hmmfile";
+    my $hmmout = "$currdir/hmmout";
+    my $hmmtbl = "$currdir/hmmtbl";
 
     system("$hmmbuild                        $hmm $pdbsqfile >  $hmmout\n");
     system("$hmmersearch --domtblout $hmmtbl $hmm $sqfile    >> $hmmout\n");
@@ -391,11 +392,11 @@ sub first_pos_in_pdbsq {
     }
     close(H);
 
-    system("rm $pdbsqfile\n");
-    system("rm $sqfile\n");
-    system("rm $hmm\n");
-    system("rm $hmmout\n");
-    system("rm $hmmtbl\n");
+    system("/bin/rm $pdbsqfile\n");
+    system("/bin/rm $sqfile\n");
+    system("/bin/rm $hmm\n");
+    system("/bin/rm $hmmout\n");
+    system("/bin/rm $hmmtbl\n");
     
     return $pos;
 }
@@ -406,8 +407,8 @@ sub parse_pdb_contact_map {
     my $len = length($sq);
     my @sq = split(//,$sq);
     
-    printf      "# maxD  $maxD\n";
-    printf      "# minL  $minL\n";
+    #printf      "# maxD  $maxD\n";
+    #printf      "# minL  $minL\n";
     printf COR  "# maxD  $maxD\n";
     printf COR  "# minL  $minL\n";
     printf MAP  "# maxD  $maxD\n";
@@ -442,7 +443,7 @@ sub parse_pdb_contact_map {
     my $l2;
     my $distance;
     my $atom_offset = atom_offset($pdbfile, $chain);
-    print "atom offset $atom_offset\n";
+    #print "#atom offset $atom_offset\n";
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
        	get_atom_coords($pdbfile, $l1+$atom_offset, $chain, \$nat1, \$char1, \@type1, \@x1, \@y1, \@z1);
@@ -450,20 +451,20 @@ sub parse_pdb_contact_map {
 	}
 	else {
 	    if (aa_conversion($char1) =~ /^$sq[$l1]$/) {
-		#printf "\nchain$chain;position %d/%d: character $char1\n", $l1+$atom_offset, $len;
+		#printf "\n#chain$chain;position %d/%d: character $char1\n", $l1+$atom_offset, $len;
 	    } 
-	    else { printf "chain$chain;position %d/%d: mismatched character %s should be $sq[$l1]\n", $l1+$atom_offset, $len, aa_conversion($char1); die; }
+	    else { printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l1]\n", $l1+$atom_offset, $len, aa_conversion($char1); die; }
 	}
 	
 	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
 	    get_atom_coords($pdbfile, $l2+$atom_offset, $chain, \$nat2, \$char2, \@type2, \@x2, \@y2, \@z2);
-	    if ($nat2 == 0) { #print "atom $l2 not present\n"; 
+	    if ($nat2 == 0) { #print "#atom $l2 not present\n"; 
 	    }
 	    else {
 		if (aa_conversion($char2) =~ /^$sq[$l2]$/) {
-		    #printf "chain$chain;position %d/%d: $char2\n", $l2+$atom_offset, $len;
+		    #printf "#chain$chain;position %d/%d: $char2\n", $l2+$atom_offset, $len;
 		} 
-		else { printf "chain$chain;position %d/%d: mismatched character %s should be $sq[$l2]\n", $l2+1, $len, aa_conversion($char2); die; }
+		else { printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l2]\n", $l2+1, $len, aa_conversion($char2); die; }
 	    }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
@@ -474,12 +475,12 @@ sub parse_pdb_contact_map {
 		}  
 		
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
-		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance; 
+		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance;
 		    $nct ++;
 		    
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
 			$nc ++;
-			printf      "%d %d %s | %d %d %s | %.2f\n", $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance; 
+			#printf      "%d %d %s | %d %d %s | %.2f\n", $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance; 
 			printf MAP  "%d %s %d %s %.2f\n", $map[$l1]+1, $sq[$l1], $map[$l2]+1, $sq[$l2], $distance; 
 			printf MAP1 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance; 
 		    }
@@ -487,7 +488,7 @@ sub parse_pdb_contact_map {
 	    }
 	}
     }
-    print      "\# contacts: $nc\n";
+    #print      "\# contacts: $nc\n";
     print MAP  "\# contacts: $nc\n";
     print MAP0 "\# contacts: $nct\n";
     print MAP1 "\# contacts: $nc\n";
@@ -661,4 +662,47 @@ sub euclidean_distance {
     $distance  = sqrt($distance);
 
     return $distance;
+}
+
+sub plot_contact_map {
+    my ($mapfile, $len, $seeplots) = @_;
+    
+    my $psfile = "$mapfile.ps";
+    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
+    my $pdffile = $psfile;
+    if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
+
+    my $xlabel = "alignment position";
+    my $title  = "$mapfile";
+    
+    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    
+    print GP "set terminal postscript color solid 14\n";
+
+    print GP "set output '$psfile'\n";
+    print GP "unset key\n";
+    print GP "set size ratio -1\n";
+    print GP "set size 1,1\n";
+
+    print GP "set nokey\n";
+    print GP "set xlabel '$xlabel'\n";
+    print GP "set ylabel '$xlabel'\n";
+    if ($len > 0) {
+	print GP "set xrange [0:$len]\n";
+	print GP "set yrange [0:$len]\n";
+    }
+
+    #print GP "set title \"$title\\n\\n$key\"\n";
+    print GP "set title '$title'\n";
+
+    my $cmd = "'$mapfile' using 1:3  title '' ls 1, '$mapfile' using 3:1  title '' ls 1";
+ 
+    #print    "plot $cmd\n";
+    print GP "plot $cmd\n";
+
+    close (GP);
+
+    system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
+    system("/bin/rm $psfile\n");
+    if ($seeplots) { system ("open $pdffile&\n"); }
 }
