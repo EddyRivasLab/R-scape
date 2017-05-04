@@ -136,6 +136,7 @@ OBJS     = e1_bg.o\
            branchinference.o\
 	   contactmap.o\
 	   cococyk.o\
+	   correlators.o\
 	   covgrammars.o\
 	   covariation.o\
 	   cykcov.o\

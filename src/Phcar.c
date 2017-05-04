@@ -23,6 +23,7 @@
 
 #include "msamanip.h"
 #include "msatree.h"
+#include "correlators.h"
 #include "covariation.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
@@ -733,7 +734,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
-  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, useme, cfg->errbuf, cfg->verbose) != eslOK) {
+  if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, NULL, &useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
@@ -881,7 +882,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, TRUE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, TRUE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
 
   /* main function */
   data.outfp         = NULL;
@@ -926,11 +927,11 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
   if (cfg->w <= 0) return eslFAIL;
 
-  cov_Destroy(mi);
+  corr_Destroy(mi);
   return eslOK;
 
  ERROR:
-  if (mi) cov_Destroy(mi);
+  if (mi) corr_Destroy(mi);
   return status;
 }
 
@@ -967,7 +968,7 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   }
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
 
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) {
@@ -1045,12 +1046,12 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   if (pid) free(pid);
   if (nid) free(nid);
   if (n) free(n);
-  cov_Destroy(mi); mi = NULL;
+  corr_Destroy(mi); mi = NULL;
 
   return eslOK;
   
  ERROR:
-  if (mi)       cov_Destroy(mi);
+  if (mi)       corr_Destroy(mi);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
   if (title)    free(title);

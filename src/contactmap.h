@@ -40,6 +40,8 @@ extern int    ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap
 			 char *pdbfile, char *pdbcfile, char *errbuf, int verbose);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern void   CMAP_FreeCList(CLIST *list);
+extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
+extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
 
 #endif /*CONTACTMAP_INCLUDED*/
 

@@ -25,6 +25,7 @@
 #include "msamanip.h"
 #include "msatree.h"
 #include "allbranchmsa.h"
+#include "correlators.h"
 #include "covariation.h"
 #include "covgrammars.h"
 #include "ribosum_matrix.h"
@@ -261,7 +262,7 @@ static ESL_OPTIONS options[] = {
    /* Control of pdf contacts */
   { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbcfile",       "read pdb file from file <f>",                                                               0 },
   { "--pdbcfile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbfile",        "read pdb contacts from file <f>",                                                           0 },
-  { "--cntmaxD",        eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
+  { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
  
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
@@ -303,6 +304,7 @@ static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
+static int existsfile(char *file);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -612,9 +614,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* the pdb contacts */
   cfg.pdbfile = NULL;
-  if ( esl_opt_IsOn(go, "--pdbfile") ) { cfg.pdbfile = esl_opt_GetString(go, "--pdbfile"); }
+  if ( esl_opt_IsOn(go, "--pdbfile") ) {
+    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
+    if (!existsfile(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
+  }
   cfg.pdbcfile = NULL;
-  if ( esl_opt_IsOn(go, "--pdbcfile") ) { cfg.pdbcfile = esl_opt_GetString(go, "--pdbcfile"); }
+  if ( esl_opt_IsOn(go, "--pdbcfile") ) {
+    cfg.pdbcfile = esl_opt_GetString(go, "--pdbcfile");
+    if (!existsfile(cfg.pdbcfile))  esl_fatal("pdbcfile %s does not seem to exist\n", cfg.pdbcfile);
+  }
   cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
   cfg.clist = NULL;
   
@@ -1224,7 +1232,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
 
   /* main function */
   data.outfp         = NULL;
@@ -1246,12 +1254,14 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
+  data.isRNA         = cfg->abcisRNA;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
+  data.clist         = cfg->clist;
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
@@ -1275,11 +1285,11 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
 
-  cov_Destroy(mi);
+  corr_Destroy(mi);
   return eslOK;
 
  ERROR:
-  if (mi) cov_Destroy(mi);
+  if (mi) corr_Destroy(mi);
   return status;
 }
 
@@ -1329,7 +1339,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   }
   
   /* create the MI structure */
-  mi = cov_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
 
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
@@ -1358,12 +1368,14 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
+  data.isRNA         = cfg->abcisRNA;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
+  data.clist         = cfg->clist;
   data.msamap        = cfg->msamap;
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
@@ -1418,12 +1430,12 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
-  cov_Destroy(mi); mi = NULL;
+  corr_Destroy(mi); mi = NULL;
 
   return eslOK;
   
  ERROR:
-  if (mi)          cov_Destroy(mi);
+  if (mi)          corr_Destroy(mi);
   if (cykct)       free(cykct);
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);
@@ -1927,4 +1939,17 @@ write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
  ERROR:
   if (ct) free(ct);
   return status;
+}
+
+static int
+existsfile(char *file) {
+  FILE *fp = NULL;
+
+  fp = fopen(file, "r");
+  if (fp) {
+    fclose(fp);
+    return TRUE;
+  }
+  else
+    return FALSE;
 }

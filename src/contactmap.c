@@ -45,8 +45,8 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
   int   *ct = NULL;
   int    L = msa->alen;
   int    alloc_ncnt = 5;
-  int    ncnt;
-  int    h;
+  int    ncnt = alloc_ncnt;
+  int    h = 0;
   int    i, j;
   int    status;
 
@@ -58,7 +58,6 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
   
   if (pdbfile == NULL)
     {
-      h = 0;
       for (i = 0; i < L; i ++) {
 	
 	if (h == ncnt - 1) {
@@ -67,12 +66,12 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
 	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
 	}
 	
-	if (ct[i] > i) {
+	if (ct[i+1] > i+1) {
 	  /* assign */
 	  clist->cnt[h].i    = i+1;
-	  clist->cnt[h].j    = ct[i]+1;
+	  clist->cnt[h].j    = ct[i+1];
 	  clist->cnt[h].posi = msamap[i]+1;
-	  clist->cnt[h].posj = msamap[ct[i]]+1;
+	  clist->cnt[h].posj = msamap[ct[i+1]-1]+1;
 	  clist->cnt[h].isbp = TRUE;
 	  clist->cnt[h].D    = +eslINFINITY;
 	  clist->cnt[h].sc   = -eslINFINITY;
@@ -97,7 +96,7 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
       
       read_pdfcontacts(tmpfile, msarevmap, ct, clist, errbuf);
       
-      //remove(tmpfile);
+      remove(tmpfile);
     }
   else if (pdbcfile != NULL)
     {
@@ -108,7 +107,6 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
   clist->maxD = cntmaxD;
   *ret_ct     = ct;
   *ret_clist  = clist;
-  printf("NC %d NBP %d\n", clist->ncnt, *ret_nbpairs);
   
 #if 0
   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
@@ -125,16 +123,6 @@ ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevm
   if (ct) free(ct);
   if (clist) CMAP_FreeCList(clist);
   return status;
-}
-
-void
-CMAP_FreeCList(CLIST *list)
-{
-  if (list == NULL) return;
-
-  if (list->srtcnt) free(list->srtcnt);
-  if (list->cnt)    free(list->cnt);
-  free(list);
 }
 
 CLIST *
@@ -157,6 +145,39 @@ CMAP_CreateCList(int alloc_ncnt)
  ERROR:
   return NULL;
 }
+
+void
+CMAP_FreeCList(CLIST *list)
+{
+  if (list == NULL) return;
+
+  if (list->srtcnt) free(list->srtcnt);
+  if (list->cnt)    free(list->cnt);
+  free(list);
+}
+
+int
+CMAP_IsContactLocal(int i, int j, CLIST *clist)
+{
+  int h;
+   
+  for (h = 0; h < clist->ncnt; h ++) {
+    if (i == clist->cnt[h].i && j == clist->cnt[h].j) return TRUE;
+  }
+  return FALSE;
+}
+
+int
+CMAP_IsBPLocal(int i, int j, CLIST *clist)
+{
+  int h;
+   
+  for (h = 0; h < clist->ncnt; h ++) {
+    if (i == clist->cnt[h].i && j == clist->cnt[h].j && clist->cnt[h].isbp) return TRUE;
+  }
+  return FALSE;
+}
+
 
 
 static int
