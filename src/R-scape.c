@@ -145,6 +145,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
   int              nbpairs_cyk;
+  double           pottsmu;
   
   char            *pdbfile;             /* pdfb file */
   char            *pdbcfile;            /* file with pdb contact list */
@@ -488,6 +489,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--CCFp"))  cfg.covtype = CCFp;
   else if (esl_opt_GetBoolean(go, "--CCF"))   cfg.covtype = CCF;
   else if (esl_opt_GetBoolean(go, "--PFp"))   cfg.covtype = PFp;
+
+  cfg.pottsmu = 0.01;
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -1260,6 +1263,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
+  data.pottsmu       = cfg->pottsmu;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1374,6 +1378,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
+  data.pottsmu       = cfg->pottsmu;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;

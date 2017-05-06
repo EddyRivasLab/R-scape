@@ -25,7 +25,7 @@ static double func_potts                       (PT *pt, ESL_MSA *msa, float tol,
 
 
 PT *
-potts_Create(int64_t L, ESL_ALPHABET *abc)
+potts_Create(int64_t L, ESL_ALPHABET *abc, double mu)
 {
   PT  *pt = NULL;
   int  K  = abc->K;
@@ -36,6 +36,7 @@ potts_Create(int64_t L, ESL_ALPHABET *abc)
   ESL_ALLOC(pt, sizeof(PT));
   pt->L   = L;
   pt->abc = abc;
+  pt->mu  = mu;
 
   ESL_ALLOC(pt->e,            sizeof(double **) * L);
   ESL_ALLOC(pt->h,            sizeof(double  *) * L);
@@ -79,7 +80,7 @@ potts_Destroy(PT *pt)
 }
 
 int
-potts_Build(PT **ret_pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+potts_Build(PT **ret_pt, ESL_MSA *msa, double mu, float tol, char *errbuf, int verbose)
 {
   PT      *pt = NULL;
   float    firststep;
@@ -89,7 +90,7 @@ potts_Build(PT **ret_pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
  /* init */
   firststep = 1e+0;
 
-  pt = potts_Create(msa->alen, msa->abc);
+  pt = potts_Create(msa->alen, msa->abc, mu);
   status = potts_OptimizeGD(pt, msa, &logp, firststep, tol, errbuf, verbose);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error optimizing potts");
 

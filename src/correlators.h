@@ -175,6 +175,7 @@ struct data_s {
   int                 *ct;
   CLIST               *clist;
   int                 *msamap;
+  int                  pottsmu;
   int                  firstpos;
   double               bmin;
   double               w;

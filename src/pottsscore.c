@@ -23,6 +23,7 @@ potts_UnNormLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbo
 {
   double logp = -eslINFINITY;
   double val;
+  double hi, eij;
   int    K = msa->abc->K;
   int    axi, axj;
   int    resi, resj;
@@ -30,20 +31,27 @@ potts_UnNormLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbo
   int    s;
   
   for (s = 0; s < msa->nseq; s++) {
-    
+
+    val = 0;
     for (i = 0; i < msa->alen-1; i ++) {
-      axi = msa->ax[s][i];
+      axi  = msa->ax[s][i];
       resi = esl_abc_XIsCanonical(msa->abc, axi);
-      val = 0;
-      if (resi) val -= pt->h[i][axi];
+
+      hi = (resi)? pt->h[i][axi] : 0;
+      val += hi;
+      val += pt->mu * hi * hi;
       
-      for (j = 0; j < msa->alen-1; j ++) {
+      for (j = i+1; j < msa->alen; j ++) {
 	axj  = msa->ax[s][j];
 	resj = esl_abc_XIsCanonical(msa->abc, axj);
-	if (j != i && resi && resj) val -= pt->e[i][j][IDX(axi,axj,K)];
-      }
+	
+	eij = (resi && resj)? pt->e[i][j][IDX(axi,axj,K)] : 0;
+	val += eij;
+	val += pt->mu * eij * eij;
+       }
     }
 
+    val *= msa->wgt[s];
     logp = e2_FLogsum(logp, val);
   }
   

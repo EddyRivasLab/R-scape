@@ -69,7 +69,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     if (status != eslOK) goto ERROR;
   }
   else if (data->covtype == PFp) {
-    status = potts_Build(&pt, msa, data->tol, data->errbuf, data->verbose);
+    status = potts_Build(&pt, msa, data->pottsmu, data->tol, data->errbuf, data->verbose);
     if (status != eslOK) goto ERROR;
   }
 
