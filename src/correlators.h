@@ -63,7 +63,9 @@ typedef enum {
   CCFp  = 25,
   CCFa  = 26,
 
-  COVNONE = 27,
+  PFp   = 27, // potts+Frobenius+APC
+  
+  COVNONE = 28,
 } COVTYPE;
 
 typedef enum {
@@ -74,7 +76,7 @@ typedef enum {
 typedef enum{
   NAIVE      = 0,
   NULLPHYLO  = 1,
-  DCA        = 2,
+  POTTS      = 2,
   AKMAEV     = 3,
 } METHOD;
 

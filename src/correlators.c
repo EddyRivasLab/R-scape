@@ -1290,7 +1290,7 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
     status = corr_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
     break;
-  case DCA:
+  case POTTS:
     break;
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   } 

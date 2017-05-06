@@ -31,7 +31,7 @@
 #include "ribosum_matrix.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
-#define METHODOPTS   "--nullphylo,--naive,--dca,--akmaev"              
+#define METHODOPTS   "--nullphylo,--naive,--potts,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
@@ -217,6 +217,7 @@ static ESL_OPTIONS options[] = {
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
   { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
   /* covariation measures */
+  { "--PFp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS  ASC corrected statistic",                                                              1 },
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APC corrected statistic",                                                              1 },
   { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  statistic",                                                                            1 },
@@ -253,7 +254,7 @@ static ESL_OPTIONS options[] = {
    /* phylogenetic method */
   { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive statistics",                                                                          0 },
   { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "nullphylo  statistics",                                                                     0 },
-  { "--dca",          eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "direct coupling analysis (DCA) MI statistics",                                              0 },
+  { "--potts",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "potts couplings",                                                                           0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
@@ -486,6 +487,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--CCFa"))  cfg.covtype = CCFa;
   else if (esl_opt_GetBoolean(go, "--CCFp"))  cfg.covtype = CCFp;
   else if (esl_opt_GetBoolean(go, "--CCF"))   cfg.covtype = CCF;
+  else if (esl_opt_GetBoolean(go, "--PFp"))   cfg.covtype = PFp;
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -500,7 +502,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
   else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
-  else if (esl_opt_GetBoolean(go, "--dca"))       cfg.method = DCA;
+  else if (esl_opt_GetBoolean(go, "--potts"))     cfg.method = POTTS;
   else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
 
   if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }

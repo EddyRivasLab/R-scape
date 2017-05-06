@@ -31,6 +31,8 @@
 #include "covgrammars.h"
 #include "cykcov.h"
 #include "logsum.h"
+#include "pottsbuild.h"
+#include "pottsscore.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
@@ -56,6 +58,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
+  PT            *pt = NULL;
   COVCLASS       covclass = data->mi->class;
   int            status;
 
@@ -65,8 +68,18 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
+  else if (data->covtype == PFp) {
+    status = potts_Build(&pt, msa, data->tol, data->errbuf, data->verbose);
+    if (status != eslOK) goto ERROR;
+  }
 
   switch(data->covtype) {
+  case PFp:
+    status = potts_CalculateCOV(pt, data, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR; 
+    break;
   case CHIa: 
     status = corr_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
@@ -227,18 +240,34 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       if  (status != eslOK) goto ERROR;
     }
   }
- 
+
+  if (pt) potts_Destroy(pt);
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
   
  ERROR:
+  if (pt) potts_Destroy(pt);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
   return status;
 }
 
+int 
+cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
+{
+  int status;
 
+  switch(type) {
+  case Eval:     esl_sprintf(ret_threshtype, "Eval");    break;
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong THRESHTYPE");
+  }
+
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
 
 int
 cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
@@ -260,7 +289,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   int              status;
 
   corr_COVTYPEString(&covtype, mi->type, data->errbuf);
-  corr_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
+  cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
   // really bad alignment, covariation spread is smaller than tol, stop here.
   if (data->w == 0) {

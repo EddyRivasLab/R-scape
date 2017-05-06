@@ -22,13 +22,18 @@ typedef struct potts_s {
 } PT;
 
 struct optimize_data {
-  float          time;
+  PT            *pt;
+  ESL_MSA       *msa;
+  float          logp;
+  double         firststep;
   double         tol;
   char          *errbuf;
   int            verbose;
 };
 
-extern int   potts_Build(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 extern PT   *potts_Create(int64_t L, ESL_ALPHABET *abc);
 extern void  potts_Destroy(PT *pt);
+extern int   potts_Build(PT **ret_pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+extern int   potts_OptimizeGD(PT *pt, ESL_MSA *msa, float *ret_sc, float firststep, float tol, char *errbuf, int verbose);
+extern int   potts_GaugeZeroSum(PT *pt, double tol, char *errbuf);
 #endif

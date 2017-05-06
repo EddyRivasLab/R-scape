@@ -159,6 +159,7 @@ OBJS     = e1_bg.o\
            phmmer.o\
            plot.o\
            pottsbuild.o\
+           pottsscore.o\
            p7_evopipeline.o\
            etophits_output_tabular.o\
            ratematrix.o\
