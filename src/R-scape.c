@@ -28,6 +28,7 @@
 #include "correlators.h"
 #include "covariation.h"
 #include "covgrammars.h"
+#include "pottsbuild.h"
 #include "ribosum_matrix.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
@@ -145,7 +146,10 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              onbpairs;
   int              nbpairs;
   int              nbpairs_cyk;
+
+  
   double           pottsmu;
+  POTTSTYPE        pottstype;
   
   char            *pdbfile;             /* pdfb file */
   char            *pdbcfile;            /* file with pdb contact list */
@@ -261,6 +265,7 @@ static ESL_OPTIONS options[] = {
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  
    /* Control of pdf contacts */
   { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbcfile",       "read pdb file from file <f>",                                                               0 },
   { "--pdbcfile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbfile",        "read pdb contacts from file <f>",                                                           0 },
@@ -461,6 +466,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
   }
 
+  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
+  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
+  else if (esl_opt_GetBoolean(go, "--potts"))     cfg.method = POTTS;
+  else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
+
+  if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
+
   if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
   else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
   else if (esl_opt_GetBoolean(go, "--CHI"))   cfg.covtype = CHI;
@@ -488,9 +500,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--CCFa"))  cfg.covtype = CCFa;
   else if (esl_opt_GetBoolean(go, "--CCFp"))  cfg.covtype = CCFp;
   else if (esl_opt_GetBoolean(go, "--CCF"))   cfg.covtype = CCF;
-  else if (esl_opt_GetBoolean(go, "--PFp"))   cfg.covtype = PFp;
+  else if (esl_opt_GetBoolean(go, "--PFp")) { cfg.covtype = PFp; cfg.method = POTTS; }
 
-  cfg.pottsmu = 0.01;
+  cfg.pottsmu   = 0.01;
+  cfg.pottstype = FULL;
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -503,13 +516,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.allowpair->mx[1][2] = cfg.allowpair->mx[2][1] = 1.0;
   cfg.allowpair->mx[2][3] = cfg.allowpair->mx[3][2] = 1.0;
 
-  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
-  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
-  else if (esl_opt_GetBoolean(go, "--potts"))     cfg.method = POTTS;
-  else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
-
-  if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
-
+  
   /* for the cov histograms */
   cfg.hpts    = HPTS;                                                               /* number of points in the histogram */
   cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin") : BMIN; /* lowest cov score to bound the histogram */
@@ -1237,7 +1244,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->method, cfg->covclass);
+  if (cfg->method == POTTS) printf("^^ pots %d\n", mi->pt->type);
 
   /* main function */
   data.outfp         = NULL;
@@ -1264,6 +1272,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.pottsmu       = cfg->pottsmu;
+  data.pottstype     = cfg->pottstype;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1345,7 +1354,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   }
   
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->method, cfg->covclass);
 
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
@@ -1379,6 +1388,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.pottsmu       = cfg->pottsmu;
+  data.pottstype     = cfg->pottstype;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;

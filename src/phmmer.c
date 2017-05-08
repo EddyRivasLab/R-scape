@@ -504,7 +504,7 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
   FILE         *fp = NULL;
   ESL_MSAFILE *afp = NULL;
   ESL_MSA      *msa = NULL;
-  MSA_STAT      mstat;    
+  MSA_STAT     *mstat = NULL;    
   int           hmmALEN;
   float         hmmSQLEN;
   float         hmmPID;
@@ -551,7 +551,7 @@ HMMER_EmitStats(char *hmmfile, ESL_ALPHABET *abc, float time, char **ret_hmmname
   if (ret_hmmALEN)   *ret_hmmALEN   = hmmALEN;
   if (ret_hmmSQLEN)  *ret_hmmSQLEN  = hmmSQLEN;
   if (ret_hmmPID)    *ret_hmmPID    = hmmPID;
-  if (ret_hmmPMATCH) *ret_hmmPMATCH = mstat.avgmatch;
+  if (ret_hmmPMATCH) *ret_hmmPMATCH = mstat->avgmatch;
  
   esl_msafile_Close(afp);
   remove(tmpmsafile);

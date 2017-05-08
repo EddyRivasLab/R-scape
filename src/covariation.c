@@ -63,19 +63,25 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   int            status;
 
   /* Calculate the covariation matrix */
-  if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
-	 data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
-    status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+  switch(data->method) {
+  case NAIVE:
+  case AKMAEV:
+  case NULLPHYLO:
+    if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
+	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
+      status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+      if (status != eslOK) goto ERROR;
+    }
+    break;
+  case POTTS:
+    status = potts_Build(data->mi->pt, msa, data->pottsmu, data->pottstype, data->tol, data->errbuf, data->verbose);
     if (status != eslOK) goto ERROR;
-  }
-  else if (data->covtype == PFp) {
-    status = potts_Build(&pt, msa, data->pottsmu, data->tol, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
+    break;
   }
 
   switch(data->covtype) {
   case PFp:
-    status = potts_CalculateCOV(pt, data, &ranklist, &hitlist);
+    status = potts_CalculateCOV(data, NULL, NULL);
     if (status != eslOK) goto ERROR; 
     status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 

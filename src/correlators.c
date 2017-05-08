@@ -31,6 +31,7 @@
 #include "covgrammars.h"
 #include "cykcov.h"
 #include "logsum.h"
+#include "pottsbuild.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
@@ -1079,7 +1080,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
 
 
 struct mutual_s *
-corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass)
+corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, METHOD method, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1108,7 +1109,13 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
        ESL_ALLOC(mi->pp[i][j],       sizeof(double  ) * K2);
     }
   }
-   
+
+  mi->pt = NULL;
+  if (method == POTTS) {
+    mi->pt = potts_Create(alen, abc, 0.01, APLM);
+    if (status != eslOK) goto ERROR;
+  }
+
   mi->COV = esl_dmatrix_Create(alen, alen);
  
   /* initialize for adding counts */
@@ -1137,6 +1144,7 @@ corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS miclass)
   mi->type  = mitype;
   mi->class = miclass;
 
+  
   if (mi->COV) esl_dmatrix_SetZero(mi->COV);
 
   mi->besthreshCOV = -eslINFINITY;
@@ -1162,6 +1170,9 @@ corr_Destroy(struct mutual_s *mi)
       free(mi->pp[i]);
       free(mi->pm[i]);
     }
+
+    if (mi->pt) potts_Destroy(mi->pt);
+    
     if (mi->COV)  esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
     free(mi->ngap);
