@@ -1080,7 +1080,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
 
 
 struct mutual_s *
-corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, METHOD method, COVCLASS covclass)
+corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, double pottsmu, POTTSTRAIN pottstrain, METHOD method, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1112,7 +1112,7 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
 
   mi->pt = NULL;
   if (method == POTTS) {
-    mi->pt = potts_Create(alen, abc, 0.01, APLM);
+    mi->pt = potts_Create(alen, abc, pottsmu, pottstrain);
     if (status != eslOK) goto ERROR;
   }
 

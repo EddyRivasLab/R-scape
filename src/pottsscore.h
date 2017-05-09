@@ -14,8 +14,8 @@
 #include "correlators.h"
 #include "pottsbuild.h"
 
-extern int potts_SumH           (PT *pt, ESL_MSA *msa, double *ret_sc,   char *errbuf, int verbose);
-extern int potts_FULLLogp       (PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
-extern int potts_APLMLogp(int i, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
+extern int potts_SumH    (PT *pt, ESL_MSA *msa, double *ret_sc,   char *errbuf, int verbose);
+extern int potts_FULLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
+extern int potts_APLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
 extern int potts_CalculateCOV(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 #endif

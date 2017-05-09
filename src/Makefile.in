@@ -102,6 +102,7 @@ PROGS    = scorematrix2rate\
 	   appcov\
 	   msaq\
            Phcar\
+	   pottsim\
 
 
 OBJS     = e1_bg.o\

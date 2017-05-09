@@ -21,6 +21,8 @@
 static double potts_score_oneseq(PT *pt, ESL_DSQ *sq);
 static double potts_full_logz(PT *pt);
 static double potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq);
+static double potts_regularize(PT *pt);
+
 
 int
 potts_SumH(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
@@ -44,155 +46,67 @@ int
 potts_FULLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
   double logp;
-  double reg;
-  double hi, eij;
-  int    K = msa->abc->K;
-  int    i, j;
-  int    a, b;
 
   potts_SumH(pt, msa, &logp, errbuf, verbose);
   logp /= msa->nseq;
   logp -= potts_full_logz(pt);
 
   // l2-regularization
-  reg = 0;
-  for (i = 0; i < pt->L; i ++) 
-    for (a = 0; a < K; a ++) {
-      hi = pt->h[i][a];
-      reg += hi*hi;
-      
-      for (j = i+1; j < pt->L; j ++)  
-	for (b = 0; b < K; b ++) {
-	  eij = pt->e[i][j][IDX(a,b,K)];
-	  reg += eij*eij;
-	}
-    }
-  reg *= pt->mu;
-  
-  logp += reg;
+  logp += potts_regularize(pt);
   
   *ret_logp = logp;
   return eslOK;
 }
 
 int
-potts_APLMLogp(int i, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
+potts_APLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
   ESL_DSQ *sq;
   double   logp = 0.;
-  double   sc = 0.;
+  double   sc;
   double   hi, eij;
-  double   reg;
   int      K = msa->abc->K;
   int      sqi, sqj;
   int      resi, resj;
   int      s;
-  int      j;
+  int      i, j;
   int      a, b;
   
   for (s = 0; s < msa->nseq; s++) {
-    sq   = msa->ax[s];
-    sqi  = sq[i];
-    resi = esl_abc_XIsCanonical(msa->abc, sqi);
+    sq = msa->ax[s];
     
-    hi = (resi)? pt->h[i][sqi] : 0;
-    sc += hi;
-    
-    for (j = 0; j < pt->L; j ++) {
-      if (j == i) continue;
+    for (i = 0; i < pt->L; i ++) {
+      sqi  = sq[i];
+      resi = esl_abc_XIsCanonical(msa->abc, sqi);
       
-      sqj  = sq[j];
-      resj = esl_abc_XIsCanonical(msa->abc, sqj);
+      hi = (resi)? pt->h[i][sqi] : 0;
+      sc = hi;
       
-      eij = (resi && resj)? pt->e[i][j][IDX(sqi,sqj,K)] : 0;
-      sc += eij;
-      sc -= potts_aplm_logz(i, pt, sq);
-    }
-    sc *= msa->wgt[s];
-
-    logp += sc;
-  }
-  logp /= msa->nseq;  
-
-  // l2-regularization
-  reg = 0;
-  for (a = 0; a < K; a ++) {
-    hi = pt->h[i][a];
-    reg += hi*hi;
-    
-    for (j = 0; j < pt->L; j ++) {
-      if (j ==i) continue;
-      
-      for (b = 0; b < K; b ++) {
-	eij = pt->e[i][j][IDX(a,b,K)];
-	reg += eij*eij;
+      for (j = 0; j < pt->L; j ++) {
+	if (j == i) continue;
+	
+	sqj  = sq[j];
+	resj = esl_abc_XIsCanonical(msa->abc, sqj);
+	
+	eij = (resi && resj)? pt->e[i][j][IDX(sqi,sqj,K)] : 0;
+	sc += eij;
       }
+      sc -= potts_aplm_logz(i, pt, sq);
+      sc *= msa->wgt[s];
+      
+      logp += sc;
     }
+    logp /= msa->nseq;  
   }
-  reg *= pt->mu;
-  logp += reg;
+  
+  // l2-regularization
+  logp += potts_regularize(pt);
   
   *ret_logp = logp;
 
   return eslOK;
 }
 
-
-// sum_{a,b} exp{ \sim_i hi(a) + \sum_{i<j} eij(a,b) }
-//
-static double
-potts_full_logz(PT *pt)
-{
-  double logsum = -eslINFINITY;
-  double sc;
-  int    K = pt->abc->K;
-  int    i, j;
-  int    a, b;
-  
-  for (a = 0; a < K; a ++)
-    for (b = 0; b < K; b ++) {
-      sc = 0.;
-      
-      for (i = 0; i < pt->L; i ++) {
-	sc += pt->h[i][a];	
-	for (j = i+1; j < pt->L; j ++) 
-	  sc += pt->e[i][j][IDX(a,b,K)];
-      }
-      
-      logsum = e2_FLogsum(logsum, sc);
-    }
-  
-  return logsum;
-}
-
-// sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ]
-//
-static double
-potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
-{
-  double logsum = -eslINFINITY;
-  double sc;
-  int    K = pt->abc->K;
-  int    sqj;
-  int    resj;
-  int    j;
-  int    a;
-
-  for (a = 0; a < K; a ++) {
-    sc = pt->h[i][a];
-    
-    for (j = 0; j < pt->L; j ++) {
-      if (j == i) continue;
-      sqj  = sq[j];
-      resj = esl_abc_XIsCanonical(pt->abc, sqj);
-      sc += (resj)? pt->e[i][j][IDX(a,sqj,K)] : 0.;      
-    }
-    
-    logsum = e2_FLogsum(logsum, sc);
-  }
-
-  return logsum;
-}
 
 
 int                 
@@ -273,4 +187,90 @@ potts_score_oneseq(PT *pt, ESL_DSQ *sq)
     }
   }
   return sc;
+}
+
+
+// sum_{a,b} exp{ \sim_i hi(a) + \sum_{i<j} eij(a,b) }
+//
+static double
+potts_full_logz(PT *pt)
+{
+  double logsum = -eslINFINITY;
+  double sc;
+  int    K = pt->abc->K;
+  int    i, j;
+  int    a, b;
+  
+  for (a = 0; a < K; a ++)
+    for (b = 0; b < K; b ++) {
+      sc = 0.;
+      
+      for (i = 0; i < pt->L; i ++) {
+	sc += pt->h[i][a];	
+	for (j = i+1; j < pt->L; j ++) 
+	  sc += pt->e[i][j][IDX(a,b,K)];
+      }
+      
+      logsum = e2_FLogsum(logsum, sc);
+    }
+  
+  return logsum;
+}
+
+// sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ]
+//
+static double
+potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
+{
+  double logsum = -eslINFINITY;
+  double sc;
+  int    K = pt->abc->K;
+  int    sqj;
+  int    resj;
+  int    j;
+  int    a;
+
+  for (a = 0; a < K; a ++) {
+    sc = pt->h[i][a];
+    
+    for (j = 0; j < pt->L; j ++) {
+      if (j == i) continue;
+      sqj  = sq[j];
+      resj = esl_abc_XIsCanonical(pt->abc, sqj);
+      sc += (resj)? pt->e[i][j][IDX(a,sqj,K)] : 0.;      
+    }
+    
+    logsum = e2_FLogsum(logsum, sc);
+  }
+
+  return logsum;
+}
+
+
+static double
+potts_regularize(PT *pt)
+{
+  double reg = 0;
+  double hi, eij;
+  int    K = pt->abc->K;
+  int    i, j;
+  int    a, b;
+  
+  // l2-regularization
+  for (a = 0; a < K; a ++) {
+    hi = pt->h[i][a];
+    reg += hi*hi;
+    
+    for (j = 0; j < pt->L; j ++) {
+      if (j ==i) continue;
+      
+      for (b = 0; b < K; b ++) {
+	eij = pt->e[i][j][IDX(a,b,K)];
+	reg += eij*eij;
+      }
+    }
+  }
+  reg *= pt->mu;
+
+  return reg;
 }

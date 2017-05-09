@@ -37,6 +37,7 @@
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
+#define POTTSTOPTS   "--FULL,--APLM,--DCA,--ACE,--BML"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -79,7 +80,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
   int              tstart;
   int              tend;
-
   char            *outmsafile;
   FILE            *outmsafp;
  
@@ -149,7 +149,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   
   double           pottsmu;
-  POTTSTYPE        pottstype;
+  POTTSTRAIN        pottstrain;
   
   char            *pdbfile;             /* pdfb file */
   char            *pdbcfile;            /* file with pdb contact list */
@@ -271,6 +271,14 @@ static ESL_OPTIONS options[] = {
   { "--pdbcfile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbfile",        "read pdb contacts from file <f>",                                                           0 },
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
  
+   /* Control for potts implementation */
+  { "--pottsmu",      eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
+  { "--FULL",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -502,8 +510,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--CCF"))   cfg.covtype = CCF;
   else if (esl_opt_GetBoolean(go, "--PFp")) { cfg.covtype = PFp; cfg.method = POTTS; }
 
-  cfg.pottsmu   = 0.01;
-  cfg.pottstype = FULL;
+  cfg.pottsmu    = esl_opt_GetReal(go, "--pottsmu");
+  cfg.pottstrain = NONE;
+  if      (esl_opt_GetBoolean(go, "--FULL")) cfg.pottstrain = FULL;
+  else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pottstrain = APLM;
+  else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pottstrain = GINV;
+  else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pottstrain = ACE;
+  else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pottstrain = BML;
+
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -1244,8 +1258,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->method, cfg->covclass);
-  if (cfg->method == POTTS) printf("^^ pots %d\n", mi->pt->type);
+  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->pottsmu, cfg->pottstrain, cfg->method, cfg->covclass);
 
   /* main function */
   data.outfp         = NULL;
@@ -1271,8 +1284,6 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
-  data.pottsmu       = cfg->pottsmu;
-  data.pottstype     = cfg->pottstype;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1354,8 +1365,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   }
   
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->method, cfg->covclass);
-
+  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->pottsmu, cfg->pottstrain, cfg->method, cfg->covclass);
+ 
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
     if (cfg->mode == GIVSS || cfg->mode == CYKSS)
@@ -1387,8 +1398,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
-  data.pottsmu       = cfg->pottsmu;
-  data.pottstype     = cfg->pottstype;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;

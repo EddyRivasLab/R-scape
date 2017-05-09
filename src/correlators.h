@@ -178,8 +178,6 @@ struct data_s {
   int                 *ct;
   CLIST               *clist;
   int                 *msamap;
-  int                  pottsmu;
-  int                  pottstype;
   int                  firstpos;
   double               bmin;
   double               w;
@@ -224,7 +222,7 @@ extern int              corr_CalculateCCF     (COVCLASS covclass, struct data_s 
 extern int              corr_CalculateCCF_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern struct mutual_s *corr_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int thresh, ESL_ALPHABET *abc,
-				    METHOD method, COVCLASS covclass);
+				    double pottsmu, POTTSTRAIN pottstrain, METHOD method, COVCLASS covclass);
 extern int              corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             corr_Destroy(struct mutual_s *mi);
 extern int              corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);

@@ -58,7 +58,6 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
-  PT            *pt = NULL;
   COVCLASS       covclass = data->mi->class;
   int            status;
 
@@ -74,7 +73,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     }
     break;
   case POTTS:
-    status = potts_Build(data->mi->pt, msa, data->pottsmu, data->pottstype, data->tol, data->errbuf, data->verbose);
+    status = potts_Build(data->mi->pt, msa, data->tol, data->errbuf, data->verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -247,13 +246,11 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     }
   }
 
-  if (pt) potts_Destroy(pt);
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
   
  ERROR:
-  if (pt) potts_Destroy(pt);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
   return status;

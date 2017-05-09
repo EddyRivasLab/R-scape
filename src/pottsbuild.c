@@ -17,18 +17,16 @@
 #include "pottsbuild.h"
 #include "pottsscore.h"
 
-static int    optimize_full_pack_paramvector   (double *p, long np, struct optimize_data *data);
-static int    optimize_aplm_pack_paramvector   (double *p, long np, struct optimize_data *data);
-static int    optimize_full_unpack_paramvector (double *p, long np, struct optimize_data *data);
-static int    optimize_aplm_unpack_paramvector (double *p, long np, struct optimize_data *data);
+static int    optimize_pack_paramvector   (double *p, long np, struct optimize_data *data);
+static int    optimize_unpack_paramvector (double *p, long np, struct optimize_data *data);
 static void   optimize_bracket_define_direction(double *p, long np, struct optimize_data *data);
 static double optimize_potts_func              (double *p, long np, void *dptr);
-static double func_potts_full                  (         PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
-static double func_potts_aplm                  (int pos, PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+static double func_potts_full                  (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+static double func_potts_aplm                  (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 
 
 PT *
-potts_Create(int64_t L, ESL_ALPHABET *abc, double mu, POTTSTYPE pttype)
+potts_Create(int64_t L, ESL_ALPHABET *abc, double mu, POTTSTRAIN pottstrain)
 {
   PT  *pt = NULL;
   int  K  = abc->K;
@@ -37,10 +35,10 @@ potts_Create(int64_t L, ESL_ALPHABET *abc, double mu, POTTSTYPE pttype)
   int  status;
   
   ESL_ALLOC(pt, sizeof(PT));
-  pt->L    = L;
-  pt->abc  = abc;
-  pt->mu   = mu;
-  pt->type = pttype;
+  pt->L     = L;
+  pt->abc   = abc;
+  pt->mu    = mu;
+  pt->train = pottstrain;
 
   ESL_ALLOC(pt->e,            sizeof(double **) * L);
   ESL_ALLOC(pt->h,            sizeof(double  *) * L);
@@ -72,14 +70,15 @@ potts_Assign(PT *pt, double val)
   int L = pt->L;
   int K = pt->abc->K;
   int i, j;
-  int a;
+  int a, b;
   
   for (i = 0; i < L; i++) {
     for (a = 0; a < K; a ++) pt->h[i][a] = val;
     for (j = i; j < L; j++)
-      for (a = 0; a < K*K; a ++) {
-	pt->e[i][j][a] = (i==j||j>i+1)? 0.:val;
-	pt->e[j][i][a] = pt->e[i][j][a];
+      for (a = 0; a < K; a ++) 
+	for (b = 0; b < K; b ++) {
+	  pt->e[i][j][IDX(a,b,K)] = ((i==j||j>i+1)&&a+b==K)? 0.:val;
+	  pt->e[j][i][IDX(b,a,K)] = pt->e[i][j][IDX(a,b,K)];
       }
   }
   return eslOK;
@@ -104,33 +103,20 @@ potts_Destroy(PT *pt)
 }
 
 int
-potts_Build(PT *pt, ESL_MSA *msa, double mu, POTTSTYPE pttype, float tol, char *errbuf, int verbose)
+potts_Build(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   float    firststep;
   int      status;
 
   /* init */
-  firststep = 1e-5;
+  firststep = 1.0;
 
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error in potts_Build()");
-  potts_Assign(pt, 1.0);
-  
-  pt->mu = mu;
-  pt->type = pttype;
+  potts_Assign(pt, 0.1);
 
-  switch(pt->type) {
-  case FULL:
-    status = potts_OptimizeGDFULL(pt, msa, firststep, tol, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error optimizing FULL potts");
-    break;
-  case APLM:
-    status = potts_OptimizeGDAPLM(pt, msa, firststep, tol, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error optimizing FULL potts");
-    break;
-  case GINV:
-    break;
-  }
-  
+  status = potts_OptimizeGD(pt, msa, firststep, tol, errbuf, verbose);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error optimizing potts");
+    
  return eslOK;
 
  ERROR:
@@ -138,20 +124,17 @@ potts_Build(PT *pt, ESL_MSA *msa, double mu, POTTSTYPE pttype, float tol, char *
 }
 
 int
-potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose)
+potts_OptimizeGD(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   double                *p = NULL;	       /* parameter vector                        */
   double                *u = NULL;             /* max initial step size vector            */
   double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
-  double                 logp_init;
   double                 logp;
   int                    L = msa->alen;
   int                    K = msa->abc->K;
   int                    np;
   int                    status;
-
-  logp_init = func_potts_full(pt, msa, tol, errbuf, verbose);
 
   np = L*K*(1+L*K);     /* the variables hi eij */
   /* allocate */
@@ -170,7 +153,7 @@ potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
  
   /* Create the parameter vector.
    */
-  optimize_full_pack_paramvector(p, (long)np, &data);
+  optimize_pack_paramvector(p, (long)np, &data);
  
   /* pass problem to the optimizer
    */
@@ -180,13 +163,13 @@ potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
 		       (void *) (&data), 
 		       tol, wrk, &logp);
   if (status != eslOK) 
-    esl_fatal("optimize_full_potts(): bad bracket minimization");	
+    esl_fatal("optimize_potts(): bad bracket minimization");	
   
   /* unpack the final parameter vector */
-  optimize_full_unpack_paramvector(p, (long)np, &data);
-  if (verbose) printf("END POTTS FULL OPTIMIZATION: logp %f --> %f\n", logp_init, logp);
+  optimize_unpack_paramvector(p, (long)np, &data);
+  if (verbose) printf("END POTTS OPTIMIZATION\n");
   status = potts_GaugeZeroSum(pt, tol, errbuf);
-  if (status != eslOK) esl_fatal("optimize_full_potts(): bad zero gauge sum");
+  if (status != eslOK) esl_fatal("%s.optimize_potts(): bad zero gauge sum", errbuf);
     
   /* clean up */
   if (u   != NULL) free(u);
@@ -201,85 +184,6 @@ potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
   return status;
 }
 
-int
-potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose)
-{
-  struct optimize_data   data;
-  double                *p = NULL;	       /* parameter vector                        */
-  double                *u = NULL;             /* max initial step size vector            */
-  double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
-  double                 logp;
-  double                 logp_init;
-  int                    L = msa->alen;
-  int                    K = msa->abc->K;
-  int                    np;
-  int                    pos;
-  int                    i, j;
-  int                    a, b;
-  int                    status;
-
-   np = K*(1+L*K);     /* the variables hi eij */
-  
-  /* allocate */
-  ESL_ALLOC(p,   sizeof(double) * (np+1));
-  ESL_ALLOC(u,   sizeof(double) * (np+1));
-  ESL_ALLOC(wrk, sizeof(double) * (np+1) * 4);
-  
- /* Copy shared info into the "data" structure
-   */
-  data.pt         = pt;
-  data.msa        = msa;
-  data.firststep  = firststep;
-  data.tol        = tol;
-  data.errbuf     = errbuf;
-  data.verbose    = verbose;
-
-  for (pos = 0; pos < L; pos ++) {
-
-    data.pos = pos;
-    logp_init = func_potts_aplm(pos, pt, msa, tol, errbuf, verbose);
-    
-    /* Create the parameter vector.
-     */
-    optimize_aplm_pack_paramvector(p, (long)np, &data);
-    
-    /* pass problem to the optimizer
-     */
-    optimize_bracket_define_direction(u, (long)np, &data);
-    status = min_Bracket(p, u, np, data.firststep,
-			 &optimize_potts_func,
-			 (void *) (&data), 
-			 tol, wrk, &logp);
-    if (status != eslOK) 
-      esl_fatal("optimize_aplm_potts(): bad bracket minimization");	
-    
-    /* unpack the final parameter vector */
-    optimize_aplm_unpack_paramvector(p, (long)np, &data);
-
-    // symmetrize
-    for (i = 0; i < pt->L; i++) 
-      for (j = 0; j < pt->L; j++) 
-	for (a = 0; a < K*K; a ++) {
-	  pt->e[i][j][a] = 0.5 * (pt->e[i][j][a] + pt->e[j][i][a]);
-	  pt->e[j][i][a] = pt->e[i][j][a];
-	}
-    potts_GaugeZeroSum(pt, tol, errbuf);
-     
-    if (verbose) printf("END POTTS APML %d OPTIMIZATION: logp %f --> %f\n", pos, logp_init, logp);
-  }
-  
-  /* clean up */
-  if (u   != NULL) free(u);
-  if (p   != NULL) free(p);
-  if (wrk != NULL) free(wrk);
-  return eslOK;
-
- ERROR:
-  if (p   != NULL) free(p);
-  if (u   != NULL) free(u);
-  if (wrk != NULL) free(wrk);
-  return status;
-}
 
 // sum_b eij(a,b) = sum_a eij(a,b) = sum_a hi[a] = 0
 //
@@ -302,37 +206,36 @@ potts_GaugeZeroSum(PT *pt, double tol, char *errbuf)
   for (i = 1; i < pt->L; i++) sumh[i] = sumh[i-1] + K;
   
   for (i = 0; i < pt->L; i++) {
+    
     for (a = 0; a < K; a ++) sumh[i][a] = 0;
     
     for (j = 0; j < pt->L; j++) {
-      // initialize
-      for (a = 0; a < K; a ++) sumi[a] = 0;
-      for (a = 0; a < K; a ++) sumj[a] = 0;
-      sum  = 0;
       
-      for (a = 0; a < K; a ++) 	
+      sum = 0;     
+      for (a = 0; a < K; a ++) {
+	sumi[a] = 0;
+	sumj[a] = 0; 
 	for (b = 0; b < K; b ++) {
 	  sum        += pt->e[i][j][IDX(a,b,K)];
+	  sumi[a]    += pt->e[i][j][IDX(a,b,K)];
+	  sumj[a]    += pt->e[i][j][IDX(b,a,K)];
 	  sumh[i][a] += pt->e[i][j][IDX(a,b,K)];
-	  sumi[b]    += pt->e[i][j][IDX(a,b,K)];
-	  sumj[b]    += pt->e[i][j][IDX(b,a,K)];
 	}
-
+      }
+      
       for (a = 0; a < K; a ++) 
 	for (b = 0; b < K; b ++)
-	  pt->e[i][j][IDX(a,b,K)] -= sumi[b] + sumj[a] - sum;
-    } // end of j loop
-     
-    for (a = 0; a < K; a ++)
-      pt->h[i][a] -= sumh[i][a];
+	  pt->e[i][j][IDX(a,b,K)] -= sumi[b]/K + sumj[a]/K - sum/K;
+    }
+    for (a = 0; a < K; a ++) pt->h[i][a] -= sumh[i][a]; 
   }
-
-#if 1
+  
+#if 0
   // check it is a zero sum
   for (i = 0; i < pt->L; i++) {
     sum = 0;
     for (a = 0; a < K; a ++) sum += pt->h[i][a];
-    if (fabs(sum) > tol) ESL_XFAIL(eslFAIL, errbuf, "zerosum for h failed");
+    if (fabs(sum) > tol) ESL_XFAIL(eslFAIL, errbuf, "zerosum for h failed. sum = %f", sum);
     
     for (j = i+1; j < pt->L; j++) {
       sum = 0;
@@ -364,7 +267,7 @@ potts_GaugeZeroSum(PT *pt, double tol, char *errbuf)
 /*------------------------------- internal functions ----------------------------------*/
 
 static int
-optimize_full_pack_paramvector(double *p, long np, struct optimize_data *data)
+optimize_pack_paramvector(double *p, long np, struct optimize_data *data)
 {
   int   L = data->msa->alen;
   int   K = data->msa->abc->K;
@@ -379,25 +282,9 @@ optimize_full_pack_paramvector(double *p, long np, struct optimize_data *data)
   }
   return eslOK;  
 }
-static int
-optimize_aplm_pack_paramvector(double *p, long np, struct optimize_data *data)
-{
-  int   pos = data->pos;
-  int   L = data->msa->alen;
-  int   K = data->msa->abc->K;
-  int   x = 0;
-  int   i, j;
-  int   a;
-
-  for (a = 0; a < K; a++)     p[x++] = data->pt->h[pos][a];
-  for (j = 0; j < L; j++) 
-    for (a = 0; a < K*K; a++) p[x++] = data->pt->e[pos][j][a];
- 
-  return eslOK;  
-}
 
 static int
-optimize_full_unpack_paramvector(double *p, long np, struct optimize_data *data)
+optimize_unpack_paramvector(double *p, long np, struct optimize_data *data)
 {
   int   L = data->msa->alen;
   int   K = data->msa->abc->K;
@@ -414,29 +301,13 @@ optimize_full_unpack_paramvector(double *p, long np, struct optimize_data *data)
  return eslOK;
 }
 
-static int
-optimize_aplm_unpack_paramvector(double *p, long np, struct optimize_data *data)
-{
-  int   pos = data->pos;
-  int   L = data->msa->alen;
-  int   K = data->msa->abc->K;
-  int   x = 0;
-  int   i, j;
-  int   a;
-  
-  for (a = 0; a < K; a++)     data->pt->h[pos][a]    = p[x++];
-  for (j = 0; j < L; j++) 
-    for (a = 0; a < K*K; a++) data->pt->e[pos][j][a] = p[x++];
- 
- return eslOK;
-}
 
 static void
 optimize_bracket_define_direction(double *u, long np, struct optimize_data *data)
 {
   int x;
-  for (x = 0; x < np; x++) u[x] = 0.01;
-  u[np] = 0.05;
+  for (x = 0; x < np; x++) u[x] = 0.1;
+  u[np] = 0.5;
 }
 
 static double
@@ -444,16 +315,19 @@ optimize_potts_func(double *p, long np, void *dptr)
 {
   struct optimize_data *data = (struct optimize_data *) dptr;
   
-  switch(data->pt->type) {
+  optimize_unpack_paramvector(p, np, data);
+  
+  switch(data->pt->train) {
   case FULL:
-    optimize_full_unpack_paramvector(p, np, data);
     data->logp = func_potts_full(data->pt, data->msa, data->tol, data->errbuf, data->verbose);
     break;
   case APLM:
-    optimize_aplm_unpack_paramvector(p, np, data);
-    data->logp = func_potts_aplm(data->pos, data->pt, data->msa, data->tol, data->errbuf, data->verbose);
+    data->logp = func_potts_aplm(data->pt, data->msa, data->tol, data->errbuf, data->verbose);
     break;
   case GINV:
+  case ACE:
+  case BML:
+  case NONE:
     data->logp = -eslINFINITY;
     break;
   }
@@ -474,21 +348,22 @@ func_potts_full(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
   printf("logp FULL %f\n", logp);
 #endif
   
-  return logp;
+  return -logp;
 }
  
 static double
-func_potts_aplm(int pos, PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+func_potts_aplm(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   double  logp;
   int     status;
   
-  status = potts_APLMLogp(pos, pt, msa, &logp, errbuf, verbose);
+  status = potts_APLMLogp(pt, msa, &logp, errbuf, verbose);
+
   if (status != eslOK) exit(1);
   
 #if 1
   printf("logp APLM %f\n", logp);
 #endif
   
-  return logp;
+  return -logp;
 }
