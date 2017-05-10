@@ -1278,7 +1278,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   struct data_s    data;
   int              status;
 
-  corr_Reuse(mi, mi->type, TRUE, cfg->covtype, cfg->covclass);
+  corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
   
   /* weigth the sequences */
   if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);

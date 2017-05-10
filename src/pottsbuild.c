@@ -38,7 +38,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
   
   // Initiazize 
-  //potts_InitGaussian(r, pt, 0., 1.0);
+  //status = potts_InitGaussian(r, pt, 0., 1.0);
   status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   

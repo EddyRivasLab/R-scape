@@ -1135,7 +1135,7 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
 int
 corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
 {
-  int K  = abc->K;
+  int K  = mi->abc->K;
   int K2 = K * K;
   int i, j;
 
@@ -1144,17 +1144,17 @@ corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
   mi->class     = miclass;
 
    /* initialize for adding counts */
-  for (i = 0; i < alen; i++) {
+  for (i = 0; i < mi->alen; i++) {
     esl_vec_DSet(mi->pm[i], K, 0.0); 
  
-    for (j = 0; j < alen; j++) {
+    for (j = 0; j < mi->alen; j++) {
       mi->nseff[i][j] = 0.;
       mi->ngap[i][j]  = 0.;
       esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
     }
   }
 
-  corr_ReuseCOV(mi,mitype, miclass);
+  corr_ReuseCOV(mi, mitype, miclass);
 
   return eslOK;
 }
