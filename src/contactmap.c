@@ -226,7 +226,6 @@ read_pdfcontacts(char *pdbcfile, int *revmap, int *ct, CLIST *clist, char *errbu
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
 	D = atof(tok);
 
-	printf("^^ posi %d %d posj %d %d |%f\n", i, posi, j, posj, D);
 	if (i > 0 && j > 0 && isnewcontact(posi, posj, clist)) {
 	  
 	  if (h == ncnt - 1) {

@@ -882,7 +882,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, TRUE, msa->nseq, msa->alen, cfg->abc, 0.0, NONE, cfg->method, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, TRUE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
 
   /* main function */
   data.outfp         = NULL;
@@ -968,7 +968,7 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   }
 
   /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, msa->nseq, msa->alen, cfg->abc, 0.0, NONE, cfg->method, cfg->covclass);
+  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, msa->nseq, msa->alen, cfg->abc, cfg->covclass);
 
   /* write MSA info to the sumfile */
   if (cfg->mode != RANSS) {

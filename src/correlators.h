@@ -64,9 +64,11 @@ typedef enum {
   CCFp  = 25,
   CCFa  = 26,
 
-  PFp   = 27, // potts+Frobenius+APC
+  PTFp   = 27, // potts+Frobenius+APC
+  PTAp   = 28, // potts+Averages+APC
+  PTDp   = 29, // potts+DI+APC
   
-  COVNONE = 28,
+  COVNONE = 30,
 } COVTYPE;
 
 typedef enum {
@@ -87,6 +89,7 @@ typedef enum {
   RANSS = 2,
 } MODE;
 
+
 struct mutual_s {
   int64_t         alen;
   int64_t         nseq;
@@ -95,8 +98,6 @@ struct mutual_s {
   double        **nseff;       // effective number of sequences  [0,alen-1][0,alen-1]
   double        **ngap;        // number of gaps  [0,alen-1][0,alen-1]
 
-  PT             *pt;          // optional: a potts model
-  
   COVTYPE         type;
   COVCLASS        class;
   ESL_DMATRIX    *COV;         // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
@@ -111,6 +112,7 @@ struct mutual_s {
 
   ESL_ALPHABET   *abc;
 };
+
 
 typedef struct ranklist_s {
   ESL_HISTOGRAM *ha;             /* histogram of scores (all pairs) */
@@ -165,6 +167,7 @@ struct data_s {
   RANKLIST            *ranklist_null;
   RANKLIST            *ranklist_aux;
   struct mutual_s     *mi; 
+  PT                  *pt; 
   THRESH              *thresh;
   METHOD               method;
   MODE                 mode;
@@ -221,8 +224,8 @@ extern int              corr_CalculateRAFS    (COVCLASS covclass, struct data_s 
 extern int              corr_CalculateCCF     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern int              corr_CalculateCCF_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
-extern struct mutual_s *corr_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int thresh, ESL_ALPHABET *abc,
-				    double pottsmu, POTTSTRAIN pottstrain, METHOD method, COVCLASS covclass);
+extern struct mutual_s *corr_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int thresh, ESL_ALPHABET *abc, COVCLASS covclass);
+extern int              corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass);
 extern int              corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             corr_Destroy(struct mutual_s *mi);
 extern int              corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);

@@ -65,6 +65,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   switch(data->method) {
   case NAIVE:
   case AKMAEV:
+  case POTTS:
   case NULLPHYLO:
     if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
 	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
@@ -72,15 +73,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       if (status != eslOK) goto ERROR;
     }
     break;
-  case POTTS:
-    status = potts_Build(data->mi->pt, msa, data->tol, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-    break;
   }
 
   switch(data->covtype) {
-  case PFp:
-    status = potts_CalculateCOV(data, NULL, NULL);
+  case PTFp:
+  case PTAp:
+  case PTDp:
+    status = potts_CalculateCOV(data);
     if (status != eslOK) goto ERROR; 
     status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR; 

@@ -33,7 +33,7 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nullphylo,--naive,--potts,--akmaev"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa"              
+#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa,--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
@@ -82,7 +82,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              tend;
   char            *outmsafile;
   FILE            *outmsafp;
- 
   char            *outnullfile;
   FILE            *outnullfp; 
   char            *outdir;
@@ -122,6 +121,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double          *fbp;
   double          *fnbp;
 
+  struct mutual_s *mi;
+  
   METHOD           method;
   char            *treefile;
   FILE            *treefp;
@@ -148,8 +149,10 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nbpairs_cyk;
 
   
-  double           pottsmu;
-  POTTSTRAIN        pottstrain;
+  double           ptmu;
+  PTTRAIN          pttrain;
+  PTSCTYPE         ptsctype;
+  PT              *pt;
   
   char            *pdbfile;             /* pdfb file */
   char            *pdbcfile;            /* file with pdb contact list */
@@ -222,7 +225,6 @@ static ESL_OPTIONS options[] = {
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
   { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
   /* covariation measures */
-  { "--PFp",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS  ASC corrected statistic",                                                              1 },
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APC corrected statistic",                                                              1 },
   { "--CHI",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  statistic",                                                                            1 },
@@ -250,6 +252,9 @@ static ESL_OPTIONS options[] = {
   { "--CCFa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenius norm ASC corrected statistic",                       1 },
   { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                      1 },
   { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                   1 },
+  { "--PTFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                              1 },
+  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                              1 },
+  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                              1 },
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
@@ -272,7 +277,7 @@ static ESL_OPTIONS options[] = {
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
  
    /* Control for potts implementation */
-  { "--pottsmu",      eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
+  { "--ptmu",      eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
   { "--FULL",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
@@ -474,6 +479,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
   }
 
+  cfg.mi = NULL;
+  
   if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
   else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
   else if (esl_opt_GetBoolean(go, "--potts"))     cfg.method = POTTS;
@@ -481,42 +488,46 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
 
-  if      (esl_opt_GetBoolean(go, "--CHIa"))  cfg.covtype = CHIa;
-  else if (esl_opt_GetBoolean(go, "--CHIp"))  cfg.covtype = CHIp;
-  else if (esl_opt_GetBoolean(go, "--CHI"))   cfg.covtype = CHI;
-  else if (esl_opt_GetBoolean(go, "--GTa"))   cfg.covtype = GTa;
-  else if (esl_opt_GetBoolean(go, "--GTp"))   cfg.covtype = GTp;
-  else if (esl_opt_GetBoolean(go, "--GT"))    cfg.covtype = GT;
-  else if (esl_opt_GetBoolean(go, "--MIa"))   cfg.covtype = MIa;
-  else if (esl_opt_GetBoolean(go, "--MIp"))   cfg.covtype = MIp;
-  else if (esl_opt_GetBoolean(go, "--MI"))    cfg.covtype = MI;
-  else if (esl_opt_GetBoolean(go, "--MIra"))  cfg.covtype = MIra;
-  else if (esl_opt_GetBoolean(go, "--MIrp"))  cfg.covtype = MIrp;
-  else if (esl_opt_GetBoolean(go, "--MIr"))   cfg.covtype = MIr;
-  else if (esl_opt_GetBoolean(go, "--MIga"))  cfg.covtype = MIga;
-  else if (esl_opt_GetBoolean(go, "--MIgp"))  cfg.covtype = MIgp;
-  else if (esl_opt_GetBoolean(go, "--MIg"))   cfg.covtype = MIg;
-  else if (esl_opt_GetBoolean(go, "--OMESa")) cfg.covtype = OMESa;
-  else if (esl_opt_GetBoolean(go, "--OMESp")) cfg.covtype = OMESp;
-  else if (esl_opt_GetBoolean(go, "--OMES"))  cfg.covtype = OMES;
-  else if (esl_opt_GetBoolean(go, "--RAFa"))  cfg.covtype = RAFa;
-  else if (esl_opt_GetBoolean(go, "--RAFp"))  cfg.covtype = RAFp;
-  else if (esl_opt_GetBoolean(go, "--RAF"))   cfg.covtype = RAF;
-  else if (esl_opt_GetBoolean(go, "--RAFSa")) cfg.covtype = RAFSa;
-  else if (esl_opt_GetBoolean(go, "--RAFSp")) cfg.covtype = RAFSp;
-  else if (esl_opt_GetBoolean(go, "--RAFS"))  cfg.covtype = RAFS;
-  else if (esl_opt_GetBoolean(go, "--CCFa"))  cfg.covtype = CCFa;
-  else if (esl_opt_GetBoolean(go, "--CCFp"))  cfg.covtype = CCFp;
-  else if (esl_opt_GetBoolean(go, "--CCF"))   cfg.covtype = CCF;
-  else if (esl_opt_GetBoolean(go, "--PFp")) { cfg.covtype = PFp; cfg.method = POTTS; }
+  if      (esl_opt_GetBoolean(go, "--CHIa"))   cfg.covtype = CHIa;
+  else if (esl_opt_GetBoolean(go, "--CHIp"))   cfg.covtype = CHIp;
+  else if (esl_opt_GetBoolean(go, "--CHI"))    cfg.covtype = CHI;
+  else if (esl_opt_GetBoolean(go, "--GTa"))    cfg.covtype = GTa;
+  else if (esl_opt_GetBoolean(go, "--GTp"))    cfg.covtype = GTp;
+  else if (esl_opt_GetBoolean(go, "--GT"))     cfg.covtype = GT;
+  else if (esl_opt_GetBoolean(go, "--MIa"))    cfg.covtype = MIa;
+  else if (esl_opt_GetBoolean(go, "--MIp"))    cfg.covtype = MIp;
+  else if (esl_opt_GetBoolean(go, "--MI"))     cfg.covtype = MI;
+  else if (esl_opt_GetBoolean(go, "--MIra"))   cfg.covtype = MIra;
+  else if (esl_opt_GetBoolean(go, "--MIrp"))   cfg.covtype = MIrp;
+  else if (esl_opt_GetBoolean(go, "--MIr"))    cfg.covtype = MIr;
+  else if (esl_opt_GetBoolean(go, "--MIga"))   cfg.covtype = MIga;
+  else if (esl_opt_GetBoolean(go, "--MIgp"))   cfg.covtype = MIgp;
+  else if (esl_opt_GetBoolean(go, "--MIg"))    cfg.covtype = MIg;
+  else if (esl_opt_GetBoolean(go, "--OMESa"))  cfg.covtype = OMESa;
+  else if (esl_opt_GetBoolean(go, "--OMESp"))  cfg.covtype = OMESp;
+  else if (esl_opt_GetBoolean(go, "--OMES"))   cfg.covtype = OMES;
+  else if (esl_opt_GetBoolean(go, "--RAFa"))   cfg.covtype = RAFa;
+  else if (esl_opt_GetBoolean(go, "--RAFp"))   cfg.covtype = RAFp;
+  else if (esl_opt_GetBoolean(go, "--RAF"))    cfg.covtype = RAF;
+  else if (esl_opt_GetBoolean(go, "--RAFSa"))  cfg.covtype = RAFSa;
+  else if (esl_opt_GetBoolean(go, "--RAFSp"))  cfg.covtype = RAFSp;
+  else if (esl_opt_GetBoolean(go, "--RAFS"))   cfg.covtype = RAFS;
+  else if (esl_opt_GetBoolean(go, "--CCFa"))   cfg.covtype = CCFa;
+  else if (esl_opt_GetBoolean(go, "--CCFp"))   cfg.covtype = CCFp;
+  else if (esl_opt_GetBoolean(go, "--CCF"))    cfg.covtype = CCF;
+  else if (esl_opt_GetBoolean(go, "--PTFp")) { cfg.covtype = PTFp; cfg.method = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTAp")) { cfg.covtype = PTAp; cfg.method = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTDp")) { cfg.covtype = PTDp; cfg.method = POTTS; }
 
-  cfg.pottsmu    = esl_opt_GetReal(go, "--pottsmu");
-  cfg.pottstrain = NONE;
-  if      (esl_opt_GetBoolean(go, "--FULL")) cfg.pottstrain = FULL;
-  else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pottstrain = APLM;
-  else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pottstrain = GINV;
-  else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pottstrain = ACE;
-  else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pottstrain = BML;
+  // potts model
+  cfg.pt = NULL;
+  cfg.ptmu    = esl_opt_GetReal(go, "--ptmu");
+  cfg.pttrain = NONE;
+  if      (esl_opt_GetBoolean(go, "--FULL")) cfg.pttrain = FULL;
+  else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pttrain = APLM;
+  else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pttrain = GINV;
+  else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pttrain = ACE;
+  else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pttrain = BML;
 
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
@@ -1129,9 +1140,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-  
+
+  /* create the MI structure */
+  cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
+  if (cfg->mi == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to create mutual_s", cfg->errbuf);
+    
+  //POTTS: calculate the couplings first
+  if (cfg->method == POTTS) {
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->tol, cfg->errbuf, cfg->verbose);
+    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to find potts parameters", cfg->errbuf);
+  }
+ 
   /* the null model first */
-  if (cfg->method == NULLPHYLO) {
+  if (cfg->method != NAIVE) {
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
@@ -1197,7 +1218,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile);
-  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
+  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile);
+  if (cfg->mi) corr_Destroy(cfg->mi);
+  if (cfg->pt) potts_Destroy(cfg->pt);
 
   return eslOK;
 
@@ -1218,6 +1241,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile); 
   if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
+  if (cfg->mi) corr_Destroy(cfg->mi);
+  if (cfg->pt) potts_Destroy(cfg->pt);
   return status;
 }
 
@@ -1249,16 +1274,15 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  struct mutual_s *mi = NULL;
+  struct mutual_s *mi = cfg->mi;
   struct data_s    data;
   int              status;
 
+  corr_Reuse(mi, mi->type, TRUE, cfg->covtype, cfg->covclass);
+  
   /* weigth the sequences */
   if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
   else                             esl_msaweight_PB(msa);
-
-  /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, TRUE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->pottsmu, cfg->pottstrain, cfg->method, cfg->covclass);
 
   /* main function */
   data.outfp         = NULL;
@@ -1274,7 +1298,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.r             = cfg->r;
   data.ranklist_null = NULL;
   data.ranklist_aux  = NULL;
-  data.mi            = mi;
+  data.mi            = cfg->mi;
+  data.pt            = cfg->pt;
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
@@ -1311,11 +1336,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
 
-  corr_Destroy(mi);
   return eslOK;
 
  ERROR:
-  if (mi) corr_Destroy(mi);
   return status;
 }
 
@@ -1323,8 +1346,8 @@ static int
 run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
   char            *title = NULL;
+  struct mutual_s *mi = cfg->mi;
   struct data_s    data;
-  struct mutual_s *mi   = NULL;
   int             *cykct = NULL;
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
@@ -1334,6 +1357,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   esl_stopwatch_Start(cfg->watch);
 
+  corr_Reuse(mi, (cfg->mode == RANSS)? TRUE : FALSE, cfg->covtype, cfg->covclass);
+  
   /* weigth the sequences */
   if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
   else                             esl_msaweight_PB(msa);
@@ -1364,9 +1389,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     fprintf(cfg->sumfp, "%g\t\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat->avgid); 
   }
   
-  /* create the MI structure */
-  mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->pottsmu, cfg->pottstrain, cfg->method, cfg->covclass);
- 
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
     if (cfg->mode == GIVSS || cfg->mode == CYKSS)
@@ -1388,7 +1410,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.r             = cfg->r;
   data.ranklist_null = ranklist_null;
   data.ranklist_aux  = ranklist_aux;
-  data.mi            = mi;
+  data.mi            = cfg->mi;
+  data.pt            = cfg->pt;
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
@@ -1456,12 +1479,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
-  corr_Destroy(mi); mi = NULL;
 
   return eslOK;
   
  ERROR:
-  if (mi)          corr_Destroy(mi);
   if (cykct)       free(cykct);
   if (ranklist)    cov_FreeRankList(ranklist);
   if (cykranklist) cov_FreeRankList(cykranklist);

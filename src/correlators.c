@@ -1080,7 +1080,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
 
 
 struct mutual_s *
-corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, double pottsmu, POTTSTRAIN pottstrain, METHOD method, COVCLASS covclass)
+corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
   int              K  = abc->K;
@@ -1110,12 +1110,6 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
     }
   }
 
-  mi->pt = NULL;
-  if (method == POTTS) {
-    mi->pt = potts_Create(alen, abc, pottsmu, pottstrain);
-    if (status != eslOK) goto ERROR;
-  }
-
   mi->COV = esl_dmatrix_Create(alen, alen);
  
   /* initialize for adding counts */
@@ -1136,6 +1130,33 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
   
  ERROR:
   return NULL;
+}
+
+int
+corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
+{
+  int K  = abc->K;
+  int K2 = K * K;
+  int i, j;
+
+  mi->ishuffled = ishuffled;
+  mi->type      = mitype;
+  mi->class     = miclass;
+
+   /* initialize for adding counts */
+  for (i = 0; i < alen; i++) {
+    esl_vec_DSet(mi->pm[i], K, 0.0); 
+ 
+    for (j = 0; j < alen; j++) {
+      mi->nseff[i][j] = 0.;
+      mi->ngap[i][j]  = 0.;
+      esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
+    }
+  }
+
+  corr_ReuseCOV(mi,mitype, miclass);
+
+  return eslOK;
 }
 
 int
@@ -1171,8 +1192,6 @@ corr_Destroy(struct mutual_s *mi)
       free(mi->pm[i]);
     }
 
-    if (mi->pt) potts_Destroy(mi->pt);
-    
     if (mi->COV)  esl_dmatrix_Destroy(mi->COV);
     free(mi->nseff);
     free(mi->ngap);
@@ -1294,14 +1313,13 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
   switch(method) {
   case NAIVE:
   case NULLPHYLO:
+  case POTTS:
     status = corr_NaivePP(r, msa, mi, donull2b, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
     break;
   case AKMAEV:
     status = corr_PostOrderPP(msa, T, ribosum, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
-    break;
-  case POTTS:
     break;
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   } 

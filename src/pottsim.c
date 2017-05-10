@@ -83,7 +83,7 @@ main(int argc, char **argv)
   else if (esl_opt_GetBoolean(go, "--dna"))   abc = esl_alphabet_Create(eslDNA);  
   else if (esl_opt_GetBoolean(go, "--amino")) abc = esl_alphabet_Create(eslAMINO);
   
-  pt = potts_Create(L, abc, 0.0, NONE);
+  pt = potts_Create(L, abc, 0.0, NONE, AVG);
  
   /* geometric goodness of fit */
   if (esl_opt_IsUsed(go, "--geofit")) {

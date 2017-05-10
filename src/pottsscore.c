@@ -110,10 +110,45 @@ potts_APLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose
 
 
 int                 
-potts_CalculateCOV(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+potts_CalculateCOV(struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
-  PT              *pt = mi->pt;
+  PT              *pt = data->pt;
+  int              i, j;
+  int              status;
+
+  switch(pt->sctype) {
+  case FROEB:
+    status = potts_CalculateCOVFrobenius(data);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "potts_CalculateCOVFrobenius() error");
+    break;
+  case AVG:
+   status = potts_CalculateCOVAverage(data);
+   if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "potts_CalculateCOVAverage() error");
+     break;
+  case DI:
+    ESL_XFAIL(eslFAIL, data->errbuf, "potts_CalculateCOVDI() not implemented yet");
+    break;
+  }
+  
+  if (data->verbose) {
+    printf("POTTS[%f,%f]\n", mi->minCOV, mi->maxCOV);
+    for (i = 0; i < pt->L-1; i++) 
+      for (j = i+1; j < pt->L; j++) {
+	printf("POTTS[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+      } 
+  }
+
+  return status;
+
+ ERROR:
+  return status;
+}
+int                 
+potts_CalculateCOVFrobenius(struct data_s *data)
+{
+  struct mutual_s *mi = data->mi;
+  PT              *pt = data->pt;
   char            *errbuf = data->errbuf;
   double           tol = data->tol;
   double           cov;
@@ -124,17 +159,17 @@ potts_CalculateCOV(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_h
   int              a, b;
   int              status = eslOK;
 
-  // Use the Frobenious norm with zero-sum gauge
-  status = potts_GaugeZeroSum(pt, tol, data->errbuf);
+  // Use the Frobenius norm with zero-sum gauge
+  status = potts_GaugeZeroSum(pt, data->errbuf, data->verbose);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "zerosum gauge failed");
   
-  for (i = 0; i < pt->L-1; i ++) {
+  for (i = 0; i < pt->L; i ++) {
     for (j = 0; j < pt->L; j ++) {
       cov = 0;
       
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
-	  eij  = pt->e[i][j][IDX(a,b,K)];
+	  eij  = (i==j)?0:pt->e[i][j][IDX(a,b,K)];
 	  cov += eij * eij;
 	}
       cov = sqrt(cov);
@@ -144,12 +179,40 @@ potts_CalculateCOV(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_h
     }
   }
 
-  if (verbose) {
-    printf("POTTS[%f,%f]\n", mi->minCOV, mi->maxCOV);
-    for (i = 0; i < pt->L-1; i++) 
-      for (j = i+1; j < pt->L; j++) {
-	printf("POTTS[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
-      } 
+  return status;
+
+ ERROR:
+  return status;
+}
+
+int                 
+potts_CalculateCOVAverage(struct data_s *data)
+{
+  struct mutual_s *mi = data->mi;
+  PT              *pt = data->pt;
+  char            *errbuf = data->errbuf;
+  double           tol = data->tol;
+  double           cov;
+  double           eij;
+  int              verbose = data->verbose;
+  int              K = pt->abc->K;
+  int              i, j;
+  int              a, b;
+  int              status = eslOK;
+
+  for (i = 0; i < pt->L; i ++) {
+    for (j = 0; j < pt->L; j ++) {
+      cov = 0;
+      
+      for (a = 0; a < K; a ++)
+	for (b = 0; b < K; b ++) {
+	  eij = (i==j)?0:pt->e[i][j][IDX(a,b,K)];
+	  cov += eij;
+	}
+      if (cov > mi->maxCOV) { mi->maxCOV = cov; }
+      if (cov < mi->minCOV) { mi->minCOV = cov; }
+      mi->COV->mx[i][j] = cov;
+    }
   }
 
   return status;
@@ -171,19 +234,19 @@ potts_score_oneseq(PT *pt, ESL_DSQ *sq)
   int           resi, resj;
   int           i, j;
   
-  for (i = 0; i < L-1; i ++) {
+  for (i = 0; i < L; i ++) {
     sqi  = sq[i];
     resi = esl_abc_XIsCanonical(abc, sqi);
     
     hi = (resi)? pt->h[i][sqi] : 0;
     sc += hi;
     
-    for (j = i+1; j < L; j ++) {
+    for (j = 0; j < L; j ++) {
       sqj  = sq[j];
       resj = esl_abc_XIsCanonical(abc, sqj);
       
       eij = (resi && resj)? pt->e[i][j][IDX(sqi,sqj,K)] : 0;
-      sc += eij;
+      sc += (i==j)?0:0.5*eij;
     }
   }
   return sc;
@@ -207,8 +270,8 @@ potts_full_logz(PT *pt)
       
       for (i = 0; i < pt->L; i ++) {
 	sc += pt->h[i][a];	
-	for (j = i+1; j < pt->L; j ++) 
-	  sc += pt->e[i][j][IDX(a,b,K)];
+	for (j = 0; j < pt->L; j ++) 
+	  sc += (i==j)?0:0.5 * pt->e[i][j][IDX(a,b,K)];
       }
       
       logsum = e2_FLogsum(logsum, sc);
