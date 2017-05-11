@@ -29,7 +29,7 @@
 #include "contactmap.h"
 #include "msamanip.h"
 
-static int read_pdbmap(char *pdbmapfile, int L, int **ret_msa2pdb, char *errbuf);
+static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf);
 static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf);
 static int isnewcontact(int posi,int  posj, CLIST *clist);
 
@@ -56,14 +56,19 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   status = msamanip_CalculateCT(msa, &ct, ret_nbpairs, -1.0, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
 
-  clist = CMAP_CreateCList(alloc_ncnt);
-  if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
+   ESL_ALLOC(msa2pdb, sizeof(int) * L);
+   esl_vec_ISet(msa2pdb, L, 0);
+   
+   clist = CMAP_CreateCList(alloc_ncnt);
+   if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
   
   if (pdbfile == NULL)
     {
       clist->mind = 1; // the cntmind only affects the pbd contact maps, not the RNA structures
-      
+
       for (i = 0; i < L; i ++) {
+	
+	msa2pdb[i] = i;
 	
 	if (h == ncnt - 1) {
 	  ncnt += alloc_ncnt;
@@ -92,29 +97,31 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
     {
       clist->mind = cntmind; // the cntmind affects the pbd contact maps, not the RNA structures
       
+      if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
+      fclose(tmpfp);
+      if ((status = esl_tmpfile_named(tmpcfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
+      fclose(tmpfp);
+      
       if (RSCAPE_BIN)                         // look for the installed executable
 	esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
       else
 	ESL_XFAIL(status, errbuf, "Failed to find pdb_parse.pl file\n");
-      esl_sprintf(&args, "%s -D %f -W ALL -C %s %s %s %s %s > %s", cmd, cntmaxD, pdbfile, tmpcfile, msafile, RSCAPE_BIN, gnuplot, tmpfile);
+      esl_sprintf(&args, "%s -D %f -W ALL -C %s %s %s %s %s > %s", cmd, cntmaxD, tmpmapfile, pdbfile, msafile, RSCAPE_BIN, gnuplot, tmpcfile);
       system(args);
-
-      if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
-      fclose(tmpfp);
-      read_pdbmap(tmpmapfile, L, &msa2pdb, errbuf);
-      //remove(tmpmapfile);
+      
+      read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
+      remove(tmpmapfile);
      
-      if ((status = esl_tmpfile_named(tmpcfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
-      fclose(tmpfp);
       read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ct, clist, errbuf);      
-      //remove(tmpcfile);
+      remove(tmpcfile);
     }
   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
 
-  clist->maxD = cntmaxD;
-  *ret_ct     = ct;
-  *ret_clist  = clist;
-  
+  clist->maxD  = cntmaxD;
+  *ret_ct      = ct;
+  *ret_clist   = clist;
+  *ret_msa2pdb = msa2pdb;
+
 #if 0
   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
   if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
@@ -191,14 +198,14 @@ CMAP_IsBPLocal(int i, int j, CLIST *clist)
 
 
 static int
-read_pdbmap(char *pdbmapfile, int L, int **ret_msa2pdb, char *errbuf)
+read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
   int              nchain = 0;
   char           **mapfile = NULL;
-  int             *msa2pdb = NULL;
   int              c;
+  int              posi;
   int              pdbi;
   int              i;
   int              status;
@@ -216,9 +223,6 @@ read_pdbmap(char *pdbmapfile, int L, int **ret_msa2pdb, char *errbuf)
   esl_fileparser_Close(efp);
   
   // Add from all chains if unique
-   ESL_ALLOC(msa2pdb, sizeof(int *)*L);
-   esl_vec_ISet(msa2pdb, L, 0);
-   
   for (c = 0; c < nchain; c ++) {
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
     esl_fileparser_SetCommentChar(efp, '#');
@@ -227,19 +231,21 @@ read_pdbmap(char *pdbmapfile, int L, int **ret_msa2pdb, char *errbuf)
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
 	pdbi = atoi(tok);
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
-	i = atoi(tok);
-	if (i > 0) msa2pdb[i-1] = pdbi-1;
+	posi = atoi(tok);
+
+	if (posi > 0) {
+	  i = omsa2msa[posi-1]+1;
+	  msa2pdb[i-1] = pdbi-1;
+	}
      }
   }
 
-  *ret_msa2pdb = msa2pdb;
   free(mapfile);
   return eslOK;
 
  ERROR:
   for (c = 0; c < nchain; c++) { if (mapfile[c]) free(mapfile[c]); }
   if (mapfile) free(mapfile);
-  if (msa2pdb) free(msa2pdb);
   return status;
 }
 

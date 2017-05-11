@@ -72,7 +72,7 @@ for (my $n = 0; $n < $nch; $n ++) {
     my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
 
     print "$mapfile\n";
-    if (COORFILE) {
+    if ($coorfile) {
 	print COORF "$corfile\n";
     }
     
@@ -713,7 +713,7 @@ sub plot_contact_map {
 
     close (GP);
 
-    system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
-    system("/bin/rm $psfile\n");
-    if ($seeplots) { system ("open $pdffile&\n"); }
+    #system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
+    #system("/bin/rm $psfile\n");
+    #if ($seeplots) { system ("open $pdffile&\n"); }
 }
