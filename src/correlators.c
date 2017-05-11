@@ -1456,7 +1456,11 @@ corr_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf)
   case MIga:  esl_sprintf(ret_covtype, "MIga");  break; 
   case RAFa:  esl_sprintf(ret_covtype, "RAFa");  break; 
   case RAFSa: esl_sprintf(ret_covtype, "RAFSa"); break; 
-  case CCFa:  esl_sprintf(ret_covtype, "CCFa");  break; 
+  case CCFa:  esl_sprintf(ret_covtype, "CCFa");  break;
+    
+  case PTFp:  esl_sprintf(ret_covtype, "PTFp");  break; 
+  case PTAp:  esl_sprintf(ret_covtype, "PTAp");  break; 
+  case PTDp:  esl_sprintf(ret_covtype, "PTDp");  break; 
 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE");
   }
@@ -1502,6 +1506,10 @@ corr_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(covtype, "RAFa"))   type = RAFa;
   else if (!esl_strcmp(covtype, "RAFSa"))  type = RAFSa;
   else if (!esl_strcmp(covtype, "CCFa"))   type = CCFa;
+
+  else if (!esl_strcmp(covtype, "PTFp"))   type = PTFp;
+  else if (!esl_strcmp(covtype, "PTAp"))   type = PTAp;
+  else if (!esl_strcmp(covtype, "PTDp"))   type = PTDp;
 
   else
     ESL_XFAIL(eslFAIL, errbuf, "wrong COVTYPE %s", covtype);

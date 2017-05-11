@@ -4,20 +4,21 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_W $opt_D $opt_L $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_W $opt_D $opt_L $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('W:D:L:v');
+getopts ('C:W:D:L:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  pdb_parse.pl [options] <pdbfile> <stofile> \n\n";
+        print "usage:  pdb_parse.pl [options] <pdbfile> <stofile> <rscapedir> <gnuplotdir> \n\n";
         print "options:\n";
  	exit;
 }
 
-my $pdbfile = shift;
-my $stofile = shift;
-my $gnuplot = shift;
+my $pdbfile   = shift;
+my $stofile   = shift;
+my $rscapebin = shift;
+my $gnuplot   = shift;
 use constant GNUPLOT => '$gnuplot';
 
 my $currdir = $ENV{PWD};
@@ -27,7 +28,7 @@ if ($stoname =~ /\/([^\/]+)\.\S+$/) { $stoname = $1; }
 my $pfamname = $stofile;
 if ($pfamname =~ /\/([^\/]+)\.\S+$/) { $pfamname = $1; }
 
-my $hmmer       = "lib/hmmer";
+my $hmmer       = "$rscapebin/../lib/hmmer";
 my $hmmbuild    = "$hmmer/src/programs/hmmbuild";
 my $hmmersearch = "$hmmer/src/programs/hmmsearch";
 
@@ -35,8 +36,15 @@ my $easel    = "$hmmer/lib/easel";
 my $sfetch   = "$easel/miniapps/esl-sfetch";
 my $reformat = "$easel/miniapps/esl-reformat";
 
+my $coorfile = "";
+if ($opt_C) { 
+    $coorfile = "$opt_C";
+    open(COORF,  ">$coorfile")  || die;
+}
+
 my $maxD = 8;
 if ($opt_D) { $maxD = $opt_D; }
+$maxD = int($maxD*100)/100;
 
 my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
@@ -51,7 +59,7 @@ my @sq = ();
 my $len;
 my $alen;
 
-my $seeplots = 1;
+my $seeplots = 0;
 
 my $pdbname = parse_pdb($pdbfile, \$nch, \@chname, \@sq);
 #print     "# PFAM: $stofile\n";
@@ -64,6 +72,9 @@ for (my $n = 0; $n < $nch; $n ++) {
     my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
 
     print "$mapfile\n";
+    if (COORFILE) {
+	print COORF "$corfile\n";
+    }
     
     open(COR,  ">$corfile")  || die;
     open(MAP,  ">$mapfile")  || die;
@@ -95,6 +106,7 @@ for (my $n = 0; $n < $nch; $n ++) {
     plot_contact_map($mapfile,  $alen, $seeplots);
 }
 
+if ($coorfile) { close(COORF); }
 
 sub parse_pdb {
     my ($pdbfile, $ret_nch, $chname_ref, $sq_ref) = @_;
@@ -697,7 +709,6 @@ sub plot_contact_map {
 
     my $cmd = "'$mapfile' using 1:3  title '' ls 1, '$mapfile' using 3:1  title '' ls 1";
  
-    #print    "plot $cmd\n";
     print GP "plot $cmd\n";
 
     close (GP);

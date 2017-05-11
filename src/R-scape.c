@@ -154,10 +154,11 @@ struct cfg_s { /* Shared configuration in masters & workers */
   PTSCTYPE         ptsctype;
   PT              *pt;
   
-  char            *pdbfile;             /* pdfb file */
-  char            *pdbcfile;            /* file with pdb contact list */
-  double           cntmaxD;
-  CLIST           *clist; 
+  char            *pdbfile;            // pdfb file 
+  double           cntmaxD;            // max distance in pdb structure to call a contact
+  int              cntmind;            // mindis in pdb sequence allowed
+  CLIST           *clist;              // list of pdb contact at a distance < cntmaxD
+  int             *msa2pdb;            // map of the pdb sequence to the analyzed alignment
   
   int              voutput;
   int              doroc;
@@ -247,14 +248,14 @@ static ESL_OPTIONS options[] = {
   { "--RAFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold APC corrected statistic",                                                        1 },
   { "--RAF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold statistic",                                                                      1 },
   { "--RAFSa",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking ASC corrected statistic",                                               1 },
-  { "--RAFSp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking APC corrected statistic",                                              1 },
+  { "--RAFSp",        eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking APC corrected statistic",                                               1 },
   { "--RAFS",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "RNAalifold-stacking  statistic",                                                            1 },
   { "--CCFa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenius norm ASC corrected statistic",                       1 },
-  { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                      1 },
-  { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                   1 },
-  { "--PTFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                              1 },
-  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                              1 },
-  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                              1 },
+  { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                     1 },
+  { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                  1 },
+  { "--PTFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                  1 },
+  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                  1 },
+  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                  1 },
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
@@ -272,12 +273,12 @@ static ESL_OPTIONS options[] = {
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
   
    /* Control of pdf contacts */
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbcfile",       "read pdb file from file <f>",                                                               0 },
-  { "--pdbcfile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--pdbfile",        "read pdb contacts from file <f>",                                                           0 },
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb file from file <f>",                                                               0 },
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
+  { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        0 },
  
    /* Control for potts implementation */
-  { "--ptmu",      eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
+  { "--ptmu",         eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
   { "--FULL",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
@@ -655,13 +656,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
     if (!existsfile(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
   }
-  cfg.pdbcfile = NULL;
-  if ( esl_opt_IsOn(go, "--pdbcfile") ) {
-    cfg.pdbcfile = esl_opt_GetString(go, "--pdbcfile");
-    if (!existsfile(cfg.pdbcfile))  esl_fatal("pdbcfile %s does not seem to exist\n", cfg.pdbcfile);
-  }
   cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
+  cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
   cfg.clist = NULL;
+  cfg.msa2pdb = NULL;
   
   /* the ribosum matrices */
   cfg.ribofile = NULL;
@@ -1021,7 +1019,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     }
   }
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap,
-				(cfg->pdbfile||cfg->pdbcfile)?&cfg->msarevmap:NULL,
+				(cfg->pdbfile)?&cfg->msarevmap:NULL,
 				&useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
@@ -1122,9 +1120,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
 
   /* the structure/contact map */
-  status = ContactMap(cfg->msafile, cfg->gnuplot, msa, cfg->msamap, cfg->msarevmap,
-		      &cfg->ct, &cfg->nbpairs, &cfg->clist, cfg->cntmaxD,
-		      cfg->pdbfile, cfg->pdbcfile, cfg->errbuf, cfg->verbose);
+  status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->msamap, cfg->msarevmap,
+		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
 #if 0
@@ -1205,6 +1202,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
+  if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
   if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
@@ -1227,6 +1225,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
  ERROR:
   if (cfg->ct) free(cfg->ct);
   if (cfg->clist) CMAP_FreeCList(cfg->clist);
+  if (cfg->msa2pdb) free(cfg->msa2pdb); 
   if (cfg->msafrq) free(cfg->msafrq); 
   if (cfg->T) esl_tree_Destroy(cfg->T); 
   if (cfg->msaname) free(cfg->msaname);
@@ -1313,6 +1312,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
+  data.msa2pdb       = cfg->msa2pdb;
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
@@ -1425,6 +1425,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
+  data.msa2pdb       = cfg->msa2pdb;
   data.msamap        = cfg->msamap;
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;

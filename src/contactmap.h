@@ -13,11 +13,14 @@
 #include "esl_tree.h"
 
 typedef struct cnt_s {
-  int64_t i;
+  int64_t i;        // positions in the analyzed alignment
   int64_t j;
   
-  int64_t posi;
+  int64_t posi;     // positions in the input alignment
   int64_t posj;
+
+  int64_t pdbi;     // positions in the pdb sequence
+  int64_t pdbj;
 
   int     isbp;
   double  D;
@@ -29,15 +32,16 @@ typedef struct clist_s{
   int      alloc_ncnt;
   int      ncnt;
   double   maxD;
+  int      mind; // min(j-i+1)
   
   CNT    **srtcnt;
   CNT     *cnt;
 } CLIST;
 
 
-extern int    ContactMap(char *msafile, char *gnuplot, ESL_MSA *msa, int *msamap, int *msarevmap,
-			 int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, double contD,
-			 char *pdbfile, char *pdbcfile, char *errbuf, int verbose);
+extern int    ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2omsa, int *omsa2msa,
+			 int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
+			 double contD, int cntmind, char *errbuf, int verbose);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern void   CMAP_FreeCList(CLIST *list);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);

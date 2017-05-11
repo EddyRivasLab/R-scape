@@ -180,6 +180,7 @@ struct data_s {
   struct ribomatrix_s *ribosum;
   int                 *ct;
   CLIST               *clist;
+  int                 *msa2pdb;
   int                 *msamap;
   int                  firstpos;
   double               bmin;

@@ -16,8 +16,6 @@ if (!@ARGV) {
 }
 
 my $F = shift;
-my $gnuplot = shift;
-use constant GNUPLOT => '$gnuplot';
 
 my @prefile;
 my @prename;
@@ -41,6 +39,10 @@ my $pfamname = $prefile[0];
 if ($pfamname =~ /(PF[^\.]+)\./) { $pfamname = $1; }
 my $oafafile = "data/$pfamname.afa";
 print "original file: $oafafile\n";
+
+my $gnuplot = shift;
+use constant GNUPLOT => '$gnuplot';
+
 
 my $NCH = 0;
 my @cmpfile;

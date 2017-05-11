@@ -314,6 +314,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
 
+      if (data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind) continue;
+      
       /* add to the ha histogram  */
       add = ESL_MAX(mtx->mx[i][j], data->bmin+data->w);
       esl_histogram_Add(ranklist->ha, add);
@@ -438,6 +440,8 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     f = t = tf = 0;
     for (i = 0; i < L-1; i ++) 
       for (j = i+1; j < L; j ++) {
+	if (data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind) continue;
+	
 	cov = mtx->mx[i][j];
 	E   = eval->mx[i][j];
 	
@@ -587,6 +591,7 @@ int
 cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, char *covtype, char *threshtype)
 {
   HITLIST  *hitlist = NULL;
+  int      *msa2pdb = data->msa2pdb;
   double    sen, ppv, F;
   double    cov;
   double    eval;
@@ -617,6 +622,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
    for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       
+      if (msa2pdb[j]-msa2pdb[i] < data->clist->mind) continue;
+
       is_bpair      = FALSE; 
       is_compatible = FALSE;
       is_contact    = CMAP_IsContactLocal(i+1, j+1, data->clist);
