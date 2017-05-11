@@ -21,7 +21,8 @@
 static double potts_score_oneseq(PT *pt, ESL_DSQ *sq);
 static double potts_full_logz(PT *pt);
 static double potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq);
-static double potts_regularize(PT *pt);
+static double potts_full_regularize(PT *pt);
+static double potts_aplm_regularize(int pos, PT *pt);
 
 
 int
@@ -52,14 +53,14 @@ potts_FULLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose
   logp -= potts_full_logz(pt);
 
   // l2-regularization
-  logp += potts_regularize(pt);
+  logp += potts_full_regularize(pt);
   
   *ret_logp = logp;
   return eslOK;
 }
 
 int
-potts_APLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
+potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
   ESL_DSQ *sq;
   double   logp = 0.;
@@ -69,41 +70,39 @@ potts_APLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose
   int      sqi, sqj;
   int      resi, resj;
   int      s;
-  int      i, j;
+  int      j;
   int      a, b;
   
   for (s = 0; s < msa->nseq; s++) {
     sq = msa->ax[s];
     
-    for (i = 0; i < pt->L; i ++) {
-      sqi  = sq[i];
-      resi = esl_abc_XIsCanonical(msa->abc, sqi);
+    sqi  = sq[pos];
+    resi = esl_abc_XIsCanonical(msa->abc, sqi);
       
-      hi = (resi)? pt->h[i][sqi] : 0;
-      sc = hi;
+    hi = (resi)? pt->h[pos][sqi] : 0;
+    sc = hi;
+    
+    for (j = 0; j < pt->L; j ++) {
+      if (j == pos) continue;
       
-      for (j = 0; j < pt->L; j ++) {
-	if (j == i) continue;
-	
-	sqj  = sq[j];
-	resj = esl_abc_XIsCanonical(msa->abc, sqj);
-	
-	eij = (resi && resj)? pt->e[i][j][IDX(sqi,sqj,K)] : 0;
-	sc += eij;
-      }
-      sc -= potts_aplm_logz(i, pt, sq);
-      sc *= msa->wgt[s];
+      sqj  = sq[j];
+      resj = esl_abc_XIsCanonical(msa->abc, sqj);
       
-      logp += sc;
+      eij = (resi && resj)? pt->e[pos][j][IDX(sqi,sqj,K)] : 0;
+      sc += eij;
     }
-    logp /= msa->nseq;  
+    sc -= potts_aplm_logz(pos, pt, sq);
+    sc *= msa->wgt[s];
+    
+    logp += sc;
   }
+  logp /= msa->nseq;  
   
   // l2-regularization
-  logp += potts_regularize(pt);
+  logp += potts_aplm_regularize(pos, pt);
   
   *ret_logp = logp;
-
+  
   return eslOK;
 }
 
@@ -258,25 +257,44 @@ potts_score_oneseq(PT *pt, ESL_DSQ *sq)
 static double
 potts_full_logz(PT *pt)
 {
-  double logsum = -eslINFINITY;
-  double sc;
-  int    K = pt->abc->K;
-  int    i, j;
-  int    a, b;
+  int    *a = NULL;
+  double  logsum = -eslINFINITY;
+  double  sc;
+  int     L = pt->L;
+  int     K = pt->abc->K;
+  int     i, j;
+  int     x = 0;
+  int     status;
   
-  for (a = 0; a < K; a ++)
-    for (b = 0; b < K; b ++) {
-      sc = 0.;
-      
-      for (i = 0; i < pt->L; i ++) {
-	sc += pt->h[i][a];	
-	for (j = 0; j < pt->L; j ++) 
-	  sc += (i==j)?0:0.5 * pt->e[i][j][IDX(a,b,K)];
-      }
-      
-      logsum = e2_FLogsum(logsum, sc);
+  ESL_ALLOC(a, sizeof(int)*L);
+  for (i = 0; i < L; i ++) a[i] = 0;
+
+  while(TRUE) {
+
+    sc = 0.;
+    for (i = 0; i < L; i ++) {
+      sc += pt->h[i][a[i]];	
+      for (j = 0; j < L; j ++) 
+	sc += (i==j)?0:0.5 * pt->e[i][j][IDX(a[i],a[j],K)];
     }
-  
+    logsum = e2_FLogsum(logsum, sc);
+
+    // increment
+    a[0] ++;
+
+    // carry
+    while (a[x] == K) {
+      // overflow you are done
+      if (x == L-1) { free(a); return logsum; }
+      
+      a[x++] = 0;
+      a[x] ++;
+    }
+    
+    x = 0;
+  }
+
+ ERROR:
   return logsum;
 }
 
@@ -311,12 +329,41 @@ potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
 
 
 static double
-potts_regularize(PT *pt)
+potts_full_regularize(PT *pt)
 {
   double reg = 0;
   double hi, eij;
   int    K = pt->abc->K;
   int    i, j;
+  int    a, b;
+  
+  // l2-regularization
+  for (i = 0; i < pt->L; i ++) 
+    for (a = 0; a < K; a ++) {
+      hi = pt->h[i][a];
+      reg += hi*hi;
+      
+      for (j = 0; j < pt->L; j ++) {
+	if (j ==i) continue;
+	
+	for (b = 0; b < K; b ++) {
+	  eij = pt->e[i][j][IDX(a,b,K)];
+	  reg += eij*eij;
+	}
+      }
+    }
+  reg *= pt->mu;
+  
+  return reg;
+}
+
+static double
+potts_aplm_regularize(int i, PT *pt)
+{
+  double reg = 0;
+  double hi, eij;
+  int    K = pt->abc->K;
+  int    j;
   int    a, b;
   
   // l2-regularization
