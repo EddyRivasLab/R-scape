@@ -11,6 +11,7 @@
 
 #include "easel.h"
 #include "esl_alphabet.h"
+#include "esl_fileparser.h"
 #include "esl_random.h"
 #include "esl_vectorops.h"
 
@@ -19,27 +20,28 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-static int    optimize_full_pack_paramvector   (double *p, long np, struct optimize_data *data);
-static int    optimize_full_unpack_paramvector (double *p, long np, struct optimize_data *data);
+static int    optimize_all_pack_paramvector   (double *p, long np, struct optimize_data *data);
+static int    optimize_all_unpack_paramvector (double *p, long np, struct optimize_data *data);
 static int    optimize_aplm_pack_paramvector   (double *p, long np, struct optimize_data *data);
 static int    optimize_aplm_unpack_paramvector (double *p, long np, struct optimize_data *data);
 static void   optimize_bracket_define_direction(double *p, long np, struct optimize_data *data);
 static double optimize_potts_func              (double *p, long np, void *dptr);
-static double func_potts_full                           (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+static double func_potts_ml                             (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+static double func_potts_plm                            (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 static double func_potts_aplm                  (int pos, PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 static int    symmetrize(PT *pt);
 
 PT *
-potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCTYPE ptsctype, float tol, char *errbuf, int verbose)
+potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp, float tol, char *errbuf, int verbose)
 {
   PT              *pt = NULL;
   float            firststep;
   int              status;
   
-  pt = potts_Create(msa->alen, msa->abc, ptmu, pttrain, ptsctype);
+  pt = potts_Create(msa->alen, msa->abc->K, msa->abc, ptmu, pttrain, ptsctype);
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
   
-  // Initiazize 
+  // Initialize 
   //status = potts_InitGaussian(r, pt, 0., 1.0);
   status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -50,9 +52,10 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
   case NONE:
    ESL_XFAIL(eslFAIL, errbuf, "errork, you should not be here");
      break;
-  case FULL:
-    status = potts_OptimizeGDFULL(pt, msa, firststep, tol, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error full optimizing potts");
+  case ML:
+  case PLM:
+    status = potts_OptimizeGDALL(pt, msa, firststep, tol, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
     status = potts_OptimizeGDAPLM(pt, msa, firststep, tol, errbuf, verbose);
@@ -61,10 +64,11 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
   case GINV:
   case ACE:
   case BML:
-    ESL_XFAIL(eslFAIL, errbuf, "error  optimization method not implemented");
+    ESL_XFAIL(eslFAIL, errbuf, "error optimization method not implemented");
     break;
   }
-    
+
+  if (pottsfp) potts_Write(pottsfp, pt);
  return pt;
 
  ERROR:
@@ -72,7 +76,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
 }
 
 int
-potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose)
+potts_OptimizeGDALL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   double                *p = NULL;	       /* parameter vector                        */
@@ -101,7 +105,7 @@ potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
  
   /* Create the parameter vector.
    */
-  optimize_full_pack_paramvector(p, (long)np, &data);
+  optimize_all_pack_paramvector(p, (long)np, &data);
  
   /* pass problem to the optimizer
    */
@@ -114,10 +118,10 @@ potts_OptimizeGDFULL(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
     esl_fatal("optimize_potts(): bad bracket minimization");	
   
   /* unpack the final parameter vector */
-  optimize_full_unpack_paramvector(p, (long)np, &data);
-  if (verbose) printf("END POTTS FULL OPTIMIZATION\n");
+  optimize_all_unpack_paramvector(p, (long)np, &data);
+  if (verbose) printf("END POTTS ALL OPTIMIZATION\n");
 
-  if (verbose) potts_Dump(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
   if (u   != NULL) free(u);
@@ -185,7 +189,7 @@ potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
   // symmetrize
   symmetrize(pt);
  
-  if (verbose) potts_Dump(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
   if (u   != NULL) free(u);
@@ -202,10 +206,9 @@ potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
 
 
 PT *
-potts_Create(int64_t L, ESL_ALPHABET *abc, double mu, PTTRAIN pttrain, PTSCTYPE  ptsctype)
+potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double mu, PTTRAIN pttrain, PTSCTYPE  ptsctype)
 {
   PT  *pt = NULL;
-  int  K  = abc->K;
   int  K2 = K * K;
   int  i, j;
   int  status;
@@ -241,30 +244,6 @@ potts_Create(int64_t L, ESL_ALPHABET *abc, double mu, PTTRAIN pttrain, PTSCTYPE 
   return NULL;
 }
 
-void
-potts_Dump(FILE *fp, PT *pt)
-{
-  int L = pt->L;
-  int K = pt->abc->K;
-  int i, j;
-  int a, b;
-  
-  for (i = 0; i < L; i++) {
-    fprintf(fp, "%d ", i);
-    for (a = 0; a < K; a ++) fprintf(fp, "%f ", pt->h[i][a]);
-    fprintf(fp, "\n");
-  }
-  
-  for (i = 0; i < L; i++) 
-    for (j = i+1; j < L; j++) {
-      fprintf(fp, "%d %d ", i, j);
-      for (a = 0; a < K; a ++) 
-	for (b = 0; b < K; b ++) {
-	  fprintf(fp, "%f ", pt->e[i][j][IDX(a,b,K)]);
-	}
-      fprintf(fp, "\n");
-    }
-}
 
 void                
 potts_Destroy(PT *pt)
@@ -354,7 +333,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
       pt->h[i][a] = hi/K;
     }
 
-  //potts_Dump(stdout, pt);
+  //potts_Write(stdout, pt);
 
   corr_Destroy(mi);
   return eslOK;
@@ -458,12 +437,115 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 }
 
 
+PT *
+potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf)
+{
+  ESL_FILEPARSER  *efp   = NULL;
+  char            *tok;
+  PT              *pt = NULL;
+  double           hi, eij;
+  int              ln = 0;
+  int              K  = 0;
+  int              L  = 0;
+  int              t  = 0;
+  int              i, j;
+  int              status;
+
+  // One pass to figure out L
+  if (esl_fileparser_Open(paramfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  while (esl_fileparser_NextLine(efp) == eslOK)
+    {
+      t = 0;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", paramfile);
+      i = atoi(tok);
+	
+      while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+	hi = atof(tok);
+	t ++;
+      }
+      if (ln == 0) K = t;
+      
+      if (t  == K) ln ++;
+      else { L = ln; break; }
+    }
+  esl_fileparser_Close(efp);
+  printf("L %d K %d\n", L, K);
+
+  pt = potts_Create(L, K, NULL, 0.0, NONE, SCNONE);
+  if (abc) {
+    if (K != abc->K) ESL_XFAIL(eslFAIL, errbuf, "wrong alphabet for file %s", paramfile);
+    pt->abc = abc;
+  }
+  
+  // now the real parsing
+  if (esl_fileparser_Open(paramfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  ln = 0;
+  while (esl_fileparser_NextLine(efp) == eslOK)
+    {
+      t = 0;
+      if (ln < L) {
+	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", paramfile);
+	i = atoi(tok);
+	
+	while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+	  pt->h[ln][t] = atof(tok);
+	  t ++;
+	}
+	ln ++;
+      }
+      else {
+	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", paramfile);
+	i = atoi(tok);
+	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", paramfile);
+	j = atoi(tok);
+	
+	while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+	  pt->e[i][j][t] = atof(tok);
+	  t ++;
+	}
+      }
+    }
+  esl_fileparser_Close(efp);
+  
+  return pt;
+  
+ ERROR:
+  return NULL;
+}
+
+void
+potts_Write(FILE *fp, PT *pt)
+{
+  int L = pt->L;
+  int K = pt->abc->K;
+  int i, j;
+  int a, b;
+  
+  for (i = 0; i < L; i++) {
+    fprintf(fp, "%d ", i);
+    for (a = 0; a < K; a ++) fprintf(fp, "%f ", pt->h[i][a]);
+    fprintf(fp, "\n");
+  }
+  
+  for (i = 0; i < L; i++) 
+    for (j = i+1; j < L; j++) {
+      fprintf(fp, "%d %d ", i, j);
+      for (a = 0; a < K; a ++) 
+	for (b = 0; b < K; b ++) {
+	  fprintf(fp, "%f ", pt->e[i][j][IDX(a,b,K)]);
+	}
+      fprintf(fp, "\n");
+    }
+}
 
 
 /*------------------------------- internal functions ----------------------------------*/
 
 static int
-optimize_full_pack_paramvector(double *p, long np, struct optimize_data *data)
+optimize_all_pack_paramvector(double *p, long np, struct optimize_data *data)
 {
   int   L = data->msa->alen;
   int   K = data->msa->abc->K;
@@ -498,7 +580,7 @@ optimize_aplm_pack_paramvector(double *p, long np, struct optimize_data *data)
 }
 
 static int
-optimize_full_unpack_paramvector(double *p, long np, struct optimize_data *data)
+optimize_all_unpack_paramvector(double *p, long np, struct optimize_data *data)
 {
   double eij, eji;
   int    L = data->msa->alen;
@@ -544,7 +626,7 @@ static void
 optimize_bracket_define_direction(double *u, long np, struct optimize_data *data)
 {
   int x;
-  for (x = 0; x < np; x++) u[x] = 0.1;
+  for (x = 0; x < np; x++) u[x] = 0.01;
   u[np] = 0.5;
 }
 
@@ -555,9 +637,13 @@ optimize_potts_func(double *p, long np, void *dptr)
   
   
   switch(data->pt->train) {
-  case FULL:
-    optimize_full_unpack_paramvector(p, np, data);
-    data->logp = func_potts_full(data->pt, data->msa, data->tol, data->errbuf, data->verbose);
+  case ML:
+    optimize_all_unpack_paramvector(p, np, data);
+    data->logp = func_potts_ml(data->pt, data->msa, data->tol, data->errbuf, data->verbose);
+    break;
+  case PLM:
+    optimize_all_unpack_paramvector(p, np, data);
+    data->logp = func_potts_plm(data->pt, data->msa, data->tol, data->errbuf, data->verbose);
     break;
   case APLM:
     optimize_aplm_unpack_paramvector(p, np, data);
@@ -575,16 +661,32 @@ optimize_potts_func(double *p, long np, void *dptr)
 }
 
 static double
-func_potts_full(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+func_potts_ml(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   double  logp;
   int     status;
   
-  status = potts_FULLLogp(pt, msa, &logp, errbuf, verbose);
+  status = potts_MLLogp(pt, msa, &logp, errbuf, verbose);
   if (status != eslOK) exit(1);
   
 #if 1
-  printf("logp FULL %f\n", logp);
+  printf("logp ML %f\n", logp);
+#endif
+  
+  return -logp;
+}
+ 
+static double
+func_potts_plm(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+{
+  double  logp;
+  int     status;
+  
+  status = potts_PLMLogp(pt, msa, &logp, errbuf, verbose);
+  if (status != eslOK) exit(1);
+  
+#if 1
+  printf("logp PLM %f\n", logp);
 #endif
   
   return -logp;

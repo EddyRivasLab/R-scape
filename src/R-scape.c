@@ -37,7 +37,7 @@
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
-#define POTTSTOPTS   "--FULL,--APLM,--DCA,--ACE,--BML"                                          
+#define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -153,6 +153,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   PTTRAIN          pttrain;
   PTSCTYPE         ptsctype;
   PT              *pt;
+  char            *outpottsfile;
+  FILE            *outpottsfp;
   
   char            *pdbfile;            // pdfb file 
   double           cntmaxD;            // max distance in pdb structure to call a contact
@@ -268,9 +270,9 @@ static ESL_OPTIONS options[] = {
   { "--potts",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "potts couplings",                                                                           0 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
-  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,               "use protein alphabet",                                                                      0 },
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },
   
    /* Control of pdf contacts */
   { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb file from file <f>",                                                               0 },
@@ -279,11 +281,13 @@ static ESL_OPTIONS options[] = {
  
    /* Control for potts implementation */
   { "--ptmu",         eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              0 },
-  { "--FULL",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--APLM",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--APLM",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
+  { "--outpotts",  eslARG_OUTFILE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters to file <f>,",                                              0 },
   
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
@@ -325,7 +329,6 @@ static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
-static int existsfile(char *file);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -342,7 +345,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   struct stat  info;
   char         *outname = NULL;
   int           status;
-
 
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
@@ -524,11 +526,16 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.pt = NULL;
   cfg.ptmu    = esl_opt_GetReal(go, "--ptmu");
   cfg.pttrain = NONE;
-  if      (esl_opt_GetBoolean(go, "--FULL")) cfg.pttrain = FULL;
+  if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
+  else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
   else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pttrain = APLM;
   else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pttrain = GINV;
   else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pttrain = ACE;
   else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pttrain = BML;
+  cfg.ptsctype = SCNONE;
+  if      (esl_opt_GetBoolean(go, "--PTFp")) cfg.ptsctype = FROEB;
+  else if (esl_opt_GetBoolean(go, "--PTAp")) cfg.ptsctype = AVG;
+  else if (esl_opt_GetBoolean(go, "--PTDp")) cfg.ptsctype = DI;
 
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
@@ -570,7 +577,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     else                 esl_sprintf(&cfg.outsrtfile, "%s.w%d.s%d.sorted.out", cfg.outheader, cfg.window, cfg.slide);
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
-  
+
+  /* potts */
+  cfg.outpottsfile = NULL;
+  cfg.outpottsfp   = NULL;
+  if (cfg.method == POTTS && esl_opt_IsOn(go, "--outpotts")) {
+    esl_sprintf(&cfg.outpottsfile, "%s", esl_opt_GetString(go, "--outpotts"));
+    if ((cfg.outpottsfp = fopen(cfg.outpottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s", cfg.outpottsfile);
+  } 
+
   /*  rocplot file */
   cfg.rocfile = NULL;
   cfg.rocfp = NULL;
@@ -654,7 +669,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.pdbfile = NULL;
   if ( esl_opt_IsOn(go, "--pdbfile") ) {
     cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
-    if (!existsfile(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
+    if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
   }
   cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
   cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
@@ -849,6 +864,7 @@ main(int argc, char **argv)
   fclose(cfg.sumfp);
   if (cfg.omsacykfp) fclose(cfg.omsacykfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
+  if (cfg.outpottsfp) fclose(cfg.outpottsfp);
   if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
@@ -872,6 +888,7 @@ main(int argc, char **argv)
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.omsacykfile) free(cfg.omsacykfile);
   if (cfg.outmsafile) free(cfg.outmsafile);
+  if (cfg.outpottsfile) free(cfg.outpottsfile);
   if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
@@ -1144,8 +1161,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     
   //POTTS: calculate the couplings first
   if (cfg->method == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->tol, cfg->errbuf, cfg->verbose);
-    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to find potts parameters", cfg->errbuf);
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
  
   /* the null model first */
@@ -1987,17 +2004,4 @@ write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
  ERROR:
   if (ct) free(ct);
   return status;
-}
-
-static int
-existsfile(char *file) {
-  FILE *fp = NULL;
-
-  fp = fopen(file, "r");
-  if (fp) {
-    fclose(fp);
-    return TRUE;
-  }
-  else
-    return FALSE;
 }

@@ -19,9 +19,9 @@
 #include "pottsbuild.h"
 
 static double potts_score_oneseq(PT *pt, ESL_DSQ *sq);
-static double potts_full_logz(PT *pt);
+static double potts_all_logz(PT *pt);
 static double potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq);
-static double potts_full_regularize(PT *pt);
+static double potts_all_regularize(PT *pt);
 static double potts_aplm_regularize(int pos, PT *pt);
 
 
@@ -44,18 +44,39 @@ potts_SumH(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 
 
 int
-potts_FULLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
+potts_MLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
   double logp;
 
   potts_SumH(pt, msa, &logp, errbuf, verbose);
   logp /= msa->nseq;
-  logp -= potts_full_logz(pt);
+  logp -= potts_all_logz(pt);
 
   // l2-regularization
-  logp += potts_full_regularize(pt);
+  logp += potts_all_regularize(pt);
   
   *ret_logp = logp;
+  return eslOK;
+}
+
+int
+potts_PLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
+{
+  ESL_DSQ *sq;
+  double   logp = 0.;
+  double   sc;
+  int      s;
+  int      i;
+  
+  for (i = 0; i < pt->L; i ++) {
+    potts_APLMLogp(i, pt, msa, &sc, errbuf, verbose);
+    logp += sc;
+  } 
+  // l2-regularization
+  logp += potts_all_regularize(pt);
+  
+  *ret_logp = logp;
+  
   return eslOK;
 }
 
@@ -117,6 +138,8 @@ potts_CalculateCOV(struct data_s *data)
   int              status;
 
   switch(pt->sctype) {
+  case SCNONE:
+    break;
   case FROEB:
     status = potts_CalculateCOVFrobenius(data);
     if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "potts_CalculateCOVFrobenius() error");
@@ -252,10 +275,10 @@ potts_score_oneseq(PT *pt, ESL_DSQ *sq)
 }
 
 
-// sum_{a,b} exp{ \sim_i hi(a) + \sum_{i<j} eij(a,b) }
+// sum_{a1,..,aL} exp{ \sim_i hi(ai) + \sum_{i<j} eij(ai,aj) }
 //
 static double
-potts_full_logz(PT *pt)
+potts_all_logz(PT *pt)
 {
   int    *a = NULL;
   double  logsum = -eslINFINITY;
@@ -274,11 +297,11 @@ potts_full_logz(PT *pt)
     sc = 0.;
     for (i = 0; i < L; i ++) {
       sc += pt->h[i][a[i]];	
-      for (j = 0; j < L; j ++) 
-	sc += (i==j)?0:0.5 * pt->e[i][j][IDX(a[i],a[j],K)];
+      for (j = i+1; j < L; j ++) 
+	sc += pt->e[i][j][IDX(a[i],a[j],K)];
     }
     logsum = e2_FLogsum(logsum, sc);
-
+ 
     // increment
     a[0] ++;
 
@@ -329,7 +352,7 @@ potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
 
 
 static double
-potts_full_regularize(PT *pt)
+potts_all_regularize(PT *pt)
 {
   double reg = 0;
   double hi, eij;
