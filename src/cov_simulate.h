@@ -25,6 +25,12 @@ typedef enum {
   RAND  = 3,         // random sequences
 } TREETYPE;
 
+typedef enum {
+  SAMPLE_NAIVE  = 0,        // independent positions
+  SAMPLE_RNASS  = 1,        // sample according to an RNA secondary structure
+  SAMPLE_POTTS  = 2,        // Metropolis-Hastins sampling from a potts model
+} SIMTYPE;
+
 extern int cov_GenerateAlignment(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double abl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, E1_RATE *e1rateB, 
 				 struct ribomatrix_s *ribosum, ESL_MSA **msafull, int noss, int noindels, double tol, char *errbuf, int verbose);
 extern int cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double abl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate,

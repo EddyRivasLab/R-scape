@@ -30,28 +30,28 @@
 
 static void ax_dump(ESL_DSQ *dsq);
 static int  cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, char *errbuf, int verbose);
-static int  cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, struct ribomatrix_s *ribusum,
+static int  cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribusum,
 					  int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
-static int  cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double abl, E1_RATE *e1rate, struct ribomatrix_s *ribusum,
+static int  cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double abl, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribusum,
 					  int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
-static int  cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, struct ribomatrix_s *ribusum,
+static int  cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, int noss, struct ribomatrix_s *ribusum,
 					  int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
 static int  cov_evolve_indels_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, E1_RATE *e1rateB, ESL_MSA *msafull, 
 				   int **ret_ct, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
 static int  cov_evolve_indels_star(ESL_RANDOMNESS *r, int N, double abl, E1_RATE *e1rate, E1_RATE *e1rateB, ESL_MSA *msafull, 
 				   int **ret_ct, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
 static int  cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int p, int d, double time, int inodes, E1_RATE *e1rate,
-							struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, double tol, char *errbuf, int verbose);
+							int noss, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, double tol, char *errbuf, int verbose);
 static int  cov_evolve_ascendant_to_descendant_indels(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int p, int d, double time, int inodes, 
 						      E1_RATE *e1rate, E1_RATE *e1rateB, int **ret_ct, ESL_MSA *msa, double tol, char *errbuf, int verbose);
-static int   cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, 
+static int   cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes, int noss, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, 
 			       double tol, char *errbuf, int verbose);
-static int  cov_emit_ungapped(ESL_RANDOMNESS *r, E1_MODEL *e1model, ESL_DMATRIX *riboP, double *riboM, int aidx, int didx, int *ct, ESL_MSA *msa, 
+static int  cov_emit_ungapped(ESL_RANDOMNESS *r, E1_MODEL *e1model, int noss, ESL_DMATRIX *riboP, double *riboM, int aidx, int didx, int *ct, ESL_MSA *msa, 
 			      char *errbuf, int verbose);
-static int  cov_emit_random(ESL_RANDOMNESS *r, double *riboM, double *xrnaM, int idx, int *ct, ESL_MSA *msa, char *errbuf, int verbose);
+static int  cov_emit_random(ESL_RANDOMNESS *r, int noss, double *riboM, double *xrnaM, int idx, int *ct, ESL_MSA *msa, char *errbuf, int verbose);
 static int  cov_emit_indels(ESL_RANDOMNESS *r, E1_MODEL *e1model, E1_MODEL *e1modelB, int didx, int **ret_ct, ESL_MSA *msa, char *errbuf, int verbose);
-static int  cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model, ESL_DMATRIX *riboP, int *ct, ESL_MSA *msa, int verbose);
-static int  cov_residue(ESL_RANDOMNESS *r, int pos, int idx, double *riboM, double *upairM, int *ct, ESL_MSA *msa, int verbose);
+static int  cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model, int noss, ESL_DMATRIX *riboP, int *ct, ESL_MSA *msa, int verbose);
+static int  cov_residue(ESL_RANDOMNESS *r, int pos, int idx, int noss, double *riboM, double *upairM, int *ct, ESL_MSA *msa, int verbose);
 static int  cov_addres(ESL_RANDOMNESS *r, int idx, int pos, double *P, ESL_MSA *msa, int verbose);
 static int  cov_addpair(ESL_RANDOMNESS *r, int idx, int pos, int pair, double *riboP, int *ct, ESL_MSA *msa, int verbose);
 static int  cov_insert(ESL_RANDOMNESS *r, int sqidx, int pos, int **ret_ct, ESL_MSA *msa, double *f, int K, int l, int verbose);
@@ -132,9 +132,9 @@ cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, doubl
   if (cov_add_root(root, msa, &idx, nidx, noss, errbuf, verbose)!= eslOK) { status = eslFAIL; goto ERROR; }
 
  /* evolve root */
-  if (T)                     status = cov_evolve_root_ungapped_tree(r, T,       e1rate, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
-  else if (treetype == STAR) status = cov_evolve_root_ungapped_star(r, N, atbl, e1rate, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
-  else if (treetype == RAND) status = cov_evolve_root_ungapped_rand(r, N,               ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
+  if (T)                     status = cov_evolve_root_ungapped_tree(r, T,       e1rate, noss, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
+  else if (treetype == STAR) status = cov_evolve_root_ungapped_star(r, N, atbl, e1rate, noss, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
+  else if (treetype == RAND) status = cov_evolve_root_ungapped_rand(r, N,               noss, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
   if (status != eslOK) { status = eslFAIL; goto ERROR; }
 
   *ret_msafull = msa;
@@ -233,7 +233,7 @@ cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, cha
 
 
 static int 
-cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1rate, struct ribomatrix_s *ribosum,
+cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribosum,
 			      int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose)
 {
   int inodes = 1;  // only the root node
@@ -242,7 +242,7 @@ cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1
   int status;
 
   for (i = 0; i < N; i ++) {
-    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, -i, atbl, inodes, e1rate, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
+    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, -i, atbl, inodes, e1rate, noss, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, i, atbl);
 
     if (verbose) {
@@ -258,7 +258,7 @@ cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1
 }
 
 static int 
-cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, struct ribomatrix_s *ribosum,
+cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, int noss, struct ribomatrix_s *ribosum,
 			      int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose)
 {
   int inodes = 1;  // only the root node
@@ -266,7 +266,7 @@ cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, struct ribomatrix_s *rib
   int status;
 
   for (i = 0; i < N; i ++) {
-    if (cov_create_random(r, ret_idx, nidx, -i, inodes, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
+    if (cov_create_random(r, ret_idx, nidx, -i, inodes, noss, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to create sequence %d\n", errbuf, i);
 
     if (verbose) {
@@ -281,7 +281,7 @@ cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, struct ribomatrix_s *rib
 }
 
 static int 
-cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, struct ribomatrix_s *ribosum,
+cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribosum,
 			      int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose)
 {
   double ld, rd;
@@ -297,9 +297,9 @@ cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, s
     ld = T->ld[v];
     rd = T->rd[v];
     
-    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, dl, ld, inodes, e1rate, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
+    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, dl, ld, inodes, e1rate, noss, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, dl, ld);
-    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, dr, rd, inodes, e1rate, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
+    if (cov_evolve_ascendant_to_descendant_ungapped(r, ret_idx, nidx, v, dr, rd, inodes, e1rate, noss, ribosum, ct, msa, tol, errbuf, verbose) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, dr, rd);
 
     if (verbose) {
@@ -381,12 +381,12 @@ cov_evolve_indels_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1rate, E
 
 static int
 cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int p, int d, double time, int inodes, E1_RATE *e1rate, 
-					    struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, double tol, char *errbuf, int verbose)
+					    int noss, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, double tol, char *errbuf, int verbose)
 {
   E1_MODEL    *e1model = NULL;
   ESL_DMATRIX *riboP = NULL;
-  ESL_DMATRIX *riboQ = ribosum->bprsQ;
-  double      *riboM = ribosum->bprsM;
+  ESL_DMATRIX *riboQ = (noss)? NULL : ribosum->bprsQ;
+  double      *riboM = (noss)? NULL : ribosum->bprsM;
   int          idx;
   int          didx;
   int          status;
@@ -401,10 +401,12 @@ cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int
   e1_model_RenormNoIndels(e1model);
  
   /* evolve the riboQ(aa'|bb') rate to time */
-  riboP = ratematrix_ConditionalsFromRate(time, riboQ, tol, errbuf, verbose);
-  if (riboP == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to evolve ribosum to time %f", time);
-  if (verbose) esl_dmatrix_Dump(stdout, riboP, NULL, NULL);
-
+  if (!noss) {
+    riboP = ratematrix_ConditionalsFromRate(time, riboQ, tol, errbuf, verbose);
+    if (riboP == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to evolve ribosum to time %f", time);
+    if (verbose) esl_dmatrix_Dump(stdout, riboP, NULL, NULL);
+  }
+  
   /* generate the descendant sequence */
   idx = *ret_idx;
   if (d > 0) { didx = idx++;      nidx[d] = didx; }
@@ -414,7 +416,7 @@ cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int
   if (d <= 0) esl_sprintf(&msa->sqname[didx], "T%d", -d+1);
   else        esl_sprintf(&msa->sqname[didx], "v%d",  d);
 
-  status = cov_emit_ungapped(r, e1model, riboP, riboM, nidx[p], didx, ct, msa, errbuf, verbose);
+  status = cov_emit_ungapped(r, e1model, noss, riboP, riboM, nidx[p], didx, ct, msa, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   msa->sqlen[didx] = esl_abc_dsqrlen(msa->abc, msa->ax[didx]);
 
@@ -444,10 +446,11 @@ cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int
 }
 
 static int
-cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa, double tol, char *errbuf, int verbose)
+cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes, int noss, struct ribomatrix_s *ribosum, int *ct, ESL_MSA *msa,
+		  double tol, char *errbuf, int verbose)
 {
-  double      *riboM = ribosum->bprsM;
-  double      *urnaM = ribosum->urnaM;
+  double      *riboM = (noss)? NULL : ribosum->bprsM;
+  double      *urnaM = (noss)? NULL : ribosum->urnaM;
   int          idx;
   int          didx;
   int          status;
@@ -461,7 +464,7 @@ cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes,
   if (d <= 0) esl_sprintf(&msa->sqname[didx], "T%d", -d+1);
   else        esl_sprintf(&msa->sqname[didx], "v%d",  d);
 
-  status = cov_emit_random(r, riboM, urnaM, didx, ct, msa, errbuf, verbose);
+  status = cov_emit_random(r, noss, riboM, urnaM, didx, ct, msa, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   msa->sqlen[didx] = esl_abc_dsqrlen(msa->abc, msa->ax[didx]);
 
@@ -555,7 +558,7 @@ cov_evolve_ascendant_to_descendant_indels(ESL_RANDOMNESS *r, int *ret_idx, int *
 }
 
 int
-cov_emit_random(ESL_RANDOMNESS *r, double *riboM, double *upairM, int idx, int *ct, ESL_MSA *msa, char *errbuf, int verbose)
+cov_emit_random(ESL_RANDOMNESS *r, int noss, double *riboM, double *upairM, int idx, int *ct, ESL_MSA *msa, char *errbuf, int verbose)
 {
   int       L = msa->alen;      /* length of ancestral sq, it includes gaps */
   int       pos = 1;		/* position in alignment 1..alen */
@@ -563,7 +566,7 @@ cov_emit_random(ESL_RANDOMNESS *r, double *riboM, double *upairM, int idx, int *
    
   while (pos <= L)
     {
-      status = cov_residue(r, pos, idx, riboM, upairM, ct, msa, verbose);  
+      status = cov_residue(r, pos, idx, noss, riboM, upairM, ct, msa, verbose);  
       if (status != eslOK) goto ERROR;
       pos ++;
    }
@@ -575,7 +578,7 @@ cov_emit_random(ESL_RANDOMNESS *r, double *riboM, double *upairM, int idx, int *
 }
 
 int
-cov_emit_ungapped(ESL_RANDOMNESS *r, E1_MODEL *e1model, ESL_DMATRIX *riboP, double *riboM, int aidx, int didx, int *ct, ESL_MSA *msa, char *errbuf, int verbose)
+cov_emit_ungapped(ESL_RANDOMNESS *r, E1_MODEL *e1model, int noss, ESL_DMATRIX *riboP, double *riboM, int aidx, int didx, int *ct, ESL_MSA *msa, char *errbuf, int verbose)
 {
   int       L = msa->alen;      /* length of ancestral sq, it includes gaps */
   int       pos = 0;		/* position in alignment 1..alen */
@@ -611,7 +614,7 @@ cov_emit_ungapped(ESL_RANDOMNESS *r, E1_MODEL *e1model, ESL_DMATRIX *riboP, doub
       }
 
       if (st == e1T_S)  { /* a substitution, sample a residue */
-	status = cov_substitute(r, pos, aidx, didx, e1model, riboP, ct, msa, verbose);  
+	status = cov_substitute(r, pos, aidx, didx, e1model, noss, riboP, ct, msa, verbose);  
 	if (status != eslOK) goto ERROR;
       }
    }
@@ -714,7 +717,7 @@ cov_emit_indels(ESL_RANDOMNESS *r, E1_MODEL *e1model, E1_MODEL *e1modelB, int di
 
 
 static int
-cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model, ESL_DMATRIX *riboP, int *ct, ESL_MSA *msa, int verbose)
+cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model, int noss, ESL_DMATRIX *riboP, int *ct, ESL_MSA *msa, int verbose)
 {
   int apos = msa->ax[aidx][pos];
   int apair;
@@ -722,8 +725,8 @@ cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model
   int K    = e1model->abc->K;
   
   if (apos > K) return eslFAIL;
-  
-  if (pair == 0) cov_addres (r, didx, pos, e1model->sub->mx[apos], msa, verbose);
+ 
+  if (noss || pair == 0) cov_addres(r, didx, pos, e1model->sub->mx[apos], msa, verbose);
   else {
     apair = msa->ax[aidx][pair]; if (apair > K) return eslFAIL;
     cov_addpair(r, didx, pos, pair, riboP->mx[IDX(apos,apair,K)], ct, msa, verbose);
@@ -734,12 +737,12 @@ cov_substitute(ESL_RANDOMNESS *r, int pos, int aidx, int didx, E1_MODEL *e1model
 }
 
 static int
-cov_residue(ESL_RANDOMNESS *r, int pos, int idx, double *riboM, double *upairM, int *ct, ESL_MSA *msa, int verbose)
+cov_residue(ESL_RANDOMNESS *r, int pos, int idx, int noss, double *riboM, double *upairM, int *ct, ESL_MSA *msa, int verbose)
 {
   int pair = ct[pos];
   
-  if (pair == 0) cov_addres (r, idx, pos, upairM, msa, verbose);
-  else           cov_addpair(r, idx, pos, pair, riboM, ct, msa, verbose);
+  if (noss || pair == 0) cov_addres (r, idx, pos, upairM, msa, verbose);
+  else                   cov_addpair(r, idx, pos, pair, riboM, ct, msa, verbose);
   
   return eslOK;
   

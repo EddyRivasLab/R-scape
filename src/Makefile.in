@@ -102,7 +102,6 @@ PROGS    = scorematrix2rate\
 	   appcov\
 	   msaq\
            Phcar\
-	   pottsim\
 
 
 OBJS     = e1_bg.o\
@@ -161,6 +160,7 @@ OBJS     = e1_bg.o\
            plot.o\
            pottsbuild.o\
            pottsscore.o\
+	   pottsim.o\
            p7_evopipeline.o\
            etophits_output_tabular.o\
            ratematrix.o\

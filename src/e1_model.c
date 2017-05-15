@@ -98,15 +98,16 @@ e1_model_Create(E1_RATE *R, float time, const float *fmatch, const float *fins, 
     if (evom->sub == NULL) ESL_XFAIL(eslFAIL, errbuf, "couldn't calculate evosubs\n");
     evom->fsubsite = (fmatch)? ratematrix_FFreqSubsPerSite(evom->sub, (float *)fmatch) : ratematrix_DFreqSubsPerSite(evom->sub, R->em->f);
     //printf("time %f freq subsite %f\n", time, evom->fsubsite);
+  
+    if (fins != NULL) {
+      ESL_ALLOC(evom->ins, sizeof(float) * abc->K);
+      esl_vec_FCopy(fins, abc->K, evom->ins);
+    }
   }
   
-  if (fins != NULL) {
-    ESL_ALLOC(evom->ins, sizeof(float) * abc->K);
-    esl_vec_FCopy(fins, abc->K, evom->ins);
-  }
   if (verbose) {
     e1_model_DumpTransitions(stdout, evom);
-    if (abc != NULL) e1_model_DumpEmissions(stdout, evom);
+    if (fins != NULL && abc != NULL) e1_model_DumpEmissions(stdout, evom);
   }
   
   return evom;
@@ -119,7 +120,8 @@ e1_model_Create(E1_RATE *R, float time, const float *fmatch, const float *fins, 
 int
 e1_model_Transitions(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errbuf, int verbose)
 {
-  int status;
+  char *evomodeltype = e1_rate_EvomodelType(evom->R->evomodel);
+  int   status;
   
   switch(R->evomodel) {
   case AALI:
@@ -185,19 +187,21 @@ e1_model_Transitions(E1_MODEL *evom, E1_RATE *R, int L, float tol, char *errbuf,
     ESL_XFAIL(eslFAIL, errbuf, "unknown evomodel type.");
     break;
   }
-  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. e1_model %s not properly assigned", errbuf, e1_rate_EvomodelType(evom->R->evomodel));
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. e1_model %s not properly assigned", errbuf, evomodeltype);
   
   status = e1_model_ValidateTransitions(evom, tol, errbuf);
   if (status != eslOK) {
     printf("\nerror: %s\n", errbuf);
     e1_rate_Dump(stdout, (E1_RATE *)evom->R);
     e1_model_DumpTransitions(stdout, evom);
-    ESL_XFAIL(eslFAIL, errbuf, "e1_model %s did not validate", e1_rate_EvomodelType(evom->R->evomodel));
+    ESL_XFAIL(eslFAIL, errbuf, "e1_model %s did not validate", evomodeltype);
   }
 
+  free(evomodeltype);
   return status;
 
  ERROR:
+  if (evomodeltype) free(evomodeltype);
   return status;
 }
 

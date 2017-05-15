@@ -59,8 +59,8 @@ extern int   potts_OptimizeGDALL (PT *pt, ESL_MSA *msa, float firststep, float t
 extern int   potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float firststep, float tol, char *errbuf, int verbose);
 extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double mu, PTTRAIN pttrain, PTSCTYPE ptsctype);
 extern void  potts_Destroy(PT *pt);
-extern int   potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma);
-extern int   potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
+extern int   potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma);
+extern int   potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
 extern int   potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose);
 extern PT   *potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf);
 extern void  potts_Write(FILE *fp, PT *pt);

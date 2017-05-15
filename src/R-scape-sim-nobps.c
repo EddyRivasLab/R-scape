@@ -1,5 +1,5 @@
 /* R-scape-sim-nobps -- simulate alignments to test R-scape
- *                       use the null model but only on the positions not annotataed as secondary structure
+ *                       use the null model but only on the positions not annotated as secondary structure
  */
 #include <stdio.h>
 #include <stdlib.h>

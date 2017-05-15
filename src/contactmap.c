@@ -118,9 +118,9 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
 
   clist->maxD  = cntmaxD;
-  *ret_ct      = ct;
-  *ret_clist   = clist;
-  *ret_msa2pdb = msa2pdb;
+  if (ret_ct)      *ret_ct      = ct;
+  if (ret_clist)   *ret_clist   = clist;
+  if (ret_msa2pbd) *ret_msa2pdb = msa2pdb;
 
 #if 0
   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;

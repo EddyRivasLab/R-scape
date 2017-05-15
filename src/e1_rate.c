@@ -732,7 +732,8 @@ int
 e1_rate_CalculateInsertRates(EVOM evomodel, struct rateparam_s *ret_rateparam, double betaMinf, double betaDinf, double etaStar, 
 			     double betaMStar, double betaDStar, double tol, char *errbuf, int verbose)
 {
-  int status;
+  char *evomodeltype = e1_rate_EvomodelType(evomodel);
+  int   status;
 
   if (evomodel == UN) ESL_XFAIL(eslFAIL, errbuf, "evomodel is undefined");
 
@@ -752,12 +753,14 @@ e1_rate_CalculateInsertRates(EVOM evomodel, struct rateparam_s *ret_rateparam, d
     ESL_XFAIL(eslFAIL, errbuf, "unknown evomodel type.");
   }
   else {
-    ESL_XFAIL(eslFAIL, errbuf, "e1_rate_CalculateInsertRates() model %s not implemented\n", e1_rate_EvomodelType(evomodel));
+    ESL_XFAIL(eslFAIL, errbuf, "e1_rate_CalculateInsertRates() model %s not implemented\n", evomodeltype);
   }
 
+  free(evomodeltype);
   return status;
 
  ERROR:
+  if (evomodeltype) free(evomodeltype);
   return status;
 }
 
@@ -989,9 +992,10 @@ e1_rate_Destroy(E1_RATE *R)
 int
 e1_rate_Dump(FILE *fp, const E1_RATE *R)
 {
-  int t;
+  char *evomodeltype = e1_rate_EvomodelType(R->evomodel);
+  int   t;
 
-  fprintf(fp, "\nRATES for evomodel %s\n", e1_rate_EvomodelType(R->evomodel));
+  fprintf(fp, "\nRATES for evomodel %s\n", evomodeltype);
   fprintf(fp, "muA rates\n");
   for (t = 0; t < e1R_NSTATETYPES; t ++) 
     fprintf(fp, "%f     ", R->muA[t]);
@@ -1009,13 +1013,14 @@ e1_rate_Dump(FILE *fp, const E1_RATE *R)
   fprintf(fp, "rD    %f\n", R->rD);
   fprintf(fp, "p     %f\n", R->p);
 
+  free(evomodeltype);
   return eslOK;
 }
 
 char *
 e1_rate_EvomodelType(EVOM evomodel)
 {
-  char *evomodeltype;
+  char *evomodeltype = NULL;
   int   status;
 
   ESL_ALLOC(evomodeltype, sizeof(char)*10);
@@ -1162,6 +1167,7 @@ e1_rate_ReadParamfile(char *paramfile, struct rateparam_s *ret_rateparam, EVOM *
   ESL_FILEPARSER      *paramfp = NULL;
   struct rateparam_s   rateparam;
   EVOM                 evomodel = *ret_evomodel;
+  char                *evomodeltype = NULL;
   char                *tok1;
   char                *tok2;
   int                  status;
@@ -1265,27 +1271,30 @@ e1_rate_ReadParamfile(char *paramfile, struct rateparam_s *ret_rateparam, EVOM *
       if (strcmp(tok1, "model") != 0)                                   ESL_XFAIL(eslFAIL, errbuf, "failed to parse evomodel from file %s", paramfile);
       if (esl_fileparser_GetTokenOnLine(paramfp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse evomodel from file %s", paramfile);	 
       if (evomodel != e1_rate_Evomodel(tok2))  {
-	printf("overwriting evomodel %s to %s\n", e1_rate_EvomodelType(evomodel), tok2);
+	evomodeltype = e1_rate_EvomodelType(evomodel);
+	printf("overwriting evomodel %s to %s\n", evomodeltype, tok2);
 	evomodel = e1_rate_Evomodel(tok2);
-     }
+      }
     }
   
-  if (verbose)   
+  if (verbose) {
     printf("rI %f rM %f rD %f | sI %f sD %f vI %f vD %f | ldEM %f muEM %f ldED %f muED %f ldI %f muI %f muA %f %f %f | model %s\n",  
 	   rateparam.rI, rateparam.rM, rateparam.rD, 
 	   rateparam.sI, rateparam.sD, rateparam.vI, rateparam.vD,
 	   rateparam.ldEM, rateparam.muEM, rateparam.ldED, rateparam.muED, 
 	   rateparam.ldI, rateparam.muI, 
 	   rateparam.muAM, rateparam.muAD, rateparam.muAI, 
-	   e1_rate_EvomodelType(evomodel));
-  
+	   evomodeltype);
+  }
   esl_fileparser_Close(paramfp); paramfp = NULL;
   
   *ret_rateparam = rateparam;
   *ret_evomodel  = evomodel;
+  if (evomodeltype) free(evomodeltype);
   return eslOK;
   
  ERROR:
+  if (evomodeltype) free(evomodeltype);
   return status;
 }
 

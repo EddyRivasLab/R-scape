@@ -345,8 +345,8 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 
 // sum_b eij(a,b) = sum_a eij(a,b) = sum_a hi[a] = 0
 //
-// e(a,b) → e(a,b) − e(·,b) − e(a,·) + e(·,·)
-// h(a)   → h(a)   - e(a,·)
+// eij(a,b) → eij(a,b) − 1/K * \sum_c eij(c,b) − 1/k * \sum_d eij(a,d) + \1/K^2 * \sum_c \sum_d eij(c,d)
+// hi(a)    → hi(a)    - \sum_{j\neq i} 1/K * \sum_d eij(a,d)
 int
 potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 {
@@ -354,29 +354,28 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   int      K2 = K*K; 
   double   sumi[K];
   double   sumj[K];
-  double **sumh;
+  double   sumh;
   double   sum;
   double   tol = 1e-5;
   int      i, j;
   int      a, b;
   int      status;
 
-  ESL_ALLOC(sumh,    sizeof(double *) * pt->L);
-  ESL_ALLOC(sumh[0], sizeof(double)   * pt->L*K);
-  for (i = 1; i < pt->L; i++) sumh[i] = sumh[i-1] + K;
-  
-  for (i = 0; i < pt->L; i++) {
-    sum = 0;
-    for (a = 0; a < K; a ++) sum += pt->h[i][a];
-    for (a = 0; a < K; a ++) pt->h[i][a] -= sum/K;
-  }
-    
-  for (i = 0; i < pt->L; i++) {
-    
-    for (a = 0; a < K; a ++) sumh[i][a] = 0;
-    
-    for (j = i+1; j < pt->L; j++) {
+  for (i = 0; i < pt->L; i++) 
+    for (a = 0; a < K; a ++) {
       
+      sumh = 0.0;  
+      for (j = 0; j < pt->L; j++) {
+	if (i==j) continue;
+	for (b = 0; b < K; b ++) 
+	  sumh += pt->e[i][j][IDX(a,b,K)];
+      }
+      
+      pt->h[i][a] -= sumh/K;    
+    }
+  
+  for (i = 0; i < pt->L; i++) 
+    for (j = i+1; j < pt->L; j++) {    
       sum = 0;     
       for (a = 0; a < K; a ++) {
 	sumi[a] = 0;
@@ -385,7 +384,6 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 	  sum        += pt->e[i][j][IDX(a,b,K)];
 	  sumi[a]    += pt->e[i][j][IDX(b,a,K)];
 	  sumj[a]    += pt->e[i][j][IDX(a,b,K)];
-	  sumh[i][a] += pt->e[i][j][IDX(a,b,K)];
 	}
       }
       
@@ -395,7 +393,6 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 	  pt->e[j][i][IDX(a,b,K)]  = pt->e[i][j][IDX(a,b,K)];
 	}
     }
-  }
   
 #if 0
   // check it is a zero sum
@@ -426,13 +423,9 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 
 #endif
   
-  free(sumh[0]);
-  free(sumh);
   return eslOK;
 
  ERROR:
-  if (sumh[0]) free(sumh[0]);
-  if (sumh)    free(sumh);
   return status;
 }
 
