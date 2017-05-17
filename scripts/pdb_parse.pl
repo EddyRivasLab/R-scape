@@ -4,9 +4,9 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_C $opt_W $opt_D $opt_L $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_M $opt_W $opt_D $opt_L $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('C:W:D:L:v');
+getopts ('C:M:W:D:L:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -24,9 +24,12 @@ use constant GNUPLOT => '$gnuplot';
 my $currdir = $ENV{PWD};
 
 my $stoname = $stofile;
-if ($stoname =~ /\/([^\/]+)\.\S+$/) { $stoname = $1; }
+if ($stoname =~ /\/([^\/]+)\.[^\/]+$/) { $stoname = $1; }
 my $pfamname = $stofile;
-if ($pfamname =~ /\/([^\/]+)\.\S+$/) { $pfamname = $1; }
+if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
+
+print "STO:  $stoname\n";
+print "PFAM: $pfamname\n";
 
 my $hmmer       = "$rscapebin/../lib/hmmer";
 my $hmmbuild    = "$hmmer/src/programs/hmmbuild";
@@ -40,6 +43,11 @@ my $coorfile = "";
 if ($opt_C) { 
     $coorfile = "$opt_C";
     open(COORF,  ">$coorfile")  || die;
+}
+my $mapfile = "";
+if ($opt_M) { 
+    $mapfile = "$opt_M";
+    open(MAPF,  ">$mapfile")  || die;
 }
 
 my $maxD = 8;
@@ -83,12 +91,12 @@ for (my $n = 0; $n < $nch; $n ++) {
     
     #print      "# PDB: $pdbname\n";
     print COR  "# PDB: $pdbname\n";
-    print MAP  "# PDB: $pdbname\n";
+    print MAP  "# PDB: $pdbname\n"; if ($mapfile)  { print MAPF  "# PDB: $pdbname\n"; }
     print MAP0 "# PDB: $pdbname\n";
     print MAP1 "# PDB: $pdbname\n";
     #print      "# chain $chname[$n]\n# $sq[$n]\n";
     print COR  "# chain $chname[$n]\n";
-    print MAP  "# chain $chname[$n]\n";
+    print MAP  "# chain $chname[$n]\n"; if ($mapfile)  { print MAPF  "# chain $chname[$n]\n"; }
     print MAP0 "# chain $chname[$n]\n";
     print MAP1 "# chain $chname[$n]\n";
     print MAP1 "# maps to $pfamname\n";
@@ -107,6 +115,7 @@ for (my $n = 0; $n < $nch; $n ++) {
 }
 
 if ($coorfile) { close(COORF); }
+if ($mapfile)  { close(MAPF);  }
 
 sub parse_pdb {
     my ($pdbfile, $ret_nch, $chname_ref, $sq_ref) = @_;
@@ -191,20 +200,26 @@ sub map_sq {
 	}
     }
     close(STO);
-    if ($name =~ /^$/) {
+    
+     if ($name =~ /^$/) {
 	$exactsq = 0;
-	print "could not find $pdbname name chain $chname in sto file.. trying by homology\n"; 
-	return 0;
-	if (find_pdbsq_in_pfam($stofile, $sq, \$name, \$asq) == 0) {
+	print "could not find $pdbname chain $chname in sto file... trying by homology\n";
+	my $len = find_pdbsq_in_pfam($stofile, $sq, \$name, \$asq);
+	if ($len == 0 || $name =~ //) {
 	    print "could not find $pdbname in sto file\n";
 	    return 0;
 	}
     }
+
+    print "^^$sq\n";
+    print "^^$asq\n";
     
     my @sq  = split(//,$sq);
     my @asq = split(//,$asq);
-    my $x = first_pos_in_pdbsq($sq, $asq);    
+    my $x = first_pos_in_pdbsq($sq, $asq);
     my $y = 0;
+    print "^^^^^ x $x y $y\n";    
+
     while ($x < $len && $y < length($asq)) {
 	if ($asq[$y] =~ /^\.$/  || $asq[$y] =~ /^\-$/) { 
 	    #print "# gap $y $asq[$y]\n"; 
@@ -254,26 +269,28 @@ sub find_pdbsq_in_pfam {
     system("$hmmbuild             $hmm $pdbsqfile >  $hmmout\n");
     system("$hmmersearch -E 1e-15 $hmm $stofile   >  $hmmout\n");
     
-    system("more $hmmout\n");
+    system("/usr/bin/more $hmmout\n");
 
     # take hit with best evalue
     my $pdbasq;
     my $asq;
     parse_hmmout_for_besthit($hmmout, \$name, \$from_pdb, \$to_pdb, \$from, \$to, \$pdbasq, \$asq);
-  
-    $pfam_asq = get_asq_from_sto($stofile, $name, $from, $to);
-    #print "# pfamseq $name $from-$to\n# $pfam_asq";
-
+    if ($name =~ //) { print "could not find best hit\n"; die; }
     
+    $pfam_asq = get_asq_from_sto($stofile, $name, $from, $to);
+    #print "#pfamseq $name $from-$to\n$pfam_asq\n";
+
+    $$ret_name = $name;
     $$ret_pfam_asq = $pfam_asq;
 
-    system("rm $pdbsqfile\n");
-    system("rm $hmm\n");
-    system("rm $hmmout\n");
+    system("/bin/rm $pdbsqfile\n");
+    system("/bin/rm $hmm\n");
+    system("/bin/rm $hmmout\n");
 
     return length($pfam_asq);
 }
 
+    
 sub parse_hmmout_for_besthit {
     my ($hmmout, $ret_name, $ret_from_pdb, $ret_to_pdb, $ret_from, $ret_to, $ret_pdbasq, $ret_asq) = @_;
 
@@ -285,6 +302,37 @@ sub parse_hmmout_for_besthit {
     my $asq    = "";
     my $name   = "";
 
+    my $n = 0;
+    open(HF, "$hmmout") || die;
+    while(<HF>) {
+	if (/#/) {
+	}
+	elsif (/\>\>\s+(\S+)/ && $n == 0) {
+	    $name = $1;
+	    $asq = "";
+	    $pdbasq = "";
+	    $from = 123456789;
+	    $from_pdb = 123456789;
+	    $n ++;
+	}
+	elsif (/\>\>\s+(\S+)/ && $n > 0) {
+	    last;
+	}
+	elsif ($n==1 && /^\s*$name\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	    my $i  = $1;
+	    $asq  .= $2;
+	    $to    = $3;
+	    $from  = ($i < $from)? $i:$from;
+	}
+	elsif ($n==1 && /^\s*pdbsqfile\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	    my $i     = $1;
+	    $pdbasq  .= $2;
+	    $to_pdb   = $3;
+	    $from_pdb  = ($i < $from_pdb)? $i:$from_pdb;
+	}
+    }
+    close(HF);
+    
     $$ret_from_pdb = $from_pdb;
     $$ret_to_pdb   = $to_pdb;
     $$ret_from     = $from;
@@ -353,17 +401,18 @@ sub get_asq_from_sto {
 	if (/^\>$name/) {
 	    $found = 1;
 	}
-	elsif ($found && /^(\S+)$/) {
-	    $asq .= $1;
-	}
- 	elsif ($found == 1 && /^\>/) {
+	elsif ($found == 1 && /^\>/) {
 	    $found = 0;
 	    last;
 	}       
-    }
+	elsif ($found == 1 && /^(\S+)$/) {
+	    $asq .= $1;
+	}
+     }
     close(AFA);
     
-    return $asq;
+
+    return substr($asq, $from, $to);
 }
 
 sub first_pos_in_pdbsq {
@@ -393,7 +442,8 @@ sub first_pos_in_pdbsq {
     system("$hmmbuild                        $hmm $pdbsqfile >  $hmmout\n");
     system("$hmmersearch --domtblout $hmmtbl $hmm $sqfile    >> $hmmout\n");
 
-    #system("more $hmmout\n");
+    system("/usr/bin/more $hmmout\n");
+    system("/usr/bin/more $hmmtbl\n");
     open(H, "$hmmtbl") || die;
     while(<H>) {
 	if (/^\#/) {
@@ -425,6 +475,10 @@ sub parse_pdb_contact_map {
     printf COR  "# minL  $minL\n";
     printf MAP  "# maxD  $maxD\n";
     printf MAP  "# minL  $minL\n";
+    if ($mapfile)  { 
+	print MAPF  "# maxD  $maxD\n";
+	print MAPF  "# minL  $minL\n";
+    }
     printf MAP0 "# maxD  $maxD\n";
     printf MAP0 "# minL  $minL\n";
     printf MAP1 "# maxD  $maxD\n";
@@ -459,7 +513,8 @@ sub parse_pdb_contact_map {
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
        	get_atom_coords($pdbfile, $l1+$atom_offset, $chain, \$nat1, \$char1, \@type1, \@x1, \@y1, \@z1);
-	if ($nat1 == 0) { #print "atom $l1 not present\n"; 
+	if ($nat1 == 0) { 
+	    print "atom $l1 not present\n"; 
 	}
 	else {
 	    if (aa_conversion($char1) =~ /^$sq[$l1]$/) {
@@ -470,19 +525,21 @@ sub parse_pdb_contact_map {
 	
 	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
 	    get_atom_coords($pdbfile, $l2+$atom_offset, $chain, \$nat2, \$char2, \@type2, \@x2, \@y2, \@z2);
-	    if ($nat2 == 0) { #print "#atom $l2 not present\n"; 
+	    if ($nat2 == 0) { 
+		print "#atom $l2 not present\n"; 
 	    }
 	    else {
 		if (aa_conversion($char2) =~ /^$sq[$l2]$/) {
 		    #printf "#chain$chain;position %d/%d: $char2\n", $l2+$atom_offset, $len;
 		} 
-		else { printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l2]\n", $l2+1, $len, aa_conversion($char2); die; }
+		else { 
+		    printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l2]\n", $l2+1, $len, aa_conversion($char2); die; }
 	    }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
 
 	    if ($distance > 0) {
-		if (0 && $map[$l1] >= 0 && $map[$l2] >= 0) {
+	      if ($map[$l1] == 32) {
 		    printf "^^^%d | %d %d %s | %d %d %s | %.2f\n", abs($l1-$l2), $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance;
 		}  
 		
@@ -492,7 +549,10 @@ sub parse_pdb_contact_map {
 		    
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
 			$nc ++;
-			#printf      "%d %d %s | %d %d %s | %.2f\n", $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance; 
+			printf      "%d %d %s | %d %d %s | %.2f\n", $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance;
+			if ($mapfile) {
+			    printf MAPF  "%d %s %d %s %.2f\n", $map[$l1]+1, $sq[$l1], $map[$l2]+1, $sq[$l2], $distance; 
+			}
 			printf MAP  "%d %s %d %s %.2f\n", $map[$l1]+1, $sq[$l1], $map[$l2]+1, $sq[$l2], $distance; 
 			printf MAP1 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance; 
 		    }
@@ -502,6 +562,9 @@ sub parse_pdb_contact_map {
     }
     #print      "\# contacts: $nc\n";
     print MAP  "\# contacts: $nc\n";
+    if ($mapfile) {
+	print MAP  "\# contacts: $nc\n";
+    }
     print MAP0 "\# contacts: $nct\n";
     print MAP1 "\# contacts: $nc\n";
 
@@ -550,6 +613,9 @@ sub sq_conversion {
 sub aa_conversion {
     my ($aa) = @_;
     my $new;
+
+    if ($aa =~ /^\S$/) { return $aa; } # DNA/RNA
+    
     if    ($aa =~ /^ALA$/) { $new = "A"; }
     elsif ($aa =~ /^CYS$/) { $new = "C"; }
     elsif ($aa =~ /^ASP$/) { $new = "D"; }
@@ -608,14 +674,24 @@ sub get_atom_coords {
 	    $x     = $3;
 	    $y     = $4;
 	    $z     = $5;
-	    $thisn = $2;
+	    $thisn = $2; 
 	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
 	}
-	elsif (/^ATOM\s+\d+\s+(\S+)\s*\S\S\S\s+$chain\s+$thisn\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
+	elsif (/^ATOM\s+\d+\s+C1\S*\s+\S*(\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
+	    $type  = "N";
+	    $char  = $1;
+	    $x     = $3;
+	    $y     = $4;
+	    $z     = $5;
+	    $thisn = $2; 
+	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
+	}
+	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S)\s+$chain\s+$thisn\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
 	    $type = $1;
-	    $x    = $2;
-	    $y    = $3;
-	    $z    = $4;
+	    $char = $2;
+	    $x    = $3;
+	    $y    = $4;
+	    $z    = $5;
 	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; }
 	}
     }

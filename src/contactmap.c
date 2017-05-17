@@ -99,14 +99,15 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
       
       if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
       fclose(tmpfp);
-      if ((status = esl_tmpfile_named(tmpcfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
+      if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
       fclose(tmpfp);
       
       if (RSCAPE_BIN)                         // look for the installed executable
 	esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
       else
 	ESL_XFAIL(status, errbuf, "Failed to find pdb_parse.pl file\n");
-      esl_sprintf(&args, "%s -D %f -W ALL -C %s %s %s %s %s > %s", cmd, cntmaxD, tmpmapfile, pdbfile, msafile, RSCAPE_BIN, gnuplot, tmpcfile);
+      esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s %s %s %s %s > /dev/null", cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+      printf("%s\n", args);
       system(args);
       
       read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
@@ -117,17 +118,20 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
     }
   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
 
-  clist->maxD  = cntmaxD;
-  if (ret_ct)      *ret_ct      = ct;
-  if (ret_clist)   *ret_clist   = clist;
-  if (ret_msa2pbd) *ret_msa2pdb = msa2pdb;
-
 #if 0
   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
   if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
 #endif
 
-  if (ret_msa2pdb) *ret_msa2pdb = msa2pdb;
+  clist->maxD  = cntmaxD;
+
+  if (1||verbose) CMAP_Dump(stdout, clist);
+  
+  if (ret_ct)      *ret_ct      = ct;      else free(ct);
+  if (ret_clist)   *ret_clist   = clist;   else free(clist);
+  if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
+
+
   if (cmd) free(cmd);
   if (args) free(args);
   return eslOK;
@@ -195,6 +199,19 @@ CMAP_IsBPLocal(int i, int j, CLIST *clist)
   return FALSE;
 }
 
+int
+CMAP_Dump(FILE *fp, CLIST *clist)
+{
+  int h;
+
+  fprintf(fp, "#Ncontacts %d\n",   clist->ncnt);
+  fprintf(fp, "#maxD      %.2f\n", clist->maxD);
+  fprintf(fp, "#mind      %.d\n",  clist->mind);
+  for (h = 0; h < clist->ncnt; h ++) {
+    fprintf(fp, "%d %d | isbp? %d\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, clist->cnt[h].isbp);
+  }
+  return FALSE;
+}
 
 
 static int
@@ -204,10 +221,10 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
   char            *tok;
   int              nchain = 0;
   char           **mapfile = NULL;
-  int              c;
   int              posi;
   int              pdbi;
   int              i;
+  int              c;
   int              status;
   
   if (esl_fileparser_Open(pdbmapfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
@@ -217,12 +234,13 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
     {
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbmapfile);
        esl_sprintf(&mapfile[nchain], tok);
+ 
       nchain ++;
       ESL_REALLOC(mapfile, sizeof(char *)*(nchain+1));
     }
   esl_fileparser_Close(efp);
   
-  // Add from all chains if unique
+  // Add contacts from all chains if unique
   for (c = 0; c < nchain; c ++) {
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
     esl_fileparser_SetCommentChar(efp, '#');
@@ -232,14 +250,14 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
 	pdbi = atoi(tok);
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
 	posi = atoi(tok);
-
+	
 	if (posi > 0) {
 	  i = omsa2msa[posi-1]+1;
 	  msa2pdb[i-1] = pdbi-1;
 	}
-     }
+      }
   }
-
+  
   free(mapfile);
   return eslOK;
 
@@ -254,87 +272,65 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
-  int              nchain = 0;
-  char           **cntfile = NULL;
   int              ncnt = clist->alloc_ncnt;
   int              posi, posj;
   int              i, j;
   double           D;
-  int              c;
   int              h = 0;
   int              status;
-  
+
   if (esl_fileparser_Open(pdbcfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
   esl_fileparser_SetCommentChar(efp, '#');
-  ESL_ALLOC(cntfile, sizeof(char *));
   while (esl_fileparser_NextLine(efp) == eslOK)
     {
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
-       esl_sprintf(&cntfile[nchain], tok);
-      nchain ++;
-      ESL_REALLOC(cntfile, sizeof(char *)*(nchain+1));
+      posi = atoi(tok);
+      i    = omsa2msa[posi-1]+1;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      posj = atoi(tok);
+      j    = omsa2msa[posj-1]+1;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      D = atof(tok);
+      
+      if (i > 0 && j > 0 && j-i >= clist->mind && isnewcontact(posi, posj, clist)) {
+	
+	if (h == ncnt - 1) {
+	  ncnt += clist->alloc_ncnt;
+	  ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
+	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
+	}
+	
+	clist->cnt[h].posi = posi;
+	clist->cnt[h].posj = posj;
+	clist->cnt[h].i    = i;
+	clist->cnt[h].j    = j;
+	clist->cnt[h].pdbi = msa2pdb[i-1]+1;
+	clist->cnt[h].pdbj = msa2pdb[j-1]+1;
+	clist->cnt[h].D    = D;
+	clist->cnt[h].isbp = FALSE;
+	clist->ncnt        = h;
+	ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
+	ct[j] = j;
+	
+#if 0
+	printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
+	       (int)clist->cnt[h].i, (int)clist->cnt[h].posi, (int)clist->cnt[h].pdbi,
+	       (int)clist->cnt[h].j, (int)clist->cnt[h].posj, (int)clist->cnt[h].pdbj, clist->cnt[h].D);
+#endif
+	
+	h ++;
+      }
     }
   esl_fileparser_Close(efp);
-  
-  // Add contacts from all chains if unique
-  for (c = 0; c < nchain; c ++) {
-    if (esl_fileparser_Open(cntfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-    esl_fileparser_SetCommentChar(efp, '#');
-    while (esl_fileparser_NextLine(efp) == eslOK)
-      {
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", cntfile[c]);
-	posi = atoi(tok);
-	i    = omsa2msa[posi-1]+1;
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", cntfile[c]);
-	
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", cntfile[c]);
-	posj = atoi(tok);
-	j    = omsa2msa[posj-1]+1;
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", cntfile[c]);
-	
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", cntfile[c]);
-	D = atof(tok);
-
-	if (i > 0 && j > 0 && j-i >= clist->mind && isnewcontact(posi, posj, clist)) {
-	  
-	  if (h == ncnt - 1) {
-	    ncnt += clist->alloc_ncnt;
-	    ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
-	    ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
-	  }
-	  
-	  clist->cnt[h].posi = posi;
-	  clist->cnt[h].posj = posj;
-	  clist->cnt[h].i    = i;
-	  clist->cnt[h].j    = j;
-	  clist->cnt[h].pdbi = msa2pdb[i-1]+1;
-	  clist->cnt[h].pdbj = msa2pdb[j-1]+1;
-	  clist->cnt[h].D    = D;
-	  clist->cnt[h].isbp = FALSE;
-	  clist->ncnt        = h;
-	  ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
-	  ct[j] = j;
-
-#if 0
-	  printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
-		 (int)clist->cnt[h].i, (int)clist->cnt[h].posi, (int)clist->cnt[h].pdbi,
-		 (int)clist->cnt[h].j, (int)clist->cnt[h].posj, (int)clist->cnt[h].pdbj, clist->cnt[h].D);
-#endif
-	  
-	  h ++;
-	}
-      }
-    esl_fileparser_Close(efp);
-  }
 
   clist->ncnt = h;
-  for (c = 0; c < nchain; c++) { free(cntfile[c]); }
-  free(cntfile);
   return eslOK;
 
  ERROR:
-  for (c = 0; c < nchain; c++) { if (cntfile[c]) free(cntfile[c]); }
-  if (cntfile) free(cntfile);
   return status;
 }
 

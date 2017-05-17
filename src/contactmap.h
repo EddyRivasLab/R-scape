@@ -46,6 +46,7 @@ extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern void   CMAP_FreeCList(CLIST *list);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
+extern int    CMAP_Dump(FILE *fp, CLIST *clist);
 
 #endif /*CONTACTMAP_INCLUDED*/
 

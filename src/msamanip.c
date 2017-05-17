@@ -405,7 +405,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
 int
 msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len)
 {
-  ESL_MSA *omsa;
+  ESL_MSA *omsa = *msa; /* pointer to original msa */
   ESL_MSA *new = NULL;
   ESL_DSQ *dsq = NULL;
   int     *useme = NULL;
@@ -418,8 +418,6 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   int      x;
   int      status;
 
-  omsa = *msa; /* pointer to original msa */
-  
   for (n = 0; n < omsa->ngc; n++) {
     if (strcmp(omsa->gc_tag[n], "seq_cons") == 0) {
       esl_abc_CreateDsq(omsa->abc, omsa->gc[n], &dsq);
@@ -465,7 +463,6 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   *ret_nfrags = omsa->nseq - esl_vec_ISum(useme, omsa->nseq);
 
  /* replace msa */
-  esl_msa_Destroy(omsa);
   *msa = new;
 
   if (dsq) free(dsq);

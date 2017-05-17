@@ -45,9 +45,14 @@ sub parse_pdblist {
     while (<LIST>) {
 	if (/\#/) {
 	}
-	elsif (/^(\S+)(\S)\s+/) {
+	elsif (/^(\S+)([A_Z])\s+/) {
 	    $pdbname_ref->[$nf] = $1;
 	    $pdbf_ref->[$nf]    = "data/PDB/$1.$2.pdb";
+	    $nf ++;
+	}
+	elsif (/^(\S+)\s+/) {
+	    $pdbname_ref->[$nf] = $1;
+	    $pdbf_ref->[$nf]    = "data/PDB/$1.pdb";
 	    $nf ++;
 	}
     }
@@ -62,6 +67,7 @@ sub parse_pdblist {
 
      my $url = "$pdb_url/$pdbname.pdb";
      print "$url\n";
+     print "$pdbf\n";
      
      open(PDB, ">$pdbf") || die;
      my $content = get($url);

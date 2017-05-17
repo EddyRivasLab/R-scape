@@ -42,8 +42,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
   
   // Initialize 
-  //status = potts_InitGaussian(r, pt, 0., 1.0);
-  status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
+  //status = potts_AssignGaussian(r, pt, 0., 1.0);
+  status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   
   /* init */
@@ -264,7 +264,7 @@ potts_Destroy(PT *pt)
 }
 
 int
-potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma)
+potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma)
 {
   int L = pt->L;
   int K = pt->abc->K;
@@ -288,7 +288,7 @@ potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma)
 
 
 int
-potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
+potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
 {
   struct mutual_s *mi = NULL;
   double           exp;
@@ -301,7 +301,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
   int              i, j;
   int              a, b;
   int              status;
-  
+
   mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
   if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
 

@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -49,7 +52,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char                 errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS      *r;	               /* random numbers */
   ESL_ALPHABET        *abc;                    /* the alphabet */
-  
+
+  char                *gnuplot;
+
   int                  onemsa;
   int                  nmsa;
   char                *msafile;
@@ -109,6 +114,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   char                *pottsfile;
   char                *pdbfile;
+  double               cntmaxD;            // max distance in pdb structure to call a contact
   double               pottsigma;
   POTTSPARAM           pottsparam;
   int                  L;                       // lenght of the alignment if not controlled by pottsfile of pdbfile
@@ -127,6 +133,7 @@ static ESL_OPTIONS options[] = {
   { "--potts",         eslARG_NONE,     FALSE,   NULL,       NULL,SIMOPTS,    NULL,  NULL,               "Metropolis-Hastins for a potts model",                                                      1 }, 
   /* potts simulation */ 
   { "--pottsfile",   eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pdbfile",       "read potts params from file <f>",                                                           1 },
+  { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
   { "--pdbfile",     eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pottsfile",     "read contacts from pdbfile <f>",                                                            1 },
   { "--pottsigma",     eslARG_REAL,     "0.1",   NULL,     "x>=0",   NULL,  "--potts",NULL,              "if sampling param from a N(0,sigma)",                                                       1 },
   { "--ptpgauss",      eslARG_NONE,    "TRUE",   NULL,       NULL,POTTSOPTS,"--potts",NULL,              "potts param sampled from a Gaussian distribution",                                          1 }, 
@@ -190,6 +197,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS  *go = esl_getopts_Create(options);
   struct cfg_s  cfg;
+  char         *path;
+  char         *s;
+  char         *tok;
+  char         *tok1 = NULL;
+  struct stat   info;
   int           status;
 
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
@@ -215,6 +227,25 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+  
+  /* find gnuplot */
+  cfg.gnuplot = NULL;
+  path = getenv("PATH"); // chech for an executable in the path
+  s = path; 
+  while (esl_strcmp(s, "")) {
+    esl_strtok(&s, ":", &tok);
+    esl_sprintf(&tok1, "%s/gnuplot", tok);
+    if ((stat(tok1, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);    
+      break;
+    }
+    free(tok1); tok1 = NULL;
+  }
+  if (cfg.gnuplot == NULL && "GNUPLOT" && (s = getenv("GNUPLOT"))) { // check for an envvar
+    if ((stat(s, &info) == 0) && (info.st_mode & S_IXOTH)) {
+      esl_sprintf(&cfg.gnuplot, "%s -persist", s);
+    }
+  }
   
   /* outheader for all output files */
   cfg.outheader = NULL;
@@ -290,13 +321,19 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--ptpcontact")) cfg.pottsparam = PTP_CONTACT; 
   
   cfg.L = esl_opt_GetInteger(go, "-L");
-  cfg.pottsigma =  esl_opt_GetReal(go, "--pottsigma");
+  cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
+  if ( esl_opt_IsOn(go, "--pottsigma") ) {
+    cfg.pottsparam = PTP_GAUSS;
+    cfg.pottsigma =  esl_opt_GetReal(go, "--pottsigma");
+  }
   if ( esl_opt_IsOn(go, "--pottsfile") ) {
+    cfg.pottsparam = PTP_FILE;
     cfg.pottsfile = esl_opt_GetString(go, "--pottsfile");
     if (!esl_FileExists(cfg.pottsfile))  esl_fatal("pottsfile %s does not seem to exist\n", cfg.pottsfile);    
   }
   if ( esl_opt_IsOn(go, "--pdbfile") ) {
-    cfg.pottsfile = esl_opt_GetString(go, "--pdbfile");
+    cfg.pottsparam = PTP_CONTACT;
+    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
     if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);    
   }
    
@@ -341,9 +378,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   *ret_go  = go;
   *ret_cfg = cfg;
 
+  if (tok1) free(tok1);
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
+  if (tok1) free(tok1);
   esl_usage(stdout, banner, usage);
   if (puts("\nwhere options are:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
@@ -351,6 +390,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   exit(1);  
 
  ERROR:
+  if (tok1) free(tok1);
   if (go) esl_getopts_Destroy(go);
   exit(status);
 }
@@ -615,7 +655,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_fatal(msg);
   }
   
-  
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -623,7 +662,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  if (msa->nseq < cfg->nseqmin || msa->alen == 0) {
+  if (msa->alen == 0) {
     esl_msa_Destroy(msa); msa = NULL;
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -631,11 +670,12 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  msa = *omsa;
   
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
+  startpos = 0;
+  endpos   = alen-1;
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap, (cfg->pdbfile)?&cfg->msarevmap:NULL,
 				&useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
@@ -734,7 +774,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
       esl_fatal("%s\nfailed to generate the rnass simulated alignment", cfg->errbuf);
     break;
   case SAMPLE_POTTS:
-    if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull, 
+    if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull,
+				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->cntmaxD, cfg->gnuplot,
 				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nFailed to generate the simulated potts alignment", cfg->errbuf);
     break;

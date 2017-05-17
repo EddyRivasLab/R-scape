@@ -1143,10 +1143,10 @@ corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
   mi->type      = mitype;
   mi->class     = miclass;
 
-   /* initialize for adding counts */
+  /* initialize for adding counts */
   for (i = 0; i < mi->alen; i++) {
     esl_vec_DSet(mi->pm[i], K, 0.0); 
- 
+    
     for (j = 0; j < mi->alen; j++) {
       mi->nseff[i][j] = 0.;
       mi->ngap[i][j]  = 0.;
@@ -1303,7 +1303,7 @@ corr_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
 
 int                 
 corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-	  METHOD method, int donull2b, double tol, int verbose, char *errbuf)
+	   METHOD method, int donull2b, double tol, int verbose, char *errbuf)
 {
   int i, j;
   int x, y;
