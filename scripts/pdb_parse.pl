@@ -70,8 +70,8 @@ my $alen;
 my $seeplots = 0;
 
 my $pdbname = parse_pdb($pdbfile, \$nch, \@chname, \@sq);
-#print     "# PFAM: $stofile\n";
-#print     "# PDB:  $pdbname\n# $nch chains\n";
+print     "# PFAM: $stofile\n";
+print     "# PDB:  $pdbname\n# $nch chains\n";
 
 for (my $n = 0; $n < $nch; $n ++) {
     my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
@@ -168,99 +168,116 @@ sub parse_pdb {
     return $pdbname;
 }
 
-sub map_sq {
-    my ($stofile, $pdbname, $chname, $sq, $map_ref) = @_;
+sub map_pdbsq {
+    my ($stofile, $pdbname, $chname, $pdbsq, $map_ref) = @_;
 
-    my $len = length($sq);
+    my $len = length($pdbsq);
     for (my $l = 0; $l < $len; $l ++) {
 	$map_ref->[$l] = -1;
     }
 
-    my $name = "";
-    my $asq = "";
+    my $pfam_name = "";
+    my $pfam_asq = "";
     my $i;
     my $j;
-    my $exactsq = 1;
     open(STO, "$stofile") || die;
     while (<STO>) {
 	if (/^\#\=GS\s+(\S+)\s+DR PDB\;\s+\S*$pdbname\S*\s+$chname\;\s+(\d+)\-(\d+)\;/) {
-	    $name = $1;
-	    $i    = $2;
-	    $j    = $3;
-	    #print "# $name $i $j\n";
+	    $pfam_name = $1;
+	    $i         = $2;
+	    $j         = $3;
+	    #print "# $pfam_name $i $j\n";
 	}
 	elsif (/^\#\=GS\s+(\S+)\s+AC\s+\S*$pdbname\S*\s*$/) {
-	    $name = $1;
-	    $i    = 1;
-	    $j    = -1;
-	    #print "# $name\n";
+	    $pfam_name = $1;
+	    $i         = 1;
+	    $j         = -1;
+	    #print "# $pfam_name\n";
 	}
-	elsif (/^$name\s+(\S+)\s*$/) {
-	    $asq .= uc $1;
+	elsif (/^$pfam_name\s+(\S+)\s*$/) {
+	    $pfam_asq .= uc $1;
 	}
     }
     close(STO);
-    
-     if ($name =~ /^$/) {
-	$exactsq = 0;
-	print "could not find $pdbname chain $chname in sto file... trying by homology\n";
-	my $len = find_pdbsq_in_pfam($stofile, $sq, \$name, \$asq);
-	if ($len == 0 || $name =~ //) {
-	    print "could not find $pdbname in sto file\n";
-	    return 0;
-	}
+
+    my $from_pdb;
+    my $from_pfam;
+    my $ali_pdb;
+    my $ali_pfam;
+    my $alen = find_pdbsq_in_pfam($stofile, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
+    if ($alen == 0 || $pfamname =~ //) {
+	print "could not find $pdbname in sto file\n";
+	return 0;
     }
 
-    print "^^$sq\n";
-    print "^^$asq\n";
-    
-    my @sq  = split(//,$sq);
-    my @asq = split(//,$asq);
-    my $x = first_pos_in_pdbsq($sq, $asq);
-    my $y = 0;
-    print "^^^^^ x $x y $y\n";    
+    my @ali_pdb  = split(//,$ali_pdb);
+    my @ali_pfam = split(//,$ali_pfam);
+    my @pfam_asq = split(//,$pfam_asq);
+    my $x = $from_pdb-1;
+    my $y = $from_pfam-1;
+    print "^^ x $x y $y\n";
 
-    while ($x < $len && $y < length($asq)) {
-	if ($asq[$y] =~ /^\.$/  || $asq[$y] =~ /^\-$/) { 
-	    #print "# gap $y $asq[$y]\n"; 
-	    $y ++; 
+    my $pos = 0;
+    while ($pos < $alen) {
+	my $pos_pdb  = uc($ali_pdb[$pos]);
+	my $pos_pfam = uc($ali_pfam[$pos]);
+	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
+	    printf "# double gap at pos %d\n", $pos; 
 	}
-	elsif ($exactsq && $sq[$x] =~ /^$asq[$y]$/)  { 
+	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
+	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
+	    $y ++;	
+	}
+	elsif ($pos_pfam =~ /^[\.\-]$/)  { 
+	    printf "# pfam gap | move pdb $x $pos_pdb \n"; 
+	    $x ++; 
+	}
+	elsif (uc($pos_pfam) =~ /^$pos_pdb$/)  { 
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
 	    $map_ref->[$x] = $y;  
-	    #print "# match $x $sq[$x] | $y $asq[$y]\n"; 
+	    printf "# match $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++; 
 	}
-	elsif ($exactsq == 0)               { 
+	else {
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
 	    $map_ref->[$x] = $y;  
-	    #print "# match $x $sq[$x] | $y $asq[$y]\n"; 
+	    printf "# mismach $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++;
 	}
-
-	else {
-	    # print "uh? $x $sq[$x] | $y $asq[$y]\n"; die;
-	    $map_ref->[$x] = $y;  
-	    #print "# mismach $x $sq[$x] | $y $asq[$y]\n"; 
-	    $x ++; $y ++;
-	} 
+	$pos ++;
     }
     
-    return length($asq);
+    return length($pfam_asq);
+}
+
+sub alipos_isgap {
+    my ($char) = @_;
+
+    if ($char =~ /^[\.\-]$/) {
+	return 1;
+    }
+    return 0;
 }
 
 sub find_pdbsq_in_pfam {
-    my ($stofile, $pdbsq, $ret_name, $ret_pfam_asq) = @_;
+    my ($stofile, $pdbname, $pdbsq, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
  
-    my $pfam_asq = "";
-    my $name     =  "";
+    my $ali_pdb  = "";
+    my $ali_pfam = "";
     my $from_pdb;
-    my $to_pdb;
-    my $from;
-    my $to;
+    my $from_pfam;
+    my $pfam_asq = "";
 
-    my $pdbsqfile = "$currdir/pdbsqfile";
+    my $pfamname =  $$ret_pfamname;
+     if ($pfamname =~ //) {    
+	print "could not find $pdbname in sto file... trying by homology\n";
+    }
+
+    my $pdbsqfile = "$currdir/$pdbname";
     
     open(F, ">$pdbsqfile") || die;
-    print F ">pdbsq\n$pdbsq\n";
+    print F ">$pdbname\n$pdbsq\n";
     close(F);
      
     my $hmm    = "$currdir/hmmfile";
@@ -274,33 +291,41 @@ sub find_pdbsq_in_pfam {
     # take hit with best evalue
     my $pdbasq;
     my $asq;
-    parse_hmmout_for_besthit($hmmout, \$name, \$from_pdb, \$to_pdb, \$from, \$to, \$pdbasq, \$asq);
-    if ($name =~ //) { print "could not find best hit\n"; die; }
+    parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
+    if ($pfamname =~ //) { print "could not find best hit\n"; die; }
     
-    $pfam_asq = get_asq_from_sto($stofile, $name, $from, $to);
-    #print "#pfamseq $name $from-$to\n$pfam_asq\n";
+    $pfam_asq = get_asq_from_sto($stofile, $pfamname, 0);
 
-    $$ret_name = $name;
-    $$ret_pfam_asq = $pfam_asq;
+    print ">$pdbname\n$pdbsq\n";
+    print ">$pfamname\n$pfam_asq\n";
+    print "$ali_pdb\n";
+    print "$ali_pfam\n";
+    
+    $$ret_pfamname  = $pfamname;
+    $$ret_ali_pdb   = $ali_pdb;
+    $$ret_ali_pfam  = $ali_pfam;
+    $$ret_from_pdb  = $from_pdb;
+    $$ret_from_pfam = $from_pfam;
+    $$ret_pfam_asq  = $pfam_asq;
 
     system("/bin/rm $pdbsqfile\n");
     system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
 
-    return length($pfam_asq);
+    return length($ali_pfam);
 }
 
     
 sub parse_hmmout_for_besthit {
-    my ($hmmout, $ret_name, $ret_from_pdb, $ret_to_pdb, $ret_from, $ret_to, $ret_pdbasq, $ret_asq) = @_;
+    my ($hmmout, $pdbname, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
 
     my $from_pdb;
     my $to_pdb;
-    my $from = -1;
-    my $to = -1;
-    my $pdbasq = "";
-    my $asq    = "";
-    my $name   = "";
+    my $from_pfam = -1;
+    my $to_pfam   = -1;
+    my $ali_pdb   = "";
+    my $ali_pfam  = "";
+    my $pfamname  = "";
 
     my $n = 0;
     open(HF, "$hmmout") || die;
@@ -308,38 +333,36 @@ sub parse_hmmout_for_besthit {
 	if (/#/) {
 	}
 	elsif (/\>\>\s+(\S+)/ && $n == 0) {
-	    $name = $1;
-	    $asq = "";
-	    $pdbasq = "";
-	    $from = 123456789;
-	    $from_pdb = 123456789;
+	    $pfamname = $1;
+	    $ali_pfam = "";
+	    $ali_pdb  = "";
+	    $from_pfam = 123456789;
+	    $from_pdb  = 123456789;
 	    $n ++;
 	}
 	elsif (/\>\>\s+(\S+)/ && $n > 0) {
 	    last;
 	}
-	elsif ($n==1 && /^\s*$name\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif ($n==1 && /^\s*$pfamname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i  = $1;
-	    $asq  .= $2;
-	    $to    = $3;
-	    $from  = ($i < $from)? $i:$from;
+	    $ali_pfam  .= $2;
+	    $to_pfam    = $3;
+	    $from_pfam  = ($i < $from_pfam)? $i:$from_pfam;
 	}
-	elsif ($n==1 && /^\s*pdbsqfile\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif ($n==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i     = $1;
-	    $pdbasq  .= $2;
+	    $ali_pdb .= $2;
 	    $to_pdb   = $3;
-	    $from_pdb  = ($i < $from_pdb)? $i:$from_pdb;
+	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
 	}
     }
     close(HF);
     
-    $$ret_from_pdb = $from_pdb;
-    $$ret_to_pdb   = $to_pdb;
-    $$ret_from     = $from;
-    $$ret_to       = $to;
-    $$ret_name     = $name;
-    $$ret_pdbasq   = $pdbasq;
-    $$ret_asq      = $asq;
+    $$ret_from_pdb  = $from_pdb;
+    $$ret_from_pfam = $from_pfam;
+    $$ret_pfamname  = $pfamname;
+    $$ret_ali_pdb   = $ali_pdb;
+    $$ret_ali_pfam  = $ali_pfam;
 }
 
 sub coordtrans_seq2asq{
@@ -387,7 +410,7 @@ sub coordtrans_aseq2sq{
 }
 
 sub get_asq_from_sto {
-    my ($stofile, $name, $from, $to) = @_;
+    my ($stofile, $name, $from) = @_;
     my $asq = "";
 
     my $afafile = "$stofile";
@@ -412,56 +435,9 @@ sub get_asq_from_sto {
     close(AFA);
     
 
-    return substr($asq, $from, $to);
+    return substr($asq, $from);
 }
 
-sub first_pos_in_pdbsq {
-    my ($pdbsq, $asq) = @_;
-    
-    my $pos = 0;
-    my $sq = $asq;
-    $sq =~ s/\.//g;
-    $sq =~ s/\-//g;
-
-    #print "# $pdbsq\n# $asq\n# $sq\n";
- 
-    my $pdbsqfile = "$currdir/pdbsqfile";
-    my $sqfile    = "$currdir/sqfile";
-    
-    open(F, ">$pdbsqfile") || die;
-    print F ">pdbsq\n$pdbsq\n";
-    close(F);
-    open(F, ">$sqfile") || die;
-    print F ">sq\n$sq\n";
-    close(F);
-    
-    my $hmm    = "$currdir/hmmfile";
-    my $hmmout = "$currdir/hmmout";
-    my $hmmtbl = "$currdir/hmmtbl";
-
-    system("$hmmbuild                        $hmm $pdbsqfile >  $hmmout\n");
-    system("$hmmersearch --domtblout $hmmtbl $hmm $sqfile    >> $hmmout\n");
-
-    system("/usr/bin/more $hmmout\n");
-    system("/usr/bin/more $hmmtbl\n");
-    open(H, "$hmmtbl") || die;
-    while(<H>) {
-	if (/^\#/) {
-	    }
-	elsif (/^\S+\s+\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\S+\s+\S+\s+\d+\s+\d+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)\s+\d+/) {
-	    $pos = $1-1;
-	}
-    }
-    close(H);
-
-    system("/bin/rm $pdbsqfile\n");
-    system("/bin/rm $sqfile\n");
-    system("/bin/rm $hmm\n");
-    system("/bin/rm $hmmout\n");
-    system("/bin/rm $hmmtbl\n");
-    
-    return $pos;
-}
 
 sub parse_pdb_contact_map {
     my ($pdbfile, $stofile, $chain, $sq, $which, $maxD, $minL) = @_;
@@ -485,7 +461,7 @@ sub parse_pdb_contact_map {
     printf MAP1 "# minL  $minL\n";
 
     my @map = (); # map sq to the sequence in the alignment  
-    my $alen = map_sq($stofile, $pdbname, $chain, $sq, \@map);
+    my $alen = map_pdbsq($stofile, $pdbname, $chain, $sq, \@map);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map[$x]+1;
@@ -514,7 +490,7 @@ sub parse_pdb_contact_map {
     for ($l1 = 0; $l1 < $len; $l1 ++) {
        	get_atom_coords($pdbfile, $l1+$atom_offset, $chain, \$nat1, \$char1, \@type1, \@x1, \@y1, \@z1);
 	if ($nat1 == 0) { 
-	    print "atom $l1 not present\n"; 
+	    print "atom $l1 not present\n";
 	}
 	else {
 	    if (aa_conversion($char1) =~ /^$sq[$l1]$/) {
@@ -522,7 +498,7 @@ sub parse_pdb_contact_map {
 	    } 
 	    else { printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l1]\n", $l1+$atom_offset, $len, aa_conversion($char1); die; }
 	}
-	
+       
 	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
 	    get_atom_coords($pdbfile, $l2+$atom_offset, $chain, \$nat2, \$char2, \@type2, \@x2, \@y2, \@z2);
 	    if ($nat2 == 0) { 
@@ -539,7 +515,7 @@ sub parse_pdb_contact_map {
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
 
 	    if ($distance > 0) {
-	      if ($map[$l1] == 32) {
+	      if (0&&$map[$l1] == 32) {
 		    printf "^^^%d | %d %d %s | %d %d %s | %.2f\n", abs($l1-$l2), $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance;
 		}  
 		
@@ -677,8 +653,8 @@ sub get_atom_coords {
 	    $thisn = $2; 
 	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
 	}
-	elsif (/^ATOM\s+\d+\s+C1\S*\s+\S*(\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
-	    $type  = "N";
+	elsif (/^ATOM\s+\d+\s+P\S*\s+(\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
+	    $type  = "P";
 	    $char  = $1;
 	    $x     = $3;
 	    $y     = $4;
@@ -686,7 +662,7 @@ sub get_atom_coords {
 	    $thisn = $2; 
 	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
 	}
-	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S)\s+$chain\s+$thisn\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
+	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S*)\s+$chain\s+$thisn\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
 	    $type = $1;
 	    $char = $2;
 	    $x    = $3;

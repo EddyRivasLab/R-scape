@@ -314,7 +314,12 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
 
-      if (data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind) continue;
+      // if found in the pdb structure, make sure
+      // they are at least mind appart
+      if (data->msa2pdb[i] >= 0 &&
+	  data->msa2pdb[j] >= 0 &&
+	  data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind)
+	continue;
       
       /* add to the ha histogram  */
       add = ESL_MAX(mtx->mx[i][j], data->bmin+data->w);
@@ -440,7 +445,12 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     f = t = tf = 0;
     for (i = 0; i < L-1; i ++) 
       for (j = i+1; j < L; j ++) {
-	if (data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind) continue;
+	
+	// if found in the pdb structure, make sure
+	// they are at least mind appart
+	if (data->msa2pdb[i] >= 0 &&
+	    data->msa2pdb[j] >= 0 &&
+	    data->msa2pdb[j]-data->msa2pdb[i] < data->clist->mind) continue;
 	
 	cov = mtx->mx[i][j];
 	E   = eval->mx[i][j];
@@ -622,14 +632,17 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
    for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       
-      if (msa2pdb[j]-msa2pdb[i] < data->clist->mind) continue;
+      // if found in the pdb structure, make sure
+      // they are at least mind appart
+      if (msa2pdb[i] >= 0 &&
+	  msa2pdb[j] >= 0 &&
+	  msa2pdb[j]-msa2pdb[i] < data->clist->mind) continue;
 
-      is_bpair      = FALSE; 
       is_compatible = FALSE;
       is_contact    = CMAP_IsContactLocal(i+1, j+1, data->clist);
- 
-      if (data->ct[i+1] == j+1) is_bpair = TRUE;
-      if (data->isRNA && data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
+      is_bpair      = CMAP_IsBPLocal(i+1, j+1, data->clist);
+
+      if (data->hasss && data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
     
       cov = mi->COV->mx[i][j];
       if (data->ranklist_null == NULL) eval = h+1;
@@ -740,13 +753,32 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 }
 
 static int
-hit_sorted_by_eval(const void *vh1, const void *vh2)
+hit_sorted_by_score(const void *vh1, const void *vh2)
 {
   HIT *h1 = *((HIT **) vh1);  /* don't ask. don't change. Don't Panic. */
   HIT *h2 = *((HIT **) vh2);
 
   if      (h1->sc < h2->sc) return  1;
   else if (h1->sc > h2->sc) return -1;
+  else {
+ 
+    /* report first pair first */
+    int dir1 = (h1->i < h2->i ? 1 : -1);
+    int dir2 = (h1->j < h2->j ? 1 : -1);
+    if (dir1 != dir2) return dir2; // so if dir1 is pos (1), and dir2 is neg (-1), this will return -1, placing h1 before h2;  otherwise, vice versa
+    else              return dir1;
+
+  }
+}
+
+static int
+hit_sorted_by_eval(const void *vh1, const void *vh2)
+{
+  HIT *h1 = *((HIT **) vh1);  /* don't ask. don't change. Don't Panic. */
+  HIT *h2 = *((HIT **) vh2);
+
+  if      (h1->Eval > h2->Eval) return  1;
+  else if (h1->Eval < h2->Eval) return -1;
   else {
  
     /* report first pair first */
@@ -775,8 +807,12 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
     ih = hitlist->srthit[h]->i;
     jh = hitlist->srthit[h]->j;
     
-    if (hitlist->srthit[h]->is_contact)      { 
+    if (hitlist->srthit[h]->is_bpair)      { 
       fprintf(fp, "*\t%8d\t%8d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }
+    else if (hitlist->srthit[h]->is_contact)      { 
+      fprintf(fp, "+\t%8d\t%8d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->is_compatible) { 

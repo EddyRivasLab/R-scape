@@ -274,8 +274,8 @@ static ESL_OPTIONS options[] = {
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
    /* Control of pdf contacts */
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb file from file <f>",                                                               0 },
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb file from file <f>",                                                               0 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        0 },
   /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
   { "--ptmu",         eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              1 },
@@ -1319,7 +1319,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
-  data.isRNA         = cfg->abcisRNA;
+  data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
@@ -1432,7 +1432,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.thresh        = cfg->thresh;
   data.method        = cfg->method;
   data.mode          = cfg->mode;
-  data.isRNA         = cfg->abcisRNA;
+  data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;

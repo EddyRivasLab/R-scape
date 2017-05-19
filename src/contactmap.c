@@ -30,7 +30,7 @@
 #include "msamanip.h"
 
 static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf);
-static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf);
+static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct, CLIST *clist, char *errbuf);
 static int isnewcontact(int posi,int  posj, CLIST *clist);
 
 int
@@ -46,6 +46,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   CLIST *clist = NULL;
   int   *ct = NULL;
   int   *msa2pdb = NULL;
+  int    hasss = FALSE;
   int    L = msa->alen;
   int    alloc_ncnt = 5;
   int    ncnt = alloc_ncnt;
@@ -55,9 +56,10 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 
   status = msamanip_CalculateCT(msa, &ct, ret_nbpairs, -1.0, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
-
+  if (msa->ss_cons) hasss = TRUE;
+  
    ESL_ALLOC(msa2pdb, sizeof(int) * L);
-   esl_vec_ISet(msa2pdb, L, 0);
+   esl_vec_ISet(msa2pdb, L, -1);
    
    clist = CMAP_CreateCList(alloc_ncnt);
    if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
@@ -113,7 +115,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
       read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
       remove(tmpmapfile);
      
-      read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ct, clist, errbuf);      
+      read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, hasss, ct, clist, errbuf);      
       remove(tmpcfile);
     }
   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
@@ -181,9 +183,11 @@ int
 CMAP_IsContactLocal(int i, int j, CLIST *clist)
 {
   int h;
-   
+  int ii = (i<j)? i : j;
+  int jj = (i<j)? j : i;
+  
   for (h = 0; h < clist->ncnt; h ++) {
-    if (i == clist->cnt[h].i && j == clist->cnt[h].j) return TRUE;
+    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j) return TRUE;
   }
   return FALSE;
 }
@@ -192,9 +196,11 @@ int
 CMAP_IsBPLocal(int i, int j, CLIST *clist)
 {
   int h;
-   
+  int ii = (i<j)? i : j;
+  int jj = (i<j)? j : i;
+  
   for (h = 0; h < clist->ncnt; h ++) {
-    if (i == clist->cnt[h].i && j == clist->cnt[h].j && clist->cnt[h].isbp) return TRUE;
+    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j && clist->cnt[h].isbp) return TRUE;
   }
   return FALSE;
 }
@@ -203,13 +209,16 @@ int
 CMAP_Dump(FILE *fp, CLIST *clist)
 {
   int h;
-
-  fprintf(fp, "#Ncontacts %d\n",   clist->ncnt);
-  fprintf(fp, "#maxD      %.2f\n", clist->maxD);
-  fprintf(fp, "#mind      %.d\n",  clist->mind);
+  int nbp = 0;
+  
   for (h = 0; h < clist->ncnt; h ++) {
+    if (clist->cnt[h].isbp) nbp ++;
     fprintf(fp, "%d %d | isbp? %d\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, clist->cnt[h].isbp);
   }
+  fprintf(fp, "#Ncontacts %d (%d bpairs)\n", clist->ncnt, nbp);
+  fprintf(fp, "#maxD      %.2f\n", clist->maxD);
+  fprintf(fp, "#mind      %.d\n",  clist->mind);
+
   return FALSE;
 }
 
@@ -226,7 +235,8 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
   int              i;
   int              c;
   int              status;
-  
+
+  // Read the names of the .cor files to use
   if (esl_fileparser_Open(pdbmapfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
   esl_fileparser_SetCommentChar(efp, '#');
   ESL_ALLOC(mapfile, sizeof(char *));
@@ -240,7 +250,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
     }
   esl_fileparser_Close(efp);
   
-  // Add contacts from all chains if unique
+  // Add from all chains if unique
   for (c = 0; c < nchain; c ++) {
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
     esl_fileparser_SetCommentChar(efp, '#');
@@ -268,7 +278,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
 }
 
 static int
-read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf)
+read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct, CLIST *clist, char *errbuf)
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
@@ -313,8 +323,13 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	clist->cnt[h].D    = D;
 	clist->cnt[h].isbp = FALSE;
 	clist->ncnt        = h;
-	ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
-	ct[j] = j;
+	if (!hasss) {
+	  ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
+	  ct[j] = j;
+	}
+	else {
+	  if (ct[i] == j) clist->cnt[h].isbp = TRUE;
+	}
 	
 #if 0
 	printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
