@@ -8,6 +8,15 @@ use vars qw ($opt_C $opt_M $opt_W $opt_D $opt_L $opt_v);  # required if strict u
 use Getopt::Std;
 getopts ('C:M:W:D:L:v');
 
+struct RES => {
+char     => '$', # number of atoms
+nat      => '$', # number of atoms
+type     => '@', # type for eacth atom
+x        => '@', # x position for eacht atom
+y        => '@', # y position for eacht atom
+z        => '@', # z position for eacht atom
+};
+
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
         print "usage:  pdb_parse.pl [options] <pdbfile> <stofile> <rscapedir> <gnuplotdir> \n\n";
@@ -486,9 +495,18 @@ sub parse_pdb_contact_map {
     my $distance;
     my $atom_offset = atom_offset($pdbfile, $chain);
     #print "#atom offset $atom_offset\n";
-    
+
+    my @res;
+    get_atoms_coord($pdbfile, $len, $atom_offset, $chain, \@res);
+ 
     for ($l1 = 0; $l1 < $len; $l1 ++) {
-       	get_atom_coords($pdbfile, $l1+$atom_offset, $chain, \$nat1, \$char1, \@type1, \@x1, \@y1, \@z1);
+	$nat1  = $res[$l1]->{"RES::nat"};
+	$char1 = $res[$l1]->{"RES::char"};
+	@type1 = @{$res[$l1]->{"RES::type"}};
+	@x1    = @{$res[$l1]->{"RES::x"}};
+	@y1    = @{$res[$l1]->{"RES::y"}};
+	@z1    = @{$res[$l1]->{"RES::z"}};
+	
 	if ($nat1 == 0) { 
 	    print "atom $l1 not present\n";
 	}
@@ -500,7 +518,12 @@ sub parse_pdb_contact_map {
 	}
        
 	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
-	    get_atom_coords($pdbfile, $l2+$atom_offset, $chain, \$nat2, \$char2, \@type2, \@x2, \@y2, \@z2);
+	    $nat2  = $res[$l2]->{"RES::nat"};
+	    $char2 = $res[$l2]->{"RES::char"};
+	    @type2 = @{$res[$l2]->{"RES::type"}};
+	    @x2    = @{$res[$l2]->{"RES::x"}};
+	    @y2    = @{$res[$l2]->{"RES::y"}};
+	    @z2    = @{$res[$l2]->{"RES::z"}};
 	    if ($nat2 == 0) { 
 		print "#atom $l2 not present\n"; 
 	    }
@@ -515,10 +538,6 @@ sub parse_pdb_contact_map {
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
 
 	    if ($distance > 0) {
-	      if (0&&$map[$l1] == 32) {
-		    printf "^^^%d | %d %d %s | %d %d %s | %.2f\n", abs($l1-$l2), $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance;
-		}  
-		
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
 		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance;
 		    $nct ++;
@@ -631,50 +650,83 @@ sub aa_conversion {
 }
 
 
-sub get_atom_coords {
-    my ($pdbfile, $nn, $chain, $ret_nat, $ret_char, $type_ref, $x_ref, $y_ref, $z_ref) = @_;
-    
+sub get_atoms_coord {
+    my ($pdbfile, $len, $atom_offset, $chain, $res_ref) = @_;
+
     my $nat = 0;
     my $type;
     my $char = "9";
     my $x;
     my $y;
     my $z;
+    my $l;
+
+    for ($l = 0; $l < $len; $l ++) {
+	$res_ref->[$l] = RES->new();
+	$res_ref->[$l]->{"RES::nat"}  = 0;
+	$res_ref->[$l]->{"RES::char"} = "";
+    }
     
-    my $thisn = 0;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	if (/^ATOM\s+\d+\s+N\s+\S*(\S\S\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
 	    $type  = "N";
 	    $char  = $1;
+	    $l     = $2-$atom_offset;
 	    $x     = $3;
 	    $y     = $4;
 	    $z     = $5;
-	    $thisn = $2; 
-	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
+	    
+	    $nat = $res_ref->[$l]->{"RES::nat"};	    
+	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
+	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+	    $res_ref->[$l]->{"RES::char"}          = $char;
+	    $res_ref->[$l]->{"RES::nat"} ++;
 	}
 	elsif (/^ATOM\s+\d+\s+P\S*\s+(\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
 	    $type  = "P";
 	    $char  = $1;
+	    $l     = $2-$atom_offset; 
 	    $x     = $3;
 	    $y     = $4;
 	    $z     = $5;
-	    $thisn = $2; 
-	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; $$ret_char = $char; }
+	    $nat = $res_ref->[$l]->{"RES::nat"};	    
+	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
+	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+	    $res_ref->[$l]->{"RES::char"}          = $char;
+	    $res_ref->[$l]->{"RES::nat"} ++;
 	}
-	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S*)\s+$chain\s+$thisn\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
+	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S*)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
 	    $type = $1;
 	    $char = $2;
-	    $x    = $3;
-	    $y    = $4;
-	    $z    = $5;
-	    if ($thisn == $nn) { $type_ref->[$nat] = $type; $x_ref->[$nat] = $x; $y_ref->[$nat] = $y; $z_ref->[$nat] = $z; $nat ++; }
+	    $l    = $3-$atom_offset; 
+	    $x    = $4;
+	    $y    = $5;
+	    $z    = $6;
+	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
+	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
+	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+	    $res_ref->[$l]->{"RES::char"}          = $char;
+	    $res_ref->[$l]->{"RES::nat"} ++;	    
 	}
     }
+    close(FILE);
 
-    $$ret_nat = $nat;
-    if (0) { printf "res %d char %s nat %d\n", $nn, $$ret_char, $nat; }
+    if (1) {
+	for ($l = 0; $l < $len; $l ++) {
+	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
+	    $char = $res_ref->[$l]->{"RES::char"};	    
+	    printf "res %d char %s nat %d\n", $l+$atom_offset, $char, $nat;
+	}
+    }
 }
+
 
 sub distance {
     my ($which, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
