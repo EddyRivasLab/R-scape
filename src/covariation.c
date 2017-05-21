@@ -735,8 +735,12 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
     
-    if (hitlist->hit[h].is_contact)      { 
+    if (hitlist->hit[h].is_bpair)      { 
       fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else if (hitlist->hit[h].is_contact)      { 
+      fprintf(fp, "c\t%10d\t%10d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
     else if (hitlist->hit[h].is_compatible) { 
@@ -812,7 +816,7 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->is_contact)      { 
-      fprintf(fp, "+\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "c\t%8d\t%8d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->is_compatible) { 

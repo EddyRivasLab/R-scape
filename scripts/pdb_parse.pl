@@ -10,6 +10,7 @@ getopts ('C:M:W:D:L:v');
 
 struct RES => {
 char     => '$', # number of atoms
+coor     => '$', # coordenate in seqref
 nat      => '$', # number of atoms
 type     => '@', # type for eacth atom
 x        => '@', # x position for eacht atom
@@ -39,7 +40,6 @@ if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
 
 print "STO:  $stoname\n";
 print "PFAM: $pfamname\n";
-
 my $hmmer       = "$rscapebin/../lib/hmmer";
 my $hmmbuild    = "$hmmer/src/programs/hmmbuild";
 my $hmmersearch = "$hmmer/src/programs/hmmsearch";
@@ -142,7 +142,7 @@ sub parse_pdb {
 	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
 	    $pdbname = $1;
 	}
-	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+\S+.+)$/) {
+	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+)$/) {
 	    $cur_chain   = $1;
 	    my $sqlen    = $2;
 	    $sq          = $3;
@@ -213,9 +213,9 @@ sub map_pdbsq {
     my $from_pfam;
     my $ali_pdb;
     my $ali_pfam;
-    my $alen = find_pdbsq_in_pfam($stofile, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
+    my $alen = find_pdbsq_in_pfam($stofile, $chname, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
     if ($alen == 0 || $pfamname =~ //) {
-	print "could not find $pdbname in sto file\n";
+	print "could not find $pdbname chain $chname in sto file\n";
 	return 0;
     }
 
@@ -270,7 +270,7 @@ sub alipos_isgap {
 }
 
 sub find_pdbsq_in_pfam {
-    my ($stofile, $pdbname, $pdbsq, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
+    my ($stofile, $chain, $pdbname, $pdbsq, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
  
     my $ali_pdb  = "";
     my $ali_pfam = "";
@@ -279,8 +279,8 @@ sub find_pdbsq_in_pfam {
     my $pfam_asq = "";
 
     my $pfamname =  $$ret_pfamname;
-     if ($pfamname =~ //) {    
-	print "could not find $pdbname in sto file... trying by homology\n";
+     if ($pfamname eq "") {    
+	print "could not find $pdbname chain $chain in sto file... trying by homology\n";
     }
 
     my $pdbsqfile = "$currdir/$pdbname";
@@ -301,14 +301,16 @@ sub find_pdbsq_in_pfam {
     my $pdbasq;
     my $asq;
     parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
-    if ($pfamname =~ //) { print "could not find best hit\n"; die; }
+    if ($pfamname eq "") { print "could not find best hit for chain $chain\n"; }
     
     $pfam_asq = get_asq_from_sto($stofile, $pfamname, 0);
 
-    print ">$pdbname\n$pdbsq\n";
-    print ">$pfamname\n$pfam_asq\n";
-    print "$ali_pdb\n";
-    print "$ali_pfam\n";
+    if ($pfamname ne "") {
+	print "^^>$pdbname\n$pdbsq\n";
+	print ">^^$pfamname\n$pfam_asq\n";
+	print "^^$ali_pdb\n";
+	print "^^$ali_pfam\n";
+    }
     
     $$ret_pfamname  = $pfamname;
     $$ret_ali_pdb   = $ali_pdb;
@@ -328,8 +330,8 @@ sub find_pdbsq_in_pfam {
 sub parse_hmmout_for_besthit {
     my ($hmmout, $pdbname, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
 
-    my $from_pdb;
-    my $to_pdb;
+    my $from_pdb  = -1;
+    my $to_pdb    = -1;
     my $from_pfam = -1;
     my $to_pfam   = -1;
     my $ali_pdb   = "";
@@ -369,7 +371,7 @@ sub parse_hmmout_for_besthit {
     
     $$ret_from_pdb  = $from_pdb;
     $$ret_from_pfam = $from_pfam;
-    $$ret_pfamname  = $pfamname;
+    $$ret_pfamname  = ($from_pfam<0)? "":$pfamname;
     $$ret_ali_pdb   = $ali_pdb;
     $$ret_ali_pfam  = $ali_pfam;
 }
@@ -422,6 +424,8 @@ sub get_asq_from_sto {
     my ($stofile, $name, $from) = @_;
     my $asq = "";
 
+    if ($name =~ //) { return $asq; }
+     
     my $afafile = "$stofile";
     if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
     elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
@@ -480,6 +484,8 @@ sub parse_pdb_contact_map {
     my $nc = 0;
     my $nat1;
     my $nat2;
+    my $coor1;
+    my $coor2;
     my $char1;
     my $char2;
     my @type1;
@@ -494,46 +500,37 @@ sub parse_pdb_contact_map {
     my $l2;
     my $distance;
     my $atom_offset = atom_offset($pdbfile, $chain);
-    #print "#atom offset $atom_offset\n";
+    if ($atom_offset < 0) { print "could not find atom offset\n"; die; }
+    print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
-    get_atoms_coord($pdbfile, $len, $atom_offset, $chain, \@res);
+    get_atoms_coord($pdbfile, $atom_offset, \@sq, $len, $chain, \@res);
  
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
+	$coor1 = $res[$l1]->{"RES::coor"};
 	$char1 = $res[$l1]->{"RES::char"};
 	@type1 = @{$res[$l1]->{"RES::type"}};
 	@x1    = @{$res[$l1]->{"RES::x"}};
 	@y1    = @{$res[$l1]->{"RES::y"}};
 	@z1    = @{$res[$l1]->{"RES::z"}};
-	
-	if ($nat1 == 0) { 
-	    print "atom $l1 not present\n";
-	}
-	else {
-	    if (aa_conversion($char1) =~ /^$sq[$l1]$/) {
-		#printf "\n#chain$chain;position %d/%d: character $char1\n", $l1+$atom_offset, $len;
-	    } 
-	    else { printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l1]\n", $l1+$atom_offset, $len, aa_conversion($char1); die; }
-	}
+
+	if (aa_conversion($char1) ne $sq[$l1]) {
+	    printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $sq[$coor1]\n", 
+	    ($l1+1), $len, $coor1+1, $len+$atom_offset, aa_conversion($char1); die; }
        
 	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
 	    $nat2  = $res[$l2]->{"RES::nat"};
+	    $coor2 = $res[$l2]->{"RES::coor"};
 	    $char2 = $res[$l2]->{"RES::char"};
 	    @type2 = @{$res[$l2]->{"RES::type"}};
 	    @x2    = @{$res[$l2]->{"RES::x"}};
 	    @y2    = @{$res[$l2]->{"RES::y"}};
 	    @z2    = @{$res[$l2]->{"RES::z"}};
-	    if ($nat2 == 0) { 
-		print "#atom $l2 not present\n"; 
-	    }
-	    else {
-		if (aa_conversion($char2) =~ /^$sq[$l2]$/) {
-		    #printf "#chain$chain;position %d/%d: $char2\n", $l2+$atom_offset, $len;
-		} 
-		else { 
-		    printf "#chain$chain;position %d/%d: mismatched character %s should be $sq[$l2]\n", $l2+1, $len, aa_conversion($char2); die; }
-	    }
+
+	    if (aa_conversion($char2) ne $sq[$l2]) {
+		printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $sq[$coor2]\n", 
+		($l2+1), $len, $coor2+1, $len+$atom_offset, aa_conversion($char2); die; }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
 
@@ -572,15 +569,18 @@ sub atom_offset {
     my $atom_offset = 1;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/^DBREF\s+\S+\s+$chain\s+(\S+)\s+\S+\s+PDB/) {
+	if (/^DBREF1\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
 	    $atom_offset = $1;
+	    return $atom_offset;
 	}
-	elsif (/^DBREF\s+\S+\s+$chain\s+(\S+)\s+\S+\s+UNP/) {
+	elsif (/^DBREF\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
 	    $atom_offset = $1;
+	    return $atom_offset;
 	}
 	elsif (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
 	    my $val = $1;
 	    if ($val < $atom_offset) { $atom_offset = $val; }
+	    return $atom_offset;
 	}
     }
     close(FILE);
@@ -600,7 +600,7 @@ sub sq_conversion {
 	$seq =~ s/^(\S+)\s+//; $aa = $1;
 	$new .= aa_conversion($aa); 
     }
-    #print "seq\n$new\n";
+    #printf "new $new\n";
     $$ret_seq = $new;
     return length($new);
 }
@@ -611,39 +611,56 @@ sub aa_conversion {
 
     if ($aa =~ /^\S$/) { return $aa; } # DNA/RNA
     
-    if    ($aa =~ /^ALA$/) { $new = "A"; }
-    elsif ($aa =~ /^CYS$/) { $new = "C"; }
-    elsif ($aa =~ /^ASP$/) { $new = "D"; }
-    elsif ($aa =~ /^GLU$/) { $new = "E"; }
-    elsif ($aa =~ /^PHE$/) { $new = "F"; }
-    elsif ($aa =~ /^GLY$/) { $new = "G"; }
-    elsif ($aa =~ /^HIS$/) { $new = "H"; }
-    elsif ($aa =~ /^ILE$/) { $new = "I"; }
-    elsif ($aa =~ /^LYS$/) { $new = "K"; }
-    elsif ($aa =~ /^LEU$/) { $new = "L"; }
-    elsif ($aa =~ /^MET$/) { $new = "M"; }
-    elsif ($aa =~ /^MSE$/) { $new = "M"; } #selenomethionine is incorporated as methionine
-    elsif ($aa =~ /^ASN$/) { $new = "N"; }
-    elsif ($aa =~ /^PRO$/) { $new = "P"; }
-    elsif ($aa =~ /^GLN$/) { $new = "Q"; }
-    elsif ($aa =~ /^ARG$/) { $new = "R"; }
-    elsif ($aa =~ /^SER$/) { $new = "S"; }
-    elsif ($aa =~ /^SEP$/) { $new = "S"; } # phosphoseronine
-    elsif ($aa =~ /^THR$/) { $new = "T"; }
-    elsif ($aa =~ /^TPO$/) { $new = "T"; } # phosphothereonine
-    elsif ($aa =~ /^VAL$/) { $new = "V"; }
-    elsif ($aa =~ /^TRP$/) { $new = "W"; }
-    elsif ($aa =~ /^TYR$/) { $new = "Y"; }
-    elsif ($aa =~ /^DA$/)  { $new = "A"; }
-    elsif ($aa =~ /^DC$/)  { $new = "C"; }
-    elsif ($aa =~ /^DG$/)  { $new = "G"; }
-    elsif ($aa =~ /^DT$/)  { $new = "T"; }
-    elsif ($aa =~ /^A$/)   { $new = "A"; }
-    elsif ($aa =~ /^C$/)   { $new = "C"; }
-    elsif ($aa =~ /^G$/)   { $new = "G"; }
-    elsif ($aa =~ /^T$/)   { $new = "T"; }
-    elsif ($aa =~ /^U$/)   { $new = "U"; }
-    elsif ($aa =~ /^UMP$/) { $new = "U"; }
+    if    ($aa =~ /^ALA$/)  { $new = "A"; }
+    elsif ($aa =~ /^CYS$/)  { $new = "C"; }
+    elsif ($aa =~ /^ASP$/)  { $new = "D"; }
+    elsif ($aa =~ /^GLU$/)  { $new = "E"; }
+    elsif ($aa =~ /^BGLU$/) { $new = "E"; }
+    elsif ($aa =~ /^PHE$/)  { $new = "F"; }
+    elsif ($aa =~ /^GLY$/)  { $new = "G"; }
+    elsif ($aa =~ /^HIS$/)  { $new = "H"; }
+    elsif ($aa =~ /^ILE$/)  { $new = "I"; }
+    elsif ($aa =~ /^LYS$/)  { $new = "K"; }
+    elsif ($aa =~ /^LEU$/)  { $new = "L"; }
+    elsif ($aa =~ /^MET$/)  { $new = "M"; }
+    elsif ($aa =~ /^BMET$/) { $new = "M"; }
+    elsif ($aa =~ /^MSE$/)  { $new = "M"; } #selenomethionine is incorporated as methionine
+    elsif ($aa =~ /^ASN$/)  { $new = "N"; }
+    elsif ($aa =~ /^PRO$/)  { $new = "P"; }
+    elsif ($aa =~ /^GLN$/)  { $new = "Q"; }
+    elsif ($aa =~ /^ARG$/)  { $new = "R"; }
+    elsif ($aa =~ /^SER$/)  { $new = "S"; }
+    elsif ($aa =~ /^SEP$/)  { $new = "S"; } # phosphoseronine
+    elsif ($aa =~ /^THR$/)  { $new = "T"; }
+    elsif ($aa =~ /^TPO$/)  { $new = "T"; } # phosphothereonine
+    elsif ($aa =~ /^VAL$/)  { $new = "V"; }
+    elsif ($aa =~ /^TRP$/)  { $new = "W"; }
+    elsif ($aa =~ /^TYR$/)  { $new = "Y"; }
+    elsif ($aa =~ /^DA$/)   { $new = "A"; }
+    elsif ($aa =~ /^DC$/)   { $new = "C"; }
+    elsif ($aa =~ /^DG$/)   { $new = "G"; }
+    elsif ($aa =~ /^DT$/)   { $new = "T"; }
+    elsif ($aa =~ /^A$/)    { $new = "A"; }
+    elsif ($aa =~ /^C$/)    { $new = "C"; }
+    elsif ($aa =~ /^G$/)    { $new = "G"; }
+    elsif ($aa =~ /^T$/)    { $new = "T"; }
+    elsif ($aa =~ /^U$/)    { $new = "U"; }
+    # modified residues
+    elsif ($aa =~ /^1MA$/)  { $new = "A"; }
+    elsif ($aa =~ /^12A$/)  { $new = "A"; }
+    elsif ($aa =~ /^5MC$/)  { $new = "C"; }
+    elsif ($aa =~ /^CCC$/)  { $new = "C"; }
+    elsif ($aa =~ /^GDP$/)  { $new = "G"; }
+    elsif ($aa =~ /^GTP$/)  { $new = "G"; }
+    elsif ($aa =~ /^2MG$/)  { $new = "G"; }
+    elsif ($aa =~ /^7MG$/)  { $new = "G"; }
+    elsif ($aa =~ /^H2U$/)  { $new = "U"; }
+    elsif ($aa =~ /^UMP$/)  { $new = "U"; }
+    elsif ($aa =~ /^PSU$/)  { $new = "U"; }
+    elsif ($aa =~ /^2MU$/)  { $new = "U"; }
+    elsif ($aa =~ /^70U$/)  { $new = "U"; }
+    elsif ($aa =~ /^AH2U$/) { $new = "U"; }
+    elsif ($aa =~ /^BH2U$/) { $new = "U"; }
     else { print "aa_conversion(): uh? $aa\n"; die; }
 
     return $new;
@@ -651,11 +668,12 @@ sub aa_conversion {
 
 
 sub get_atoms_coord {
-    my ($pdbfile, $len, $atom_offset, $chain, $res_ref) = @_;
+    my ($pdbfile, $atom_offset, $pdbsq_ref, $len, $chain, $res_ref) = @_;
 
     my $nat = 0;
     my $type;
     my $char = "9";
+    my $coor;
     my $x;
     my $y;
     my $z;
@@ -664,66 +682,45 @@ sub get_atoms_coord {
     for ($l = 0; $l < $len; $l ++) {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
-	$res_ref->[$l]->{"RES::char"} = "";
+	$res_ref->[$l]->{"RES::coor"} = $l+$atom_offset-1;
+	$res_ref->[$l]->{"RES::char"} = "$pdbsq_ref->[$l]";
     }
-    
+
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/^ATOM\s+\d+\s+N\s+\S*(\S\S\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
-	    $type  = "N";
-	    $char  = $1;
-	    $l     = $2-$atom_offset;
-	    $x     = $3;
-	    $y     = $4;
-	    $z     = $5;
+	if (  /^ATOM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  || 
+	      /^ATOM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/ ||
+	    /^HETATM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  ||
+	    /^HETATM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/   ) {
+
+	    $type  = $1;
+	    $char  = $2;
+	    $l     = $3-$atom_offset;
+	    $x     = $4;
+	    $y     = $5;
+	    $z     = $6;
+
+	    if ($l < 0) { print "get_atoms_coord() error\n"; die; }
 	    
-	    $nat = $res_ref->[$l]->{"RES::nat"};	    
-	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
-	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-	    $res_ref->[$l]->{"RES::char"}          = $char;
-	    $res_ref->[$l]->{"RES::nat"} ++;
-	}
-	elsif (/^ATOM\s+\d+\s+P\S*\s+(\S)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
-	    $type  = "P";
-	    $char  = $1;
-	    $l     = $2-$atom_offset; 
-	    $x     = $3;
-	    $y     = $4;
-	    $z     = $5;
-	    $nat = $res_ref->[$l]->{"RES::nat"};	    
-	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
-	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-	    $res_ref->[$l]->{"RES::char"}          = $char;
-	    $res_ref->[$l]->{"RES::nat"} ++;
-	}
-	elsif (/^ATOM\s+\d+\s+(\S+)\s*(\S*)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/) {
-	    $type = $1;
-	    $char = $2;
-	    $l    = $3-$atom_offset; 
-	    $x    = $4;
-	    $y    = $5;
-	    $z    = $6;
-	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
-	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
-	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-	    $res_ref->[$l]->{"RES::char"}          = $char;
-	    $res_ref->[$l]->{"RES::nat"} ++;	    
+	    if ($l < $len) {
+		$nat = $res_ref->[$l]->{"RES::nat"};	    
+		${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
+		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+		${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+		${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+		$res_ref->[$l]->{"RES::char"}          = $char;
+		$res_ref->[$l]->{"RES::nat"} ++;
+	    }
 	}
     }
     close(FILE);
-
-    if (1) {
-	for ($l = 0; $l < $len; $l ++) {
-	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
-	    $char = $res_ref->[$l]->{"RES::char"};	    
-	    printf "res %d char %s nat %d\n", $l+$atom_offset, $char, $nat;
-	}
+    
+    for ($l = 0; $l < $len; $l ++) {
+	$nat  = $res_ref->[$l]->{"RES::nat"};	    
+	$coor = $res_ref->[$l]->{"RES::coor"};	    
+	$char = $res_ref->[$l]->{"RES::char"};	    
+	if ($nat == 0) { print "#res $l has not atoms\n"; }
+	if (1) { printf "res %d coor %d char %s nat %d\n", $l, $coor, $char, $nat; }
     }
 }
 
