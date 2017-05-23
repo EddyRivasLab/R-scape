@@ -1295,7 +1295,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
   
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
   else                             esl_msaweight_PB(msa);
 
   /* main function */
@@ -1375,7 +1375,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   corr_Reuse(mi, (cfg->mode == RANSS)? TRUE : FALSE, cfg->covtype, cfg->covclass);
   
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
   else                             esl_msaweight_PB(msa);
 
   /* print to stdout */

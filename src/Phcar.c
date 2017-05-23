@@ -878,7 +878,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int              status;
 
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
   else                             esl_msaweight_PB(msa);
 
   /* create the MI structure */
@@ -952,7 +952,7 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   esl_stopwatch_Start(cfg->watch);
 
   /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa, NULL);
+  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
   else                             esl_msaweight_PB(msa);
 
   /* print to stdout */

@@ -83,8 +83,8 @@ E2MSA_COPYRIGHT="Copyright (C) 2017 Howard Hughes Medical Institute."
 E2MSA_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 E2MSA_VERSION="0.1.0"
 E2MSA_URL="http://selab.org/"
-E2MSA_ESLDIR="lib/hmmer/lib/easel"
-E2MSA_SADIR="lib/hmmer/lib/libdivsufsort"
+E2MSA_ESLDIR="lib/hmmer/easel"
+E2MSA_SADIR="lib/hmmer/libdivsufsort"
 
 E2MSA_HMMERDIR="lib/hmmer/src"
 
@@ -99,8 +99,9 @@ RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_HMMERDIR="lib/hmmer/src"
-RSCAPE_ESLDIR="lib/hmmer/lib/easel"
-RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+RSCAPE_ESLDIR="lib/hmmer/easel"
+RSCAPE_SADIR="lib/hmmer/libdivsufsort"
+RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
 
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
@@ -119,6 +120,15 @@ if  test "$prefix" = NONE ; then
   E2MSA_BIN="`pwd`/bin"
 else
   E2MSA_BIN=${prefix}/bin
+fi
+
+RNAVIEW_HOME="`pwd`"        #magic to get full path to current directory
+AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then 
+  RNAVIEW_HOME="`pwd`/lib/RNAVIEW"
+else
+  RNAVIEW_HOME=${prefix}/lib/RNAVIEW
 fi
 
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
@@ -143,8 +153,11 @@ AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
+AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
+
+AC_SUBST(RNAVIEW_HOME)
 
 AC_SUBST(INFERNAL_RELCODE)
 AC_SUBST(INFERNAL_DATE)
@@ -169,6 +182,8 @@ AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
+
+AC_DEFINE_UNQUOTED(RNAVIEW_HOME,     "$RNAVIEW_HOME")
 
 AC_DEFINE_UNQUOTED(INFERNAL_DATE, "$INFERNAL_DATE")
 AC_DEFINE_UNQUOTED(INFERNAL_COPYRIGHT, "$INFERNAL_COPYRIGHT")
@@ -578,10 +593,11 @@ AC_SYS_LARGEFILE
 AC_CONFIG_HEADERS([
 src/e2_config.h
 src/rscape_config.h
+lib/RNAVIEW/src/rnaview_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
-AC_CONFIG_SUBDIRS(lib/hmmer/lib/easel)
+AC_CONFIG_SUBDIRS(lib/hmmer/easel)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
 
 AC_CONFIG_FILES([
@@ -593,7 +609,8 @@ lib/R2R/NotByZasha/infernal-0.7/Makefile
 lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
 lib/R2R/src/Makefile
 lib/FastTree/src/Makefile
-lib/hmmer/lib/easel/Makefile
+lib/RNAVIEW/src/Makefile
+lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
 ])
 

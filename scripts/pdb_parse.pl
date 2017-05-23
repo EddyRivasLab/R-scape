@@ -41,10 +41,10 @@ if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
 print "STO:  $stoname\n";
 print "PFAM: $pfamname\n";
 my $hmmer       = "$rscapebin/../lib/hmmer";
-my $hmmbuild    = "$hmmer/src/programs/hmmbuild";
-my $hmmersearch = "$hmmer/src/programs/hmmsearch";
+my $hmmbuild    = "$hmmer/src/hmmbuild";
+my $hmmersearch = "$hmmer/src/hmmsearch";
 
-my $easel    = "$hmmer/lib/easel";
+my $easel    = "$hmmer/easel";
 my $sfetch   = "$easel/miniapps/esl-sfetch";
 my $reformat = "$easel/miniapps/esl-reformat";
 
@@ -223,33 +223,53 @@ sub map_pdbsq {
     my @ali_pfam = split(//,$ali_pfam);
     my @pfam_asq = split(//,$pfam_asq);
     my $x = $from_pdb-1;
-    my $y = $from_pfam-1;
+    my $n = 0;
+    
+    my $y = 0;
+    while ($n < $from_pfam-1) {
+	if ($pfam_asq[$y] =~ /^[\.\-]$/) { 
+	    printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	    $y ++;
+	}
+	else {
+	    $n ++; $y ++;
+ 	}
+    }
     print "^^ x $x y $y\n";
-
     my $pos = 0;
     while ($pos < $alen) {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
 	my $pos_pfam = uc($ali_pfam[$pos]);
+	#printf("\n^^^^ pos $pos | $pos_pdb $pos_pfam | pfam $y %s\n", $pfam_asq[$y]);
 	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
 	    printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
 	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
+		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		$y ++; 
+	    }
 	    $y ++;	
 	}
 	elsif ($pos_pfam =~ /^[\.\-]$/)  { 
 	    printf "# pfam gap | move pdb $x $pos_pdb \n"; 
 	    $x ++; 
 	}
-	elsif (uc($pos_pfam) =~ /^$pos_pdb$/)  { 
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
+	elsif ($pos_pfam =~ /^$pos_pdb$/)  { 
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
+		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		$y ++; 
+	    }
 	    $map_ref->[$x] = $y;  
 	    printf "# match $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++; 
 	}
 	else {
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { $y ++; }
+	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
+		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		$y ++; 
+	    }
 	    $map_ref->[$x] = $y;  
 	    printf "# mismach $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++;
@@ -277,6 +297,7 @@ sub find_pdbsq_in_pfam {
     my $from_pdb;
     my $from_pfam;
     my $pfam_asq = "";
+    my $eval = 1000;
 
     my $pfamname =  $$ret_pfamname;
      if ($pfamname eq "") {    
@@ -293,9 +314,10 @@ sub find_pdbsq_in_pfam {
     my $hmmout = "$currdir/hmmout";
  
     system("$hmmbuild             $hmm $pdbsqfile >  $hmmout\n");
-    system("$hmmersearch -E 1e-15 $hmm $stofile   >  $hmmout\n");
+    system("$hmmersearch -E $eval $hmm $stofile   >  $hmmout\n");
+    system("/bin/echo $hmmersearch -E $eval --F1 10 --F2 10 --F3 10 $hmm $stofile   \n");
     
-    system("/usr/bin/more $hmmout\n");
+    #system("/usr/bin/more $hmmout\n");
 
     # take hit with best evalue
     my $pdbasq;
@@ -320,7 +342,7 @@ sub find_pdbsq_in_pfam {
     $$ret_pfam_asq  = $pfam_asq;
 
     system("/bin/rm $pdbsqfile\n");
-    system("/bin/rm $hmm\n");
+    #system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
 
     return length($ali_pfam);
@@ -571,16 +593,20 @@ sub atom_offset {
     while (<FILE>) {
 	if (/^DBREF1\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
 	    $atom_offset = $1;
-	    return $atom_offset;
+	    last;
 	}
 	elsif (/^DBREF\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
 	    $atom_offset = $1;
-	    return $atom_offset;
+	    last;
 	}
-	elsif (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
+    }
+    close(FILE);
+    
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
 	    my $val = $1;
 	    if ($val < $atom_offset) { $atom_offset = $val; }
-	    return $atom_offset;
 	}
     }
     close(FILE);
@@ -688,8 +714,11 @@ sub get_atoms_coord {
 
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (  /^ATOM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  || 
-	      /^ATOM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/ ||
+	if (  /^HETATM\s+\d+\s+(\S+)\s+HOH\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  ||
+	    /^HETATM\s+\d+\s+MN\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/   ) {
+	}
+	elsif (  /^ATOM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  || 
+		 /^ATOM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/ ||
 	    /^HETATM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  ||
 	    /^HETATM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/   ) {
 
@@ -699,10 +728,8 @@ sub get_atoms_coord {
 	    $x     = $4;
 	    $y     = $5;
 	    $z     = $6;
-
-	    if ($l < 0) { print "get_atoms_coord() error\n"; die; }
 	    
-	    if ($l < $len) {
+	    if ($l >= 0 && $l < $len) {
 		$nat = $res_ref->[$l]->{"RES::nat"};	    
 		${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
 		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;

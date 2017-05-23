@@ -587,6 +587,7 @@ PACKAGE_URL=''
 
 ac_default_prefix="`pwd`"
 ac_default_prefix="`pwd`"
+ac_default_prefix="`pwd`"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -667,8 +668,10 @@ INFERNAL_LICENSE
 INFERNAL_COPYRIGHT
 INFERNAL_DATE
 INFERNAL_RELCODE
+RNAVIEW_HOME
 RSCAPE_BIN
 RSCAPE_HOME
+RSCAPE_RNAVIEWDIR
 RSCAPE_SADIR
 RSCAPE_ESLDIR
 RSCAPE_HMMERDIR
@@ -753,7 +756,7 @@ MPICC
 CPP
 PIC_FLAGS'
 ac_subdirs_all='lib/hmmer
-lib/hmmer/lib/easel
+lib/hmmer/easel
 lib/R2R/NotByZasha/infernal-0.7/squid'
 
 # Initialize some variables set by options.
@@ -2329,8 +2332,8 @@ E2MSA_COPYRIGHT="Copyright (C) 2017 Howard Hughes Medical Institute."
 E2MSA_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 E2MSA_VERSION="0.1.0"
 E2MSA_URL="http://selab.org/"
-E2MSA_ESLDIR="lib/hmmer/lib/easel"
-E2MSA_SADIR="libdivsufsort"
+E2MSA_ESLDIR="lib/hmmer/easel"
+E2MSA_SADIR="lib/hmmer/libdivsufsort"
 
 E2MSA_HMMERDIR="lib/hmmer/src"
 
@@ -2345,8 +2348,9 @@ RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/src"
 R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
 RSCAPE_HMMERDIR="lib/hmmer/src"
-RSCAPE_ESLDIR="lib/hmmer/lib/easel"
-RSCAPE_SADIR="lib/hmmer/lib/libdivsufsort"
+RSCAPE_ESLDIR="lib/hmmer/easel"
+RSCAPE_SADIR="lib/hmmer/libdivsufsort"
+RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
 
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
@@ -2367,7 +2371,19 @@ else
   E2MSA_BIN=${prefix}/bin
 fi
 
+RNAVIEW_HOME="`pwd`"        #magic to get full path to current directory
+ #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then
+  RNAVIEW_HOME="`pwd`/lib/RNAVIEW"
+else
+  RNAVIEW_HOME=${prefix}/lib/RNAVIEW
+fi
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
+
+
+
 
 
 
@@ -2452,6 +2468,11 @@ _ACEOF
 
 cat >>confdefs.h <<_ACEOF
 #define RSCAPE_BIN "$RSCAPE_BIN"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define RNAVIEW_HOME "$RNAVIEW_HOME"
 _ACEOF
 
 
@@ -7397,19 +7418,19 @@ fi
 #################################################################
 # 13. Write out esl_config.h header and the Makefiles
 #################################################################
-ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h"
+ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h lib/RNAVIEW/src/rnaview_config.h"
 
 
 
 
 subdirs="$subdirs lib/hmmer"
 
-subdirs="$subdirs lib/hmmer/lib/easel"
+subdirs="$subdirs lib/hmmer/easel"
 
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile documentation/e2msa/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/lib/easel/Makefile lib/hmmer/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile documentation/e2msa/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/RNAVIEW/src/Makefile lib/hmmer/easel/Makefile lib/hmmer/Makefile"
 
 
 #################################################################
@@ -8108,6 +8129,7 @@ do
   case $ac_config_target in
     "src/e2_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/e2_config.h" ;;
     "src/rscape_config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/rscape_config.h" ;;
+    "lib/RNAVIEW/src/rnaview_config.h") CONFIG_HEADERS="$CONFIG_HEADERS lib/RNAVIEW/src/rnaview_config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "documentation/Makefile") CONFIG_FILES="$CONFIG_FILES documentation/Makefile" ;;
@@ -8116,7 +8138,8 @@ do
     "lib/R2R/NotByZasha/infernal-0.7/squid/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/squid/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;
     "lib/FastTree/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/FastTree/src/Makefile" ;;
-    "lib/hmmer/lib/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/lib/easel/Makefile" ;;
+    "lib/RNAVIEW/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/RNAVIEW/src/Makefile" ;;
+    "lib/hmmer/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/easel/Makefile" ;;
     "lib/hmmer/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

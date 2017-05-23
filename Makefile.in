@@ -22,6 +22,7 @@ R2RDIR         = @RSCAPE_R2RDIR@
 INFERNALDIR    = @R2R_INFERNALDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
+RNAVIEWDIR     = @RSCAPE_RNAVIEWDIR@
 
 
 # location of libdivsufsort for suffix array creation
@@ -91,7 +92,8 @@ endif
 #      (Excludes test programs.)
 #
 all: 
-	${QUIET_SUBDIR0}${FASTTREEDIR}       ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${FASTTREEDIR}        ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${R2RDIR}             ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${ESLDIR}             ${QUIET_SUBDIR1} all
@@ -111,6 +113,7 @@ install:
 	${INSTALL} -d ${DESTDIR}${man1dir}
 	${INSTALL} -d ${DESTDIR}${pdfdir}
 	${QUIET_SUBDIR0}${FASTTREEDIR}      ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}${RNAVIEWDIR}       ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} install
 
@@ -123,6 +126,7 @@ uninstall:
 #
 clean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}     ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${RNAVIEWDIR}      ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${INFERNALDIR}     ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${R2RDIR}          ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${HMMERDIR}        ${QUIET_SUBDIR1} clean
@@ -138,6 +142,7 @@ clean:
 #
 distclean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}        ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${R2RDIR}             ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${HMMERDIR}           ${QUIET_SUBDIR1} distclean
