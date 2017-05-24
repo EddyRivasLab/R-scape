@@ -222,19 +222,18 @@ void get_bpseq(long ds, long num_bp, long **pair_num, long **seidx,
 	}
 	else if (!strcmp(ResName[ib],"  P") || !strcmp(ResName[ib],"PSU")){
 	  bp_seq[i][j] = 'P';
-	  printf("uncommon_bp_seq %s assigned to: %c\n",
-		 idmsg, bp_seq[i][j]);
+	  //printf("uncommon_bp_seq %s assigned to: %c\n", idmsg, bp_seq[i][j]);
 	}
 	else{
 	  ry = RY[i][j];                
 	  bp_seq[i][j]= identify_uncommon(ry, AtomName, ib, ie);
-	  printf("uncommon %s assigned to: %c\n",
-		 idmsg, bp_seq[i][j]);
+	  //printf("uncommon %s assigned to: %c\n", idmsg, bp_seq[i][j]);
 	}
       }
       
     }
   }
+  
 }
 
 

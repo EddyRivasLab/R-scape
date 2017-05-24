@@ -171,7 +171,8 @@ struct data_s {
   THRESH              *thresh;
   METHOD               method;
   MODE                 mode;
-  int                  hasss;    //Has a ss_cons secondary structure
+  int                  abcisRNA;  // MSA is RNA or DNA
+  int                  hasss;     //Has a ss_cons secondary structure
   COVTYPE              covtype;
   int                  onbpairs;
   int                  nbpairs;

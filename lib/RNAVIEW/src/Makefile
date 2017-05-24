@@ -56,7 +56,7 @@ endif
 # Compiler configuration
 #
 CC       = gcc
-CFLAGS   = -DNO_SSE -O3 -funroll-loops 
+CFLAGS   = -DNO_SSE -O3 -funroll-loops -g -Wall
 LIBS     =  
 
 # Other tools
@@ -66,9 +66,11 @@ AR       = /usr/bin/ar
 RANLIB   = ranlib
 INSTALL  = /usr/bin/install -c
 
+LIBS      = -lhmmer -leasel -lsrc     -lm
 
-MYLIBDIRS = -L.
-MYINCDIRS = -I.
+IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src -I.
+LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src -L.
+
 
 # Code manifests
 #
@@ -98,14 +100,15 @@ OBJS     = \
 	xml2ps.o  \
 	multiple.o \
 	statistics.o \
+	erfiles.o \
 
 all: ${PROGS} 
 
 ${PROGS}: ${HDRS} ${OBJS} 
-	${QUIET_CC}${CC} ${CFLAGS} ${MYLIBDIRS} ${MYINCDIRS} -o $@ ${OBJS} ${LIBS} 
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ ${OBJS} ${LIBS} 
 
 .c.o:   
-	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} ${MYINCDIRS} -o $@ -c $<
+	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} ${IFLAGS} -o $@ -c $<
 
 install: 
 	${QUIET}if [ ! -z "${PROGS}" ]; then \

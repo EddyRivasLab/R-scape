@@ -131,7 +131,7 @@ void get_pair_type(long num_hbonds, char **hb_atom1, char **hb_atom2,
     get_unequility(num_hbonds, hb_atom2, &nh2, atom);
     edge_type(nh2, atom,  j, bseq, type_wd2);
     
-    sprintf(type,"%s/%s",type_wd1, type_wd2);
+    sprintf(type,"%s%s",type_wd1, type_wd2);
     
   }else
     sprintf(type,"?/?");
@@ -400,9 +400,9 @@ void cis_or_trans(long i, long j, char *bseq, long **seidx, char **AtomName,
   a = dot(vc1,vc2);
       /* a = dot(vector_NC_1, vector_NC_2); not good */
   if(a > 0)
-    strcpy(cis_tran," cis ");
+    strcpy(cis_tran, "c");
   else
-    strcpy(cis_tran," tran");
+    strcpy(cis_tran, "t");
 
   return ;
 

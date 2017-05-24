@@ -2047,120 +2047,121 @@ void bp_network(long num_residue, long *RY, long **seidx, char **AtomName,
                 long *num_multi, long *multi_idx, long **multi)
 /* get the base-pair networking system: triple, etc */
 {
-    char b1[BUF512], criteria[200];
-    double rtn_val[21];
-    long bpid, i, ir, j, k, m, inum_base, tnum_base = 0, max_ple = -1, num_ple = 0;
-    long *ivec, *idx1, *idx2;
-
-    for (i = 1; i <= num_residue; i++)
-        if (RY[i] >= 0)
-            tnum_base++;        /* total number of bases */
-
-    ivec = lvector(1, tnum_base);
-    idx1 = lvector(1, tnum_base);
-    idx2 = lvector(1, tnum_base);
-
-        /* fprintf(fp, "\nDetailed pairing information for each base\n"); */
-    for (i = 1; i <= num_residue; i++) {
-        if (RY[i] < 0)
-            continue;
-
-        ir = seidx[i][1];
-        baseinfo(ChainID[ir], ResSeq[ir], Miscs[ir][2], ResName[ir],
-                 bseq[i], 1, b1);
-
-        /* list of direct pairing 
-        fprintf(fp, "%5ld %s: [%2ld]", i, b1, pair_info[i][NP]);
-        for (j = 1; j <= pair_info[i][NP]; j++)
-            fprintf(fp, "%5ld", pair_info[i][j]);
-        fprintf(fp, "\n");*/
-
-        /* find all the possible connections */
-        ivec[1] = i;
-        for (j = 2; j <= tnum_base; j++)
-            ivec[j] = 0;
-        inum_base = 1;
-
-        m = 1;
-        while (ivec[m] && m <= tnum_base) {
-            ir = ivec[m++];
-            for (j = 1; j <= pair_info[ir][NP]; j++) {
-                for (k = 1; k <= inum_base; k++)
-                    if (pair_info[ir][j] == ivec[k])
-                        break;
-                if (k > inum_base)        /* not in the list yet */
-                    ivec[++inum_base] = pair_info[ir][j];
-            }
-        }
-
-        /* list of networked pairing 
-        fprintf(fp, "                      [%2ld]", inum_base - 1);
-        for (j = 2; j <= inum_base; j++)
-            fprintf(fp, "%5ld", ivec[j]);
-        fprintf(fp, "\n");*/
-
-        /* keep only the ones that have {dv, angle, and dNN} in range */
-        for (j = 1; j <= inum_base - 1; j++) {
-            if (ivec[j] < 0)
-                continue;
-            m = 0;
-            for (k = j + 1; k <= inum_base; k++) {
-                m++;
-                if (ivec[k] < 0) {
-                    idx1[m] = 1000000 - ivec[k];
-                    continue;
-                }
-                check_pair(ivec[j], ivec[k], bseq, seidx, xyz, Nxyz,
-                           orien, org,AtomName , BPRS, rtn_val, &bpid, 1, criteria);
-                if (!bpid) {        /* not in a network yet */
-                    idx1[m] = 1000000 + ivec[k];
-                    ivec[k] = -ivec[k];
-                } else
-                    idx1[m] = get_round(MFACTOR * rtn_val[2]);        /* vertical distance */
-            }
-            if (m > 1) {
-                lsort(m, idx1, idx2);
-                for (k = 1; k <= m; k++)
-                    idx1[k] = ivec[j + idx2[k]];
-                for (k = 1; k <= m; k++)
-                    ivec[k + j] = idx1[k];
-            }
-        }
-
-        k = 0;
-        for (j = 2; j <= inum_base; j++)
-            if (ivec[j] > 0) {
-                if (++k >= NP) {
-                    printf( "residue %s has over %ld pairs\n", b1,
-                            NP - 1);
-                    --k;
-                    break;
-                } else
-                    pair_info[i][k] = ivec[j];
-            }
-        pair_info[i][NP] = k;        /* total number of pairs for residue i */
-        if (k++ > 1) {
-            num_ple++;
-            if (k > max_ple)
-                max_ple = k;
-        }
-            /*
-        fprintf(fp, "                      [%2ld]", pair_info[i][NP]);
-        for (j = 1; j <= pair_info[i][NP]; j++)
-            fprintf(fp, "%5ld", pair_info[i][j]);
-        fprintf(fp, "\n");
-            */
+  char b1[BUF512], criteria[200];
+  double rtn_val[21];
+  long bpid, i, ir, j, k, m, inum_base, tnum_base = 0, max_ple = -1, num_ple = 0;
+  long *ivec, *idx1, *idx2;
+  
+  for (i = 1; i <= num_residue; i++)
+    if (RY[i] >= 0)
+      tnum_base++;        /* total number of bases */
+  
+  ivec = lvector(1, tnum_base);
+  idx1 = lvector(1, tnum_base);
+  idx2 = lvector(1, tnum_base);
+  
+  /* fprintf(fp, "\nDetailed pairing information for each base\n"); */
+  for (i = 1; i <= num_residue; i++) {
+    if (RY[i] < 0)
+      continue;
+    
+    ir = seidx[i][1];
+    baseinfo(ChainID[ir], ResSeq[ir], Miscs[ir][2], ResName[ir],
+	     bseq[i], 1, b1);
+    
+    /* list of direct pairing 
+       fprintf(fp, "%5ld %s: [%2ld]", i, b1, pair_info[i][NP]);
+       for (j = 1; j <= pair_info[i][NP]; j++)
+       fprintf(fp, "%5ld", pair_info[i][j]);
+       fprintf(fp, "\n");*/
+    
+    /* find all the possible connections */
+    ivec[1] = i;
+    for (j = 2; j <= tnum_base; j++)
+      ivec[j] = 0;
+    inum_base = 1;
+    
+    m = 1;
+    while (ivec[m] && m <= tnum_base) {
+      ir = ivec[m++];
+      for (j = 1; j <= pair_info[ir][NP]; j++) {
+	for (k = 1; k <= inum_base; k++)
+	  if (pair_info[ir][j] == ivec[k])
+	    break;
+	if (k > inum_base)        /* not in the list yet */
+	  ivec[++inum_base] = pair_info[ir][j];
+      }
     }
-
-    if (num_ple)
-        multiplets(num_ple, max_ple, num_residue, pair_info, ivec, idx1,
-                   AtomName, ResName, ChainID, ResSeq, Miscs, xyz, orien,
-                   org, seidx, bseq, fp, num_multi,multi_idx,multi);
-
-    free_lvector(ivec, 1, tnum_base);
-    free_lvector(idx1, 1, tnum_base);
-    free_lvector(idx2, 1, tnum_base);
+    
+    /* list of networked pairing 
+       fprintf(fp, "                      [%2ld]", inum_base - 1);
+       for (j = 2; j <= inum_base; j++)
+       fprintf(fp, "%5ld", ivec[j]);
+       fprintf(fp, "\n");*/
+    
+    /* keep only the ones that have {dv, angle, and dNN} in range */
+    for (j = 1; j <= inum_base - 1; j++) {
+      if (ivec[j] < 0)
+	continue;
+      m = 0;
+      for (k = j + 1; k <= inum_base; k++) {
+	m++;
+	if (ivec[k] < 0) {
+	  idx1[m] = 1000000 - ivec[k];
+	  continue;
+	}
+	check_pair(ivec[j], ivec[k], bseq, seidx, xyz, Nxyz,
+		   orien, org,AtomName , BPRS, rtn_val, &bpid, 1, criteria);
+	if (!bpid) {        /* not in a network yet */
+	  idx1[m] = 1000000 + ivec[k];
+	  ivec[k] = -ivec[k];
+	} else
+	  idx1[m] = get_round(MFACTOR * rtn_val[2]);        /* vertical distance */
+      }
+      if (m > 1) {
+	lsort(m, idx1, idx2);
+	for (k = 1; k <= m; k++)
+	  idx1[k] = ivec[j + idx2[k]];
+	for (k = 1; k <= m; k++)
+	  ivec[k + j] = idx1[k];
+      }
+    }
+    
+    k = 0;
+    for (j = 2; j <= inum_base; j++)
+      if (ivec[j] > 0) {
+	if (++k >= NP) {
+	  printf( "residue %s has over %ld pairs\n", b1,
+		  NP - 1);
+	  --k;
+	  break;
+	} else
+	  pair_info[i][k] = ivec[j];
+      }
+    pair_info[i][NP] = k;        /* total number of pairs for residue i */
+    if (k++ > 1) {
+      num_ple++;
+      if (k > max_ple)
+	max_ple = k;
+    }
+    /*
+      fprintf(fp, "                      [%2ld]", pair_info[i][NP]);
+      for (j = 1; j <= pair_info[i][NP]; j++)
+      fprintf(fp, "%5ld", pair_info[i][j]);
+      fprintf(fp, "\n");
+    */
+  }
+  
+  if (num_ple)
+    multiplets(num_ple, max_ple, num_residue, pair_info, ivec, idx1,
+	       AtomName, ResName, ChainID, ResSeq, Miscs, xyz, orien,
+	       org, seidx, bseq, fp, num_multi,multi_idx,multi);
+  
+  free_lvector(ivec, 1, tnum_base);
+  free_lvector(idx1, 1, tnum_base);
+  free_lvector(idx2, 1, tnum_base);
 }
+
 void multiplets(long num_ple, long max_ple, long num_residue,
                 long **pair_info, long *ivec, long *idx1, char **AtomName,
                 char **ResName, char *ChainID, long *ResSeq, char **Miscs,
@@ -2169,127 +2170,116 @@ void multiplets(long num_ple, long max_ple, long num_residue,
                 long **multi)
 /* print out multiplets information and write out the coordinates */
 {
-    char  pairstr[BUF512], pairnum[BUF512],tmp[BUF512];
-    double z[4] =
+  char  pairstr[BUF512], pairnum[BUF512],tmp[BUF512];
+  double z[4] =
     {EMPTY_NUMBER, 0.0, 0.0, 1.0};
-    double hinge[4], zave[4], pave[4], **ztot, **ptot, **rotmat, **xyz_residue;
-    long i, inum_base, inum, is_exist, j, jr, k, m, n_unique = 0, **mtxple;
- /*   FILE *mfp;*/
- /*   
-    mfp = open_file("multiplets.pdb", "w");
+  double hinge[4], zave[4], pave[4], **ztot, **ptot, **rotmat, **xyz_residue;
+  long i, inum_base, inum, is_exist, j, jr, k, m, n_unique = 0, **mtxple;
 
-    fprintf(fp, "\n_________________________________________________________\n");
-*/
-    fprintf(fp, "\nSummary of triplets and higher multiplets\n");
-    fprintf(fp, "BEGIN_multiplets\n");
-    mtxple = lmatrix(1, num_ple, 0, max_ple);
-    ztot = dmatrix(1, max_ple, 1, 3);
-    ptot = dmatrix(1, max_ple, 1, 3);
-    rotmat = dmatrix(1, 3, 1, 3);
-    xyz_residue = dmatrix(1, NUM_RESIDUE_ATOMS, 1, 3);
+  fprintf(fp, "\nSummary of triplets and higher multiplets\n");
+  fprintf(fp, "BEGIN_multiplets\n");
+  mtxple = lmatrix(1, num_ple, 0, max_ple);
+  ztot = dmatrix(1, max_ple, 1, 3);
+  ptot = dmatrix(1, max_ple, 1, 3);
+  rotmat = dmatrix(1, 3, 1, 3);
+  xyz_residue = dmatrix(1, NUM_RESIDUE_ATOMS, 1, 3);
+  
+  for (i = 1; i <= num_residue; i++) {
+    if (pair_info[i][NP] > 1) {
+      inum_base = pair_info[i][NP] + 1;
+      ivec[1] = i;
+      for (j = 1; j <= pair_info[i][NP]; j++)
+	ivec[j + 1] = pair_info[i][j];
+      lsort(inum_base, ivec, idx1);        /* sort into order */
+      is_exist = 0;        /* check if already counted */
+      for (j = 1; j <= n_unique && !is_exist; j++)
+	if (inum_base == mtxple[j][0]) {        /* same base # */
+	  for (k = 1; k <= mtxple[j][0]; k++)
+	    if (ivec[k] != mtxple[j][k])
+	      break;
+	  if (k > mtxple[j][0])
+	    is_exist = 1;        /* already there */
+	}
+      if(inum_base >=20)
+	printf("Too many network interactions, Increse Memery");
+      
+      if (!is_exist) {
+	mtxple[++n_unique][0] = inum_base;
+	pairstr[0] = '\0';
+	pairnum[0] = '\0';
+	multi_idx[n_unique] = inum_base;
+        
+	for (j = 1; j <= inum_base; j++) {
+	  jr = ivec[j];
+	  multi[n_unique][j] = jr;
+	  mtxple[n_unique][j] = jr;        /* a copy of unique case */
+	  k = seidx[jr][1];
 
-    for (i = 1; i <= num_residue; i++) {
-        if (pair_info[i][NP] > 1) {
-            inum_base = pair_info[i][NP] + 1;
-            ivec[1] = i;
-            for (j = 1; j <= pair_info[i][NP]; j++)
-                ivec[j + 1] = pair_info[i][j];
-            lsort(inum_base, ivec, idx1);        /* sort into order */
-            is_exist = 0;        /* check if already counted */
-            for (j = 1; j <= n_unique && !is_exist; j++)
-                if (inum_base == mtxple[j][0]) {        /* same base # */
-                    for (k = 1; k <= mtxple[j][0]; k++)
-                        if (ivec[k] != mtxple[j][k])
-                            break;
-                    if (k > mtxple[j][0])
-                        is_exist = 1;        /* already there */
-                }
-            if(inum_base >=20)
-                printf("Too many network interactions, Increse Memery");
-
-            if (!is_exist) {
-                mtxple[++n_unique][0] = inum_base;
-                pairstr[0] = '\0';
-                pairnum[0] = '\0';
-                multi_idx[n_unique] = inum_base;
-                
-                for (j = 1; j <= inum_base; j++) {
-                    jr = ivec[j];
-                    multi[n_unique][j] = jr;
-                    mtxple[n_unique][j] = jr;        /* a copy of unique case */
-                    k = seidx[jr][1];
-                    /*
-                    baseinfo(ChainID[k], ResSeq[k], Miscs[k][2],
-                             ResName[k], bseq[jr], 1, b1);
-                        
-                    sprintf(tmp, "[%ld]%s%s", jr, b1,
-                            (j == inum_base) ? "" : " + ");
-                        */
-                    sprintf(tmp, "%c: %ld %c%s", ChainID[k], ResSeq[k], bseq[jr],
-                            (j == inum_base) ? "" : "  +  ");
-                    
-                    strcat(pairstr, tmp);
-                    
-                    sprintf(tmp, "%ld_",jr);
-                    
-                    strcat(pairnum, tmp);
-                    
-                    for (k = 1; k <= 3; k++) {
-                        if (j > 1 && dot(ztot[1], &orien[jr][6]) < 0.0)
-                            ztot[j][k] = -orien[jr][6 + k];
-                        else
-                            ztot[j][k] = orien[jr][6 + k];
-                        ptot[j][k] = org[jr][k];
-                    }
-                }
-                fprintf(fp,"%s| [%ld %ld]  %s\n", pairnum,n_unique, inum_base, pairstr);
-
-                /* write out coordinates in PDB format */
-                ave_dmatrix(ptot, inum_base, 3, pave);
-                ave_dmatrix(ztot, inum_base, 3, zave);
-                cross(zave, z, hinge);
-                arb_rotation(hinge, magang(zave, z), rotmat);
-
-                inum = 0;
-                    /*
-                fprintf(mfp, "REMARK    Section #%4.4ld %ld\n", n_unique,
-                        inum_base);
-                fprintf(mfp, "REMARK    %s\n", pairstr);
-                    */
-                for (j = 1; j <= inum_base; j++) {        /* for each residue */
-                    jr = ivec[j];
-                    for (k = seidx[jr][1]; k <= seidx[jr][2]; k++) {
-                        for (m = 1; m <= 3; m++)
-                            zave[m] = xyz[k][m] - pave[m];
-                        multi_vec_Tmatrix(zave, 3, rotmat, 3, 3,
-                                          xyz_residue[k - seidx[jr][1] +
-                                                      1]);
-                    }
-                        /*
-                    pdb_record(seidx[jr][1], seidx[jr][2], &inum, 1,
-                               AtomName, ResName, ChainID, ResSeq,
-                               xyz_residue, Miscs, mfp);
-                        */
-                }
-                    /*
-                fprintf(mfp, "END\n");
-                    */
-            }
-        }
+	  sprintf(tmp, "%c: %ld %c%s", ChainID[k], ResSeq[k], bseq[jr],
+		  (j == inum_base) ? "" : "  +  ");
+	  
+	  strcat(pairstr, tmp);
+          
+	  sprintf(tmp, "%ld_",jr);
+          
+	  strcat(pairnum, tmp);
+          
+	  for (k = 1; k <= 3; k++) {
+	    if (j > 1 && dot(ztot[1], &orien[jr][6]) < 0.0)
+	      ztot[j][k] = -orien[jr][6 + k];
+	    else
+	      ztot[j][k] = orien[jr][6 + k];
+	    ptot[j][k] = org[jr][k];
+	  }
+	}
+	fprintf(fp,"%s| [%ld %ld]  %s\n", pairnum, n_unique, inum_base, pairstr);
+	
+	/* write out coordinates in PDB format */
+	ave_dmatrix(ptot, inum_base, 3, pave);
+	ave_dmatrix(ztot, inum_base, 3, zave);
+	cross(zave, z, hinge);
+	arb_rotation(hinge, magang(zave, z), rotmat);
+	
+	inum = 0;
+	/*
+	  fprintf(mfp, "REMARK    Section #%4.4ld %ld\n", n_unique,
+	  inum_base);
+	  fprintf(mfp, "REMARK    %s\n", pairstr);
+	*/
+	for (j = 1; j <= inum_base; j++) {        /* for each residue */
+	  jr = ivec[j];
+	  for (k = seidx[jr][1]; k <= seidx[jr][2]; k++) {
+	    for (m = 1; m <= 3; m++)
+	      zave[m] = xyz[k][m] - pave[m];
+	    multi_vec_Tmatrix(zave, 3, rotmat, 3, 3,
+			      xyz_residue[k - seidx[jr][1] +
+					  1]);
+	  }
+	  /*
+	    pdb_record(seidx[jr][1], seidx[jr][2], &inum, 1,
+	    AtomName, ResName, ChainID, ResSeq,
+	    xyz_residue, Miscs, mfp);
+	  */
+	}
+	/*
+	  fprintf(mfp, "END\n");
+	*/
+      }
     }
-        
-    fprintf(fp, "END_multiplets\n");
-        
-   
-    *num_multi =  n_unique;
-        /*
+  }
+  
+  fprintf(fp, "END_multiplets\n");
+  
+  
+  *num_multi =  n_unique;
+  /*
     close_file(mfp);
-        */
-    free_lmatrix(mtxple, 1, num_ple, 0, max_ple);
-    free_dmatrix(ztot, 1, max_ple, 1, 3);
-    free_dmatrix(ptot, 1, max_ple, 1, 3);
-    free_dmatrix(rotmat, 1, 3, 1, 3);
-    free_dmatrix(xyz_residue, 1, NUM_RESIDUE_ATOMS, 1, 3);
+  */
+  free_lmatrix(mtxple, 1, num_ple, 0, max_ple);
+  free_dmatrix(ztot, 1, max_ple, 1, 3);
+  free_dmatrix(ptot, 1, max_ple, 1, 3);
+  free_dmatrix(rotmat, 1, 3, 1, 3);
+  free_dmatrix(xyz_residue, 1, NUM_RESIDUE_ATOMS, 1, 3);
 }
 
 

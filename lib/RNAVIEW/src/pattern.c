@@ -31,7 +31,7 @@ void motif(char *pdbfile)
 {
   
   char  **str_pair, inpfile[100],outfile[100];
-  char  str[100], str_num[1000], working_num[40];
+  char  str[100], str_num[1000], working_num[100];
   long i, j,n, k, nl,nl_tot=0;
   long np, non_wc, *npatt, **patt, max_npatt;
   FILE *output;
@@ -271,7 +271,7 @@ void pattern_search(long max_npatt, char *inpfile, char *parfile)
   long *group_idx, *patt_idx, *matched, n_group;
   long *idx_in,*idx_in_tmp, *idx_out, **pair_idx;    
   long **pair_new_idx, nns=0;    
-  char str[1000], tmp[300], outfile[700], **line, **pair_new, str_num[1000];
+  char str[1000], tmp[400], outfile[700], **line, **pair_new, str_num[1000];
   long num_patt=14;
   
   FILE *finp, *fout ;

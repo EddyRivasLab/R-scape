@@ -7430,7 +7430,7 @@ subdirs="$subdirs lib/hmmer/easel"
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile documentation/e2msa/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/RNAVIEW/src/Makefile lib/hmmer/easel/Makefile lib/hmmer/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile documentation/Makefile documentation/e2msa/Makefile lib/R2R/NotByZasha/infernal-0.7/Makefile lib/R2R/NotByZasha/infernal-0.7/squid/Makefile lib/R2R/src/Makefile lib/FastTree/src/Makefile lib/hmmer/easel/Makefile lib/hmmer/Makefile lib/RNAVIEW/src/Makefile"
 
 
 #################################################################
@@ -8138,9 +8138,9 @@ do
     "lib/R2R/NotByZasha/infernal-0.7/squid/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/NotByZasha/infernal-0.7/squid/Makefile" ;;
     "lib/R2R/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/R2R/src/Makefile" ;;
     "lib/FastTree/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/FastTree/src/Makefile" ;;
-    "lib/RNAVIEW/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/RNAVIEW/src/Makefile" ;;
     "lib/hmmer/easel/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/easel/Makefile" ;;
     "lib/hmmer/Makefile") CONFIG_FILES="$CONFIG_FILES lib/hmmer/Makefile" ;;
+    "lib/RNAVIEW/src/Makefile") CONFIG_FILES="$CONFIG_FILES lib/RNAVIEW/src/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

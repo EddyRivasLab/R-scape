@@ -12,6 +12,23 @@
 #include "esl_random.h"
 #include "esl_tree.h"
 
+typedef enum {
+  WWc     = 0,
+  WWt     = 1,
+  HHc     = 2,
+  HHt     = 3,
+  SSc     = 4,
+  SSt     = 5,
+  WHc     = 6,
+  WHt     = 7,
+  WSc     = 8,
+  WSt     = 9,
+  HSc     = 10,
+  HSt     = 11,
+  STACKED = 12,
+  BPNONE  = 13,
+} BPTYPE;
+
 typedef struct cnt_s {
   int64_t i;        // positions in the analyzed alignment
   int64_t j;
@@ -23,6 +40,8 @@ typedef struct cnt_s {
   int64_t pdbj;
 
   int     isbp;
+  BPTYPE  bptype;
+  
   double  D;
   
   double sc;
@@ -39,7 +58,7 @@ typedef struct clist_s{
 } CLIST;
 
 
-extern int    ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2omsa, int *omsa2msa,
+extern int    ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2omsa, int *omsa2msa, int abcisRNA,
 			 int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
 			 double contD, int cntmind, char *errbuf, int verbose);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
@@ -47,6 +66,8 @@ extern void   CMAP_FreeCList(CLIST *list);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
 extern int    CMAP_Dump(FILE *fp, CLIST *clist);
+extern int    CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf);
+extern int    CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf);
 
 #endif /*CONTACTMAP_INCLUDED*/
 

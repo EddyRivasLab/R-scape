@@ -609,9 +609,9 @@ lib/R2R/NotByZasha/infernal-0.7/Makefile
 lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
 lib/R2R/src/Makefile
 lib/FastTree/src/Makefile
-lib/RNAVIEW/src/Makefile
 lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
+lib/RNAVIEW/src/Makefile
 ])
 
 #################################################################

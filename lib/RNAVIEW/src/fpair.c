@@ -5,6 +5,9 @@
 #include <math.h>
 #include "nrutil.h"
 #include "rna.h"
+#include "erfiles.h"
+
+#include "contactmap.h"
 
 void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp);
 
@@ -20,473 +23,485 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 
 /* find all the possible base-pairs and non-pairs*/
 {
-    char HB_ATOM[BUF512], pa_int=' ', corresp[20];
-    char b1[BUF512], b2[BUF512], **atom, work_num[20], tmp_str[5];
-    char **hb_atom1, **hb_atom2, type[20],  syn_i[20], syn_j[20];
-    char str[256], **base_single, **base_sugar, **base_p, **other;    
-    long nb_single =0, nb_sugar=0, nb_p=0, nb_other=0, nc1,nc2;  
-    long bpid_lu=0, i,  ir, j, jr, k,num_bp = 0;
-    long nh,m,stack_key =0, c_key, bone_key;
-    long **pair_info, *prot_rna, nh1=0,nh2=0, nnh=0;
-    double rtn_val[21], HB_UPPER[2],*hb_dist, change, geo_check;
+  char HB_ATOM[BUF512], pa_int=' ', corresp[20];
+  char b1[BUF512], b2[BUF512], **atom, work_num[20], tmp_str[5];
+  char **hb_atom1, **hb_atom2, type[20],  syn_i[20], syn_j[20];
+  char str[256], **base_single, **base_sugar, **base_p, **other;    
+  long nb_single =0, nb_sugar=0, nb_p=0, nb_other=0, nc1,nc2;  
+  long bpid_lu=0, i,  ir, j, jr, k,num_bp = 0;
+  long nh,m,stack_key =0, c_key, bone_key;
+  long **pair_info, *prot_rna, nh1=0,nh2=0, nnh=0;
+  double rtn_val[21], HB_UPPER[2],*hb_dist, change, geo_check;
+  LIST *list = NULL;
+  int   alloc_np = 5;
+  int   np = alloc_np;
+  char  errbuf[eslERRBUFSIZE];
+  int   status;
+  
+  base_single = cmatrix(0, num_residue, 0, 120);
+  base_sugar = cmatrix(0, num_residue, 0, 120);
+  base_p = cmatrix(0, num_residue, 0, 120);
+  other = cmatrix(0, num_residue, 0, 120);
+  
+  hb_atom1 = cmatrix(0, BUF512, 0, 4);
+  hb_atom2 = cmatrix(0, BUF512, 0, 4);
+  hb_dist = dvector(0, BUF512);
+  
+  hb_crt_alt(HB_UPPER, HB_ATOM, b1);
+  
+  pair_info = lmatrix(0, num_residue, 0, NP); /* detailed base-pair network*/
+  prot_rna = lvector(0, num_residue); 
+  
+  for(i=0;i<=num_residue; i++)
+    for(j=0;j<=NP; j++)
+      pair_info[i][j]=0;
+  
+  for(i=0;i<BUF512; i++){
+    strcpy(hb_atom1[i],"");
+    strcpy(hb_atom2[i],"");
+    hb_dist[i]=0;
+  }
+  
+  
+  /*
+    fprintf(fout, "------------------------------------------------\n");    
+    fprintf(fout,"Base-pair criteria used: \n");
+    fprintf(fout, "%6.2f --> upper H-bond length limits (ON..ON).\n", BPRS[1]);    
+    
+    fprintf(fout, "%6.2f --> max. distance between paired base origins.\n",
+    BPRS[2]);
+    
+    fprintf(fout, "%6.2f --> max. vertical distance between paired"
+    " base origins.\n", BPRS[3]);    
+    fprintf(fout, "%6.2f --> max. angle between paired bases [0-90].\n",
+    BPRS[4]);
+    
+    fprintf(fout, "%6.2f --> MIN. distance between RN9/YN1 atoms.\n",
+    BPRS[5]);
+    fprintf(fout, "%6.2f --> max. distance criterion for helix break[0-12]\n",
+    BPRS[6]);
+    
+    fprintf(fout,"------------------------------------------------ \n");
+    fprintf(fout,"INSTRUCTIONS: \n");
+    
+    fprintf(fout,"Column 1, 2, 3 are Chain ID, Residue number, Residue name\n");
+    fprintf(fout,"W.C. pairs are annotated as -/- (AU,AT) or +/+ (GC)\n");
+    fprintf(fout,"The three edges: W(Watson-Crick); H(Hoogsteen); S(suger)\n");
+    fprintf(fout,"Glycosidic bond orientation is annotated as (cis or trans).\n");
+    fprintf(fout,"Syn sugar-base conformations are annotated as (syn).\n");
+    fprintf(fout,"Stacked base pairs are annotated as (stack).\n");
+    fprintf(fout,"Non-identified edges are annotated as (.) or (?)\n");
+    fprintf(fout,"Tertiary interactions are marked by (!) in the line.\n");
+    
+    fprintf(fout,"------------------------------------------------ \n");
+  */
 
- 
-    base_single = cmatrix(0, num_residue, 0, 120);
-    base_sugar = cmatrix(0, num_residue, 0, 120);
-    base_p = cmatrix(0, num_residue, 0, 120);
-    other = cmatrix(0, num_residue, 0, 120);
-
-    hb_atom1 = cmatrix(0, BUF512, 0, 4);
-    hb_atom2 = cmatrix(0, BUF512, 0, 4);
-    hb_dist = dvector(0, BUF512);
-    
-    hb_crt_alt(HB_UPPER, HB_ATOM, b1);
-    
-    pair_info = lmatrix(0, num_residue, 0, NP); /* detailed base-pair network*/
-    prot_rna = lvector(0, num_residue); 
-
-    for(i=0;i<=num_residue; i++)
-        for(j=0;j<=NP; j++)
-            pair_info[i][j]=0;
-    
-    for(i=0;i<BUF512; i++){
-        strcpy(hb_atom1[i],"");
-        strcpy(hb_atom2[i],"");
-        hb_dist[i]=0;
-    }
-    
-        
-    /*
-      fprintf(fout, "------------------------------------------------\n");    
-      fprintf(fout,"Base-pair criteria used: \n");
-      fprintf(fout, "%6.2f --> upper H-bond length limits (ON..ON).\n", BPRS[1]);    
+  list = er_CreateList(alloc_np);
+  fprintf(fout,   "BEGIN_base-pair\n" );
+  
+  for (i = 1; i <= num_residue; i++){   
+    prot_rna[i]=0; 
+    sugar_syn[i]=0;
+  }
+  
+  /* change this condition if used 
+     protein_rna_interact(BPRS[1],num_residue, seidx, xyz,AtomName, prot_rna);
+  */
+  
+  syn_or_anti(num_residue, AtomName, seidx, xyz,RY, sugar_syn);
+  
+  for (i = 1; i < num_residue; i++) {
+    for (j = i + 1; j <= num_residue; j++) {
       
-      fprintf(fout, "%6.2f --> max. distance between paired base origins.\n",
-      BPRS[2]);
+      ir = seidx[i][1];
+      jr = seidx[j][1];
       
-      fprintf(fout, "%6.2f --> max. vertical distance between paired"
-      " base origins.\n", BPRS[3]);    
-      fprintf(fout, "%6.2f --> max. angle between paired bases [0-90].\n",
-      BPRS[4]);
+      if(sugar_syn[i] ==1){
+	/*
+	  sprintf(syn_i, "%c:%ld %3s ", ChainID[ir], ResSeq[ir],"syn");
+	*/
+	sprintf(syn_i, "%3s ", "syn");    
+      }else{
+	strcpy(syn_i,"  ");
+      }
+      if(sugar_syn[j] ==1){
+	sprintf(syn_j, "%3s ", "syn");
+	/*
+	  sprintf(syn_j, "%c:%ld %3s ", ChainID[jr], ResSeq[jr],"syn");
+	*/
+      }else{
+	strcpy(syn_j,"  ");
+      }
       
-      fprintf(fout, "%6.2f --> MIN. distance between RN9/YN1 atoms.\n",
-      BPRS[5]);
-      fprintf(fout, "%6.2f --> max. distance criterion for helix break[0-12]\n",
-      BPRS[6]);
       
-      fprintf(fout,"------------------------------------------------ \n");
-      fprintf(fout,"INSTRUCTIONS: \n");
+      check_pairs(i, j, bseq, seidx, xyz, Nxyz, orien, org,
+		  AtomName,BPRS, rtn_val, &bpid_lu, 0);
+      /* here at least one good NO H bond (donor and acceptor)*/
       
-      fprintf(fout,"Column 1, 2, 3 are Chain ID, Residue number, Residue name\n");
-      fprintf(fout,"W.C. pairs are annotated as -/- (AU,AT) or +/+ (GC)\n");
-      fprintf(fout,"The three edges: W(Watson-Crick); H(Hoogsteen); S(suger)\n");
-      fprintf(fout,"Glycosidic bond orientation is annotated as (cis or trans).\n");
-      fprintf(fout,"Syn sugar-base conformations are annotated as (syn).\n");
-      fprintf(fout,"Stacked base pairs are annotated as (stack).\n");
-      fprintf(fout,"Non-identified edges are annotated as (.) or (?)\n");
-      fprintf(fout,"Tertiary interactions are marked by (!) in the line.\n");
-      
-      fprintf(fout,"------------------------------------------------ \n");
-    */
-    
-    fprintf(fout,"BEGIN_base-pair\n" );
-    
-    
-    for (i = 1; i <= num_residue; i++){   
-      prot_rna[i]=0; 
-      sugar_syn[i]=0;
-    }
-    
-    
-    /* change this condition if used 
-       protein_rna_interact(BPRS[1],num_residue, seidx, xyz,AtomName, prot_rna);
-    */
-    
-    syn_or_anti(num_residue, AtomName, seidx, xyz,RY, sugar_syn);
-    
-    for (i = 1; i < num_residue; i++) {
-      for (j = i + 1; j <= num_residue; j++) {
+      if(bpid_lu){ /* only base-base */
 	
 	ir = seidx[i][1];
 	jr = seidx[j][1];
+	sprintf(work_num, "%ld\t%ld", i, j);
         
-	if(sugar_syn[i] ==1){
-	  /*
-	    sprintf(syn_i, "%c:%ld %3s ", ChainID[ir], ResSeq[ir],"syn");
-	  */
-	  sprintf(syn_i, "%3s ", "syn");    
-	}else{
-	  strcpy(syn_i,"  ");
-	}
-	if(sugar_syn[j] ==1){
-	  sprintf(syn_j, "%3s ", "syn");
-	  /*
-	    sprintf(syn_j, "%c:%ld %3s ", ChainID[jr], ResSeq[jr],"syn");
-	  */
-	}else{
-	  strcpy(syn_j,"  ");
-	}
+	change=0.35; /* change the value for new H bond dist!! */
         
-        
-	check_pairs(i, j, bseq, seidx, xyz, Nxyz, orien, org,
-		    AtomName,BPRS, rtn_val, &bpid_lu, 0);
-	/* here at least one good NO H bond (donor and acceptor)*/
 	
-	if(bpid_lu){ /* only base-base */
-	  
-	  ir = seidx[i][1];
-	  jr = seidx[j][1];
-	  sprintf(work_num, "%ld_%ld", i, j);
-          
-	  change=0.35; /* change the value for new H bond dist!! */
-          
-	  
-	  /* the last two value 1, 0 is the followings :
-	     c_key= 1;
-	     a key wether to include C-C H bond. 1 yes, 0 not 
-	     bone_key= 0;
-	     a key wheather to include O3', O5', O1P,O2P;   0 not include 
-	  */
-	  c_key=1;
-	  bone_key=0;
-	  Hbond_pair(i, j, seidx, AtomName, bseq, xyz, change,
-		     &nh, hb_atom1, hb_atom2, hb_dist, c_key, bone_key);                
-	  
-	  /*   only distance  check     
-	       base_base_dist(i, j, seidx, AtomName, bseq, xyz, 3.8,
-	       &nh, hb_atom1, hb_atom2, hb_dist);
-	  */         
-	  
-	  
-	  /* test new H bonds after increasing H bond distance */
-	  nnh=0; 
-	  for (k = 1; k <=nh ; k++) {
-	    /*
-	      printf("%9s, %c: %5ld %c-%c %5ld %c: %c %s%s %s-%s  %7.2f  %2d\n",
-	      work_num,ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
-	      ChainID[jr], pa_int, syn_i, syn_j,
-	      hb_atom1[k],hb_atom2[k], hb_dist[k], nh);
-	    */                           
-	    if(hb_atom1[k][3] != ' ' && hb_atom2[k][3] != ' ')
-		continue;
-	    nnh++;
-	  }
-	  
-	  if(nnh == 1){ /*single base-to-base H bond */
-	    
-	    if(nb_single++ > num_residue-2){
-	      printf("increase memory for single H bond case\n");
-	      fprintf(fout,"END_base-pair\n" );
-	      return;
-	    }
-	    geo_check=5.2; /*for edge to edge check, larger for single bond*/
-            
-	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			 bseq, hb_atom1, hb_atom2, hb_dist, type);
-	    
-	    /*
-	      sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]);
-	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
-	      geo_check=5.5; 
-	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-	      bseq,hb_atom1, hb_atom2, hb_dist, type);
-	      }
-	    */
-            
-	    sprintf(str,"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !1H(b_b)\n",
-		    work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
-		    ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
-	    strcpy(base_single[nb_single], str);
+	/* the last two value 1, 0 is the followings :
+	   c_key= 1;
+	   a key wether to include C-C H bond. 1 yes, 0 not 
+	   bone_key= 0;
+	   a key wheather to include O3', O5', O1P,O2P;   0 not include 
+	*/
+	c_key=1;
+	bone_key=0;
+	Hbond_pair(i, j, seidx, AtomName, bseq, xyz, change,
+		   &nh, hb_atom1, hb_atom2, hb_dist, c_key, bone_key);                
+	
+	/*   only distance  check     
+	     base_base_dist(i, j, seidx, AtomName, bseq, xyz, 3.8,
+	     &nh, hb_atom1, hb_atom2, hb_dist);
+	*/         
+	
+	
+	/* test new H bonds after increasing H bond distance */
+	nnh=0; 
+	for (k = 1; k <=nh ; k++) {
+	  if(hb_atom1[k][3] != ' ' && hb_atom2[k][3] != ' ')
 	    continue;
-	    
+	  nnh++;
+	}
+	
+	if(nnh == 1){ /*single base-to-base H bond */
+	  
+	  if(nb_single++ > num_residue-2){
+	    printf("increase memory for single H bond case\n");
+	    fprintf(fout,   "END_base-pair\n" );
+	    return;
 	  }
-	  else {  /* more than 2 H bonds (into more details)*/
-	    atom=cmatrix(0,nh, 0,4);
-	    get_unequility(nh, hb_atom1, &nh1, atom); 
-	    get_unequility(nh, hb_atom2, &nh2, atom);                
-	    free_cmatrix(atom, 0,nh, 0,4);
+	  geo_check=5.2; /*for edge to edge check, larger for single bond*/
+          
+	  LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+		       bseq, hb_atom1, hb_atom2, hb_dist, type);
+	  
+	  sprintf(str,"%9s\t%c: %5ld %c%c %5ld %c: %7s %c %s%s !1H(b_b)\n",
+		  work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
+		  ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
+	  strcpy(base_single[nb_single], str);
+	  continue;
+	  
+	}
+	else {  /* more than 2 H bonds (into more details)*/
+	  atom=cmatrix(0,nh, 0,4);
+	  get_unequility(nh, hb_atom1, &nh1, atom); 
+	  get_unequility(nh, hb_atom2, &nh2, atom);                
+	  free_cmatrix(atom, 0,nh, 0,4);
+          
+	  /* bifurcated  bond  (also belongs to 12 families, but with more restraits)*/
+	  if((nh1==1 && nh2>1) || (nh2==1 && nh1>1)){
+	    if((rtn_val[2] > BPRS[3]-0.6) ||(rtn_val[3] > BPRS[4]-20)){
+	      if(nb_single++ > num_residue-2){
+		fprintf(fout,"END_base-pair\n" );
+		printf("increase memory for single H bond case\n");
+		return;
+	      }
+	      
+	      geo_check=5.0;
+	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			   bseq,hb_atom1, hb_atom2, hb_dist, type);
+	      sprintf(str,"%9s\t%c: %5ld %c %c %5ld %c: %7s %c %s%s !1H(b_b).\n",
+		      work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
+		      ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
+	      strcpy(base_single[nb_single], str);
+	      
+	      continue;
+	    }
             
-	    /* bifurcated  bond  (also belongs to 12 families, but with more restraits)*/
-	    if((nh1==1 && nh2>1) || (nh2==1 && nh1>1)){
-	      if((rtn_val[2] > BPRS[3]-0.6) ||(rtn_val[3] > BPRS[4]-20)){
+            
+	    geo_check=4.329; /*for edge to edge check*/
+	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			 bseq,hb_atom1, hb_atom2, hb_dist, type);
+	    
+	    sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]);
+	    
+            
+	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?") ||
+	       (rtn_val[2] > BPRS[3]-0.4) ||(rtn_val[3] > BPRS[4]-15))
+	      { 
 		if(nb_single++ > num_residue-2){
-		  fprintf(fout,"END_base-pair\n" );
 		  printf("increase memory for single H bond case\n");
+		  fprintf(fout,"END_base-pair\n" );
 		  return;
 		}
 		
 		geo_check=5.0;
 		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			     bseq,hb_atom1, hb_atom2, hb_dist, type);
-		sprintf(str,"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !1H(b_b).\n",
+		sprintf(str,"%9s\t%c: %5ld %c %c %5ld %c: %7s %c %s%s !1H(b_b).\n",
 			work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
 			ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
 		strcpy(base_single[nb_single], str);
-		
 		continue;
 	      }
+	    
+	    
+	  }else {/* 2 H bonds */
+	    
+	    if(bpid_lu ==2){ /* W.C. cases */
+	      
+	      if( (toupper(bseq[i]) == 'A' &&
+		   (toupper(bseq[j]) == 'U' || toupper(bseq[j]) == 'T'))
+		  ||(toupper(bseq[j]) == 'A' &&
+		     (toupper(bseq[i]) == 'U' || toupper(bseq[i]) == 'T'))){
+		strcpy(type, "WWc");
+		
+	      }else if( (toupper(bseq[i]) == 'G' && toupper(bseq[j]) == 'C') ||
+			(toupper(bseq[j]) == 'G' && toupper(bseq[i]) == 'C') ){  
+		strcpy(type, "WWc");
+	      }else {
+		strcpy(type, "WWc"); /*CI or IC*/
+	      }
+	      
               
-              
-	      geo_check=4.329; /*for edge to edge check*/
+	    }else if (bpid_lu ==1 || bpid_lu ==-1){ /* non-W.C. cases */
+	      geo_check=4.1; /*for edge to edge check*/
 	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			   bseq,hb_atom1, hb_atom2, hb_dist, type);
 	      
 	      sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]);
-	      
-              
-	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?") ||
-		 (rtn_val[2] > BPRS[3]-0.4) ||(rtn_val[3] > BPRS[4]-15))
-		{ 
-		  if(nb_single++ > num_residue-2){
-		    printf("increase memory for single H bond case\n");
-		    fprintf(fout,"END_base-pair\n" );
-		    return;
-		  }
-		  
-		  geo_check=5.0;
-		  LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			       bseq,hb_atom1, hb_atom2, hb_dist, type);
-		  sprintf(str,"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !1H(b_b).\n",
-			  work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
-			  ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
-		  strcpy(base_single[nb_single], str);
-		  continue;
-		}
-	      
-	      
-	    }else {/* 2 H bonds */
-	      
-	      if(bpid_lu ==2){ /* W.C. cases */
-		
-		if( (toupper(bseq[i]) == 'A' &&
-		     (toupper(bseq[j]) == 'U' || toupper(bseq[j]) == 'T'))
-		    ||(toupper(bseq[j]) == 'A' &&
-		       (toupper(bseq[i]) == 'U' || toupper(bseq[i]) == 'T'))){
-		  strcpy(type, "-/- cis ");
-		  
-		}else if( (toupper(bseq[i]) == 'G' && toupper(bseq[j]) == 'C') ||
-			  (toupper(bseq[j]) == 'G' && toupper(bseq[i]) == 'C') ){  
-		  strcpy(type, "+/+ cis ");
-		}else {
-		  strcpy(type, "X/X cis "); /*CI or IC*/
-		}
-		
-                
-	      }else if (bpid_lu ==1 || bpid_lu ==-1){ /* non-W.C. cases */
-		geo_check=4.1; /*for edge to edge check*/
+	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?") ){
+		geo_check=4.3; 
 		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			     bseq,hb_atom1, hb_atom2, hb_dist, type);
-		
-		sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]);
-		if(strstr(tmp_str, ".") || strstr(tmp_str, "?") ){
-		  geo_check=4.3; 
-		  LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			       bseq,hb_atom1, hb_atom2, hb_dist, type);
-		}
-		
 	      }
-	    }
-	    LW_Saenger_correspond(bseq[i], bseq[j], type, corresp);
-            
-	    fprintf(fout, "%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s %s\n",work_num,
-		    ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
-		    ChainID[jr],type, pa_int, syn_i, syn_j, corresp);
-	    /*
-	      pair_type_param(rtn_val, type_param);
-              
-	      printf("%9s, %c: %5ld %c-%c %5ld %c: %7s  %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f %c %s%s\n",work_num,
-	      ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
-	      ChainID[jr],type, rtn_val[15], rtn_val[16], rtn_val[17],
-	      rtn_val[18], rtn_val[19],rtn_val[20], pa_int, syn_i, syn_j);
 	      
-	    */ 
-	    num_bp++;
-	    sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]); 
-	    strcpy(pair_type[num_bp],tmp_str);
+	    }
+	  }
+	  LW_Saenger_correspond(bseq[i], bseq[j], type, corresp);
+          
+	  fprintf(fout, "%9s\t%c: %5ld %c %c %5ld %c: %7s %c %s%s %s\n",
+		  work_num,
+		  ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
+		  ChainID[jr],type, pa_int, syn_i, syn_j, corresp);
+	  fprintf(stdout, "%9s\t%c\t%5ld\t%c\t%c\t%5ld\t%c\t%7s\t%c\n",
+		  work_num,
+		  ChainID[ir], ResSeq[ir], bseq[i], bseq[j], ResSeq[jr],
+		  ChainID[jr], type, pa_int);
+
+	  if (num_bp == np - 1) {
+	    np += alloc_np;
+	    ESL_REALLOC(list->pair, sizeof(PAIR) * np);
+	  }
+	  list->pair[num_bp].i      = i;
+	  list->pair[num_bp].j      = j;
+	  list->pair[num_bp].ir     = ir;
+	  list->pair[num_bp].jr     = jr;
+	  list->pair[num_bp].isbp   = TRUE;
+	  list->pair[num_bp].D      = +eslINFINITY;
+	  list->pair[num_bp].chi    = ChainID[ir];
+	  list->pair[num_bp].chj    = ChainID[jr];
+	  list->pair[num_bp].ic     = bseq[i];
+	  list->pair[num_bp].jc     = bseq[j];
+	  CMAP_String2BPTYPE(type, &list->pair[num_bp].bptype, errbuf);
+
+	  num_bp++;
+	  list->np = num_bp;
+	  sprintf(tmp_str, "%c%c%c", type[0],type[2],type[4]); 
+	  strcpy(pair_type[num_bp],tmp_str);
+	  
+	  if(num_bp >= 2*num_residue){                    
+	    printf( "The total number of pairs %ld is too large. ",num_bp); 
+	    printf(  "Increase the memery for bs_pairs_tot!!\n" );
+	    fprintf(fout,"END_base-pair\n" );
+	    return;
+	  }
+	  bs_pairs_tot[num_bp][1] = i;
+	  bs_pairs_tot[num_bp][2] = j;
+          
+	}
+        
+        
+	if (++pair_info[i][NP] >= NP) {
+	  printf( "residue %s has over %ld pairs\n", b1,
+		  NP - 1);
+	  --pair_info[i][NP];
+	  break;
+	} else
+	  pair_info[i][pair_info[i][NP]] = j;
+	if (++pair_info[j][NP] >= NP) {
+	  printf( "residue %s has over %ld pairs\n", b2,
+		  NP - 1);
+	  --pair_info[j][NP];
+	  break;
+	} else
+	  pair_info[j][pair_info[j][NP]] = i;
+	
+      } else if( bpid_lu ==0){ /* not a H bond for base -  base */
+	
+	ir = seidx[i][1];
+	jr = seidx[j][1];
+	sprintf(work_num, "%ld\t%ld", i, j);
+        
+	if(rtn_val[1] > BPRS[2] ) continue; /*dist between origins */
+	if(rtn_val[2] > BPRS[3] + 0.3) continue; /* projection onto mean normal */
+	if( rtn_val[3] > BPRS[4]) continue;/* angle between base normals */
+        
+	base_stack(i, j, bseq, seidx, AtomName, xyz,rtn_val, &stack_key);
+	
+	if(stack_key>0) { /*rid of base-base stacked case */
+	  if(rtn_val[3]<40){
+	    fprintf(fout, "%9s\t%c: %5ld %c %c %5ld %c: stacked\n",
+		    work_num, ChainID[ir],
+		    ResSeq[ir], bseq[i], bseq[j],
+		    ResSeq[jr],ChainID[jr]);
+	    fprintf(stdout, "%9s\t%c\t%5ld\t%c\t%c\t%5ld\t%c\tstacked\n",
+		    work_num, ChainID[ir],
+		    ResSeq[ir], bseq[i], bseq[j],
+		    ResSeq[jr],ChainID[jr]);
 	    
-	    if(num_bp >= 2*num_residue){                    
-	      printf( "The total number of pairs %ld is too large. ",num_bp); 
-	      printf(  "Increase the memery for bs_pairs_tot!!\n" );
+	  }                        
+	  continue; 
+	}
+	
+	if(rtn_val[2] > BPRS[3]) continue; /* projection onto mean normal */
+	c_key=0;
+	bone_key=1;
+	change=0;  /*restrict tertiary interaction */
+	Hbond_pair(i, j, seidx, AtomName, bseq, xyz, change,
+		   &nh, hb_atom1, hb_atom2, hb_dist, c_key, bone_key);
+	if(nh>0){
+	  nc1 = 0;
+	  nc2 = 0;
+	  for(k=1; k<=nh; k++){
+	    
+	    if( ((!strcmp(hb_atom1[k], " O2'") || !strcmp(hb_atom1[k], " O4'")) &&
+		 strchr("NO", hb_atom2[k][1])  &&  hb_atom2[k][3] != '\'' &&
+		 hb_atom2[k][3] != 'P')   ||
+		
+		((!strcmp(hb_atom2[k], " O2'") || !strcmp(hb_atom2[k], " O4'")) &&
+		 strchr("NO", hb_atom1[k][1])  &&  hb_atom1[k][3] != '\'' &&
+		 hb_atom1[k][3] != 'P')  ) { /*base(O, N) .. sugar (O2', O4')*/
+	      
+	      nc1++;
+              
+	    }else if( ((!strcmp(hb_atom1[k], " O1P") || !strcmp(hb_atom1[k], " O2P")) &&
+		       hb_atom2[k][3] != '\'' &&  hb_atom2[k][1] != 'C' ) ||
+		      
+		      ((!strcmp(hb_atom2[k], " O1P") || !strcmp(hb_atom2[k], " O2P")) &&
+		       hb_atom1[k][3] != '\'' &&  hb_atom1[k][1] != 'C' )  
+		      
+		      ){  /*base(O, N) .. (O1P, O2P) */
+	      nc2++;
+	    }
+	  }
+	  
+	  if(nh==nc1){
+	    if(nb_sugar++ > num_residue-2){
+	      printf("increase memory for single H bond (base-sugar)\n");
 	      fprintf(fout,"END_base-pair\n" );
 	      return;
 	    }
-	    bs_pairs_tot[num_bp][1] = i;
-	    bs_pairs_tot[num_bp][2] = j;
-            
-	  }
-          
-          
-	  if (++pair_info[i][NP] >= NP) {
-	    printf( "residue %s has over %ld pairs\n", b1,
-		    NP - 1);
-	    --pair_info[i][NP];
-	    break;
-	  } else
-	    pair_info[i][pair_info[i][NP]] = j;
-	  if (++pair_info[j][NP] >= NP) {
-	    printf( "residue %s has over %ld pairs\n", b2,
-		    NP - 1);
-	    --pair_info[j][NP];
-	    break;
-	  } else
-	    pair_info[j][pair_info[j][NP]] = i;
-	  
-	} else if( bpid_lu ==0){ /* not a H bond for base -  base */
-	  
-	  ir = seidx[i][1];
-	  jr = seidx[j][1];
-	  sprintf(work_num, "%ld_%ld", i, j);
-          
-	  if(rtn_val[1] > BPRS[2] ) continue; /*dist between origins */
-	  if(rtn_val[2] > BPRS[3] + 0.3) continue; /* projection onto mean normal */
-	  if( rtn_val[3] > BPRS[4]) continue;/* angle between base normals */
-          
-	  base_stack(i, j, bseq, seidx, AtomName, xyz,rtn_val, &stack_key);
-	  
-	  if(stack_key>0) { /*rid of base-base stacked case */
-	    if(rtn_val[3]<40){
-	      fprintf(fout, "%9s, %c: %5ld %c-%c %5ld %c: %s%s stacked\n",
-		      work_num, ChainID[ir],
-		      ResSeq[ir], bseq[i], bseq[j],
-		      ResSeq[jr],ChainID[jr],  syn_i, syn_j);
-	      
-	    }                        
-	    continue; 
-	  }
-	  
-	  if(rtn_val[2] > BPRS[3]) continue; /* projection onto mean normal */
-	  c_key=0;
-	  bone_key=1;
-	  change=0;  /*restrict tertiary interaction */
-	  Hbond_pair(i, j, seidx, AtomName, bseq, xyz, change,
-		     &nh, hb_atom1, hb_atom2, hb_dist, c_key, bone_key);
-	  if(nh>0){
-	    nc1 = 0;
-	    nc2 = 0;
-	    for(k=1; k<=nh; k++){
-	      
-	      if( ((!strcmp(hb_atom1[k], " O2'") || !strcmp(hb_atom1[k], " O4'")) &&
-		   strchr("NO", hb_atom2[k][1])  &&  hb_atom2[k][3] != '\'' &&
-		   hb_atom2[k][3] != 'P')   ||
-		  
-		  ((!strcmp(hb_atom2[k], " O2'") || !strcmp(hb_atom2[k], " O4'")) &&
-		   strchr("NO", hb_atom1[k][1])  &&  hb_atom1[k][3] != '\'' &&
-		   hb_atom1[k][3] != 'P')  ) { /*base(O, N) .. sugar (O2', O4')*/
-		
-		nc1++;
-                
-	      }else if( ((!strcmp(hb_atom1[k], " O1P") || !strcmp(hb_atom1[k], " O2P")) &&
-			 hb_atom2[k][3] != '\'' &&  hb_atom2[k][1] != 'C' ) ||
-			
-			((!strcmp(hb_atom2[k], " O1P") || !strcmp(hb_atom2[k], " O2P")) &&
-			 hb_atom1[k][3] != '\'' &&  hb_atom1[k][1] != 'C' )  
-			
-			){  /*base(O, N) .. (O1P, O2P) */
-		nc2++;
-	      }
+	    
+	    geo_check=4.8; 
+	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			 bseq, hb_atom1, hb_atom2, hb_dist, type);
+	    
+	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
+	      geo_check=5.8; 
+	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			   bseq,hb_atom1, hb_atom2, hb_dist, type);
 	    }
 	    
-	    if(nh==nc1){
-	      if(nb_sugar++ > num_residue-2){
-		printf("increase memory for single H bond (base-sugar)\n");
-		fprintf(fout,"END_base-pair\n" );
-		return;
-	      }
-	      
-	      geo_check=4.8; 
-	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			   bseq, hb_atom1, hb_atom2, hb_dist, type);
-	      
-	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
-		geo_check=5.8; 
-		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			     bseq,hb_atom1, hb_atom2, hb_dist, type);
-	      }
-	      
-              
-	      sprintf(base_sugar[nb_sugar],"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !(b_s)\n",
-		      work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
-		      ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
-	      
-	    }else if (nh==nc2){
-	      
-	      if(nb_p++ > num_residue-2){
-		fprintf(fout,"END_base-pair\n" );
-		printf("increase memory for single H bond (base-O1P, O2P)\n");
-		return;
-	      }
-	      
-	      geo_check=4.8; 
-	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			   bseq, hb_atom1, hb_atom2, hb_dist, type);
-	      
-	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
-		geo_check=5.8; 
-		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			     bseq,hb_atom1, hb_atom2, hb_dist, type);
-	      }
-	      
-	      sprintf(base_p[nb_p],"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !b_(O1P,O2P)\n",
-			work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
-		      ResSeq[jr],ChainID[jr], type,pa_int,syn_i, syn_j);
-	      
-	    }else{
-	      
-	      if(nb_other++ > num_residue-2){
-		printf("increase memory for single H bond (other cases)\n");
-		fprintf(fout,"END_base-pair\n" );
-		return;
-                
-	      }
-	      
-              
-	      geo_check=5.2; 
-	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			   bseq, hb_atom1, hb_atom2, hb_dist, type);
-	      if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
-		geo_check=6.0; 
-		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
-			     bseq,hb_atom1, hb_atom2, hb_dist, type);
-	      }
-	      
-	      sprintf(other[nb_other],"%9s, %c: %5ld %c-%c %5ld %c: %7s %c %s%s !(s_s)\n",
-		      work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
-		      ResSeq[jr],ChainID[jr], type,pa_int,syn_i, syn_j);
+            
+	    sprintf(base_sugar[nb_sugar],"%9s, %c: %5ld %c %c %5ld %c: %7s %c %s%s !(b_s)\n",
+		    work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
+		    ResSeq[jr],ChainID[jr], type,pa_int, syn_i, syn_j);
+	    
+	  }else if (nh==nc2){
+	    
+	    if(nb_p++ > num_residue-2){
+	      fprintf(fout,"END_base-pair\n" );
+	      printf("increase memory for single H bond (base-O1P, O2P)\n");
+	      return;
 	    }
+	    
+	    geo_check=4.8; 
+	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			 bseq, hb_atom1, hb_atom2, hb_dist, type);
+	    
+	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
+	      geo_check=5.8; 
+	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			   bseq,hb_atom1, hb_atom2, hb_dist, type);
+	    }
+	    
+	    sprintf(base_p[nb_p],"%9s, %c: %5ld %c %c %5ld %c: %7s %c %s%s !b_(O1P,O2P)\n",
+		    work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
+		    ResSeq[jr],ChainID[jr], type,pa_int,syn_i, syn_j);
+	    
+	  }else{
+	    
+	    if(nb_other++ > num_residue-2){
+	      printf("increase memory for single H bond (other cases)\n");
+	      fprintf(fout,"END_base-pair\n" );
+	      return;
+              
+	    }
+	    
+            
+	    geo_check=5.2; 
+	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			 bseq, hb_atom1, hb_atom2, hb_dist, type);
+	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
+	      geo_check=6.0; 
+	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
+			   bseq,hb_atom1, hb_atom2, hb_dist, type);
+	    }
+	    
+	    sprintf(other[nb_other],"%9s, %c: %5ld %c %c %5ld %c: %7s %c %s%s !(s_s)\n",
+		    work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
+		    ResSeq[jr],ChainID[jr], type,pa_int,syn_i, syn_j);
 	  }
 	}
-      }         
-    }
-    /*
-      printf("%ld   %ld  %ld   %ld \n",nb_single ,nb_sugar,nb_p,nb_other);
-    */
-    
-    for(m=1; m<=nb_single; m++)
-      fprintf(fout, "%s", base_single[m]);
-    for(m=1; m<=nb_sugar; m++)
-      fprintf(fout, "%s", base_sugar[m]);
-    for(m=1; m<=nb_p; m++)
-      fprintf(fout, "%s", base_p[m]);
-    for(m=1; m<=nb_other; m++)
-      fprintf(fout, "%s", other[m]);
-    
-    fprintf(fout,"END_base-pair\n" );
-    
-    *num_pair_tot = num_bp;
-    
-    bp_network(num_residue, RY, seidx, AtomName, ResName, ChainID, ResSeq,
-               Miscs, xyz, bseq, pair_info, Nxyz, orien, org, BPRS, fout,
-               num_multi,multi_idx,multi);
-    
-    free_cmatrix(base_single, 0, num_residue, 0, 120);
-    free_cmatrix(base_sugar, 0, num_residue, 0, 120);
-    free_cmatrix(base_p, 0, num_residue, 0, 120);
-    free_cmatrix(other, 0, num_residue, 0, 120);
-    free_cmatrix(hb_atom1, 0, BUF512, 0, 4);
-    free_cmatrix(hb_atom2, 0, BUF512, 0, 4);
-    free_dvector(hb_dist, 0, BUF512);
-    free_lmatrix(pair_info, 0, num_residue, 0, NP);
-    free_lvector(prot_rna, 0, num_residue);       
+      }
+    }         
+  }
+  /*
+    printf("%ld   %ld  %ld   %ld \n",nb_single ,nb_sugar,nb_p,nb_other);
+  */
+  
+  for(m=1; m<=nb_single; m++)
+    fprintf(fout, "%s", base_single[m]);
+  for(m=1; m<=nb_sugar; m++)
+    fprintf(fout, "%s", base_sugar[m]);
+  for(m=1; m<=nb_p; m++)
+    fprintf(fout, "%s", base_p[m]);
+  for(m=1; m<=nb_other; m++)
+    fprintf(fout, "%s", other[m]);
+  
+  fprintf(fout,   "END_base-pair\n" );
+  
+  *num_pair_tot = num_bp;
+  
+  bp_network(num_residue, RY, seidx, AtomName, ResName, ChainID, ResSeq,
+	     Miscs, xyz, bseq, pair_info, Nxyz, orien, org, BPRS, fout,
+	     num_multi,multi_idx,multi);
+  
+  free_cmatrix(base_single, 0, num_residue, 0, 120);
+  free_cmatrix(base_sugar, 0, num_residue, 0, 120);
+  free_cmatrix(base_p, 0, num_residue, 0, 120);
+  free_cmatrix(other, 0, num_residue, 0, 120);
+  free_cmatrix(hb_atom1, 0, BUF512, 0, 4);
+  free_cmatrix(hb_atom2, 0, BUF512, 0, 4);
+  free_dvector(hb_dist, 0, BUF512);
+  free_lmatrix(pair_info, 0, num_residue, 0, NP);
+  free_lvector(prot_rna, 0, num_residue);
+
+  er_ListDump(stdout, list);
+  er_FreeList(list);
+
+ ERROR:
+  if (list) er_FreeList(list);
 }
 
 void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp)
@@ -1733,172 +1748,164 @@ void Hbond_pair(long i, long j, long **seidx, char **AtomName, char *bseq,
                 char **hb_atom2, double *hb_dist, long c_key,long bone_key)
 /* this is filter for NO which can not form H bond (base-base) */
 {
-    double dd,dist, dtmp[4];
-    long k, m, n, num_hbonds = 0;
-    long without_H_m, with_H_m, without_H_n, with_H_n;
+  double dd,dist, dtmp[4];
+  long k, m, n, num_hbonds = 0;
+  long without_H_m, with_H_m, without_H_n, with_H_n;
+  
+  
+  for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
     
-        
-    for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
-           
-        if(c_key == 0){   
-            if(AtomName[m][1] == 'C')   continue;
-        }
-
-        if(bone_key == 0){
-            if(!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O2P") ||
-               !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") )
-                continue;
-        }
-        
-
-        if( (AtomName[m][1] == 'C' && AtomName[m][3]== '\'') ||
-            AtomName[m][1] =='P') continue;
-        
-        if(toupper(bseq[i]) == 'A' || toupper(bseq[i]) == 'I' ){  /*filter */
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 ") )
-                continue;
-            
-        }else if (toupper(bseq[i]) == 'G' ){
-            /*
-            if(AtomName[m][1]=='C') continue;
-              */   
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 ") )
-                continue;
-               
-        }else if (toupper(bseq[i]) == 'P' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 "))
-                continue;
-            
-        }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
-                  toupper(bseq[i]) == 'T' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C2 "))
-                continue;
-        }
-        
-        H_catalog(i, m, bseq, AtomName, &without_H_m, &with_H_m);
-
-        for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
-                
-            if(c_key == 0){
-                if(AtomName[n][1] == 'C') continue;
-            }
-            
-            if(bone_key == 0){
-                if(!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O2P") ||
-                   !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") )
-                    continue;
-            }
-                
-            if( (AtomName[n][1] == 'C' && AtomName[n][3]== '\'') ||
-                AtomName[n][1] =='P') continue;
-        
-            if(toupper(bseq[j]) == 'A' || toupper(bseq[j]) == 'I' ){  /*filter */
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 ")/* || !strcmp(AtomName[n], " C8 ")*/ )
-                    continue;
-            
-            }else if (toupper(bseq[j]) == 'G' ){
-                /*
-                if(AtomName[n][1]=='C') continue;
-                 */   
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 ") )
-                    continue;
-                    
-            
-            }else if (toupper(bseq[j]) == 'P' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 "))
-                    continue;
-            
-            }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
-                      toupper(bseq[j]) == 'T' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C2 "))
-                    continue;
-            }
-
-
-            if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C')
-                continue;                                           
-            
-            if((!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O4'") ||
-                !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") ||
-                !strcmp(AtomName[m], " O2P")) &&
-               (!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O4'") ||
-                !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") ||
-                !strcmp(AtomName[n], " O2P")))
-                continue;
-            
-                
-            
-            H_catalog(j, n, bseq, AtomName, &without_H_n, &with_H_n);
-
-            if(without_H_m ==1 && without_H_n ==1 ) continue;
-
-
-
-            if( (strchr("NO", AtomName[m][1])  &&  AtomName[m][3] != '\'' &&
-                AtomName[m][3] != 'P') &&
-                (strchr("NO", AtomName[n][1])  &&  AtomName[n][3] != '\'' &&
-                AtomName[n][3] != 'P' ) ){   
-                dist= 3.4 + change;      /*base (N, O) .. base (N, O) */
-                if(dist>=4) dist=4.0;
-                
-            }else if((AtomName[m][1] == 'C' && (AtomName[n][3] != '\'' &&
-                      AtomName[n][3] != 'P' && strchr("NO", AtomName[n][1])))||
-                     (AtomName[n][1] == 'C' && (AtomName[m][3] != '\'' &&
-                      AtomName[m][3] != 'P' && strchr("NO", AtomName[m][1])))) {   
-                dist= 3.6 + change;      /*base (N, O) .. base (CH) */
-                if(dist>=4.0) dist=4.0;
-                
-            }else if((AtomName[m][1] == 'O' && AtomName[m][3] == '\'' &&
-                      strchr("NO", AtomName[n][1]) && AtomName[n][3] != '\'' &&
-                      AtomName[n][3] != 'P' ) ||
-                     (AtomName[n][1] == 'O' && AtomName[n][3] == '\'' &&
-                      strchr("NO", AtomName[m][1]) && AtomName[m][3] != '\'' &&
-                      AtomName[m][3] != 'P' )) {   
-                dist= 3.4 + change;      /*base (N, O) .. sugar (O?') */
-                if(dist>=4.0) dist=4.0;
-                
-                
-            }else if((AtomName[m][3] == 'P' && AtomName[n][3] != '\''
-                      && AtomName[n][1] != 'C') ||
-                     (AtomName[n][3] == 'P' && AtomName[m][3] != '\''
-                      && AtomName[m][1] != 'C')) {   
-                dist= 3.2 + change;      /*base (N, O) .. O1P or O2P */
-                if(dist>=4.0) dist=4.0;
-                
-            }else {
-                dist= 3.1 + change;    /* (O?', O?P, C) .. sugar (O?', O?P, C) */
-                if(dist>=3.8) dist=3.8;
-            }
-            
-            for (k = 1; k <= 3; k++) {
-                dtmp[k] = xyz[m][k] - xyz[n][k];
-            }
-            if ((dd = veclen(dtmp)) < dist) {
-                if (++num_hbonds > BUF512)
-                    nrerror("Too many possible H-bonds between two bases");
-                    /*         
-                printf("in hbond %5ld %5ld  %4s-%4s %8.2f%8.2f | %c-%c %ld \n",
-                       i, j, AtomName[m],AtomName[n],dd, dist,
-                       bseq[i],bseq[j], num_hbonds);
-                    */
-                    
-                strcpy(hb_atom1[num_hbonds], AtomName[m]);
-                strcpy(hb_atom2[num_hbonds], AtomName[n]);
-                hb_dist[num_hbonds] = dd;
-                   
-            }
-
-        }
+    if(c_key == 0){   
+      if(AtomName[m][1] == 'C')   continue;
     }
-
-            
-    *nh = num_hbonds;
-   
     
+    if(bone_key == 0){
+      if(!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O2P") ||
+	 !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") )
+	continue;
+    }
+    
+    
+    if( (AtomName[m][1] == 'C' && AtomName[m][3]== '\'') ||
+	AtomName[m][1] =='P') continue;
+    
+    if(toupper(bseq[i]) == 'A' || toupper(bseq[i]) == 'I' ){  /*filter */
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 ") )
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'G' ){
+      /*
+	if(AtomName[m][1]=='C') continue;
+      */   
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 ") )
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'P' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 "))
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
+	      toupper(bseq[i]) == 'T' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C2 "))
+	continue;
+    }
+    
+    H_catalog(i, m, bseq, AtomName, &without_H_m, &with_H_m);
+    
+    for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
+      
+      if(c_key == 0){
+	if(AtomName[n][1] == 'C') continue;
+      }
+      
+      if(bone_key == 0){
+	if(!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O2P") ||
+	   !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") )
+	  continue;
+      }
+      
+      if( (AtomName[n][1] == 'C' && AtomName[n][3]== '\'') ||
+	  AtomName[n][1] =='P') continue;
+      
+      if(toupper(bseq[j]) == 'A' || toupper(bseq[j]) == 'I' ){  /*filter */
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 ")/* || !strcmp(AtomName[n], " C8 ")*/ )
+	  continue;
+	
+      }else if (toupper(bseq[j]) == 'G' ){
+	/*
+	  if(AtomName[n][1]=='C') continue;
+	*/   
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 ") )
+	  continue;
+	
+        
+      }else if (toupper(bseq[j]) == 'P' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 "))
+	  continue;
+	
+      }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
+		toupper(bseq[j]) == 'T' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C2 "))
+	  continue;
+      }
+      
+      
+      if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C')
+	continue;                                           
+      
+      if((!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O4'") ||
+	  !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") ||
+	  !strcmp(AtomName[m], " O2P")) &&
+	 (!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O4'") ||
+	  !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") ||
+	  !strcmp(AtomName[n], " O2P")))
+	continue;
+      
+      
+      
+      H_catalog(j, n, bseq, AtomName, &without_H_n, &with_H_n);
+      
+      if(without_H_m ==1 && without_H_n ==1 ) continue;
+      
+      
+      
+      if( (strchr("NO", AtomName[m][1])  &&  AtomName[m][3] != '\'' &&
+	   AtomName[m][3] != 'P') &&
+	  (strchr("NO", AtomName[n][1])  &&  AtomName[n][3] != '\'' &&
+	   AtomName[n][3] != 'P' ) ){   
+	dist= 3.4 + change;      /*base (N, O) .. base (N, O) */
+	if(dist>=4) dist=4.0;
+        
+      }else if((AtomName[m][1] == 'C' && (AtomName[n][3] != '\'' &&
+					  AtomName[n][3] != 'P' && strchr("NO", AtomName[n][1])))||
+	       (AtomName[n][1] == 'C' && (AtomName[m][3] != '\'' &&
+					  AtomName[m][3] != 'P' && strchr("NO", AtomName[m][1])))) {   
+	dist= 3.6 + change;      /*base (N, O) .. base (CH) */
+	if(dist>=4.0) dist=4.0;
+	
+      }else if((AtomName[m][1] == 'O' && AtomName[m][3] == '\'' &&
+		strchr("NO", AtomName[n][1]) && AtomName[n][3] != '\'' &&
+		AtomName[n][3] != 'P' ) ||
+	       (AtomName[n][1] == 'O' && AtomName[n][3] == '\'' &&
+		strchr("NO", AtomName[m][1]) && AtomName[m][3] != '\'' &&
+		AtomName[m][3] != 'P' )) {   
+	dist= 3.4 + change;      /*base (N, O) .. sugar (O?') */
+	if(dist>=4.0) dist=4.0;
+        
+        
+      }else if((AtomName[m][3] == 'P' && AtomName[n][3] != '\''
+		&& AtomName[n][1] != 'C') ||
+	       (AtomName[n][3] == 'P' && AtomName[m][3] != '\''
+		&& AtomName[m][1] != 'C')) {   
+	dist= 3.2 + change;      /*base (N, O) .. O1P or O2P */
+	if(dist>=4.0) dist=4.0;
+        
+      }else {
+	dist= 3.1 + change;    /* (O?', O?P, C) .. sugar (O?', O?P, C) */
+	if(dist>=3.8) dist=3.8;
+      }
+      
+      for (k = 1; k <= 3; k++) {
+	dtmp[k] = xyz[m][k] - xyz[n][k];
+      }
+      if ((dd = veclen(dtmp)) < dist) {
+	if (++num_hbonds > BUF512)
+	  nrerror("Too many possible H-bonds between two bases");
+	strcpy(hb_atom1[num_hbonds], AtomName[m]);
+	strcpy(hb_atom2[num_hbonds], AtomName[n]);
+	hb_dist[num_hbonds] = dd;
+        
+      }
+      
+    }
+  }
+   
+  *nh = num_hbonds;
+   
 }
 
 void base_base_dist(long i, long j, long **seidx, char **AtomName, char *bseq,
@@ -1906,110 +1913,104 @@ void base_base_dist(long i, long j, long **seidx, char **AtomName, char *bseq,
                      char **hb_atom2, double *hb_dist)
 /* this is filter for NO which can not form H bond (base-base) */
 {
-    double dd, dtmp[4];
-    long k, m, n, num_hbonds = 0;
+  double dd, dtmp[4];
+  long k, m, n, num_hbonds = 0;
+  
+  
+  for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
     
-        
-    for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
-           
-
-        if(!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O2P") ||
-           !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") )
-            continue;
-        
-
-        if( (AtomName[m][1] == 'C' && AtomName[m][3]== '\'') ||
-            AtomName[m][1] =='P') continue;
-        
-        if(toupper(bseq[i]) == 'A' || toupper(bseq[i]) == 'I' ){  /*filter */
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 ") )
-                continue;
-            
-        }else if (toupper(bseq[i]) == 'G' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 ") )
-                continue;
-            
-        }else if (toupper(bseq[i]) == 'P' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 "))
-                continue;
-            
-        }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
-                  toupper(bseq[i]) == 'T' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C2 "))
-                continue;
-        }
-        
-
-        for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
-                
-            if(!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O2P") ||
-               !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") )
-                continue;
-                
-            if( (AtomName[n][1] == 'C' && AtomName[n][3]== '\'') ||
-                AtomName[n][1] =='P') continue;
-        
-            if(toupper(bseq[j]) == 'A' || toupper(bseq[j]) == 'I' ){  /*filter */
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 ") )
-                    continue;
-            
-            }else if (toupper(bseq[j]) == 'G' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 ") )
-                    continue;
-            
-            }else if (toupper(bseq[j]) == 'P' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 "))
-                    continue;
-            
-            }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
-                      toupper(bseq[j]) == 'T' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C2 "))
-                    continue;
-            }
-
-
-            if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C')
-                continue;                                           
-            
-            if((!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O4'") ||
-                !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") ||
-                !strcmp(AtomName[m], " O2P")) &&
-               (!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O4'") ||
-                !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") ||
-                !strcmp(AtomName[n], " O2P")))
-                continue;
-            
-            for (k = 1; k <= 3; k++) {
-                dtmp[k] = xyz[m][k] - xyz[n][k];
-            }
-            if ((dd = veclen(dtmp)) < dist) {
-                if (++num_hbonds > BUF512)
-                    nrerror("Too many possible H-bonds between two bases");
-                    /*        
-                printf("in hbond %5ld %5ld  %4s-%4s %8.2f%8.2f | %c-%c %ld \n",
-                       i, j, AtomName[m],AtomName[n],dd, dist,
-                       bseq[i],bseq[j], num_hbonds);
-                    
-                    */  
-                strcpy(hb_atom1[num_hbonds], AtomName[m]);
-                strcpy(hb_atom2[num_hbonds], AtomName[n]);
-                hb_dist[num_hbonds] = dd;
-                   
-            }
-
-
     
-
-        }
+    if(!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O2P") ||
+       !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") )
+      continue;
+    
+    
+    if( (AtomName[m][1] == 'C' && AtomName[m][3]== '\'') ||
+	AtomName[m][1] =='P') continue;
+    
+    if(toupper(bseq[i]) == 'A' || toupper(bseq[i]) == 'I' ){  /*filter */
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 ") )
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'G' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 ") )
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'P' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 "))
+	continue;
+      
+    }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
+	      toupper(bseq[i]) == 'T' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C2 "))
+	continue;
     }
-
-            
-    *nh = num_hbonds;
-   
+    
+    
+    for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
+      
+      if(!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O2P") ||
+	 !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") )
+	continue;
+      
+      if( (AtomName[n][1] == 'C' && AtomName[n][3]== '\'') ||
+	  AtomName[n][1] =='P') continue;
+      
+      if(toupper(bseq[j]) == 'A' || toupper(bseq[j]) == 'I' ){  /*filter */
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 ") )
+	  continue;
+	
+      }else if (toupper(bseq[j]) == 'G' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 ") )
+	  continue;
+	
+      }else if (toupper(bseq[j]) == 'P' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 "))
+	  continue;
+	
+      }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
+		toupper(bseq[j]) == 'T' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C2 "))
+	  continue;
+      }
+      
+      
+      if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C')
+	continue;                                           
+      
+      if((!strcmp(AtomName[m], " O3'") || !strcmp(AtomName[m], " O4'") ||
+	  !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " O1P") ||
+	  !strcmp(AtomName[m], " O2P")) &&
+	 (!strcmp(AtomName[n], " O3'") || !strcmp(AtomName[n], " O4'") ||
+	  !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " O1P") ||
+	  !strcmp(AtomName[n], " O2P")))
+	continue;
+      
+      for (k = 1; k <= 3; k++) {
+	dtmp[k] = xyz[m][k] - xyz[n][k];
+      }
+      if ((dd = veclen(dtmp)) < dist) {
+	if (++num_hbonds > BUF512)
+	  nrerror("Too many possible H-bonds between two bases");
+	/*        
+		  printf("in hbond %5ld %5ld  %4s-%4s %8.2f%8.2f | %c-%c %ld \n",
+		  i, j, AtomName[m],AtomName[n],dd, dist,
+		  bseq[i],bseq[j], num_hbonds);
+                  
+	*/  
+	strcpy(hb_atom1[num_hbonds], AtomName[m]);
+	strcpy(hb_atom2[num_hbonds], AtomName[n]);
+	hb_dist[num_hbonds] = dd;
+        
+      }    
+    }
+  }
+  
+  *nh = num_hbonds;
     
 }
 
@@ -2020,88 +2021,88 @@ void non_Hbond_pair(long i, long j, long m, long n, char **AtomName,
 /* this is filter for NO which can not form H bond (base-base) */
 {
     
-    if(RY[i] == 1 && RY[j] == 1){
-        if((strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-                           
-           (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
-           (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O6 ")==0) 
-           
-           ){
-            *yes=1;
-        }
-    }else if(RY[i] == 0 && RY[j] == 0){
-                        
-        if((strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
-                           
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
-
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O4 ")==0) 
-
-           ){
-            *yes=1;
-        }
-    }else if( (RY[i] == 1 && RY[j] == 0) ){
-        if((strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
-                           
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
-
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
-           (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
-
-           (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N1 ")==0) /* ?*/
-
-           ){
-            *yes=1;
-        }
-    }else if( (RY[i] == 0 && RY[j] == 1) ){
-        if((strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-                           
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
-           (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
-
-           (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N7 ")==0) /* ?*/
-                           
-
-           ){
-            *yes=1;
-        }
+  if(RY[i] == 1 && RY[j] == 1){
+    if((strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
+       (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N7 ")==0) ||
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O6 ")==0) 
+       
+       ){
+      *yes=1;
     }
+  }else if(RY[i] == 0 && RY[j] == 0){
+    
+    if((strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
+       
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
+       
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O4 ")==0) 
+       
+       ){
+      *yes=1;
+    }
+  }else if( (RY[i] == 1 && RY[j] == 0) ){
+    if((strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " N9 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
+       
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " N3 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
+       
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " N1 ")==0) ||
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O2 ")==0) ||
+       (strcmp(AtomName[m], " O6 ")==0 && strcmp(AtomName[n], " O4 ")==0) ||
+       
+       (strcmp(AtomName[m], " N7 ")==0 && strcmp(AtomName[n], " N1 ")==0) /* ?*/
+       
+       ){
+      *yes=1;
+    }
+  }else if( (RY[i] == 0 && RY[j] == 1) ){
+    if((strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " O2 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N9 ")==0) ||
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " N3 ")==0) ||
+       (strcmp(AtomName[m], " O4 ")==0 && strcmp(AtomName[n], " O6 ")==0) ||
+       
+       (strcmp(AtomName[m], " N1 ")==0 && strcmp(AtomName[n], " N7 ")==0) /* ?*/
+       
+       
+       ){
+      *yes=1;
+    }
+  }
 }
 
-    
+
 
 void single_BB_Hbond(long i, long j, long **seidx, char **AtomName, char *bseq,
                      double **xyz, long *Hyes)        
@@ -2110,112 +2111,109 @@ void single_BB_Hbond(long i, long j, long **seidx, char **AtomName, char *bseq,
 */
 {
   /*    char cm,cn; */
-    double dd,dist, dtmp[4];
-    long k, m, n, num_hbonds = 0;
-        /*
+  double dd,dist, dtmp[4];
+  long k, m, n, num_hbonds = 0;
+  /*
     Hbond_pair(i, j, seidx, AtomName, bseq, xyz, Hyes);
-        */
+  */
+  
+  for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
     
-    for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
-           
-      /*   cm = AtomName[m][1]; */
-
-        if(strchr("P", AtomName[m][1]) || strchr("P", AtomName[m][3]))
-            continue;
-        if(strstr(AtomName[m], "'") && strcmp(AtomName[m], " O2'"))
-            continue;
-        
-        if(toupper(bseq[i]) == 'A' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 "))
-                continue;
-        }else if (toupper(bseq[i]) == 'G' ){
-            if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
-               !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 "))
-                continue;
-        }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
-                  toupper(bseq[i]) == 'T' ){
-            if(!strcmp(AtomName[m], " C4 ")  || !strcmp(AtomName[m], " C2 "))
-                continue;
-        }
-            
-/*
-        if( !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " C5'")||
-            !strcmp(AtomName[m], " C4'") || !strcmp(AtomName[m], " O4'") )
-            continue;    
-*/                     
-        for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
-
-	  /*        cn = AtomName[n][1]; */
-
-            if(strchr("P", AtomName[n][1]) || strchr("P", AtomName[n][3]))
-                continue;
-            if(strstr(AtomName[n], "'") && strcmp(AtomName[n], " O2'"))
-                continue;
-
-            if(toupper(bseq[j]) == 'A' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 "))
-                    continue;
-            }else if (toupper(bseq[j]) == 'G' ){
-                if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
-                   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 "))
-                    continue;
-            }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
-                      toupper(bseq[j]) == 'T' ){
-                if(!strcmp(AtomName[n], " C4 ")  || !strcmp(AtomName[n], " C2 "))
-                    continue;
-            }
-            
-/*            
-            if( !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " C5'")||
-                !strcmp(AtomName[n], " C4'") || !strcmp(AtomName[n], " O4'") )
-                 continue;    
-*/ 
-            if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C' )
-                continue;
-            if((AtomName[m][1] == 'C' && AtomName[n][3] == '\'') ||
-               (AtomName[n][1] == 'C' && AtomName[m][3] == '\'') )
-                continue;
-            
-
-            
-            if(!strcmp(AtomName[m], " O2'") && !strcmp(AtomName[n], " O2'")) 
-                continue;
-            if((!strcmp(AtomName[m], " O2'") && AtomName[n][1] == 'C') ||
-               (!strcmp(AtomName[n], " O2'") && AtomName[m][1] == 'C')) 
-                continue;
-                
-
-            if(AtomName[m][1] == 'C' || AtomName[n][1] == 'C' ) {
-                dist= 3.6;
-            }else if(!strcmp(AtomName[m], " O2'") || !strcmp(AtomName[n], " O2'"))
-                dist= 3.4;
-
-               
-            for (k = 1; k <= 3; k++) {
-                dtmp[k] = xyz[m][k] - xyz[n][k];
-            }
-            if ((dd = veclen(dtmp)) < dist) {
-                if (++num_hbonds > BUF512)
-                    nrerror("Too many possible H-bonds between two bases");
-                *Hyes=1;
-                printf("%5ld %5ld  %4s - %4s %8.2f%8.2f\n", i, j, AtomName[m],AtomName[n],dd, dist);
-                
-                    /*
-                strcpy(hb_atom1[num_hbonds], AtomName[m]);
-                strcpy(hb_atom2[num_hbonds], AtomName[n]);
-                hb_dist[num_hbonds] = dd;
-                    */
-            }
-
-
-            
-        }
+    /*   cm = AtomName[m][1]; */
+    
+    if(strchr("P", AtomName[m][1]) || strchr("P", AtomName[m][3]))
+      continue;
+    if(strstr(AtomName[m], "'") && strcmp(AtomName[m], " O2'"))
+      continue;
+    
+    if(toupper(bseq[i]) == 'A' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 "))
+	continue;
+    }else if (toupper(bseq[i]) == 'G' ){
+      if(!strcmp(AtomName[m], " C4 ") || !strcmp(AtomName[m], " C5 ")||
+	 !strcmp(AtomName[m], " C6 ") || !strcmp(AtomName[m], " C2 "))
+	continue;
+    }else if (toupper(bseq[i]) == 'U'|| toupper(bseq[i]) == 'C' ||
+	      toupper(bseq[i]) == 'T' ){
+      if(!strcmp(AtomName[m], " C4 ")  || !strcmp(AtomName[m], " C2 "))
+	continue;
     }
-    printf("\n");
     
-    
+    /*
+      if( !strcmp(AtomName[m], " O5'") || !strcmp(AtomName[m], " C5'")||
+      !strcmp(AtomName[m], " C4'") || !strcmp(AtomName[m], " O4'") )
+      continue;    
+    */                     
+    for (n = seidx[j][1]; n <= seidx[j][2]; n++) {
+      
+      /*        cn = AtomName[n][1]; */
+      
+      if(strchr("P", AtomName[n][1]) || strchr("P", AtomName[n][3]))
+	continue;
+      if(strstr(AtomName[n], "'") && strcmp(AtomName[n], " O2'"))
+	continue;
+      
+      if(toupper(bseq[j]) == 'A' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 "))
+	  continue;
+      }else if (toupper(bseq[j]) == 'G' ){
+	if(!strcmp(AtomName[n], " C4 ") || !strcmp(AtomName[n], " C5 ")||
+	   !strcmp(AtomName[n], " C6 ") || !strcmp(AtomName[n], " C2 "))
+	  continue;
+      }else if (toupper(bseq[j]) == 'U'|| toupper(bseq[j]) == 'C' ||
+		toupper(bseq[j]) == 'T' ){
+	if(!strcmp(AtomName[n], " C4 ")  || !strcmp(AtomName[n], " C2 "))
+	  continue;
+      }
+      
+      /*            
+		    if( !strcmp(AtomName[n], " O5'") || !strcmp(AtomName[n], " C5'")||
+		    !strcmp(AtomName[n], " C4'") || !strcmp(AtomName[n], " O4'") )
+		    continue;    
+      */ 
+      if(AtomName[m][1] == 'C' && AtomName[n][1] == 'C' )
+	continue;
+      if((AtomName[m][1] == 'C' && AtomName[n][3] == '\'') ||
+	 (AtomName[n][1] == 'C' && AtomName[m][3] == '\'') )
+	continue;
+      
+      
+      
+      if(!strcmp(AtomName[m], " O2'") && !strcmp(AtomName[n], " O2'")) 
+	continue;
+      if((!strcmp(AtomName[m], " O2'") && AtomName[n][1] == 'C') ||
+	 (!strcmp(AtomName[n], " O2'") && AtomName[m][1] == 'C')) 
+	continue;
+      
+      
+      if(AtomName[m][1] == 'C' || AtomName[n][1] == 'C' ) {
+	dist= 3.6;
+      }else if(!strcmp(AtomName[m], " O2'") || !strcmp(AtomName[n], " O2'"))
+	dist= 3.4;
+      
+      
+      for (k = 1; k <= 3; k++) {
+	dtmp[k] = xyz[m][k] - xyz[n][k];
+      }
+      if ((dd = veclen(dtmp)) < dist) {
+	if (++num_hbonds > BUF512)
+	  nrerror("Too many possible H-bonds between two bases");
+	*Hyes=1;
+	printf("%5ld %5ld  %4s - %4s %8.2f%8.2f\n", i, j, AtomName[m],AtomName[n],dd, dist);
+        
+	/*
+	  strcpy(hb_atom1[num_hbonds], AtomName[m]);
+	  strcpy(hb_atom2[num_hbonds], AtomName[n]);
+	  hb_dist[num_hbonds] = dd;
+	*/
+      }
+        
+    }
+  }
+  printf("\n");
+   
 }
  
 void syn_or_anti( long num_residue, char **AtomName, long **seidx,
@@ -2262,9 +2260,6 @@ void syn_or_anti( long num_residue, char **AtomName, long **seidx,
         
         if (m == 5)                /* all 4 indexes are okay  */
             chi_angle = torsion(xyz4);
-/*     
-        printf("%5ld %5ld %5ld %5ld %5ld   %8.2f\n", i, chi[1],chi[2],chi[3],chi[4],chi_angle );
-*/        
         if(chi_angle>=-90 && chi_angle <= 90 )
             sugar_syn[i]=1;
         else
@@ -2274,7 +2269,6 @@ void syn_or_anti( long num_residue, char **AtomName, long **seidx,
 }
    
 /* get the LW edges by the mophorlogy parameters */
-/*
 void pair_type_param(double *rtn_val, char *type_param)
 {
     double v1,v2,v3,v4,v5,v6;
@@ -2288,22 +2282,21 @@ void pair_type_param(double *rtn_val, char *type_param)
     
     strcpy(type_param, "?");
 
-    if( abs(v1)<5 && abs(v2)<2.5 && abs(v3)<2.5 && abs(v4)<45 && abs(v5)<40 && abs(v6)<40 ){
-        strcpy(type_param, "W/W cis");
-    }else if(abs(v1)<3 && abs(v2)<4 && abs(v3)<3 && abs(v4)<50 && abs(v5)>130){
-        strcpy(type_param, "W/W tran");
-    }else if(abs(v1)<4 && abs(v2)<3 && abs(v3)<5 && abs(v4)>90 && abs(v5)>40){
-        strcpy(type_param, "W/H cis");
-    }else if(v1>2.5 &&v1<6 && abs(v3)<2 && v6<-60){
-        strcpy(type_param, "W/H tran");
-    }else if(abs(v4)>100 && abs(v5)>80){
-        strcpy(type_param, "H/W cis");
-    }else if(v1<-1.9 && abs(v2)<3 && abs(v3)<2 && abs(v4)<40 && abs(v5)<40 && v6<-60){
-        strcpy(type_param, "H/W tran");
-    }else if(v1<-3.0 && abs(v2)<2 && abs(v3)<2.5 && abs(v4)<55 && abs(v5)<60 && v6>40){
-        strcpy(type_param, "W/S cis");
-    }else if(abs(v1)<4.5 && abs(v2)<4 && abs(v3)<6 && abs(v4)>80 && abs(v5)<60 && v6>40){
-        strcpy(type_param, "W/S cis");
-        
-*/    
-
+    if( fabs(v1)<5 && fabs(v2)<2.5 && fabs(v3)<2.5 && fabs(v4)<45 && fabs(v5)<40 && fabs(v6)<40 ){
+        strcpy(type_param, "WWc");
+    }else if(fabs(v1)<3 && fabs(v2)<4 && fabs(v3)<3 && fabs(v4)<50 && fabs(v5)>130){
+        strcpy(type_param, "WWt");
+    }else if(fabs(v1)<4 && fabs(v2)<3 && fabs(v3)<5 && fabs(v4)>90 && fabs(v5)>40){
+        strcpy(type_param, "WHc");
+    }else if(v1>2.5 &&v1<6 && fabs(v3)<2 && v6<-60){
+        strcpy(type_param, "WHt");
+    }else if(fabs(v4)>100 && fabs(v5)>80){
+        strcpy(type_param, "HWc");
+    }else if(v1<-1.9 && fabs(v2)<3 && fabs(v3)<2 && fabs(v4)<40 && fabs(v5)<40 && v6<-60){
+        strcpy(type_param, "HWt");
+    }else if(v1<-3.0 && fabs(v2)<2 && fabs(v3)<2.5 && fabs(v4)<55 && fabs(v5)<60 && v6>40){
+        strcpy(type_param, "WSc");
+    }else if(fabs(v1)<4.5 && fabs(v2)<4 && fabs(v3)<6 && fabs(v4)>80 && fabs(v5)<60 && v6>40){
+        strcpy(type_param, "WSc");
+    }
+}

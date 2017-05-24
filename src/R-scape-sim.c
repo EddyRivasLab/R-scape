@@ -33,6 +33,7 @@
 #include "pottsscore.h"
 #include "pottsim.h"
 
+#define ALPHOPTS   "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define TREEOPTS   "--star,--given,--sim"                                          
 #define ALPHOPTS   "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define SIMOPTS    "--naive,--rnass,--potts"                                          
@@ -52,6 +53,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char                 errbuf[eslERRBUFSIZE];
   ESL_RANDOMNESS      *r;	               /* random numbers */
   ESL_ALPHABET        *abc;                    /* the alphabet */
+  int                  abcisRNA;
 
   char                *gnuplot;
 
@@ -127,6 +129,10 @@ static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  /* alphabet type */
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
   /* type of simulation */
   { "--naive",         eslARG_NONE,    "TRUE",   NULL,       NULL,SIMOPTS,    NULL,  NULL,               "naive simulation: independent positions",                                                   1 }, 
   { "--rnass",         eslARG_NONE,     FALSE,   NULL,       NULL,SIMOPTS,    NULL,  NULL,               "simulation according to a RNA secondary structure",                                         1 }, 
@@ -264,12 +270,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.msamap = NULL;
   cfg.msarevmap = NULL;
   
-  /* alphabet */
+   /* alphabet */
   cfg.abc = NULL;
-  if      (esl_opt_GetBoolean(go, "--rna"))   cfg.abc = esl_alphabet_Create(eslRNA); 
-  else if (esl_opt_GetBoolean(go, "--dna"))   cfg.abc = esl_alphabet_Create(eslDNA); 
-  else if (esl_opt_GetBoolean(go, "--amino")) cfg.abc = esl_alphabet_Create(eslAMINO); 
-
+  cfg.abcisRNA = FALSE;
+  if      (esl_opt_GetBoolean(go, "--rna"))   { cfg.abc = esl_alphabet_Create(eslRNA);   cfg.abcisRNA = TRUE;  }
+  else if (esl_opt_GetBoolean(go, "--dna"))   { cfg.abc = esl_alphabet_Create(eslDNA);   cfg.abcisRNA = TRUE;  }
+  else if (esl_opt_GetBoolean(go, "--amino")) { cfg.abc = esl_alphabet_Create(eslAMINO);                       }
+ 
   /* options constraining the msa */
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          :  0.0; // remove sequences with no residues always
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          :  0.0;
@@ -775,7 +782,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
     break;
   case SAMPLE_POTTS:
     if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull,
-				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->cntmaxD, cfg->gnuplot,
+				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->abcisRNA, cfg->cntmaxD, cfg->gnuplot,
 				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nFailed to generate the simulated potts alignment", cfg->errbuf);
     break;
