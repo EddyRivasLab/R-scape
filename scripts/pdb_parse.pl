@@ -4,9 +4,9 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_C $opt_M $opt_W $opt_D $opt_L $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_M $opt_R $opt_W $opt_D $opt_L $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('C:M:W:D:L:v');
+getopts ('C:M:RW:D:L:v');
 
 struct RES => {
 char     => '$', # number of atoms
@@ -16,6 +16,17 @@ type     => '@', # type for eacth atom
 x        => '@', # x position for eacht atom
 y        => '@', # y position for eacht atom
 z        => '@', # z position for eacht atom
+};
+
+struct CNT => {
+i        => '$', # pdb position
+j        => '$', # 
+posi     => '$', # alignment position
+posj     => '$', # 
+chi      => '$', # character
+chj      => '$', # 
+bptype   => '$', # WWc WWt HHc HHt SSc SSt WHc WHt WSc WSt HSc HSt STACKED BPCONTACT BPNONE
+distance => '$', # euclidian distance
 };
 
 # Print a helpful message if the user provides no input file.
@@ -38,8 +49,7 @@ if ($stoname =~ /\/([^\/]+)\.[^\/]+$/) { $stoname = $1; }
 my $pfamname = $stofile;
 if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
 
-print "STO:  $stoname\n";
-print "PFAM: $pfamname\n";
+my $rnaview     = "$rscapebin/rnaview";
 my $hmmer       = "$rscapebin/../lib/hmmer";
 my $hmmbuild    = "$hmmer/src/hmmbuild";
 my $hmmersearch = "$hmmer/src/hmmsearch";
@@ -53,11 +63,8 @@ if ($opt_C) {
     $coorfile = "$opt_C";
     open(COORF,  ">$coorfile")  || die;
 }
-my $mapfile = "";
-if ($opt_M) { 
-    $mapfile = "$opt_M";
-    open(MAPF,  ">$mapfile")  || die;
-}
+my $mapallfile = "";
+if ($opt_M) { $mapallfile = "$opt_M"; }
 
 my $maxD = 8;
 if ($opt_D) { $maxD = $opt_D; }
@@ -66,21 +73,30 @@ $maxD = int($maxD*100)/100;
 my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
 
+my $dornaview = 0;
+if ($opt_R) { $dornaview = 1; }
+
 #options: CA C ALL NOH
 my $which = "CA";
 if ($opt_W) { $which = "$opt_W"; }
 
 my $nch = 0;
 my @chname = ();
-my @sq = ();
+my @chsq = ();
 my $len;
 my $alen;
 
 my $seeplots = 0;
 
-my $pdbname = parse_pdb($pdbfile, \$nch, \@chname, \@sq);
-print     "# PFAM: $stofile\n";
-print     "# PDB:  $pdbname\n# $nch chains\n";
+my $resolution;
+my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq);
+print     "# PFAM:       $stofile\n";
+print     "# PDB:        $pdbname\n";
+print     "# chains:     $nch\n";
+print     "# resolution: $resolution\n";
+
+my $ncnt_t = 0; ## total contacts from all chains
+my @cnt_t;
 
 for (my $n = 0; $n < $nch; $n ++) {
     my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
@@ -88,7 +104,7 @@ for (my $n = 0; $n < $nch; $n ++) {
     my $mapfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.map";
     my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
 
-    print "$mapfile\n";
+    print "\n chain $chname[$n]\n";
     if ($coorfile) {
 	print COORF "$corfile\n";
     }
@@ -98,20 +114,18 @@ for (my $n = 0; $n < $nch; $n ++) {
     open(MAP0, ">$map0file") || die;
     open(MAP1, ">$map1file") || die;
     
-    #print      "# PDB: $pdbname\n";
     print COR  "# PDB: $pdbname\n";
-    print MAP  "# PDB: $pdbname\n"; if ($mapfile)  { print MAPF  "# PDB: $pdbname\n"; }
+    print MAP  "# PDB: $pdbname\n"; 
     print MAP0 "# PDB: $pdbname\n";
     print MAP1 "# PDB: $pdbname\n";
-    #print      "# chain $chname[$n]\n# $sq[$n]\n";
     print COR  "# chain $chname[$n]\n";
-    print MAP  "# chain $chname[$n]\n"; if ($mapfile)  { print MAPF  "# chain $chname[$n]\n"; }
+    print MAP  "# chain $chname[$n]\n";
     print MAP0 "# chain $chname[$n]\n";
     print MAP1 "# chain $chname[$n]\n";
     print MAP1 "# maps to $pfamname\n";
-    
-    $len = length($sq[$n]);
-    $alen = parse_pdb_contact_map($pdbfile, $stofile, $chname[$n], $sq[$n], $which, $maxD, $minL);
+
+    $len = length($chsq[$n]);
+    $alen = parse_pdb_contact_map($pdbfile, \$ncnt_t, \@cnt_t, $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL);
     close(COR);
     close(MAP);
     close(MAP0);
@@ -123,14 +137,17 @@ for (my $n = 0; $n < $nch; $n ++) {
     plot_contact_map($mapfile,  $alen, $seeplots);
 }
 
+print_allcontacts($mapallfile, $ncnt_t, \@cnt_t, $pdbname, $pfamname, $maxD, $minL);
+
 if ($coorfile) { close(COORF); }
-if ($mapfile)  { close(MAPF);  }
+
 
 sub parse_pdb {
-    my ($pdbfile, $ret_nch, $chname_ref, $sq_ref) = @_;
+    my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref) = @_;
 
     my $pdfname;
     my $nch = 0;
+    my $resulution;
 
     my $cur_chain;
     my $prv_chain = "";
@@ -142,6 +159,9 @@ sub parse_pdb {
 	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
 	    $pdbname = $1;
 	}
+	elsif (/RESOLUTION.\s+(.+)$/) {
+	    $resolution = $1;
+	}
 	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+)$/) {
 	    $cur_chain   = $1;
 	    my $sqlen    = $2;
@@ -149,16 +169,16 @@ sub parse_pdb {
 	    $sq =~ s/\n//g;
 	    
 	    if ($prv_chain =~ /^$/) {
-		$sq_ref->[$nch]     = $sq;
+		$chsq_ref->[$nch]   = $sq;
 		$chname_ref->[$nch] = $cur_chain;
 		$sqlen[$nch]        = $sqlen;
 	    }
 	    elsif ($cur_chain =~ /^$prv_chain$/) {
-		$sq_ref->[$nch] .= $sq;
+		$chsq_ref->[$nch] .= $sq;
 	    }
 	    else { 
 		$nch ++; 
-		$sq_ref->[$nch]     = $sq;
+		$chsq_ref->[$nch]   = $sq;
 		$chname_ref->[$nch] = $cur_chain;
 		$sqlen[$nch]        = $sqlen;
 	    }
@@ -169,14 +189,16 @@ sub parse_pdb {
     $nch ++;
 
     for (my $n = 0; $n < $nch; $n ++) {
-	my $len = sq_conversion(\$sq_ref->[$n]);
+	my $len = sq_conversion(\$chsq_ref->[$n]);
 	if ($len != $sqlen[$n]) { print "parse_pdb(): seq len is $len should be $sqlen[$n]\n"; die; }
     }
     
-    $$ret_nch = $nch;
+    $$ret_resolution = $resolution;    
+    $$ret_nch        = $nch;
     return $pdbname;
 }
 
+# map[0..pdblen-1] taking values in 0..msa_alen-1
 sub map_pdbsq {
     my ($stofile, $pdbname, $chname, $pdbsq, $map_ref) = @_;
 
@@ -219,12 +241,14 @@ sub map_pdbsq {
 	return 0;
     }
 
+    # x (0..len-1) is coord in the pbdseq of the first aligned position
     my @ali_pdb  = split(//,$ali_pdb);
     my @ali_pfam = split(//,$ali_pfam);
     my @pfam_asq = split(//,$pfam_asq);
     my $x = $from_pdb-1;
+
+    # y (0..pfamalen-1) is the coord in the pfam alignment of the first aligned position
     my $n = 0;
-    
     my $y = 0;
     while ($n < $from_pfam-1) {
 	if ($pfam_asq[$y] =~ /^[\.\-]$/) { 
@@ -235,48 +259,48 @@ sub map_pdbsq {
 	    $n ++; $y ++;
  	}
     }
-    print "^^ x $x y $y\n";
+    print "1st in pdb $x | 1st in pfamali $y\n";
+    
     my $pos = 0;
     while ($pos < $alen) {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
 	my $pos_pfam = uc($ali_pfam[$pos]);
-	#printf("\n^^^^ pos $pos | $pos_pdb $pos_pfam | pfam $y %s\n", $pfam_asq[$y]);
 	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
-	    printf "# double gap at pos %d\n", $pos; 
+	    #printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
+	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
 	    }
 	    $y ++;	
 	}
 	elsif ($pos_pfam =~ /^[\.\-]$/)  { 
-	    printf "# pfam gap | move pdb $x $pos_pdb \n"; 
+	    #printf "# pfam gap | move pdb $x $pos_pdb \n"; 
 	    $x ++; 
 	}
 	elsif ($pos_pfam =~ /^$pos_pdb$/)  { 
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
 	    }
 	    $map_ref->[$x] = $y;  
-	    printf "# match $x $pos_pdb | %d $pos_pfam\n", $y; 
+	    #printf "# match $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++; 
 	}
 	else {
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
 	    }
 	    $map_ref->[$x] = $y;  
-	    printf "# mismach $x $pos_pdb | %d $pos_pfam\n", $y; 
+	    #printf "# mismach $x $pos_pdb | %d $pos_pfam\n", $y; 
 	    $x ++; $y ++;
 	}
 	$pos ++;
     }
-    
+
     return length($pfam_asq);
 }
 
@@ -290,17 +314,17 @@ sub alipos_isgap {
 }
 
 sub find_pdbsq_in_pfam {
-    my ($stofile, $chain, $pdbname, $pdbsq, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
+    my ($stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
  
     my $ali_pdb  = "";
     my $ali_pfam = "";
     my $from_pdb;
     my $from_pfam;
     my $pfam_asq = "";
-    my $eval = 1000;
+    my $eval = 1;
 
-    my $pfamname =  $$ret_pfamname;
-     if ($pfamname eq "") {    
+    my $pfamsqname =  $$ret_pfamsqname;
+     if ($pfamsqname eq "") {    
 	print "could not find $pdbname chain $chain in sto file... trying by homology\n";
     }
 
@@ -310,39 +334,38 @@ sub find_pdbsq_in_pfam {
     print F ">$pdbname\n$pdbsq\n";
     close(F);
      
-    my $hmm    = "$currdir/hmmfile";
-    my $hmmout = "$currdir/hmmout";
+    my $hmm       = "$currdir/hmmfile";
+    my $hmmout    = "$currdir/hmmout";
  
-    system("$hmmbuild             $hmm $pdbsqfile >  $hmmout\n");
-    system("$hmmersearch -E $eval $hmm $stofile   >  $hmmout\n");
-    system("/bin/echo $hmmersearch -E $eval --F1 10 --F2 10 --F3 10 $hmm $stofile   \n");
-    
+    system("$hmmbuild                       $hmm  $pdbsqfile   >  /dev/null\n");
+    system("$hmmersearch -E $eval           $hmm  $stofile     >  $hmmout\n");
+    system("/bin/echo $hmmersearch -E $eval $hmm  $stofile \n");
     #system("/usr/bin/more $hmmout\n");
 
     # take hit with best evalue
     my $pdbasq;
     my $asq;
-    parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
-    if ($pfamname eq "") { print "could not find best hit for chain $chain\n"; }
+    parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamsqname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
+    if ($pfamsqname eq "") { print "could not find best hit for chain $chain\n"; }
     
-    $pfam_asq = get_asq_from_sto($stofile, $pfamname, 0);
+    $pfam_asq = get_asq_from_sto($stofile, $pfamsqname, 0);
 
-    if ($pfamname ne "") {
-	print "^^>$pdbname\n$pdbsq\n";
-	print ">^^$pfamname\n$pfam_asq\n";
+    if ($pfamsqname ne "") {
+	printf "^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
+	print "^^>$pfamsqname\n$pfam_asq\n";
 	print "^^$ali_pdb\n";
 	print "^^$ali_pfam\n";
     }
     
-    $$ret_pfamname  = $pfamname;
-    $$ret_ali_pdb   = $ali_pdb;
-    $$ret_ali_pfam  = $ali_pfam;
-    $$ret_from_pdb  = $from_pdb;
-    $$ret_from_pfam = $from_pfam;
-    $$ret_pfam_asq  = $pfam_asq;
+    $$ret_pfamsqname = $pfamsqname;
+    $$ret_ali_pdb    = $ali_pdb;
+    $$ret_ali_pfam   = $ali_pfam;
+    $$ret_from_pdb   = $from_pdb;
+    $$ret_from_pfam  = $from_pfam;
+    $$ret_pfam_asq   = $pfam_asq;
 
     system("/bin/rm $pdbsqfile\n");
-    #system("/bin/rm $hmm\n");
+    system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
 
     return length($ali_pfam);
@@ -350,37 +373,31 @@ sub find_pdbsq_in_pfam {
 
     
 sub parse_hmmout_for_besthit {
-    my ($hmmout, $pdbname, $ret_pfamname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
+    my ($hmmout, $pdbname, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
 
-    my $from_pdb  = -1;
-    my $to_pdb    = -1;
-    my $from_pfam = -1;
-    my $to_pfam   = -1;
-    my $ali_pdb   = "";
-    my $ali_pfam  = "";
-    my $pfamname  = "";
+    my $from_pdb   = -1;
+    my $to_pdb     = -1;
+    my $from_pfam  = -1;
+    my $to_pfam    = -1;
+    my $ali_pdb    = "";
+    my $ali_pfam   = "";
+    my $pfamsqname = "";
 
     my $n = 0;
     open(HF, "$hmmout") || die;
     while(<HF>) {
 	if (/#/) {
 	}
-	elsif (/\>\>\s+(\S+)/ && $n == 0) {
-	    $pfamname = $1;
-	    $ali_pfam = "";
-	    $ali_pdb  = "";
-	    $from_pfam = 123456789;
-	    $from_pdb  = 123456789;
+	elsif (/\>\>\s+(\S+)\s*$/ && $n == 0) {
+	    $pfamsqname = $1;
+	    $ali_pfam   = "";
+	    $ali_pdb    = "";
+	    $from_pfam  = 123456789;
+	    $from_pdb   = 123456789;
 	    $n ++;
 	}
 	elsif (/\>\>\s+(\S+)/ && $n > 0) {
 	    last;
-	}
-	elsif ($n==1 && /^\s*$pfamname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
-	    my $i  = $1;
-	    $ali_pfam  .= $2;
-	    $to_pfam    = $3;
-	    $from_pfam  = ($i < $from_pfam)? $i:$from_pfam;
 	}
 	elsif ($n==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i     = $1;
@@ -388,14 +405,20 @@ sub parse_hmmout_for_besthit {
 	    $to_pdb   = $3;
 	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
 	}
+	elsif ($n==1 && /^\s*$pfamsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	    my $i       = $1;
+	    $ali_pfam  .= $2;
+	    $to_pfam    = $3;
+	    $from_pfam  = ($i < $from_pfam)? $i:$from_pfam;
+	}
     }
     close(HF);
-    
-    $$ret_from_pdb  = $from_pdb;
-    $$ret_from_pfam = $from_pfam;
-    $$ret_pfamname  = ($from_pfam<0)? "":$pfamname;
-    $$ret_ali_pdb   = $ali_pdb;
-    $$ret_ali_pfam  = $ali_pfam;
+
+    $$ret_from_pdb   = $from_pdb;
+    $$ret_from_pfam  = $from_pfam;
+    $$ret_pfamsqname = ($from_pfam<0)? "":$pfamsqname;
+    $$ret_ali_pdb    = $ali_pdb;
+    $$ret_ali_pfam   = $ali_pfam;
 }
 
 sub coordtrans_seq2asq{
@@ -472,38 +495,60 @@ sub get_asq_from_sto {
 
     return substr($asq, $from);
 }
+sub get_first_asq_from_sto {
+    my ($stofile, $from) = @_;
+    my $asq = "";
+
+    my $afafile = "$stofile";
+    if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
+    elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
+    if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
+
+    my $n = 0;
+    open(AFA, "$afafile") || die;
+    while(<AFA>) {
+	if (/^\>(\S+)/) {
+	    $n ++;
+	}
+	elsif ($n == 1 && /^\>/) {
+	    last;
+	}       
+	elsif ($n == 1 && /^(\S+)$/) {
+	    $asq .= $1;
+	}
+     }
+    close(AFA);
+    
+
+    return substr($asq, $from);
+}
 
 
 sub parse_pdb_contact_map {
-    my ($pdbfile, $stofile, $chain, $sq, $which, $maxD, $minL) = @_;
+    my ($pdbfile, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL) = @_;
 
-    my $len = length($sq);
-    my @sq = split(//,$sq);
+    my $len  = length($chsq);
+    my @chsq = split(//,$chsq);
     
-    #printf      "# maxD  $maxD\n";
-    #printf      "# minL  $minL\n";
     printf COR  "# maxD  $maxD\n";
     printf COR  "# minL  $minL\n";
     printf MAP  "# maxD  $maxD\n";
     printf MAP  "# minL  $minL\n";
-    if ($mapfile)  { 
-	print MAPF  "# maxD  $maxD\n";
-	print MAPF  "# minL  $minL\n";
-    }
     printf MAP0 "# maxD  $maxD\n";
     printf MAP0 "# minL  $minL\n";
     printf MAP1 "# maxD  $maxD\n";
     printf MAP1 "# minL  $minL\n";
-
+    
     my @map = (); # map sq to the sequence in the alignment  
-    my $alen = map_pdbsq($stofile, $pdbname, $chain, $sq, \@map);
+    my $alen = map_pdbsq($stofile, $pdbname, $chain, $chsq, \@map);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map[$x]+1;
     }
- 
-    my $nct = 0;
-    my $nc = 0;
+
+    my $ncnt = 0; # the contact for this chain
+    my @cnt;
+    
     my $nat1;
     my $nat2;
     my $coor1;
@@ -525,10 +570,12 @@ sub parse_pdb_contact_map {
     if ($atom_offset < 0) { print "could not find atom offset\n"; die; }
     print "#atom offset $atom_offset chain $chain\n";
 
+    my $nres; #residues annotated
     my @res;
-    get_atoms_coord($pdbfile, $atom_offset, \@sq, $len, $chain, \@res);
- 
-    for ($l1 = 0; $l1 < $len; $l1 ++) {
+    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \$nres, \@res);
+    print "# calculate distances\n";
+    
+    for ($l1 = 0; $l1 < $nres; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
 	$coor1 = $res[$l1]->{"RES::coor"};
 	$char1 = $res[$l1]->{"RES::char"};
@@ -537,11 +584,15 @@ sub parse_pdb_contact_map {
 	@y1    = @{$res[$l1]->{"RES::y"}};
 	@z1    = @{$res[$l1]->{"RES::z"}};
 
-	if (aa_conversion($char1) ne $sq[$l1]) {
-	    printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $sq[$coor1]\n", 
-	    ($l1+1), $len, $coor1+1, $len+$atom_offset, aa_conversion($char1); die; }
+	printf "%s", $char1;
+	
+	if ($char1 ne $chsq[$l1]) {
+	    #printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor1]\n", 
+	    #($l1+1), $len, $coor1+1, $len+$atom_offset-1, $char1; 
+	    #die;
+	}
        
-	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
+	for ($l2 = $l1+1; $l2 < $nres; $l2 ++) {
 	    $nat2  = $res[$l2]->{"RES::nat"};
 	    $coor2 = $res[$l2]->{"RES::coor"};
 	    $char2 = $res[$l2]->{"RES::char"};
@@ -550,39 +601,221 @@ sub parse_pdb_contact_map {
 	    @y2    = @{$res[$l2]->{"RES::y"}};
 	    @z2    = @{$res[$l2]->{"RES::z"}};
 
-	    if (aa_conversion($char2) ne $sq[$l2]) {
-		printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $sq[$coor2]\n", 
-		($l2+1), $len, $coor2+1, $len+$atom_offset, aa_conversion($char2); die; }
+	    #if ($char2 ne $chsq[$l2]) {
+	#	printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
+	#	($l2+1), $len, $coor2+1, $len+$atom_offset-1, $char2; 
+	#	#die; 
+	 #   }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
 
 	    if ($distance > 0) {
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
-		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance;
-		    $nct ++;
-		    
+		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance;
+
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
-			$nc ++;
-			printf      "%d %d %s | %d %d %s | %.2f\n", $l1+1, $map[$l1]+1, $sq[$l1], $l2+1, $map[$l2]+1, $sq[$l2], $distance;
-			if ($mapfile) {
-			    printf MAPF  "%d %s %d %s %.2f\n", $map[$l1]+1, $sq[$l1], $map[$l2]+1, $sq[$l2], $distance; 
-			}
-			printf MAP  "%d %s %d %s %.2f\n", $map[$l1]+1, $sq[$l1], $map[$l2]+1, $sq[$l2], $distance; 
-			printf MAP1 "%d %s %d %s %.2f\n", $l1+1, $sq[$l1], $l2+1, $sq[$l2], $distance; 
+			
+			$cnt[$ncnt] = CNT->new();
+			$cnt[$ncnt]->{"CNT::i"}        = $l1+1;
+			$cnt[$ncnt]->{"CNT::j"}        = $l2+1;
+			$cnt[$ncnt]->{"CNT::posi"}     = $map[$l1]+1;
+			$cnt[$ncnt]->{"CNT::posj"}     = $map[$l2]+1;
+			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
+			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
+			$cnt[$ncnt]->{"CNT::bptype"}   = "BPCONTACT";
+			$cnt[$ncnt]->{"CNT::distance"} = $distance;
+			
+			$ncnt ++;
 		    }
 		}
 	    }
 	}
     }
-    #print      "\# contacts: $nc\n";
-    print MAP  "\# contacts: $nc\n";
-    if ($mapfile) {
-	print MAP  "\# contacts: $nc\n";
+    print "# end calculate distances\n";
+
+    ## If RNA, run rnaview to extract the bptypes
+    if ($dornaview) { run_rnaview($pdbfile, $stofile, $pdbname, $chain, \$ncnt, \@cnt); }
+    
+    # add all contacts from this chain to the list of total contacts if new
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
     }
-    print MAP0 "\# contacts: $nct\n";
-    print MAP1 "\# contacts: $nc\n";
+    
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	
+	printf      "%d %d %s | %d %d %s | %s | %.2f \n", 
+	$cnt[$c]->{"CNT::i"}, $cnt[$c]->{"CNT::posi"}, $cnt[$c]->{"CNT::chri"}, 
+	$cnt[$c]->{"CNT::j"}, $cnt[$c]->{"CNT::posj"}, $cnt[$c]->{"CNT::chrj"}, 
+	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
+	
+	printf MAP  "%d %s %d %s %s %.2f\n",
+	$cnt[$c]->{"CNT::posi"}, $cnt[$c]->{"CNT::chri"}, 
+	$cnt[$c]->{"CNT::posj"}, $cnt[$c]->{"CNT::chrj"}, 
+	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
+	
+	printf MAP1 "%d %s %d %s %s %.2f\n", 
+	$cnt[$c]->{"CNT::i"}, $cnt[$c]->{"CNT::chri"}, 
+	$cnt[$c]->{"CNT::j"}, $cnt[$c]->{"CNT::chrj"}, 
+	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
+	
+   }
+    
+    print      "\# contacts: $ncnt total $$ret_ncnt_t\n";
+    print MAP0 "\# contacts: $ncnt\n";
+    print MAP  "\# contacts: $ncnt\n";
+    print MAP1 "\# contacts: $ncnt\n";
 
     return $alen;
+	}
+
+sub addcontact {
+    my ($ret_ncnt, $cnt_ref, $new_ref) = @_;
+
+    my $ncnt = $$ret_ncnt;
+
+    my $i        = $new_ref->{"CNT::i"};
+    my $j        = $new_ref->{"CNT::j"};
+    my $posi     = $new_ref->{"CNT::posi"};
+    my $posj     = $new_ref->{"CNT::posj"};
+    my $chri     = $new_ref->{"CNT::chri"};
+    my $chrj     = $new_ref->{"CNT::chrj"};
+    my $bptype   = $new_ref->{"CNT::bptype"};
+    my $distance = $new_ref->{"CNT::distance"};
+
+    my $c;
+    for ($c = 0; $c < $ncnt; $c ++) {
+	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) { last; }
+    }
+
+    if ($c == $ncnt) {
+	$cnt_ref->[$ncnt] = CNT->new();
+	$cnt_ref->[$ncnt]->{"CNT::i"}        = $i;
+	$cnt_ref->[$ncnt]->{"CNT::j"}        = $j;
+	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
+	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
+	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
+	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
+	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
+	$cnt_ref->[$ncnt]->{"CNT::distance"} = $distance;
+	$$ret_ncnt ++;
+    }
+
+}
+
+ sub print_allcontacts {
+    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL) = @_;
+    
+    if ($file =~ //) { return; }
+
+    my $nbp = 0;
+    my $nwc = 0;
+    open(FILE,  ">$mapallfile")  || die;
+    print FILE  "# PDB   $pdbname\n"; 
+    print FILE  "# MSA   $pfamname\n"; 
+    print FILE  "# maxD  $maxD\n";
+    print FILE  "# minL  $minL\n";
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWt$/) { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HH/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^SS/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WH/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WS/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HS/)   { $nbp ++; }
+	
+	printf FILE  "%d\t%s\t%d\t%s\t%s\t%.2f\n", 
+	$cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
+	$cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
+	$cnt_ref->[$c]->{"CNT::bptype"}, 
+	$cnt_ref->[$c]->{"CNT::distance"}; 
+    }
+    print FILE  "\# contacts: $ncnt\n";
+    print FILE  "\# bpairs:   $nbp\n";
+    print FILE  "\# wc:       $nwc\n";
+    
+    close (FILE);   
+}
+
+sub run_rnaview {
+    my ($pdbfile, $stofile, $pdbname, $chain, $ret_ncnt, $cnt_ref) = @_;
+
+    my $ncnt = $$ret_ncnt;
+    my $rnaviewfile = "rnaviewf";
+    my $sq;
+    my @map = (); # map sq to the sequence in the alignment
+    my @atom2sq;
+
+    system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
+    system("/usr/bin/more $rnaviewfile\n");
+
+    open(RF, "$rnaviewfile") || die;
+    while(<RF>) {
+	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
+	    $sq = $1;
+	    my $alen = map_pdbsq($stofile, $pdbname, $chain, $sq, \@map);
+	    if ($alen == 0) { return; } # cannot find this chain in the msa
+	}
+	elsif (/\#\s+seq_$chain\s+(\d.+)\s*$/) {
+	    @atom2sq = split(/ /, $1);
+	}
+	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
+	    my $posi   = $map[$atom2sq[$1]-1]+1;
+	    my $posj   = $map[$2-1]+1;
+	    my $chri   = aa_conversion($3);
+	    my $chrj   = aa_conversion($4);
+ 	    my $bptype = $5;
+
+	    if ($posi > 0 && $posj > 0) {
+		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
+	    }
+	}
+    }
+    close(RF);   
+    
+    system("/bin/rm $rnaviewfile\n");
+
+    $$ret_ncnt = $ncnt;
+}
+
+sub rnaview2list {
+    my ($posi, $chri, $posj, $chrj, $bptype, $ret_ncnt, $cnt_ref) = @_;
+
+    my $ncnt = $$ret_ncnt;
+    my $found = 0;
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && 
+	    $posj == $cnt_ref->[$c]->{"CNT::posj"} ) {
+	    if ($chri =~ /^$cnt_ref->[$c]->{"CNT::chri"}$/ &&
+		$chrj =~ /^$cnt_ref->[$c]->{"CNT::chrj"}$/ ) {
+		$found = 1;
+		$cnt_ref->[$c]->{"CNT::bptype"} = $bptype;
+	    }
+	    else { 
+		printf "i %d %s %s\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"} ; 
+		printf "j %d %s %s\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"} ; 
+		print "bad rnaview correspondence\n"; 
+		die; 
+	    }
+	}
+	if ($found == 1) { last; }
+    }
+
+    if ($found == 0) {
+	printf "i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
+	printf "new bpair\n"; 
+	
+	$cnt_ref->[$ncnt] = CNT->new();
+	$cnt_ref->[$ncnt]->{"CNT::i"}        = 0;
+	$cnt_ref->[$ncnt]->{"CNT::j"}        = 0;
+	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
+	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
+	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
+	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
+	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
+	$cnt_ref->[$ncnt]->{"CNT::distance"} = 0;
+	$$ret_ncnt ++;
+    }
+
 }
 
 sub atom_offset {
@@ -635,119 +868,151 @@ sub aa_conversion {
     my ($aa) = @_;
     my $new;
 
-    if ($aa =~ /^\S$/) { return $aa; } # DNA/RNA
+    my $AA = uc($aa);
     
-    if    ($aa =~ /^ALA$/)  { $new = "A"; }
-    elsif ($aa =~ /^CYS$/)  { $new = "C"; }
-    elsif ($aa =~ /^ASP$/)  { $new = "D"; }
-    elsif ($aa =~ /^GLU$/)  { $new = "E"; }
-    elsif ($aa =~ /^BGLU$/) { $new = "E"; }
-    elsif ($aa =~ /^PHE$/)  { $new = "F"; }
-    elsif ($aa =~ /^GLY$/)  { $new = "G"; }
-    elsif ($aa =~ /^HIS$/)  { $new = "H"; }
-    elsif ($aa =~ /^ILE$/)  { $new = "I"; }
-    elsif ($aa =~ /^LYS$/)  { $new = "K"; }
-    elsif ($aa =~ /^LEU$/)  { $new = "L"; }
-    elsif ($aa =~ /^MET$/)  { $new = "M"; }
-    elsif ($aa =~ /^BMET$/) { $new = "M"; }
-    elsif ($aa =~ /^MSE$/)  { $new = "M"; } #selenomethionine is incorporated as methionine
-    elsif ($aa =~ /^ASN$/)  { $new = "N"; }
-    elsif ($aa =~ /^PRO$/)  { $new = "P"; }
-    elsif ($aa =~ /^GLN$/)  { $new = "Q"; }
-    elsif ($aa =~ /^ARG$/)  { $new = "R"; }
-    elsif ($aa =~ /^SER$/)  { $new = "S"; }
-    elsif ($aa =~ /^SEP$/)  { $new = "S"; } # phosphoseronine
-    elsif ($aa =~ /^THR$/)  { $new = "T"; }
-    elsif ($aa =~ /^TPO$/)  { $new = "T"; } # phosphothereonine
-    elsif ($aa =~ /^VAL$/)  { $new = "V"; }
-    elsif ($aa =~ /^TRP$/)  { $new = "W"; }
-    elsif ($aa =~ /^TYR$/)  { $new = "Y"; }
-    elsif ($aa =~ /^DA$/)   { $new = "A"; }
-    elsif ($aa =~ /^DC$/)   { $new = "C"; }
-    elsif ($aa =~ /^DG$/)   { $new = "G"; }
-    elsif ($aa =~ /^DT$/)   { $new = "T"; }
-    elsif ($aa =~ /^A$/)    { $new = "A"; }
-    elsif ($aa =~ /^C$/)    { $new = "C"; }
-    elsif ($aa =~ /^G$/)    { $new = "G"; }
-    elsif ($aa =~ /^T$/)    { $new = "T"; }
-    elsif ($aa =~ /^U$/)    { $new = "U"; }
+    if    ($AA =~ /^ALA$/)  { $new = "A"; }
+    elsif ($AA =~ /^CYS$/)  { $new = "C"; }
+    elsif ($AA =~ /^ASP$/)  { $new = "D"; }
+    elsif ($AA =~ /^GLU$/)  { $new = "E"; }
+    elsif ($AA =~ /^BGLU$/) { $new = "E"; }
+    elsif ($AA =~ /^PHE$/)  { $new = "F"; }
+    elsif ($AA =~ /^GLY$/)  { $new = "G"; }
+    elsif ($AA =~ /^HIS$/)  { $new = "H"; }
+    elsif ($AA =~ /^ILE$/)  { $new = "I"; }
+    elsif ($AA =~ /^LYS$/)  { $new = "K"; }
+    elsif ($AA =~ /^LEU$/)  { $new = "L"; }
+    elsif ($AA =~ /^MET$/)  { $new = "M"; }
+    elsif ($AA =~ /^BMET$/) { $new = "M"; }
+    elsif ($AA =~ /^MSE$/)  { $new = "M"; } #selenomethionine is incorporated as methionine
+    elsif ($AA =~ /^ASN$/)  { $new = "N"; }
+    elsif ($AA =~ /^PRO$/)  { $new = "P"; }
+    elsif ($AA =~ /^GLN$/)  { $new = "Q"; }
+    elsif ($AA =~ /^ARG$/)  { $new = "R"; }
+    elsif ($AA =~ /^SER$/)  { $new = "S"; }
+    elsif ($AA =~ /^SEP$/)  { $new = "S"; } # phosphoseronine
+    elsif ($AA =~ /^THR$/)  { $new = "T"; }
+    elsif ($AA =~ /^TPO$/)  { $new = "T"; } # phosphothereonine
+    elsif ($AA =~ /^VAL$/)  { $new = "V"; }
+    elsif ($AA =~ /^TRP$/)  { $new = "W"; }
+    elsif ($AA =~ /^TYR$/)  { $new = "Y"; }
+    elsif ($AA =~ /^DA$/)   { $new = "A"; }
+    elsif ($AA =~ /^DC$/)   { $new = "C"; }
+    elsif ($AA =~ /^DG$/)   { $new = "G"; }
+    elsif ($AA =~ /^DT$/)   { $new = "T"; }
+    elsif ($AA =~ /^A$/)    { $new = "A"; }
+    elsif ($AA =~ /^I$/)    { $new = "A"; }
+    elsif ($AA =~ /^C$/)    { $new = "C"; }
+    elsif ($AA =~ /^G$/)    { $new = "G"; }
+    elsif ($AA =~ /^T$/)    { $new = "T"; }
+    elsif ($AA =~ /^U$/)    { $new = "U"; }
+    elsif ($AA =~ /^P$/)    { $new = "U"; }
     # modified residues
-    elsif ($aa =~ /^1MA$/)  { $new = "A"; }
-    elsif ($aa =~ /^12A$/)  { $new = "A"; }
-    elsif ($aa =~ /^5MC$/)  { $new = "C"; }
-    elsif ($aa =~ /^CCC$/)  { $new = "C"; }
-    elsif ($aa =~ /^GDP$/)  { $new = "G"; }
-    elsif ($aa =~ /^GTP$/)  { $new = "G"; }
-    elsif ($aa =~ /^2MG$/)  { $new = "G"; }
-    elsif ($aa =~ /^7MG$/)  { $new = "G"; }
-    elsif ($aa =~ /^H2U$/)  { $new = "U"; }
-    elsif ($aa =~ /^UMP$/)  { $new = "U"; }
-    elsif ($aa =~ /^PSU$/)  { $new = "U"; }
-    elsif ($aa =~ /^2MU$/)  { $new = "U"; }
-    elsif ($aa =~ /^70U$/)  { $new = "U"; }
-    elsif ($aa =~ /^AH2U$/) { $new = "U"; }
-    elsif ($aa =~ /^BH2U$/) { $new = "U"; }
-    else { print "aa_conversion(): uh? $aa\n"; die; }
+    elsif ($AA =~ /^1MA$/)  { $new = "A"; }
+    elsif ($AA =~ /^12A$/)  { $new = "A"; }
+    elsif ($AA =~ /^5MC$/)  { $new = "C"; }
+    elsif ($AA =~ /^CCC$/)  { $new = "C"; }
+    elsif ($AA =~ /^OMC$/)  { $new = "C"; }
+    elsif ($AA =~ /^M2G$/)  { $new = "G"; }
+    elsif ($AA =~ /^OMG$/)  { $new = "G"; }
+    elsif ($AA =~ /^YYG$/)  { $new = "G"; }
+    elsif ($AA =~ /^GDP$/)  { $new = "G"; }
+    elsif ($AA =~ /^GTP$/)  { $new = "G"; }
+    elsif ($AA =~ /^2MG$/)  { $new = "G"; }
+    elsif ($AA =~ /^7MG$/)  { $new = "G"; }
+    elsif ($AA =~ /^H2U$/)  { $new = "U"; }
+    elsif ($AA =~ /^UMP$/)  { $new = "U"; }
+    elsif ($AA =~ /^PSU$/)  { $new = "U"; }
+    elsif ($AA =~ /^2MU$/)  { $new = "U"; }
+    elsif ($AA =~ /^70U$/)  { $new = "U"; }
+    elsif ($AA =~ /^5MU$/)  { $new = "U"; }
+    elsif ($AA =~ /^AH2U$/) { $new = "U"; }
+    elsif ($AA =~ /^BH2U$/) { $new = "U"; }
+    else { print "aa_conversion(): uh? |$AA|\n"; die; }
 
     return $new;
 }
 
 
 sub get_atoms_coord {
-    my ($pdbfile, $atom_offset, $pdbsq_ref, $len, $chain, $res_ref) = @_;
+    my ($pdbfile, $atom_offset, $pdbsq_ref, $len, $chain, $ret_nres, $res_ref) = @_;
 
-    my $nat = 0;
     my $type;
-    my $char = "9";
+    my $char;
+    my $nat;
     my $coor;
     my $x;
     my $y;
     my $z;
     my $l;
-
+    my $nres = 0;
+    my $recording = 0;
+    
     for ($l = 0; $l < $len; $l ++) {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
 	$res_ref->[$l]->{"RES::coor"} = $l+$atom_offset-1;
-	$res_ref->[$l]->{"RES::char"} = "$pdbsq_ref->[$l]";
+	$res_ref->[$l]->{"RES::char"} = aa_conversion($pdbsq_ref->[$l]);
     }
-
+    
+    # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
+    #
+    #
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (  /^HETATM\s+\d+\s+(\S+)\s+HOH\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  ||
-	    /^HETATM\s+\d+\s+MN\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/   ) {
-	}
-	elsif (  /^ATOM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  || 
-		 /^ATOM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/ ||
-	    /^HETATM\s+\d+\s+(\S+)\s+(\S+)\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/  ||
-	    /^HETATM\s+\d+\s+(\S{3})(\S{4})\s+$chain\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+/   ) {
+	my $line = $_;
 
-	    $type  = $1;
-	    $char  = $2;
-	    $l     = $3-$atom_offset;
-	    $x     = $4;
-	    $y     = $5;
-	    $z     = $6;
+	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
+	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom = $1; }
+	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial = $1; }
+	    my $atomname = substr($line, 12, 4); if ($atomname =~ /^\s*(\S+)\s*$/) { $atomname = $1; }
+	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc = $1; }
+	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname = aa_conversion($1); }
+	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid = $1; }
+	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos = $1; }
+	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode = $1; }
+	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x = $1; }
+	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y = $1; }
+	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z = $1; }
+
+	    # Look for the target chain
+	    if ($chainid ne $chain) { next; }
 	    
-	    if ($l >= 0 && $l < $len) {
-		$nat = $res_ref->[$l]->{"RES::nat"};	    
-		${$res_ref->[$l]->{"RES::type"}}[$nat] = $type;
-		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-		${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-		${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-		$res_ref->[$l]->{"RES::char"}          = $char;
-		$res_ref->[$l]->{"RES::nat"} ++;
+	    # Ignore HOH WAT MN atoms
+	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
+	    
+	    # An atom to record
+	    $recording = 1;
+	    
+	    $l = $respos-$atom_offset;	 
+	    printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n", 
+	    $l+1;
+	    if ($l < 0)     { print "bad lenght\n"; die; }
+ 	    if ($l >= $len) { print "too long?\n";  die; }
+
+	    $nat = $res_ref->[$l]->{"RES::nat"};
+	    if ($res_ref->[$l]->{"RES::char"} ne $resname) {
+		printf "residue %d (%d%s) is %s but should be %s\n", $l+1, $respos, $icode, $resname, $res_ref->[$l]->{"RES::char"}; 
+		die; 
 	    }
+	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atom;
+	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+	    $res_ref->[$l]->{"RES::nat"} ++;
 	}
-    }
+	# How to terminate chain
+	elsif ($recording && $line =~ /TER/) { last; }
+   }
     close(FILE);
+
+    $$ret_nres = $l+1;
     
-    for ($l = 0; $l < $len; $l ++) {
+    for ($l = 0; $l < $$ret_nres; $l ++) {
 	$nat  = $res_ref->[$l]->{"RES::nat"};	    
 	$coor = $res_ref->[$l]->{"RES::coor"};	    
 	$char = $res_ref->[$l]->{"RES::char"};	    
 	if ($nat == 0) { print "#res $l has not atoms\n"; }
-	if (1) { printf "res %d coor %d char %s nat %d\n", $l, $coor, $char, $nat; }
+	if (0) { printf "res %d coor %d char %s nat %d\n", $l, $coor, $char, $nat; }
     }
 }
 

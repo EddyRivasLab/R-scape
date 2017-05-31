@@ -36,6 +36,8 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
+#define ALLCONTACTS 0 // TRUE if want to use all contacts as "positive test set"
+
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *surv);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
@@ -327,7 +329,11 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
  
       /* add to the histogram of base pairs (hb) and not bps (ht) */
       if (data->mode == GIVSS || data->mode == CYKSS) {
-	if (CMAP_IsContactLocal(i+1,j+1,data->clist)) 
+#if ALLCONTACTS
+	if (CMAP_IsContactLocal(i+1,j+1,data->clist))
+#else
+	if (CMAP_IsBPLocal(i+1,j+1,data->clist))
+#endif
 	  esl_histogram_Add(ranklist->hb, add);
 	else 
 	  esl_histogram_Add(ranklist->ht, add);
@@ -412,8 +418,8 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
   double           cov;
   double           E;
   int              L = mi->alen;
-  int              is_pair;
   int              is_contact;
+  int              is_bp;
   int              i, j;
   int              b;
   int              fp, tf, t, f, neg;
@@ -427,8 +433,12 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
       cov = mtx->mx[i][j];
       
       is_contact = CMAP_IsContactLocal(i, j, data->clist);
-      is_pair    = (data->ct[i+1] == j+1)? TRUE : FALSE;     
+      is_bp      = CMAP_IsBPLocal(i, j, data->clist);
+#if ALLCONTACTS
       if (is_contact) eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+#else
+      if (is_bp)      eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+#endif
       else            eval->mx[i][j] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
     }    
   
@@ -455,11 +465,15 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 	cov = mtx->mx[i][j];
 	E   = eval->mx[i][j];
 	
-	is_pair    = (data->ct[i+1] == j+1)? TRUE : FALSE;
 	is_contact = CMAP_IsContactLocal(i, j, data->clist);
+	is_bp      = CMAP_IsBPLocal(i, j, data->clist);
 	
 	if (E <= target_eval)    f  ++;
+#if ALLCONTACTS
 	if (is_contact)        { t  ++;
+#else
+	if (is_bp)             { t  ++;
+#endif
 	  if (E <= target_eval)  tf ++;
 	}	
       }    
@@ -606,8 +620,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   double    cov;
   double    eval;
   double    tol = 0.01;
-  int       is_contact;
-  int       is_bpair;
+  BPTYPE    bptype;
   int       is_compatible;
   int       alloc_nhit = 5;
   int       bin;
@@ -639,15 +652,20 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	  msa2pdb[j]-msa2pdb[i] < data->clist->mind) continue;
 
       is_compatible = FALSE;
-      is_contact    = CMAP_IsContactLocal(i+1, j+1, data->clist);
-      is_bpair      = CMAP_IsBPLocal(i+1, j+1, data->clist);
-
-      if (data->hasss && data->ct[i+1] == 0 && data->ct[j+1] == 0) is_compatible = TRUE;
+      bptype        = CMAP_GetBPTYPE(i+1, j+1, data->clist);
+     
+      if (data->hasss && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
+	is_compatible = TRUE;
+      }
     
       cov = mi->COV->mx[i][j];
       if (data->ranklist_null == NULL) eval = h+1;
       else {
-	if (is_contact)
+#if ALLCONTACTS
+	if (bptype < BPNONE)
+#else
+	if (bptype < STACKED)
+#endif
 	  eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
 	else 
 	  eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
@@ -665,8 +683,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].j             = j;
 	hitlist->hit[h].sc            = cov;
 	hitlist->hit[h].Eval          = eval;
-	hitlist->hit[h].is_contact    = is_contact;
-	hitlist->hit[h].is_bpair      = is_bpair;
+	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
       }
@@ -674,10 +691,19 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   nhit = h;
   hitlist->nhit = nhit;
 
+#if ALLCONTACTS
   t = data->clist->ncnt;
+#else
+  t = data->clist->nbps;
+#endif
   for (h = 0; h < nhit; h ++) {
     f ++;
-    if (hitlist->hit[h].is_contact) tf ++;
+    
+#if ALLCONTACTS
+    if (hitlist->hit[h].bptype < BPNONE) tf ++;
+#else
+    if (hitlist->hit[h].bptype < STACKED) tf ++;
+#endif
   } 
   fp = f - tf;
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
@@ -735,11 +761,19 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
     
-    if (hitlist->hit[h].is_bpair)      { 
+    if (hitlist->hit[h].bptype == WWc)      { 
       fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
-    else if (hitlist->hit[h].is_contact)      { 
+    else if (hitlist->hit[h].bptype < STACKED) { 
+      fprintf(fp, "**\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+    else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) { 
+      fprintf(fp, "c~\t%10d\t%10d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+    }
+   else if (hitlist->hit[h].bptype < BPNONE) { 
       fprintf(fp, "c\t%10d\t%10d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
@@ -811,11 +845,19 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
     ih = hitlist->srthit[h]->i;
     jh = hitlist->srthit[h]->j;
     
-    if (hitlist->srthit[h]->is_bpair)      { 
+    if (hitlist->srthit[h]->bptype == WWc) { 
       fprintf(fp, "*\t%8d\t%8d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
-    else if (hitlist->srthit[h]->is_contact)      { 
+    else if (hitlist->srthit[h]->bptype < STACKED) { 
+      fprintf(fp, "**\t%8d\t%8d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }
+    else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) { 
+      fprintf(fp, "c~\t%8d\t%8d\t%.2f\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+    }
+    else if (hitlist->srthit[h]->bptype < BPNONE) { 
       fprintf(fp, "c\t%8d\t%8d\t%.2f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
@@ -1641,7 +1683,11 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   // the covarying basepairs
   isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-    if (hitlist->hit[h].is_contact) { isempty = FALSE; break; }
+#if ALLCONTACTS
+    if (hitlist->hit[h].bptype < BPNONE)  { isempty = FALSE; break; }
+#else
+    if (hitlist->hit[h].bptype < STACKED) { isempty = FALSE; break; }
+#endif
   }
 
   if (!isempty) {
@@ -1651,7 +1697,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     for (h = 0; h < hitlist->nhit; h ++) {
       ih = hitlist->hit[h].i;
       jh = hitlist->hit[h].j;
-      if (hitlist->hit[h].is_contact) {
+      if (hitlist->hit[h].bptype < BPNONE) {
 	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
 	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
       }	
@@ -1683,7 +1729,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   // covarying pairs incompatible with the given structure
   isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-    if (!hitlist->hit[h].is_contact && !hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
+    if (!hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
   }
 
   if (!isempty) {
@@ -1693,7 +1739,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     for (h = 0; h < hitlist->nhit; h ++) {
       ih = hitlist->hit[h].i;
       jh = hitlist->hit[h].j;
-      if (!hitlist->hit[h].is_contact && !hitlist->hit[h].is_compatible) {
+      if (!hitlist->hit[h].is_compatible) {
 	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
 	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
       }
@@ -1782,7 +1828,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
       ih = hitlist->hit[h].i+1;
       jh = hitlist->hit[h].j+1;
       
-      if ((i == ih || i == jh) && hitlist->hit[h].is_bpair) { 
+      if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc) { 
 	esl_sprintf(&tok, "2"); 
 	found = TRUE; 
       }
@@ -2044,7 +2090,6 @@ cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf
 
 	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
 	  { // add this pair
-	    //printf("%c %c | %d %d %d\n", cons[i], cons[j], i, j, d);
 	    ct[i+1] = j+1;
 	    ct[j+1] = i+1;
 	  }	

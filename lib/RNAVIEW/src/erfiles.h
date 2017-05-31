@@ -37,16 +37,14 @@ typedef struct pair_s {
 typedef struct list_s{
   int      alloc_np;
   int      np;
-  double   maxD;
-  int      mind; // min(j-i+1)
   
   PAIR    *pair;
 } LIST;
 
-extern int er_PrintSeqs(long **chain_idx,long nchain, long num_residue, char *bseq, long **seidx, char *ChainID, long *ResSeq, char *errbuf);
-extern int er_Contacts(long num_residue, char *bseq, long **seidx, long *RY, char **AtomName,
-		       char **ResName, char *ChainID, long *ResSeq,char **Miscs, double **xyz);
-
+extern long  er_ChainFrom(char chid, long nchain, char *ChainID, long **chain_idx, long *ResSeq, long **seidx);
+extern int   er_PDB_GetSeq(char *pdffile, char *chainname, int from, int to, char **ret_sq, int **ret_ismissing, char *errbuf);
+extern int   er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName, long *ResSeq,
+			       char **AtomName, char **Miscs,double **xyz, char *errbuf);
 extern LIST *er_CreateList(int alloc_np);
 extern void  er_FreeList(LIST *list);
 extern int   er_ListDump(FILE *fp, LIST *list);

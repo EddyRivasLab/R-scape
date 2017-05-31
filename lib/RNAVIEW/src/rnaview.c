@@ -38,8 +38,7 @@ int main(int argc, char *argv[])
 
   if(argc<=1 || (argc==2 && strstr(argv[1], "-h")))
     usage();
-  
-  if( (strstr(argv[1], "a") || strstr(argv[1], "A")) && argv[1][0] == '-' ){
+if( (strstr(argv[1], "a") || strstr(argv[1], "A")) && argv[1][0] == '-' ){
     //printf("Processing a file list containing all the PDB files\n");
     process_multiple_file(argc, argv); 
   }else{
@@ -563,11 +562,12 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 /* do all sorts of calculations */
 {
   char outfile[BUF512];
-  char HB_ATOM[BUF512], ALT_LIST[BUF512], user_chain[20];
+  char HB_ATOM[BUF512], ALT_LIST[BUF512];
+  char *user_chain = NULL;
   char *ChainID, *bseq, **AtomName, **ResName, **Miscs;
   long i, j, k,m,n, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
   long *ResSeq, *RY, **seidx, num_modify, *modify_idx;
-  long **chain_idx,nchain;
+  long **chain_idx, nchain;
   double HB_UPPER[2], **xyz;
   static long base_all;    
   FILE *fout;
@@ -605,21 +605,29 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   */
   seidx = residue_idx(num, ResSeq, Miscs, ChainID, ResName, &num_residue);
   
-  if(CHAIN==1){ 
-    strcpy(user_chain, ARGV[2]);
+  if (CHAIN == 1){
+    esl_sprintf(&user_chain, ARGV[2]);
     upperstr(user_chain);
-    }
+  }
+  
+  if (er_PrintChainSeqs(pdbfile, user_chain, ChainID, num_residue, seidx, ResName, ResSeq, AtomName, Miscs, xyz, errbuf) != eslOK) {
+    printf("%s\n", errbuf);
+    exit(1);
+  }
   
   /* Below is only for nucleic acids ie RY >= 0*/  
   bs_atoms = 0;
-  for(i = 1; i <= num_residue; i++){
+   for (i = 1; i <= num_residue; i++){
     ib = seidx[i][1];
     ie = seidx[i][2];
     dna_rna = residue_ident(AtomName, xyz, ib, ie);
-       
+    
+    //if (dna_rna < 0) printf("   removing chain %c residue %ld %s (%ld-%ld atoms)\n", ChainID[ib], i, ResName[ib], ib, ie);
+    
     if (dna_rna >= 0){         
-      for(j = seidx[i][1]; j <= seidx[i][2]; j++){
-	if(CHAIN==0){ 
+      
+      for (j = seidx[i][1]; j <= seidx[i][2]; j++){
+	if (CHAIN == 0) { 
 	  bs_atoms++;
 	  if (bs_atoms != j) { // ER: copying a string to itself causes problems in some OS
 	    strcpy(AtomName[bs_atoms], AtomName[j]);
@@ -630,8 +638,9 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	  for(k = 0 ; k <=NMISC; k++)
 	    Miscs[bs_atoms][k] = Miscs[j][k];
 	  for(k = 1 ; k <=3; k++)
-                        xyz[bs_atoms][k] = xyz[j][k];
-	}else{ /* user select chainiD */
+	    xyz[bs_atoms][k] = xyz[j][k];
+	}
+	else { /* user select chainiD */
 	  if(!strchr(user_chain, toupper(ChainID[j]) ) )continue;
 	  bs_atoms++;
 	  if (bs_atoms != j) {  // ER: copying a string to itself causes problems in some OS
@@ -645,7 +654,6 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	  for(k = 1 ; k <=3; k++)
 	    xyz[bs_atoms][k] = xyz[j][k];
 	}
-        
       }
     }
     /* uncomment this if used 
@@ -674,7 +682,8 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   
   chain_idx = lmatrix(1,500 , 1, 2);  /* # of chains max = 200 */    
   get_chain_idx(nres, seidx, ChainID, &nchain, chain_idx);
-  
+
+
   bs_atoms = 0;
   for (i=1; i<=nchain; i++){ /* rid of ligand */
     if((chain_idx[i][2] - chain_idx[i][1]) <= 0)continue;
@@ -683,8 +692,8 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
       ib = seidx[k][1];
       ie = seidx[k][2];
       dna_rna = residue_ident(AtomName, xyz, ib, ie);
-      
-      if (dna_rna >= 0){          
+
+      if (dna_rna >= 0){
 	for(j = ib; j <= ie; j++){
 	  bs_atoms++;
 	  if (bs_atoms != j) {  // ER: copying a string to itself causes problems in some OS
@@ -700,12 +709,9 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	  n=bs_atoms;
 	}
       }
-      
+
     }
-    
   }
-  
-  
   nres=0;    
   seidx=residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);
   
@@ -714,13 +720,12 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   get_seq(fout,nres, seidx, AtomName, ResName, ChainID, ResSeq, Miscs,
 	  xyz, bseq, RY, &num_modify,modify_idx);  /* get the new RY */
   
-  er_PrintSeqs(chain_idx, nchain, num_residue, bseq, seidx, ChainID, ResSeq, errbuf);
-  
+ 
   work_horse(pdbfile, fout, nres, bs_atoms, bseq, seidx, RY, AtomName,
-	     ResName, ChainID, ResSeq, Miscs, xyz,num_modify, modify_idx,  
+	     ResName, ChainID, nchain, chain_idx, ResSeq, Miscs, xyz,num_modify, modify_idx,  
 	     type_stat, pair_stat);
 
-  base_all=base_all+nres; /* acculate all the bases */
+  base_all=base_all+nres; /* accumulate all the bases */
   *bs_all=base_all;
   
   if(!(PS>0 || VRML>0 || XML>0 || ALL>0) )
@@ -743,7 +748,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 
 void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
                 char *bseq, long **seidx, long *RY, char **AtomName,
-                char **ResName, char *ChainID, long *ResSeq,char **Miscs, 
+                char **ResName, char *ChainID, long nchain, long **chain_idx, long *ResSeq,char **Miscs, 
                 double **xyz,long num_modify, long *modify_idx, 
                 long *type_stat,long **pair_stat)
 /* perform all the calculations */
@@ -778,15 +783,12 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
   /* find all the base-pairs */
   //printf("Finding all the base pairs...\n");    
   all_pairs(pdbfile, fout, num_residue, RY, Nxyz, orien, org, BPRS,
-	    seidx, xyz, AtomName, ResName, ChainID, ResSeq, Miscs, bseq,
+	    seidx, xyz, AtomName, ResName, ChainID, nchain, chain_idx, ResSeq, Miscs, bseq,
 	    &num_pair_tot, pair_type, bs_pairs_tot, &num_single_base,
 	    single_base, &num_multi, multi_idx, multi_pair, sugar_syn);
 
   fprintf(fout, "  The total base pairs =%4ld (from %4ld bases)\n",
 	  num_pair_tot,num_residue);
-  fprintf(stdout, "# total_base_pairs %ld\n", num_pair_tot);
-  fprintf(stdout, "# total_bases      %ld\n", num_residue);
-  //er_Contacts(num_residue, bseq, seidx, RY, AtomName, ResName, ChainID, ResSeq, Miscs, xyz);
   
   if (!num_pair_tot) {        
     printf( "No base-pairs found for (%s) "

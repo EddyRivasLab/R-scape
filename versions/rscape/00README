@@ -100,8 +100,36 @@ To update the software distribution for rscape, copy new tarball to the software
   
 --then to push changes to eddylab.org, go up to the `eddylab.org` main directory with the Makefile in it, and:
 
-cd /Users/rivase/eddylab-web/eddylab.org
-make
+
+
+ # Go to the eddylab.org rscape repository
+  #
+  cd eddylab-web/eddylab.org/site/software/rscape
+  #
+  # Make sure your git clone is up to date.
+  # You need to be on RC VPN for this, because that's where `origin` is.
+  #
+  git pull origin
+  #
+  # Copy the new tarball here, change symlink, add to git
+  # Also, replace the Userguide
+  #
+  cp ~/WHEREEVER/rscape_v0.3.3.tar.gz .
+  cp ~/WHEREEVER/R-scape_userguide.pdf .
+  rm rscape.tar.gz
+  ln -s rscape_v0.3.3.tar.gz rscape.tar.gz
+  git add rscape_v0.3.3.tar.gz
+  #
+  # Update eddylab.org, using the Makefile to do the rsync
+  #
+  cd ../../..
+  make
+  #
+  # If it worked, commit and push the changes.
+  #
+  git commit -a
+  git push origin
+
 
 
 ================================================================================================================================================================

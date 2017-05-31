@@ -6,7 +6,7 @@
 extern void rna(char *pdbfile, long *type_stat,long **pair_stat, long *base_all);
 extern void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
 		       char *bseq, long **seidx, long *RY, char **AtomName,
-		       char **ResName, char *ChainID, long *ResSeq,char **Miscs, 
+		       char **ResName, char *ChainID, long nchain, long **chain_idx, long *ResSeq,char **Miscs, 
 		       double **xyz,long num_modify, long *modify_idx, 
 		       long *type_stat,long **pair_stat);
 extern void RY_edge_stat(char *pdbfile, long np);
@@ -379,13 +379,13 @@ extern void cmdline(int argc, char *argv[], char *inpfile);
 
 extern void handle_str(char *pdbfile, char *outfile, long ds, long curves,
 		       long divide, long hetatm, long pairs);
-extern void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
-		      double **Nxyz, double **orien, double **org, double *BPRS,
-		      long **seidx, double **xyz, char **AtomName, char **ResName,
-		      char *ChainID, long *ResSeq, char **Miscs, char *bseq,
-		      long *num_pair_tot, char **pair_type,long **bs_pairs_tot,
-		      long *num_single_base, long *single_base,long *num_multi,
-		      long *multi_idx, long **multi, long *sugar_syn);
+extern int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
+		     double **Nxyz, double **orien, double **org, double *BPRS,
+		     long **seidx, double **xyz, char **AtomName, char **ResName,
+		     char *ChainID, long nchain, long **chain_idx, long *ResSeq, char **Miscs, char *bseq,
+		     long *num_pair_tot, char **pair_type,long **bs_pairs_tot,
+		     long *num_single_base, long *single_base,long *num_multi,
+		     long *multi_idx, long **multi, long *sugar_syn);
 
 extern void best_pair(long i, long num_residue, long *RY, long **seidx,
 		      double **xyz, double **Nxyz, long *matched_idx,

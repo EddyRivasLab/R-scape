@@ -13,14 +13,14 @@ void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp);
 
 
 
-void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
-               double **Nxyz, double **orien, double **org, double *BPRS,
-               long **seidx, double **xyz, char **AtomName, char **ResName,
-               char *ChainID, long *ResSeq, char **Miscs, char *bseq,
-               long *num_pair_tot, char **pair_type, long **bs_pairs_tot,
-               long *num_single_base, long *single_base,long *num_multi,
-               long *multi_idx, long **multi, long *sugar_syn)
-
+int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
+	      double **Nxyz, double **orien, double **org, double *BPRS,
+	      long **seidx, double **xyz, char **AtomName, char **ResName,
+	      char *ChainID, long nchain, long **chain_idx, long *ResSeq, char **Miscs, char *bseq,
+	      long *num_pair_tot, char **pair_type, long **bs_pairs_tot,
+	      long *num_single_base, long *single_base,long *num_multi,
+	      long *multi_idx, long **multi, long *sugar_syn)
+  
 /* find all the possible base-pairs and non-pairs*/
 {
   char HB_ATOM[BUF512], pa_int=' ', corresp[20];
@@ -177,7 +177,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	  if(nb_single++ > num_residue-2){
 	    printf("increase memory for single H bond case\n");
 	    fprintf(fout,   "END_base-pair\n" );
-	    return;
+	    return eslFAIL;
 	  }
 	  geo_check=5.2; /*for edge to edge check, larger for single bond*/
           
@@ -203,7 +203,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	      if(nb_single++ > num_residue-2){
 		fprintf(fout,"END_base-pair\n" );
 		printf("increase memory for single H bond case\n");
-		return;
+		return eslFAIL;
 	      }
 	      
 	      geo_check=5.0;
@@ -231,7 +231,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		if(nb_single++ > num_residue-2){
 		  printf("increase memory for single H bond case\n");
 		  fprintf(fout,"END_base-pair\n" );
-		  return;
+		  return eslFAIL;
 		}
 		
 		geo_check=5.0;
@@ -283,19 +283,27 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		  work_num,
 		  ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
 		  ChainID[jr],type, pa_int, syn_i, syn_j, corresp);
-	  fprintf(stdout, "%9s\t%c\t%5ld\t%c\t%c\t%5ld\t%c\t%7s\t%c\n",
-		  work_num,
-		  ChainID[ir], ResSeq[ir], bseq[i], bseq[j], ResSeq[jr],
-		  ChainID[jr], type, pa_int);
 
+	  char *s;
+	  char *tok;
+	  esl_sprintf(&s, ResName[ir]);
+	  esl_strtok(&s, " ", &tok);
+	  if (Miscs[ir][0] == 'H' &&
+	      ( strcmp(tok,"PLR") == 0 || strcmp(tok,"IRI") == 0 || strcmp(tok,"C2E") == 0 )) break;
+	  esl_sprintf(&s, ResName[jr]);
+	  esl_strtok(&s, " ", &tok);
+	  if (Miscs[jr][0] == 'H' &&
+	      ( strcmp(tok,"PLR") == 0 || strcmp(tok,"IRI") == 0 || strcmp(tok,"C2E") == 0 )) break;
+	  
 	  if (num_bp == np - 1) {
 	    np += alloc_np;
 	    ESL_REALLOC(list->pair, sizeof(PAIR) * np);
 	  }
-	  list->pair[num_bp].i      = i;
-	  list->pair[num_bp].j      = j;
-	  list->pair[num_bp].ir     = ir;
-	  list->pair[num_bp].jr     = jr;
+
+	  list->pair[num_bp].i      = ResSeq[ir] - er_ChainFrom(ChainID[ir], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	  list->pair[num_bp].j      = ResSeq[jr] - er_ChainFrom(ChainID[jr], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	  list->pair[num_bp].ir     = ResSeq[ir];
+	  list->pair[num_bp].jr     = ResSeq[jr];
 	  list->pair[num_bp].isbp   = TRUE;
 	  list->pair[num_bp].D      = +eslINFINITY;
 	  list->pair[num_bp].chi    = ChainID[ir];
@@ -313,7 +321,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    printf( "The total number of pairs %ld is too large. ",num_bp); 
 	    printf(  "Increase the memery for bs_pairs_tot!!\n" );
 	    fprintf(fout,"END_base-pair\n" );
-	    return;
+	    return eslFAIL;
 	  }
 	  bs_pairs_tot[num_bp][1] = i;
 	  bs_pairs_tot[num_bp][2] = j;
@@ -354,10 +362,26 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		    work_num, ChainID[ir],
 		    ResSeq[ir], bseq[i], bseq[j],
 		    ResSeq[jr],ChainID[jr]);
-	    fprintf(stdout, "%9s\t%c\t%5ld\t%c\t%c\t%5ld\t%c\tstacked\n",
-		    work_num, ChainID[ir],
-		    ResSeq[ir], bseq[i], bseq[j],
-		    ResSeq[jr],ChainID[jr]);
+	    
+	    if (num_bp == np - 1) {
+	      np += alloc_np;
+	      ESL_REALLOC(list->pair, sizeof(PAIR) * np);
+	    }
+	    
+	    list->pair[num_bp].i      = ResSeq[ir] - er_ChainFrom(ChainID[ir], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	    list->pair[num_bp].j      = ResSeq[jr] - er_ChainFrom(ChainID[jr], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	    list->pair[num_bp].ir     = ResSeq[ir];
+	    list->pair[num_bp].jr     = ResSeq[jr];
+	    list->pair[num_bp].isbp   = FALSE;
+	    list->pair[num_bp].D      = +eslINFINITY;
+	    list->pair[num_bp].chi    = ChainID[ir];
+	    list->pair[num_bp].chj    = ChainID[jr];
+	    list->pair[num_bp].ic     = bseq[i];
+	    list->pair[num_bp].jc     = bseq[j];
+	    list->pair[num_bp].bptype = STACKED;
+
+	  num_bp++;
+	  list->np = num_bp;
 	    
 	  }                        
 	  continue; 
@@ -399,7 +423,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    if(nb_sugar++ > num_residue-2){
 	      printf("increase memory for single H bond (base-sugar)\n");
 	      fprintf(fout,"END_base-pair\n" );
-	      return;
+	      return eslFAIL;
 	    }
 	    
 	    geo_check=4.8; 
@@ -422,7 +446,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    if(nb_p++ > num_residue-2){
 	      fprintf(fout,"END_base-pair\n" );
 	      printf("increase memory for single H bond (base-O1P, O2P)\n");
-	      return;
+	      return eslFAIL;
 	    }
 	    
 	    geo_check=4.8; 
@@ -444,7 +468,7 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    if(nb_other++ > num_residue-2){
 	      printf("increase memory for single H bond (other cases)\n");
 	      fprintf(fout,"END_base-pair\n" );
-	      return;
+	      return eslFAIL;
               
 	    }
 	    
@@ -499,9 +523,12 @@ void all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 
   er_ListDump(stdout, list);
   er_FreeList(list);
-
+  return eslOK;
+  
  ERROR:
   if (list) er_FreeList(list);
+  return status;
+  
 }
 
 void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp)

@@ -129,9 +129,9 @@ typedef struct hit_s {
   double sc;
   double Eval;
 
-  int is_contact;
-  int is_bpair;
-  int is_compatible;
+  BPTYPE bptype;
+  int    is_compatible; // is compatible with all WWc annotated pairs
+  
 } HIT;
 
 typedef struct hitlist_s{

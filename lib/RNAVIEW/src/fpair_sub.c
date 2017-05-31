@@ -22,49 +22,48 @@ void get_chain_idx(long num_residue, long **seidx, char *ChainID,
                    long *nchain, long **chain_idx)
 /* get chain index */
 {
-
-    long n, j, k1, k2;
-    
-    chain_idx[1][1] = 1;
-    n=1;
-    for (j=2; j<=num_residue; j++){
-        k1 = seidx[j-1][1];
-        k2 = seidx[j][1];
-        chain_idx[n][2] = j-1;
-        if(ChainID[k1] != ChainID[k2]){
-            n++;
-            chain_idx[n][1] = j;
-        }
+  long n, j, k1, k2;
+  
+  chain_idx[1][1] = 1;
+  n=1;
+  for (j=2; j<=num_residue; j++){
+    k1 = seidx[j-1][1];
+    k2 = seidx[j][1];
+    chain_idx[n][2] = j-1;
+    if(ChainID[k1] != ChainID[k2]){
+      n++;
+      chain_idx[n][1] = j;
     }
-    chain_idx[n][2] = num_residue;
-    *nchain = n;
+  }
+  chain_idx[n][2] = num_residue;
+  *nchain = n;
 }
 
 
-
-void get_reference_pdb(char *BDIR)
+void
+get_reference_pdb(char *BDIR)
 {
-    char **sAtomName, spdb[80];
-    char ref[] = "AGCUTIP";
-    long i,j,k,snum;
-    double  **sx;
-
-    sAtomName = cmatrix(1, 20, 0, 4);
-    sx = dmatrix(1, 20, 1, 3);
-    
-    for(i=0; i<7; i++){ /* read the reference pdb files */
-        sprintf(spdb, "%sAtomic_%c.pdb", BDIR, ref[i]);
-        snum = read_pdb_ref(spdb, sAtomName, sx);
-        std[i].sNatom = snum;
-        for(j=1; j<=snum; j++){
-            for(k=1; k<=3; k++)
-                std[i].sxyz[j][k] = sx[j][k];            
-            strcpy(std[i].sAtomNam[j], sAtomName[j]);
-        }
+  char **sAtomName, spdb[80];
+  char ref[] = "AGCUTIP";
+  long i,j,k,snum;
+  double  **sx;
+  
+  sAtomName = cmatrix(1, 20, 0, 4);
+  sx = dmatrix(1, 20, 1, 3);
+  
+  for(i=0; i<7; i++){ /* read the reference pdb files */
+    sprintf(spdb, "%sAtomic_%c.pdb", BDIR, ref[i]);
+    snum = read_pdb_ref(spdb, sAtomName, sx);
+    std[i].sNatom = snum;
+    for(j=1; j<=snum; j++){
+      for(k=1; k<=3; k++)
+	std[i].sxyz[j][k] = sx[j][k];            
+      strcpy(std[i].sAtomNam[j], sAtomName[j]);
     }
-    free_dmatrix(sx, 1, 20, 1, 3);
-    free_cmatrix(sAtomName, 1, 20, 0, 4);
-    
+  }
+  free_dmatrix(sx, 1, 20, 1, 3);
+  free_cmatrix(sAtomName, 1, 20, 0, 4);
+  
 }
 
 long  ref_idx(char resnam)
@@ -512,8 +511,9 @@ long **residue_idx(long num, long *ResSeq, char **Miscs, char *ChainID,
     iCode = (Miscs == NULL) ? ' ' : Miscs[i][2];
     sprintf(bidx[i],"%3s%c%4ld%c",ResName[i],ChainID[i],ResSeq[i], iCode);
   }
-  for (i = 1; i < num; i++)
+  for (i = 1; i < num; i++) {
     temp[i] = strcmp(bidx[i + 1], bidx[i]) ? 1 : 0;
+  }
   temp[num] = 1;
   
   n = 0;                        /* get number of residues */
@@ -529,7 +529,7 @@ long **residue_idx(long num, long *ResSeq, char **Miscs, char *ChainID,
   for (i = 2; i <= n; i++)
     seidx[i][1] = seidx[i - 1][2] + 1;
   seidx[1][1] = 1;
-  
+
   *num_residue = n;
   
   free_cmatrix(bidx, 1, num, 0, 12);
@@ -553,6 +553,7 @@ long residue_ident(char **AtomName, double **xyz, long ib, long ie)
     N1 = find_1st_atom(" N1 ", AtomName, ib, ie, "");
     C2 = find_1st_atom(" C2 ", AtomName, ib, ie, "");
     C6 = find_1st_atom(" C6 ", AtomName, ib, ie, "");
+
     if (N1 && C2 && C6) {
         for (i = 1; i <= 3; i++)
             temp[i] = xyz[N1][i] - xyz[C2][i];
@@ -607,7 +608,7 @@ void get_seq(FILE *fout, long num_residue, long **seidx, char **AtomName,
         if (RY[i] >= 0) {
             sprintf(idmsg, "residue %3s %4ld%c on chain %c [#%ld]",
                     ResName[ib], ResSeq[ib], Miscs[ib][2], ChainID[ib], i);
-            
+           
             if      (!strcmp(ResName[ib],"  A") || !strcmp(ResName[ib],"ADE"))
                bseq[i] = 'A';
             else if (!strcmp(ResName[ib],"  G") || !strcmp(ResName[ib],"GUA"))

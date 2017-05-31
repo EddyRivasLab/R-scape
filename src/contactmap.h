@@ -13,20 +13,21 @@
 #include "esl_tree.h"
 
 typedef enum {
-  WWc     = 0,
-  WWt     = 1,
-  HHc     = 2,
-  HHt     = 3,
-  SSc     = 4,
-  SSt     = 5,
-  WHc     = 6,
-  WHt     = 7,
-  WSc     = 8,
-  WSt     = 9,
-  HSc     = 10,
-  HSt     = 11,
-  STACKED = 12,
-  BPNONE  = 13,
+  WWc       = 0,
+  WWt       = 1,
+  HHc       = 2,
+  HHt       = 3,
+  SSc       = 4,
+  SSt       = 5,
+  WHc       = 6,
+  WHt       = 7,
+  WSc       = 8,
+  WSt       = 9,
+  HSc       = 10,
+  HSt       = 11,
+  STACKED   = 12,
+  BPCONTACT = 13,
+  BPNONE    = 14,
 } BPTYPE;
 
 typedef struct cnt_s {
@@ -49,9 +50,13 @@ typedef struct cnt_s {
 
 typedef struct clist_s{
   int      alloc_ncnt;
-  int      ncnt;
+  int      ncnt;    // total number of contacts
+  int      nbps;    // total number of basepairs (all 12 types)
+  int      nwwc;    // total number of WWc basepairs 
+  
   double   maxD;
   int      mind; // min(j-i+1)
+
   
   CNT    **srtcnt;
   CNT     *cnt;
@@ -63,8 +68,10 @@ extern int    ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *m
 			 double contD, int cntmind, char *errbuf, int verbose);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern void   CMAP_FreeCList(CLIST *list);
+extern BPTYPE CMAP_GetBPTYPE(int i, int j, CLIST *clist);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
+extern int    CMAP_IsWCLocal(int i, int j, CLIST *clist);
 extern int    CMAP_Dump(FILE *fp, CLIST *clist);
 extern int    CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf);
 extern int    CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf);

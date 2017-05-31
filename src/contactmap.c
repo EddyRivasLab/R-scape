@@ -38,9 +38,8 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
 	   double cntmaxD, int cntmind, char *errbuf, int verbose)
 {
-  char   tmpcfile[16]  = "esltmpXXXXXX"; /* template for contacts*/
+  char   tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
   char   tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
-  char   tmpviewfile[16] = "esltmpXXXXXX"; /* template for rnaview output */
   FILE  *tmpfp  = NULL;
   char  *cmd  = NULL;
   char  *args = NULL;
@@ -49,13 +48,14 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   int   *msa2pdb = NULL;
   int    hasss = FALSE;
   int    L = msa->alen;
+  int    ct_nbpairs;
   int    alloc_ncnt = 5;
   int    ncnt = alloc_ncnt;
   int    h = 0;
   int    i, j;
   int    status;
-
-  status = msamanip_CalculateCT(msa, &ct, ret_nbpairs, -1.0, errbuf);
+  
+  status = msamanip_CalculateCT(msa, &ct, &ct_nbpairs, -1.0, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
   if (msa->ss_cons && abcisRNA) hasss = TRUE;
   
@@ -91,6 +91,8 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 	  clist->cnt[h].bptype = WWc;
 	  clist->cnt[h].D      = +eslINFINITY;
 	  clist->cnt[h].sc     = -eslINFINITY;
+	  clist->nbps ++;
+	  clist->nwwc ++;
 	  h ++;
 	}
       }
@@ -106,12 +108,15 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
       if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
       fclose(tmpfp);
       
-
       // read the contact from the pdbfile
       if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
       else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
-      esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s %s %s %s %s > /dev/null",
-		  cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+      if (abcisRNA)  // run rnaview as well
+	esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s -R %s %s %s %s > /dev/null",
+		    cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+      else 
+ 	esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s %s %s %s %s > /dev/null",
+		    cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
       printf("%s\n", args);
       system(args);
       
@@ -120,25 +125,8 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
      
       read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, hasss, ct, clist, errbuf);      
       remove(tmpcfile);
-
-      // If RNA, use RNAVIEW to identify all basepairs.
-      // Add the information to the list of contact
-      // If RNAVIEW finds more contact those will be added too
-      if (abcisRNA) {
-	if ((status = esl_tmpfile_named(tmpviewfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create rnaviewfile");
-	fclose(tmpfp);
- 
-	if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/RNAVIEW", RSCAPE_BIN);  
-	else            ESL_XFAIL(status, errbuf, "Failed to find executable RNAVIEW\n");
-	
-	esl_sprintf(&args, "%s %s > /dev/null", cmd, pdbfile);
-	printf("%s\n", args);
-	system(args);
-
-	remove(tmpviewfile);
-      }
-
     }
+  
   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
 
 #if 0
@@ -147,6 +135,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 #endif
 
   clist->maxD  = cntmaxD;
+  *ret_nbpairs = clist->nbps;
 
   if (1||verbose) CMAP_Dump(stdout, clist);
   
@@ -181,6 +170,8 @@ CMAP_CreateCList(int alloc_ncnt)
 
   clist->alloc_ncnt = alloc_ncnt;
   clist->ncnt = 0;
+  clist->nbps = 0;
+  clist->nwwc = 0;
   clist->maxD = -1;
   clist->mind = -1;
 
@@ -198,6 +189,20 @@ CMAP_FreeCList(CLIST *list)
   if (list->srtcnt) free(list->srtcnt);
   if (list->cnt)    free(list->cnt);
   free(list);
+}
+
+BPTYPE 
+CMAP_GetBPTYPE(int i, int j, CLIST *clist)
+{
+  BPTYPE bptype = BPNONE;
+  int    h;
+  int    ii = (i<j)? i : j;
+  int    jj = (i<j)? j : i;
+  
+  for (h = 0; h < clist->ncnt; h ++) {
+    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j) return clist->cnt[h].bptype;
+  }
+  return bptype;
 }
 
 int
@@ -221,7 +226,20 @@ CMAP_IsBPLocal(int i, int j, CLIST *clist)
   int jj = (i<j)? j : i;
   
   for (h = 0; h < clist->ncnt; h ++) {
-    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j && clist->cnt[h].isbp) return TRUE;
+    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j && clist->cnt[h].bptype < STACKED) return TRUE;
+  }
+  return FALSE;
+}
+
+int
+CMAP_IsWCLocal(int i, int j, CLIST *clist)
+{
+  int h;
+  int ii = (i<j)? i : j;
+  int jj = (i<j)? j : i;
+  
+  for (h = 0; h < clist->ncnt; h ++) {
+    if (ii == clist->cnt[h].i && jj == clist->cnt[h].j && clist->cnt[h].bptype == WWc) return TRUE;
   }
   return FALSE;
 }
@@ -232,16 +250,22 @@ CMAP_Dump(FILE *fp, CLIST *clist)
   int h;
   int nbp = 0;
   int nwc = 0;
-  
+  char *bptype = NULL;
+
+
   for (h = 0; h < clist->ncnt; h ++) {
     if (clist->cnt[h].isbp) nbp ++;
-    if (clist->cnt[h].bptype == WWc) nwc ++;
-    fprintf(fp, "%d %d | isbp? %d bptype %d\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, clist->cnt[h].isbp, clist->cnt[h].bptype);
+    if (clist->cnt[h].bptype == WWc) { nwc ++; }
+    CMAP_BPTYPEString(&bptype, clist->cnt[h].bptype, NULL);
+  
+    fprintf(fp, "%d %d | bptype %s\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, bptype);
+    free(bptype); bptype = NULL;
   }
-  fprintf(fp, "#Ncontacts %d (%d bpairs %d wc pairs)\n", clist->ncnt, nbp, nwc);
+  fprintf(fp, "#Ncontacts %d (%d bpairs %d wc pairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
   fprintf(fp, "#maxD      %.2f\n", clist->maxD);
   fprintf(fp, "#mind      %.d\n",  clist->mind);
 
+  if (bptype) free(bptype);
   return FALSE;
 }
 
@@ -252,20 +276,21 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   int status;
 
   switch(type) {
-  case WWc:     esl_sprintf(ret_bptype, "WWc");     break;
-  case WWt:     esl_sprintf(ret_bptype, "WWt");     break;
-  case HHc:     esl_sprintf(ret_bptype, "HHc");     break;
-  case HHt:     esl_sprintf(ret_bptype, "HHt");     break;
-  case SSc:     esl_sprintf(ret_bptype, "SSc");     break;
-  case SSt:     esl_sprintf(ret_bptype, "SSt");     break;
-  case WHc:     esl_sprintf(ret_bptype, "WHc");     break;
-  case WHt:     esl_sprintf(ret_bptype, "WHt");     break;
-  case WSc:     esl_sprintf(ret_bptype, "WSc");     break;
-  case WSt:     esl_sprintf(ret_bptype, "WSt");     break;
-  case HSc:     esl_sprintf(ret_bptype, "HSc");     break;
-  case HSt:     esl_sprintf(ret_bptype, "HSt");     break;
-  case STACKED: esl_sprintf(ret_bptype, "STACKED"); break;
-  case BPNONE:  esl_sprintf(ret_bptype, "BPNONE");  break;
+  case WWc:       esl_sprintf(ret_bptype, "WWc");       break;
+  case WWt:       esl_sprintf(ret_bptype, "WWt");       break;
+  case HHc:       esl_sprintf(ret_bptype, "HHc");       break;
+  case HHt:       esl_sprintf(ret_bptype, "HHt");       break;
+  case SSc:       esl_sprintf(ret_bptype, "SSc");       break;
+  case SSt:       esl_sprintf(ret_bptype, "SSt");       break;
+  case WHc:       esl_sprintf(ret_bptype, "WHc");       break;
+  case WHt:       esl_sprintf(ret_bptype, "WHt");       break;
+  case WSc:       esl_sprintf(ret_bptype, "WSc");       break;
+  case WSt:       esl_sprintf(ret_bptype, "WSt");       break;
+  case HSc:       esl_sprintf(ret_bptype, "HSc");       break;
+  case HSt:       esl_sprintf(ret_bptype, "HSt");       break;
+  case STACKED:   esl_sprintf(ret_bptype, "STACKED");   break;
+  case BPCONTACT: esl_sprintf(ret_bptype, "BPCONTACT"); break;
+  case BPNONE:    esl_sprintf(ret_bptype, "BPNONE");    break;
 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong BPTYPE");
   }
@@ -282,20 +307,21 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   BPTYPE type;
   int     status;
 
-  if      (!esl_strcmp(bptype, "WWc"))     type = WWc;
-  else if (!esl_strcmp(bptype, "WWt"))     type = WWt;
-  else if (!esl_strcmp(bptype, "HHc"))     type = HHc;
-  else if (!esl_strcmp(bptype, "HHt"))     type = HHt;
-  else if (!esl_strcmp(bptype, "SSc"))     type = SSc;
-  else if (!esl_strcmp(bptype, "SSt"))     type = SSt;
-  else if (!esl_strcmp(bptype, "WHc"))     type = WHc;
-  else if (!esl_strcmp(bptype, "WHt"))     type = WHt;
-  else if (!esl_strcmp(bptype, "WSc"))     type = WSc;
-  else if (!esl_strcmp(bptype, "WSt"))     type = WSt;
-  else if (!esl_strcmp(bptype, "HSc"))     type = HSc;
-  else if (!esl_strcmp(bptype, "HSt"))     type = HSt;
-  else if (!esl_strcmp(bptype, "STACKED")) type = STACKED;
-  else if (!esl_strcmp(bptype, "BPNONE"))  type = BPNONE;
+  if      (!esl_strcmp(bptype, "WWc"))       type = WWc;
+  else if (!esl_strcmp(bptype, "WWt"))       type = WWt;
+  else if (!esl_strcmp(bptype, "HHc"))       type = HHc;
+  else if (!esl_strcmp(bptype, "HHt"))       type = HHt;
+  else if (!esl_strcmp(bptype, "SSc"))       type = SSc;
+  else if (!esl_strcmp(bptype, "SSt"))       type = SSt;
+  else if (!esl_strcmp(bptype, "WHc"))       type = WHc;
+  else if (!esl_strcmp(bptype, "WHt"))       type = WHt;
+  else if (!esl_strcmp(bptype, "WSc"))       type = WSc;
+  else if (!esl_strcmp(bptype, "WSt"))       type = WSt;
+  else if (!esl_strcmp(bptype, "HSc"))       type = HSc;
+  else if (!esl_strcmp(bptype, "HSt"))       type = HSt;
+  else if (!esl_strcmp(bptype, "STACKED"))   type = STACKED;
+  else if (!esl_strcmp(bptype, "BPCONTACT")) type = BPCONTACT;
+  else if (!esl_strcmp(bptype, "BPNONE"))    type = BPNONE;
 
   else
     ESL_XFAIL(eslFAIL, errbuf, "wrong BYTYPE %s", bptype);
@@ -370,6 +396,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
   int              ncnt = clist->alloc_ncnt;
   int              posi, posj;
   int              i, j;
+  BPTYPE           bptype;
   double           D;
   int              h = 0;
   int              status;
@@ -389,6 +416,9 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
       
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
+      CMAP_String2BPTYPE(tok, &bptype, errbuf);
+ 
+      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
       D = atof(tok);
       
       if (i > 0 && j > 0 && j-i >= clist->mind && isnewcontact(posi, posj, clist)) {
@@ -406,18 +436,19 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 	clist->cnt[h].pdbi   = msa2pdb[i-1]+1;
 	clist->cnt[h].pdbj   = msa2pdb[j-1]+1;
 	clist->cnt[h].D      = D;
-	clist->cnt[h].isbp   = FALSE;
-	clist->cnt[h].bptype = BPNONE;
+	clist->cnt[h].bptype = bptype;
 	clist->ncnt          = h;
+	clist->cnt[h].isbp   = (bptype < STACKED)? TRUE : FALSE;
+	if (bptype <  STACKED) clist->nbps ++;
+	if (bptype == WWc)     clist->nwwc ++;
+
 	if (!hasss) {
 	  ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
 	  ct[j] = j;
 	}
 	else {
-	  if (ct[i] == j) {
-	    clist->cnt[h].isbp   = TRUE;
-	    clist->cnt[h].bptype = WWc;
-	  }
+	  if (ct[i] == j && clist->cnt[h].bptype != WWc)
+	    ESL_XFAIL(eslFAIL, errbuf, "conflict between the cons_ss and the pdb file %s", pdbcfile);
 	}
 	
 #if 0
@@ -430,7 +461,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
       }
     }
   esl_fileparser_Close(efp);
-
+  
   clist->ncnt = h;
   return eslOK;
 
