@@ -15,8 +15,12 @@ void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp);
 
 int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	      double **Nxyz, double **orien, double **org, double *BPRS,
-	      long **seidx, double **xyz, char **AtomName, char **ResName,
-	      char *ChainID, long nchain, long **chain_idx, long *ResSeq, char **Miscs, char *bseq,
+	      long **seidx, double **xyz,
+	      long nchain_tot, char *chain_name, long *chain_f, long *chain_t,
+	      char **AtomName, char **ResName,
+	      char *ChainID, long nchain, long **chain_idx,
+	      long *AtomNum, long *Atom2SEQ,
+	      long *ResSeq, char **Miscs, char *bseq,
 	      long *num_pair_tot, char **pair_type, long **bs_pairs_tot,
 	      long *num_single_base, long *single_base,long *num_multi,
 	      long *multi_idx, long **multi, long *sugar_syn)
@@ -35,6 +39,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   LIST *list = NULL;
   int   alloc_np = 5;
   int   np = alloc_np;
+  int   ichain_idx, jchain_idx;
+  long  from, to;
   char  errbuf[eslERRBUFSIZE];
   int   status;
   
@@ -98,7 +104,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 
   list = er_CreateList(alloc_np);
   fprintf(fout,   "BEGIN_base-pair\n" );
-  
+
   for (i = 1; i <= num_residue; i++){   
     prot_rna[i]=0; 
     sugar_syn[i]=0;
@@ -111,11 +117,17 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   syn_or_anti(num_residue, AtomName, seidx, xyz,RY, sugar_syn);
   
   for (i = 1; i < num_residue; i++) {
-    for (j = i + 1; j <= num_residue; j++) {
+    ir = seidx[i][1];
+    ichain_idx = er_ChainIdx(ChainID[ir], nchain_tot, chain_name);
+    from = chain_f[ichain_idx];
+   
+   for (j = i + 1; j <= num_residue; j++) {
       
-      ir = seidx[i][1];
       jr = seidx[j][1];
+      jchain_idx = er_ChainIdx(ChainID[jr], nchain_tot, chain_name);
       
+      to = chain_t[jchain_idx];
+
       if(sugar_syn[i] ==1){
 	/*
 	  sprintf(syn_i, "%c:%ld %3s ", ChainID[ir], ResSeq[ir],"syn");
@@ -299,9 +311,12 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    np += alloc_np;
 	    ESL_REALLOC(list->pair, sizeof(PAIR) * np);
 	  }
+	  
+	  if (ResSeq[ir] < from || ResSeq[ir] > to) break;
+	  if (ResSeq[jr] < from || ResSeq[jr] > to) break;
 
-	  list->pair[num_bp].i      = ResSeq[ir] - er_ChainFrom(ChainID[ir], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
-	  list->pair[num_bp].j      = ResSeq[jr] - er_ChainFrom(ChainID[jr], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	  list->pair[num_bp].i      = Atom2SEQ[AtomNum[ir]];
+	  list->pair[num_bp].j      = Atom2SEQ[AtomNum[jr]];
 	  list->pair[num_bp].ir     = ResSeq[ir];
 	  list->pair[num_bp].jr     = ResSeq[jr];
 	  list->pair[num_bp].isbp   = TRUE;
@@ -362,14 +377,17 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		    work_num, ChainID[ir],
 		    ResSeq[ir], bseq[i], bseq[j],
 		    ResSeq[jr],ChainID[jr]);
-	    
+
+	    if (ResSeq[ir] < from || ResSeq[ir] > to) break;
+	    if (ResSeq[jr] < from || ResSeq[jr] > to) break;
+
 	    if (num_bp == np - 1) {
 	      np += alloc_np;
 	      ESL_REALLOC(list->pair, sizeof(PAIR) * np);
 	    }
 	    
-	    list->pair[num_bp].i      = ResSeq[ir] - er_ChainFrom(ChainID[ir], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
-	    list->pair[num_bp].j      = ResSeq[jr] - er_ChainFrom(ChainID[jr], nchain, ChainID, chain_idx, ResSeq, seidx) + 1;
+	    list->pair[num_bp].i      = Atom2SEQ[AtomNum[ir]];
+	    list->pair[num_bp].j      = Atom2SEQ[AtomNum[jr]];
 	    list->pair[num_bp].ir     = ResSeq[ir];
 	    list->pair[num_bp].jr     = ResSeq[jr];
 	    list->pair[num_bp].isbp   = FALSE;

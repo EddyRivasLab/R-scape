@@ -204,7 +204,7 @@ long number_of_atoms(char *pdbfile)
 }
 
 long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
-              long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST)
+              long *AtomNum, long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST)
 /* read in a PDB file and do some processing
  * Miscs[][NMISC]: H/A, altLoc, iCode, occ./tempFac./segID/element/charge
  *           col#   0     1       2       3-28 [combined together]
@@ -212,7 +212,7 @@ long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
 {
   char str[BUF512], temp[BUF512], *pchar, str_id[20], str_id0[20];
   long i, n, nlen;
-  char atomname[5], resname[4], chainid, resseq[5];
+  char atomname[5], atomnum[7], resname[4], chainid, resseq[5];
   FILE *fp;
   
   if((fp = fopen(pdbfile, "r"))==NULL) {        
@@ -262,10 +262,20 @@ long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
       strcpy(AtomName[n], atomname);
       strcpy(ResName[n], resname);
       ChainID[n] = chainid;
+      
       if (sscanf(resseq, "%4ld", &ResSeq[n]) != 1) {
 	printf( "residue #? ==> %.54s\n", str);
 	ResSeq[n] = 9999;
       }
+      
+      strncpy(atomnum, str + 6, 6);    /* atom number */
+      atomnum[6] = '\0';
+     if (sscanf(atomnum, "%6ld", &AtomNum[n]) != 1) {
+	printf( "atom #? ==> %.54s\n", str);
+	exit(1);
+      }
+
+      
       
       strncpy(temp, str + 30, 25);           /* xyz */
       temp[25] = '\0';

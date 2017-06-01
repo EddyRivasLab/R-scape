@@ -16,25 +16,19 @@
 #include "erfiles.h"
 
 static char er_aa_conversion(char *s);
-static int er_Seq2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName, long *ResSeq, char **Miscs, char *errbuf);
+static int  er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
+			     long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf);
 
-long er_ChainFrom(char chid, long nchain, char *ChainID, long **chain_idx, long *ResSeq, long **seidx)
+
+int er_ChainIdx(char chid, long nchain, char *chain_name)
 {
   long c;
-  long from, to;
-  long ib, ie;
   
-  for (c = 1; c <= nchain; c ++){ 
-    ib = chain_idx[c][1];
-    ie = chain_idx[c][2];
-
-    if ((ie - ib) <= 0) continue;
-
-    from = ResSeq[ seidx[ib][1] ];
-    to   = ResSeq[ seidx[ie][1] ];
-    if (chid == ChainID[seidx[ib][1]]) return from;
+  for (c = 0; c < nchain; c ++){
+    if (chid == chain_name[c]) return c;
   }
-  
+
+  if (c == nchain) { printf("could not find chain %c\n", chid); exit(1); }
   return 0;
 }
 
@@ -135,11 +129,13 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int from, int to, char **ret_s
   return status;
 }
 
-int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName, long *ResSeq, char **AtomName, char **Miscs,
-		      double **xyz, char *errbuf)
+int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName,
+		      long *AtomNum, long *Atom2SEQ, long *ResSeq, char **AtomName, char **Miscs, double **xyz,
+		      long *ret_nchain, char **ret_chain_name, long **ret_chain_f, long **ret_chain_t, char *errbuf)
 {
   long  *chain_f = NULL;
   long  *chain_t = NULL;
+  char  *chain_name = NULL;
   long  *chain_isnucl = NULL;
   long   nchain_alloc = 1;
   long   nchain = 0;
@@ -159,11 +155,14 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 
   ESL_ALLOC(chain_f,      sizeof(long) * nchain_alloc);
   ESL_ALLOC(chain_t,      sizeof(long) * nchain_alloc);
+  ESL_ALLOC(chain_name,   sizeof(char) * nchain_alloc);
   ESL_ALLOC(chain_isnucl, sizeof(long) * nchain_alloc);
   
-  chain_f[nchain] = 1;
   ib = seidx[1][1];
   ie = seidx[1][2];
+  chain_f[nchain]    = 1;
+  chain_name[nchain] = ChainID[ib];
+
   isnucl     = (residue_ident(AtomName, xyz, ib, ie) >= 0)? TRUE : FALSE;
   isnucl_prv = isnucl;
 
@@ -187,18 +186,19 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
       // chain nchain has ended at i-1
       chain_isnucl[nchain] = isnucl_prv;
       chain_t[nchain]      = i-1;
-
       // new chain starts at i
       nchain ++;
       
       if (nchain == nchain_alloc) {
 	nchain_alloc ++;
+	ESL_REALLOC(chain_name,   sizeof(char) * nchain_alloc);
 	ESL_REALLOC(chain_f,      sizeof(long) * nchain_alloc);
 	ESL_REALLOC(chain_t,      sizeof(long) * nchain_alloc);
  	ESL_REALLOC(chain_isnucl, sizeof(long) * nchain_alloc);
       }
       
-      chain_f[nchain] = i;
+      chain_f[nchain]    = i;
+      chain_name[nchain] = ChainID[ib];
       isnucl = (residue_ident(AtomName, xyz, ib, ie) >= 0)? TRUE : FALSE;
     }
     isnucl_prv = isnucl;
@@ -210,20 +210,27 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   
   for (c = 0; c < nchain; c ++){
 
+    
     ib = chain_f[c];
     ie = chain_t[c];
+    
     if ((ie - ib) <= 0) continue;
 
     rb   = seidx[ib][1];
     re   = seidx[ie][2];
     from = ResSeq[rb];
     to   = ResSeq[re];
+
+    // this is terrible re-using chain_f chain_t for later
+    chain_f[c]    = from;
+    chain_t[c]    = to;
+    chain_name[c] = ChainID[rb];
     
     ch[0] = ChainID[rb];
     ch[1] = '\0';
     if (user_chain && strcmp(user_chain, ch)) continue;
     if (!chain_isnucl[c]) continue;
- 
+
     fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%ld\t%ld\n", ChainID[rb], from, to);
     fprintf(stdout, "# seq_%c ", ChainID[rb]);
     
@@ -231,20 +238,23 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get chain sequence", errbuf);
     fprintf(stdout, "%s\n", sq);
 
-    status = er_Seq2ResSeq(sq, ismissing, ChainID[rb], ib, ie, seidx, ResName, ResSeq, Miscs, errbuf);
+    status = er_SEQRES2ResSeq(sq, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get the coords correspondence", errbuf);
 
     free(ismissing); ismissing = NULL;
     free(sq); sq = NULL;
   }
 
-  free(chain_f);
-  free(chain_t);
+  *ret_nchain = nchain;
+  if (ret_chain_name) *ret_chain_name = chain_name; else free(chain_name);
+  if (ret_chain_f)    *ret_chain_f    = chain_f;    else free(chain_f);
+  if (ret_chain_t)    *ret_chain_t    = chain_t;    else free(chain_t);
   free(chain_isnucl);
   if (sq) free(sq);
   return eslOK;
   
  ERROR:
+  if (chain_name)   free(chain_name);
   if (chain_f)      free(chain_f);
   if (chain_t)      free(chain_t);
   if (chain_isnucl) free(chain_isnucl);
@@ -324,7 +334,8 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 //
 //                                                                               * -> another documented "missing residue"
 //
-static int er_Seq2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName, long *ResSeq, char **Miscs, char *errbuf)
+static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
+			    long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf)
 {
   int  *map = NULL;
   char *name;
@@ -332,22 +343,25 @@ static int er_Seq2ResSeq(char *sq, int *ismissing, char chainname, long ib, long
   char  new[2];
   char  icode;
   int   len = strlen(sq);
-  int   n;
+  int   l;
   long  i;
   long  rb;
   long  pos;
   long  pos_first = ResSeq[seidx[ib][1]];
   long  pos_prv = -1;
   long  p;
+  long  ANum;
   int   status;
 
   ESL_ALLOC(map, sizeof(int)*len);
-  for (n = 0; n < len; n ++) map[n] = 0;
+  for (l = 0; l < len; l ++) map[l] = 0;
   new[1] = '\0';
  
-  for (i = ib, n = 0; i <= ie; i++, n ++){
+  for (i = ib, l = 0; i <= ie; i++, l ++){
     rb  = seidx[i][1];
     pos = ResSeq[rb];
+
+    ANum = AtomNum[rb];
 
     if (pos - pos_first > len) continue;
     if (pos < pos_first) continue;
@@ -358,21 +372,22 @@ static int er_Seq2ResSeq(char *sq, int *ismissing, char chainname, long ib, long
     name[1] = '\0';
     icode = Miscs[rb][2];
 
-    if (n > 0 && pos != pos_prv+1) {
+    if (l > 0 && pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
-	if (ismissing[p-1]) { n ++; }
+	if (ismissing[p-1]) { l ++; }
       }
     }
-    if (n >= len) { printf("n %d len %d\n", n, len); return eslFAIL; }
-    strncpy(new, sq+n, 1);
+    if (l >= len) { printf("l %d >= len %d\n", l, len); return eslFAIL; }
+    strncpy(new, sq+l, 1);
     
-    map[n]  = pos;
+    map[l]  = pos;
     pos_prv = pos;
+    Atom2SEQ[ANum] = l+1;
   }
 
   fprintf(stdout, "# seq_%c", chainname);
-  for (n = 0; n < len; n ++) 
-    fprintf(stdout, " %d", map[n]);
+  for (l = 0; l < len; l ++) 
+    fprintf(stdout, " %d", map[l]);
   fprintf(stdout, "\n");
 
   free(map);

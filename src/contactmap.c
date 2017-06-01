@@ -64,97 +64,99 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
    
    clist = CMAP_CreateCList(alloc_ncnt);
    if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
-  
-  if (pdbfile == NULL)
-    {
-      clist->mind = 1; // the cntmind only affects the pbd contact maps, not the RNA structures
+   clist->mind = cntmind;
 
-      for (i = 0; i < L; i ++) {
-	
-	msa2pdb[i] = i;
-	
-	if (h == ncnt - 1) {
-	  ncnt += alloc_ncnt;
-	  ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
-	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
-	}
-	
-	if (ct[i+1] > i+1) {
-	  /* assign */
-	  clist->cnt[h].i      = i+1;
-	  clist->cnt[h].j      = ct[i+1];
-	  clist->cnt[h].posi   = msa2omsa[i]+1;
-	  clist->cnt[h].posj   = msa2omsa[ct[i+1]-1]+1;
-	  clist->cnt[h].pdbi   = -1;
-	  clist->cnt[h].pdbj   = -1;
-	  clist->cnt[h].isbp   = TRUE;
-	  clist->cnt[h].bptype = WWc;
-	  clist->cnt[h].D      = +eslINFINITY;
-	  clist->cnt[h].sc     = -eslINFINITY;
-	  clist->nbps ++;
-	  clist->nwwc ++;
-	  h ++;
-	}
-      }
-      clist->ncnt = h;
+   // Start with the ss_cons structure if there is one
+   if (hasss)
+     {
+       for (i = 0; i < L; i ++) {
 
+	 msa2pdb[i] = i;
+	 
+	 if (h == ncnt - 1) {
+	   ncnt += alloc_ncnt;
+	   ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
+	   ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
+	 }
+	 
+	 if (ct[i+1] > i+1 && (ct[i+1] - i) >= cntmind) {
+	   /* assign */
+	   clist->cnt[h].i      = i+1;
+	   clist->cnt[h].j      = ct[i+1];
+	   clist->cnt[h].posi   = msa2omsa[i]+1;
+	   clist->cnt[h].posj   = msa2omsa[ct[i+1]-1]+1;
+	   clist->cnt[h].pdbi   = -1;
+	   clist->cnt[h].pdbj   = -1;
+	   clist->cnt[h].isbp   = TRUE;
+	   clist->cnt[h].bptype = WWc;
+	   clist->cnt[h].D      = +eslINFINITY;
+	   clist->cnt[h].sc     = -eslINFINITY;
+	   clist->nbps ++;
+	   clist->nwwc ++;
+	   h ++;
+	 }
+       }
+       clist->ncnt = h;
     }
-  else if (pdbfile != NULL)
-    {
-      clist->mind = cntmind; // the cntmind affects the pbd contact maps, not the RNA structures
-      
-      if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
-      fclose(tmpfp);
-      if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
-      fclose(tmpfp);
-      
-      // read the contact from the pdbfile
-      if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
-      else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
-      if (abcisRNA)  // run rnaview as well
-	esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s -R %s %s %s %s > /dev/null",
-		    cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
-      else 
- 	esl_sprintf(&args, "%s -D %f -W ALL -C %s -M %s %s %s %s %s > /dev/null",
-		    cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
-      printf("%s\n", args);
-      system(args);
-      
-      read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
-      remove(tmpmapfile);
-     
-      read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, hasss, ct, clist, errbuf);      
-      remove(tmpcfile);
-    }
-  
-  else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
-
+   if (1||verbose) CMAP_Dump(stdout, clist);
+   
+   // Add the pdb annotation if there is one
+   if (pdbfile != NULL)
+     {
+       if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
+       fclose(tmpfp);
+       if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
+       fclose(tmpfp);
+       
+       // read the contact from the pdbfile
+       if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
+       else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
+       if (abcisRNA)  // run rnaview as well
+	 esl_sprintf(&args, "%s -D %f -W MIN -C %s -M %s -R %s %s %s %s > /dev/null",
+		     cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+       else 
+	 esl_sprintf(&args, "%s -D %f -W MIN -C %s -M %s %s %s %s %s > /dev/null",
+		     cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+       printf("%s\n", args);
+       system(args);
+       
+       status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
+       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
+       remove(tmpmapfile);
+       
+       status = read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, hasss, ct, clist, errbuf);
+       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading contacts", errbuf);
+       remove(tmpcfile);
+     }
+   
+   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
+   
 #if 0
-  for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
-  if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
+   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
+   if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
 #endif
-
-  clist->maxD  = cntmaxD;
-  *ret_nbpairs = clist->nbps;
-
-  if (1||verbose) CMAP_Dump(stdout, clist);
-  
-  if (ret_ct)      *ret_ct      = ct;      else free(ct);
-  if (ret_clist)   *ret_clist   = clist;   else free(clist);
-  if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
-
-
-  if (cmd) free(cmd);
-  if (args) free(args);
-  return eslOK;
-  
+   
+   clist->maxD  = cntmaxD;
+   *ret_nbpairs = clist->nbps;
+   
+   if (1||verbose) CMAP_Dump(stdout, clist);
+   
+   if (ret_ct)      *ret_ct      = ct;      else free(ct);
+   if (ret_clist)   *ret_clist   = clist;   else free(clist);
+   if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
+   
+   
+   if (cmd) free(cmd);
+   if (args) free(args);
+   return eslOK;
+   
  ERROR:
-  if (msa2pdb) free(msa2pdb);
-  if (cmd) free(cmd);
-  if (args) free(args);
-  if (ct) free(ct);
-  if (clist) CMAP_FreeCList(clist);
-  return status;
+   if (msa2pdb) free(msa2pdb);
+   if (cmd) free(cmd);
+   if (args) free(args);
+   if (ct) free(ct);
+   if (clist) CMAP_FreeCList(clist);
+   return status;
 }
 
 CLIST *
@@ -289,7 +291,7 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   case HSc:       esl_sprintf(ret_bptype, "HSc");       break;
   case HSt:       esl_sprintf(ret_bptype, "HSt");       break;
   case STACKED:   esl_sprintf(ret_bptype, "STACKED");   break;
-  case BPCONTACT: esl_sprintf(ret_bptype, "BPCONTACT"); break;
+  case CONTACT:   esl_sprintf(ret_bptype, "CONTACT");   break;
   case BPNONE:    esl_sprintf(ret_bptype, "BPNONE");    break;
 
   default: ESL_XFAIL(eslFAIL, errbuf, "wrong BPTYPE");
@@ -320,7 +322,7 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(bptype, "HSc"))       type = HSc;
   else if (!esl_strcmp(bptype, "HSt"))       type = HSt;
   else if (!esl_strcmp(bptype, "STACKED"))   type = STACKED;
-  else if (!esl_strcmp(bptype, "BPCONTACT")) type = BPCONTACT;
+  else if (!esl_strcmp(bptype, "CONTACT"))   type = CONTACT;
   else if (!esl_strcmp(bptype, "BPNONE"))    type = BPNONE;
 
   else
@@ -393,12 +395,12 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
-  int              ncnt = clist->alloc_ncnt;
+  int              ncnt = clist->ncnt;
   int              posi, posj;
   int              i, j;
   BPTYPE           bptype;
   double           D;
-  int              h = 0;
+  int              h = ncnt;
   int              status;
 
   if (esl_fileparser_Open(pdbcfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
@@ -420,8 +422,8 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
  
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
       D = atof(tok);
-      
-      if (i > 0 && j > 0 && j-i >= clist->mind && isnewcontact(posi, posj, clist)) {
+
+      if (i > 0 && j > 0 && (j-i+1) >= clist->mind && isnewcontact(posi, posj, clist)) {
 	
 	if (h == ncnt - 1) {
 	  ncnt += clist->alloc_ncnt;
@@ -442,19 +444,26 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 	if (bptype <  STACKED) clist->nbps ++;
 	if (bptype == WWc)     clist->nwwc ++;
 
-	if (!hasss) {
-	  ct[i] = i; // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
-	  ct[j] = j;
+	if (!hasss) { // ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
+	  if (bptype == WWc) {
+	    ct[i] = j; 
+	    ct[j] = i;
+	  }
+	  else {
+	    ct[i] = i; 
+	    ct[j] = j;
+	  }
 	}
 	else {
-	  if (ct[i] == j && clist->cnt[h].bptype != WWc)
-	    ESL_XFAIL(eslFAIL, errbuf, "conflict between the cons_ss and the pdb file %s", pdbcfile);
+	  if (ct[i] == j && clist->cnt[h].bptype == CONTACT)
+	    clist->cnt[h].bptype = WWc;
 	}
 	
 #if 0
-	printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
-	       (int)clist->cnt[h].i, (int)clist->cnt[h].posi, (int)clist->cnt[h].pdbi,
-	       (int)clist->cnt[h].j, (int)clist->cnt[h].posj, (int)clist->cnt[h].pdbj, clist->cnt[h].D);
+	if (bptype == WWc)
+	  printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
+		 (int)clist->cnt[h].i, (int)clist->cnt[h].posi, (int)clist->cnt[h].pdbi,
+		 (int)clist->cnt[h].j, (int)clist->cnt[h].posj, (int)clist->cnt[h].pdbj, clist->cnt[h].D);
 #endif
 	
 	h ++;
@@ -470,7 +479,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 }
 
 static int
-isnewcontact(int posi,int  posj, CLIST *clist)
+isnewcontact(int posi, int  posj, CLIST *clist)
 {
   int h;
   for (h = 0; h < clist->ncnt; h ++) {

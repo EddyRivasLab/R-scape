@@ -16,10 +16,10 @@
 #include "rna.h"
 
 typedef struct pair_s {
-  long i;       // positions in chain
+  long i;       // position in SEQRES
   long j;
   
-  long ir;      // positions in pdb sequence
+  long ir;      // positions in ATOM "resSeq"
   long jr;
 
   char ic;    // the character
@@ -41,10 +41,11 @@ typedef struct list_s{
   PAIR    *pair;
 } LIST;
 
-extern long  er_ChainFrom(char chid, long nchain, char *ChainID, long **chain_idx, long *ResSeq, long **seidx);
+extern int   er_ChainIdx(char chid, long nchain, char *chain_name);
 extern int   er_PDB_GetSeq(char *pdffile, char *chainname, int from, int to, char **ret_sq, int **ret_ismissing, char *errbuf);
-extern int   er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName, long *ResSeq,
-			       char **AtomName, char **Miscs,double **xyz, char *errbuf);
+extern int   er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName,
+			       long *AtomNum, long *Atom2SEQ, long *ResSeq, char **AtomName, char **Miscs,double **xyz,
+			       long *ret_nchain, char **ret_chain_name, long **ret_chain_f, long **ret_chain_t, char *errbuf);
 extern LIST *er_CreateList(int alloc_np);
 extern void  er_FreeList(LIST *list);
 extern int   er_ListDump(FILE *fp, LIST *list);

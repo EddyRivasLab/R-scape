@@ -25,8 +25,8 @@ typedef enum {
   WSt       = 9,
   HSc       = 10,
   HSt       = 11,
-  STACKED   = 12,
-  BPCONTACT = 13,
+  STACKED   = 12, // two bases in proximity that are involved in other basepairs
+  CONTACT   = 13, // just in proximity in the 3D structure
   BPNONE    = 14,
 } BPTYPE;
 

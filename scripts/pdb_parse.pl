@@ -25,7 +25,7 @@ posi     => '$', # alignment position
 posj     => '$', # 
 chi      => '$', # character
 chj      => '$', # 
-bptype   => '$', # WWc WWt HHc HHt SSc SSt WHc WHt WSc WSt HSc HSt STACKED BPCONTACT BPNONE
+bptype   => '$', # WWc WWt HHc HHt SSc SSt WHc WHt WSc WSt HSc HSt STACKED CONTACT BPNONE
 distance => '$', # euclidian distance
 };
 
@@ -76,8 +76,8 @@ if ($opt_L) { $minL = $opt_L; }
 my $dornaview = 0;
 if ($opt_R) { $dornaview = 1; }
 
-#options: CA C ALL NOH
-my $which = "CA";
+#options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
+my $which = "MIN";
 if ($opt_W) { $which = "$opt_W"; }
 
 my $nch = 0;
@@ -252,14 +252,14 @@ sub map_pdbsq {
     my $y = 0;
     while ($n < $from_pfam-1) {
 	if ($pfam_asq[$y] =~ /^[\.\-]$/) { 
-	    printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	    #printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 	    $y ++;
 	}
 	else {
 	    $n ++; $y ++;
  	}
     }
-    print "1st in pdb $x | 1st in pfamali $y\n";
+    print "^^1st in pdb $x | 1st in pfamali $y\n";
     
     my $pos = 0;
     while ($pos < $alen) {
@@ -271,7 +271,7 @@ sub map_pdbsq {
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
 	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
 	    }
 	    $y ++;	
@@ -544,6 +544,7 @@ sub parse_pdb_contact_map {
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map[$x]+1;
+	#printf     "%d %d\n", $x+1, $map[$x]+1;
     }
 
     my $ncnt = 0; # the contact for this chain
@@ -570,12 +571,11 @@ sub parse_pdb_contact_map {
     if ($atom_offset < 0) { print "could not find atom offset\n"; die; }
     print "#atom offset $atom_offset chain $chain\n";
 
-    my $nres; #residues annotated
     my @res;
-    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \$nres, \@res);
+    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \@res);
     print "# calculate distances\n";
     
-    for ($l1 = 0; $l1 < $nres; $l1 ++) {
+    for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
 	$coor1 = $res[$l1]->{"RES::coor"};
 	$char1 = $res[$l1]->{"RES::char"};
@@ -584,15 +584,13 @@ sub parse_pdb_contact_map {
 	@y1    = @{$res[$l1]->{"RES::y"}};
 	@z1    = @{$res[$l1]->{"RES::z"}};
 
-	printf "%s", $char1;
-	
 	if ($char1 ne $chsq[$l1]) {
-	    #printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor1]\n", 
-	    #($l1+1), $len, $coor1+1, $len+$atom_offset-1, $char1; 
-	    #die;
+	    printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor1]\n", 
+	    ($l1+1), $len, $coor1+1, $len+$atom_offset-1, $char1; 
+	    die;
 	}
        
-	for ($l2 = $l1+1; $l2 < $nres; $l2 ++) {
+	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
 	    $nat2  = $res[$l2]->{"RES::nat"};
 	    $coor2 = $res[$l2]->{"RES::coor"};
 	    $char2 = $res[$l2]->{"RES::char"};
@@ -601,20 +599,22 @@ sub parse_pdb_contact_map {
 	    @y2    = @{$res[$l2]->{"RES::y"}};
 	    @z2    = @{$res[$l2]->{"RES::z"}};
 
-	    #if ($char2 ne $chsq[$l2]) {
-	#	printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
-	#	($l2+1), $len, $coor2+1, $len+$atom_offset-1, $char2; 
-	#	#die; 
-	 #   }
+	    if ($char2 ne $chsq[$l2]) {
+		printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
+		($l2+1), $len, $coor2+1, $len+$atom_offset-1, $char2; 
+		die; 
+	    }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
+	    if ($l1 == 0 && $l2 == 117) { print "^^distance $distance\n"; }
+	    
 
 	    if ($distance > 0) {
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
 		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance;
 
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
-			
+
 			$cnt[$ncnt] = CNT->new();
 			$cnt[$ncnt]->{"CNT::i"}        = $l1+1;
 			$cnt[$ncnt]->{"CNT::j"}        = $l2+1;
@@ -622,7 +622,7 @@ sub parse_pdb_contact_map {
 			$cnt[$ncnt]->{"CNT::posj"}     = $map[$l2]+1;
 			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
 			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
-			$cnt[$ncnt]->{"CNT::bptype"}   = "BPCONTACT";
+			$cnt[$ncnt]->{"CNT::bptype"}   = "CONTACT";
 			$cnt[$ncnt]->{"CNT::distance"} = $distance;
 			
 			$ncnt ++;
@@ -640,33 +640,37 @@ sub parse_pdb_contact_map {
     for (my $c = 0; $c < $ncnt; $c ++) {
 	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
     }
+
+    print_contactlist(\*STDOUT, $ncnt, \@cnt);
+    print_contactlist(\*MAP,    $ncnt, \@cnt);
+    print_contactlist(\*MAP1,   $ncnt, \@cnt);
+    
+    return $alen;
+}
+
+sub print_contactlist {
+    my ($fp, $ncnt, $cnt_ref) = @_;
+    
+    my $nbp = 0;
+    my $nwc = 0;
     
     for (my $c = 0; $c < $ncnt; $c ++) {
-	
-	printf      "%d %d %s | %d %d %s | %s | %.2f \n", 
-	$cnt[$c]->{"CNT::i"}, $cnt[$c]->{"CNT::posi"}, $cnt[$c]->{"CNT::chri"}, 
-	$cnt[$c]->{"CNT::j"}, $cnt[$c]->{"CNT::posj"}, $cnt[$c]->{"CNT::chrj"}, 
-	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
-	
-	printf MAP  "%d %s %d %s %s %.2f\n",
-	$cnt[$c]->{"CNT::posi"}, $cnt[$c]->{"CNT::chri"}, 
-	$cnt[$c]->{"CNT::posj"}, $cnt[$c]->{"CNT::chrj"}, 
-	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
-	
-	printf MAP1 "%d %s %d %s %s %.2f\n", 
-	$cnt[$c]->{"CNT::i"}, $cnt[$c]->{"CNT::chri"}, 
-	$cnt[$c]->{"CNT::j"}, $cnt[$c]->{"CNT::chrj"}, 
-	$cnt[$c]->{"CNT::bptype"}, $cnt[$c]->{"CNT::distance"};
-	
-   }
-    
-    print      "\# contacts: $ncnt total $$ret_ncnt_t\n";
-    print MAP0 "\# contacts: $ncnt\n";
-    print MAP  "\# contacts: $ncnt\n";
-    print MAP1 "\# contacts: $ncnt\n";
 
-    return $alen;
-	}
+	my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
+	if    ($bptype =~ /^WWc$/)                           { $nbp ++; $nwc ++; }
+	elsif ($bptype ne "STACKED" && $bptype ne "CONTACT") { $nbp ++; };
+	
+    	printf $fp "%d\t%d\t%s\t%d\t%d\t%s\t%s\t%.2f\n", 
+		$cnt_ref->[$c]->{"CNT::i"}, $cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
+		$cnt_ref->[$c]->{"CNT::j"}, $cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
+		$cnt_ref->[$c]->{"CNT::bptype"}, $cnt_ref->[$c]->{"CNT::distance"};
+    }
+    printf $fp "# contacts: $ncnt\n";
+    printf $fp "# bpairs   %d \n", $nbp;
+    printf $fp "# WWc      %d \n", $nwc;
+    
+}
+
 
 sub addcontact {
     my ($ret_ncnt, $cnt_ref, $new_ref) = @_;
@@ -709,7 +713,7 @@ sub addcontact {
 
     my $nbp = 0;
     my $nwc = 0;
-    open(FILE,  ">$mapallfile")  || die;
+    open(FILE,  ">$file")  || die;
     print FILE  "# PDB   $pdbname\n"; 
     print FILE  "# MSA   $pfamname\n"; 
     print FILE  "# maxD  $maxD\n";
@@ -743,7 +747,6 @@ sub run_rnaview {
     my $rnaviewfile = "rnaviewf";
     my $sq;
     my @map = (); # map sq to the sequence in the alignment
-    my @atom2sq;
 
     system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
     system("/usr/bin/more $rnaviewfile\n");
@@ -755,11 +758,8 @@ sub run_rnaview {
 	    my $alen = map_pdbsq($stofile, $pdbname, $chain, $sq, \@map);
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
-	elsif (/\#\s+seq_$chain\s+(\d.+)\s*$/) {
-	    @atom2sq = split(/ /, $1);
-	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
-	    my $posi   = $map[$atom2sq[$1]-1]+1;
+	    my $posi   = $map[$1-1]+1;
 	    my $posj   = $map[$2-1]+1;
 	    my $chri   = aa_conversion($3);
 	    my $chrj   = aa_conversion($4);
@@ -801,8 +801,7 @@ sub rnaview2list {
     }
 
     if ($found == 0) {
-	printf "i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
-	printf "new bpair\n"; 
+	printf "new bpair: i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
 	
 	$cnt_ref->[$ncnt] = CNT->new();
 	$cnt_ref->[$ncnt]->{"CNT::i"}        = 0;
@@ -813,9 +812,9 @@ sub rnaview2list {
 	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
 	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
 	$cnt_ref->[$ncnt]->{"CNT::distance"} = 0;
-	$$ret_ncnt ++;
+	$ncnt ++;
     }
-
+    $$ret_ncnt = $ncnt;
 }
 
 sub atom_offset {
@@ -933,30 +932,138 @@ sub aa_conversion {
 }
 
 
+# The numbering of the sequence in SEQRES does not have to agree with the numbers
+# given in the ATOM line as "resSeq"
+#
+# Two reasons for that non-correspondence
+#
+# (1) Sometimes in ATOM a number is just not used
+#
+#       example 3hl2.pdb chain E: it goes from 16 to 18 missing 17, but 17 ISNOT a missing residue
+#
+#                    ATOM  14473  C5 B  U E  16      46.093 -21.393   9.929  0.50100.66           C  
+#                    ATOM  14474  C6 A  U E  16      40.956 -19.338  30.396  0.50 99.67           C  
+#                    ATOM  14475  C6 B  U E  16      46.175 -22.317   8.966  0.50 99.69           C  
+#                    ATOM  14476  P  A  G E  18      38.337 -22.615  34.967  0.50101.62           P  
+#                    ATOM  14477  P  B  G E  18      44.644 -26.224   4.396  0.50105.38           P  
+#
+#        the U(16) G(18) are contiguous in SEQRES.
+#
+# (2) There is something called "insertion residues". PDB documentations says:
+#
+#          Alphabet letters are commonly used for insertion code. The
+#          insertion code is used when two residues have the same
+#          numbering. The combination of residue numbering and
+#          insertion code defines the unique residue.
+#
+#      example 3hl2.pdb chain E: there are 3 insertion residues:  5A, 5B, 5C
+#
+#                         ATOM  13879  C6 B  C E   4      28.577  -2.586  10.917  0.50 90.30           C  
+#                         ATOM  13880  P  A  G E   5A     62.899 -27.100  31.234  0.50 94.87           P  
+#                         .
+#                         .
+#                         .
+#                         ATOM  13924  C4 A  G E   5A     62.453 -21.295  28.899  0.50101.28           C  
+#                         ATOM  13925  C4 B  G E   5A     33.721  -4.688  10.483  0.50101.54           C  
+#                         ATOM  13926  P  A  G E   5B     57.209 -23.191  31.258  0.50114.69           P  
+#                         .
+#                         .
+#                         .
+#                         ATOM  13971  C4 B  G E   5B     38.398  -6.815  12.263  0.50104.40           C  
+#                         ATOM  13972  P  A  A E   5C     53.245 -19.845  29.978  0.50103.68           P  
+#                         ATOM  13973  P  B  A E   5C     39.584 -11.933   9.395  0.50103.81           P  
+#                         .
+#                         .
+#                         .
+#                         ATOM  14015  C4 B  A E   5C     38.787  -9.494  15.853  0.50102.79           C  
+#                         ATOM  14016  P  A  U E   6      49.823 -18.749  24.136  0.50107.74           P  
+#                         ATOM  14017  P  B  U E   6      42.253 -14.348  15.233  0.50103.96           P  
+#
+# IN SEQRES those insertion residues are all there as CGGAU
+#                                                     
+#    for the 3hl2.pdb chain E the actual correspondence between
+#          the SEQRES (1-90)
+#          and
+#          the atom resSeq numbering (1-76)
+#     is as follows
+#
+# SEQRES_E G C C C G G A U G A U C  C  U  C  A  G  U  G  G  U  C  U  G  G  G  G  U  G  C  A  G  G
+# resSeq_E 1 2 3 4 5 5 5 6 7 8 9 10 11 12 13 14 15 16 18 19 20 20 21 22 23 24 25 26 27 28 29 30 31
+#                  * * *                             *      *  *
+#
+# SEQRES_E C U U C A A A  C  C  U  G  U  A  G  C  U  G  U  C  U  A  G  C  G  A  C  A  G  A  G  U  G  G
+# resSeq_E 0 0 0 0 0 0 0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
+#                                               *  *  *  *  *  *  *  *  *  *  *  *
+#
+#          * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
+#
+# SEQRES_E U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
+# resSeq_E 54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
+#                                              *  *
+#
+#                                                                               * -> another documented "missing residue"
+#
+#
 sub get_atoms_coord {
-    my ($pdbfile, $atom_offset, $pdbsq_ref, $len, $chain, $ret_nres, $res_ref) = @_;
+    my ($pdbfile, $atom_offset, $seqres_ref, $len, $chain, $res_ref) = @_;
 
     my $type;
     my $char;
-    my $nat;
     my $coor;
+    my $nat;
     my $x;
     my $y;
     my $z;
-    my $l;
-    my $nres = 0;
+    my $l = 0;
+    my $nn = 0;
     my $recording = 0;
+    my $respos_first;
+    my $respos_prv = -1;
+    my $id;
+    my $id_prv = -1;
+    
     
     for ($l = 0; $l < $len; $l ++) {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
-	$res_ref->[$l]->{"RES::coor"} = $l+$atom_offset-1;
-	$res_ref->[$l]->{"RES::char"} = aa_conversion($pdbsq_ref->[$l]);
+	$res_ref->[$l]->{"RES::coor"} = -1;
+	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l]);
     }
+
+    my @ismissing;
+    my $remarknum = 0;
+    my $from;
+    my $to;
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/DBREF\s+\S+\s+$chain\s+(\d+)\s+(\d+)\s+/) {
+	    $from = $1;
+	    $to   = $2;
+	    for (my $r = $from-1; $r < $to; $r++) {
+		$ismissing[$r] = 0;
+	    }
+	}
+    }
+    close(FILE);
+    
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
+	    $remarknum = $1;
+	}
+	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)\s*$/) {
+	    my $pos = $1;
+	    if ($pos < $from || $pos > $to) {  print "Bad position $pos\n"; die; }
+	    $ismissing[$pos-1] = 1;
+	}
+	
+    }
+    close(FILE);
     
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
+    $l = 0;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	my $line = $_;
@@ -981,38 +1088,53 @@ sub get_atoms_coord {
 	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
 	    
 	    # An atom to record
+	    $id = "$respos"."$icode";
+	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 	    
-	    $l = $respos-$atom_offset;	 
-	    printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n", 
-	    $l+1;
+	    if ($respos - $respos_first > $len) { continue; }
+	    if ($respos < $respos_first)        { continue; }
+
+	    if ($nn == 0 || $id =~ /^$id_prv$/) {
+		$nat = $res_ref->[$l]->{"RES::nat"};
+		${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
+		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+		${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+		${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+		$res_ref->[$l]->{"RES::nat"} ++;
+	    }
+	    else {
+		$l ++;
+		if ($l > 0 && $respos != $respos_prv+1) {
+		    for (my $p = $respos_prv+1; $p < $respos; $p ++) {
+			if ($ismissing[$p-1]) { $l ++; }
+		    }
+
+		}
+		
+	    }
+	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
+	    $res_ref->[$l]->{"RES::coor"} = $respos;
+ 
+	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 	    if ($l < 0)     { print "bad lenght\n"; die; }
  	    if ($l >= $len) { print "too long?\n";  die; }
 
-	    $nat = $res_ref->[$l]->{"RES::nat"};
-	    if ($res_ref->[$l]->{"RES::char"} ne $resname) {
-		printf "residue %d (%d%s) is %s but should be %s\n", $l+1, $respos, $icode, $resname, $res_ref->[$l]->{"RES::char"}; 
-		die; 
-	    }
-	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atom;
-	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-	    $res_ref->[$l]->{"RES::nat"} ++;
+	    $id_prv     = $id;
+	    $respos_prv = $respos;
+	    $nn ++;
 	}
 	# How to terminate chain
 	elsif ($recording && $line =~ /TER/) { last; }
    }
     close(FILE);
-
-    $$ret_nres = $l+1;
     
-    for ($l = 0; $l < $$ret_nres; $l ++) {
+    for ($l = 0; $l < $len; $l ++) {
 	$nat  = $res_ref->[$l]->{"RES::nat"};	    
 	$coor = $res_ref->[$l]->{"RES::coor"};	    
 	$char = $res_ref->[$l]->{"RES::char"};	    
-	if ($nat == 0) { print "#res $l has not atoms\n"; }
-	if (0) { printf "res %d coor %d char %s nat %d\n", $l, $coor, $char, $nat; }
+	#if ($nat == 0) { print "#res $l has not atoms\n"; }
+	if (0) { printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; }
     }
 }
 
@@ -1023,16 +1145,18 @@ sub distance {
     my $distance = 0;
     if ($nat1 == 0 || $nat2 == 0) { return $distance; }
     
-    if  ($which =~ /^CA$/ || $which =~ /^C$/)  {
+    if  ($which =~ /^CA$/ || $which =~ /^C$/ || $which eq "C1'")  {
 	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		if ($type1_ref->[$a1] =~ /^$which$/ && $type2_ref->[$a2] =~ /^$which$/) {
-		    $distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+	    if ($type1_ref->[$a1] =~ /^$which$/) {
+		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		    if ($type2_ref->[$a2] =~ /^$which$/) {
+			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		    }
 		}
 	    }
 	}
     }
-    elsif ($which =~ /^ALL$/) {
+    elsif ($which =~ /^MIN$/) { # minimum atom distance
 	$distance = 1e+50;
 	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
 	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
@@ -1040,6 +1164,20 @@ sub distance {
 		if ($dist < $distance) { $distance = $dist; }
 	    }
 	}
+    }
+    elsif ($which =~ /^AVG$/) { # average
+	$distance = 0;
+	my $n = 0;
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		if  ($dist > 0) {
+		    $distance += $dist;
+		    $n ++;
+		}
+	    }
+	}
+	$distance /= $n;
     }
     elsif ($which =~ /^NOH$/) {
 	$distance = 1e+50;

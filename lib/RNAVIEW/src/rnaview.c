@@ -567,9 +567,14 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   char *ChainID, *bseq, **AtomName, **ResName, **Miscs;
   long i, j, k,m,n, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
   long *ResSeq, *RY, **seidx, num_modify, *modify_idx;
+  long *AtomNum, *Atom2SEQ;
+  long nchain_tot;
   long **chain_idx, nchain;
   double HB_UPPER[2], **xyz;
-  static long base_all;    
+  static long base_all;
+  char  *chain_name = NULL;
+  long  *chain_f = NULL;
+  long  *chain_t = NULL;
   FILE *fout;
   char errbuf[eslERRBUFSIZE];
 
@@ -592,13 +597,15 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   AtomName = cmatrix(1, num, 0, 4);
   ResName = cmatrix(1, num, 0, 3);
   ChainID = cvector(1, num);
+  AtomNum = lvector(1, num);
+  Atom2SEQ = lvector(1, num);
   ResSeq = lvector(1, num);
   xyz = dmatrix(1, num, 1, 3);
   Miscs = cmatrix(1, num, 0, NMISC);
   
   fprintf(stdout, "# PDB_file %s\n",  pdbfile);
   fprintf(fout,"PDB data file name: %s\n",  pdbfile);
-  num = read_pdb(pdbfile,AtomName, ResName, ChainID, ResSeq, xyz, Miscs, ALT_LIST);
+  num = read_pdb(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
   
   /* get the numbering information of each residue.
      seidx[i][j]; i = 1-num_residue  j=1,2
@@ -610,7 +617,9 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
     upperstr(user_chain);
   }
   
-  if (er_PrintChainSeqs(pdbfile, user_chain, ChainID, num_residue, seidx, ResName, ResSeq, AtomName, Miscs, xyz, errbuf) != eslOK) {
+  if (er_PrintChainSeqs(pdbfile, user_chain, ChainID, num_residue, seidx, ResName,
+			AtomNum, Atom2SEQ, ResSeq, AtomName, Miscs, xyz,
+			&nchain_tot, &chain_name, &chain_f, &chain_t, errbuf) != eslOK) {
     printf("%s\n", errbuf);
     exit(1);
   }
@@ -634,6 +643,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	    strcpy(ResName[bs_atoms], ResName[j]);
 	    ChainID[bs_atoms] = ChainID[j];
 	    ResSeq[bs_atoms] = ResSeq[j];
+	    AtomNum[bs_atoms] = AtomNum[j];
 	  }
 	  for(k = 0 ; k <=NMISC; k++)
 	    Miscs[bs_atoms][k] = Miscs[j][k];
@@ -648,6 +658,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	    strcpy(ResName[bs_atoms], ResName[j]);
 	    ChainID[bs_atoms] = ChainID[j];
 	    ResSeq[bs_atoms] = ResSeq[j];
+	    AtomNum[bs_atoms] = AtomNum[j];
 	  }
 	  for(k = 0 ; k <=NMISC; k++)
 	    Miscs[bs_atoms][k] = Miscs[j][k];
@@ -679,10 +690,10 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   bseq = cvector(1, num_residue);
   nres=0;    
   seidx=residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);
-  
+
+  nchain = nchain_tot;
   chain_idx = lmatrix(1,500 , 1, 2);  /* # of chains max = 200 */    
   get_chain_idx(nres, seidx, ChainID, &nchain, chain_idx);
-
 
   bs_atoms = 0;
   for (i=1; i<=nchain; i++){ /* rid of ligand */
@@ -701,6 +712,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	    strcpy(ResName[bs_atoms], ResName[j]);
 	    ChainID[bs_atoms] = ChainID[j];
 	    ResSeq[bs_atoms] = ResSeq[j];
+	    AtomNum[bs_atoms] = AtomNum[j];
 	  }
 	  for(m = 0 ; m <=NMISC; m++)
 	    Miscs[bs_atoms][m] = Miscs[j][m];
@@ -722,8 +734,9 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   
  
   work_horse(pdbfile, fout, nres, bs_atoms, bseq, seidx, RY, AtomName,
-	     ResName, ChainID, nchain, chain_idx, ResSeq, Miscs, xyz,num_modify, modify_idx,  
-	     type_stat, pair_stat);
+	     ResName, ChainID, nchain, chain_idx, AtomNum, Atom2SEQ, ResSeq,
+	     Miscs, xyz, nchain_tot, chain_name, chain_f, chain_t,
+	     num_modify, modify_idx, type_stat, pair_stat);
 
   base_all=base_all+nres; /* accumulate all the bases */
   *bs_all=base_all;
@@ -736,6 +749,8 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   free_cmatrix(ResName, 1, num, 0, 3);
   free_cvector(ChainID, 1, num);
   free_lvector(ResSeq, 1, num);
+  free_lvector(AtomNum, 1, num);
+  free_lvector(Atom2SEQ, 1, num);
   free_dmatrix(xyz, 1, num, 1, 3);
   free_cmatrix(Miscs, 1, num, 0, NMISC);
   free_lmatrix(seidx, 1, num_residue, 1, 2);
@@ -743,13 +758,18 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   free_lmatrix(chain_idx, 1,500 , 1, 2);   
   free_lvector(RY, 1, num_residue);
   free_lvector(modify_idx, 1, num_residue);
-  
+  if (chain_name) free (chain_name);
+  if (chain_f) free (chain_f);
+  if (chain_t) free (chain_t);
 }
 
 void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
                 char *bseq, long **seidx, long *RY, char **AtomName,
-                char **ResName, char *ChainID, long nchain, long **chain_idx, long *ResSeq,char **Miscs, 
-                double **xyz,long num_modify, long *modify_idx, 
+                char **ResName, char *ChainID, long nchain, long **chain_idx,
+		long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, 
+                double **xyz, 
+		long nchain_tot, char *chain_name, long *chain_f, long *chain_t,
+		long num_modify, long *modify_idx, 
                 long *type_stat,long **pair_stat)
 /* perform all the calculations */
   
@@ -783,7 +803,9 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
   /* find all the base-pairs */
   //printf("Finding all the base pairs...\n");    
   all_pairs(pdbfile, fout, num_residue, RY, Nxyz, orien, org, BPRS,
-	    seidx, xyz, AtomName, ResName, ChainID, nchain, chain_idx, ResSeq, Miscs, bseq,
+	    seidx, xyz, nchain_tot, chain_name, chain_f, chain_t,
+	    AtomName, ResName, ChainID, nchain, chain_idx,
+	    AtomNum, Atom2SEQ, ResSeq, Miscs, bseq,
 	    &num_pair_tot, pair_type, bs_pairs_tot, &num_single_base,
 	    single_base, &num_multi, multi_idx, multi_pair, sugar_syn);
 

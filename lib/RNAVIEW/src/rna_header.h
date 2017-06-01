@@ -6,8 +6,10 @@
 extern void rna(char *pdbfile, long *type_stat,long **pair_stat, long *base_all);
 extern void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
 		       char *bseq, long **seidx, long *RY, char **AtomName,
-		       char **ResName, char *ChainID, long nchain, long **chain_idx, long *ResSeq,char **Miscs, 
-		       double **xyz,long num_modify, long *modify_idx, 
+		       char **ResName, char *ChainID, long nchain, long **chain_idx,
+		       long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, 
+		       double **xyz, long nchain_tot, char *chain_name, long *chain_f, long *chain_t,
+		       long num_modify, long *modify_idx, 
 		       long *type_stat,long **pair_stat);
 extern void RY_edge_stat(char *pdbfile, long np);
 
@@ -258,7 +260,7 @@ extern long close_file(FILE * fp);
 extern long upperstr(char *a);
 extern long number_of_atoms(char *pdbfile);
 extern long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
-		     long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST);
+		     long *AtomNum, long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST);
 extern void pdb_record(long ib, long ie, long *inum, long idx, char **AtomName,
 		       char **ResName, char *ChainID, long *ResSeq, double **xyz,
 		       char **Miscs, FILE * fp);
@@ -381,8 +383,11 @@ extern void handle_str(char *pdbfile, char *outfile, long ds, long curves,
 		       long divide, long hetatm, long pairs);
 extern int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		     double **Nxyz, double **orien, double **org, double *BPRS,
-		     long **seidx, double **xyz, char **AtomName, char **ResName,
-		     char *ChainID, long nchain, long **chain_idx, long *ResSeq, char **Miscs, char *bseq,
+		     long **seidx, double **xyz,
+		     long nchain_tot, char *chain_name, long *chain_f, long *chain_t,
+		     char **AtomName, char **ResName,
+		     char *ChainID, long nchain, long **chain_idx,
+		     long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *bseq,
 		     long *num_pair_tot, char **pair_type,long **bs_pairs_tot,
 		     long *num_single_base, long *single_base,long *num_multi,
 		     long *multi_idx, long **multi, long *sugar_syn);
