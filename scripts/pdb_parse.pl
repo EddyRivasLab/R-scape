@@ -606,8 +606,6 @@ sub parse_pdb_contact_map {
 	    }
 
 	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
-	    if ($l1 == 0 && $l2 == 117) { print "^^distance $distance\n"; }
-	    
 
 	    if ($distance > 0) {
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
@@ -1092,8 +1090,8 @@ sub get_atoms_coord {
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 	    
-	    if ($respos - $respos_first > $len) { continue; }
-	    if ($respos < $respos_first)        { continue; }
+	    if ($respos - $respos_first > $len) { next; }
+	    if ($respos < $respos_first)        { next; }
 
 	    if ($nn == 0 || $id =~ /^$id_prv$/) {
 		$nat = $res_ref->[$l]->{"RES::nat"};

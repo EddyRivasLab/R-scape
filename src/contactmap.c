@@ -50,8 +50,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   int    L = msa->alen;
   int    ct_nbpairs;
   int    alloc_ncnt = 5;
-  int    ncnt = alloc_ncnt;
-  int    h = 0;
+  int    ncnt = 0;
   int    i, j;
   int    status;
   
@@ -73,32 +72,32 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 
 	 msa2pdb[i] = i;
 	 
-	 if (h == ncnt - 1) {
-	   ncnt += alloc_ncnt;
-	   ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
-	   ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
+	 if (ncnt == clist->alloc_ncnt - 1) {
+	   clist->alloc_ncnt += alloc_ncnt;
+	   ESL_REALLOC(clist->cnt,    sizeof(CNT)   * clist->alloc_ncnt);
+	   ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * clist->alloc_ncnt);
 	 }
 	 
 	 if (ct[i+1] > i+1 && (ct[i+1] - i) >= cntmind) {
 	   /* assign */
-	   clist->cnt[h].i      = i+1;
-	   clist->cnt[h].j      = ct[i+1];
-	   clist->cnt[h].posi   = msa2omsa[i]+1;
-	   clist->cnt[h].posj   = msa2omsa[ct[i+1]-1]+1;
-	   clist->cnt[h].pdbi   = -1;
-	   clist->cnt[h].pdbj   = -1;
-	   clist->cnt[h].isbp   = TRUE;
-	   clist->cnt[h].bptype = WWc;
-	   clist->cnt[h].D      = +eslINFINITY;
-	   clist->cnt[h].sc     = -eslINFINITY;
+	   clist->cnt[ncnt].i      = i+1;
+	   clist->cnt[ncnt].j      = ct[i+1];
+	   clist->cnt[ncnt].posi   = msa2omsa[i]+1;
+	   clist->cnt[ncnt].posj   = msa2omsa[ct[i+1]-1]+1;
+	   clist->cnt[ncnt].pdbi   = -1;
+	   clist->cnt[ncnt].pdbj   = -1;
+	   clist->cnt[ncnt].isbp   = TRUE;
+	   clist->cnt[ncnt].bptype = WWc;
+	   clist->cnt[ncnt].D      = +eslINFINITY;
+	   clist->cnt[ncnt].sc     = -eslINFINITY;
 	   clist->nbps ++;
 	   clist->nwwc ++;
-	   h ++;
+	   ncnt ++;
 	 }
        }
-       clist->ncnt = h;
+       clist->ncnt = ncnt;
     }
-   if (1||verbose) CMAP_Dump(stdout, clist);
+   if (verbose) CMAP_Dump(stdout, clist);
    
    // Add the pdb annotation if there is one
    if (pdbfile != NULL)
@@ -396,11 +395,11 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
   int              ncnt = clist->ncnt;
+  int              alloc_ncnt = 5;
   int              posi, posj;
   int              i, j;
   BPTYPE           bptype;
   double           D;
-  int              h = ncnt;
   int              status;
 
   if (esl_fileparser_Open(pdbcfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
@@ -425,22 +424,22 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 
       if (i > 0 && j > 0 && (j-i+1) >= clist->mind && isnewcontact(posi, posj, clist)) {
 	
-	if (h == ncnt - 1) {
-	  ncnt += clist->alloc_ncnt;
-	  ESL_REALLOC(clist->cnt,    sizeof(CNT)   * ncnt);
-	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * ncnt);
+	if (ncnt == clist->alloc_ncnt - 1) {
+	  clist->alloc_ncnt += alloc_ncnt;
+	  ESL_REALLOC(clist->cnt,    sizeof(CNT)   * clist->alloc_ncnt);
+	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * clist->alloc_ncnt);
 	}
 	
-	clist->cnt[h].posi   = posi;
-	clist->cnt[h].posj   = posj;
-	clist->cnt[h].i      = i;
-	clist->cnt[h].j      = j;
-	clist->cnt[h].pdbi   = msa2pdb[i-1]+1;
-	clist->cnt[h].pdbj   = msa2pdb[j-1]+1;
-	clist->cnt[h].D      = D;
-	clist->cnt[h].bptype = bptype;
-	clist->ncnt          = h;
-	clist->cnt[h].isbp   = (bptype < STACKED)? TRUE : FALSE;
+	clist->cnt[ncnt].posi   = posi;
+	clist->cnt[ncnt].posj   = posj;
+	clist->cnt[ncnt].i      = i;
+	clist->cnt[ncnt].j      = j;
+	clist->cnt[ncnt].pdbi   = msa2pdb[i-1]+1;
+	clist->cnt[ncnt].pdbj   = msa2pdb[j-1]+1;
+	clist->cnt[ncnt].D      = D;
+	clist->cnt[ncnt].bptype = bptype;
+	clist->ncnt          = ncnt;
+	clist->cnt[ncnt].isbp   = (bptype < STACKED)? TRUE : FALSE;
 	if (bptype <  STACKED) clist->nbps ++;
 	if (bptype == WWc)     clist->nwwc ++;
 
@@ -455,23 +454,23 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 	  }
 	}
 	else {
-	  if (ct[i] == j && clist->cnt[h].bptype == CONTACT)
-	    clist->cnt[h].bptype = WWc;
+	  if (ct[i] == j && clist->cnt[ncnt].bptype == CONTACT)
+	    clist->cnt[ncnt].bptype = WWc;
 	}
 	
 #if 0
 	if (bptype == WWc)
-	  printf("h %d posi %d %d %d posj %d %d %d |%f\n", h+1,
-		 (int)clist->cnt[h].i, (int)clist->cnt[h].posi, (int)clist->cnt[h].pdbi,
-		 (int)clist->cnt[h].j, (int)clist->cnt[h].posj, (int)clist->cnt[h].pdbj, clist->cnt[h].D);
+	  printf("ncnt %d posi %d %d %d posj %d %d %d |%f\n", ncnt+1,
+		 (int)clist->cnt[ncnt].i, (int)clist->cnt[ncnt].posi, (int)clist->cnt[ncnt].pdbi,
+		 (int)clist->cnt[ncnt].j, (int)clist->cnt[ncnt].posj, (int)clist->cnt[ncnt].pdbj, clist->cnt[ncnt].D);
 #endif
 	
-	h ++;
+	ncnt ++;
       }
     }
   esl_fileparser_Close(efp);
   
-  clist->ncnt = h;
+  clist->ncnt = ncnt;
   return eslOK;
 
  ERROR:
