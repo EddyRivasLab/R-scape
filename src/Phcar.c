@@ -1030,7 +1030,7 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
 	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, NULL, ranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, NULL, 3, ranklist, title);
     if (status != eslOK) goto ERROR;
 
     status = create_msa_significant(cfg, msa, hitlist, &cfg->smsa);

@@ -74,7 +74,8 @@ my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
 
 my $dornaview = 0;
-if ($opt_R) { $dornaview = 1; }
+my $isrna = 0;
+if ($opt_R) { $dornaview = 1; $isrna = 1; }
 
 #options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
 my $which = "MIN";
@@ -866,6 +867,40 @@ sub aa_conversion {
     my $new;
 
     my $AA = uc($aa);
+
+    if ($isrna) {
+	if    ($AA =~ /^A$/)    { $new = "A"; }
+	elsif ($AA =~ /^I$/)    { $new = "A"; }
+	elsif ($AA =~ /^C$/)    { $new = "C"; }
+	elsif ($AA =~ /^G$/)    { $new = "G"; }
+	elsif ($AA =~ /^T$/)    { $new = "T"; }
+	elsif ($AA =~ /^U$/)    { $new = "U"; }
+	elsif ($AA =~ /^P$/)    { $new = "U"; }
+	# modified residues
+	elsif ($AA =~ /^1MA$/)  { $new = "A"; }
+	elsif ($AA =~ /^12A$/)  { $new = "A"; }
+	elsif ($AA =~ /^5MC$/)  { $new = "C"; }
+	elsif ($AA =~ /^CCC$/)  { $new = "C"; }
+	elsif ($AA =~ /^OMC$/)  { $new = "C"; }
+	elsif ($AA =~ /^M2G$/)  { $new = "G"; }
+	elsif ($AA =~ /^OMG$/)  { $new = "G"; }
+	elsif ($AA =~ /^YYG$/)  { $new = "G"; }
+	elsif ($AA =~ /^GDP$/)  { $new = "G"; }
+	elsif ($AA =~ /^GTP$/)  { $new = "G"; }
+	elsif ($AA =~ /^2MG$/)  { $new = "G"; }
+	elsif ($AA =~ /^7MG$/)  { $new = "G"; }
+	elsif ($AA =~ /^H2U$/)  { $new = "U"; }
+	elsif ($AA =~ /^UMP$/)  { $new = "U"; }
+	elsif ($AA =~ /^PSU$/)  { $new = "U"; }
+	elsif ($AA =~ /^2MU$/)  { $new = "U"; }
+	elsif ($AA =~ /^70U$/)  { $new = "U"; }
+	elsif ($AA =~ /^5MU$/)  { $new = "U"; }
+	elsif ($AA =~ /^AH2U$/) { $new = "U"; }
+	elsif ($AA =~ /^BH2U$/) { $new = "U"; }
+	else { print "aa_conversion(): uh? |$AA|\n"; die; }	
+	return $new;
+    }
+    
     
     if    ($AA =~ /^ALA$/)  { $new = "A"; }
     elsif ($AA =~ /^CYS$/)  { $new = "C"; }
@@ -896,34 +931,7 @@ sub aa_conversion {
     elsif ($AA =~ /^DC$/)   { $new = "C"; }
     elsif ($AA =~ /^DG$/)   { $new = "G"; }
     elsif ($AA =~ /^DT$/)   { $new = "T"; }
-    elsif ($AA =~ /^A$/)    { $new = "A"; }
-    elsif ($AA =~ /^I$/)    { $new = "A"; }
-    elsif ($AA =~ /^C$/)    { $new = "C"; }
-    elsif ($AA =~ /^G$/)    { $new = "G"; }
-    elsif ($AA =~ /^T$/)    { $new = "T"; }
-    elsif ($AA =~ /^U$/)    { $new = "U"; }
-    elsif ($AA =~ /^P$/)    { $new = "U"; }
-    # modified residues
-    elsif ($AA =~ /^1MA$/)  { $new = "A"; }
-    elsif ($AA =~ /^12A$/)  { $new = "A"; }
-    elsif ($AA =~ /^5MC$/)  { $new = "C"; }
-    elsif ($AA =~ /^CCC$/)  { $new = "C"; }
-    elsif ($AA =~ /^OMC$/)  { $new = "C"; }
-    elsif ($AA =~ /^M2G$/)  { $new = "G"; }
-    elsif ($AA =~ /^OMG$/)  { $new = "G"; }
-    elsif ($AA =~ /^YYG$/)  { $new = "G"; }
-    elsif ($AA =~ /^GDP$/)  { $new = "G"; }
-    elsif ($AA =~ /^GTP$/)  { $new = "G"; }
-    elsif ($AA =~ /^2MG$/)  { $new = "G"; }
-    elsif ($AA =~ /^7MG$/)  { $new = "G"; }
-    elsif ($AA =~ /^H2U$/)  { $new = "U"; }
-    elsif ($AA =~ /^UMP$/)  { $new = "U"; }
-    elsif ($AA =~ /^PSU$/)  { $new = "U"; }
-    elsif ($AA =~ /^2MU$/)  { $new = "U"; }
-    elsif ($AA =~ /^70U$/)  { $new = "U"; }
-    elsif ($AA =~ /^5MU$/)  { $new = "U"; }
-    elsif ($AA =~ /^AH2U$/) { $new = "U"; }
-    elsif ($AA =~ /^BH2U$/) { $new = "U"; }
+    elsif ($AA =~ /^\S$/)   { $new = $AA; } # if AA is already given in the 1 letter code
     else { print "aa_conversion(): uh? |$AA|\n"; die; }
 
     return $new;

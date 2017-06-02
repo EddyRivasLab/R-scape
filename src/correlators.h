@@ -22,6 +22,16 @@
 #define NCOVTYPE = 5;
 
 typedef enum {
+  SAMPLE_CONTACTS = 0, // Use all contacts as the sample size
+  SAMPLE_BP       = 1, // Use all 12 bp types (RNA only)
+  SAMPLE_WC       = 2, // Use  WWc bapirs (RNA only)
+  SAMPLE_ALL      = 3, // Use all pair combinations as sample sice
+} SAMPLESIZE;
+
+
+
+
+typedef enum {
   C16      = 0,
   C2       = 1,
   CSELECT  = 2,
@@ -164,6 +174,8 @@ struct data_s {
   char                *R2Rcykfile;
   int                  R2Rall;
   ESL_RANDOMNESS      *r;
+
+  SAMPLESIZE           samplesize;
   RANKLIST            *ranklist_null;
   RANKLIST            *ranklist_aux;
   struct mutual_s     *mi; 

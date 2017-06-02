@@ -36,8 +36,6 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
-#define ALLCONTACTS 0 // TRUE if want to use all contacts as "positive test set"
-
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *surv);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
@@ -76,7 +74,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     }
     break;
   }
-
+ 
   switch(data->covtype) {
   case PTFp:
   case PTAp:
@@ -238,9 +236,9 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 
   if (data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, TRUE, data->verbose, data->errbuf);
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
-      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, FALSE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
       status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
@@ -288,6 +286,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           cov;
   double           eval;
   double           tol = 1e-2;
+  int              select;
   int              i, j;
   int              b;
   int              status;
@@ -329,11 +328,23 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
  
       /* add to the histogram of base pairs (hb) and not bps (ht) */
       if (data->mode == GIVSS || data->mode == CYKSS) {
-#if ALLCONTACTS
-	if (CMAP_IsContactLocal(i+1,j+1,data->clist))
-#else
-	if (CMAP_IsBPLocal(i+1,j+1,data->clist))
-#endif
+	
+	switch(data->samplesize) {
+	case SAMPLE_CONTACTS:
+	  select = CMAP_IsContactLocal(i+1,j+1,data->clist);
+	  break;
+	case  SAMPLE_BP:
+	  select = CMAP_IsBPLocal(i+1,j+1,data->clist);
+	  break;
+	case  SAMPLE_WC:
+	  select = CMAP_IsWCLocal(i+1,j+1,data->clist);
+	  break;	  
+	case  SAMPLE_ALL:
+	  select = FALSE;
+	  break;	  
+	}
+
+	if (select)
 	  esl_histogram_Add(ranklist->hb, add);
 	else 
 	  esl_histogram_Add(ranklist->ht, add);
@@ -418,8 +429,7 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
   double           cov;
   double           E;
   int              L = mi->alen;
-  int              is_contact;
-  int              is_bp;
+  int              select;
   int              i, j;
   int              b;
   int              fp, tf, t, f, neg;
@@ -432,14 +442,23 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     for (j = i+1; j < L; j ++) {
       cov = mtx->mx[i][j];
       
-      is_contact = CMAP_IsContactLocal(i, j, data->clist);
-      is_bp      = CMAP_IsBPLocal(i, j, data->clist);
-#if ALLCONTACTS
-      if (is_contact) eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-#else
-      if (is_bp)      eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-#endif
-      else            eval->mx[i][j] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+      switch(data->samplesize) {
+      case SAMPLE_CONTACTS:
+	select =  CMAP_IsContactLocal(i, j, data->clist);
+	break;
+      case SAMPLE_BP:
+	select = CMAP_IsBPLocal(i, j, data->clist);
+	break;
+      case SAMPLE_WC:
+	select = CMAP_IsWCLocal(i, j, data->clist);
+	break;
+      case SAMPLE_ALL:
+	select = FALSE;
+	break;	
+      }
+      
+      if (select) eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+      else        eval->mx[i][j] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
     }    
   
   if (data->mode == GIVSS || data->mode == CYKSS) {
@@ -465,15 +484,23 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 	cov = mtx->mx[i][j];
 	E   = eval->mx[i][j];
 	
-	is_contact = CMAP_IsContactLocal(i, j, data->clist);
-	is_bp      = CMAP_IsBPLocal(i, j, data->clist);
+	switch(data->samplesize) {
+	case SAMPLE_CONTACTS:
+	  select =  CMAP_IsContactLocal(i, j, data->clist);
+	  break;
+	case SAMPLE_BP:
+	  select = CMAP_IsBPLocal(i, j, data->clist);
+	  break;
+	case SAMPLE_WC:
+	  select = CMAP_IsWCLocal(i, j, data->clist);
+	  break;
+	case SAMPLE_ALL:
+	  select = FALSE;
+	  break;	
+	}
 	
 	if (E <= target_eval)    f  ++;
-#if ALLCONTACTS
-	if (is_contact)        { t  ++;
-#else
-	if (is_bp)             { t  ++;
-#endif
+	if (select)            { t  ++;
 	  if (E <= target_eval)  tf ++;
 	}	
       }    
@@ -621,6 +648,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   double    eval;
   double    tol = 0.01;
   BPTYPE    bptype;
+  int       select;
   int       is_compatible;
   int       alloc_nhit = 5;
   int       bin;
@@ -657,15 +685,26 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       if (data->hasss && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
 	is_compatible = TRUE;
       }
-    
+
+      switch(data->samplesize) {
+      case SAMPLE_CONTACTS:
+	select = (bptype < BPNONE)?   TRUE : FALSE;
+	break;
+      case SAMPLE_BP:
+	select = (bptype < STACKED)? TRUE : FALSE;
+	break;
+      case SAMPLE_WC:
+	select = (bptype == WWc)?    TRUE : FALSE;
+	break;
+      case SAMPLE_ALL:
+	select = FALSE;
+	break;	
+      }
+  
       cov = mi->COV->mx[i][j];
       if (data->ranklist_null == NULL) eval = h+1;
       else {
-#if ALLCONTACTS
-	if (bptype < BPNONE)
-#else
-	if (bptype < STACKED)
-#endif
+	if (select)
 	  eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
 	else 
 	  eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
@@ -691,20 +730,40 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   nhit = h;
   hitlist->nhit = nhit;
 
-#if ALLCONTACTS
-  t = data->clist->ncnt;
-#else
-  t = data->clist->nbps;
-#endif
+  switch(data->samplesize) {
+  case SAMPLE_CONTACTS:
+   t = data->clist->ncnt;
+    break;
+  case SAMPLE_BP:
+     t = data->clist->nbps;
+    break;
+  case SAMPLE_WC:
+     t = data->clist->nwwc;
+    break;
+  case SAMPLE_ALL: // use all contacts here
+    t = data->clist->ncnt;
+    break;	
+  }
+  
   for (h = 0; h < nhit; h ++) {
     f ++;
-    
-#if ALLCONTACTS
-    if (hitlist->hit[h].bptype < BPNONE) tf ++;
-#else
-    if (hitlist->hit[h].bptype < STACKED) tf ++;
-#endif
-  } 
+
+    switch(data->samplesize) {
+    case SAMPLE_CONTACTS:
+      select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      break;
+    case SAMPLE_BP:
+      select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+      break;
+    case SAMPLE_WC:
+     select = (hitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
+      break;
+    case SAMPLE_ALL: // use all contacts here
+      select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+     break;	
+    }
+    if (select) tf ++;
+  }
   fp = f - tf;
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
@@ -1012,7 +1071,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
   int            i;
   int            status;
             
-   /* calculate the cykcov ct vector */
+  /* calculate the cykcov ct vector */
   status = CYKCOV(data->r, data->mi, &cykct, &sc, minloop, covthresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
@@ -1046,9 +1105,9 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
     if (status != eslOK) goto ERROR;
     
     /* DotPlots (pdf,svg) */
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, hitlist, TRUE,  data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE,  data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, hitlist, FALSE, data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, FALSE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
 
@@ -1132,11 +1191,12 @@ cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmas
 }
 
 int 
-cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, RANKLIST *ranklist, char *title)
+cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, SAMPLESIZE samplesize, RANKLIST *ranklist, char *title)
 {
   FILE     *fp = NULL;
   RANKLIST *ranklist_null = data->ranklist_null;
   char     *errbuf = data->errbuf;
+  int       ignorebps;
   int       status;
 
   if (ranklist == NULL) return eslOK;
@@ -1144,17 +1204,18 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
   if (covhisfile) {
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
     /* write the survival for the given alignment (base pairs) */
-    cov_histogram_PlotSurvival(fp, ranklist->hb, NULL);
+    if (samplesize != SAMPLE_ALL) cov_histogram_PlotSurvival(fp, ranklist->hb, NULL);
     /* write the survival for the given alignment (not pairs) */
     cov_histogram_PlotSurvival(fp, ranklist->ht, NULL);
     /* write the survival for the null alignments */
     if (ranklist_null) cov_histogram_PlotSurvival(fp, ranklist_null->ha, ranklist_null->survfit);
     fclose(fp);
-    
+
+    ignorebps = (samplesize == SAMPLE_ALL)? TRUE : data->ignorebps;
     if (!data->nofigures) {
-      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE, data->ignorebps);
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE, ignorebps);
       if (status != eslOK) goto ERROR;
-      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE, data->ignorebps);
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE, ignorebps);
       if (status != eslOK) goto ERROR;
     }
   }
@@ -1573,7 +1634,7 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
 
 
 int              
-cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, HITLIST *hitlist, 
+cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, SAMPLESIZE samplesize, HITLIST *hitlist, 
 	    int dosvg, int verbose, char *errbuf)
 {
   FILE    *pipe;
@@ -1583,6 +1644,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   double   ps_max = 0.40;
   double   ps_min = 0.0003;
   int      isempty;
+  int      select;
   int      ileft, iright;
   int      h;           /* index for hitlist */
   int      i, ipair;
@@ -1683,11 +1745,23 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   // the covarying basepairs
   isempty = TRUE;
   for (h = 0; h < hitlist->nhit; h ++) {
-#if ALLCONTACTS
-    if (hitlist->hit[h].bptype < BPNONE)  { isempty = FALSE; break; }
-#else
-    if (hitlist->hit[h].bptype < STACKED) { isempty = FALSE; break; }
-#endif
+
+    	switch(samplesize) {
+	case SAMPLE_CONTACTS:
+	  select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+	  break;
+	case SAMPLE_BP:
+	  select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+	  break;
+	case SAMPLE_WC:
+	  select = (hitlist->hit[h].bptype == WWc)?    TRUE : FALSE;
+	  break;	  
+	case SAMPLE_ALL:
+	  select = FALSE;
+	  break;	  
+	}
+
+    if (select) { isempty = FALSE; break; }
   }
 
   if (!isempty) {
@@ -1697,7 +1771,23 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     for (h = 0; h < hitlist->nhit; h ++) {
       ih = hitlist->hit[h].i;
       jh = hitlist->hit[h].j;
-      if (hitlist->hit[h].bptype < BPNONE) {
+
+      switch(samplesize) {
+      case SAMPLE_CONTACTS:
+	select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+	break;
+      case SAMPLE_BP:
+	select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+	break;
+      case SAMPLE_WC:
+	select = (hitlist->hit[h].bptype == WWc)?    TRUE : FALSE;
+	break;	  
+      case SAMPLE_ALL:
+	select = FALSE;
+	break;	  
+      }
+      
+      if (select) {
 	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
 	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
       }	

@@ -25,6 +25,7 @@
 #include "esl_stack.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
+#include "esl_wuss.h"
 
 #include "contactmap.h"
 #include "msamanip.h"
@@ -40,6 +41,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 {
   char   tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
   char   tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
+  char  *ss = NULL;
   FILE  *tmpfp  = NULL;
   char  *cmd  = NULL;
   char  *args = NULL;
@@ -127,29 +129,36 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading contacts", errbuf);
        remove(tmpcfile);
      }
-   
-   else ESL_XFAIL(eslFAIL, errbuf, "could not create contact map");
-   
+    
 #if 0
    for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
    if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
 #endif
+
+   if (abcisRNA) {
+     /* Impose the new ct on the msa GC line 'cons_ss' */
+     ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
+     esl_ct2wuss(ct, msa->alen, ss);
+     /* Replace the 'SS_cons' GC line with the new ss */
+     esl_sprintf(&(msa->ss_cons), "%s", ss);
+   }
    
    clist->maxD  = cntmaxD;
    *ret_nbpairs = clist->nbps;
    
    if (1||verbose) CMAP_Dump(stdout, clist);
-   
+
    if (ret_ct)      *ret_ct      = ct;      else free(ct);
    if (ret_clist)   *ret_clist   = clist;   else free(clist);
    if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
    
-   
+   free(ss);   
    if (cmd) free(cmd);
    if (args) free(args);
    return eslOK;
    
  ERROR:
+   if (ss) free(ss);
    if (msa2pdb) free(msa2pdb);
    if (cmd) free(cmd);
    if (args) free(args);
@@ -456,6 +465,10 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct
 	else {
 	  if (ct[i] == j && clist->cnt[ncnt].bptype == CONTACT)
 	    clist->cnt[ncnt].bptype = WWc;
+	  if (bptype == WWc && ct[i] == 0 && ct[j] == 0) {
+	    ct[i] = j; 
+	    ct[j] = i;
+	  }
 	}
 	
 #if 0

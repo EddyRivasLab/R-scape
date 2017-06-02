@@ -35,6 +35,7 @@
 #define METHODOPTS   "--nullphylo,--naive,--potts,--akmaev"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa,--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
+#define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
@@ -64,6 +65,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   
   COVTYPE          covtype;
   COVCLASS         covclass;
+
+  SAMPLESIZE       samplesize;
   
   ESL_DMATRIX     *allowpair;          /* decide on the type of base pairs allowed */
   int              nseqthresh;
@@ -227,6 +230,10 @@ static ESL_OPTIONS options[] = {
   { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle res within a column that appear canonical (i,j) pairs ",                    0 },
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
   { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
+  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all contacts (default for amino acids)",               1 },
+  { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all 12-type basepairs (default for RNA/DNA)",          1 },
+  { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is WWc basepairs only",                                   1 },
+  { "--sampleall",    eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all pairs (default if no contacts given)",             1 },
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APC corrected statistic",                                                              1 },
@@ -474,7 +481,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--null2b")) cfg.nulltype = Null2b;
   else if (esl_opt_GetBoolean(go, "--null3"))  cfg.nulltype = Null3;
   else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
-
+  
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
   if (esl_opt_IsOn(go, "-E")) { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
     if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
@@ -786,7 +793,14 @@ main(int argc, char **argv)
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     cfg.abcisRNA = FALSE;
-    if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) { cfg.abcisRNA = TRUE; }
+    if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) cfg.abcisRNA = TRUE;
+   
+    cfg.samplesize = (cfg.abcisRNA)? SAMPLE_BP : SAMPLE_CONTACTS;
+    if      (esl_opt_GetBoolean(go, "--samplecontacts")) { cfg.samplesize = SAMPLE_CONTACTS; }
+    else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
+    else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
+    else if (esl_opt_GetBoolean(go, "--sampleall"))      { cfg.samplesize = SAMPLE_ALL; }
+    if (cfg.samplesize != SAMPLE_ALL && msa->ss_cons == NULL && cfg.pdbfile == NULL) cfg.samplesize = SAMPLE_ALL;
 
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
@@ -1138,7 +1152,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
-
+  
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
   esl_vec_DDump(stdout, cfg->ft,   cfg->abc->K, "total BC");
@@ -1310,6 +1324,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.R2Rall        = FALSE;
   data.gnuplot       = NULL;
   data.r             = cfg->r;
+  data.samplesize    = cfg->samplesize;
   data.ranklist_null = NULL;
   data.ranklist_aux  = NULL;
   data.mi            = cfg->mi;
@@ -1424,6 +1439,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.R2Rall        = cfg->R2Rall;
   data.gnuplot       = cfg->gnuplot;
   data.r             = cfg->r;
+  data.samplesize    = cfg->samplesize;
   data.ranklist_null = ranklist_null;
   data.ranklist_aux  = ranklist_aux;
   data.mi            = cfg->mi;
@@ -1470,7 +1486,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
 	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, ranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
  
@@ -1488,7 +1504,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ha->imin, cykranklist->ha->imax, cykranklist->ha->xmax, cykranklist->ha->xmin);
       //esl_histogram_Plot(stdout, ranklist->ha);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cykranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cfg->samplesize, cykranklist, title);
     if (status != eslOK) goto ERROR; 
   }
 
