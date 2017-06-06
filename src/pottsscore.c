@@ -179,6 +179,7 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   int              K = pt->abc->K;
   int              i, j;
   int              a, b;
+  int              idx;
   int              status = eslOK;
 
   // Use the Frobenius norm with zero-sum gauge
@@ -191,7 +192,9 @@ potts_CalculateCOVFrobenius(struct data_s *data)
       
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
-	  eij  = (i==j)?0:pt->e[i][j][IDX(a,b,K)];
+	  idx  = IDX(a,b,K);
+	  eij  = (i==j)? 0 : pt->e[i][j][idx];
+	  //cov += mi->pp[i][j][idx] * eij * eij;
 	  cov += eij * eij;
 	}
       cov = sqrt(cov);
@@ -220,6 +223,7 @@ potts_CalculateCOVAverage(struct data_s *data)
   int              K = pt->abc->K;
   int              i, j;
   int              a, b;
+  int              idx;
   int              status = eslOK;
 
   for (i = 0; i < pt->L; i ++) {
@@ -228,7 +232,8 @@ potts_CalculateCOVAverage(struct data_s *data)
       
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
-	  eij = (i==j)?0:pt->e[i][j][IDX(a,b,K)];
+	  idx  = IDX(a,b,K);
+	  eij  = (i==j)? 0 : pt->e[i][j][idx];
 	  cov += eij;
 	}
       if (cov > mi->maxCOV) { mi->maxCOV = cov; }

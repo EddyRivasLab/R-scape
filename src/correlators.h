@@ -87,11 +87,15 @@ typedef enum {
 } ACTYPE;
 
 typedef enum{
+  NONPARAM = 0,
+  POTTS    = 1,
+  AKMAEV   = 2,
+} METHOD;
+
+typedef enum{
   NAIVE      = 0,
   NULLPHYLO  = 1,
-  POTTS      = 2,
-  AKMAEV     = 3,
-} METHOD;
+} STATSMETHOD;
 
 typedef enum {
   GIVSS = 0,
@@ -181,7 +185,8 @@ struct data_s {
   struct mutual_s     *mi; 
   PT                  *pt; 
   THRESH              *thresh;
-  METHOD               method;
+  STATSMETHOD          statsmethod;
+  METHOD               covmethod;
   MODE                 mode;
   int                  abcisRNA;  // MSA is RNA or DNA
   int                  hasss;     //Has a ss_cons secondary structure

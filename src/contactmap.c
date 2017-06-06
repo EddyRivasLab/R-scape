@@ -73,7 +73,7 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
        for (i = 0; i < L; i ++) {
 
 	 msa2pdb[i] = i;
-	 
+
 	 if (ncnt == clist->alloc_ncnt - 1) {
 	   clist->alloc_ncnt += alloc_ncnt;
 	   ESL_REALLOC(clist->cnt,    sizeof(CNT)   * clist->alloc_ncnt);
@@ -257,10 +257,11 @@ CMAP_IsWCLocal(int i, int j, CLIST *clist)
 int
 CMAP_Dump(FILE *fp, CLIST *clist)
 {
-  int h;
-  int nbp = 0;
-  int nwc = 0;
+  int   h;
+  int   nbp = 0;
+  int   nwc = 0;
   char *bptype = NULL;
+  int   status = eslOK;
 
 
   for (h = 0; h < clist->ncnt; h ++) {
@@ -271,12 +272,22 @@ CMAP_Dump(FILE *fp, CLIST *clist)
     fprintf(fp, "%d %d | bptype %s\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, bptype);
     free(bptype); bptype = NULL;
   }
-  fprintf(fp, "#Ncontacts %d (%d bpairs %d wc pairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
-  fprintf(fp, "#maxD      %.2f\n", clist->maxD);
-  fprintf(fp, "#mind      %.d\n",  clist->mind);
+  if (nbp != clist->nbps) status = eslFAIL;
+  if (nwc != clist->nwwc) status = eslFAIL;
+
+  CMAP_DumpShort(fp, clist);
 
   if (bptype) free(bptype);
-  return FALSE;
+  return status;
+}
+
+int
+CMAP_DumpShort(FILE *fp, CLIST *clist)
+{
+  fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
+  fprintf(fp, "# maxD      %.2f\n", clist->maxD);
+  fprintf(fp, "# mind      %.d\n",  clist->mind);
+  return eslOK;
 }
 
 

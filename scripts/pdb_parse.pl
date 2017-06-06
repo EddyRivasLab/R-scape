@@ -772,7 +772,8 @@ sub run_rnaview {
     close(RF);   
     
     system("/bin/rm $rnaviewfile\n");
-
+    system("/bin/rm base_pair_statistics.out\n");
+    
     $$ret_ncnt = $ncnt;
 }
 

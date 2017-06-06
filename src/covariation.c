@@ -62,14 +62,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   int            status;
 
   /* Calculate the covariation matrix */
-  switch(data->method) {
-  case NAIVE:
+  switch(data->covmethod) {
+  case NONPARAM:
   case AKMAEV:
   case POTTS:
-  case NULLPHYLO:
     if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
 	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
-      status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->method, data->donull2b, data->tol, data->verbose, data->errbuf);
+      status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->covmethod, data->donull2b, data->tol, data->verbose, data->errbuf);
       if (status != eslOK) goto ERROR;
     }
     break;
@@ -351,7 +350,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       }
     }
   
-  /* histogram and exponential fit */
+  /* Histogram and Fit */
   if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS) ) {
     if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
       ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
@@ -386,7 +385,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
     for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
       cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
-      eval = (data->ranklist_null)? cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+      eval = (data->ranklist_null)? cov2evalue(cov, (select)?ranklist->hb->Nc:ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
       if (eval > ESL_MIN(0.0,mi->maxCOV) && eval <= data->thresh->val) data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, b-1);
    }
   }
@@ -444,13 +443,13 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
       
       switch(data->samplesize) {
       case SAMPLE_CONTACTS:
-	select =  CMAP_IsContactLocal(i, j, data->clist);
+	select =  CMAP_IsContactLocal(i+1, j+1, data->clist);
 	break;
       case SAMPLE_BP:
-	select = CMAP_IsBPLocal(i, j, data->clist);
+	select = CMAP_IsBPLocal(i+1, j+1, data->clist);
 	break;
       case SAMPLE_WC:
-	select = CMAP_IsWCLocal(i, j, data->clist);
+	select = CMAP_IsWCLocal(i+1, j+1, data->clist);
 	break;
       case SAMPLE_ALL:
 	select = FALSE;
@@ -463,8 +462,10 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
   
   if (data->mode == GIVSS || data->mode == CYKSS) {
     fprintf(data->rocfp, "# Method: %s\n", covtype);      
-    if (mi->ishuffled) fprintf(data->rocfp, "#shuffled_cov_score    FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
-    else               fprintf(data->rocfp, "#cov_score            FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
+    if (mi->ishuffled)
+      fprintf(data->rocfp, "#shuffled_cov_score    FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
+    else
+      fprintf(data->rocfp, "#cov_score             FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
   }
  
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
@@ -486,24 +487,24 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 	
 	switch(data->samplesize) {
 	case SAMPLE_CONTACTS:
-	  select =  CMAP_IsContactLocal(i, j, data->clist);
+	  select =  CMAP_IsContactLocal(i+1, j+1, data->clist);
 	  break;
 	case SAMPLE_BP:
-	  select = CMAP_IsBPLocal(i, j, data->clist);
+	  select = CMAP_IsBPLocal(i+1, j+1, data->clist);
 	  break;
 	case SAMPLE_WC:
-	  select = CMAP_IsWCLocal(i, j, data->clist);
+	  select = CMAP_IsWCLocal(i+1, j+1, data->clist);
 	  break;
 	case SAMPLE_ALL:
-	  select = FALSE;
+	  select = CMAP_IsContactLocal(i+1, j+1, data->clist);
 	  break;	
 	}
 	
 	if (E <= target_eval)    f  ++;
 	if (select)            { t  ++;
 	  if (E <= target_eval)  tf ++;
-	}	
-      }    
+	}
+     }    
     fp  = f - tf;
     sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
     ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
@@ -700,9 +701,9 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	select = FALSE;
 	break;	
       }
-  
+      
       cov = mi->COV->mx[i][j];
-      if (data->ranklist_null == NULL) eval = h+1;
+      if (data->ranklist_null == NULL) eval = 0; // naive method: eval does not inform of statistical significance
       else {
 	if (select)
 	  eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
@@ -732,13 +733,13 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
   switch(data->samplesize) {
   case SAMPLE_CONTACTS:
-   t = data->clist->ncnt;
+    t = data->clist->ncnt;
     break;
   case SAMPLE_BP:
-     t = data->clist->nbps;
+    t = data->clist->nbps;
     break;
   case SAMPLE_WC:
-     t = data->clist->nwwc;
+    t = data->clist->nwwc;
     break;
   case SAMPLE_ALL: // use all contacts here
     t = data->clist->ncnt;
@@ -747,7 +748,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   for (h = 0; h < nhit; h ++) {
     f ++;
-
+    
     switch(data->samplesize) {
     case SAMPLE_CONTACTS:
       select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
@@ -777,6 +778,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     if (data->mode == CYKSS) {
       fprintf(data->outfp, "# cyk-cov structure\n");
     }
+    CMAP_DumpShort(data->outfp, data->clist);
     fprintf(data->outfp,    "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
@@ -788,14 +790,15 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       fprintf(stdout,         "# cyk-cov structure\n");
       fprintf(data->outsrtfp, "# cyk-cov structure\n");
     }
+    CMAP_DumpShort(data->outsrtfp, data->clist);
     fprintf(stdout,         "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outsrtfp, "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    cov_WriteRankedHitList(stdout, nhit, hitlist, data->msamap, data->firstpos);
-    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap, data->firstpos);
+    cov_WriteRankedHitList(stdout,         nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
+    cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
   }
   
   if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
@@ -888,7 +891,7 @@ hit_sorted_by_eval(const void *vh1, const void *vh2)
 }
 
 int 
-cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos)
+cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
 {
   int h;
   int ih, jh;
@@ -896,7 +899,7 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
   if (fp == NULL) return eslOK;
 
   for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
-  if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), hit_sorted_by_eval);
+  if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
   fprintf(fp, "#       left_pos       right_pos        score   E-value\n");
   fprintf(fp, "#------------------------------------------------------------\n");
@@ -1204,7 +1207,7 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
   if (covhisfile) {
     if ((fp = fopen(covhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open covhisfile %s\n", covhisfile);
     /* write the survival for the given alignment (base pairs) */
-    if (samplesize != SAMPLE_ALL) cov_histogram_PlotSurvival(fp, ranklist->hb, NULL);
+    cov_histogram_PlotSurvival(fp, ranklist->hb, NULL);
     /* write the survival for the given alignment (not pairs) */
     cov_histogram_PlotSurvival(fp, ranklist->ht, NULL);
     /* write the survival for the null alignments */
@@ -1215,7 +1218,7 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
     if (!data->nofigures) {
       status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE, ignorebps);
       if (status != eslOK) goto ERROR;
-      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE, ignorebps);
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE,  ignorebps);
       if (status != eslOK) goto ERROR;
     }
   }
@@ -1416,7 +1419,9 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     xmax = ESL_MAX(xmax, evalue2cov(expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit));
   }
   xmax += 10.;
-  xmin = (ranklist_null)? ESL_MIN(ranklist->hb->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1. : ranklist->ht->xmin - 1.;
+  xmin = (ranklist_null)?
+    ESL_MIN(ranklist->ht->xmin, evalue2cov(expsurv,ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit)) - 1. :
+    ranklist->ht->xmin - 1.;
  
   ymax = (ranklist_null)? cov2evalue(xmin, 1, ranklist_null->ha, ranklist_null->survfit) + 0.7 : 1.7;
   ymin = (ranklist_null)? cov2evalue(xmax, 1, ranklist_null->ha, ranklist_null->survfit)       : 1.0/(double)ranklist->ha->Nc;
@@ -1458,19 +1463,20 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     
     linespoints = FALSE;
     posy = ymin*exp(1.0*incy);
-    status = cov_histogram_plotexpectsurv  (pipe, ranklist_null->ha->Nc, ranklist_null->ha, ranklist_null->survfit, key3, "x1y1",
-					    FALSE, posx, posy, FALSE, linespoints, 55, 5);
+
+    status = cov_histogram_plotexpectsurv(pipe, ranklist_null->ha->Nc, ranklist_null->ha, ranklist_null->survfit, key3, "x1y1",
+					  FALSE, posx, posy, FALSE, linespoints, 55, 5);
     if (status != eslOK) goto ERROR;
     linespoints = TRUE;
   }
 
   if (ignorebps) {
     posy = ymin*exp(2.0*incy);
-       status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist->ha, NULL, key0, "x1y1", FALSE, posx, posy,
-					    FALSE, linespoints, 33, 3);
-      if (status != eslOK) goto ERROR;
-      cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -4.0, "Expected # pairs with score > t", 3);
-   }
+    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist->ha, NULL, key0, "x1y1", FALSE, posx, posy,
+					  FALSE, linespoints, 33, 3);
+    if (status != eslOK) goto ERROR;
+    cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -4.0, "Expected # pairs with score > t", 3);
+  }
   else {
     posy = ymin*exp(2.0*incy);
     status = cov_histogram_plotexpectsurv  (pipe, ranklist->ht->Nc, ranklist->ht, NULL, key1, "x1y1", FALSE, posx, posy,
@@ -2289,7 +2295,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
 
   /* use the fit if possible */
   if      (survfit && icov >= 2*h->nb-1)                 eval = survfit[2*h->nb-1] * (double)Nc;
-  else if (survfit &&h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]  * (double)Nc;
+  else if (survfit &&h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]    * (double)Nc;
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 

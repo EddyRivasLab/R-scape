@@ -183,8 +183,9 @@ potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float firststep, float tol, char *err
   
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (long)np, &data);
-    if (1||verbose) printf("END POTTS APLM OPTIMIZATION for position %d\n", i);
+    if (verbose) printf("END POTTS APLM OPTIMIZATION for position %d\n", i);
   }
+  if (1||verbose) printf("END POTTS APLM OPTIMIZATION\n");
 
   // symmetrize
   symmetrize(pt);
@@ -695,7 +696,7 @@ func_potts_aplm(int pos, PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
 
   if (status != eslOK) exit(1);
   
-#if 1
+#if 0
   printf("pos %d logp APLM %f\n", pos, logp);
 #endif
   

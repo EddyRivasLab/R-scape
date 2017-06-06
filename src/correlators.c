@@ -1311,8 +1311,7 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
   int status;
 
   switch(method) {
-  case NAIVE:
-  case NULLPHYLO:
+  case NONPARAM:
   case POTTS:
     status = corr_NaivePP(r, msa, mi, donull2b, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
@@ -1361,7 +1360,6 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
 	  printf("\n");
 	}
       }
-      if (i==5) esl_vec_DDump(stdout, mi->pm[i], K, NULL);
     }
   }
   

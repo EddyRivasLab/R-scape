@@ -30,9 +30,9 @@
 #include "covgrammars.h"
 #include "pottsbuild.h"
 #include "ribosum_matrix.h"
-
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
-#define METHODOPTS   "--nullphylo,--naive,--potts,--akmaev"              
+#define METHODOPTS   "--nonparam,--potts,--akmaev"              
+#define STATSOPTS    "--nullphylo,--naive"              
 #define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa,--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
@@ -126,7 +126,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   struct mutual_s *mi;
   
-  METHOD           method;
+  METHOD           covmethod;
+  STATSMETHOD      statsmethod;
+  
   char            *treefile;
   FILE            *treefp;
   ESL_TREE        *T;
@@ -159,7 +161,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outpottsfile;
   FILE            *outpottsfp;
   
-  char            *pdbfile;            // pdfb file 
+  char            *pdbfile;            // pdfb file
+  char            *pdbname;
   double           cntmaxD;            // max distance in pdb structure to call a contact
   int              cntmind;            // mindis in pdb sequence allowed
   CLIST           *clist;              // list of pdb contact at a distance < cntmaxD
@@ -271,9 +274,11 @@ static ESL_OPTIONS options[] = {
   { "--CSELECT",     eslARG_NONE,     "TRUE",    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use C2 if nseq <= nseqthresh otherwise use C16",                                            1 },
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "nseqthresh is <n>",                                                                         0 },   
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
-   /* phylogenetic method */
-  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "naive statistics",                                                                          1 },
-  { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "nullphylo  statistics",                                                                     1 },
+   /* significance method */
+  { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,STATSOPTS, NULL,  NULL,                "sort results by cov score, no null model involved",                                         1 },
+  { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,STATSOPTS, NULL,  NULL,                "nullphylo  statistics",                                                                     1 },
+   /* covariation method */
+  { "--nonparam",     eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "non parameteric correlate",                                                                 1 },
   { "--potts",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "potts couplings",                                                                           1 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
@@ -435,6 +440,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outheader, "%s", outname); 
   }
   else { cfg.submsa = 0; }
+
     
   /* other options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
@@ -489,43 +495,44 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.mi = NULL;
   
-  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.method = NAIVE;
-  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.method = NULLPHYLO;
-  else if (esl_opt_GetBoolean(go, "--potts"))     cfg.method = POTTS;
-  else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.method = AKMAEV;
+  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.statsmethod = NAIVE;
+  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.statsmethod = NULLPHYLO;
+  if (cfg.statsmethod == NAIVE) { cfg.thresh->val = 1e+12; }
 
-  if (cfg.method == NAIVE) { cfg.thresh->val = 1e+12; }
+  if      (esl_opt_GetBoolean(go, "--nonparam"))  cfg.covmethod = NONPARAM;
+  else if (esl_opt_GetBoolean(go, "--potts"))     cfg.covmethod = POTTS;
+  else if (esl_opt_GetBoolean(go, "--akmaev"))    cfg.covmethod = AKMAEV;
 
-  if      (esl_opt_GetBoolean(go, "--CHIa"))   cfg.covtype = CHIa;
-  else if (esl_opt_GetBoolean(go, "--CHIp"))   cfg.covtype = CHIp;
-  else if (esl_opt_GetBoolean(go, "--CHI"))    cfg.covtype = CHI;
-  else if (esl_opt_GetBoolean(go, "--GTa"))    cfg.covtype = GTa;
-  else if (esl_opt_GetBoolean(go, "--GTp"))    cfg.covtype = GTp;
-  else if (esl_opt_GetBoolean(go, "--GT"))     cfg.covtype = GT;
-  else if (esl_opt_GetBoolean(go, "--MIa"))    cfg.covtype = MIa;
-  else if (esl_opt_GetBoolean(go, "--MIp"))    cfg.covtype = MIp;
-  else if (esl_opt_GetBoolean(go, "--MI"))     cfg.covtype = MI;
-  else if (esl_opt_GetBoolean(go, "--MIra"))   cfg.covtype = MIra;
-  else if (esl_opt_GetBoolean(go, "--MIrp"))   cfg.covtype = MIrp;
-  else if (esl_opt_GetBoolean(go, "--MIr"))    cfg.covtype = MIr;
-  else if (esl_opt_GetBoolean(go, "--MIga"))   cfg.covtype = MIga;
-  else if (esl_opt_GetBoolean(go, "--MIgp"))   cfg.covtype = MIgp;
-  else if (esl_opt_GetBoolean(go, "--MIg"))    cfg.covtype = MIg;
-  else if (esl_opt_GetBoolean(go, "--OMESa"))  cfg.covtype = OMESa;
-  else if (esl_opt_GetBoolean(go, "--OMESp"))  cfg.covtype = OMESp;
-  else if (esl_opt_GetBoolean(go, "--OMES"))   cfg.covtype = OMES;
-  else if (esl_opt_GetBoolean(go, "--RAFa"))   cfg.covtype = RAFa;
-  else if (esl_opt_GetBoolean(go, "--RAFp"))   cfg.covtype = RAFp;
-  else if (esl_opt_GetBoolean(go, "--RAF"))    cfg.covtype = RAF;
-  else if (esl_opt_GetBoolean(go, "--RAFSa"))  cfg.covtype = RAFSa;
-  else if (esl_opt_GetBoolean(go, "--RAFSp"))  cfg.covtype = RAFSp;
-  else if (esl_opt_GetBoolean(go, "--RAFS"))   cfg.covtype = RAFS;
-  else if (esl_opt_GetBoolean(go, "--CCFa"))   cfg.covtype = CCFa;
-  else if (esl_opt_GetBoolean(go, "--CCFp"))   cfg.covtype = CCFp;
-  else if (esl_opt_GetBoolean(go, "--CCF"))    cfg.covtype = CCF;
-  else if (esl_opt_GetBoolean(go, "--PTFp")) { cfg.covtype = PTFp; cfg.method = POTTS; }
-  else if (esl_opt_GetBoolean(go, "--PTAp")) { cfg.covtype = PTAp; cfg.method = POTTS; }
-  else if (esl_opt_GetBoolean(go, "--PTDp")) { cfg.covtype = PTDp; cfg.method = POTTS; }
+  if      (esl_opt_GetBoolean(go, "--CHIa"))  { cfg.covtype = CHIa;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--CHIp"))  { cfg.covtype = CHIp;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--CHI"))   { cfg.covtype = CHI;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--GTa"))   { cfg.covtype = GTa;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--GTp"))   { cfg.covtype = GTp;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--GT"))    { cfg.covtype = GT;    cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIa"))   { cfg.covtype = MIa;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIp"))   { cfg.covtype = MIp;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MI"))    { cfg.covtype = MI;    cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIra"))  { cfg.covtype = MIra;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIrp"))  { cfg.covtype = MIrp;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIr"))   { cfg.covtype = MIr;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIga"))  { cfg.covtype = MIga;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIgp"))  { cfg.covtype = MIgp;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--MIg"))   { cfg.covtype = MIg;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--OMESa")) { cfg.covtype = OMESa; cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--OMESp")) { cfg.covtype = OMESp; cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--OMES"))  { cfg.covtype = OMES;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAFa"))  { cfg.covtype = RAFa;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAFp"))  { cfg.covtype = RAFp;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAF"))   { cfg.covtype = RAF;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAFSa")) { cfg.covtype = RAFSa; cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAFSp")) { cfg.covtype = RAFSp; cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--RAFS"))  { cfg.covtype = RAFS;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--CCFa"))  { cfg.covtype = CCFa;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--CCFp"))  { cfg.covtype = CCFp;  cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--CCF"))   { cfg.covtype = CCF;   cfg.covmethod = NONPARAM; }
+  else if (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.covmethod = POTTS; }
 
   // potts model
   cfg.pt = NULL;
@@ -567,6 +574,20 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.omstat = NULL;
   cfg.ocykct = NULL;
 
+  /* the pdb contacts */
+  cfg.pdbfile = NULL;
+  cfg.pdbname = NULL;
+  if ( esl_opt_IsOn(go, "--pdbfile") ) {
+    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
+    if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
+
+    // add the pdbname to the outheader
+    esl_FileTail(cfg.pdbfile, TRUE, &cfg.pdbname);
+    esl_sprintf(&outname, "%s.%s", cfg.outheader, cfg.pdbname);
+    free(cfg.outheader); cfg.outheader = NULL;
+    esl_sprintf(&cfg.outheader, "%s", outname); 
+  }
+  
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
@@ -583,10 +604,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
 
+  cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
+  cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
+  cfg.clist = NULL;
+  cfg.msa2pdb = NULL;
+
   /* potts */
   cfg.outpottsfile = NULL;
   cfg.outpottsfp   = NULL;
-  if (cfg.method == POTTS && esl_opt_IsOn(go, "--outpotts")) {
+  if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) {
     esl_sprintf(&cfg.outpottsfile, "%s", esl_opt_GetString(go, "--outpotts"));
     if ((cfg.outpottsfp = fopen(cfg.outpottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s", cfg.outpottsfile);
   } 
@@ -669,22 +695,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
   cfg.fnbp = NULL;
-
-  /* the pdb contacts */
-  cfg.pdbfile = NULL;
-  if ( esl_opt_IsOn(go, "--pdbfile") ) {
-    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
-    if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
-  }
-  cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
-  cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
-  cfg.clist = NULL;
-  cfg.msa2pdb = NULL;
   
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
-  if (cfg.method == AKMAEV) {
+  if (cfg.covmethod == AKMAEV) {
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
     else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
 
@@ -894,6 +909,7 @@ main(int argc, char **argv)
   if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
+  if (cfg.pdbname) free(cfg.pdbname);
   if (cfg.rocfile) free(cfg.rocfile);
   free(cfg.sumfile);
   free(cfg.gnuplot);
@@ -1170,15 +1186,15 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* create the MI structure */
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
   if (cfg->mi == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to create mutual_s", cfg->errbuf);
-    
-  //POTTS: calculate the couplings first
-  if (cfg->method == POTTS) {
+
+  // POTTS: calculate the couplings first
+  if (cfg->covmethod == POTTS) {
     cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
     if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
- 
+
   /* the null model first */
-  if (cfg->method != NAIVE) {
+  if (cfg->statsmethod != NAIVE) {
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
@@ -1332,7 +1348,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
-  data.method        = cfg->method;
+  data.statsmethod   = cfg->statsmethod;
+  data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
@@ -1361,7 +1378,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (status != eslOK) goto ERROR; 
   if (mi->maxCOV <= cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
 
-  if (cfg->method == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
+  if (cfg->statsmethod == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
   if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
@@ -1405,10 +1422,16 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
+
+  // POTTS: calculate the couplings 
+  if (cfg->covmethod == POTTS) {
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
+  }
   
- /* produce a tree
+  /* produce a tree
    */
-  if (cfg->method == AKMAEV) {
+  if (cfg->covmethod == AKMAEV) {
     status = create_tree(go, cfg, msa);
     if (status != eslOK)  { esl_fatal(cfg->errbuf); }
     nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
@@ -1447,7 +1470,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
-  data.method        = cfg->method;
+  data.statsmethod   = cfg->statsmethod;
+  data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
@@ -1513,6 +1537,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
+  if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
 
   return eslOK;
   
@@ -1522,6 +1547,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
   if (title)       free(title);
+  if (cfg->pt) potts_Destroy(cfg->pt);
   return status;
 }
 
@@ -1837,7 +1863,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   int       sc;
   int       s;
   int       status;
-  
+
   status = create_tree(go, cfg, msa);
    if (status != eslOK) goto ERROR;
   if (cfg->T == NULL) {
@@ -1865,11 +1891,11 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
     if (cfg->verbose) {
-       esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
-      //msamanip_XStats(shmsa, &shmstat);
-      //msamanip_DumpStats(stdout, shmsa, shmstat);
+      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      msamanip_XStats(shmsa, &shmstat);
+      msamanip_DumpStats(stdout, shmsa, shmstat);
     }
-
+    
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the widt of the histogram", cfg->errbuf);

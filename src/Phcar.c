@@ -56,7 +56,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   COVTYPE          covtype;
   COVCLASS         covclass;
 
-  METHOD           method;
+  STATSMETHOD      statsmethod;
+  METHOD           covmethod;
 
   int              onemsa;
   int              nmsa;
@@ -326,7 +327,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
-  cfg.method      = NULLPHYLO;
+  cfg.statsmethod = NULLPHYLO;
   
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
@@ -899,7 +900,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.mi            = mi;
   data.covtype       = cfg->covtype;
   data.thresh        = cfg->thresh;
-  data.method        = cfg->method;
+  data.statsmethod   = cfg->statsmethod;
+  data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.ct            = cfg->ct;
   data.onbpairs      = cfg->onbpairs;
@@ -998,7 +1000,8 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   data.mi            = mi;
   data.covtype       = cfg->covtype;
   data.thresh        = cfg->thresh;
-  data.method        = cfg->method;
+  data.statsmethod   = cfg->statsmethod;
+  data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.ct            = cfg->ct;
   data.onbpairs      = cfg->onbpairs;

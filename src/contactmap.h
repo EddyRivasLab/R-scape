@@ -73,6 +73,7 @@ extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsWCLocal(int i, int j, CLIST *clist);
 extern int    CMAP_Dump(FILE *fp, CLIST *clist);
+extern int    CMAP_DumpShort(FILE *fp, CLIST *clist);
 extern int    CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf);
 extern int    CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf);
 

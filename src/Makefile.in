@@ -174,7 +174,10 @@ OBJS     = e1_bg.o\
 	   tkf_simulate.o\
 
 
-SCRIPTS   = ../scripts/pdb_parse.pl\
+SCRIPTS   = \
+	../scripts/pdb_parse.pl \
+	../scripts/rocplot.pl \
+	../scripts/rocplot_together.pl \
 
 all: libsrc.a ${PROGS} 
 
