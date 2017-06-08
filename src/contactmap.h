@@ -45,7 +45,7 @@ typedef struct cnt_s {
   
   double  D;
   
-  double sc;
+  double  sc;
 } CNT;
 
 typedef struct clist_s{

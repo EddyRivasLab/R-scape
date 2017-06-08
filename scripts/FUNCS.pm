@@ -148,7 +148,7 @@ sub fill_histo_array {
     if ($sc >=  $N-$shift) { $his_ref->[$dim] += $val; return; }
     if ($sc <=  -$shift)   { $his_ref->[0]    += $val; return; }
     
-    for (my $i=1; $i<=$dim; $i++) { 
+    for (my $i=0; $i<=$dim; $i++) { 
 	if ( $i/$k-$shift <= $sc && $sc < ($i+1)/$k - $shift) {  
 	    $his_ref->[$i] += $val;
 	    last; 

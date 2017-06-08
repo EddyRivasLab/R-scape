@@ -19,7 +19,7 @@ z        => '@', # z position for eacht atom
 };
 
 struct CNT => {
-i        => '$', # pdb position
+i        => '$', # pdb positionmin
 j        => '$', # 
 posi     => '$', # alignment position
 posj     => '$', # 
@@ -40,23 +40,6 @@ my $pdbfile   = shift;
 my $stofile   = shift;
 my $rscapebin = shift;
 my $gnuplot   = shift;
-use constant GNUPLOT => '$gnuplot';
-
-my $currdir = $ENV{PWD};
-
-my $stoname = $stofile;
-if ($stoname =~ /\/([^\/]+)\.[^\/]+$/) { $stoname = $1; }
-my $pfamname = $stofile;
-if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
-
-my $rnaview     = "$rscapebin/rnaview";
-my $hmmer       = "$rscapebin/../lib/hmmer";
-my $hmmbuild    = "$hmmer/src/hmmbuild";
-my $hmmersearch = "$hmmer/src/hmmsearch";
-
-my $easel    = "$hmmer/easel";
-my $sfetch   = "$easel/miniapps/esl-sfetch";
-my $reformat = "$easel/miniapps/esl-reformat";
 
 my $coorfile = "";
 if ($opt_C) { 
@@ -74,81 +57,112 @@ my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
 
 my $dornaview = 0;
-my $isrna = 0;
-if ($opt_R) { $dornaview = 1; $isrna = 1; }
+if ($opt_R) { $dornaview = 1; }
 
 #options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
 my $which = "MIN";
 if ($opt_W) { $which = "$opt_W"; }
 
-my $nch = 0;
-my @chname = ();
-my @chsq = ();
-my $len;
-my $alen;
-
 my $seeplots = 0;
-
-my $resolution;
-my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq);
-print     "# PFAM:       $stofile\n";
-print     "# PDB:        $pdbname\n";
-print     "# chains:     $nch\n";
-print     "# resolution: $resolution\n";
 
 my $ncnt_t = 0; ## total contacts from all chains
 my @cnt_t;
+contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$ncnt_t, \@cnt_t, $maxD, $minL, $which, $dornaview, $coorfile, $mapallfile, $seeplots);
 
-for (my $n = 0; $n < $nch; $n ++) {
-    my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
-    my $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
-    my $mapfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.map";
-    my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
 
-    print "\n chain $chname[$n]\n";
-    if ($coorfile) {
-	print COORF "$corfile\n";
+sub contacts_from_pdbfile {
+	
+    my ($gnuplot, $rscapebin, $pdfile, $stofile, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, $dornaview, $coorfile, $seeplots) = @_;
+
+    my $ncnt_t = 0;
+    
+    use constant GNUPLOT => '$gnuplot';
+    
+    my $currdir = $ENV{PWD};
+    
+    my $stoname = $stofile;
+    if ($stoname =~ /\/([^\/]+)\.[^\/]+$/) { $stoname = $1; }
+    my $pfamname = $stofile;
+    if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
+    
+    my $hmmer       = "$rscapebin/../lib/hmmer";
+    my $hmmbuild    = "$hmmer/src/hmmbuild";
+    my $hmmersearch = "$hmmer/src/hmmsearch";
+    
+    my $easel    = "$hmmer/easel";
+    my $sfetch   = "$easel/miniapps/esl-sfetch";
+    my $reformat = "$easel/miniapps/esl-reformat";
+    
+    my $isrna = 0;
+    if ($dornaview) { $isrna = 1; }
+    
+    my $nch = 0;
+    my @chname = ();
+    my @chsq = ();
+    my $len;
+    my $alen;
+    
+    
+    my $resolution;
+    my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
+    print     "# PFAM:       $stofile\n";
+    print     "# PDB:        $pdbname\n";
+    print     "# chains:     $nch\n";
+    print     "# resolution: $resolution\n";
+        
+    for (my $n = 0; $n < $nch; $n ++) {
+	my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
+	my $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
+	my $mapfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.map";
+	my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
+	
+	print "\n chain $chname[$n]\n";
+	if ($coorfile) {
+	    print COORF "$corfile\n";
+	}
+	
+	open(COR,  ">$corfile")  || die;
+	open(MAP,  ">$mapfile")  || die;
+	open(MAP0, ">$map0file") || die;
+	open(MAP1, ">$map1file") || die;
+	
+	print COR  "# PDB: $pdbname\n";
+	print MAP  "# PDB: $pdbname\n"; 
+	print MAP0 "# PDB: $pdbname\n";
+	print MAP1 "# PDB: $pdbname\n";
+	print COR  "# chain $chname[$n]\n";
+	print MAP  "# chain $chname[$n]\n";
+	print MAP0 "# chain $chname[$n]\n";
+	print MAP1 "# chain $chname[$n]\n";
+	print MAP1 "# maps to $pfamname\n";
+	
+	$len = length($chsq[$n]);
+	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna);
+	close(COR);
+	close(MAP);
+	close(MAP0);
+	close(MAP1);
+	if ($alen == 0) { next; }
+	
+	plot_contact_map($map0file, $len,  $seeplots);
+	plot_contact_map($map1file, -1,    $seeplots);
+	plot_contact_map($mapfile,  $alen, $seeplots);
     }
-    
-    open(COR,  ">$corfile")  || die;
-    open(MAP,  ">$mapfile")  || die;
-    open(MAP0, ">$map0file") || die;
-    open(MAP1, ">$map1file") || die;
-    
-    print COR  "# PDB: $pdbname\n";
-    print MAP  "# PDB: $pdbname\n"; 
-    print MAP0 "# PDB: $pdbname\n";
-    print MAP1 "# PDB: $pdbname\n";
-    print COR  "# chain $chname[$n]\n";
-    print MAP  "# chain $chname[$n]\n";
-    print MAP0 "# chain $chname[$n]\n";
-    print MAP1 "# chain $chname[$n]\n";
-    print MAP1 "# maps to $pfamname\n";
 
-    $len = length($chsq[$n]);
-    $alen = parse_pdb_contact_map($pdbfile, \$ncnt_t, \@cnt_t, $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL);
-    close(COR);
-    close(MAP);
-    close(MAP0);
-    close(MAP1);
-    if ($alen == 0) { next; }
     
-    plot_contact_map($map0file, $len,  $seeplots);
-    plot_contact_map($map1file, -1,    $seeplots);
-    plot_contact_map($mapfile,  $alen, $seeplots);
+    if ($coorfile) { close(COORF); }
+
+    if ($mapallfile) { print_allcontacts($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
+    
+    $$ret_ncnt_t = $ncnt_t;
 }
 
-print_allcontacts($mapallfile, $ncnt_t, \@cnt_t, $pdbname, $pfamname, $maxD, $minL);
-
-if ($coorfile) { close(COORF); }
-
-
 sub parse_pdb {
-    my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref) = @_;
+    my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna) = @_;
 
-    my $pdfname;
+    my $pdbname;
     my $nch = 0;
-    my $resulution;
+    my $resolution;
 
     my $cur_chain;
     my $prv_chain = "";
@@ -190,7 +204,7 @@ sub parse_pdb {
     $nch ++;
 
     for (my $n = 0; $n < $nch; $n ++) {
-	my $len = sq_conversion(\$chsq_ref->[$n]);
+	my $len = sq_conversion(\$chsq_ref->[$n], $isrna);
 	if ($len != $sqlen[$n]) { print "parse_pdb(): seq len is $len should be $sqlen[$n]\n"; die; }
     }
     
@@ -201,7 +215,7 @@ sub parse_pdb {
 
 # map[0..pdblen-1] taking values in 0..msa_alen-1
 sub map_pdbsq {
-    my ($stofile, $pdbname, $chname, $pdbsq, $map_ref) = @_;
+    my ($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chname, $pdbsq, $map_ref) = @_;
 
     my $len = length($pdbsq);
     for (my $l = 0; $l < $len; $l ++) {
@@ -236,7 +250,7 @@ sub map_pdbsq {
     my $from_pfam;
     my $ali_pdb;
     my $ali_pfam;
-    my $alen = find_pdbsq_in_pfam($stofile, $chname, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
+    my $alen = find_pdbsq_in_pfam($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
     if ($alen == 0 || $pfamname =~ //) {
 	print "could not find $pdbname chain $chname in sto file\n";
 	return 0;
@@ -315,7 +329,7 @@ sub alipos_isgap {
 }
 
 sub find_pdbsq_in_pfam {
-    my ($stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
+    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
  
     my $ali_pdb  = "";
     my $ali_pfam = "";
@@ -330,6 +344,16 @@ sub find_pdbsq_in_pfam {
     }
 
     my $pdbsqfile = "$currdir/$pdbname";
+
+    my $hmmer       = "$rscapebin/../lib/hmmer";
+    my $hmmbuild    = "$hmmer/src/hmmbuild";
+    my $hmmersearch = "$hmmer/src/hmmsearch";
+    
+    my $easel    = "$hmmer/easel";
+    my $sfetch   = "$easel/miniapps/esl-sfetch";
+    my $reformat = "$easel/miniapps/esl-reformat";
+
+    printf("^^ $pdbsqfile\n");
     
     open(F, ">$pdbsqfile") || die;
     print F ">$pdbname\n$pdbsq\n";
@@ -349,7 +373,7 @@ sub find_pdbsq_in_pfam {
     parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamsqname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
     if ($pfamsqname eq "") { print "could not find best hit for chain $chain\n"; }
     
-    $pfam_asq = get_asq_from_sto($stofile, $pfamsqname, 0);
+    $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
 
     if ($pfamsqname ne "") {
 	printf "^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
@@ -467,7 +491,7 @@ sub coordtrans_aseq2sq{
 }
 
 sub get_asq_from_sto {
-    my ($stofile, $name, $from) = @_;
+    my ($reformat, $stofile, $name, $from) = @_;
     my $asq = "";
 
     if ($name =~ //) { return $asq; }
@@ -496,8 +520,9 @@ sub get_asq_from_sto {
 
     return substr($asq, $from);
 }
+
 sub get_first_asq_from_sto {
-    my ($stofile, $from) = @_;
+    my ($reformat, $stofile, $from) = @_;
     my $asq = "";
 
     my $afafile = "$stofile";
@@ -526,7 +551,7 @@ sub get_first_asq_from_sto {
 
 
 sub parse_pdb_contact_map {
-    my ($pdbfile, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
@@ -541,7 +566,7 @@ sub parse_pdb_contact_map {
     printf MAP1 "# minL  $minL\n";
     
     my @map = (); # map sq to the sequence in the alignment  
-    my $alen = map_pdbsq($stofile, $pdbname, $chain, $chsq, \@map);
+    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map[$x]+1;
@@ -633,7 +658,7 @@ sub parse_pdb_contact_map {
     print "# end calculate distances\n";
 
     ## If RNA, run rnaview to extract the bptypes
-    if ($dornaview) { run_rnaview($pdbfile, $stofile, $pdbname, $chain, \$ncnt, \@cnt); }
+    if ($dornaview) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, \$ncnt, \@cnt, $isrna); }
     
     # add all contacts from this chain to the list of total contacts if new
     for (my $c = 0; $c < $ncnt; $c ++) {
@@ -740,12 +765,14 @@ sub addcontact {
 }
 
 sub run_rnaview {
-    my ($pdbfile, $stofile, $pdbname, $chain, $ret_ncnt, $cnt_ref) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $ret_ncnt, $cnt_ref, $isrna) = @_;
 
     my $ncnt = $$ret_ncnt;
     my $rnaviewfile = "rnaviewf";
     my $sq;
     my @map = (); # map sq to the sequence in the alignment
+
+    my $rnaview = "$rscapebin/rnaview";
 
     system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
     system("/usr/bin/more $rnaviewfile\n");
@@ -754,14 +781,14 @@ sub run_rnaview {
     while(<RF>) {
 	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
 	    $sq = $1;
-	    my $alen = map_pdbsq($stofile, $pdbname, $chain, $sq, \@map);
+	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $sq, \@map);
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
 	    my $posi   = $map[$1-1]+1;
 	    my $posj   = $map[$2-1]+1;
-	    my $chri   = aa_conversion($3);
-	    my $chrj   = aa_conversion($4);
+	    my $chri   = aa_conversion($3, $isrna);
+	    my $chrj   = aa_conversion($4, $isrna);
  	    my $bptype = $5;
 
 	    if ($posi > 0 && $posj > 0) {
@@ -847,7 +874,7 @@ sub atom_offset {
 }
 
 sub sq_conversion {
-    my ($ret_seq) = @_;
+    my ($ret_seq, $isrna) = @_;
 
     my $seq = $$ret_seq;
     my $new = "";
@@ -856,7 +883,7 @@ sub sq_conversion {
     #print "seq\n$seq\n";
     while ($seq) {
 	$seq =~ s/^(\S+)\s+//; $aa = $1;
-	$new .= aa_conversion($aa); 
+	$new .= aa_conversion($aa, $isrna); 
     }
     #printf "new $new\n";
     $$ret_seq = $new;
@@ -864,7 +891,7 @@ sub sq_conversion {
 }
 
 sub aa_conversion {
-    my ($aa) = @_;
+    my ($aa, $isrna) = @_;
     my $new;
 
     my $AA = uc($aa);
@@ -1060,8 +1087,8 @@ sub get_atoms_coord {
 	}
 	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)\s*$/) {
 	    my $pos = $1;
-	    if ($pos < $from || $pos > $to) {  print "Bad position $pos\n"; die; }
-	    $ismissing[$pos-1] = 1;
+	    if ($pos < $from || $pos > $to) {  print "Bad position $pos ($from,$to)\n";  }
+	    else { $ismissing[$pos-1] = 1; }
 	}
 	
     }

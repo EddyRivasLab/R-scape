@@ -4,9 +4,9 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_L $opt_v);  # required if strict used
+use vars qw ($opt_D $opt_L $opt_P $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('L:v');
+getopts ('D:L:P:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -49,9 +49,20 @@ use lib '$rscapedir/scripts';
 
 my $currdir = $ENV{PWD};
 
+my $maxD = 8;
+if ($opt_D) { $maxD = $opt_D; }
+
 my $minL = -1;
 if ($opt_L) { $minL = $opt_L; }
 for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = ($minL>0)? "$prename[$f].minL$minL.roc":"$prename[$f].roc"; }
+
+my $pdbfile = "";
+my $ncnt = 0;
+my @cnt;
+if ($opt_P) { 
+    $pdbfile = "$opt_P";
+    contactlist_from_pdbfile($pdbfile, $afafile, $maxD, $minL, \$ncnt, \@cnt);
+}
 
 my $verbose = 0;
 if ($opt_v) { $verbose = 1; }
@@ -90,9 +101,9 @@ for (my $f = 0; $f < $F; $f ++) {
    
 }
 
-my $xmax = 300;
+my $xmax = 100;
 my $viewplots = 1;
-rocplot($pfamname, $F, \@rocfile, $xmax, $viewplots);
+rocplot($pfamname, $F, \@rocfile, \@prename, $xmax, $viewplots);
 
 
 sub  create_rocfile_rscape {
@@ -207,7 +218,7 @@ sub  create_rocfile_DCA {
 
 
 sub rocplot {
-    my ($pfamname, $F, $file_ref, $xmax, $seeplots) = @_;
+    my ($pfamname, $F, $file_ref, $prename_ref, $xmax, $seeplots) = @_;
 
 
    my $psfile = "results/$pfamname.N$F.ps";
@@ -242,6 +253,7 @@ sub rocplot {
     print $gp "set style line 8   lt 1 lc rgb 'blue' pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
 
+    my $logscale = 0;
     $xlabel = "SEN contacts";
     $ylabel = "PPV contacts";
     $x_min = 0;
@@ -250,7 +262,7 @@ sub rocplot {
     $y_max = 100;
     $x = 16;
     $y = 17;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "SEN bpairs";
     $ylabel = "PPV bpairs";
     $x_min = 0;
@@ -259,92 +271,93 @@ sub rocplot {
     $y_max = 100;
     $x = 19;
     $y = 20;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
+    $logscale = 0;
     $xlabel = "number of predictions per position";
     $ylabel = "PPV contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 17;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "SEN contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 16;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "F contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 18;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
     # basepairs
     $xlabel = "number of predictions per position";
     $ylabel = "PPV bpairs";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 20;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "SEN bpairs";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 19;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "F bpairs";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
     $y_max = 100;
     $x = 9;
     $y = 21;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
  
     $xlabel = "number of predictions";
     $ylabel = "PPV contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $xmax;
     $y_min = 0;
     $y_max = 100;
     $x = 1;
     $y = 17;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions";
     $ylabel = "SEN contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $xmax;
     $y_min = 0;
     $y_max = 100;
     $x = 1;
     $y = 16;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions";
     $ylabel = "F contacts";
-    $x_min = 0;
+    $x_min = 0.001;
     $x_max = $xmax;
     $y_min = 0;
     $y_max = 100;
     $x = 1;
     $y = 18;
-    oneplot($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max);
+    oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
 
     close($gp);
@@ -358,20 +371,33 @@ sub rocplot {
 
 
 sub oneplot {
-    my ($gp, $F, $file_ref, $x, $y, $xlabel, $ylabel, $title, $xmin, $xmax, $ymin, $ymax) = @_;
+    my ($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $xmin, $xmax, $ymin, $ymax, $logscale) = @_;
    
     my $cmd = "";
-    my $m = 1;
+    my $m = 5;
     
     print $gp "set title  '$title'\n";
     print $gp "set xlabel '$xlabel'\n";
     print $gp "set ylabel '$ylabel'\n";
     print $gp "set xrange [$xmin:$xmax]\n";
     print $gp "set yrange [$ymin:$ymax]\n";
+    if ($logscale) { print $gp "set logscale x\n"; }
     for (my $f = 0; $f < $F; $f++) {
-	$cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y                      ls 7, " : "'$file_ref->[$f]' using $x:$y                      ls $m, ";
-	$cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '' with lines ls 7"   : "'$file_ref->[$f]' using $x:$y  title '' with lines ls $m, ";
+	my $key = $prename_ref->[$f];
+	$cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title ''                ls $m, " : "'$file_ref->[$f]' using $x:$y  title ''                ls $m, ";
+	$cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m, ";
 	$m ++; if ($m == 7) { $m = 8; }
     }
     print $gp "plot $cmd\n";
+    if ($logscale) { print $gp "unset logscale\n"; }
+}
+
+
+sub contactlist_from_pdbfile 
+{
+    my ($pdbfile, $afafile, $maxD, $minL, $ret_ncnt, $cnt_ref) = @_;
+
+    my $ncnt = 0;
+
+    $$ret_ncnt = $ncnt;
 }
