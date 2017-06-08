@@ -4,14 +4,14 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_D $opt_L $opt_P $opt_v);  # required if strict used
+use vars qw ($opt_D $opt_L $opt_P $opt_R $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('D:L:P:v');
+getopts ('D:L:P:RW:v');
 
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <afafile> <rscapedir> <gnuplotdir> \n\n";
+        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <gnuplotdir> \n\n";
         print "options:\n";
  	exit;
 }
@@ -33,19 +33,24 @@ my $outname;
 	if ($prename[$f] =~ /\/(ID\S+)\//)    { $ID = $1; $outname .= ".$ID"; }
     }
 }
-my $afafile  = shift;
+my $stofile  = shift;
 my $pfamname = $prefile[0];
 if ($pfamname =~ /(PF[^\.]+)\./) { $pfamname = $1; }
 if ($pfamname =~ /(RF[^\.]+)\./) { $pfamname = $1; }
 my $oafafile = "data/$pfamname.afa";
 print "original file: $oafafile\n";
 
-my $rscapedir = shift;
+my $rscapebin = shift;
 my $gnuplot   = shift;
-use constant GNUPLOT => '$gnuplot';
+#use constant GNUPLOT => '$gnuplot';
 use constant GNUPLOT => '/usr/local/bin/gnuplot';
-use lib '$rscapedir/scripts';
-#use FUNCS;
+
+my $lib;
+#BEGIN { $lib = "$rscapebin/../scripts" };
+#use lib '$lib';
+use lib '/Users/rivase/src/src/mysource/scripts';
+use PDBFUNCS;
+use FUNCS;
 
 my $currdir = $ENV{PWD};
 
@@ -56,12 +61,21 @@ my $minL = -1;
 if ($opt_L) { $minL = $opt_L; }
 for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = ($minL>0)? "$prename[$f].minL$minL.roc":"$prename[$f].roc"; }
 
-my $pdbfile = "";
+my $dornaview = 0;
+if ($opt_R) { $dornaview = 1; }
+my $which = "MIN"; #options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
+if ($opt_W) { $which = "$opt_W"; }
+my $seeplots = 0;
 my $ncnt = 0;
+my $nbp  = 0;
+my $nwc  = 0;
 my @cnt;
+my $pdbfile = "";
 if ($opt_P) { 
     $pdbfile = "$opt_P";
-    contactlist_from_pdbfile($pdbfile, $afafile, $maxD, $minL, \$ncnt, \@cnt);
+    PDBFUNCS::contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$ncnt, \@cnt, $maxD, $minL, $which, $dornaview, "", "", $seeplots);
+    PDBFUNCS::print_contactlist(\*STDOUT, $ncnt, \@cnt);
+    PDBFUNCS::bpinfo_contactlist($ncnt, \@cnt, \$nbp, \$nwc);
 }
 
 my $verbose = 0;
@@ -79,7 +93,9 @@ if ($dorandom) {
     $F ++;
 }
 
-
+my $alen = -1;
+my $alenDCA = -1;
+my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
     my$method = "";
     
@@ -93,8 +109,11 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^random$/) {
 	create_rocfile_random($rocfile[$f], $prefile[$f]);
     }
-    elsif ($method =~ /^DCA$/) {
-	create_rocfile_DCA($rocfile[$f], $prefile[$f]);
+    elsif ($method =~ /^mfDCA$/) {
+	$alenDCA = create_rocfile_mfDCA ($rocfile[$f], $prefile[$f], $stofile, $minL, $ncnt, $nbp, $nwc, \@cnt,  \$alen, \$alenDCA, \@mapDCA);
+    }
+    elsif ($method =~ /^plmDCA$/) {
+	$alenDCA = create_rocfile_plmDCA($rocfile[$f], $prefile[$f], $stofile, $minL, $ncnt, $nbp, $nwc, \@cnt, \$alen, \$alenDCA, \@mapDCA);
     }
     else { print "method $method not implemented yet\n"; die; }
     
@@ -105,6 +124,12 @@ my $xmax = 100;
 my $viewplots = 1;
 rocplot($pfamname, $F, \@rocfile, \@prename, $xmax, $viewplots);
 
+
+
+
+
+
+####################### routines
 
 sub  create_rocfile_rscape {
     my ($rocfile, $file) = @_;
@@ -177,9 +202,6 @@ sub writeline {
     
     printf $fp "$f\t$f_c\t$f_b\t$f_w\t\t$t_c\t$t_b\t$t_w\t$alen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
     $f/$alen, $f_c/$alen, $f_b/$alen, $f_w/$alen, $t_c/$alen, $t_b/$alen, $t_w/$alen, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
-
-    #printf     "$f\t$f_c\t$f_b\t$f_w\t\t$t_c\t$t_b\t$t_w\t$alen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-    #$f/$alen, $f_c/$alen, $f_b/$alen, $f_w/$alen, $t_c/$alen, $t_b/$alen, $t_w/$alen, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
 }
 
 sub calculateF {
@@ -200,12 +222,9 @@ sub calculateF {
     $$ret_F   = 100.*$F;
 }
 
-sub  create_rocfile_random {
-    my ($rocfile, $prefile) = @_;
-}
 
-sub  create_rocfile_DCA {
-    my ($rocfile, $prefile) = @_;
+sub  create_rocfile_mfDCA {
+    my ($rocfile, $prefile, $stofile, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $ret_alen, $ret_alenDCA, $mapDCA_ref, $which) = @_;
 
     my $method = "mfDCA";
     my $which  = "DI";
@@ -213,9 +232,97 @@ sub  create_rocfile_DCA {
 	$which = "MI";
 	$method .= "-$which";
     }
+
+    my $alenDCA = $$ret_alenDCA;
+    if ($alenDCA < 0) {
+	mapDCA2MSA($stofile, $mapDCA_ref, $ret_alen, \$alenDCA);
+    }
+
+    parse_mfDCA($rocfile, $prefile, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $mapDCA_ref, $$ret_alen, $alenDCA, $which);
+    
+    $$ret_alenDCA = $alenDCA;
     
 }
 
+sub  create_rocfile_plmDCA {
+    my ($rocfile, $prefile, $stofile, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $ret_alen, $ret_alenDCA, $mapDCA_ref) = @_;
+
+    my $method = "plmDCA";
+  
+    my $alenDCA = $$ret_alenDCA;
+    if ($alenDCA < 0) {
+	mapDCA2MSA($stofile, $mapDCA_ref, $ret_alen, \$alenDCA);
+    }
+
+    parse_plmDCA($rocfile, $prefile, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $mapDCA_ref, $$ret_alen, $alenDCA);
+
+    $$ret_alenDCA = $alenDCA;
+  
+}
+
+sub  create_rocfile_random {
+    my ($rocfile, $prefile) = @_;
+}
+
+
+
+# map the coordenates in DCA output files to those of the input alignment
+#
+# mlDCA and plmDCA trim internally the alignmen by removing coluns with . or lower case
+# we need mapDCA() because mlDCA and plmDCA report coordinates relative
+# to this filtered alignment, not relative to the input alignment
+#
+# alen    length of the input alignment
+# alenDCA length of the columns used by DCA (no . no lower case)
+# mapDCA[1..alenDCA] valued in 1..alen
+sub mapDCA2MSA {
+    my ($stofile, $mapDCA_ref, $ret_alen, $ret_alenDCA) = @_;
+    my $alen     = 0;
+    my $asq      = "";
+    my $alenDCA  = 0;
+    my $asqDCA   = "";
+
+    my $afafile = "$stofile.afa";
+    my $reformat = "$rscapebin/../lib/hmmer/easel/miniapps/esl-reformat afa ";
+    system("$reformat $stofile > $afafile\n");
+    
+    # grab the first sequence
+    my $n = 0;
+    open (FA, "$afafile") || die;
+    while (<FA>) {
+	if (/^\>/) { $n ++; if ($n > 1) { last; } }
+	elsif ($n == 1 && /^(\S+)\s*$/) {
+	    $asq .= $1;
+	}       
+    }
+    close (FA);
+    
+    $alen = length($asq);
+    
+    my $aux = $asq;
+    my $char;
+    my $apos = 0;
+    my $pos = 0;
+    while ($aux) {
+	$apos ++;
+	$aux =~ s/^(\S)//; $char = $1;
+	if ($char =~ /^\.$/ || $char =~ /^[a-z]$/) {
+	}
+	else { 
+	    $asqDCA .= "$char"; 
+	    $pos ++;     
+	    $mapDCA_ref->[$pos] = $apos;
+	}
+    }
+    $alenDCA = length($asqDCA);
+    
+    print "alen    $alen\n$asq\n";
+    print "alenDCA $alenDCA\n$asqDCA\n";
+
+    system("rm $afafile\n");
+    $$ret_alenDCA = $alenDCA;
+    $$ret_alen    = $alen;
+}
 
 sub rocplot {
     my ($pfamname, $F, $file_ref, $prename_ref, $xmax, $seeplots) = @_;
@@ -393,11 +500,216 @@ sub oneplot {
 }
 
 
-sub contactlist_from_pdbfile 
-{
-    my ($pdbfile, $afafile, $maxD, $minL, $ret_ncnt, $cnt_ref) = @_;
+sub parse_mfDCA {
+    my ($rocfile, $file, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $mapDCA_ref, $alen, $alenDCA, $which) = @_;
+    my $npre = 0;
 
-    my $ncnt = 0;
+    my $sortfile = sort_mfDCA($file, $which);
+    
+    open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
 
-    $$ret_ncnt = $ncnt;
+    my $f   = 0;
+    my $f_c = 0;
+    my $f_b = 0;
+    my $f_w = 0;
+    my $t_c = $ncnt;
+    my $t_b = $nbp;
+    my $t_w = $nwc;
+
+    my $type;
+    open(FILE, "$sortfile") || die;
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
+	    my $idca = $1;
+	    my $jdca = $2;
+	    my $i    = $mapDCA_ref->[$idca];
+	    my $j    = $mapDCA_ref->[$jdca];
+	    if (PDBFUNCS::found_in_contactlist($i, $j, $minL, $ncnt, $cnt_ref, \$type)) {
+		if    ($type ==  0) { $f_w ++; }
+		elsif ($type <  12) { $f_b ++; }
+		$f_c ++;
+	    }
+	    $f ++;
+	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $alen);
+	    writeline(\*STDOUT, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $alen);
+	}
+    }
+    close(FILE);
+    close($fp);
+
+    system("rm $sortfile\n");
+}
+
+sub parse_plmDCA {
+    my ($rocfile, $file, $minL, $ncnt, $nbp, $nwc, $cnt_ref, $mapDCA_ref, $alen, $alenDCA) = @_;
+    my $npre = 0;
+
+    my $sortfile = sort_plmDCA($file);
+
+    open(FILE, "$sortfile") || die;
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
+	    my $i = $1;
+	    my $j = $2;
+
+	}
+    }
+    close(FILE);
+
+   system("rm $sortfile\n");
+}
+
+sub parse_gremplin {
+    my ($file, $minL) = @_;
+    my $npre = 0;
+
+    my $sortfile = sort_gremlin($file);
+
+    open(FILE, "$sortfile") || die;
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
+	    my $i = $1;
+	    my $j = $2;
+	}
+    }
+    close(FILE);
+
+    system("rm $sortfile\n");
+}
+
+sub sort_mfDCA {
+    my ($file, $which) = @_;
+
+    my $sortfile = "$file.sort";
+    my $n = 0;
+    my %i;
+    my %j;
+    my %sc;
+    my $di;
+    my $mi;
+    open(SORT, ">$sortfile") || die;
+    open(FILE, "$file") || die;
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s*$/) {
+	    $i{$n} = $1;
+	    $j{$n} = $2;
+	    $mi    = $3;
+	    $di    = $4;
+	    if    ($which =~ /^DI$/) { $sc{$n} = $di; }
+	    elsif ($which =~ /^MI$/) { $sc{$n} = $mi; }
+	    $n ++;
+	}
+    }
+    close(FILE);
+    
+    my @newkey = sort { $sc{$b} <=> $sc{$a} } keys(%sc);
+    my @newi   = @i{@newkey};
+    my @newj   = @j{@newkey};
+    my @newsc  = @sc{@newkey};
+
+   for (my $x = 0; $x < $n; $x ++) {
+	print SORT "$newi[$x] $newj[$x] $newsc[$x]\n";
+    }
+    close(SORT);
+   
+    return $sortfile;
+}
+
+sub sort_plmDCA {
+    my ($file) = @_;
+
+    my $sortfile = "$file.sort";
+
+    my $n = 0;
+    my %i;
+    my %j;
+    my %sc;
+    my $di;
+    my $mi;
+    my %newi;
+    my %newj;
+    my %newsc;
+    open(SORT, ">$sortfile") || die;
+    open(FILE, "$file") || print "FILE DOES NOT EXIST\n";
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+),(\d+),(\S+)\s*$/) {
+	    $i{$n}  = $1;
+	    $j{$n}  = $2;
+	    $sc{$n} = $3;
+	    $n ++;
+	}
+    }
+    close(FILE);
+
+    my @newkey = sort { $sc{$b} <=> $sc{$a} } keys(%sc);
+    my @newi   = @i{@newkey};
+    my @newj   = @j{@newkey};
+    my @newsc  = @sc{@newkey};
+
+    for(my $x = 0; $x < $n; $x ++) {
+	print SORT "$newi[$x] $newj[$x] $newsc[$x]\n";
+    }
+    close(SORT);
+    
+    return $sortfile;
+}
+
+sub sort_gremlin {
+    my ($file) = @_;
+
+    my $sortfile = "$file.sort";
+
+    my $n = 0;
+    my %i;
+    my %j;
+    my %sc;
+    my $di;
+    my $mi;
+    my %newi;
+    my %newj;
+    my %newsc;
+    
+    my $row = 0;
+    my $dim;
+    open(SORT, ">$sortfile") || die;
+    print "file:$file\n";
+    open(FILE, "$file") || print "FILE DOES NOT EXIST\n";
+    while(<FILE>) {
+	my $line = $_;
+	$line =~ s/\n//g;
+	my @vec = split(/ /, $line);
+
+	$dim = $#vec+1;
+	for (my $col = $row+1; $col < $dim; $col ++) {
+	    $i{$n}  = $row+1;
+	    $j{$n}  = $col+1;
+	    $sc{$n} = $vec[$col];
+	    $n ++;
+	}
+	$row ++;
+    }
+    close(FILE);
+     if ($row != $dim) { print "sort_gremlin() error\n"; }
+    
+    my @newkey = sort { $sc{$b} <=> $sc{$a} } keys(%sc);
+    my @newi   = @i{@newkey};
+    my @newj   = @j{@newkey};
+    my @newsc  = @sc{@newkey};
+
+    for(my $x = 0; $x < $n; $x ++) {
+	print SORT "$newi[$x] $newj[$x] $newsc[$x]\n";
+    }
+    close(SORT);
+    
+    return $sortfile;
 }
