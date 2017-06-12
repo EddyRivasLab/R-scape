@@ -30,7 +30,7 @@
 #include "contactmap.h"
 #include "msamanip.h"
 
-static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf);
+static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf);
 static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int hasss, int *ct, CLIST *clist, char *errbuf);
 static int isnewcontact(int posi,int  posj, CLIST *clist);
 
@@ -113,15 +113,15 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
        if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
        else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
        if (abcisRNA)  // run rnaview as well
-	 esl_sprintf(&args, "%s -D %f -W MIN -C %s -M %s -R %s %s %s %s > /dev/null",
-		     cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R %s %s %s %s > /dev/null",
+		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
        else 
-	 esl_sprintf(&args, "%s -D %f -W MIN -C %s -M %s %s %s %s %s > /dev/null",
-		     cmd, cntmaxD, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s %s %s %s %s > /dev/null",
+		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
        printf("%s\n", args);
        system(args);
        
-       status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, errbuf);
+       status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, &(clist->pdblen), errbuf);
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
        remove(tmpmapfile);
        
@@ -179,11 +179,12 @@ CMAP_CreateCList(int alloc_ncnt)
   clist->srtcnt[0] = clist->cnt;
 
   clist->alloc_ncnt = alloc_ncnt;
-  clist->ncnt = 0;
-  clist->nbps = 0;
-  clist->nwwc = 0;
-  clist->maxD = -1;
-  clist->mind = -1;
+  clist->ncnt   = 0;
+  clist->nbps   = 0;
+  clist->nwwc   = 0;
+  clist->maxD   = -1;
+  clist->mind   = -1;
+  clist->pdblen = -1;
 
   return clist;
 
@@ -287,6 +288,7 @@ CMAP_DumpShort(FILE *fp, CLIST *clist)
   fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
   fprintf(fp, "# maxD      %.2f\n", clist->maxD);
   fprintf(fp, "# mind      %.d\n",  clist->mind);
+  if (clist->pdblen > 0) { fprintf(fp, "# pdblen    %.d\n",  clist->pdblen); }
   return eslOK;
 }
 
@@ -356,7 +358,7 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
 
 
 static int
-read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
+read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf)
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
@@ -364,6 +366,8 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
   char           **mapfile = NULL;
   int              posi;
   int              pdbi;
+  int              pdb_min = L;
+  int              pdb_max = 0;
   int              i;
   int              c;
   int              status;
@@ -394,11 +398,15 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, char *errbuf)
 	posi = atoi(tok);
 	
 	if (posi > 0) {
+	  if (pdbi < pdb_min) pdb_min = pdbi;
+	  if (pdbi > pdb_max) pdb_max = pdbi;
 	  i = omsa2msa[posi-1]+1;
 	  msa2pdb[i-1] = pdbi-1;
 	}
       }
   }
+
+  *ret_pdblen = pdb_max - pdb_min + 1;
   
   free(mapfile);
   return eslOK;

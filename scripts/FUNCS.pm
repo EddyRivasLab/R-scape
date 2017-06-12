@@ -10,7 +10,7 @@ my $easel        = "~/src/hmmer/hmmer/easel/miniapps";
 my $esl_reformat = "$easel/esl-reformat";
 my $esl_afetch   = "$easel/esl-afetch";
 
-use constant GNUPLOT => '/opt/local/bin/gnuplot';
+use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 sub afa2sto {
     my ($root, $file) = @_;
@@ -208,10 +208,7 @@ sub gnuplot_histo {
 
     my ($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, $iscum, $seeplots, $xleft, $xright, $ymax) = @_;
 
-    my $pdffile = $psfile;
-    if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
-    
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+     open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -220,7 +217,7 @@ sub gnuplot_histo {
     #print GP "set nokey\n";
     print GP "set xlabel '$xlabel'\n";
     print GP "set xrange [$xleft:$xright]\n";
-    print GP "set yrange [0:$ymax]\n";
+    if ($ymax > 0) { print GP "set yrange [0:$ymax]\n"; }
 
     #print GP "set title \"$title\\n\\n$key\"\n";
     print GP "set title '$title'\n";
@@ -235,14 +232,12 @@ sub gnuplot_histo {
 	$cmd .= "'$hfile' using $xfield:$yfield  with boxes title '$key' ls 1";
     } 
 
-    print  "plot $cmd\n";
+    #print  "plot $cmd\n";
     print GP "plot $cmd\n";
 
     close (GP);
 
-    system ("ps2pdf $psfile\n"); 
-    system("rm $psfile\n");
-    if ($seeplots) { system ("open $pdffile&\n"); }
+    if ($seeplots) { system ("open $psfile&\n"); }
 }
 
 

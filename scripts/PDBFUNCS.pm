@@ -9,30 +9,87 @@ our $VERSION = "1.00";
 use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 struct RES => {
-char     => '$', # number of atoms
-coor     => '$', # coordenate in seqref
-nat      => '$', # number of atoms
-type     => '@', # type for eacth atom
-x        => '@', # x position for eacht atom
-y        => '@', # y position for eacht atom
-z        => '@', # z position for eacht atom
+    char     => '$', # number of atoms
+    coor     => '$', # coordenate in seqref
+    nat      => '$', # number of atoms
+    type     => '@', # type for eacth atom
+    x        => '@', # x position for eacht atom
+    y        => '@', # y position for eacht atom
+    z        => '@', # z position for eacht atom
 };
 
 struct CNT => {
-i        => '$', # pdb positionmin
-j        => '$', # 
-posi     => '$', # alignment position
-posj     => '$', # 
-chi      => '$', # character
-chj      => '$', # 
-bptype   => '$', # WWc WWt HHc HHt SSc SSt WHc WHt WSc WSt HSc HSt STACKED CONTACT BPNONE
-distance => '$', # euclidian distance
+    i        => '$', # pdb position
+    j        => '$', # 
+    posi     => '$', # alignment position
+    posj     => '$', # 
+    chi      => '$', # character
+    chj      => '$', # 
+    bptype   => '$', # WWc WWt HHc HHt SSc SSt WHc WHt WSc WSt HSc HSt STACKED CONTACT BPNONE
+    distance => '$', # euclidian distance
 };
 
 
+struct PDB2MSA => {
+    pdbname   => '$', # pdb  name
+    stoname   => '$',  # alignment name
+    pdblen    => '$', # length of pdb sequence
+    msalen    => '$', # length of pfam alignment
+    
+    which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms)
+    
+    maxD      => '$', # maximun spacial distance (A) to define a contact
+    minL      => '$', # minimum backbone distance (in pdbseq) to define a contact 
+    ncnt      => '$', # number of contacts
+    cnt       => '@', # a CNT structure for each contact
+
+    nbp       => '$', # (RNA) number of basepairs (any of 12 types)
+    nwc       => '$', # (RNA) number of basepairs (WWc only)
+    
+};
+
+
+sub pdb2msa {
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $maxD, $minL, $which, $isrna, $seeplots) = @_;
+
+    $$pdb2msa_ref = PDB2MSA->new();
+    my $stoname = $stofile;
+    if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
+    if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
+
+    my $pdbname = $pdbfile;
+    if ($pdbname =~ /\/([^\/]+)\s*$/) { $pdbname = $1; }
+
+    my $pdblen;
+    my $msalen;
+    
+    my $ncnt;
+    my @cnt;
+    my $nbp;
+    my $nwc;
+    
+    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$ncnt, \@cnt, $maxD, $minL, $which, $isrna, "", "", $seeplots);
+    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+    contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
+    contactlist_maxlen($ncnt, \@cnt, \$pdblen);
+
+    $$pdb2msa_ref->{"PDB2MSA::pdbname"}  = $pdbname;
+    $$pdb2msa_ref->{"PDB2MSA::stoname"}  = $stoname;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}   = $pdblen;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}   = $msalen;
+    
+    $$pdb2msa_ref->{"PDB2MSA::ncnt"}     = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nbp"}      = $nbp;
+    $$pdb2msa_ref->{"PDB2MSA::nwc"}      = $nwc;
+    $$pdb2msa_ref->{"PDB2MSA::maxD"}     = $maxD;
+    $$pdb2msa_ref->{"PDB2MSA::minL"}     = $minL;
+    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}   = @cnt;
+}
+
 sub contacts_from_pdbfile {
 	
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, $dornaview, $coorfile, $mapallfile, $seeplots) = @_;
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
+	$dornaview, $coorfile, $mapallfile, $seeplots) = @_;
 
     my $ncnt_t = 0;
     
@@ -62,7 +119,6 @@ sub contacts_from_pdbfile {
     my $len;
     my $alen;
     
-    
     my $resolution;
     my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
     print     "# PFAM:       $stofile\n";
@@ -87,32 +143,53 @@ sub contacts_from_pdbfile {
 	open(MAP1, ">$map1file") || die;
 	
 	print COR  "# PDB: $pdbname\n";
-	print MAP  "# PDB: $pdbname\n"; 
-	print MAP0 "# PDB: $pdbname\n";
-	print MAP1 "# PDB: $pdbname\n";
+	#print MAP  "# PDB: $pdbname\n"; 
+	#print MAP0 "# PDB: $pdbname\n";
+	#print MAP1 "# PDB: $pdbname\n";
 	print COR  "# chain $chname[$n]\n";
-	print MAP  "# chain $chname[$n]\n";
-	print MAP0 "# chain $chname[$n]\n";
-	print MAP1 "# chain $chname[$n]\n";
-	print MAP1 "# maps to $pfamname\n";
+	#print MAP  "# chain $chname[$n]\n";
+	#print MAP0 "# chain $chname[$n]\n";
+	#print MAP1 "# chain $chname[$n]\n";
+	#print MAP1 "# maps to $pfamname\n";
 	
 	$len = length($chsq[$n]);
-	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna);
+	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, 
+				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna);
 	close(COR);
 	close(MAP);
 	close(MAP0);
 	close(MAP1);
 	if ($alen == 0) { next; }
+
+	my $xfield  = 1;
+	my $yfield  = 3;
+	my $xylabel = "PDB position";
+	my $title   = "Contacts in pdb sequence";
+	plot_contact_map($map0file, $len,  $xfield, $yfield, $title, $xylabel, $seeplots);
+
+	$xfield  = 1;
+	$yfield  = 4;
+	$xylabel = "PDB position";
+	$title   = "Contacts in pdb sequence that map to the alignment";
+	plot_contact_map($map1file, -1,    $xfield, $yfield, $title, $xylabel, $seeplots);
 	
-	plot_contact_map($map0file, $len,  $seeplots);
-	plot_contact_map($map1file, -1,    $seeplots);
-	plot_contact_map($mapfile,  $alen, $seeplots);
+	$xfield  = 2;
+	$yfield  = 5;
+	$xylabel = "Alignment position";
+	$title   = "Contacts in the alignment";
+	plot_contact_map($mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $seeplots);
     }
     
     if ($coorfile) { close(COORF); }
 
-    if ($mapallfile) { print_allcontacts($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
-    
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
+
+    if (1) {
+	my $hisfile  = "$currdir/$stoname.$pdbname.chains$nch.maxD$maxD.his";
+	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, 1); 
+    }
+
+    $$ret_msalen = $alen;
     $$ret_ncnt_t = $ncnt_t;
 }
 
@@ -209,7 +286,8 @@ sub map_pdbsq {
     my $from_pfam;
     my $ali_pdb;
     my $ali_pfam;
-    my $alen = find_pdbsq_in_pfam($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
+    my $alen = find_pdbsq_in_pfam($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, 
+				  \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
     if ($alen == 0 || $pfamname =~ //) {
 	print "could not find $pdbname chain $chname in sto file\n";
 	return 0;
@@ -288,7 +366,8 @@ sub alipos_isgap {
 }
 
 sub find_pdbsq_in_pfam {
-    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
+    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, 
+	$ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
  
     my $ali_pdb  = "";
     my $ali_pfam = "";
@@ -515,12 +594,12 @@ sub parse_pdb_contact_map {
     
     printf COR  "# maxD  $maxD\n";
     printf COR  "# minL  $minL\n";
-    printf MAP  "# maxD  $maxD\n";
-    printf MAP  "# minL  $minL\n";
-    printf MAP0 "# maxD  $maxD\n";
-    printf MAP0 "# minL  $minL\n";
-    printf MAP1 "# maxD  $maxD\n";
-    printf MAP1 "# minL  $minL\n";
+    #printf MAP  "# maxD  $maxD\n";
+    #printf MAP  "# minL  $minL\n";
+    #printf MAP0 "# maxD  $maxD\n";
+    #printf MAP0 "# minL  $minL\n";
+    #printf MAP1 "# maxD  $maxD\n";
+    #printf MAP1 "# minL  $minL\n";
     
     my @map = (); # map sq to the sequence in the alignment  
     my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
@@ -556,7 +635,6 @@ sub parse_pdb_contact_map {
 
     my @res;
     get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \@res);
-    print "# calculate distances\n";
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -588,12 +666,13 @@ sub parse_pdb_contact_map {
 		die; 
 	    }
 
-	    $distance = distance($which, $nat1, \@type1, \@x1, \@y1, \@z1, $nat2, \@type2, \@x2, \@y2, \@z2);
+	    $distance = distance($which, $char1, $nat1, \@type1, \@x1, \@y1, \@z1, $char2, $nat2, \@type2, \@x2, \@y2, \@z2);
 
 	    if ($distance > 0) {
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
 		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance;
 
+		
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
 
 			$cnt[$ncnt] = CNT->new();
@@ -612,25 +691,24 @@ sub parse_pdb_contact_map {
 	    }
 	}
     }
-    print "# end calculate distances\n";
 
     ## If RNA, run rnaview to extract the bptypes
-    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, \$ncnt, \@cnt, $isrna); }
+    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $minL, \$ncnt, \@cnt, $isrna); }
     
     # add all contacts from this chain to the list of total contacts if new
     for (my $c = 0; $c < $ncnt; $c ++) {
 	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
     }
 
-    print_contactlist(\*STDOUT, $ncnt, \@cnt);
-    print_contactlist(\*MAP,    $ncnt, \@cnt);
-    print_contactlist(\*MAP1,   $ncnt, \@cnt);
+    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+    contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
+    contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
     
     return $alen;
 }
 
-sub print_contactlist {
-    my ($fp, $ncnt, $cnt_ref) = @_;
+sub contactlist_print {
+    my ($fp, $ncnt, $cnt_ref, $addcomments) = @_;
     
     my $nbp = 0;
     my $nwc = 0;
@@ -646,13 +724,14 @@ sub print_contactlist {
 		$cnt_ref->[$c]->{"CNT::j"}, $cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
 		$cnt_ref->[$c]->{"CNT::bptype"}, $cnt_ref->[$c]->{"CNT::distance"};
     }
-    printf $fp "# contacts: $ncnt\n";
-    printf $fp "# bpairs   %d \n", $nbp;
-    printf $fp "# WWc      %d \n", $nwc;
-    
+    if ($addcomments) {
+	printf $fp "# contacts: $ncnt\n";
+	printf $fp "# bpairs   %d \n", $nbp;
+	printf $fp "# WWc      %d \n", $nwc;
+    }
 }
 
-sub bpinfo_contactlist {
+sub contactlist_bpinfo {
     my ($ncnt, $cnt_ref, $ret_nbp, $ret_nwc) = @_;
     
     my $nbp = 0;
@@ -667,9 +746,23 @@ sub bpinfo_contactlist {
     $$ret_nbp = $nbp;
     $$ret_nwc = $nwc;
 }
+sub contactlist_maxlen {
+    my ($ncnt, $cnt_ref, $ret_maxlen) = @_;
+    
+    my $maxlen = 0;
+     
+    for (my $c = 0; $c < $ncnt; $c ++) {
 
-sub found_in_contactlist {
-    my ($i, $j, $minL, $ncnt, $cnt_ref, $ret_type) = @_;
+	my $i = $cnt_ref->[$c]->{"CNT::i"};
+	my $j = $cnt_ref->[$c]->{"CNT::j"};
+	my $len = $j - $i + 1;
+	if ($len > $maxlen) { $maxlen = $len; }
+    }
+    $$ret_maxlen = $maxlen;
+}
+
+sub found_alicoords_in_contactlist {
+    my ($posi, $posj, $minL, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
@@ -677,7 +770,7 @@ sub found_in_contactlist {
     for (my $c = 0; $c < $ncnt; $c ++) {
 	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { continue; } # too close in pdbseq distance
 	
-	if ($i == $cnt_ref->[$c]->{"CNT::posi"} && $j == $cnt_ref->[$c]->{"CNT::posj"}) {
+	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) {
 	    $found = 1;
 	    
 	    my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
@@ -685,19 +778,60 @@ sub found_in_contactlist {
 	    elsif ($bptype =~ /^WWt$/)     { $type = 1;  }
 	    elsif ($bptype =~ /^HHc$/)     { $type = 2;  }
 	    elsif ($bptype =~ /^HHt$/)     { $type = 3;  }
-	    elsif ($bptype =~ /^WWc$/)     { $type = 4;  }
-	    elsif ($bptype =~ /^WWt$/)     { $type = 5;  }
-	    elsif ($bptype =~ /^WWc$/)     { $type = 6;  }
-	    elsif ($bptype =~ /^WWt$/)     { $type = 7;  }
-	    elsif ($bptype =~ /^WWc$/)     { $type = 8;  }
-	    elsif ($bptype =~ /^WWt$/)     { $type = 9;  }
-	    elsif ($bptype =~ /^WWc$/)     { $type = 10; }
-	    elsif ($bptype =~ /^WWt$/)     { $type = 11; }
+	    elsif ($bptype =~ /^SSc$/)     { $type = 4;  }
+	    elsif ($bptype =~ /^SSt$/)     { $type = 5;  }
+	    elsif ($bptype =~ /^WHc$/)     { $type = 6;  }
+	    elsif ($bptype =~ /^WHt$/)     { $type = 7;  }
+	    elsif ($bptype =~ /^WSc$/)     { $type = 8;  }
+	    elsif ($bptype =~ /^WSt$/)     { $type = 9;  }
+	    elsif ($bptype =~ /^HSc$/)     { $type = 10; }
+	    elsif ($bptype =~ /^HSt$/)     { $type = 11; }
 	    elsif ($bptype =~ /^STACKED$/) { $type = 12; }
 	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
 	    else { print "uh? bptype = $bptype\n"; die;  }
 	    
 	    $$ret_type = $type;
+	    $$ret_pdbi = $cnt_ref->[$c]->{"CNT::i"};
+	    $$ret_pdbj = $cnt_ref->[$c]->{"CNT::j"};
+	    return $found;
+	}
+    }
+    
+    $$ret_type = $type;
+    return $found;
+}
+sub found_pdbcoords_in_contactlist {
+    my ($i, $j, $minL, $ncnt, $cnt_ref, $ret_type, $ret_posi, $ret_posj) = @_;
+
+    my $found = 0;
+    my $type = 14; # not a contact 
+
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { continue; } # too close in pdbseq distance
+	
+	if ($i == $cnt_ref->[$c]->{"CNT::i"} && $j == $cnt_ref->[$c]->{"CNT::j"}) {
+	    $found = 1;
+	    
+	    my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
+	    if    ($bptype =~ /^WWc$/)     { $type = 0;  }
+	    elsif ($bptype =~ /^WWt$/)     { $type = 1;  }
+	    elsif ($bptype =~ /^HHc$/)     { $type = 2;  }
+	    elsif ($bptype =~ /^HHt$/)     { $type = 3;  }
+	    elsif ($bptype =~ /^SSc$/)     { $type = 4;  }
+	    elsif ($bptype =~ /^SSt$/)     { $type = 5;  }
+	    elsif ($bptype =~ /^WHc$/)     { $type = 6;  }
+	    elsif ($bptype =~ /^WHt$/)     { $type = 7;  }
+	    elsif ($bptype =~ /^WSc$/)     { $type = 8;  }
+	    elsif ($bptype =~ /^WSt$/)     { $type = 9;  }
+	    elsif ($bptype =~ /^HSc$/)     { $type = 10; }
+	    elsif ($bptype =~ /^HSt$/)     { $type = 11; }
+	    elsif ($bptype =~ /^STACKED$/) { $type = 12; }
+	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
+	    else { print "uh? bptype = $bptype\n"; die;  }
+	    
+	    $$ret_type = $type;
+	    $$ret_posi = $cnt_ref->[$c]->{"CNT::posi"};
+	    $$ret_posj = $cnt_ref->[$c]->{"CNT::posj"};
 	    return $found;
 	}
     }
@@ -740,7 +874,7 @@ sub addcontact {
 
 }
 
- sub print_allcontacts {
+ sub allcontacts_dump {
     my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL) = @_;
     
     if ($file =~ //) { return; }
@@ -774,8 +908,36 @@ sub addcontact {
     close (FILE);   
 }
 
+sub allcontacts_histogram {
+    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $seeplots) = @_;
+    
+    my @his;
+    my $N = 50;
+    my $k = 100;
+    my $shift = 0;
+    FUNCS::init_histo_array($N, $k, \@his);
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	my $distance = $cnt_ref->[$c]->{"CNT::distance"};
+	FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, \@his);
+    }
+
+    FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
+    
+    my $title = "PDB: $pdbname   MSA: $pfamname   maxD: $maxD   minL: $minL\n";
+    my $xlabel = "euclidian minimum distance (Angstroms)";
+    my $ylabel = "number of contacts";
+    my $key = "";
+    my $psfile = "$hfile.ps";
+    my $xleft = 0;
+    my $xright = $maxD;
+    my $ymax = -1;
+    my $xfield = 1;
+    my $yfield = 2;
+    FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax);
+}
+
 sub run_rnaview {
-    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $ret_ncnt, $cnt_ref, $isrna) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $minL, $ret_ncnt, $cnt_ref, $isrna) = @_;
 
     my $ncnt = $$ret_ncnt;
     my $rnaviewfile = "rnaviewf";
@@ -795,13 +957,15 @@ sub run_rnaview {
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
-	    my $posi   = $map[$1-1]+1;
-	    my $posj   = $map[$2-1]+1;
+	    my $i      = $1;
+	    my $j      = $2;
+	    my $posi   = $map[$i-1]+1;
+	    my $posj   = $map[$j-1]+1;
 	    my $chri   = aa_conversion($3, $isrna);
 	    my $chrj   = aa_conversion($4, $isrna);
  	    my $bptype = $5;
 
-	    if ($posi > 0 && $posj > 0) {
+	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
 		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
 	    }
 	}
@@ -1184,9 +1348,9 @@ sub get_atoms_coord {
 
 
 sub distance {
-    my ($which, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
+    my ($which, $char1, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $char2, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
 
-    my $distance = 0;
+    my $distance;
     if ($nat1 == 0 || $nat2 == 0) { return $distance; }
     
     if  ($which =~ /^CA$/ || $which =~ /^C$/ || $which eq "C1'")  {
@@ -1194,6 +1358,17 @@ sub distance {
 	    if ($type1_ref->[$a1] =~ /^$which$/) {
 		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
 		    if ($type2_ref->[$a2] =~ /^$which$/) {
+			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		    }
+		}
+	    }
+	}
+    }
+     elsif  ($which =~ /^CB$/)  { # use CA if a GLY
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    if ($type1_ref->[$a1] =~ /^$which$/ || ($type1_ref->[$a1] =~ /^CA$/ &&  $char1 =~ /^G$/) ) {
+		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		    if ($type2_ref->[$a2] =~ /^$which$/ || ($type2_ref->[$a2] =~ /^CA$/ &&  $char2 =~ /^G$/) ) {
 			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
 		    }
 		}
@@ -1252,45 +1427,44 @@ sub euclidean_distance {
 }
 
 sub plot_contact_map {
-    my ($mapfile, $len, $seeplots) = @_;
+    my ($mapfile, $len, $xfield, $yfield, $title, $xylabel, $seeplots) = @_;
+
+    my $key = $mapfile;
+    if ($key =~ /([^\/]+)\s*$/) { $key = $1; }
     
     my $psfile = "$mapfile.ps";
-    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
-    my $pdffile = $psfile;
-    if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
-
-    my $xlabel = "alignment position";
-    my $title  = "$mapfile";
+    if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
+    #my $pdffile = $psfile;
+    #if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     
     open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
 
     print GP "set output '$psfile'\n";
-    print GP "unset key\n";
+    #print GP "unset key\n";
     print GP "set size ratio -1\n";
     print GP "set size 1,1\n";
 
     print GP "set nokey\n";
-    print GP "set xlabel '$xlabel'\n";
-    print GP "set ylabel '$xlabel'\n";
+    print GP "set xlabel '$xylabel'\n";
+    print GP "set ylabel '$xylabel'\n";
     if ($len > 0) {
 	print GP "set xrange [0:$len]\n";
 	print GP "set yrange [0:$len]\n";
     }
 
-    #print GP "set title \"$title\\n\\n$key\"\n";
-    print GP "set title '$title'\n";
+    print GP "set title \"$title\\n\\n$key\"\n";
+    #print GP "set title '$title'\n";
 
-    my $cmd = "'$mapfile' using 1:3  title '' ls 1, '$mapfile' using 3:1  title '' ls 1";
+    my $cmd = "x title '' with lines, '$mapfile' using $xfield:$yfield  title '' ls 3, '$mapfile' using $yfield:$xfield  title '' ls 3";
  
     print GP "plot $cmd\n";
-
     close (GP);
 
     #system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
     #system("/bin/rm $psfile\n");
-    #if ($seeplots) { system ("open $pdffile&\n"); }
+    if ($seeplots) { system ("open $psfile&\n"); }
 }
 
 1

@@ -51,15 +51,17 @@ typedef struct cnt_s {
 typedef struct clist_s{
   int      alloc_ncnt;
   int      ncnt;    // total number of contacts
-  int      nbps;    // total number of basepairs (all 12 types)
-  int      nwwc;    // total number of WWc basepairs 
-  
-  double   maxD;
-  int      mind; // min(j-i+1)
+  int      nbps;    // total number of basepairs (all 12 types) (RNA only)
+  int      nwwc;    // total number of WWc basepairs            (RNA only)
 
+                    // conditions to annotate a pair as "contact"
+  double   maxD;    // maximum Eucledian distance 
+  int      mind;    // minimum backbone distance min(j-i+1) in pdb sequence
   
   CNT    **srtcnt;
   CNT     *cnt;
+
+  int      pdblen;  // total length of the pdb fragment that is homologous to the alignment
 } CLIST;
 
 
