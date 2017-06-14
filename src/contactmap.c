@@ -270,7 +270,7 @@ CMAP_Dump(FILE *fp, CLIST *clist)
     if (clist->cnt[h].bptype == WWc) { nwc ++; }
     CMAP_BPTYPEString(&bptype, clist->cnt[h].bptype, NULL);
   
-    fprintf(fp, "%d %d | bptype %s\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, bptype);
+    fprintf(fp, "# %d %d | bptype %s\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, bptype);
     free(bptype); bptype = NULL;
   }
   if (nbp != clist->nbps) status = eslFAIL;

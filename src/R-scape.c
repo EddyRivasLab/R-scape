@@ -30,6 +30,7 @@
 #include "covgrammars.h"
 #include "pottsbuild.h"
 #include "ribosum_matrix.h"
+
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
 #define STATSOPTS    "--nullphylo,--naive"              
@@ -80,7 +81,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int             *msamap;
   int             *msarevmap;
   int              firstpos;
-  int              maxsq_gsc;        /* maximum number of seq to switch from GSC to PG sequence weighting */
+  int              maxsq_gsc;          /* maximum number of seq to switch from GSC to PG sequence weighting */
   int              tstart;
   int              tend;
   char            *outmsafile;
@@ -188,6 +189,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              window;
   int              slide;
 
+  int              YSeffect;
+
   int              nofigures;
 
   float            tol;
@@ -209,7 +212,7 @@ static ESL_OPTIONS options[] = {
   { "--expo",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to do an exponential fit (default is gamma)",                                          0},
   { "--singlelink",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to use single linkage clustering (default is esl_msaweight_IDFilter)",                 0},
   /* E-values to assess significance */
-  { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS, NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
+  { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -232,11 +235,12 @@ static ESL_OPTIONS options[] = {
   { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle res within a column",                                                       0 },
   { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle res within a column that appear canonical (i,j) pairs ",                    0 },
   { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
-  { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: ",                                                                                   0 },
+  { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: break the structure, maintain the phylogeny",                                        0 },
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all contacts (default for amino acids)",               1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all 12-type basepairs (default for RNA/DNA)",          1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is WWc basepairs only",                                   1 },
   { "--sampleall",    eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all pairs (default if no contacts given)",             1 },
+  { "--YS",           eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,                "Test the YSeffect:  shuffle alignment rows",                                               0 },
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APC corrected statistic",                                                              1 },
@@ -298,7 +302,6 @@ static ESL_OPTIONS options[] = {
   { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--outpotts",  eslARG_OUTFILE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters to file <f>,",                                              1 },
-  
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -325,7 +328,7 @@ static int rscape_banner(FILE *fp, char *progname, char *banner);
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
-static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist,
 		      int analyze);
@@ -487,7 +490,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--null2b")) cfg.nulltype = Null2b;
   else if (esl_opt_GetBoolean(go, "--null3"))  cfg.nulltype = Null3;
   else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
-  
+
+  cfg.YSeffect = FALSE;
+  if (esl_opt_GetBoolean(go, "--YS"))  cfg.YSeffect = TRUE;
+
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
   if (esl_opt_IsOn(go, "-E")) { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
     if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
@@ -852,7 +858,7 @@ main(int argc, char **argv)
 
 	cfg.firstpos = first;
 
-	status = rscape_for_msa(go, &cfg, wmsa);
+	status = rscape_for_msa(go, &cfg, &wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
  
 	esl_msa_Destroy(wmsa); wmsa = NULL;
@@ -869,7 +875,7 @@ main(int argc, char **argv)
       }
 
       cfg.firstpos = 1;
-      status = rscape_for_msa(go, &cfg, msa);
+      status = rscape_for_msa(go, &cfg, &msa);
 
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
@@ -1104,11 +1110,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 }
 
 static int
-rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 {
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
   RANKLIST *ranklist_allbranch  = NULL;
+  ESL_MSA  *msa = *ret_msa;
+  ESL_MSA  *YSmsa = NULL;
   int       nshuffle;
   int       analyze;
   int       status;
@@ -1193,6 +1201,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
 
+  // If testing the Yule-Simpson effect, shuffle the alignment by rows,
+  // while maintaing the gap structure
+  if (cfg->YSeffect) {
+    status = msamanip_ShuffleWithinRow(cfg->r, msa, &YSmsa, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to shuffle msa by columns", cfg->errbuf);
+    esl_msa_Destroy(msa);
+    msa      = YSmsa;
+    *ret_msa = YSmsa;
+  }
+  
   /* the null model first */
   if (cfg->statsmethod != NAIVE) {
     nshuffle = cfg->nshuffle;

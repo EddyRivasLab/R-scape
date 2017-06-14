@@ -55,6 +55,7 @@ extern int msamanip_SelectRandomSet(ESL_RANDOMNESS *r, ESL_MSA **msa, ESL_MSA **
 extern int msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idthresh2);
 extern int msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, int *useme, char *errbuf, int verbose);
 extern int msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose);
+extern int msamanip_ShuffleWithinRow(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose);
 extern int msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, int *usecol, ESL_MSA **ret_shmsa, 
 					     char *errbuf, int verbose);
 extern int msamanip_OutfileHeader(char *acc, char **ret_outheader);

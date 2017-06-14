@@ -45,7 +45,9 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int from, int to, char **ret_s
   int              L = -1;
   int              n = 1;
   int              i;
-  int              val;
+  int              misspos;
+  int              D;
+  int              x;
   int              status;
 
   ch[1] = '\0';
@@ -113,9 +115,24 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int from, int to, char **ret_s
 	if (strcmp(tok, chainname) != 0) continue;
 
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbfile);
-      val = atoi(tok);
-      if (val < 1) ESL_XFAIL(eslFAIL, errbuf, "failed to parse coord %d > %d from file %s", val, L, pdbfile);
-      if (val <= L) ismissing[val-1] = TRUE;
+      misspos = atoi(tok);
+      
+      if (misspos < from) {
+	D = from - misspos + 1;
+	ESL_REALLOC(ismissing, sizeof(int)*(L+D));
+	for (x = L; x >= 0; x --) ismissing[x+D] = ismissing[x];
+	for (x = 1; x <  D; x ++) ismissing[x] = FALSE;
+	ismissing[0] = TRUE;
+      }
+      else if (misspos > to) {
+	D = misspos - to + 1;
+	ESL_REALLOC(ismissing, sizeof(int)*(L+D));
+	for (x = 0; x < D-1; x ++) ismissing[x+L] = FALSE;
+	ismissing[L+D-1] = TRUE;
+      }
+      else {
+	ismissing[misspos-from] = TRUE;
+      }
     }
   esl_fileparser_Close(efp);
   
@@ -356,7 +373,9 @@ static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, l
   ESL_ALLOC(map, sizeof(int)*len);
   for (l = 0; l < len; l ++) map[l] = 0;
   new[1] = '\0';
- 
+
+  printf("len %d first %ld\n", len, pos_first);
+  
   for (i = ib, l = 0; i <= ie; i++, l ++){
     rb  = seidx[i][1];
     pos = ResSeq[rb];

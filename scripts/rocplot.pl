@@ -901,11 +901,11 @@ sub writeline {
     # tab separated fields
     # ---------------------
     #
-    # f   fc   fb   fw   tc   tb   tw   pdblen
-    # 1   2    3    4    5    6    7    8
+    # f         fc         fb         fw         tc         tb         tw         pdblen
+    # 1         2          3          4          5          6          7          8
     #
-    # f/  fc/  fb/  fw/  tc/  tb/  tw 
-    # 9   10   11   12   13   14   15  
+    # f/pdblen  fc/pdblen  fb/pdblen  fw/pdblen  tc/pdblen  tb/pdblen  tw/pdblen 
+    # 9         10         11         12         13         14         15  
     #
     # sen_c  ppv_c  F_c
     # 16     17     18

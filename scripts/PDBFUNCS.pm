@@ -959,11 +959,13 @@ sub run_rnaview {
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
 	    my $i      = $1;
 	    my $j      = $2;
+	    print "^^^^ i $i $3 j $j $4\n";
 	    my $posi   = $map[$i-1]+1;
 	    my $posj   = $map[$j-1]+1;
 	    my $chri   = aa_conversion($3, $isrna);
 	    my $chrj   = aa_conversion($4, $isrna);
- 	    my $bptype = $5;
+ 	    print "^^^^ i $i $3 $chri j $j $4 $chrj\n";
+	    my $bptype = $5;
 
 	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
 		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
@@ -992,9 +994,9 @@ sub rnaview2list {
 		$cnt_ref->[$c]->{"CNT::bptype"} = $bptype;
 	    }
 	    else { 
-		printf "i %d %s %s\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"} ; 
-		printf "j %d %s %s\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"} ; 
-		print "bad rnaview correspondence\n"; 
+		printf "i %d %s %s %d\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"}, $cnt_ref->[$c]->{"CNT::i"} ; 
+		printf "j %d %s %s %d\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"}, $cnt_ref->[$c]->{"CNT::j"} ; 
+		print "bad rnaview correspondence at $c/$ncnt\n"; 
 		die; 
 	    }
 	}
@@ -1071,37 +1073,35 @@ sub aa_conversion {
     my $AA = uc($aa);
 
     if ($isrna) {
-	if    ($AA =~ /^A$/)    { $new = "A"; }
-	elsif ($AA =~ /^I$/)    { $new = "A"; }
-	elsif ($AA =~ /^C$/)    { $new = "C"; }
-	elsif ($AA =~ /^G$/)    { $new = "G"; }
-	elsif ($AA =~ /^T$/)    { $new = "T"; }
-	elsif ($AA =~ /^U$/)    { $new = "U"; }
-	elsif ($AA =~ /^P$/)    { $new = "U"; }
+	if    ($AA =~ /^A$/)    { $new = "A"; return $new; }
+	elsif ($AA =~ /^I$/)    { $new = "A"; return $new; }
+	elsif ($AA =~ /^C$/)    { $new = "C"; return $new; }
+	elsif ($AA =~ /^G$/)    { $new = "G"; return $new; }
+	elsif ($AA =~ /^T$/)    { $new = "T"; return $new; }
+	elsif ($AA =~ /^U$/)    { $new = "U"; return $new; }
+	elsif ($AA =~ /^P$/)    { $new = "U"; return $new; }
 	# modified residues
-	elsif ($AA =~ /^1MA$/)  { $new = "A"; }
-	elsif ($AA =~ /^12A$/)  { $new = "A"; }
-	elsif ($AA =~ /^5MC$/)  { $new = "C"; }
-	elsif ($AA =~ /^CCC$/)  { $new = "C"; }
-	elsif ($AA =~ /^OMC$/)  { $new = "C"; }
-	elsif ($AA =~ /^M2G$/)  { $new = "G"; }
-	elsif ($AA =~ /^OMG$/)  { $new = "G"; }
-	elsif ($AA =~ /^YYG$/)  { $new = "G"; }
-	elsif ($AA =~ /^GDP$/)  { $new = "G"; }
-	elsif ($AA =~ /^GTP$/)  { $new = "G"; }
-	elsif ($AA =~ /^2MG$/)  { $new = "G"; }
-	elsif ($AA =~ /^7MG$/)  { $new = "G"; }
-	elsif ($AA =~ /^H2U$/)  { $new = "U"; }
-	elsif ($AA =~ /^UMP$/)  { $new = "U"; }
-	elsif ($AA =~ /^PSU$/)  { $new = "U"; }
-	elsif ($AA =~ /^2MU$/)  { $new = "U"; }
-	elsif ($AA =~ /^70U$/)  { $new = "U"; }
-	elsif ($AA =~ /^5MU$/)  { $new = "U"; }
-	elsif ($AA =~ /^AH2U$/) { $new = "U"; }
-	elsif ($AA =~ /^BH2U$/) { $new = "U"; }
-	else { print "aa_conversion(): uh? |$AA|\n"; die; }	
-	return $new;
-    }
+	elsif ($AA =~ /^1MA$/)  { $new = "A"; return $new; }
+	elsif ($AA =~ /^12A$/)  { $new = "A"; return $new; }
+	elsif ($AA =~ /^5MC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^CCC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^OMC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^M2G$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^OMG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^YYG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^GDP$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^GTP$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^2MG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^7MG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^H2U$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^UMP$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^PSU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^2MU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^70U$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^5MU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^AH2U$/) { $new = "U"; return $new; }
+	elsif ($AA =~ /^BH2U$/) { $new = "U"; return $new; }
+   }
     
     
     if    ($AA =~ /^ALA$/)  { $new = "A"; }
@@ -1261,7 +1261,14 @@ sub get_atoms_coord {
 	}
 	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)\s*$/) {
 	    my $pos = $1;
-	    if ($pos < $from || $pos > $to) {  print "Bad position $pos ($from,$to)\n";  }
+	    if ($pos < $from) {
+		$ismissing[$pos-1] = 1;
+		for (my $x = $pos; $x < $from; $x ++) { $ismissing[$x] = 0; }
+	    }
+	    elsif ($pos > $to) {  
+		$ismissing[$pos-1] = 1;
+		for (my $x = $to; $x < $pos-1; $x ++) { $ismissing[$x] = 0; }
+	    }
 	    else { $ismissing[$pos-1] = 1; }
 	}
 	
@@ -1350,7 +1357,7 @@ sub get_atoms_coord {
 sub distance {
     my ($which, $char1, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $char2, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
 
-    my $distance;
+    my $distance = 1e+50;
     if ($nat1 == 0 || $nat2 == 0) { return $distance; }
     
     if  ($which =~ /^CA$/ || $which =~ /^C$/ || $which eq "C1'")  {
@@ -1364,7 +1371,7 @@ sub distance {
 	    }
 	}
     }
-     elsif  ($which =~ /^CB$/)  { # use CA if a GLY
+    elsif  ($which =~ /^CB$/)  { # use CA if a GLY
 	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
 	    if ($type1_ref->[$a1] =~ /^$which$/ || ($type1_ref->[$a1] =~ /^CA$/ &&  $char1 =~ /^G$/) ) {
 		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
@@ -1409,7 +1416,7 @@ sub distance {
 	    }
 	}
     }
-
+    
     return $distance;
 }
 

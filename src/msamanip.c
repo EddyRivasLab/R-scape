@@ -1016,7 +1016,6 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	  }
       }
     }
-#ifdef eslAUGMENT_ALPHABET
   else
     {
       for (i = 0; i < msa->nseq; i++) {
@@ -1028,7 +1027,6 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
 	  }
       }
     }
-#endif
   
   if (verbose) {
     esl_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
@@ -1048,6 +1046,7 @@ msamanip_ShuffleColumns(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, i
   return status;
 }
 
+//shuffles within a column, but only residues while keeping the gap structure intact
 int
 msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
 {
@@ -1101,7 +1100,6 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
 	free(seqidx); seqidx = NULL;
       }
     }
-#ifdef eslAUGMENT_ALPHABET
   else
     {
       for (n = 1; n <= msa->alen; n++) {
@@ -1132,7 +1130,6 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
 	free(seqidx); seqidx = NULL;
       }
     }
-#endif
 
   if (verbose) {
     esl_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
@@ -1150,6 +1147,114 @@ msamanip_ShuffleWithinColumn(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shm
   if (useme)  free(useme);
   if (perm)   free(perm);
   if (seqidx) free(seqidx);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  return status;
+}
+
+//shuffles within a row, but only residues while keeping the gap structure intact
+int
+msamanip_ShuffleWithinRow(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+{
+  ESL_MSA *shmsa  = NULL;
+  int     *useme  = NULL;
+  int     *colidx = NULL;
+  int     *perm   = NULL;
+  int      alen;
+  int      i;
+  int      s;
+  int      c;
+  int      status = eslOK;
+
+  /* copy the original alignemt */
+  shmsa = esl_msa_Clone(msa);
+  if (shmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad allocation of shuffled msa");
+  
+  /* vector to mark residues in a row */
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  
+  /* aseq[0..nseq-1][0..alen-1] strings, or
+   * ax[0..nseq-1][(0) 1..alen (alen+1)] digital seqs 
+   */
+  if (! (msa->flags & eslMSA_DIGITAL))
+    {
+      for (s = 0; s < msa->nseq; s++) {
+	
+	/* suffle only positions with residues */
+	esl_vec_ISet(useme, msa->alen, FALSE);
+	for (i = 0; i < msa->alen; i ++) if (esl_abc_CIsResidue(msa->abc,msa->aseq[s][i])) useme[i] = TRUE;
+
+	/* within row permutation */
+	alen = msa->alen;
+	for (i = 0; i < msa->alen; i ++) if (useme[i] == FALSE) alen --;
+	if (alen == 0) continue;
+	ESL_ALLOC(colidx, sizeof(int) * alen);
+	
+	c = 0;
+	for (i = 0; i < msa->alen; i++) if (useme[i] == TRUE) { colidx[c] = i; c++; }
+	ESL_ALLOC(perm,  sizeof(int) * alen);
+	
+	for (c = 0; c < alen; i ++) perm[c] = c;
+ 	if ((status = esl_vec_IShuffle(r, perm, alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	c = 0;
+	for (i = 0; i < msa->alen; i++) {
+	  if (useme[i] == TRUE) {
+	    shmsa->aseq[s][i] = msa->aseq[s][colidx[perm[c]]];
+	    c ++;
+	  }
+	}
+	free(perm); perm = NULL;
+	free(colidx); colidx = NULL;
+      }
+    }
+  else
+    {
+      for (s = 0; s < msa->nseq; s++) {
+	
+	/* suffle only positions with residues */
+	esl_vec_ISet(useme, msa->alen, FALSE);
+	for (i = 1; i <= msa->alen; i ++) if (esl_abc_XIsResidue(msa->abc, msa->ax[s][i])) useme[i-1] = TRUE;
+
+	/* within colums permutation */
+	alen = msa->alen;
+	for (i = 1; i <= msa->alen; i ++) if (useme[i-1] == FALSE) alen --;
+	if (alen == 0) continue;
+	ESL_ALLOC(colidx, sizeof(int) * alen);
+	
+	c = 0;
+	for (i = 1; i <= msa->alen; i++) if (useme[i-1] == TRUE) { colidx[c] = i; c++; }
+	ESL_ALLOC(perm,  sizeof(int) * alen);
+	for (c = 0; c < alen; c ++) perm[c] = c;
+ 	if ((status = esl_vec_IShuffle(r, perm, alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
+
+	c = 0;
+	for (i = 1; i <= msa->alen; i++) {
+	  if (useme[i-1] == TRUE) {
+	    shmsa->ax[s][i] = msa->ax[s][colidx[perm[c]]];
+	    c ++;
+	  }
+	}
+	free(perm);   perm   = NULL;
+	free(colidx); colidx = NULL;
+      }
+    }
+
+  if (verbose) {
+    esl_msafile_Write(stdout, msa,   eslMSAFILE_STOCKHOLM);
+    esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM);
+ }
+
+  *ret_shmsa = shmsa;
+
+  free(useme);
+  if (perm)   free(perm);
+  if (colidx) free(colidx);
+  return status;
+
+ ERROR:
+  if (useme)  free(useme);
+  if (perm)   free(perm);
+  if (colidx) free(colidx);
   if (shmsa) esl_msa_Destroy(shmsa);
   return status;
 }
@@ -2013,14 +2118,12 @@ esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA **ret_newmsa
 	      break; 
 	    }
 	  } 
-#ifdef eslAUGMENT_ALPHABET
 	  else {
 	    if (esl_dst_XPairId_Overmaxid(msa->abc, msa->ax[i], msa->ax[list[j]], maxid)) {
 	      remove = TRUE; 
 	      break; 
 	    }
 	  }
-#endif
 	}
       if (remove == FALSE) {
 	list[nnew++] = i;
