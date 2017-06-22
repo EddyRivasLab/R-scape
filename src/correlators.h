@@ -214,6 +214,8 @@ struct data_s {
   int                  nofigures;
   int                  verbose;
   char                *errbuf;
+  int                  doR2R;
+  int                  doDotPlot;
   int                  donull2b;
   int                  ignorebps;  // FALSE for R-scape, TRUE for Pfcar
 };

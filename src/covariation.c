@@ -233,7 +233,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
 
-  if (data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
+  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
       status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
@@ -243,7 +243,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       if  (status != eslOK) goto ERROR;
     }
   }
-
+  
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
   return eslOK;
@@ -1900,7 +1900,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   
   /* run R2R */
   if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-  
+
   if (RSCAPE_BIN)         // look for the installed executable
     esl_sprintf(&cmd, "%s/r2r", RSCAPE_BIN);  
   else
@@ -2018,7 +2018,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
-  
+
   /* produce the R2R pdf */
   if (makepdf) {
     status = cov_R2Rpdf(r2rfile, verbose, errbuf);
@@ -2028,7 +2028,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
     status = cov_R2Rsvg(r2rfile, verbose, errbuf);
     if (status != eslOK) goto ERROR;
   }
-  
+
   esl_msa_Destroy(r2rmsa);
 
   remove(tmpinfile);
