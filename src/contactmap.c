@@ -1,4 +1,4 @@
-/*  contactmap - funtions to create a contact map (both for RNA and protein)
+/* contactmap - funtions to create a contact map (both for RNA and protein)
  * Contents:
  *
  * ER, Fri Apr 28 09:42:16 EDT 2017 [Harvard] 
@@ -301,21 +301,29 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   switch(type) {
   case WWc:       esl_sprintf(ret_bptype, "WWc");       break;
   case WWt:       esl_sprintf(ret_bptype, "WWt");       break;
-  case HHc:       esl_sprintf(ret_bptype, "HHc");       break;
-  case HHt:       esl_sprintf(ret_bptype, "HHt");       break;
-  case SSc:       esl_sprintf(ret_bptype, "SSc");       break;
-  case SSt:       esl_sprintf(ret_bptype, "SSt");       break;
   case WHc:       esl_sprintf(ret_bptype, "WHc");       break;
   case WHt:       esl_sprintf(ret_bptype, "WHt");       break;
   case WSc:       esl_sprintf(ret_bptype, "WSc");       break;
   case WSt:       esl_sprintf(ret_bptype, "WSt");       break;
+
+  case HWc:       esl_sprintf(ret_bptype, "HWc");       break;
+  case HWt:       esl_sprintf(ret_bptype, "HWt");       break;
+  case HHc:       esl_sprintf(ret_bptype, "HHc");       break;
+  case HHt:       esl_sprintf(ret_bptype, "HHt");       break;
   case HSc:       esl_sprintf(ret_bptype, "HSc");       break;
   case HSt:       esl_sprintf(ret_bptype, "HSt");       break;
+
+  case SWc:       esl_sprintf(ret_bptype, "SWc");       break;
+  case SWt:       esl_sprintf(ret_bptype, "SWt");       break;
+  case SHc:       esl_sprintf(ret_bptype, "SHc");       break;
+  case SHt:       esl_sprintf(ret_bptype, "SHt");       break;
+  case SSc:       esl_sprintf(ret_bptype, "SSc");       break;
+  case SSt:       esl_sprintf(ret_bptype, "SSt");       break;
+    
   case STACKED:   esl_sprintf(ret_bptype, "STACKED");   break;
   case CONTACT:   esl_sprintf(ret_bptype, "CONTACT");   break;
   case BPNONE:    esl_sprintf(ret_bptype, "BPNONE");    break;
-
-  default: ESL_XFAIL(eslFAIL, errbuf, "wrong BPTYPE");
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong BPTYPE");  break;
   }
 
   return eslOK;
@@ -332,22 +340,29 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
 
   if      (!esl_strcmp(bptype, "WWc"))       type = WWc;
   else if (!esl_strcmp(bptype, "WWt"))       type = WWt;
-  else if (!esl_strcmp(bptype, "HHc"))       type = HHc;
-  else if (!esl_strcmp(bptype, "HHt"))       type = HHt;
-  else if (!esl_strcmp(bptype, "SSc"))       type = SSc;
-  else if (!esl_strcmp(bptype, "SSt"))       type = SSt;
   else if (!esl_strcmp(bptype, "WHc"))       type = WHc;
   else if (!esl_strcmp(bptype, "WHt"))       type = WHt;
   else if (!esl_strcmp(bptype, "WSc"))       type = WSc;
   else if (!esl_strcmp(bptype, "WSt"))       type = WSt;
+  
+  else if (!esl_strcmp(bptype, "HWc"))       type = HWc;
+  else if (!esl_strcmp(bptype, "HWt"))       type = HWt;
+  else if (!esl_strcmp(bptype, "HHc"))       type = HHc;
+  else if (!esl_strcmp(bptype, "HHt"))       type = HHt;
   else if (!esl_strcmp(bptype, "HSc"))       type = HSc;
   else if (!esl_strcmp(bptype, "HSt"))       type = HSt;
+  
+  else if (!esl_strcmp(bptype, "SWc"))       type = SWc;
+  else if (!esl_strcmp(bptype, "SWt"))       type = SWt;
+  else if (!esl_strcmp(bptype, "SHc"))       type = SHc;
+  else if (!esl_strcmp(bptype, "SHt"))       type = SHt;
+  else if (!esl_strcmp(bptype, "SSc"))       type = SSc;
+  else if (!esl_strcmp(bptype, "SSt"))       type = SSt;
+  
   else if (!esl_strcmp(bptype, "STACKED"))   type = STACKED;
   else if (!esl_strcmp(bptype, "CONTACT"))   type = CONTACT;
   else if (!esl_strcmp(bptype, "BPNONE"))    type = BPNONE;
-
-  else
-    ESL_XFAIL(eslFAIL, errbuf, "wrong BYTYPE %s", bptype);
+  else ESL_XFAIL(eslFAIL, errbuf, "wrong BYTYPE %s", bptype);
 
   *ret_type = type;
   return eslOK;

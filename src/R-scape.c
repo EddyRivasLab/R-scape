@@ -34,7 +34,18 @@
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
 #define STATSOPTS    "--nullphylo,--naive"              
-#define COVTYPEOPTS  "--CHI,--CHIa,--CHIp,--GT,--GTa,--GTp,--MI,--MIa,--MIp,--MIr,--MIra,--MIrp,--MIg,--MIga,--MIgp,--OMES,--OMESa,--OMESp,--RAF,--RAFa,--RAFp,--RAFS,--RAFSa,--RAFSp,--CCF,--CCFp,--CCFa,--PTFp,--PTAp,--PTDp"              
+#define COVTYPEOPTS  "\
+--CHI,--CHIa,--CHIp,\
+--GT,--GTa,--GTp,\
+--MI,--MIa,--MIp,\
+--MIr,--MIra,--MIrp,\
+--MIg,--MIga,--MIgp,\
+--OMES,--OMESa,--OMESp,\
+--RAF,--RAFa,--RAFp,\
+--RAFS,--RAFSa,--RAFSp,\
+--CCF,--CCFp,--CCFa,\
+--PTFp,--PTAp,--PTDp\
+"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
@@ -610,7 +621,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
   }
 
-  cfg.cntmaxD = esl_opt_GetReal(go, "--cntmaxD");
+  cfg.cntmaxD = esl_opt_GetReal   (go, "--cntmaxD");
   cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
   cfg.clist = NULL;
   cfg.msa2pdb = NULL;
@@ -640,10 +651,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* if docyk write original alignment with cykstructure */
   cfg.omsacykfile = NULL;
   cfg.omsacykfp   = NULL;
-  if (cfg.docyk) {
-    esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
-    if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
-  } 
+  esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
+  if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
 
   /* file with the msa actually used */
   cfg.outmsafile = NULL;
@@ -808,7 +817,7 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
-    if (cfg.docyk) cfg.omsa = esl_msa_Clone(msa); // save original msa to output the cyk structure with it
+    cfg.omsa = esl_msa_Clone(msa); // save original msa to output the cyk structure with it
      
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
@@ -1114,7 +1123,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 {
   RANKLIST *ranklist_null = NULL;
   RANKLIST *ranklist_aux  = NULL;
-  RANKLIST *ranklist_allbranch  = NULL;
+  RANKLIST *ranklist_allbranch = NULL;
   ESL_MSA  *msa = *ret_msa;
   ESL_MSA  *YSmsa = NULL;
   int       nshuffle;
@@ -2045,16 +2054,20 @@ static int
 write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
 {
   ESL_MSA *omsa = cfg->omsa;
-  int *ct = NULL;
-  int  i;
-  int  status;
+  int     *ct = NULL;
+  int      i;
+  int      status;
 
   ESL_ALLOC(ct, sizeof(int)*(omsa->alen+1));
   esl_vec_ISet(ct, omsa->alen+1, 0);
   
   for (i = 0; i < L; i++) 
     if (cykct[i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykct[i+1]-1]+1;
-  
+
+  if (omsa->ss_cons == NULL) {
+    ESL_ALLOC(omsa->ss_cons, sizeof(char)*(omsa->alen+1));
+    omsa->ss_cons[omsa->alen] = '\0';
+  }
   esl_ct2wuss(ct, omsa->alen, omsa->ss_cons);
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
 

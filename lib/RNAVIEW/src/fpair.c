@@ -257,7 +257,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	      }
 	    
 	    
-	  }else {/* 2 H bonds */
+	  }
+	  else {/* 2 H bonds */
 	    
 	    if(bpid_lu ==2){ /* W.C. cases */
 	      
@@ -275,7 +276,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	      }
 	      
               
-	    }else if (bpid_lu ==1 || bpid_lu ==-1){ /* non-W.C. cases */
+	    }
+	    else if (bpid_lu ==1 || bpid_lu ==-1){ /* non-W.C. cases */
 	      geo_check=4.1; /*for edge to edge check*/
 	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			   bseq,hb_atom1, hb_atom2, hb_dist, type);
@@ -286,7 +288,6 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			     bseq,hb_atom1, hb_atom2, hb_dist, type);
 	      }
-	      
 	    }
 	  }
 	  LW_Saenger_correspond(bseq[i], bseq[j], type, corresp);
@@ -325,7 +326,11 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	  list->pair[num_bp].chj    = ChainID[jr];
 	  list->pair[num_bp].ic     = bseq[i];
 	  list->pair[num_bp].jc     = bseq[j];
-	  CMAP_String2BPTYPE(type, &list->pair[num_bp].bptype, errbuf);
+	  status = CMAP_String2BPTYPE(type, &list->pair[num_bp].bptype, errbuf);
+	  if (status != eslOK)  {
+	    printf("wrong BYTYPE %s\n", type);
+	    ESL_XFAIL(eslFAIL, errbuf, "wrong BYTYPE %s", type);
+	  }
 
 	  num_bp++;
 	  list->np = num_bp;
@@ -359,7 +364,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	} else
 	  pair_info[j][pair_info[j][NP]] = i;
 	
-      } else if( bpid_lu ==0){ /* not a H bond for base -  base */
+      }
+      else if( bpid_lu ==0){ /* not a H bond for base -  base */
 	
 	ir = seidx[i][1];
 	jr = seidx[j][1];
@@ -405,13 +411,13 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	  continue; 
 	}
 	
-	if(rtn_val[2] > BPRS[3]) continue; /* projection onto mean normal */
+	if (rtn_val[2] > BPRS[3]) continue; /* projection onto mean normal */
 	c_key=0;
 	bone_key=1;
 	change=0;  /*restrict tertiary interaction */
 	Hbond_pair(i, j, seidx, AtomName, bseq, xyz, change,
 		   &nh, hb_atom1, hb_atom2, hb_dist, c_key, bone_key);
-	if(nh>0){
+	if (nh>0){
 	  nc1 = 0;
 	  nc2 = 0;
 	  for(k=1; k<=nh; k++){
@@ -426,7 +432,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	      
 	      nc1++;
               
-	    }else if( ((!strcmp(hb_atom1[k], " O1P") || !strcmp(hb_atom1[k], " O2P")) &&
+	    }
+	    else if ( ((!strcmp(hb_atom1[k], " O1P") || !strcmp(hb_atom1[k], " O2P")) &&
 		       hb_atom2[k][3] != '\'' &&  hb_atom2[k][1] != 'C' ) ||
 		      
 		      ((!strcmp(hb_atom2[k], " O1P") || !strcmp(hb_atom2[k], " O2P")) &&
@@ -461,7 +468,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    
 	  }else if (nh==nc2){
 	    
-	    if(nb_p++ > num_residue-2){
+	    if (nb_p++ > num_residue-2) {
 	      fprintf(fout,"END_base-pair\n" );
 	      printf("increase memory for single H bond (base-O1P, O2P)\n");
 	      return eslFAIL;
@@ -471,7 +478,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			 bseq, hb_atom1, hb_atom2, hb_dist, type);
 	    
-	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
+	    if (strstr(tmp_str, ".") || strstr(tmp_str, "?")) {
 	      geo_check=5.8; 
 	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			   bseq,hb_atom1, hb_atom2, hb_dist, type);
@@ -481,7 +488,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 		    work_num, ChainID[ir], ResSeq[ir], bseq[i], bseq[j],
 		    ResSeq[jr],ChainID[jr], type,pa_int,syn_i, syn_j);
 	    
-	  }else{
+	  }
+	  else{
 	    
 	    if(nb_other++ > num_residue-2){
 	      printf("increase memory for single H bond (other cases)\n");
@@ -490,11 +498,10 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
               
 	    }
 	    
-            
 	    geo_check=5.2; 
 	    LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			 bseq, hb_atom1, hb_atom2, hb_dist, type);
-	    if(strstr(tmp_str, ".") || strstr(tmp_str, "?")){
+	    if (strstr(tmp_str, ".") || strstr(tmp_str, "?")){
 	      geo_check=6.0; 
 	      LW_pair_type(i, j, geo_check, seidx, AtomName, HB_ATOM, xyz,
 			   bseq,hb_atom1, hb_atom2, hb_dist, type);
@@ -508,9 +515,6 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
       }
     }         
   }
-  /*
-    printf("%ld   %ld  %ld   %ld \n",nb_single ,nb_sugar,nb_p,nb_other);
-  */
   
   for(m=1; m<=nb_single; m++)
     fprintf(fout, "%s", base_single[m]);

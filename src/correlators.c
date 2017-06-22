@@ -35,6 +35,9 @@
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 
+#define GAPISCHAR FALSE // TRUE to treat gaps as an extra character 
+                        // R-scape default ignores gaps when calculating pairwise covariation scores
+
 static int    is_wc(int x, int y);
 static int    is_allowed_pair(int x, int y, ESL_DMATRIX *allowpair);
 static int    number_pairs(int L, int *ct);
@@ -97,7 +100,11 @@ corr_CalculateCHI_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double exp;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, CHI, C16);
@@ -132,7 +139,11 @@ corr_CalculateCHI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
   double exp_wc, exp_nwc;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, CHI, C2);
@@ -224,7 +235,11 @@ corr_CalculateOMES_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double exp;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, OMES, C16);
@@ -258,7 +273,11 @@ corr_CalculateOMES_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, 
   double exp_wc, exp_nwc;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, OMES, C2);
@@ -352,9 +371,13 @@ corr_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double exp;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
-  
+
   corr_ReuseCOV(mi, GT, C16);
   
   // GT
@@ -387,7 +410,11 @@ corr_CalculateGT_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
   double exp_wc, exp_nwc;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, GT, C2);
@@ -478,7 +505,11 @@ corr_CalculateMI_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double mutinf;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, MI, C16);
@@ -510,7 +541,11 @@ corr_CalculateMI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
   double qij_wc, qij_nwc;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, MI, C2);
@@ -596,7 +631,11 @@ corr_CalculateMIr_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double tol = 1e-2;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, MIr, C16);
@@ -631,7 +670,11 @@ corr_CalculateMIr_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
   double tol = 1e-2;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, MIr, C2);
@@ -719,7 +762,11 @@ corr_CalculateMIg_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double mutinf;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   corr_ReuseCOV(mi, MIg, C16);
@@ -753,8 +800,12 @@ corr_CalculateMIg_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
   double qij_wc, qij_nwc;
   int    i, j;
   int    x, y;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
-  int    status = eslOK;
+#else
+  int    K = mi->abc->K;
+#endif
+  int status = eslOK;
   
   corr_ReuseCOV(mi, MIg, C2);
   
@@ -948,7 +999,11 @@ corr_CalculateCCF_C16(struct mutual_s *mi, int verbose, char *errbuf)
   double  cc;
   int     i, j;
   int     x, y;
+#if GAPISCHAR
   int     K = mi->abc->K+1;
+#else
+  int     K = mi->abc->K;
+#endif
   int     status = eslOK;
   
   corr_ReuseCOV(mi, CCF, C16);
@@ -1083,7 +1138,11 @@ struct mutual_s *
 corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alenthresh, ESL_ALPHABET *abc, COVCLASS covclass)
 {
   struct mutual_s *mi = NULL;
-  int              K  = abc->K+1;
+#if GAPISCHAR
+  int              K = abc->K+1;
+#else
+  int              K = abc->K;
+#endif
   int              K2 = K * K;
   int              i, j;
   int              status;
@@ -1135,7 +1194,11 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
 int
 corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
 {
-  int K  = mi->abc->K+1;
+#if GAPISCHAR
+  int K = mi->abc->K+1;
+#else
+  int K = mi->abc->K;
+#endif
   int K2 = K * K;
   int i, j;
 
@@ -1224,10 +1287,14 @@ corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b,
 int
 corr_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
-  int     K = mi->abc->K+1;
-  int     i, j;
-  int     x, y;
-  int     status;
+#if GAPISCHAR
+  int K = mi->abc->K+1;
+#else
+  int K = mi->abc->K;
+#endif
+  int i, j;
+  int x, y;
+  int status;
 
   /* pm are the marginals */
   for (i = 0; i < mi->alen; i ++) {
@@ -1307,7 +1374,11 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
 {
   int i, j;
   int x, y;
-  int K = msa->abc->K+1;
+#if GAPISCHAR
+  int K = mi->abc->K+1;
+#else
+  int K = mi->abc->K;
+#endif
   int status;
 
   switch(method) {
@@ -1375,7 +1446,11 @@ int
 corr_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int    i, j;
+#if GAPISCHAR
   int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
   int    status = eslOK;
   
   /* pp validation */
@@ -1561,7 +1636,11 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int    *colj = NULL;
   int    *shcoli = NULL;
   int    *shcolj = NULL;
+#if GAPISCHAR
   int     K = mi->abc->K+1;
+#else
+  int     K = mi->abc->K;
+#endif
   int     K2 = K*K;
   int     s;
   int     resi, resj;
@@ -1594,7 +1673,8 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
       mi->nseff[i][j]                += msa->wgt[s];
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
     }
-#if 0
+#if GAPISCHAR
+    // add the contribution of A - and - - columns
     else if (esl_abc_XIsCanonical(msa->abc, resi)) {
       mi->nseff[i][j] += msa->wgt[s];
       mi->pp[i][j][IDX(resi,msa->abc->K,K)] += msa->wgt[s]; 
@@ -1636,8 +1716,8 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
 
 
 int 
-mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, ESL_DMATRIX **CL, ESL_DMATRIX **CR, 
-		      double tol, int verbose, char *errbuf)
+mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi,
+		      ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf)
 {
   ESL_STACK     *vs = NULL;   /* node index stack */
   ESL_DMATRIX  **lk = NULL;
@@ -1645,7 +1725,11 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   ESL_DMATRIX   *cl, *cr;
   double         sc;
   int            dim;
+#if GAPISCHAR
   int            K = mi->abc->K+1;
+#else
+  int            K = mi->abc->K;
+#endif
   int            K2 = K*K;
   int            nnodes;
   int            v;

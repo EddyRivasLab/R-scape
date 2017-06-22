@@ -959,12 +959,10 @@ sub run_rnaview {
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
 	    my $i      = $1;
 	    my $j      = $2;
-	    print "^^^^ i $i $3 j $j $4\n";
 	    my $posi   = $map[$i-1]+1;
 	    my $posj   = $map[$j-1]+1;
 	    my $chri   = aa_conversion($3, $isrna);
 	    my $chrj   = aa_conversion($4, $isrna);
- 	    print "^^^^ i $i $3 $chri j $j $4 $chrj\n";
 	    my $bptype = $5;
 
 	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
@@ -1226,7 +1224,7 @@ sub get_atoms_coord {
     my $nn = 0;
     my $recording = 0;
     my $respos_first;
-    my $respos_prv = -1;
+    my $respos_prv;
     my $id;
     my $id_prv = -1;
     
@@ -1264,10 +1262,12 @@ sub get_atoms_coord {
 	    if ($pos < $from) {
 		$ismissing[$pos-1] = 1;
 		for (my $x = $pos; $x < $from; $x ++) { $ismissing[$x] = 0; }
+		$from = $pos;
 	    }
 	    elsif ($pos > $to) {  
 		$ismissing[$pos-1] = 1;
 		for (my $x = $to; $x < $pos-1; $x ++) { $ismissing[$x] = 0; }
+		$to = $pos;
 	    }
 	    else { $ismissing[$pos-1] = 1; }
 	}
@@ -1320,7 +1320,7 @@ sub get_atoms_coord {
 	    }
 	    else {
 		$l ++;
-		if ($l > 0 && $respos != $respos_prv+1) {
+		if ($nn > 0 && $respos != $respos_prv+1) {
 		    for (my $p = $respos_prv+1; $p < $respos; $p ++) {
 			if ($ismissing[$p-1]) { $l ++; }
 		    }

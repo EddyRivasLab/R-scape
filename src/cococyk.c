@@ -29,6 +29,24 @@ static SCVAL emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP]);
 static SCVAL emitsc_sing(int i,        ESL_DSQ *dsq, SCVAL e_sing[NB]);
 static int   segment_remove_gaps(int i, int j, ESL_DSQ *dsq);
 
+/* G6/G6S
+ *-----------------
+ *  S -> LS   | L
+ *  L -> aFa' | a
+ *  F -> aFa' | LS
+ *
+ *
+ * Basic Grammar (BGR)
+ *-----------------------------------------------------------
+ *  S  -> a S     | F0 S    | e
+ *  F0 -> a F5 a' | a P a'
+ *  F5 -> a F5 a' | a P a'
+ *  P  -> m..m    | a..m F0 | F0 m..m | m..m F0 m..m | M1 M
+ *  M  -> M1 M    | R
+ *  R  -> R a     | M1
+ *  M1 -> a M1    | F0
+ *
+ */
 int
 COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct, SCVAL *ret_sc, char *errbuf, int verbose) 
 {
@@ -1225,6 +1243,7 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
    
   i = j - d + 1;
 
+  if (d < 1 && w == BGR_S)  { *ret_sc = -eslINFINITY; return eslOK; }  // S  has to end
   if (d < 3 && w == BGR_P)  { *ret_sc = -eslINFINITY; return eslOK; }  // P  has at least 3 residues
   if (d < 5 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 5 residues
   if (d < 5 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 5 residues

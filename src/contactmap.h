@@ -15,19 +15,28 @@
 typedef enum {
   WWc       = 0,
   WWt       = 1,
-  HHc       = 2,
-  HHt       = 3,
-  SSc       = 4,
-  SSt       = 5,
-  WHc       = 6,
-  WHt       = 7,
-  WSc       = 8,
-  WSt       = 9,
+  WHc       = 2,
+  WHt       = 3,
+  WSc       = 4,
+  WSt       = 5,
+  
+  HWc       = 6,
+  HWt       = 7,
+  HHc       = 8,
+  HHt       = 9,
   HSc       = 10,
   HSt       = 11,
-  STACKED   = 12, // two bases in proximity that are involved in other basepairs
-  CONTACT   = 13, // just in proximity in the 3D structure
-  BPNONE    = 14,
+  
+  SWc       = 12,
+  SWt       = 13,
+  SHc       = 14,
+  SHt       = 15,
+  SSc       = 16,
+  SSt       = 17,
+  
+  STACKED   = 18, // two bases in proximity that are involved in other basepairs
+  CONTACT   = 19, // just in proximity in the 3D structure
+  BPNONE    = 20,
 } BPTYPE;
 
 typedef struct cnt_s {

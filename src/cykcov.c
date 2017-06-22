@@ -18,7 +18,8 @@
 #include "covgrammars.h"
 #include "cykcov.h"
 
-static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts, char *errbuf, int verbose);
+static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
+			char *errbuf, int verbose);
 
 int
 CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, double covthresh, char *errbuf, int verbose) 
@@ -96,8 +97,8 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, GMX *cyk, int **ret_c
   int             i,j,k;                 /* seq coords */
   float           tol = 0.001;
   int             status;
-
-   /* We're going to do a simple traceback that only
+  
+  /* We're going to do a simple traceback that only
    * remembers who was a base pair, and keeps a ct[]
    * array. 
    */

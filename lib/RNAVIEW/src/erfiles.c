@@ -16,7 +16,7 @@
 #include "erfiles.h"
 
 static char er_aa_conversion(char *s);
-static int  er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
+static int  er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
 			     long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf);
 
 
@@ -32,11 +32,13 @@ int er_ChainIdx(char chid, long nchain, char *chain_name)
   return 0;
 }
 
-int er_PDB_GetSeq(char *pdbfile, char *chainname, int from, int to, char **ret_sq, int **ret_ismissing, char *errbuf)
+int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, char **ret_sq, int **ret_ismissing, char *errbuf)
 {
   ESL_FILEPARSER  *efp = NULL;
   char            *sq = NULL;
   int             *ismissing = NULL;
+  int              to = *ret_to;
+  int              from = *ret_from;
   int              tmp;
   int              num = 0;
   char             ch[2];
@@ -123,20 +125,24 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int from, int to, char **ret_s
 	for (x = L; x >= 0; x --) ismissing[x+D] = ismissing[x];
 	for (x = 1; x <  D; x ++) ismissing[x] = FALSE;
 	ismissing[0] = TRUE;
+	from = misspos;
       }
       else if (misspos > to) {
 	D = misspos - to + 1;
 	ESL_REALLOC(ismissing, sizeof(int)*(L+D));
 	for (x = 0; x < D-1; x ++) ismissing[x+L] = FALSE;
 	ismissing[L+D-1] = TRUE;
+	to = misspos;
       }
       else {
 	ismissing[misspos-from] = TRUE;
       }
     }
   esl_fileparser_Close(efp);
-  
-  *ret_sq = sq;
+
+  *ret_from = from;
+  *ret_to   = to;
+  *ret_sq   = sq;
   *ret_ismissing = ismissing;
   
   return eslOK;
@@ -158,7 +164,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   long   nchain = 0;
   long   c;
   long   i;
-  long   from, to;
+  int    from, to;
   long   ib, ie, ip;
   long   rb, re;
   char   ch[2];
@@ -235,27 +241,27 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 
     rb   = seidx[ib][1];
     re   = seidx[ie][2];
-    from = ResSeq[rb];
-    to   = ResSeq[re];
+    from = (int)ResSeq[rb];
+    to   = (int)ResSeq[re];
 
-    // this is terrible re-using chain_f chain_t for later
-    chain_f[c]    = from;
-    chain_t[c]    = to;
-    chain_name[c] = ChainID[rb];
-    
     ch[0] = ChainID[rb];
     ch[1] = '\0';
     if (user_chain && strcmp(user_chain, ch)) continue;
     if (!chain_isnucl[c]) continue;
 
-    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%ld\t%ld\n", ChainID[rb], from, to);
-    fprintf(stdout, "# seq_%c ", ChainID[rb]);
-    
-    status = er_PDB_GetSeq(pdbfile, ch, (int)from, (int)to, &sq, &ismissing, errbuf);
+    status = er_PDB_GetSeq(pdbfile, ch, &from, &to, &sq, &ismissing, errbuf);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get chain sequence", errbuf);
-    fprintf(stdout, "%s\n", sq);
 
-    status = er_SEQRES2ResSeq(sq, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
+    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%d\n", ChainID[rb], from, to);
+    fprintf(stdout, "# seq_%c ", ChainID[rb]);
+    fprintf(stdout, "%s\n", sq);
+    
+    // this is terrible re-using chain_f chain_t for later
+    chain_f[c]    = from;
+    chain_t[c]    = to;
+    chain_name[c] = ChainID[rb];
+
+    status = er_SEQRES2ResSeq(sq, from, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get the coords correspondence", errbuf);
 
     free(ismissing); ismissing = NULL;
@@ -351,7 +357,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 //
 //                                                                               * -> another documented "missing residue"
 //
-static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
+static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
 			    long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf)
 {
   int  *map = NULL;
@@ -364,8 +370,7 @@ static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, l
   long  i;
   long  rb;
   long  pos;
-  long  pos_first = ResSeq[seidx[ib][1]];
-  long  pos_prv = -1;
+  long  pos_prv;
   long  p;
   long  ANum;
   int   status;
@@ -374,16 +379,21 @@ static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, l
   for (l = 0; l < len; l ++) map[l] = 0;
   new[1] = '\0';
 
-  printf("len %d first %ld\n", len, pos_first);
-  
-  for (i = ib, l = 0; i <= ie; i++, l ++){
+  l = 0;
+  if (ResSeq[seidx[ib][1]] > from) {
+    for (p = from; p < ResSeq[seidx[ib][1]]; p ++)
+      if (ismissing[p-from]) { l ++; }
+  }
+
+  pos_prv = ResSeq[seidx[ib][1]];
+  for (i = ib; i <= ie; i++){
     rb  = seidx[i][1];
     pos = ResSeq[rb];
 
     ANum = AtomNum[rb];
 
-    if (pos - pos_first > len) continue;
-    if (pos < pos_first) continue;
+    if (pos - from > len) continue;
+    if (pos < from) continue;
     
     esl_sprintf(&s, ResName[rb]);
     esl_strtok(&s, " ", &name);
@@ -391,17 +401,18 @@ static int er_SEQRES2ResSeq(char *sq, int *ismissing, char chainname, long ib, l
     name[1] = '\0';
     icode = Miscs[rb][2];
 
-    if (l > 0 && pos != pos_prv+1) {
+    if (pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
-	if (ismissing[p-1]) { l ++; }
+	if (ismissing[p-from]) { l ++; }
       }
     }
-    if (l >= len) { printf("l %d >= len %d\n", l, len); return eslFAIL; }
+    if (l >= len) { printf("this should not happen: l %d >= len %d\n", l, len); return eslFAIL; }
     strncpy(new, sq+l, 1);
     
     map[l]  = pos;
     pos_prv = pos;
     Atom2SEQ[ANum] = l+1;
+    l ++;
   }
 
   fprintf(stdout, "# seq_%c", chainname);
@@ -455,7 +466,8 @@ er_ListDump(FILE *fp, LIST *list)
   
   for (p = 0; p < list->np; p ++) {
     CMAP_BPTYPEString(&bptype, list->pair[p].bptype, NULL);
-    
+    if (bptype == NULL) { printf("\nbptype %d for pair %d not found\n", list->pair[p].bptype, p); exit(1); }
+
     if (list->pair[p].isbp) nbp ++;
     if (list->pair[p].bptype == WWc) nwc ++;
     
