@@ -126,6 +126,86 @@ from the alignment using the program FastTree~\citep{Price10}).  \rscape\ checks
 of the taxa matches for all alignments analyzed.
 
 
+
+\subsection{Options for importing a structure}
+
+R-scape does not require to input a structure (either a RNA structure
+or a protein contact map).\footnote{ For RNA alignments alone, if no
+structure is provided, R-scape computes the best secondary structure
+that includes the maximum number of significantly covarying
+basepairs.}
+\vspace{1mm}
+
+\noindent
+There are two ways to provide a contact map (or structure):
+
+\begin{itemize}
+\item By providing the alignment in Stockholm format with a ``ss\_cons'' field including the consensus
+structure for the alignment. (For RNA alignments only.)
+\item By analyzing a 3D structure provided in a PDB file. (For either RNA or peptide alignments.)
+\end{itemize}
+
+\noindent
+These two options are not incompatible with each other. If both a consensus structure is provided, and a PDB
+file, the contacts in the PDB file will be used to augment the consensus structure. No conflicts are resolved.
+
+\noindent
+If the sequence in the PDB file is found not to be a homolog of those
+in the input alignment (using the program nhmmer), no contact map is
+produced.
+
+
+\noindent
+The contacts are extracted using two methods:
+\begin{itemize}
+
+\item The distance between any two residues is calculated (as the  minimal Euclidean distance between any two atoms, except
+for H atoms). Any two pairs at a distance not larger than a maximum
+value (\texttt{contmaxD}) are called a ``contact''.
+
+\item In addition if a nucleic acid alignment, R-scape runs the program \texttt{rnaview}~\citep{YangWesthof03}\\
+(http://ndbserver.rutgers.edu/ndbmodule/services/download/rnaview.html)
+in order to identify RNA base pairs within the contacts.
+\end{itemize}
+
+\vspace{2mm}
+\noindent
+The options that control the input of a structure or contact map are:
+
+\subsubsection{\prog{--pdbfile <s>}} Reads a pdbfile associated to the alignment, and extracts the contacts
+from it.
+
+\subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
+
+\subsubsection{\prog{--cntmind <n>}} Minimum distance (in residue positions) in the backbone between two residues required to define a ``contact'' is $\langle n\rangle$.
+
+\subsection{Options for type of pairs tested}
+
+\subsubsection{\prog{--sampleall}}
+The statistical test includes all possible pairs in the alignment.
+This is the default option (both for nucleic acid or amino acid
+alignments) when no list of contacts is identified. 
+
+\subsubsection{\prog{--samplecontacts}}
+The statistical test includes all the contacts identified in a PDB
+or/and as a RNA secondary structure included with a input alignment in
+Stockholm format.  This is the default option for amino acid
+alignments if a PDB file is provided.  If no contacts are found, it
+reverts to option \prog{--sampleall}.
+
+\subsubsection{\prog{--samplebp}} For RNA alignments with only.
+The statistical test includes basepairs of all 12 possible types.
+This is the default option for RNA/DNA alignments if a PDB file is
+provided.  If no consensus structure is found, it reverts to
+option \prog{--sampleall}.
+
+\subsubsection{\prog{--samplewc}} For RNA alignments only.
+The statistical test includes only the canonical
+(Watson-Crick/Watson-Crick type) basepairs (A:U, G:C, G:U).  This is
+the default option for RNA/DNA alignments if a consensus secondary
+structure is provided. If no canonical basepairs are found, it reverts
+to option \prog{--sampleall}.
+
 \subsection{Output options}
 
 \subsubsection{\prog{--roc}}

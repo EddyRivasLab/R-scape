@@ -1907,7 +1907,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
   esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, tmpinfile, tmpoutfile);
-  system(args);
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R\n");
   fclose(fp);
  
   /* convert output to r2rmsa */
@@ -2074,8 +2075,9 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
   esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
-  system(args);
-  
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R2pdf\n");
+
   free(cmd);
   free(args);
   free(r2rpdf);
@@ -2105,8 +2107,9 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
 
   esl_sprintf(&r2rsvg, "%s.svg", r2rfile);
   esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rsvg);
-  system(args);
-    
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2Rsvg\n");
+
   if (cmd)    free(cmd);
   if (args)   free(args);
   if (r2rsvg) free(r2rsvg);

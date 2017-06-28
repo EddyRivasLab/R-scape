@@ -28,8 +28,8 @@ extern int   plot_write_BinnedRatesWithLinearRegression(char *binratefile, ESL_H
 extern int   plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **binratefile, char *xlabel, char *ylabel, char *errbuf);
 extern int   plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **binratefile, char *xlabel, char *ylabel, char *errbuf);
 extern int   plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, float bintime, float tlinear, char *xlabel, char *ylabel, char *errbuf);
-extern int   plot_file_Display(char *filename);
-extern int   plot_file_ps2pdf(char *psfile);
+extern int   plot_file_Display(char *filename, char *errbuf);
+extern int   plot_file_ps2pdf(char *psfile, char *errbuf);
 extern char *plot_file_psfilename(char *pdffile);
 
 #endif /* PLOT_INCLUDED */

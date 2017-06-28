@@ -25,7 +25,7 @@ static void delete_file(char *pdbfile, char *extension);
 int main(int argc, char *argv[])
 {
   clock_t start, finish;
-  long i;
+  long    i;
   
   ARGV=cmatrix(0, 6, 0, 40);/*6 argument and 40 length each */
   
@@ -35,13 +35,14 @@ int main(int argc, char *argv[])
   }
   
   start = clock();
-
-  if(argc<=1 || (argc==2 && strstr(argv[1], "-h")))
+  
+  if (argc <= 1 || (argc == 2 && strstr(argv[1], "-h")))
     usage();
-if( (strstr(argv[1], "a") || strstr(argv[1], "A")) && argv[1][0] == '-' ){
+  if ( (strstr(argv[1], "a") || strstr(argv[1], "A")) && argv[1][0] == '-' ){
     //printf("Processing a file list containing all the PDB files\n");
     process_multiple_file(argc, argv); 
-  }else{
+  }
+  else{
     //if(XML==0) printf("Processing a single PDB file\n");
     //else       printf("Processing a single RNAML file\n");
     process_single_file(argc, argv);
@@ -51,8 +52,7 @@ if( (strstr(argv[1], "a") || strstr(argv[1], "A")) && argv[1][0] == '-' ){
   //printf( "\nTime used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
   //fprintf(stderr, "\nJOB finished! Time used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
   free_cmatrix(ARGV, 0, 6, 0,40);
-  
-  
+ 
   return 0;    
 }
 
@@ -565,7 +565,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   char HB_ATOM[BUF512], ALT_LIST[BUF512];
   char *user_chain = NULL;
   char *ChainID, *bseq, **AtomName, **ResName, **Miscs;
-  long i, j, k,m,n, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
+  long i, j, k, m, n, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
   long *ResSeq, *RY, **seidx, num_modify, *modify_idx;
   long *AtomNum, *Atom2SEQ;
   long nchain_tot;

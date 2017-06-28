@@ -22,7 +22,7 @@ SHELL      = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 0.3
+PACKAGE_VERSION = 0.4.2
 
 # Installation targets
 #
@@ -66,7 +66,7 @@ AR       = /usr/bin/ar
 RANLIB   = ranlib
 INSTALL  = /usr/bin/install -c
 
-LIBS      = -lhmmer -leasel -lsrc     -lm
+LIBS      = -lsrc -lhmmer -leasel -lm
 
 IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src -I.
 LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src -L.

@@ -159,7 +159,7 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
  
   pclose(pipe);
 
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -406,7 +406,7 @@ plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf,
 
   pclose(pipe);
   
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -730,7 +730,7 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
  
   pclose(pipe);
   
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -1022,7 +1022,7 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
  
   pclose(pipe);
   
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -1304,7 +1304,7 @@ plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, i
 
   pclose(pipe);
   
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -1507,7 +1507,7 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
   
   pclose(pipe);
   
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -1742,7 +1742,7 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
      
   pclose(pipe);
 
-  plot_file_ps2pdf(psfile);
+  plot_file_ps2pdf(psfile, errbuf);
   
   esl_histogram_Destroy(h);
   if (key) free(key);
@@ -1763,26 +1763,39 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
 }
   
 int
-plot_file_Display(char *filename)
+plot_file_Display(char *filename, char *errbuf)
 {
   char *args = NULL;
-
-  esl_sprintf(&args, "open %s&", filename);
-  system(args);
-  if (args != NULL) free(args);
+  int   status;
   
+  esl_sprintf(&args, "open %s&", filename);
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run plot_file_Display()\n");
+  
+  if (args != NULL) free(args);  
   return eslOK;
+
+ ERROR:
+  if (args != NULL) free(args);
+  return status;
 }
 
 int
-plot_file_ps2pdf(char *psfile)
+plot_file_ps2pdf(char *psfile, char *errbuf)
 {
   char *args = NULL;
+  int   status;
 
   esl_sprintf(&args, "ps2pdf %s&", psfile);
-  system(args);
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run plot_file_ps2pdf()\n");
+  
   if (args != NULL) free(args);
   return eslOK;
+
+ ERROR:
+  if (args != NULL) free(args);
+  return status;
 }
 
 char *

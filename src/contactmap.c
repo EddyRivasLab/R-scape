@@ -119,8 +119,9 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s %s %s %s %s > /dev/null",
 		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
        printf("%s\n", args);
-       system(args);
-       
+       status = system(args);
+       if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
+
        status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, &(clist->pdblen), errbuf);
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
        remove(tmpmapfile);

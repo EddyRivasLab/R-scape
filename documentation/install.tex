@@ -39,16 +39,36 @@ including the GNU C compiler \prog{gcc}, and the C++ compiler
 \prog{g++}. We test the code using the \prog{gcc} and \prog{g++}
 compilers.
 
-\paragraph{Libraries and other installation requirements:} \rscape\ includes
-three software libraries: the Easel library package
-(\url{http://bioeasel.org/}), and two independent programs
-FastTree~\citep{Price10} (for building phylogenetic trees) and
-R2R~\citep{WeinbergBreaker11} (for drawing consensus RNA
-structures). All will automatically compile during \rscape's
-installation process.  By default, \rscape\ does not require any
-additional libraries to be installed by you, other than standard ANSI
-C99 libraries that should already be present on a system that can
-compile C code.
+\paragraph{Libraries and other installation requirements:}
+
+\rscape\ includes two software libraries:
+
+\begin{itemize}
+\item the Easel library package (\url{http://bioeasel.org/}),
+\item the HMMER library package (\url{http://hmmer.org/}),
+\end{itemize}
+
+and three independent programs:
+
+\begin{itemize}
+\item FastTree~\citep{Price10} (for building phylogenetic trees),
+  
+\item R2R~\citep{WeinbergBreaker11} (for drawing consensus RNA
+  structures),
+
+\item RNAVIEW~\citep{YangWesthof03} (for identifying different types of
+  basepairs in nucleic acid alignments).
+  
+\end{itemize}
+
+ All libraries and independent programs will automatically compile
+ during \rscape's installation process.  By default, \rscape\ does not
+ require any additional libraries to be installed by you, other than
+ standard ANSI C99 libraries that should already be present on a
+ system that can compile C code.
+
+ Executables for the three independent programs will appear in the
+ \prog{\rscape/bin} directory.
 
 \subsection{Makefile targets}
 

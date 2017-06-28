@@ -634,7 +634,7 @@ sub parse_pdb_contact_map {
     print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
-    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \@res);
+    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \@res, $isrna);
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -1132,7 +1132,7 @@ sub aa_conversion {
     elsif ($AA =~ /^DG$/)   { $new = "G"; }
     elsif ($AA =~ /^DT$/)   { $new = "T"; }
     elsif ($AA =~ /^\S$/)   { $new = $AA; } # if AA is already given in the 1 letter code
-    else { print "aa_conversion(): uh? |$AA|\n"; die; }
+    else { print "aa_conversion(): uh? |$AA| isRNA? $isrna\n"; die; }
 
     return $new;
 }
@@ -1211,7 +1211,7 @@ sub aa_conversion {
 #
 #
 sub get_atoms_coord {
-    my ($pdbfile, $atom_offset, $seqres_ref, $len, $chain, $res_ref) = @_;
+    my ($pdbfile, $atom_offset, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
 
     my $type;
     my $char;
@@ -1233,7 +1233,7 @@ sub get_atoms_coord {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
 	$res_ref->[$l]->{"RES::coor"} = -1;
-	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l]);
+	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l], $isrna);
     }
 
     my @ismissing;
@@ -1288,7 +1288,7 @@ sub get_atoms_coord {
 	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial = $1; }
 	    my $atomname = substr($line, 12, 4); if ($atomname =~ /^\s*(\S+)\s*$/) { $atomname = $1; }
 	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc = $1; }
-	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname = aa_conversion($1); }
+	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname = aa_conversion($1, $isrna); }
 	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid = $1; }
 	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos = $1; }
 	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode = $1; }

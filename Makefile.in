@@ -16,7 +16,7 @@ srcdir         = @srcdir@
 VPATH          = @srcdir@
 SHELL          = /bin/sh
 
-# location of easel, hmmer, FastTree
+# location of hmmer, easel, FastTree, R2R, rnaview
 FASTTREEDIR    = @RSCAPE_FASTTREEDIR@
 R2RDIR         = @RSCAPE_R2RDIR@
 INFERNALDIR    = @R2R_INFERNALDIR@
