@@ -50,19 +50,13 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   ESL_DSQ         cl, cr;
   int           **mutb = NULL;
   int             K = allmsa->abc->K;
-  double          sc;
-  int             K2 = K*K;
   int             L = allmsa->alen;
   int             nnodes;
   int             v, vl, vr;
   int             c;
-  int             ci, cj;
   int             pos;
-  int             posi, posj;
   int             dim;
   int             i;
-  int             k, k1;
-  int             ncnt;
   int             bidx;
   int             status;
 

@@ -365,8 +365,6 @@ main(int argc, char **argv)
   ESL_MSAFILE    *afp = NULL;
   ESL_MSA         *msa = NULL;            /* the input alignment    */
   int             *useme = NULL;
-  int              first, last;
-  int              i;
   int              status = eslOK;
   int              hstatus = eslOK;
 
@@ -500,7 +498,6 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
-  int      pos;
 
   printf("MSA          %s (alen = %" PRIu64 " nseq = %d)\n", cfg->filename, alen, (*omsa)->nseq);
   printf("ID  %.4f G   %.4f ", cfg->idthresh, cfg->gapthresh);
@@ -619,7 +616,6 @@ msaq(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   char     tmpmodfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   FILE    *msafp = NULL;
   int     *ct = NULL;
-  int      K = msa->abc->K;
   int      status;
   
   /* the ct vector  */
@@ -659,7 +655,6 @@ model_build(struct cfg_s *cfg, char *msafile, char *modfile)
   FILE *modfp = NULL;
   char *cmd   = NULL;
   char *args  = NULL;
-  char *s     = NULL;
   int   status;
 
   if      (cfg->model == HMM || (cfg->model == OPT && cfg->nbpairs == 0) ) { // build an HMM
@@ -693,7 +688,6 @@ model_align(struct cfg_s *cfg, char *modfile, char *msafile, char *msaqfile)
   char *sfile = NULL;
   char *cmd   = NULL;
   char *args  = NULL;
-  char *s     = NULL;
   int   status;
   
   if      (cfg->model == HMM || (cfg->model == OPT && cfg->nbpairs == 0) ) { // it is an HMM

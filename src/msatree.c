@@ -85,7 +85,6 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   char  tmpmsafile[16] = "esltmpXXXXXX"; /* tmpfile template */
   char *cmd  = NULL;
   char *args = NULL;
-  char *s = NULL;
   FILE *msafp = NULL;
   int   status;
   
@@ -346,7 +345,7 @@ Tree_FindMidPoint(ESL_TREE *T, float *ret_midp, int *ret_rootup, int *ret_rootdo
   ESL_ALLOC(Mx, sizeof(float) * (T->N-1));
   esl_vec_FSet(Mx, T->N-1, -1.0);
   
-  if (esl_stack_IPush(vs, T->N-2) != eslOK) { goto ERROR; }
+  if (esl_stack_IPush(vs, T->N-2) != eslOK) { status = eslFAIL; goto ERROR; }
   while (esl_stack_IPop(vs, &v) == eslOK) 
     { 
       if (T->left[v]  > 0 && Mx[T->left[v]]  < 0) { esl_stack_IPush(vs, T->left[v]);  continue; }
@@ -368,7 +367,7 @@ Tree_FindMidPoint(ESL_TREE *T, float *ret_midp, int *ret_rootup, int *ret_rootdo
   midp *= 0.5; 
   
   /* find where the midpoint is */
-  if (esl_stack_IPush(vs, 0) != eslOK) { goto ERROR; }
+  if (esl_stack_IPush(vs, 0) != eslOK) { status = eslFAIL; goto ERROR; }
   while (esl_stack_IPop(vs, &v) == eslOK) 
     { 
       /* at each node add to stack the branch with best Mx */
@@ -1669,9 +1668,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 static ESL_DSQ
 tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
 {
-  int    ichoose;
-  int    i;
-  int    status;
+  int ichoose = -1;
 
   if (frq == NULL) { // pick an available residue randomly
     ichoose = (int)(esl_random(r) * (dim-1));
@@ -1684,16 +1681,12 @@ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
   }
 
   return (ESL_DSQ)ichoose;
-
- ERROR:
-  return -1;
 }
 
 static int
 tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc, char *errbuf)
 {
   int sc = *ret_sc;
-  int sum = 0;
   int i;
   int status;
 

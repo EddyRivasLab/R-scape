@@ -85,7 +85,6 @@ FastSP_Run(const ESL_MSA *msar, const ESL_MSA *msae, int *ret_tph, int *ret_true
    
   if (msae == NULL) {
     tph    = 0;
-    trueh  = trueh;
     foundh = 0;
     cac    = 0;
     ac     = 0;

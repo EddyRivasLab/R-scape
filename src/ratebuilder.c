@@ -201,7 +201,7 @@ ratebuilder_SetScoreSystem(RATEBUILDER *bld, const char *mxfile, const char *env
 {
   ESL_FILEPARSER  *efp = NULL;
   ESL_DMATRIX     *P = NULL;
-  double          *f;                /* single frequencies used to construct P */
+  double          *f = NULL;         /* single frequencies used to construct P */
   int              i,j;              /* indices into canonical codes  */
   int              status;
 

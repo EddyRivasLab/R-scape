@@ -362,8 +362,6 @@ Ribosum_matrix_Read(char *filename, ESL_ALPHABET *abc, int verbose, char *errbuf
   ESL_FILEPARSER      *efp = NULL;
   MTX                  mtxtype;
   char                *tok;
-  int                  dim = abc->K;
-  int                  dim2 = abc->K * abc->K;
   int                  status;
 
   if (verbose) printf("ribosum file: %s\n", filename);

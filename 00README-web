@@ -9,14 +9,16 @@ Instructions for installing rscape and R-scape-web on eddylab.org
    put the new one in your home dir.)
 
  
-  scp /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.4.1.tar.gz erivas@archangel.eddylab.org:
+  scp /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.4.3.tar.gz erivas@archangel.eddylab.org:
   
   ssh erivas@archangel.eddylab.org
+  
   # now on remote eddylab.org host...
-  #tar zxf rscape_v0.4.1.tar.gz
-  gunzip   rscape_v0.4.1.tar.gz
-  tar -xvf rscape_v0.4.1.tar
-  cd rscape_v0.4.1
+  #tar zxf rscape_v0.4.3.tar.gz
+  
+  gunzip   rscape_v0.4.3.tar.gz
+  tar -xvf rscape_v0.4.3.tar
+  cd rscape_v0.4.3
   ./configure
   make
   make install
@@ -30,7 +32,18 @@ Instructions for installing rscape and R-scape-web on eddylab.org
   update anything else.
   (Compare how I have various rscape versions in ~seddy on archangel.)
 
-  ln -s rscape_v0.4.1 rscape
+  ln -s rscape_v0.4.3 rscape
+
+
+
+
+
+
+
+
+
+
+
 
 3. Back on your local machine (not archangel): 
   clone the R-scape-web code from github, cd into that dir

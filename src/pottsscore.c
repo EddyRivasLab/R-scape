@@ -62,10 +62,8 @@ potts_MLLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 int
 potts_PLMLogp(PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
-  ESL_DSQ *sq;
   double   logp = 0.;
   double   sc;
-  int      s;
   int      i;
   
   for (i = 0; i < pt->L; i ++) {
@@ -92,7 +90,6 @@ potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, in
   int      resi, resj;
   int      s;
   int      j;
-  int      a, b;
   
   for (s = 0; s < msa->nseq; s++) {
     sq = msa->ax[s];
@@ -172,10 +169,8 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   struct mutual_s *mi = data->mi;
   PT              *pt = data->pt;
   char            *errbuf = data->errbuf;
-  double           tol = data->tol;
   double           cov;
   double           eij;
-  int              verbose = data->verbose;
   int              K = pt->abc->K;
   int              i, j;
   int              a, b;
@@ -215,11 +210,8 @@ potts_CalculateCOVAverage(struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   PT              *pt = data->pt;
-  char            *errbuf = data->errbuf;
-  double           tol = data->tol;
   double           cov;
   double           eij;
-  int              verbose = data->verbose;
   int              K = pt->abc->K;
   int              i, j;
   int              a, b;
@@ -242,9 +234,6 @@ potts_CalculateCOVAverage(struct data_s *data)
     }
   }
 
-  return status;
-
- ERROR:
   return status;
 }
 

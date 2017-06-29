@@ -92,6 +92,7 @@ e2_ProfileConfig(const E1_MODEL *evoml, const E1_MODEL *evomr, float *ancf, E2_P
    *            <nj=0> is unihit. <nj=1> is the standard multihit model,
    *            with <t_{EJ} = 0.5>.
    */
+  nj = 0;
   if      (gm->mode == e2_GLOBAL) nj = 0.0;
   else if (gm->mode == e2_LOCAL)  nj = 0.5;
   gm->xsc[e2P_EE][e2P_MOVE] = logf ( 1.0f / (1.0f + nj));       // E->C1
@@ -102,6 +103,7 @@ e2_ProfileConfig(const E1_MODEL *evoml, const E1_MODEL *evomr, float *ancf, E2_P
    */
   lj = (float)L/0.2;
 
+  pmove = 1.0;
   if      (gm->mode == e2_GLOBAL) pmove = 1.0;                            /* 1.0     for global */
   else if (gm->mode == e2_LOCAL)  pmove = (2.0f + nj) / (lj + 2.0f + nj); /*         for local  */
   ploop = 1.0f - pmove;
@@ -287,8 +289,8 @@ e2hmmer_ProfileConfig(const P7_RATE *R, float tl, float tr, const P7_HMM *evoml,
   e2_FLogdiffInit();
 
   /* discretize times for substitutions */
-  dtl = select_discrete_time(R, tl); if (dtl < 0) goto ERROR;
-  dtr = select_discrete_time(R, tr); if (dtr < 0) goto ERROR;
+  dtl = select_discrete_time(R, tl); if (dtl < 0) { status = eslFAIL; goto ERROR; }
+  dtr = select_discrete_time(R, tr); if (dtr < 0) { status = eslFAIL; goto ERROR; }
  
    /* Contract checks */
   if (evoml->abc->type != evomr->abc->type) ESL_XEXCEPTION(eslEINVAL, "evom's don't match");
@@ -296,14 +298,14 @@ e2hmmer_ProfileConfig(const P7_RATE *R, float tl, float tr, const P7_HMM *evoml,
   /* Copy some pointer references and other info across from evom's  */
   gm->M = evoml->M;
   gm->mode = mode; 
-  if (mode != e2_GLOBAL) { printf("only GLOBAL model allowed\n"); goto ERROR; }
+  if (mode != e2_GLOBAL) { printf("only GLOBAL model allowed\n"); status = eslFAIL; goto ERROR; }
  
   if (gm->name != NULL) free(gm->name);
   if (gm->acc  != NULL) free(gm->acc);
   if (gm->desc != NULL) free(gm->desc);
-  if ((status = esl_strdup(evoml->name,   -1, &(gm->name))) != eslOK) goto ERROR;
-  if ((status = esl_strdup(evoml->acc,    -1, &(gm->acc)))  != eslOK) goto ERROR;
-  if ((status = esl_strdup(evoml->desc,   -1, &(gm->desc))) != eslOK) goto ERROR;
+  if ((status = esl_strdup(evoml->name,   -1, &(gm->name))) != eslOK) { status = eslFAIL; goto ERROR; }
+  if ((status = esl_strdup(evoml->acc,    -1, &(gm->acc)))  != eslOK) { status = eslFAIL; goto ERROR; }
+  if ((status = esl_strdup(evoml->desc,   -1, &(gm->desc))) != eslOK) { status = eslFAIL; goto ERROR; }
    
   /* change the bg model */
   bg->p1 = L / (L + 1.);

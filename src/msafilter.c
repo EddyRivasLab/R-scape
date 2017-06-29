@@ -147,14 +147,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS  *go = esl_getopts_Create(options);
   struct cfg_s  cfg;
-  char         *path;
-  char         *s;
-  char         *tok;
   char         *tok1 = NULL;
-  struct stat  info;
   char         *outname = NULL;
   int           status;
-
 
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }

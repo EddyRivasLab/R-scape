@@ -1689,7 +1689,6 @@ emitsc_stck(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP])
   SCVAL sc;
   int   idx;
   int   cdx;
-  int   x;
   int   ip = i-1;
   int   jp = j+1;
 
@@ -1716,7 +1715,6 @@ emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP])
 {
   SCVAL sc;
   int   idx;
-  int   x;
 
   if (dsq[i] >= NB || dsq[j] >= NB) { // ignore gaps
     sc = -eslINFINITY;

@@ -385,7 +385,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
     for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
       cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
-      eval = (data->ranklist_null)? cov2evalue(cov, (select)?ranklist->hb->Nc:ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+      eval = (data->ranklist_null)? cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
       if (eval > ESL_MIN(0.0,mi->maxCOV) && eval <= data->thresh->val) data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, b-1);
    }
   }
@@ -396,8 +396,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (data->mode == GIVSS || data->mode == CYKSS) {
     status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype);
     if (status != eslOK) goto ERROR;
-  }    
- 
+  } 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
 
@@ -559,7 +558,7 @@ cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
   if (bmin < ranklist->ha->bmin) new_bmin -= fabs(bmin) * 2. * ranklist->ha->w;
   
   new = cov_CreateRankList(ESL_MAX(bmax, ranklist->ha->bmax), new_bmin, ranklist->ha->w);
-  if (new == NULL) goto ERROR;
+  if (new == NULL) { status = eslFAIL; goto ERROR; }
 
   new->ha->n    = ranklist->ha->n;
   new->ha->xmin = ranklist->ha->xmin;
@@ -647,19 +646,16 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   double    sen, ppv, F;
   double    cov;
   double    eval;
-  double    tol = 0.01;
   BPTYPE    bptype;
   int       select;
   int       is_compatible;
   int       alloc_nhit = 5;
-  int       bin;
   int       tf = 0;
   int       f  = 0;
   int       t, fp;
   int       nhit;
   int       h = 0;
   int       i, j;
-  int       b;
   int       status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
@@ -1084,7 +1080,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
   /* replace the 'SS_cons' GC line with the new ss */
   esl_sprintf(&(msa->ss_cons), "%s", ss);
   if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
-  if (data->verbose) {
+  if (1||data->verbose) {
     printf("cykcov score = %f minloop %d covthresh %f\n", sc, minloop, covthresh);
     printf("ss:%s\n", ss);
   }
@@ -1326,12 +1322,9 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   double    y2min, y2max;
   double    posx, posy;
   double    incx, incy;
-  double    cov;
   double    expsurv = data->thresh->val;
   int       has_bpairs = FALSE;
   int       linespoints;
-  int       i;
-  double    tol = 0.01;
   int       status;
   
   if (gnuplot    == NULL) return eslOK;
@@ -1532,12 +1525,11 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   double    pointintbox;
   int       linew;
   double    pointsize;
-  double    min, max;
+  double    max;
   double    en, eo;
   double    cov;
   int       linespoints = TRUE;
-  double    tol = 0.01;
-  int       nsample;
+  int       nsample = 0;
   int       status;
 
   if (gnuplot    == NULL) return eslOK;
@@ -1867,11 +1859,10 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   char          covtag[12] = "cov_SS_cons";
   char         *args = NULL;
   char         *cmd = NULL;
-  char         *s = NULL;
   char         *ssstr = NULL;
   char         *covstr = NULL;
   char         *prv_covstr = NULL;
-  char         *tok;
+  char         *tok = NULL;
   int           found;
   int           i;
   int           h;
@@ -1890,7 +1881,6 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   esl_ct2simplewuss(ct, msa->alen, ssstr);
 
   /* replace the 'SS_cons' GC line with the new ss */
-  if (msa->ss_cons) free(msa->ss_cons); msa->ss_cons = NULL;
   esl_sprintf(&(msa->ss_cons), "%s", ssstr);  
   
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
@@ -1918,7 +1908,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   esl_msafile_Close(afp);
 
   /* modify the cov_cons_ss line according to our hitlist */
-  if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment\n");
+  if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment");
   for (i = 1; i <= msa->alen; i ++) {
     found = FALSE;
     for (h = 0; h < hitlist->nhit; h ++) {
@@ -2064,7 +2054,6 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   char *r2rpdf = NULL;
   char *args = NULL;
   char *cmd = NULL;
-  char *s = NULL;
   int   status;
 
   /* produce the R2R pdf */
@@ -2096,7 +2085,6 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
   char *r2rsvg = NULL;
   char *args = NULL;
   char *cmd = NULL;
-  char *s = NULL;
   int   status;
 
   /* produce the R2R svg */
@@ -2127,7 +2115,6 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
 {
   FILE *fp = NULL;
   char *ss = NULL;
-  int   nbpairs = 0;
   int   tagidx;
   int   L = msa->alen;
   int   status;
@@ -2214,14 +2201,17 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   if (verbose) printf("\nrfline:\n%s\nss_cons\n%s\n", rfline, msa->ss_cons);
   
   sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
-  esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
+  if (sq == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to create RF sequence");
+  status = esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to digitize RF sequence");
   
   cykcov_remove_inconsistencies(sq, ct, minloop);
 
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (verbose) {
+    printf("coco-cyk score = %f\n", sc);
+  if (1||verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);
     printf("coco-cyk score = %f\n%s\n", sc, newss);
@@ -2287,18 +2277,16 @@ static double
 cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
 {
   double eval = +eslINFINITY;
-  double expect = 0.0;
   int    icov;
   int    min_nobs = 10;
   int    c = 0;
   int    i;
-  int    b;
 
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if      (survfit && icov >= 2*h->nb-1)                 eval = survfit[2*h->nb-1] * (double)Nc;
-  else if (survfit &&h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]    * (double)Nc;
+  if      (survfit &&  icov >= 2*h->nb-1)                 eval = survfit[2*h->nb-1] * (double)Nc;
+  else if (survfit && h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]    * (double)Nc;
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 
@@ -2322,14 +2310,11 @@ static double
 evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
 {
   double cov = -eslINFINITY;
-  double p;
-  double val;
   double exp = 0.0;
   int    min_nobs = 10;
   int    c = 0;
   int    i;
-  int    b; 
-  int    it = 0;
+  int    b = h->cmin-1; 
 
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {

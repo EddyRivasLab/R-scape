@@ -85,8 +85,7 @@ msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnow
     	if (ct[i+1] == j+1) nbpairs ++;
 
   /* modify the SS_cons in the alignment */
-  if (msa->ss_cons) free(msa->ss_cons); 
-  ESL_ALLOC(msa->ss_cons, sizeof(char)*(msa->alen+1));
+  if (msa->ss_cons == NULL) ESL_ALLOC(msa->ss_cons, sizeof(char)*(msa->alen+1));
   esl_ct2wuss(ct, msa->alen, msa->ss_cons);
     
 #if 0
@@ -454,6 +453,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   }
   
   if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+  
   /* Transfer the GC comments */
   for(n = 0; n < omsa->ngc; n++) {
     if (omsa->gc[n] && (status = esl_msa_AppendGC(new, omsa->gc_tag[n], omsa->gc[n])) != eslOK) goto ERROR;
@@ -462,9 +462,10 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   *ret_seq_cons_len = clen;
   *ret_nfrags = omsa->nseq - esl_vec_ISum(useme, omsa->nseq);
 
- /* replace msa */
+  /* replace msa */
+  esl_msa_Destroy(omsa);
   *msa = new;
-
+  
   if (dsq) free(dsq);
   free(useme);
   return eslOK;
@@ -2089,7 +2090,6 @@ esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA **ret_newmsa
   int     *list   = NULL;               /* array of seqs in new msa */
   int     *useme  = NULL;               /* TRUE if seq is kept in new msa */
   int      nnew;			/* number of seqs in new alignment */
-  double   ident;                       /* pairwise percentage id */
   int      i,j;                         /* seqs counters*/
   int      remove;                      /* TRUE if sq is to be removed */
   int      status;

@@ -49,11 +49,9 @@ SSEARCH_Align(char *version, const ESL_MSA *msa, ESL_MSA **ret_ssearchmsa, float
   char            *ssearchopts = NULL;
   char            *s = NULL;
   float            sc = -eslINFINITY;
-  int              bestd = 0;
-  int              d;
   int              status;
   
-  if (msa->nseq != 2)  ESL_XFAIL(status, errbuf, "SSEARCH_align() only works for pair of sequences for now");
+  if (msa->nseq != 2)  ESL_XFAIL(eslFAIL, errbuf, "SSEARCH_align() only works for pair of sequences for now");
   
   /* db in FASTA format */
   if ((status = esl_tmpfile_named(tmpdbfile,  &fp))   != eslOK) ESL_XFAIL(status, errbuf, "failed to create db file");

@@ -161,7 +161,7 @@ cov_GenerateAlignmentAddGaps(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double
   int  idx = 0;        /* node index */
   int  inode;
   int  n;
-  int  status;
+  int  status = eslOK;
   
   /* indexing of internal nodes */
   inode = (T)? T->N - 1 : 1;

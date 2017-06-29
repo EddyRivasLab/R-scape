@@ -1453,7 +1453,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   // POTTS: calculate the couplings 
   if (cfg->covmethod == POTTS) {
     cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
-    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
+    if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
   
   /* produce a tree
@@ -2020,7 +2020,6 @@ static int
 run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_list)
 {
   ESL_MSA   *allmsa = NULL;
-  double     sc;
   int        status;
 
   if (cfg->allbranchfile == NULL) return eslOK;
@@ -2039,7 +2038,6 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
   
   if (cfg->verbose) {
     esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
-    printf("allbranch sc %f\n", sc);
   }
   
   if (allmsa) esl_msa_Destroy(allmsa);

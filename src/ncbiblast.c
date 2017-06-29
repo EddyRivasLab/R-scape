@@ -49,7 +49,7 @@ NCBIBLAST_Align(const ESL_MSA *msa, int wordsize, ESL_MSA **ret_blastmsa, char *
   char         *s = NULL;
   int           status;
   
-  if (msa->nseq != 2)  ESL_XFAIL(status, errbuf, "NCBIBLAS_align() only works for pair of sequences for now");
+  if (msa->nseq != 2)  ESL_XFAIL(eslFAIL, errbuf, "NCBIBLAS_align() only works for pair of sequences for now");
   
   /* BLAST db in FASTA format */
   if ((status = esl_tmpfile_named(tmpdbfile,  &fp))   != eslOK) ESL_XFAIL(status, errbuf, "failed to create db file");

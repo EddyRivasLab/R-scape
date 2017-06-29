@@ -948,7 +948,6 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   double          *pid = NULL;
   int             *nid = NULL;
   int             *n = NULL;
-  int              nnodes;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -1074,9 +1073,9 @@ null2_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       *usecol = NULL;
-  int       sc;
-  int       s;
-  int       status;
+  int        sc;
+  int        s;
+  int        status;
   
   // use all columns to do the shuffling
   ESL_ALLOC(usecol, sizeof(int) * (msa->alen+1));
@@ -1155,7 +1154,6 @@ null_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKL
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int        n;
-  int        sc;
   int        s;
   int        status;
   

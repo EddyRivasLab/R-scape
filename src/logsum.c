@@ -301,9 +301,9 @@ e2_DLogAddExact(double A, double B, double *ret_SUMlog, int *ret_SUMsgn)
 float
 e2_FLogAddLogExact(float Alog, int Asgn, float Blog, int Bsgn, float *ret_SUMlog, int *ret_SUMsgn)
 {
-  float SUM;
-  float SUMlog;
-  int   SUMsgn;
+  float SUM    = 0.;
+  float SUMlog = -eslINFINITY;
+  int   SUMsgn = 0;
 
   if      (Asgn > 0 && Bsgn > 0) { SUMsgn = Asgn;                        SUMlog = e2_DLogsumExact    (Alog, Blog); }
   else if (Asgn > 0 && Bsgn < 0) { SUMsgn = e2_DLogdiffsign(Alog, Blog); SUMlog = e2_DLogdiffvalExact(Alog, Blog); }
@@ -320,9 +320,9 @@ e2_FLogAddLogExact(float Alog, int Asgn, float Blog, int Bsgn, float *ret_SUMlog
 double
 e2_DLogAddLogExact(double Alog, int Asgn, double Blog, int Bsgn, double *ret_SUMlog, int *ret_SUMsgn)
 {
-  double SUM;
-  double SUMlog;
-  int    SUMsgn;
+  double SUM    = 0;
+  double SUMlog = -eslINFINITY;
+  int    SUMsgn = 0;
 
   if      (Asgn > 0 && Bsgn > 0) { SUMsgn = Asgn;                        SUMlog = e2_DLogsumExact    (Alog, Blog); }
   else if (Asgn > 0 && Bsgn < 0) { SUMsgn = e2_DLogdiffsign(Alog, Blog); SUMlog = e2_DLogdiffvalExact(Alog, Blog); }

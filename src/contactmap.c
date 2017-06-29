@@ -39,22 +39,22 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
 	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
 	   double cntmaxD, int cntmind, char *errbuf, int verbose)
 {
-  char   tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
-  char   tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
-  char  *ss = NULL;
-  FILE  *tmpfp  = NULL;
-  char  *cmd  = NULL;
-  char  *args = NULL;
-  CLIST *clist = NULL;
-  int   *ct = NULL;
-  int   *msa2pdb = NULL;
-  int    hasss = FALSE;
-  int    L = msa->alen;
-  int    ct_nbpairs;
-  int    alloc_ncnt = 5;
-  int    ncnt = 0;
-  int    i, j;
-  int    status;
+  char     tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
+  char     tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
+  char    *ss = NULL;
+  FILE    *tmpfp  = NULL;
+  char    *cmd  = NULL;
+  char    *args = NULL;
+  CLIST   *clist = NULL;
+  int     *ct = NULL;
+  int     *msa2pdb = NULL;
+  int      hasss = FALSE;
+  int      L = msa->alen;
+  int      ct_nbpairs;
+  int      alloc_ncnt = 5;
+  int      ncnt = 0;
+  int      i;
+  int      status;
   
   status = msamanip_CalculateCT(msa, &ct, &ct_nbpairs, -1.0, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
@@ -112,12 +112,16 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
        // read the contact from the pdbfile
        if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
        else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
-       if (abcisRNA)  // run rnaview as well
-	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R %s %s %s %s > /dev/null",
-		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
-       else 
-	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s %s %s %s %s > /dev/null",
-		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN, gnuplot);
+       
+       if (abcisRNA)  {// run rnaview as well
+	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R %s %s %s NULL > /dev/null",
+				  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+       }
+       else {
+	 esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s %s %s %s NULL > /dev/null",
+		     cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+       }
+       
        printf("%s\n", args);
        status = system(args);
        if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
@@ -141,7 +145,8 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
      ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
      esl_ct2wuss(ct, msa->alen, ss);
      /* Replace the 'SS_cons' GC line with the new ss */
-     esl_sprintf(&(msa->ss_cons), "%s", ss);
+     if (msa->ss_cons) strcpy(msa->ss_cons, ss);
+     else esl_strdup(ss, -1, &(msa->ss_cons));
    }
    
    clist->maxD  = cntmaxD;
@@ -420,6 +425,8 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 	  msa2pdb[i-1] = pdbi-1;
 	}
       }
+      esl_fileparser_Close(efp);
+      free(mapfile[c]);
   }
 
   *ret_pdblen = pdb_max - pdb_min + 1;

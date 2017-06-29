@@ -357,7 +357,6 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   double   sumj[K];
   double   sumh;
   double   sum;
-  double   tol = 1e-5;
   int      i, j;
   int      a, b;
   int      status;
@@ -437,7 +436,7 @@ potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf)
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
   PT              *pt = NULL;
-  double           hi, eij;
+  double           hi;
   int              ln = 0;
   int              K  = 0;
   int              L  = 0;
@@ -709,7 +708,6 @@ symmetrize(PT *pt)
   double eij, eji;
   int    L = pt->L;
   int    K = pt->abc->K;
-  int    x = 0;
   int    i, j;
   int    a, b;
 

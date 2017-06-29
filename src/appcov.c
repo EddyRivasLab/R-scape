@@ -1259,13 +1259,6 @@ PAIRSUBTYPE
 pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 {
   PAIRSUBTYPE subptype;
-  double   sum = 0;
-  double   sumi_ga;
-  double   sumi_uc;
-  double   sumj_ga;
-  double   sumj_uc;
-  int      K = a->K;
-  int      i;
 
   if (pair_type(a, frqi, frqj, maxnots) != TS) { printf("you should not be here\n"); exit(1); }
   
@@ -1296,7 +1289,6 @@ pairs_in_helix(struct summary_s *s, HELIXTYPE **appwc, struct pair_s *pair, int 
   int      **S = NULL;
   int        dim = s->ncol * (s->ncol+1) / 2;
   int        j, d;
-  int        p;
   int        hlen;
   int        status;
   
