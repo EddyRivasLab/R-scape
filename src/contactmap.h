@@ -77,8 +77,12 @@ typedef struct clist_s{
 extern int    ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2omsa, int *omsa2msa, int abcisRNA,
 			 int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
 			 double contD, int cntmind, char *errbuf, int verbose);
+extern int    ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb);
+extern int    ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
+				 double cntmaxD, int cntmind, char *errbuf, int verbose);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern void   CMAP_FreeCList(CLIST *list);
+extern int    CMAP_ReuseCList(CLIST *list);
 extern BPTYPE CMAP_GetBPTYPE(int i, int j, CLIST *clist);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);

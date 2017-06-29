@@ -679,7 +679,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       is_compatible = FALSE;
       bptype        = CMAP_GetBPTYPE(i+1, j+1, data->clist);
      
-      if (data->hasss && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
+      if (data->abcisRNA && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
 	is_compatible = TRUE;
       }
 
@@ -1088,8 +1088,12 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
   status = cov_ExpandCT(data->R2Rcykfile, data->R2Rall, data->r, msa, &cykct, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
-  data->ct = cykct;
 
+  // create a new contact list from the cykct
+  data->ct = cykct;
+  status = ContacMap_FromCT(data->clist, msa->alen, cykct, data->clist->mind, data->msamap, NULL);
+  if (status != eslOK) goto ERROR;
+  
   /* redo the hitlist since the ct has now changed */
   status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
   if (status != eslOK) goto ERROR;
@@ -2210,7 +2214,6 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-    printf("coco-cyk score = %f\n", sc);
   if (1||verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);

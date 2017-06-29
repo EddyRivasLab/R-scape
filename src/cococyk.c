@@ -53,7 +53,7 @@ COCOCYK(ESL_RANDOMNESS *r, enum grammar_e G, ESL_SQ *sq, int *ct, int **ret_cct,
   G6param  *g6p  = NULL;
   G6Sparam *g6sp = NULL;
   BGRparam *bgrp = NULL;
-  int status;
+  int       status;
 
   /* get the grammar parameters and run the corresponding CYK */
   switch(G) {
@@ -1243,7 +1243,6 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
    
   i = j - d + 1;
 
-  if (d < 1 && w == BGR_S)  { *ret_sc = -eslINFINITY; return eslOK; }  // S  has to end
   if (d < 3 && w == BGR_P)  { *ret_sc = -eslINFINITY; return eslOK; }  // P  has at least 3 residues
   if (d < 5 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 5 residues
   if (d < 5 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 5 residues
