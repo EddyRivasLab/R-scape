@@ -60,8 +60,6 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int *msa2o
   if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
   clist->mind = cntmind;
   
-  clist = CMAP_CreateCList(alloc_ncnt);
-   
   // A PDB annotation takes precedent over a secondary structure
   if (pdbfile != NULL) {
     status = ContactMap_FromPDB(pdbfile, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
@@ -540,14 +538,14 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	if (bptype <  STACKED) clist->nbps ++;
 	if (bptype == WWc)     clist->nwwc ++;
 
-	// ct = 0 not paired, ct[i]=i is contact ct[i]=j a base pair
+	// ct = 0 not paired, ct[i]=j a base pair
 	if (bptype == WWc) {
 	  ct[i] = j; 
 	  ct[j] = i;
 	}
 	else {
-	  ct[i] = i; 
-	  ct[j] = j;
+	  ct[i] = 0; 
+	  ct[j] = 0;
 	}
 	
 #if 0

@@ -1078,9 +1078,9 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
   esl_ct2wuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
-  esl_sprintf(&(msa->ss_cons), "%s", ss);
+  strcpy(msa->ss_cons, ss);
   if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
-  if (1||data->verbose) {
+  if (data->verbose) {
     printf("cykcov score = %f minloop %d covthresh %f\n", sc, minloop, covthresh);
     printf("ss:%s\n", ss);
   }
@@ -1172,9 +1172,9 @@ int
 cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double (*surv)(double x, void *params), void *params)
 {
   double *survfit = NULL;
-  int status;
-  int b;
-  double ai, bi;
+  int     status;
+  int     b;
+  double  ai, bi;
 
   ESL_ALLOC(survfit, sizeof(double) * 2*h->nb);
   esl_vec_DSet(survfit, 2*h->nb, 0.);
@@ -1885,8 +1885,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   esl_ct2simplewuss(ct, msa->alen, ssstr);
 
   /* replace the 'SS_cons' GC line with the new ss */
-  esl_sprintf(&(msa->ss_cons), "%s", ssstr);  
-  
+  strcpy(msa->ss_cons, ssstr);
+    
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                      != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
   if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
@@ -2144,8 +2144,8 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   /* replace the 'SS_cons' GC line with the new ss */
   ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_ct2simplewuss(*ret_ct, L, ss);
-  esl_sprintf(&(msa->ss_cons), "%s", ss);  
-
+  strcpy(msa->ss_cons, ss);
+   
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, msa, eslMSAFILE_PFAM);
   fclose(fp);
@@ -2214,7 +2214,7 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  if (1||verbose) {
+  if (verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);
     printf("coco-cyk score = %f\n%s\n", sc, newss);

@@ -1254,7 +1254,10 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
   case BGR_S:
     /* rule0: S -> a S */
     d1 = d2 = 0;
-    sc = (allow_single(i, ct) && d > 0)? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+    sc = -eslINFINITY;
+    if (d > 0) {
+      sc = (allow_single(i, ct))? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+    }
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */

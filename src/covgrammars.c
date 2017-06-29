@@ -212,7 +212,8 @@ void
 GMX_Destroy(GMX *gmx)
 {
   if (gmx == NULL) return;
-  if (gmx->dp) free(gmx->dp);
+  if (gmx->dp[0]) free(gmx->dp[0]);
+  if (gmx->dp)    free(gmx->dp);
   free(gmx);
 }
 

@@ -1192,10 +1192,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
-  
-  if (cfg->nbpairs == 0 && cfg->window <= 0) cfg->docyk = TRUE;  // calculate the cyk-cov structure if no given one
-  if (cfg->abcisRNA == FALSE)                cfg->docyk = FALSE;
-  if (msa->alen > cfg->cykLmax)              cfg->docyk = FALSE; // unless alignment is too long
+
+  // Special cases under which to produce or not a --cyk structure
+  // (1) use --cyl if no structure is given
+  // (2) unless it is too long.
+  if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
+  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if no given one
+    printf("No structure given or pdbfile to read one, we continue with --cyk option\n");
+    cfg->docyk = TRUE;  
+  }
+  if (msa->alen > cfg->cykLmax) { // unless alignment is too long
+    printf("Alignment is too long to calculate a structure\n");
+    cfg->docyk = FALSE;
+  }
   
   // Print some alignment information
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
