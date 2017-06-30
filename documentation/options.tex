@@ -93,8 +93,6 @@ maximum-covariation optimal structure all include the suffix
 When option \prog{--cyk} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
 This alignment has the suffix \prog{.cyk.sto}.
 
-Option \prog{--cyk} is incompatible with \prog{--pdbfile}.
-
 \subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
 associated to them. No null alignments are created.
 
@@ -177,6 +175,8 @@ The options that control the input of a structure or contact map are:
 
 \subsubsection{\prog{--pdbfile <s>}} Reads a pdbfile associated to the alignment, and extracts the contacts
 from it.
+
+Option \prog{--pdbfile} is incompatible with \prog{--cyk}.
 
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
 
