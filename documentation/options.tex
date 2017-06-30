@@ -93,6 +93,8 @@ maximum-covariation optimal structure all include the suffix
 When option \prog{--cyk} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
 This alignment has the suffix \prog{.cyk.sto}.
 
+Option \prog{--cyk} is incompatible with \prog{--pdbfile}.
+
 \subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
 associated to them. No null alignments are created.
 
@@ -146,8 +148,9 @@ structure for the alignment. (For RNA alignments only.)
 \end{itemize}
 
 \noindent
-These two options are not incompatible with each other. If both a consensus structure is provided, and a PDB
-file, the contacts in the PDB file will be used to augment the consensus structure. No conflicts are resolved.
+These two options are incompatible with each other. If both a consensus structure is provided, and a PDB
+file, the consensus structure will be ignored, and a structure will be calculated from the PDB file
+using the program \prog{rnaview}.
 
 \noindent
 If the sequence in the PDB file is found not to be a homolog of those

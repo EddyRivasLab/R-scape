@@ -189,7 +189,7 @@ struct data_s {
   METHOD               covmethod;
   MODE                 mode;
   int                  abcisRNA;  // MSA is RNA or DNA
-  int                  hasss;     //Has a ss_cons secondary structure
+  int                  hasss;     // Has a ss_cons secondary structure
   COVTYPE              covtype;
   int                  onbpairs;
   int                  nbpairs;
@@ -219,7 +219,6 @@ struct data_s {
   int                  donull2b;
   int                  ignorebps;  // FALSE for R-scape, TRUE for Pfcar
 };
-
 
 
 extern int              corr_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);

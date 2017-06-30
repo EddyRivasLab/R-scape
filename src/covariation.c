@@ -254,6 +254,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   return status;
 }
 
+
 int 
 cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
 {
@@ -402,14 +403,16 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
-
+  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS)) { free(data->ranklist_null->survfit);  data->ranklist_null->survfit = NULL; }
+  
   return eslOK;
   
  ERROR:
   if (ranklist)   cov_FreeRankList(ranklist);
   if (hitlist)    cov_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
-  if (covtype)    free(covtype); 
+  if (covtype)    free(covtype);
+  if (data->ranklist_null&& (data->mode == GIVSS || data->mode == CYKSS)) free(data->ranklist_null->survfit);
   return status;
 }
 
@@ -1888,7 +1891,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   strcpy(msa->ss_cons, ssstr);
     
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
-  if ((status = esl_tmpfile_named(tmpinfile,  &fp))                      != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
+  if ((status = esl_tmpfile_named(tmpinfile,  &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
   if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
   fclose(fp);
   

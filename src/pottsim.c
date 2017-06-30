@@ -67,7 +67,7 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error generating potts param from file %s", pottsfile);
     break;
   case PTP_CONTACT:
-    status = ContactMap(pdbfile, msafile, gnuplot, msa, msamap, msarevmap, abcisRNA,
+    status = ContactMap(pdbfile, msafile, gnuplot, msa, msa->alen, msamap, msarevmap, abcisRNA,
 			NULL, NULL, &clist, NULL, cntmaxD, 0.0, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error generating potts param from contacts");
     
