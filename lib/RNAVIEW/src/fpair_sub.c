@@ -7,6 +7,9 @@
 #include <ctype.h>
 #include <math.h>
 #include <time.h>
+
+#include "easel.h"
+
 #include "nrutil.h"
 #include "rna.h"
 
@@ -43,16 +46,17 @@ void get_chain_idx(long num_residue, long **seidx, char *ChainID,
 void
 get_reference_pdb(char *BDIR)
 {
-  char **sAtomName, spdb[80];
-  char ref[] = "AGCUTIP";
-  long i,j,k,snum;
-  double  **sx;
+  char   **sAtomName;
+  char    *spdb = NULL;
+  char     ref[] = "AGCUTIP";
+  long     i,j,k,snum;
+  double **sx;
   
   sAtomName = cmatrix(1, 20, 0, 4);
   sx = dmatrix(1, 20, 1, 3);
-  
+
   for(i=0; i<7; i++){ /* read the reference pdb files */
-    sprintf(spdb, "%sAtomic_%c.pdb", BDIR, ref[i]);
+    esl_sprintf(&spdb, "%sAtomic_%c.pdb", BDIR, ref[i]);
     snum = read_pdb_ref(spdb, sAtomName, sx);
     std[i].sNatom = snum;
     for(j=1; j<=snum; j++){
@@ -63,7 +67,7 @@ get_reference_pdb(char *BDIR)
   }
   free_dmatrix(sx, 1, 20, 1, 3);
   free_cmatrix(sAtomName, 1, 20, 0, 4);
-  
+  free(spdb);
 }
 
 long  ref_idx(char resnam)
@@ -882,7 +886,6 @@ void get_BDIR(char *BDIR, char *filename)
   // ER: make path independent of defining any environmental variables
   strcpy(BDIR, RNAVIEW_HOME);
   strcat(BDIR, "/BASEPARS/");
-  
 }
 
 void check_slash(char *BDIR)
