@@ -14,7 +14,7 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "0.5.1"
+#define RSCAPE_VERSION "0.6.1"
 #define RSCAPE_DATE "Jul 2017"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."

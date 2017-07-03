@@ -22,7 +22,7 @@ SHELL      = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 0.5.1
+PACKAGE_VERSION = 0.6.1
 
 # Installation targets
 #

@@ -1011,6 +1011,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
   msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, -1., cfg->errbuf);
+  if (cfg->pdbfile) cfg->onbpairs = 0; // do not read the bpairs from the alignment but the pdbfile
+  
   /* print some info */
   if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");

@@ -180,11 +180,11 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   else {
-    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M -S %s %s %s %s NULL &> /dev/null",
+    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s NULL &> /dev/null",
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
-  printf("%s\n", args);
+  if (verbose) printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
 
@@ -483,6 +483,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
       }
       esl_fileparser_Close(efp);
       free(mapfile[c]);
+      remove(mapfile[c]);
   }
 
   *ret_pdblen = pdb_max - pdb_min + 1;

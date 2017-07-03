@@ -126,42 +126,42 @@ sub contacts_from_pdbfile {
     print     "# resolution: $resolution\n";
         
     for (my $n = 0; $n < $nch; $n ++) {
-	
+
 	my $map0file;
 	my $map1file;
 	my $mapfile;
-	my $corfile;
 	if (!$smallout) {
 	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
 	    $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
 	    $mapfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.map";
-	    $corfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.cor";
 	}
+	my $corfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
 	    print COORF "$corfile\n";
 	}
 
+	open(COR,  ">$corfile")  || die;
 	if (!$smallout) {
-	    open(COR,  ">$corfile")  || die;
 	    open(MAP,  ">$mapfile")  || die;
 	    open(MAP0, ">$map0file") || die;
 	    open(MAP1, ">$map1file") || die;
-	    
-	    print COR  "# PDB: $pdbname\n";
-	    print COR  "# chain $chname[$n]\n";
 	}
+	
+	print COR  "# PDB: $pdbname\n";
+	print COR  "# chain $chname[$n]\n";
 	
 	$len = length($chsq[$n]);
 	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, 
 				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna, $smallout);
+	close(COR);
 	if (!$smallout) {
-	    close(COR);
 	    close(MAP);
 	    close(MAP0);
 	    close(MAP1);
 	}
+
 	if ($alen == 0) { next; }
 
 	if ($gnuplot) {
@@ -196,6 +196,11 @@ sub contacts_from_pdbfile {
 
     $$ret_msalen = $alen;
     $$ret_ncnt_t = $ncnt_t;
+    my $rnaoutfile = "$pdbfile.out";
+    my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
+    
+    system("/bin/rm $rnaoutfile\n");
+    system("/bin/rm $rnaoutfile2\n");
 }
 
 sub parse_pdb {
@@ -597,16 +602,14 @@ sub parse_pdb_contact_map {
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
 
-    if (!$smallout) {
-	printf COR  "# maxD  $maxD\n";
-	printf COR  "# minL  $minL\n";
-    }
+    printf COR  "# maxD  $maxD\n";
+    printf COR  "# minL  $minL\n";
     
     my @map = (); # map sq to the sequence in the alignment  
     my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
-	if (!$smallout) { printf COR "%d %d\n", $x+1, $map[$x]+1; }
+	printf COR "%d %d\n", $x+1, $map[$x]+1; 
 	#printf     "%d %d\n", $x+1, $map[$x]+1;
     }
 
@@ -706,7 +709,7 @@ sub parse_pdb_contact_map {
 	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
 	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
     }
-    
+
     return $alen;
 }
 

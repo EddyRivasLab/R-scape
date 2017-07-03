@@ -26,8 +26,11 @@ The \rscape\ default is \prog{--GTp}.\\
 
 Details of the definition and provenance of the different covariation
 statistics can be found in the \rscape\ manuscript: Rivas, E. \& Eddy
-S.~E., \textit{``A statistical test of RNA base pair covariation
-  applied to proposed lncRNA structures''}. In a nutshell, given two
+S.~E., \textit{``A statistical test for conserved RNA structure shows
+lack of evidence for structure in lncRNAs''}.
+
+\noindent
+In a nutshell, given two
 alignment columns $i,j$,
 %
 \[
@@ -148,7 +151,7 @@ structure for the alignment. (For RNA alignments only.)
 \noindent
 These two options are incompatible with each other. If both a consensus structure is provided, and a PDB
 file, the consensus structure will be ignored, and a structure will be calculated from the PDB file
-using the program \prog{rnaview}.
+using the program \prog{rnaview}~\citep{YangWesthof03}.
 
 \noindent
 If the sequence in the PDB file is found not to be a homolog of those
@@ -181,11 +184,77 @@ Option \prog{--pdbfile} is incompatible with \prog{--cyk}.
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
 
 \subsubsection{\prog{--cntmind <n>}} Minimum distance (in residue positions) in the backbone between two residues required to define a ``contact'' is $\langle n\rangle$.
+\vspace{5mm}
 
-
-Example of reading a structure from a PDB file:
+\noindent
+Example of reading a structure from a PDB file for the FMN riboswitch:
 
 \user{bin/R-scape --cntmaxD 4 --cntmind 3 --pdbfile tutorial/3f2q.pdb  tutorial/RF00050.sto}\\
+
+\noindent
+This command line extracts contacts from the pdb file that are at a
+Eucledian distance $\leq 4 \AA$ in the PDB structure, and such that
+they are at least 3 residues apart in the backbone.
+
+
+\noindent
+The output is
+
+\begin{sreoutput}
+# R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
+# R-scape 0.6.1 (July 2017)
+# Copyright (C) 2016 Howard Hughes Medical Institute.
+# Freely distributed under the GNU General Public License (GPLv3).
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 6 215 | bptype WWc
+# 6 216 | bptype CONTACT
+# 7 214 | bptype WWc
+# 7 215 | bptype CONTACT
+# 8 213 | bptype WWc
+# 8 214 | bptype CONTACT
+# 9 212 | bptype WWc
+# 9 213 | bptype WWc
+#
+.
+.
+.
+# 193 201 | bptype WWc
+# 193 202 | bptype CONTACT
+# 195 198 | bptype WHt
+# 198 201 | bptype CONTACT
+# contacts  153 (46 bpairs 32 wc bpairs)
+# maxD      4.00
+# mind      3
+# L         139
+# alen      221
+# MSA RF00050_FMN.3f2q nseq 144 (144) alen 139 (221) avgid 69.18 (68.15) nbpairs 46 (0)
+# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.58,216.11]     [3 | 14 46 17 | 30.43 82.35 44.44] 
+#       left_pos       right_pos        score   E-value
+#------------------------------------------------------------
+*	     171	     183	216.11	4.41458e-11
+*	     170	     184	211.69	8.02215e-11
+*	     192	     202	168.72	1.91884e-08
+*	       8	     213	149.72	2.19077e-07
+*	     172	     182	138.67	8.92814e-07
+*	     169	     185	137.23	1.10807e-06
+**	      16	      30	133.45	1.70655e-06
+*	      84	     186	125.61	4.75589e-06
+*	      17	      29	112.05	2.66491e-05
+*	       7	     214	111.13	2.96758e-05
+*	       6	     215	96.44	0.000194387
+*	      36	      87	96.33	0.000194387
+~	       5	     216	131.03	0.000489499
+*	      94	     163	78.82	0.00183574
+ 	       7	     213	107.69	0.0094673
+ 	       7	       8	98.52	0.0308494
+*	      37	      86	53.10	0.0438743
+\end{sreoutput}
+
+\noindent
+All coordinates are relative to the input alignment. The annotation of
+all types of RNA basepairs (WWc, WWt, WHc,...) is produced by the
+program \prog{rnaview}~\citep{YangWesthof03}.
 
 \subsection{Options for type of pairs tested}
 
