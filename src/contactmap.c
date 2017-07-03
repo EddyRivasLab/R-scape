@@ -171,23 +171,23 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
   fclose(tmpfp);
   
-  // read the contact from the pdbfile
+  // read the contact from the pdbfile  (small output -S)
   if (RSCAPE_BIN) esl_sprintf(&cmd, "%s/pdb_parse.pl", RSCAPE_BIN);  
   else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
   
   if (abcisRNA)  {// run rnaview as well
-    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R %s %s %s NULL > /dev/null",
+    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s NULL &> /dev/null",
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   else {
-    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s %s %s %s NULL > /dev/null",
+    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M -S %s %s %s %s NULL &> /dev/null",
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
   printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
-  
+
   status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, &(clist->pdblen), errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
   remove(tmpmapfile);
@@ -478,7 +478,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 	  if (pdbi < pdb_min) pdb_min = pdbi;
 	  if (pdbi > pdb_max) pdb_max = pdbi;
 	  i = omsa2msa[posi-1]+1;
-	  msa2pdb[i-1] = pdbi-1;
+	  if (i > 0) msa2pdb[i-1] = pdbi-1;
 	}
       }
       esl_fileparser_Close(efp);

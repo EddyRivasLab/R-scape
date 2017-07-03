@@ -4,9 +4,8 @@ use strict;
 use warnings;
 use Class::Struct;
 
-our $VERSION = "1.00";
-
-use constant GNUPLOT => '/usr/local/bin/gnuplot';
+our $VERSION = "1.00"; 
+#use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 struct RES => {
     char     => '$', # number of atoms
@@ -58,7 +57,7 @@ sub pdb2msa {
     if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
 
     my $pdbname = $pdbfile;
-    if ($pdbname =~ /\/([^\/]+)\s*$/) { $pdbname = $1; }
+    if ($pdbname =~ /\/([^\/]+)\s*$/) { $pdbname = lc($1); }
 
     my $pdblen;
     my $msalen;
@@ -89,7 +88,7 @@ sub pdb2msa {
 sub contacts_from_pdbfile {
 	
     my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
-	$dornaview, $coorfile, $mapallfile, $seeplots) = @_;
+	$dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
     
@@ -127,66 +126,72 @@ sub contacts_from_pdbfile {
     print     "# resolution: $resolution\n";
         
     for (my $n = 0; $n < $nch; $n ++) {
-	my $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
-	my $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
-	my $mapfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.map";
-	my $corfile  = "$currdir/$stoname.chain$chname[$n].maxD$maxD.cor";
+	
+	my $map0file;
+	my $map1file;
+	my $mapfile;
+	my $corfile;
+	if (!$smallout) {
+	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
+	    $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
+	    $mapfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.map";
+	    $corfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.cor";
+	}
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
 	    print COORF "$corfile\n";
 	}
-	
-	open(COR,  ">$corfile")  || die;
-	open(MAP,  ">$mapfile")  || die;
-	open(MAP0, ">$map0file") || die;
-	open(MAP1, ">$map1file") || die;
-	
-	print COR  "# PDB: $pdbname\n";
-	#print MAP  "# PDB: $pdbname\n"; 
-	#print MAP0 "# PDB: $pdbname\n";
-	#print MAP1 "# PDB: $pdbname\n";
-	print COR  "# chain $chname[$n]\n";
-	#print MAP  "# chain $chname[$n]\n";
-	#print MAP0 "# chain $chname[$n]\n";
-	#print MAP1 "# chain $chname[$n]\n";
-	#print MAP1 "# maps to $pfamname\n";
+
+	if (!$smallout) {
+	    open(COR,  ">$corfile")  || die;
+	    open(MAP,  ">$mapfile")  || die;
+	    open(MAP0, ">$map0file") || die;
+	    open(MAP1, ">$map1file") || die;
+	    
+	    print COR  "# PDB: $pdbname\n";
+	    print COR  "# chain $chname[$n]\n";
+	}
 	
 	$len = length($chsq[$n]);
 	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, 
-				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna);
-	close(COR);
-	close(MAP);
-	close(MAP0);
-	close(MAP1);
+				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna, $smallout);
+	if (!$smallout) {
+	    close(COR);
+	    close(MAP);
+	    close(MAP0);
+	    close(MAP1);
+	}
 	if ($alen == 0) { next; }
 
-	my $xfield  = 1;
-	my $yfield  = 3;
-	my $xylabel = "PDB position";
-	my $title   = "Contacts in pdb sequence";
-	plot_contact_map($map0file, $len,  $xfield, $yfield, $title, $xylabel, $seeplots);
-
-	$xfield  = 1;
-	$yfield  = 4;
-	$xylabel = "PDB position";
-	$title   = "Contacts in pdb sequence that map to the alignment";
-	plot_contact_map($map1file, -1,    $xfield, $yfield, $title, $xylabel, $seeplots);
-	
-	$xfield  = 2;
-	$yfield  = 5;
-	$xylabel = "Alignment position";
-	$title   = "Contacts in the alignment";
-	plot_contact_map($mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $seeplots);
+	if ($gnuplot) {
+	    my $xfield  = 1;
+	    my $yfield  = 3;
+	    my $xylabel = "PDB position";
+	    my $title   = "Contacts in pdb sequence";
+	    plot_contact_map($map0file, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    
+	    $xfield  = 1;
+	    $yfield  = 4;
+	    $xylabel = "PDB position";
+	    $title   = "Contacts in pdb sequence that map to the alignment";
+	    plot_contact_map($map1file, -1,    $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    
+	    $xfield  = 2;
+	    $yfield  = 5;
+	    $xylabel = "Alignment position";
+	    $title   = "Contacts in the alignment";
+	    plot_contact_map($mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	}
     }
     
     if ($coorfile) { close(COORF); }
 
     if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
 
-    if (1) {
-	my $hisfile  = "$currdir/$stoname.$pdbname.chains$nch.maxD$maxD.his";
-	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, 1); 
+    if (!$smallout) {
+	my $hisfile  = "$currdir/$stoname.$pdbname.nch$nch.maxD$maxD.his";
+	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $gnuplot, $seeplots); 
     }
 
     $$ret_msalen = $alen;
@@ -208,7 +213,7 @@ sub parse_pdb {
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
-	    $pdbname = $1;
+	    $pdbname = lc($1);
 	}
 	elsif (/RESOLUTION.\s+(.+)$/) {
 	    $resolution = $1;
@@ -587,25 +592,21 @@ sub get_first_asq_from_sto {
 
 
 sub parse_pdb_contact_map {
-    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna, $smallout) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
-    
-    printf COR  "# maxD  $maxD\n";
-    printf COR  "# minL  $minL\n";
-    #printf MAP  "# maxD  $maxD\n";
-    #printf MAP  "# minL  $minL\n";
-    #printf MAP0 "# maxD  $maxD\n";
-    #printf MAP0 "# minL  $minL\n";
-    #printf MAP1 "# maxD  $maxD\n";
-    #printf MAP1 "# minL  $minL\n";
+
+    if (!$smallout) {
+	printf COR  "# maxD  $maxD\n";
+	printf COR  "# minL  $minL\n";
+    }
     
     my @map = (); # map sq to the sequence in the alignment  
     my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
-	printf COR "%d %d\n", $x+1, $map[$x]+1;
+	if (!$smallout) { printf COR "%d %d\n", $x+1, $map[$x]+1; }
 	#printf     "%d %d\n", $x+1, $map[$x]+1;
     }
 
@@ -670,7 +671,7 @@ sub parse_pdb_contact_map {
 
 	    if ($distance > 0) {
 		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
-		    printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance;
+		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
 
 		
 		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
@@ -701,8 +702,10 @@ sub parse_pdb_contact_map {
     }
 
     contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
-    contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
-    contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
+    if (!$smallout) {
+	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
+	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
+    }
     
     return $alen;
 }
@@ -909,7 +912,7 @@ sub addcontact {
 }
 
 sub allcontacts_histogram {
-    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $seeplots) = @_;
+    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $gnuplot, $seeplots) = @_;
     
     my @his;
     my $N = 50;
@@ -933,7 +936,7 @@ sub allcontacts_histogram {
     my $ymax = -1;
     my $xfield = 1;
     my $yfield = 2;
-    FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax);
+    if ($gnuplot) { FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax); }
 }
 
 sub run_rnaview {
@@ -1434,7 +1437,7 @@ sub euclidean_distance {
 }
 
 sub plot_contact_map {
-    my ($mapfile, $len, $xfield, $yfield, $title, $xylabel, $seeplots) = @_;
+    my ($mapfile, $len, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
 
     my $key = $mapfile;
     if ($key =~ /([^\/]+)\s*$/) { $key = $1; }
@@ -1444,7 +1447,7 @@ sub plot_contact_map {
     #my $pdffile = $psfile;
     #if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
 
@@ -1469,8 +1472,6 @@ sub plot_contact_map {
     print GP "plot $cmd\n";
     close (GP);
 
-    #system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
-    #system("/bin/rm $psfile\n");
     if ($seeplots) { system ("open $psfile&\n"); }
 }
 

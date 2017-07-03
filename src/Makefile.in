@@ -175,6 +175,8 @@ OBJS     = e1_bg.o\
 
 
 SCRIPTS   = \
+	../scripts/FUNCS.pm \
+	../scripts/PDBFUNCS.pm \
 	../scripts/pdb_parse.pl \
 	../scripts/rocplot.pl \
 	../scripts/rocplot_together.pl \

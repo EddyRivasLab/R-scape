@@ -483,7 +483,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
-  
+
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
@@ -602,7 +602,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_FileTail(cfg.pdbfile, TRUE, &cfg.pdbname);
     esl_sprintf(&outname, "%s.%s", cfg.outheader, cfg.pdbname);
     free(cfg.outheader); cfg.outheader = NULL;
-    esl_sprintf(&cfg.outheader, "%s", outname); 
+    esl_sprintf(&cfg.outheader, "%s", outname);
   }
   
   /* output file */
@@ -651,8 +651,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* if docyk write original alignment with cykstructure */
   cfg.omsacykfile = NULL;
   cfg.omsacykfp   = NULL;
-  esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
-  if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
+  if (cfg.docyk) {
+    esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
+    if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
+  }
 
   /* file with the msa actually used */
   cfg.outmsafile = NULL;
@@ -1126,6 +1128,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   RANKLIST *ranklist_allbranch = NULL;
   ESL_MSA  *msa = *ret_msa;
   ESL_MSA  *YSmsa = NULL;
+  char     *outname = NULL;
   int       nshuffle;
   int       analyze;
   int       status;
@@ -1143,42 +1146,46 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   
   /* outmsa file if requested */
   if (cfg->outmsafp) esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
+
+  /* add the name of the pdbfile used to extract the structure (if any) */
+  if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
+  else              esl_sprintf(&outname, "%s",    cfg->msaname);
   
   if (cfg->outdir) {
     /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
   }
   else {
     /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s.surv",     cfg->msaname);
-    esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", cfg->msaname);
+    esl_sprintf(&cfg->covhisfile,    "%s.surv",     outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", outname);
   }
   
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->nofigures) {
-    esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, outname);
+    if (cfg->docyk) esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
     
    /* covqq file */
-    esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cykcovqqfile, "%s/%s.cyk.qq", cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykcovqqfile, "%s/%s.cyk.qq", cfg->outdir, cfg->msaname);
     
     /* dotplot file */
-    esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, cfg->msaname);
-    esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
+    esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
   }
   else if (!cfg->nofigures) {
-    esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     cfg->msaname);
-    esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
+    esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     outname);
+    if (cfg->docyk) esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
         
     /* covqq file */
-    esl_sprintf(&cfg->covqqfile,    "%s.qq",     cfg->msaname);
-    esl_sprintf(&cfg->cykcovqqfile, "%s.cyk.qq", cfg->msaname);
+    esl_sprintf(&cfg->covqqfile,    "%s.qq",     outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykcovqqfile, "%s.cyk.qq", cfg->msaname);
     
     /* dotplot file */
-    esl_sprintf(&cfg->dplotfile,    "%s.dplot",     cfg->msaname);
-    esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
+    esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
+    if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
   }
 
   /* the structure/contact map */
@@ -1207,7 +1214,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   }
   
   // Print some alignment information
-  MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  MSA_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
 
   /* create the MI structure */
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
@@ -1280,7 +1287,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   analyze = TRUE;
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
+
+  free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
   if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
@@ -1310,6 +1318,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->msafrq) free(cfg->msafrq); 
   if (cfg->T) esl_tree_Destroy(cfg->T); 
   if (cfg->msaname) free(cfg->msaname);
+  if (outname) free(outname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); 

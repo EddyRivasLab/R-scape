@@ -10,7 +10,7 @@ my $easel        = "~/src/hmmer/hmmer/easel/miniapps";
 my $esl_reformat = "$easel/esl-reformat";
 my $esl_afetch   = "$easel/esl-afetch";
 
-use constant GNUPLOT => '/usr/local/bin/gnuplot';
+#use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 sub afa2sto {
     my ($root, $file) = @_;
@@ -206,9 +206,9 @@ sub get_methods {
 
 sub gnuplot_histo {
 
-    my ($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, $iscum, $seeplots, $xleft, $xright, $ymax) = @_;
+    my ($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, $iscum, $seeplots, $xleft, $xright, $ymax, $gnuplot) = @_;
 
-     open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+     open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -244,7 +244,7 @@ sub gnuplot_histo {
 
 sub gnuplot_ave_histo {
 
-    my ($hfile, $field, $psfile, $title, $key, $xlabel, $ylabel, $xmin, $xmax, $ymin, $ymax, $viewplot) = @_;
+    my ($hfile, $field, $psfile, $title, $key, $xlabel, $ylabel, $xmin, $xmax, $ymin, $ymax, $gnuplot, $viewplot) = @_;
 
     my $n;
     my $m;
@@ -253,7 +253,7 @@ sub gnuplot_ave_histo {
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$GNUPLOT') || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -285,7 +285,7 @@ sub gnuplot_ave_histo {
     close (GP);
 
     system ("ps2pdf $psfile\n"); 
-    system("rm $psfile\n");
+    system("/bin/rm $psfile\n");
     if ($viewplot) { 
 	system ("open $pdffile&\n"); 
     }
@@ -293,12 +293,12 @@ sub gnuplot_ave_histo {
 
 sub gnuplot_ave_histo_with_dots {
 
-    my ($which, $file, $hfile, $psfile, $title, $key, $xlabel, $ylabel, $xmin, $xmax, $ymin, $ymax, $viewplot) = @_;
+    my ($which, $file, $hfile, $psfile, $title, $key, $xlabel, $ylabel, $xmin, $xmax, $ymin, $ymax, $gnuplot, $viewplot) = @_;
 
     my $n;
     my $cmd;
 
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
@@ -362,7 +362,7 @@ sub gnuplot_ave_histo_with_dots {
      }
 
     system("ps2pdf $psfile\n");
-    system("rm $psfile\n");
+    system("/bin/rm  $psfile\n");
     if ($viewplot) { 
 	system ("open $pdffile&\n"); 
     }
@@ -1372,7 +1372,7 @@ sub parse_together_rocfile {
 	if ($select_msa[$n] == 1) { $x ++; }
     }
     if ($x != $howmany) { print "you selected $x/$nmsa but should have selected $howmany\n"; die; }
-    system("rm $listfile\n");
+    system("/bin/rm  $listfile\n");
     
 
     my $useme;
@@ -2161,7 +2161,7 @@ sub parse_statfile {
 
 
 sub plot_contact_map {
-    my ($mapfile, $len, $seeplots) = @_;
+    my ($mapfile, $len, $gnuplot, $seeplots) = @_;
     
     my $psfile = "$mapfile.ps";
     #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
@@ -2171,7 +2171,7 @@ sub plot_contact_map {
     my $xlabel = "alignment position";
     my $title  = "$mapfile";
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -2200,19 +2200,19 @@ sub plot_contact_map {
     close (GP);
 
     system ("ps2pdf $psfile $pdffile\n"); 
-    system("rm $psfile\n");
+    system("/bin/rm  $psfile\n");
     if ($seeplots) { system ("open $pdffile&\n"); }
 }
 
 sub plot_id2F {
 
-    my ($N, $file_ref, $filename_ref, $which, $name, $viewplots) = @_;
+    my ($N, $file_ref, $filename_ref, $which, $name, $gnuplot, $viewplots) = @_;
 
     my $psfile  = "$name.$which.ps"; my $pdffile = "$name.$which.pdf";
     my $xlabel  = "\% ID";
     my $ylabel  = "$which (\%)";
 
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  
@@ -2281,20 +2281,20 @@ sub plot_id2F {
     }
 
     system("ps2pdf $psfile\n");
-    system("rm $psfile\n");
+    system("/bin/rm  $psfile\n");
     if ($viewplots) { system("open $pdffile&\n"); }
 }
 
 sub plot_id2totalF {
 
-    my ($N, $file_ref, $filename_ref, $which, $name, $viewplots) = @_;
+    my ($N, $file_ref, $filename_ref, $which, $name, $gnuplot, $viewplots) = @_;
 
     my $psfile  = "$name.$which.ps";
     my $pdffile = "$name.$which.pdf";
     my $xlabel  = "\% ID";
     my $ylabel  = "$which (\%)";
 
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  
@@ -2340,19 +2340,19 @@ sub plot_id2totalF {
     }
  
     system("ps2pdf $psfile\n");
-    system("rm $psfile\n");
+    system("/bin/rm  $psfile\n");
     if ($viewplots) { system("open $pdffile&\n"); }
 }
 
 sub plot_id2bench {
 
-    my ($file, $field, $name, $ylabel, $viewplots) = @_;
+    my ($file, $field, $name, $ylabel, $gnuplot, $viewplots) = @_;
 
     my $psfile  = "$file.$name.dot.ps";
     my $pdffile = "$file.$name.dot.pdf";
     my $xlabel  = "\% ID";
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  
@@ -2376,7 +2376,7 @@ sub plot_id2bench {
     close(GP);
 
     system("ps2pdf $psfile\n");
-    system("rm $psfile\n");
+    system("/bin/rm  $psfile\n");
     if ($viewplots) { system("open $pdffile&\n"); }
 
 }
@@ -2840,7 +2840,7 @@ sub write_species_file {
     }
     
     print SP "# $filename\t$nasq\t$pid\t$alen\t$avglen\n";
-    system("rm $statfile\n");
+    system("/bin/rm  $statfile\n");
     close(SP);
 }
 

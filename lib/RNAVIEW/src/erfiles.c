@@ -252,7 +252,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     status = er_PDB_GetSeq(pdbfile, ch, &from, &to, &sq, &ismissing, errbuf);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get chain sequence", errbuf);
 
-    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%lu\n", ChainID[rb], from, from+strlen(sq));
+    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%lu\n", ChainID[rb], from, from+strlen(sq)-1);
     fprintf(stdout, "# seq_%c ", ChainID[rb]);
     fprintf(stdout, "%s\n", sq);
     

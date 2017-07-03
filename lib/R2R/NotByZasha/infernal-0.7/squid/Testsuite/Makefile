@@ -15,7 +15,7 @@
 
 SHELL  = /bin/sh
 CC     = gcc
-CFLAGS = -g -Wall
+CFLAGS = -g -O2
 DEFS   = -DHAVE_CONFIG_H
 LIBS   = -lsquid  -lm
 

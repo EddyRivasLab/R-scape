@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape/rscape_v0.5 ; do \
+for v in rscape/rscape_v0.6 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -40,7 +40,9 @@ cp ~/src/src/mysource/src/pottsscore.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/pottsim.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/plot.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/appcov.* ~/src/src/mysource/versions/$v/src/. ;\
-cp ~/src/src/mysource/lib/RNAVIEW/src/.* ~/src/src/mysource/versions/$v/lib/RNAVIEW/src/. ;\
+cp ~/src/src/mysource/lib/RNAVIEW/src/*.c ~/src/src/mysource/versions/$v/lib/RNAVIEW/src/. ;\
+cp ~/src/src/mysource/lib/RNAVIEW/src/*.h ~/src/src/mysource/versions/$v/lib/RNAVIEW/src/. ;\
+cp ~/src/src/mysource/lib/RNAVIEW/src/*.in ~/src/src/mysource/versions/$v/lib/RNAVIEW/src/. ;\
 cp ~/src/src/mysource/scripts/FUNCS.pm ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/scripts/PDBFUNCS.pm ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/scripts/pdb_parse.pl ~/src/src/mysource/versions/$v/scripts/. ;\
@@ -55,7 +57,7 @@ last minute steps to make an R-scape tarball:
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v0.5 ; do \
+for v in rscape_v0.6 ; do \
 for x in 1 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\
@@ -76,7 +78,7 @@ done
 
 in eddyfs01:
 ------------
-for v in rscape_v0.5 ; do \
+for v in rscape_v0.6 ; do \
 for x in 1 ; do \
 cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd /n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/$v ;\
@@ -124,7 +126,7 @@ To update the software distribution for rscape, copy new tarball to the software
   # Also, replace the Userguide
   #
   cd /Users/rivase/eddylab-web/eddylab.org/site/software/rscape  ;\
-  for v in rscape_v0.5; do \
+  for v in rscape_v0.6; do \
   for x in 1; do \
   cp ~/src/src/mysource/versions/rscape/$v.$x.tar.gz .  ;\
   cp ~/src/src/mysource/versions/rscape/$v/documentation/R-scape_userguide.pdf .  ;\

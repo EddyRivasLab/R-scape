@@ -4,9 +4,15 @@
 use strict;
 use Class::Struct;
 
-use vars qw ($opt_C $opt_M $opt_R $opt_W $opt_D $opt_L $opt_v);  # required if strict used
+# find directory where the script is installed
+use FindBin;
+use lib $FindBin::Bin;
+use PDBFUNCS;
+use FUNCS;
+
+use vars qw ($opt_C  $opt_D $opt_L $opt_M $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
 use Getopt::Std;
-getopts ('C:M:RW:D:L:v');
+getopts ('C:D:L:M:PRSvW:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -19,19 +25,15 @@ my $pdbfile   = shift;
 my $stofile   = shift;
 my $rscapebin = shift;
 my $gnuplot   = shift;
-
-#my $lib;
-#BEGIN { $lib = "$rscapebin/../scripts" };
-#use lib '$lib';
-use lib '/Users/rivase/src/src/mysource/scripts';
-use PDBFUNCS;
-use FUNCS;
-use constant GNUPLOT => '/usr/local/bin/gnuplot';
+if ($gnuplot) { use constant GNUPLOT => '$gnuplot'; }
 
 my $coorfile = "";
 if ($opt_C) { $coorfile = "$opt_C";}
 my $mapallfile = "";
 if ($opt_M) { $mapallfile = "$opt_M"; }
+
+my $smallout = 0;
+if ($opt_S) { $smallout = 1; }
 
 my $maxD = 8;
 if ($opt_D) { $maxD = $opt_D; }
@@ -46,11 +48,12 @@ if ($opt_R) { $dornaview = 1; }
 my $which = "MIN";
 if ($opt_W) { $which = "$opt_W"; }
 
-my $seeplots = 1;
+my $seeplots = 0;
+if ($opt_P) { $seeplots = 1; }
 
 my $ncnt_t = 0; ## total contacts from all chains
 my @cnt_t;
 my $msalen;
 
 PDBFUNCS::contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$ncnt_t, \@cnt_t, $maxD, $minL, 
-				 $which, $dornaview, $coorfile, $mapallfile, $seeplots);
+				 $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots);
