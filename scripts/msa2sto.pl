@@ -7,9 +7,6 @@
 
 use strict;
 use Class::Struct;
-use lib '/groups/eddy/home/rivase/projects/evohmm/scripts';
-use lib '/Users/rivase/projects/evohmm/scripts';
-use FUNCS;
 
 use vars qw ($opt_v );  # required if strict used
 use Getopt::Std;
