@@ -49,7 +49,7 @@ AR        = @AR@
 RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 
-LIBS      = -lhmmer -leasel -lm
+LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@ -lm
 
 IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src
 LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src

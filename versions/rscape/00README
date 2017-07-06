@@ -78,24 +78,8 @@ done
 
 in eddyfs01:
 ------------
-for v in rscape_v0.6 ; do \
-for x in 1 ; do \
-cp /n/eddyfs01/home/erivas/src/src/mysource/documentation/R-scape_userguide.pdf /n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/$v/documentation/. ;\
-cd /n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/$v ;\
-make distclean ;\
-cd .. ;\
-cp -rf $v $v.$x ;\
-cd $v.$x;\
-m -rf lib/hmmer/easel/.git ;\
-rm -rf lib/hmmer/.git ;\
-cd .. ;\
-rm $v.$x.tar.* ;\
-tar cvf $v.$x.tar $v.$x ;\
-gzip $v.$x.tar ;\
-rm -rf $v.$x ;\
-done
-done
-
+scp /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.6.1.tar.gz erivas@odyssey:/n/eddyfs01/home/erivas/src/src/mysource/versions/rscape
+  
 
 
 

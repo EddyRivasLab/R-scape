@@ -774,7 +774,7 @@ sub found_alicoords_in_contactlist {
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { continue; } # too close in pdbseq distance
+	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
 	
 	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) {
 	    $found = 1;
@@ -813,7 +813,7 @@ sub found_pdbcoords_in_contactlist {
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { continue; } # too close in pdbseq distance
+	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
 	
 	if ($i == $cnt_ref->[$c]->{"CNT::i"} && $j == $cnt_ref->[$c]->{"CNT::j"}) {
 	    $found = 1;
