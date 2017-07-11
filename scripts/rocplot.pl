@@ -4,6 +4,12 @@
 use strict;
 use Class::Struct;
 
+# find directory where the script is installed
+use FindBin;
+use lib $FindBin::Bin;
+use PDBFUNCS;
+use FUNCS;
+
 use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_R $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
 getopts ('D:G:L:P:RW:v');
@@ -40,15 +46,8 @@ if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
 
 my $rscapebin = shift;
 my $gnuplot   = shift;
-#use constant GNUPLOT => '$gnuplot';
-use constant GNUPLOT => '/usr/local/bin/gnuplot';
+if ($gnuplot) { use constant GNUPLOT => '$gnuplot'; }
 
-my $lib;
-#BEGIN { $lib = "$rscapebin/../scripts" };
-#use lib '$lib';
-use lib '/Users/rivase/src/src/mysource/scripts';
-use PDBFUNCS;
-use FUNCS;
 
 my $currdir = $ENV{PWD};
 

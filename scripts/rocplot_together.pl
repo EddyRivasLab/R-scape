@@ -3,9 +3,12 @@
 
 use strict;
 use Class::Struct;
-use lib '/Users/rivase/src/src/mysource/scripts';
+
+# find directory where the script is installed
+use FindBin;
+use lib $FindBin::Bin;
+use PDBFUNCS;
 use FUNCS;
-use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 use vars qw ($opt_L $opt_v);  # required if strict used
 use Getopt::Std;
