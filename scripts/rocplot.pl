@@ -135,13 +135,13 @@ for (my $f = 0; $f < $F; $f ++) {
 	}
     }
     elsif ($method =~ /^mfDCA$/) {
-	if ($pdbfile) { create_rocfile_mfDCA ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { create_rocfile_mfDCA  ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /^plmDCA$/) {
-	if ($pdbfile) { create_rocfile_plmDCA($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { create_rocfile_plmDCA ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /^gremlin$/) {
-	if ($pdbfile) { create_rocfile_gremlin($rocfile[$f], $prefile[$f], $pdb2msa_gremlin, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { create_rocfile_gremlin($rocfile[$f], $prefile[$f], ($stofile_gremlin)?$pdb2msa_gremlin:$pdb2msa, $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /random/) {
 	create_rocfile_random($rocfile[$f], $pdb2msa, $N, $k, $shift, \@his, $fmax);
