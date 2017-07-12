@@ -40,15 +40,13 @@ my $outname;
     }
 }
 my $stofile  = shift;
-my $stoname = $prefile[0];
-if ($stoname =~ /\/([^\/]+)$/)  { $stoname = $1; }
-if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
-if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
+my $stoname  = $prefile[0];
+if ($stoname =~ /\/([^\/]+)$/) { $stoname = $1; }
+if ($stoname =~ /([^\.]+)\./)  { $stoname = $1; }
 
 my $rscapebin = shift;
 my $gnuplot   = shift;
 if ($gnuplot) { use constant GNUPLOT => '$gnuplot'; }
-
 
 my $currdir = $ENV{PWD};
 
@@ -146,17 +144,17 @@ for (my $f = 0; $f < $F; $f ++) {
     my $pdbname = $pdb2msa->pdbname;
     my $stoname = $pdb2msa->stoname;
     my $maxD    = $pdb2msa->maxD;
-    my $title  = "method: $method   PDB: $pdbname   MSA: $stoname   maxD: $maxD   minL: 1  fmax: $fmax";
-    my $xlabel = "distance in PDB sequence";
-    my $ylabel = "number of contacts";
-    my $key    = "";
-    my $psfile = "$hfile.ps";
-    my $xleft  = 1;
-    my $xright = 200;
-    my $ymax   = -1;
-    my $xfield = 1;
-    my $yfield = 2;
-    $seeplots  = 0;
+    my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   maxD: $maxD   minL: 1  fmax: $fmax";
+    my $xlabel  = "distance in PDB sequence";
+    my $ylabel  = "number of contacts";
+    my $key     = "";
+    my $psfile  = "$hfile.ps";
+    my $xleft   = 1;
+    my $xright  = 200;
+    my $ymax    = -1;
+    my $xfield  = 1;
+    my $yfield  = 2;
+    $seeplots   = 0;
     FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax);
 }
 
@@ -725,9 +723,8 @@ sub rocplot {
     my $x_max, my $x_min;
     my $y_max, my $y_min;
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
-    my $gp = \*GP;
-
+    open(my $gp, '|'.GNUPLOT) || die "Gnuplot: $!";
+ 
     print $gp "set terminal postscript color solid 14\n";
     print $gp "set output '$psfile'\n";    
     print $gp "set style line 1   lt 1 lc rgb 'black' pt 1 ps 0.5 lw 1\n";
