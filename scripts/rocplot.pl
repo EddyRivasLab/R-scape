@@ -43,6 +43,7 @@ my $stofile  = shift;
 my $stoname = $prefile[0];
 if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
 if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
+if ($stoname =~ /([^\.]+)\./)   { $stoname = $1; }
 
 my $rscapebin = shift;
 my $gnuplot   = shift;
