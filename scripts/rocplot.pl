@@ -10,9 +10,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_R $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('D:G:L:P:RW:v');
+getopts ('D:G:L:P:rR:W:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -59,7 +59,7 @@ if ($opt_L) { $minL = $opt_L; }
 for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = ($minL>0)? "$prename[$f].minL$minL.roc":"$prename[$f].roc"; }
 
 my $dornaview = 0;
-if ($opt_R) { $dornaview = 1; }
+if ($opt_r) { $dornaview = 1; }
 
 my $which = "MIN"; #options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
 if ($opt_W) { $which = "$opt_W"; }
@@ -82,6 +82,14 @@ my $pdb2msa_gremlin;
 if ($opt_G) { 
     $stofile_gremlin = "$opt_G"; 
     PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $maxD, $minL, $which, $dornaview, $seeplots);
+}  
+
+# Map the pdb2msa structure to the stofile used by rscape (if different from the main one)
+my $stofile_rscape = "";
+my $pdb2msa_rscape;
+if ($opt_R) { 
+    $stofile_rscape = "$opt_R"; 
+    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $maxD, $minL, $which, $dornaview, $seeplots);
 }  
 
 # add a random file
@@ -123,7 +131,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	    $dorandom = 0;
 	}
 	else {
-	    create_rocfile_rscape_withpdb($rocfile[$f], $prefile[$f], $pdb2msa, $N, $k, $shift, \@his, $fmax);
+	    create_rocfile_rscape_withpdb($rocfile[$f], $prefile[$f], ($stofile_rscape)?$pdb2msa_rscape:$pdb2msa, $N, $k, $shift, \@his, $fmax);
 	}
     }
     elsif ($method =~ /^mfDCA$/) {
