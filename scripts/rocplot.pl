@@ -19,7 +19,7 @@ getopts ('D:G:L:P:rR:W:v');
 if (!@ARGV) {
         print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <gnuplotdir> \n\n";
         print "options:\n";
- 	exit;
+	exit;
 }
 
 my $F = shift;
@@ -130,15 +130,13 @@ for (my $f = 0; $f < $F; $f ++) {
 	    create_rocfile_rscape($rocfile[$f], $prefile[$f], $N, $k, $shift, \@his, $fmax);
 	    $dorandom = 0;
 	}
-	else {
-	    create_rocfile_rscape_withpdb($rocfile[$f], $prefile[$f], ($stofile_rscape)?$pdb2msa_rscape:$pdb2msa, $N, $k, $shift, \@his, $fmax);
-	}
+	else { create_rocfile_rscape_withpdb($rocfile[$f], $prefile[$f], ($stofile_rscape)?$pdb2msa_rscape:$pdb2msa,     $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /^mfDCA$/) {
-	if ($pdbfile) { create_rocfile_mfDCA  ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { create_rocfile_mfDCA  ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA,      $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /^plmDCA$/) {
-	if ($pdbfile) { create_rocfile_plmDCA ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { create_rocfile_plmDCA ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA,      $N, $k, $shift, \@his, $fmax); }
     }
     elsif ($method =~ /^gremlin$/) {
 	if ($pdbfile) { create_rocfile_gremlin($rocfile[$f], $prefile[$f], ($stofile_gremlin)?$pdb2msa_gremlin:$pdb2msa, $N, $k, $shift, \@his, $fmax); }
@@ -164,7 +162,7 @@ for (my $f = 0; $f < $F; $f ++) {
     my $ymax   = -1;
     my $xfield = 1;
     my $yfield = 2;
-    $seeplots  = 1;
+    $seeplots  = 0;
     FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax);
 }
 
