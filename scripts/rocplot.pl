@@ -167,7 +167,7 @@ for (my $f = 0; $f < $F; $f ++) {
 }
 
 my $xmax = 1000;
-my $viewplots = 1;
+my $viewplots = 0;
 rocplot($stoname, $F, \@rocfile, \@prename, $xmax, $viewplots);
 
 
