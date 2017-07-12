@@ -95,16 +95,9 @@ if ($opt_R) {
 # add a random file
 my $dorandom = 1;
 if ($dorandom) {
-    if ($prename[0] =~ /results\/[^\/]+_([^\/]+)\//) { 
-	$prename[$F] = "$pdb2msa->$stoname.random";
-	$prefile[$F] = "results/random_$1/$pdb2msa->$stoname.random";
-	$rocfile[$F] = "results/random_$1/$pdb2msa->$stoname.random.minL$minL.roc";
-    }
-    else { 
-	$prename[$F] = "$stoname.random";
-	$prefile[$F] = "results/random/$stoname.random";
-	$rocfile[$F] = "results/random/$stoname.random.minL$minL.roc";
-    }
+    $prename[$F] = "$stoname.random";
+    $prefile[$F] = "results/random/$stoname.random";
+    $rocfile[$F] = "results/random/$stoname.random.minL$minL.roc";
     $F ++;
 }
 
@@ -679,7 +672,6 @@ sub sort_gremlin {
     my $row = 0;
     my $dim;
     open(SORT, ">$sortfile") || die;
-    print "file:$file\n";
     open(FILE, "$file") || print "FILE DOES NOT EXIST\n";
     while(<FILE>) {
 	my $line = $_;
