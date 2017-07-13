@@ -159,7 +159,7 @@ for (my $f = 0; $f < $F; $f ++) {
 
 my $xmax = 1000;
 my $viewplots = 0;
-rocplot($stoname, $F, \@rocfile, \@prename, $xmax, $viewplots);
+rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $xmax, $viewplots);
 
 
 
@@ -702,7 +702,7 @@ sub sort_gremlin {
 }
 
 sub rocplot {
-    my ($stoname, $F, $file_ref, $prename_ref, $xmax, $seeplots) = @_;
+    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $xmax, $seeplots) = @_;
 
 
    my $psfile = "results/$stoname.N$F.ps";
@@ -722,7 +722,7 @@ sub rocplot {
     my $x_max, my $x_min;
     my $y_max, my $y_min;
     
-    open(my $gp, '|'.GNUPLOT) || die "Gnuplot: $!";
+    open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
  
     print $gp "set terminal postscript color solid 14\n";
     print $gp "set output '$psfile'\n";    
