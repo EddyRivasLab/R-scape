@@ -34,7 +34,6 @@ print "NTYPE $M\n";
 for (my $m = 0; $m < $M; $m++)
 {
     $type[$m] =~ s/ //g;
-    print "$type[$m]\n";
 }
 
 my $famtype = "ALL";
@@ -51,6 +50,8 @@ my $shift = 0;
 my @plotfile;
 
 for (my $m = 0; $m < $M; $m++) {
+    print "$type[$m]\n";
+
     $plotfile[$m] = "$DIR/results/$string_name.$m.rocplot";
 
     my @his_f;
@@ -74,16 +75,19 @@ for (my $m = 0; $m < $M; $m++) {
     my $F = $#family+1;
     print "\nNFAM $F\n";
 
+    my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
     {
 	my $rocfile = "$family[$f]";
-	print "ROC:$rocfile\n";
 
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
 	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /^\d\S+/)  { $add = 1; }
 	if ($famtype =~ /^PFAM$/  && $rocfile =~ /^PF\S+/)  { $add = 1; }
 
 	if ($add == 0) { next; }
+
+	$nf ++;
+	print "ROC $nf: $rocfile\n";
 	
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
