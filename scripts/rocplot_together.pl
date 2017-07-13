@@ -10,24 +10,24 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_L $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_P $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('L:v');
+getopts ('CPv');
 
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot_together.pl [options] <DIR> <string_name> <string_type> <string_fam> <gnuplot> \n\n";
+        print "usage:  rocplot_together.pl [options] <DIR> <string_name> <string_type> <string_suffix> <gnuplot> \n\n";
         print "options:\n";
  	exit;
 }
 
-my $DIR = shift;
-my $string_name = shift;
-my $string_type = shift;
-my $string_fam  = shift;
-my $gnuplot     = shift;
-
+my $DIR           = shift;
+my $string_name   = shift;
+my $string_type   = shift;
+my $string_suffix = shift;
+my $gnuplot       = shift;
+ 
 my @type = split(/\s+/, $string_type);
 my $M = $#type+1;
 print "NTYPE $M\n";
@@ -37,14 +37,9 @@ for (my $m = 0; $m < $M; $m++)
     print "$type[$m]\n";
 }
 
-my @family = split(/\s+/, $string_fam);
-my $F = $#family+1;
-print "\nNFAM $F\n";
-for (my $f = 0; $f < $F; $f++)
-{
-    $family[$f] =~ s/ //g;
-    print "$family[$f]\n";
-}
+my $famtype = "ALL";
+if ($opt_P) { $famtype = "PFAM"; }
+if ($opt_C) { $famtype = "CAMEO"; }
 
 my $seeplots = 1;
 my $verbose  = 0;
@@ -72,14 +67,24 @@ for (my $m = 0; $m < $M; $m++) {
     FUNCS::init_histo_array($N, $k, \@his_tc);
     FUNCS::init_histo_array($N, $k, \@his_tb);
     FUNCS::init_histo_array($N, $k, \@his_tw);
-    
+
+    my $localdir = "$DIR/results/$type[$m]";
+    my @family;
+    FUNCS::sorted_files($localdir, \@family, $string_suffix);    
+    my $F = $#family+1;
+    print "\nNFAM $F\n";
+
     for (my $f = 0; $f < $F; $f++)
     {
-	my $rocfile = "$DIR/results/";
-	if    ($type[$m] =~ /^R-scape\/GTp$/)  { $rocfile .= "$type[$m]/$family[$f].rscape.roc"; }
-	elsif ($type[$m] =~ /^R-scape\/PTFp$/) { $rocfile .= "$type[$m]/$family[$f].rscape.roc"; }
-
+	my $rocfile = "$family[$f]";
 	print "ROC:$rocfile\n";
+
+	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
+	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /^\d\S+/)  { $add = 1; }
+	if ($famtype =~ /^PFAM$/  && $rocfile =~ /^PF\S+/)  { $add = 1; }
+
+	if ($add == 0) { next; }
+	
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
 	    if (/\#/) {
