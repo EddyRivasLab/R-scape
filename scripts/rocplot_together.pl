@@ -39,11 +39,11 @@ my $famtype = "ALL";
 if ($opt_P) { $famtype = "PFAM"; }
 if ($opt_C) { $famtype = "CAMEO"; }
 
-my $seeplots = 1;
+my $seeplots = 0;
 my $verbose  = 0;
 
 my $N = 2;
-my $k = 100;
+my $k = 10;
 my $shift = 0;
 
 my @plotfile;
