@@ -114,8 +114,8 @@ sub calculateF {
     my $ppv;
     my $F;
 
-    if ($thp > $th) { print "trues found $thp > trues $th!!\n"; die; }
-    if ($thp > $fh) { print "trues found $thp > found $fh!!\n"; die; }
+    if ($tph > $th) { print "trues found $tph > trues $th!!\n"; die; }
+    if ($tph > $fh) { print "trues found $tph > found $fh!!\n"; die; }
     $sen = ($th > 0)? $tph/$th : 0.0;
     $ppv = ($fh > 0)? $tph/$fh : 0.0;
     
