@@ -154,7 +154,7 @@ for (my $f = 0; $f < $F; $f ++) {
     my $xfield  = 1;
     my $yfield  = 2;
     $seeplots   = 0;
-    FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax);
+    FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot);
 }
 
 my $xmax = 1000;
