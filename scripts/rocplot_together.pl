@@ -17,7 +17,7 @@ getopts ('L:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot_together.pl [options] <DIR> <string_name> <string_type> <string_fam> \n\n";
+        print "usage:  rocplot_together.pl [options] <DIR> <string_name> <string_type> <string_fam> <gnuplot> \n\n";
         print "options:\n";
  	exit;
 }
@@ -26,6 +26,7 @@ my $DIR = shift;
 my $string_name = shift;
 my $string_type = shift;
 my $string_fam  = shift;
+my $gnuplot     = shift;
 
 my @type = split(/\s+/, $string_type);
 my $M = $#type+1;
@@ -123,10 +124,10 @@ for (my $m = 0; $m < $M; $m++) {
     
 }
 
-rocplot($M, \@plotfile, \@type, $seeplots);
+rocplot($M, \@plotfile, \@type, $gnuplot, $seeplots);
 
 sub rocplot {
-    my ($F, $file_ref, $type_ref, $seeplots) = @_;
+    my ($F, $file_ref, $type_ref, $gnuplot, $seeplots) = @_;
 
 
    my $psfile = "$string_name.ps";
@@ -146,7 +147,7 @@ sub rocplot {
     my $x_max, my $x_min;
     my $y_max, my $y_min;
     
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     my $gp = \*GP;
 
     print $gp "set terminal postscript color solid 14\n";
