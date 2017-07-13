@@ -206,7 +206,7 @@ sub gnuplot_histo {
 
     my ($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, $iscum, $seeplots, $xleft, $xright, $ymax, $gnuplot) = @_;
 
-     open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);

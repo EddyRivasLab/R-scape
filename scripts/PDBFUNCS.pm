@@ -938,7 +938,7 @@ sub allcontacts_histogram {
     my $ymax = -1;
     my $xfield = 1;
     my $yfield = 2;
-    if ($gnuplot) { FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax); }
+    if ($gnuplot) { FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot); }
 }
 
 sub run_rnaview {
