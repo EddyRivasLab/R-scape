@@ -5,7 +5,6 @@ use warnings;
 use Class::Struct;
 
 our $VERSION = "1.00"; 
-#use constant GNUPLOT => '/usr/local/bin/gnuplot';
 
 struct RES => {
     char     => '$', # number of atoms
@@ -1450,7 +1449,7 @@ sub plot_contact_map {
     #my $pdffile = $psfile;
     #if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
 

@@ -10,8 +10,6 @@ my $easel        = "~/src/hmmer/hmmer/easel/miniapps";
 my $esl_reformat = "$easel/esl-reformat";
 my $esl_afetch   = "$easel/esl-afetch";
 
-#use constant GNUPLOT => '/usr/local/bin/gnuplot';
-
 sub afa2sto {
     my ($root, $file) = @_;
     my $stof = "$root.sto";
@@ -208,7 +206,7 @@ sub gnuplot_histo {
 
     my ($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, $iscum, $seeplots, $xleft, $xright, $ymax, $gnuplot) = @_;
 
-     open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+     open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -253,7 +251,7 @@ sub gnuplot_ave_histo {
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     
-    open(GP,'|'.'$GNUPLOT') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -298,7 +296,7 @@ sub gnuplot_ave_histo_with_dots {
     my $n;
     my $cmd;
 
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
@@ -2171,7 +2169,7 @@ sub plot_contact_map {
     my $xlabel = "alignment position";
     my $title  = "$mapfile";
     
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
     print GP "set terminal postscript color solid 14\n";
     FUNCS::gnuplot_define_styles (*GP);
@@ -2212,7 +2210,7 @@ sub plot_id2F {
     my $xlabel  = "\% ID";
     my $ylabel  = "$which (\%)";
 
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  
@@ -2294,7 +2292,7 @@ sub plot_id2totalF {
     my $xlabel  = "\% ID";
     my $ylabel  = "$which (\%)";
 
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  
@@ -2352,7 +2350,7 @@ sub plot_id2bench {
     my $pdffile = "$file.$name.dot.pdf";
     my $xlabel  = "\% ID";
     
-    open(GP,'|'.'$gnuplot') || die "Gnuplot: $!";
+    open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
     FUNCS::gnuplot_define_styles (*GP);
  

@@ -25,7 +25,6 @@ my $pdbfile   = shift;
 my $stofile   = shift;
 my $rscapebin = shift;
 my $gnuplot   = shift;
-if ($gnuplot) { use constant GNUPLOT => '$gnuplot'; }
 
 my $coorfile = "";
 if ($opt_C) { $coorfile = "$opt_C";}

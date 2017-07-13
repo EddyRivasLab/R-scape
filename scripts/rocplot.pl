@@ -17,7 +17,7 @@ getopts ('D:G:L:P:rR:W:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <gnuplotdir> \n\n";
+        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin>  \n\n";
         print "options:\n";
 	exit;
 }
@@ -46,7 +46,6 @@ if ($stoname =~ /([^\.]+)\./)  { $stoname = $1; }
 
 my $rscapebin = shift;
 my $gnuplot   = shift;
-if ($gnuplot) { use constant GNUPLOT => '$gnuplot'; }
 
 my $currdir = $ENV{PWD};
 
