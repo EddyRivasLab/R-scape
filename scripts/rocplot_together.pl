@@ -72,7 +72,6 @@ for (my $m = 0; $m < $M; $m++) {
     my @family;
     FUNCS::sorted_files($localdir, \@family, $string_suffix);    
     my $F = $#family+1;
-    print "nfiles $F\n";
 
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
@@ -80,8 +79,8 @@ for (my $m = 0; $m < $M; $m++) {
 	my $rocfile = "$family[$f]";
 
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
-	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+/)  { $add = 1; }
-	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+/)  { $add = 1; }
+	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)  { $add = 1; }
+	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+$/)  { $add = 1; }
 
 	if ($add == 0) { next; }
 
