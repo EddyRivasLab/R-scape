@@ -250,32 +250,23 @@ sub create_rocfile_rscape_withpdb {
     my $f_c = 0;
     my $f_b = 0;
     my $f_w = 0;
-    my $t_c = 0;
-    my $t_b = 0;
-    my $t_w = 0;
+    my $t_c = $pdb2msa->ncnt;
+    my $t_b = $pdb2msa->nbp;
+    my $t_w = $pdb2msa->nwc;
     
-    my $alen = 0;
     my $type = "";
     open(FILE, "$file") || die;
     while(<FILE>) {
-	if (/^\# contacts\s+(\d+)\s+\((\d+)\s+bpairs\s+(\d+)\s+wc/) {
-	    $t_c = $1;
-	    $t_b = $2;
-	    $t_w = $3;
-	}
-	elsif (/^\#.+alen\s+(\d+)\s+/) {
-	    $alen = $1;
-	}
-	elsif (/^\#/) {
+	if (/^\#/) {
 	}
 	elsif (/^\S*\s+(\d+)\s+(\d+)\s+\S+\s+\S+\s*$/) {
 	    my $i        = $1;
 	    my $j        = $2;
 	    my $distance = $j-$i+1; # distance in the alignment
-	    my $pdbi        = -1;
-	    my $pdbj        = -1;
+	    my $pdbi     = -1;
+	    my $pdbj     = -1;
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $pdb2msa->{"PDB2MSA::ncnt"}, 
-					       \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) 
+							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) 
 	    {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
