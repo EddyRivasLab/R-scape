@@ -95,7 +95,7 @@ my $dorandom = 1;
 if ($dorandom) {
     $prename[$F] = "$stoname.random";
     $prefile[$F] = "results/random/$stoname.random";
-    $rocfile[$F] = "results/random/$stoname.random.minL$minL.roc";
+    $rocfile[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.roc";
     $F ++;
 }
 
