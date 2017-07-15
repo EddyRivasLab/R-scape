@@ -14,7 +14,7 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "0.6.1"
+#define RSCAPE_VERSION "0.7.1"
 #define RSCAPE_DATE "Jul 2017"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
@@ -31,6 +31,12 @@
 /* Debugging verbosity (0=none;3=most verbose)
  */
 /* #undef rscapeDEBUGLEVEL */
+
+/* 1 = Gaps as an extra character (and does not remove columns with gaps, ie gapthresh = 1.0)
+ * 0 = Ignores gaps when calculating pairwise covariation scores
+ *   
+ */
+#define GAPASCHAR 1
 
 /* System headers
  */

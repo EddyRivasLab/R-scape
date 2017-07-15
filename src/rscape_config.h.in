@@ -31,6 +31,12 @@
  */
 #undef rscapeDEBUGLEVEL
 
+/* 1 = Gaps as an extra character (and does not remove columns with gaps, ie gapthresh = 1.0)
+ * 0 = Ignores gaps when calculating pairwise covariation scores
+ *   
+ */
+#undef GAPASCHAR
+
 /* System headers
  */
 #undef HAVE_ENDIAN_H
