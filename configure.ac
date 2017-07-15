@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 0.6.1, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 0.7.1, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -239,6 +239,18 @@ case $enable_debugging in
      *)  AC_MSG_ERROR([Unknown argument to --enable-debugging: $enable_debugging]);;
 esac
 
+# --enable-gapaschar=no   - Ignore gaps in columns
+# --enable-gapaschar=yes  - Enable gaps as an extra character
+AC_ARG_ENABLE(gapaschar,
+[AS_HELP_STRING([--enable-gapaschar],[enable gaps as an extra character])
+AS_HELP_STRING([--enable-gapsaschar=x],[also set diagnostics verbosity level to <x> (1-3)])],
+enable_gapaschar=$enableval, enable_gapaschar=no)
+
+case $enable_gapaschar in
+   yes)  AC_DEFINE(GAPASCHAR, 1);;
+    no)  AC_DEFINE(GAPASCHAR, 0);;
+     *)  AC_MSG_ERROR([Unknown argument to --enable-gapaschar: $enable_gapaschar]);;
+esac
 
 # --enable-mpi       Enable MPI parallelization
 AC_ARG_ENABLE(mpi,[AS_HELP_STRING([--enable-mpi],[enable MPI parallelization])], enable_mpi=$enableval, enable_mpi=no)
