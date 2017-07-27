@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape/rscape_v0.6 ; do \
+for v in rscape/rscape_v0.7 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -57,7 +57,7 @@ last minute steps to make an R-scape tarball:
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v0.6 ; do \
+for v in rscape_v0.7 ; do \
 for x in 1 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\
@@ -78,7 +78,7 @@ done
 
 in eddyfs01:
 ------------
-scp /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.6.1.tar.gz erivas@odyssey:/n/eddyfs01/home/erivas/src/src/mysource/versions/rscape
+scp /Users/rivase/src/src/mysource/versions/rscape/rscape_v0.7.1.tar.gz erivas@odyssey:/n/eddyfs01/home/erivas/src/src/mysource/versions/rscape
   
 
 
@@ -110,7 +110,7 @@ To update the software distribution for rscape, copy new tarball to the software
   # Also, replace the Userguide
   #
   cd /Users/rivase/eddylab-web/eddylab.org/site/software/rscape  ;\
-  for v in rscape_v0.6; do \
+  for v in rscape_v0.7; do \
   for x in 1; do \
   cp ~/src/src/mysource/versions/rscape/$v.$x.tar.gz .  ;\
   cp ~/src/src/mysource/versions/rscape/$v/documentation/R-scape_userguide.pdf .  ;\
