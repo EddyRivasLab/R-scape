@@ -102,7 +102,9 @@ if ($dorandom) {
 my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
-    my$method = "";
+    if (-e $rocfile[$f]) { continue; }
+    
+    my $method = "";
     
     if    ($prefile[$f] =~ /results\/(\S+)_filtered\//) { $method = $1; }
     elsif ($prefile[$f] =~ /results\/([^\/]+)\//)       { $method = $1; }
@@ -717,9 +719,9 @@ sub rocplot {
  
     print $gp "set terminal postscript color solid 14\n";
     print $gp "set output '$psfile'\n";    
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 8   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 0.5\n";
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 8   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
