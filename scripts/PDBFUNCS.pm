@@ -633,7 +633,7 @@ sub parse_pdb_contact_map {
     my $l2;
     my $distance;
     my $atom_offset = atom_offset($pdbfile, $chain);
-    if ($atom_offset < 0) { print "could not find atom offset\n"; die; }
+    if ($atom_offset =~ /^NA$/) { print "could not find atom offset\n"; die; }
     print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
@@ -1026,7 +1026,7 @@ sub rnaview2list {
 sub atom_offset {
     my ($pdbfile, $chain) = @_;
 
-    my $atom_offset = 1;
+    my $atom_offset = "NA";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	if (/^DBREF1\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
