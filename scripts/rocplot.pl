@@ -102,7 +102,7 @@ if ($dorandom) {
 my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
-    if (-e $rocfile[$f]) { continue; }
+    if (-e $rocfile[$f]) { next; }
     
     my $method = "";
     
