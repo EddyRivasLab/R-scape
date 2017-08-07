@@ -404,12 +404,13 @@ sub find_pdbsq_in_pfam {
     print F ">$pdbname\n$pdbsq\n";
     close(F);
      
-    my $hmm       = "$currdir/hmmfile";
-    my $hmmout    = "$currdir/hmmout";
+    my $hmm       = "$currdir/$pdbname.hmm";
+    my $hmmout    = "$currdir/$pdbname.hmmout";
  
-    system("$hmmbuild                       $hmm  $pdbsqfile   >  /dev/null\n");
-    system("$hmmersearch -E $eval           $hmm  $stofile     >  $hmmout\n");
-    system("/bin/echo $hmmersearch -E $eval $hmm  $stofile \n");
+    system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+    system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+    system("          $hmmersearch -E $eval         $hmm  $stofile     >  $hmmout\n");
+    system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
     #system("/usr/bin/more $hmmout\n");
 
     # take hit with best evalue
@@ -1071,9 +1072,9 @@ sub sq_conversion {
 
 sub aa_conversion {
     my ($aa, $isrna) = @_;
-    my $new;
 
     my $AA = uc($aa);
+    my $new;
 
     if ($isrna) {
 	if    ($AA =~ /^A$/)    { $new = "A"; return $new; }
@@ -1137,7 +1138,8 @@ sub aa_conversion {
     elsif ($AA =~ /^DG$/)   { $new = "G"; }
     elsif ($AA =~ /^DT$/)   { $new = "T"; }
     elsif ($AA =~ /^\S$/)   { $new = $AA; } # if AA is already given in the 1 letter code
-    else { print "aa_conversion(): uh? |$AA| isRNA? $isrna\n"; die; }
+    else                    { $new = "X"; }
+    #else { print "aa_conversion(): uh? |$AA| isRNA? $isrna\n"; die; }
 
     return $new;
 }

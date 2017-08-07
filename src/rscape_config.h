@@ -18,8 +18,8 @@
 #define RSCAPE_DATE "Jul 2017"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define RSCAPE_HOME "/Users/rivase/src/src/mysource"
-#define RSCAPE_BIN "/Users/rivase/src/src/mysource/bin"
+#define RSCAPE_HOME "/n/eddyfs01/home/erivas/src/src/mysource"
+#define RSCAPE_BIN "/n/eddyfs01/home/erivas/src/src/mysource/bin"
 
 /* Large file support
  * Must precede any header file inclusion.
@@ -40,7 +40,7 @@
 
 /* System headers
  */
-/* #undef HAVE_ENDIAN_H */
+#define HAVE_ENDIAN_H 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
 #define HAVE_UNISTD_H 1

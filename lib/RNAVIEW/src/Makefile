@@ -26,7 +26,7 @@ PACKAGE_VERSION = 0.7.1
 
 # Installation targets
 #
-prefix      = /Users/rivase/src/src/mysource
+prefix      = /n/eddyfs01/home/erivas/src/src/mysource
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 bindir      = ${exec_prefix}/bin
@@ -55,9 +55,9 @@ endif
 
 # Compiler configuration
 #
-CC       = gcc
+CC       = gcc -std=gnu99
 CFLAGS   = -DNO_SSE -O3 -funroll-loops -g -Wall
-LIBS     =  
+LIBS     = -lrt  
 
 # Other tools
 #
