@@ -132,9 +132,9 @@ sub contacts_from_pdbfile {
 	if (!$smallout) {
 	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
 	    $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
-	    $mapfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.map";
+	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.map";
 	}
-	my $corfile  = "$currdir/$stoname.$pdbname.chain$chname[$n].maxD$maxD.cor";
+	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
@@ -189,13 +189,13 @@ sub contacts_from_pdbfile {
     if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
 
     if (!$smallout) {
-	my $hisfile  = "$currdir/$stoname.$pdbname.nch$nch.maxD$maxD.his";
+	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.his";
 	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $gnuplot, $seeplots); 
     }
 
     $$ret_msalen = $alen;
     $$ret_ncnt_t = $ncnt_t;
-    my $rnaoutfile = "$pdbfile.out";
+    my $rnaoutfile  = "$pdbfile.out";
     my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
     
     system("/bin/rm $rnaoutfile\n");
@@ -1447,9 +1447,7 @@ sub plot_contact_map {
     if ($key =~ /([^\/]+)\s*$/) { $key = $1; }
     
     my $psfile = "$mapfile.ps";
-    if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
-    #my $pdffile = $psfile;
-    #if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
+    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
     
     open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
