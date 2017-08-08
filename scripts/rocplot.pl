@@ -839,8 +839,6 @@ sub rocplot {
 
     close($gp);
 
-    #system ("/usr/local/bin/ps2pdf $psfile $pdffile\n"); 
-    #system("rm $psfile\n");
     if ($seeplots) { system ("open $psfile&\n"); }
 
     

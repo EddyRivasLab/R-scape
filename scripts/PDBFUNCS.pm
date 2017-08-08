@@ -268,7 +268,7 @@ sub map_pdbsq {
     }
 
     my $pfam_name = "";
-    my $pfam_asq = "";
+    my $pfam_asq  = "";
     my $i;
     my $j;
     open(STO, "$stofile") || die;
@@ -1249,10 +1249,10 @@ sub get_atoms_coord {
     my $to;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/DBREF\s+\S+\s+$chain\s+(\d+)\s+(\d+)\s+/) {
+	if (/DBREF\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
 	    $from = $1;
 	    $to   = $2;
-	    for (my $r = $from-1; $r < $to; $r++) {
+	    for (my $r = 0; $r < $to-$from; $r++) {
 		$ismissing[$r] = 0;
 	    }
 	}
@@ -1264,19 +1264,19 @@ sub get_atoms_coord {
 	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
 	    $remarknum = $1;
 	}
-	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)\s*$/) {
+	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\S+)\s*$/) {
 	    my $pos = $1;
 	    if ($pos < $from) {
 		$ismissing[$pos-1] = 1;
-		for (my $x = $pos; $x < $from; $x ++) { $ismissing[$x] = 0; }
+		for (my $x = $to-$from+1; $x <= $to-$pos; $x ++) { $ismissing[$x] = 0; }
 		$from = $pos;
 	    }
 	    elsif ($pos > $to) {  
-		$ismissing[$pos-1] = 1;
-		for (my $x = $to; $x < $pos-1; $x ++) { $ismissing[$x] = 0; }
+		$ismissing[$pos-$from] = 1;
+		for (my $x = $to+1; $x <= $pos; $x ++) { $ismissing[$x-$from] = 0; }
 		$to = $pos;
 	    }
-	    else { $ismissing[$pos-1] = 1; }
+	    else { $ismissing[$pos-$from] = 1; }
 	}
 	
     }
@@ -1329,7 +1329,7 @@ sub get_atoms_coord {
 		$l ++;
 		if ($nn > 0 && $respos != $respos_prv+1) {
 		    for (my $p = $respos_prv+1; $p < $respos; $p ++) {
-			if ($ismissing[$p-1]) { $l ++; }
+			if ($ismissing[$p-$from]) { $l ++; }
 		    }
 
 		}
