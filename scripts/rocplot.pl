@@ -54,13 +54,15 @@ if ($opt_D) { $maxD = $opt_D; }
 
 my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
-for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = ($minL>0)? "$prename[$f].minL$minL.roc":"$prename[$f].roc"; }
 
 my $dornaview = 0;
 if ($opt_r) { $dornaview = 1; }
 
-my $which = "MIN"; #options: CA C MIN AVG NOH / C1' (for RNA suggested by Westhof)
+my $which = "MIN"; #options: CA CB MIN AVG NOH / C1' (for RNA suggested by Westhof)
 if ($opt_W) { $which = "$opt_W"; }
+
+for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.roc"; }
+
 my $seeplots = 0;
 
 my $verbose = 0;
@@ -78,24 +80,34 @@ if ($opt_P) {
 my $stofile_gremlin = "";
 my $pdb2msa_gremlin;
 if ($opt_G) { 
-    $stofile_gremlin = "$opt_G"; 
-    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $maxD, $minL, $which, $dornaview, $seeplots);
-}  
+    $stofile_gremlin = "$opt_G";
+    if ($stofile_gremlin =~ /^$stofile$/) {
+	$pdb2msa_gremlin = $pdb2msa;
+    }
+    else {
+	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $maxD, $minL, $which, $dornaview, $seeplots);
+    }  
+}
 
 # Map the pdb2msa structure to the stofile used by rscape (if different from the main one)
 my $stofile_rscape = "";
 my $pdb2msa_rscape;
 if ($opt_R) { 
     $stofile_rscape = "$opt_R"; 
-    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $maxD, $minL, $which, $dornaview, $seeplots);
-}  
+    if ($stofile_rscape =~ /^$stofile$/) {
+	$pdb2msa_rscape = $pdb2msa;
+    }
+    else {
+	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $maxD, $minL, $which, $dornaview, $seeplots);
+    }  
+}
 
 # add a random file
 my $dorandom = 1;
 if ($dorandom) {
     $prename[$F] = "$stoname.random";
     $prefile[$F] = "results/random/$stoname.random";
-    $rocfile[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.roc";
+    $rocfile[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.type$which.roc";
     $F ++;
 }
 
@@ -145,7 +157,8 @@ for (my $f = 0; $f < $F; $f ++) {
     my $pdbname = $pdb2msa->pdbname;
     my $stoname = $pdb2msa->stoname;
     my $maxD    = $pdb2msa->maxD;
-    my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   maxD: $maxD   minL: 1  fmax: $fmax";
+    my $which   = $pdb2msa->which;
+    my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1  fmax: $fmax";
     my $xlabel  = "distance in PDB sequence";
     my $ylabel  = "number of contacts";
     my $key     = "";
@@ -161,7 +174,7 @@ for (my $f = 0; $f < $F; $f ++) {
 
 my $xmax = 1000;
 my $viewplots = 0;
-rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $xmax, $viewplots);
+rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $viewplots);
 
 
 
@@ -552,6 +565,7 @@ sub parse_gremlin {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
 		$f_c ++;
+		printf "-> $f_c %d $i $j $pdbi $pdbj\n", $f+1;
 	    }
 	    $f ++;
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
@@ -690,22 +704,24 @@ sub sort_gremlin {
 	print SORT "$newi[$x] $newj[$x] $newsc[$x]\n";
     }
     close(SORT);
+
+    if (0) { system("more $sortfile\n"); }
     
     return $sortfile;
 }
 
 sub rocplot {
-    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $xmax, $seeplots) = @_;
+    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $seeplots) = @_;
 
 
-   my $psfile = "results/$stoname.N$F.ps";
+   my $psfile = "results/$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
     
     #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "FILE: $psfile\n";
 
-    my $maxpp = 2;
+    my $maxpp = 1;
 
     my $xlabel;
     my $ylabel;
@@ -902,6 +918,12 @@ sub writeline {
     # sen_w  ppv_w  F_w
     # 22     23     24
     #
-    printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-    $f/$pdblen, $f_c/$pdblen, $f_b/$pdblen, $f_w/$pdblen, $t_c/$pdblen, $t_b/$pdblen, $t_w/$pdblen, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
+    if ($pdblen > 0) {
+	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+	$f/$pdblen, $f_c/$pdblen, $f_b/$pdblen, $f_w/$pdblen, $t_c/$pdblen, $t_b/$pdblen, $t_w/$pdblen, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
+    }
+    else {
+	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+	0, 0, 0, 0, 0, 0, 0, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
+    }
 }

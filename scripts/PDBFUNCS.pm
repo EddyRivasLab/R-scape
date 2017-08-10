@@ -81,6 +81,7 @@ sub pdb2msa {
     $$pdb2msa_ref->{"PDB2MSA::nwc"}      = $nwc;
     $$pdb2msa_ref->{"PDB2MSA::maxD"}     = $maxD;
     $$pdb2msa_ref->{"PDB2MSA::minL"}     = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::which"}    = $which;
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}   = @cnt;
 }
 
@@ -96,7 +97,8 @@ sub contacts_from_pdbfile {
     if ($coorfile) { open(COORF,  ">$coorfile")  || die; }
 
     my $stoname = $stofile;
-    if ($stoname =~ /\/([^\/]+)\.[^\/]+$/) { $stoname = $1; }
+    my $stodir = "";
+    if ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
     my $pfamname = $stofile;
     if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
     
@@ -130,11 +132,11 @@ sub contacts_from_pdbfile {
 	my $map1file;
 	my $mapfile;
 	if (!$smallout) {
-	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.map";
-	    $map1file = "$pdbfile.chain$chname[$n].maxD$maxD.$pfamname.map";
-	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.map";
+	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.type$which.map";
+	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type.$which.$pfamname.map";
+	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type.$which.map";
 	}
-	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.cor";
+	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type.$which.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
@@ -186,11 +188,11 @@ sub contacts_from_pdbfile {
     
     if ($coorfile) { close(COORF); }
 
-    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL); }
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which); }
 
     if (!$smallout) {
-	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.his";
-	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $gnuplot, $seeplots); 
+	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.type.$which.his";
+	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots); 
     }
 
     $$ret_msalen = $alen;
@@ -198,8 +200,8 @@ sub contacts_from_pdbfile {
     my $rnaoutfile  = "$pdbfile.out";
     my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
     
-    system("/bin/rm $rnaoutfile\n");
-    system("/bin/rm $rnaoutfile2\n");
+    #system("/bin/rm $rnaoutfile\n");
+    #system("/bin/rm $rnaoutfile2\n");
 }
 
 sub parse_pdb {
@@ -604,6 +606,7 @@ sub parse_pdb_contact_map {
 
     printf COR  "# maxD  $maxD\n";
     printf COR  "# minL  $minL\n";
+    printf COR  "# type  $which\n";
     
     my @map = (); # map sq to the sequence in the alignment  
     my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
@@ -638,7 +641,7 @@ sub parse_pdb_contact_map {
     print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
-    get_atoms_coord($pdbfile, $atom_offset, \@chsq, $len, $chain, \@res, $isrna);
+    get_atoms_coord($pdbfile, \@chsq, $len, $chain, \@res, $isrna);
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -881,7 +884,7 @@ sub addcontact {
 }
 
  sub allcontacts_dump {
-    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL) = @_;
+    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $which) = @_;
     
     if ($file =~ //) { return; }
 
@@ -892,6 +895,7 @@ sub addcontact {
     print FILE  "# MSA   $pfamname\n"; 
     print FILE  "# maxD  $maxD\n";
     print FILE  "# minL  $minL\n";
+    print FILE  "# type  $which\n";
     for (my $c = 0; $c < $ncnt; $c ++) {
 	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
 	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWt$/) { $nbp ++; }
@@ -915,7 +919,7 @@ sub addcontact {
 }
 
 sub allcontacts_histogram {
-    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $gnuplot, $seeplots) = @_;
+    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots) = @_;
     
     my @his;
     my $N = 50;
@@ -929,7 +933,7 @@ sub allcontacts_histogram {
 
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
     
-    my $title = "PDB: $pdbname   MSA: $pfamname   maxD: $maxD   minL: $minL\n";
+    my $title = "PDB: $pdbname   MSA: $pfamname   maxD: $maxD   minL: $minL type: $which\n";
     my $xlabel = "euclidian minimum distance (Angstroms)";
     my $ylabel = "number of contacts";
     my $key = "";
@@ -1218,7 +1222,7 @@ sub aa_conversion {
 #
 #
 sub get_atoms_coord {
-    my ($pdbfile, $atom_offset, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
+    my ($pdbfile, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
 
     my $type;
     my $char;
@@ -1249,16 +1253,21 @@ sub get_atoms_coord {
     my $to;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/DBREF\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
+	if    (/DBREF1\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
 	    $from = $1;
 	    $to   = $2;
-	    for (my $r = 0; $r < $to-$from; $r++) {
-		$ismissing[$r] = 0;
-	    }
+	}
+ 	elsif (/DBREF\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
+	    $from = $1;
+	    $to   = $2;
 	}
     }
     close(FILE);
-    
+    for (my $r = 0; $r < $to-$from; $r++) {
+	$ismissing[$r] = 0;
+    }
+
+    # identify the missing residues
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
@@ -1266,21 +1275,46 @@ sub get_atoms_coord {
 	}
 	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\S+)\s*$/) {
 	    my $pos = $1;
-	    if ($pos < $from) {
-		$ismissing[$pos-1] = 1;
-		for (my $x = $to-$from+1; $x <= $to-$pos; $x ++) { $ismissing[$x] = 0; }
-		$from = $pos;
+	    if ($pos < $from ) {
+		for (my $x = $to; $x <= $from; $x ++) {
+		    $ismissing[$x-$pos] = $ismissing[$x-$from];
+		}
+		for (my $x = $pos; $x < $from; $x ++) {
+		    $ismissing[$x-$pos] = 0;  # these don't count as missing
+		}
+		$from = $pos; 
 	    }
-	    elsif ($pos > $to) {  
+	    elsif ($pos > $to) {
 		$ismissing[$pos-$from] = 1;
-		for (my $x = $to+1; $x <= $pos; $x ++) { $ismissing[$x-$from] = 0; }
+		for (my $x = $to+1; $x < $pos; $x ++) {
+		    $ismissing[$x-$from] = 0;  # these don't count as missing
+		}
 		$to = $pos;
 	    }
-	    else { $ismissing[$pos-$from] = 1; }
+	    else { $ismissing[$pos-$from] = 1;}
 	}
-	
     }
     close(FILE);
+    
+    # now look for the "odd" residues
+    # these are not missing
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
+	    my $pos = $1;
+	    if ($pos < $from) {
+		for (my $x = $to; $x <= $from; $x ++) {
+		    $ismissing[$x-$pos] = $ismissing[$x-$from];
+		}
+		for (my $x = $pos; $x < $from; $x ++) {
+		    $ismissing[$x-$pos] = 0;  # these don't count as missing
+		}
+		$from = $pos; 
+	    }
+	}
+    }
+    close(FILE);
+
     
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
@@ -1313,8 +1347,7 @@ sub get_atoms_coord {
 	    $id = "$respos"."$icode";
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
-	    
-	    if ($respos - $respos_first > $len) { next; }
+
 	    if ($respos < $respos_first)        { next; }
 
 	    if ($nn == 0 || $id =~ /^$id_prv$/) {
@@ -1323,7 +1356,7 @@ sub get_atoms_coord {
 		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
 		${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
 		${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-		$res_ref->[$l]->{"RES::nat"} ++;
+		$res_ref->[$l]->{"RES::nat"}           ++;
 	    }
 	    else {
 		$l ++;
@@ -1331,14 +1364,13 @@ sub get_atoms_coord {
 		    for (my $p = $respos_prv+1; $p < $respos; $p ++) {
 			if ($ismissing[$p-$from]) { $l ++; }
 		    }
-
-		}
-		
+		}	
 	    }
+	    
+	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
 	    $res_ref->[$l]->{"RES::coor"} = $respos;
  
-	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 	    if ($l < 0)     { print "bad lenght\n"; die; }
  	    if ($l >= $len) { print "too long?\n";  die; }
 
@@ -1462,8 +1494,8 @@ sub plot_contact_map {
     print GP "set xlabel '$xylabel'\n";
     print GP "set ylabel '$xylabel'\n";
     if ($len > 0) {
-	print GP "set xrange [0:$len]\n";
-	print GP "set yrange [0:$len]\n";
+	print GP "set xrange [1:$len]\n";
+	print GP "set yrange [$len:1]\n";
     }
 
     print GP "set title \"$title\\n\\n$key\"\n";
