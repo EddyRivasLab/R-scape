@@ -372,29 +372,29 @@ sub gnuplot_ave_histo_with_dots {
 
 sub gnuplot_define_styles {
     my ($gp) = @_;
-    print $gp "set style line 1   lt 1 lc rgb 'black' pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown' pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 3   lt 1 lc rgb 'grey' pt 1 ps 0.5 lw 0.5\n";
-    print $gp "set style line 4   lt 1 lc rgb 'cyan' pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 7   lt 1 lc rgb 'red' pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 5   lt 1 lc rgb 'purple' pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 6   lt 1 lc rgb 'orange' pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 8   lt 1 lc rgb 'blue' pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
    
     print $gp "set style line 88   lt 1 lc rgb 'cyan'   pt 7 pi -1  ps 1.0 lw 2\nset pointintervalbox 1\n";
 
     print $gp "set style line 9999   lt 1 lc rgb '#8B4513'      pt 7 pi -1  lw 2 ps 1.0 \nset pointintervalbox 1\n";
 
-    print $gp "set style line 1111   lt 1 lc rgb 'black'      pt 65 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
-    print $gp "set style line 1112   lt 1 lc rgb 'brown'      pt 65 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; 
-    print $gp "set style line 1113   lt 1 lc rgb 'blue'       pt 65 pi -1  lw 2 ps 1 \nset pointintervalbox 1\n";
-    print $gp "set style line 1116   lt 1 lc rgb '#8A2BE2'     pt 65 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
-    print $gp "set style line 1114   lt 1 lc rgb '#708090'       pt 65 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; #dark slate gray
-    print $gp "set style line 1115   lt 1 lc rgb '#FF8C00'       pt 65 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
-    print $gp "set style line 1117   lt 1 lc rgb 'red'        pt 65 pi -1  lw 1\nset pointintervalbox 1\n";
-    print $gp "set style line 1118   lt 1 lc rgb '#8B4513'      pt 65 pi -1  lw 2\nset pointintervalbox 1\n"; #saddle brown
-    print $gp "set style line 1119   lt 2 lc rgb 'blueviolet'     pt 65 pi -1  lw 1\nset pointintervalbox 1\n";
+    print $gp "set style line 1111   lt 1 lc rgb 'black'      pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1112   lt 1 lc rgb 'brown'      pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; 
+    print $gp "set style line 1113   lt 1 lc rgb 'blue'       pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1116   lt 1 lc rgb '#8A2BE2'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1114   lt 1 lc rgb '#708090'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; #dark slate gray
+    print $gp "set style line 1115   lt 1 lc rgb '#FF8C00'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1117   lt 1 lc rgb 'red'        pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1118   lt 1 lc rgb '#8B4513'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; #saddle brown
+    print $gp "set style line 1119   lt 1 lc rgb 'blueviolet' pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
     
     print $gp "set style line 212   lt 2 lc rgb 'brown' pt 5 lw 5\n";
     print $gp "set style line 612   lt 2 lc rgb 'turquoise' pt 5 lw 5\n";

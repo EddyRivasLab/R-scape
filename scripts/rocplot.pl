@@ -55,6 +55,8 @@ if ($opt_D) { $maxD = $opt_D; }
 my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
 
+my $target_factor = 1.5;
+
 my $dornaview = 0;
 if ($opt_r) { $dornaview = 1; }
 
@@ -275,13 +277,16 @@ sub create_rocfile_rscape_withpdb {
 	if (/^\#/) {
 	}
 	elsif (/^\S*\s+(\d+)\s+(\d+)\s+\S+\s+\S+\s*$/) {
-	    my $i        = $1;
-	    my $j        = $2;
-	    my $distance = $j-$i+1; # distance in the alignment
-	    my $pdbi     = -1;
-	    my $pdbj     = -1;
+	    my $i          = $1;
+	    my $j          = $2;
+	    my $distance   = $j-$i+1; # distance in the alignment
+	    my $pdbi       = -1;
+	    my $pdbj       = -1;
+	    my $chri       = "";
+	    my $chrj       = "";
+	    my $cdistance  = -1;
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $pdb2msa->{"PDB2MSA::ncnt"}, 
-							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) 
+							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
@@ -466,14 +471,18 @@ sub parse_mfDCA {
 	if (/^\#/) {
 	}
 	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
-	    my $idca = $1;
-	    my $jdca = $2;
-	    my $i        = $mapDCA_ref->[$idca];
-	    my $j        = $mapDCA_ref->[$jdca];
-	    my $distance = $j-$i+1; # distance in the alignment
-	    my $pdbi        = -1;
-	    my $pdbj        = -1;
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) {
+	    my $idca       = $1;
+	    my $jdca       = $2;
+	    my $i          = $mapDCA_ref->[$idca];
+	    my $j          = $mapDCA_ref->[$jdca];
+	    my $distance   = $j-$i+1; # distance in the alignment
+	    my $pdbi       = -1;
+	    my $pdbj       = -1;
+	    my $chri       = "";
+	    my $chrj       = "";
+	    my $cdistance  = -1;
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
@@ -510,14 +519,18 @@ sub parse_plmDCA {
 	if (/^\#/) {
 	}
 	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
-	    my $idca     = $1;
-	    my $jdca     = $2;
-	    my $i        = $mapDCA_ref->[$idca];
-	    my $j        = $mapDCA_ref->[$jdca];
-	    my $distance = $j-$i+1; # distance in the alignment
-	    my $pdbi     = -1;
-	    my $pdbj     = -1;
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) {
+	    my $idca       = $1;
+	    my $jdca       = $2;
+	    my $i          = $mapDCA_ref->[$idca];
+	    my $j          = $mapDCA_ref->[$jdca];
+	    my $distance   = $j-$i+1; # distance in the alignment
+	    my $pdbi       = -1;
+	    my $pdbj       = -1;
+	    my $chri       = "";
+	    my $chrj       = "";
+	    my $cdistance  = -1;
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
@@ -539,6 +552,7 @@ sub parse_gremlin {
     my ($rocfile, $file, $pdb2msa, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_gremlin($file);
+    my @revmap   = @{$pdb2msa->revmap};
     
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
     my $f   = 0;
@@ -549,23 +563,47 @@ sub parse_gremlin {
     my $t_b = $pdb2msa->nbp;
     my $t_w = $pdb2msa->nwc;
 
+    my $ncnt_grem = 0;
+    my @cnt_grem;
+
+    my $target_ncnt = $target_factor*$pdb2msa->pdblen;
+    
     my $type;
     open(FILE, "$sortfile") || die;
     while(<FILE>) {
 	if (/^\#/) {
 	}
 	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
-	    my $i = $1;
-	    my $j = $2;
-	    my $pdbi        = -1;
-	    my $pdbj        = -1;
-	    my $distance = $j-$i+1; # distance in the alignment
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj)) {
+	    my $i          = $1;
+	    my $j          = $2;
+	    my $pdbi       = $revmap[$i-1]+1;
+	    my $pdbj       = $revmap[$j-1]+1;
+	    my $distance   = $j-$i+1; # distance in the alignment
+	    my $chri       = "N";
+	    my $chrj       = "N";
+	    my $cdistance  = -1;
+
+	    if ($ncnt_grem < $target_ncnt) {
+		$cnt_grem[$ncnt_grem] = CNT->new();
+		$cnt_grem[$ncnt_grem]->{"CNT::i"}        = $pdbi;
+		$cnt_grem[$ncnt_grem]->{"CNT::j"}        = $pdbj;
+		$cnt_grem[$ncnt_grem]->{"CNT::posi"}     = $i;
+		$cnt_grem[$ncnt_grem]->{"CNT::posj"}     = $j;
+		$cnt_grem[$ncnt_grem]->{"CNT::chri"}     = $chri;
+		$cnt_grem[$ncnt_grem]->{"CNT::chrj"}     = $chrj;
+		$cnt_grem[$ncnt_grem]->{"CNT::bptype"}   = "CONTACT";
+		$cnt_grem[$ncnt_grem]->{"CNT::distance"} = $cdistance;
+		$ncnt_grem ++;
+	    }
+
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
+	    {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
 		$f_c ++;
-		printf "-> $f_c %d $i $j $pdbi $pdbj\n", $f+1;
+		printf "-> $f_c %d | $i $j $pdbi $pdbj\n", $f+1;
 	    }
 	    $f ++;
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
@@ -574,6 +612,22 @@ sub parse_gremlin {
     }
     close(FILE);
     close($fp);
+
+    my $mapfile_grem = "$file.maxD$maxD.minL$minL.type$which.map";
+    open(MAPGREM,  ">$mapfile_grem")  || die;
+    PDBFUNCS::contactlist_print(\*MAPGREM, $ncnt_grem, \@cnt_grem, 0);
+    close(MAPGREM);
+
+    my $xfield  = 1;
+    my $yfield  = 4;
+    my $xylabel = "PDB position";
+    my $title   = "Contacts in pdb sequence - first $target_factor * L";
+    my $nf = 2;
+    my @mapfile;
+    $mapfile[0] = $mapfile_grem;
+    $mapfile[1] = $pdb2msa->mapfile;
+    PDBFUNCS::plot_contact_map($nf, \@mapfile, $pdb2msa->pdblen,  $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
+
 
     system("rm $sortfile\n");
 }

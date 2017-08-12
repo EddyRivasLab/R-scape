@@ -30,9 +30,16 @@ struct CNT => {
 
 struct PDB2MSA => {
     pdbname   => '$', # pdb  name
-    stoname   => '$',  # alignment name
+    stoname   => '$', # alignment name
     pdblen    => '$', # length of pdb sequence
     msalen    => '$', # length of pfam alignment
+
+    map       => '@', # map[0..pdblen-1]  to [0..alen-1]
+    revmap    => '@', # revmap[0..alen-1] to [0..pdblen-1]
+    
+    map0file  => '$', # name of file mapping contacts to pdb sequence
+    map1file  => '$', # name of file mapping contacts to pdb sub-sequence  represented in the alignmetn
+    mapfile   => '$', # name of file mapping contacts to alignment
     
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms)
     
@@ -65,29 +72,41 @@ sub pdb2msa {
     my @cnt;
     my $nbp;
     my $nwc;
-    
-    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$ncnt, \@cnt, $maxD, $minL, $which, $isrna, "", "", $seeplots);
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+
+    my @map;
+    my @revmap;
+    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \@map, \@revmap, 
+			   \$ncnt, \@cnt, $maxD, $minL, $which, $isrna, "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     contactlist_maxlen($ncnt, \@cnt, \$pdblen);
 
-    $$pdb2msa_ref->{"PDB2MSA::pdbname"}  = $pdbname;
-    $$pdb2msa_ref->{"PDB2MSA::stoname"}  = $stoname;
-    $$pdb2msa_ref->{"PDB2MSA::pdblen"}   = $pdblen;
-    $$pdb2msa_ref->{"PDB2MSA::msalen"}   = $msalen;
+    my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
+    open(MAP,  ">$mapfile")  || die;
+    contactlist_print(\*MAP, $ncnt, \@cnt, 0);
+    close(MAP);
+    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+
+    $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
+    $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $pdblen;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = $msalen;
     
-    $$pdb2msa_ref->{"PDB2MSA::ncnt"}     = $ncnt;
-    $$pdb2msa_ref->{"PDB2MSA::nbp"}      = $nbp;
-    $$pdb2msa_ref->{"PDB2MSA::nwc"}      = $nwc;
-    $$pdb2msa_ref->{"PDB2MSA::maxD"}     = $maxD;
-    $$pdb2msa_ref->{"PDB2MSA::minL"}     = $minL;
-    $$pdb2msa_ref->{"PDB2MSA::which"}    = $which;
-    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}   = @cnt;
+    @{$$pdb2msa_ref->{"PDB2MSA::map"}}    = @map;
+    @{$$pdb2msa_ref->{"PDB2MSA::revmap"}} = @revmap;
+    
+    $$pdb2msa_ref->{"PDB2MSA::ncnt"}      = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nbp"}       = $nbp;
+    $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
+    $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
+    $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::which"}     = $which;
+    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
+    $$pdb2msa_ref->{"PDB2MSA::mapfile"}   = $mapfile;
 }
 
 sub contacts_from_pdbfile {
 	
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
 	$dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
@@ -133,10 +152,10 @@ sub contacts_from_pdbfile {
 	my $mapfile;
 	if (!$smallout) {
 	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.type$which.map";
-	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type.$which.$pfamname.map";
-	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type.$which.map";
+	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$pfamname.map";
+	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
 	}
-	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type.$which.cor";
+	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
@@ -154,7 +173,7 @@ sub contacts_from_pdbfile {
 	print COR  "# chain $chname[$n]\n";
 	
 	$len = length($chsq[$n]);
-	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, \$ncnt_t, $cnt_t_ref, 
+	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
 				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna, $smallout);
 	close(COR);
 	if (!$smallout) {
@@ -170,19 +189,23 @@ sub contacts_from_pdbfile {
 	    my $yfield  = 3;
 	    my $xylabel = "PDB position";
 	    my $title   = "Contacts in pdb sequence";
-	    plot_contact_map($map0file, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    my @mapfile;
+	    $mapfile[0] = $map0file;
+	    plot_contact_map(1, \@mapfile, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	    
 	    $xfield  = 1;
 	    $yfield  = 4;
 	    $xylabel = "PDB position";
 	    $title   = "Contacts in pdb sequence that map to the alignment";
-	    plot_contact_map($map1file, -1,    $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    $mapfile[0] = $map1file;
+	    plot_contact_map(1, \@mapfile, -1,    $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	    
 	    $xfield  = 2;
 	    $yfield  = 5;
 	    $xylabel = "Alignment position";
 	    $title   = "Contacts in the alignment";
-	    plot_contact_map($mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    $mapfile[0] = $mapfile;
+	    plot_contact_map(1, \@mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	}
     }
     
@@ -262,7 +285,7 @@ sub parse_pdb {
 
 # map[0..pdblen-1] taking values in 0..msa_alen-1
 sub map_pdbsq {
-    my ($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chname, $pdbsq, $map_ref) = @_;
+    my ($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chname, $pdbsq, $map_ref, $revmap_ref) = @_;
 
     my $len = length($pdbsq);
     for (my $l = 0; $l < $len; $l ++) {
@@ -363,6 +386,10 @@ sub map_pdbsq {
 	}
 	$pos ++;
     }
+
+    # reverse map
+    for (my $p = 0; $p < $alen; $p ++) { $revmap_ref->[$p] = -1; }
+    for (my $l = 0; $l < $len;  $l ++) { $revmap_ref->[$map_ref->[$l]] = $l; }
 
     return length($pfam_asq);
 }
@@ -599,7 +626,8 @@ sub get_first_asq_from_sto {
 
 
 sub parse_pdb_contact_map {
-    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna, $smallout) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, 
+	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna, $smallout) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
@@ -608,12 +636,11 @@ sub parse_pdb_contact_map {
     printf COR  "# minL  $minL\n";
     printf COR  "# type  $which\n";
     
-    my @map = (); # map sq to the sequence in the alignment  
-    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, \@map);
+    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, $map_ref, $revmap_ref);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
-	printf COR "%d %d\n", $x+1, $map[$x]+1; 
-	#printf     "%d %d\n", $x+1, $map[$x]+1;
+	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
+	#printf     "%d %d\n", $x+1, $map_ref->[$x]+1;
     }
 
     my $ncnt = 0; # the contact for this chain
@@ -680,13 +707,13 @@ sub parse_pdb_contact_map {
 		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
 
 		
-		    if ($map[$l1] >= 0 && $map[$l2] >= 0) {
+		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
 
 			$cnt[$ncnt] = CNT->new();
 			$cnt[$ncnt]->{"CNT::i"}        = $l1+1;
 			$cnt[$ncnt]->{"CNT::j"}        = $l2+1;
-			$cnt[$ncnt]->{"CNT::posi"}     = $map[$l1]+1;
-			$cnt[$ncnt]->{"CNT::posj"}     = $map[$l2]+1;
+			$cnt[$ncnt]->{"CNT::posi"}     = $map_ref->[$l1]+1;
+			$cnt[$ncnt]->{"CNT::posj"}     = $map_ref->[$l2]+1;
 			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
 			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
 			$cnt[$ncnt]->{"CNT::bptype"}   = "CONTACT";
@@ -757,21 +784,23 @@ sub contactlist_bpinfo {
 }
 sub contactlist_maxlen {
     my ($ncnt, $cnt_ref, $ret_maxlen) = @_;
-    
-    my $maxlen = 0;
+
+    my $imin = 123456789;
+    my $jmax = 0;
      
     for (my $c = 0; $c < $ncnt; $c ++) {
 
 	my $i = $cnt_ref->[$c]->{"CNT::i"};
 	my $j = $cnt_ref->[$c]->{"CNT::j"};
-	my $len = $j - $i + 1;
-	if ($len > $maxlen) { $maxlen = $len; }
+	if ($i < $imin) { $imin = $i; }
+	if ($j > $jmax) { $jmax = $j; }
     }
+    my $maxlen = $jmax - $imin + 1;
     $$ret_maxlen = $maxlen;
 }
 
 sub found_alicoords_in_contactlist {
-    my ($posi, $posj, $minL, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj) = @_;
+    my ($posi, $posj, $minL, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
@@ -799,9 +828,12 @@ sub found_alicoords_in_contactlist {
 	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
 	    else { print "uh? bptype = $bptype\n"; die;  }
 	    
-	    $$ret_type = $type;
-	    $$ret_pdbi = $cnt_ref->[$c]->{"CNT::i"};
-	    $$ret_pdbj = $cnt_ref->[$c]->{"CNT::j"};
+	    $$ret_type     = $type;
+	    $$ret_pdbi     = $cnt_ref->[$c]->{"CNT::i"};
+	    $$ret_pdbj     = $cnt_ref->[$c]->{"CNT::j"};
+	    $$ret_chri     = $cnt_ref->[$c]->{"CNT::chri"};
+	    $$ret_chrj     = $cnt_ref->[$c]->{"CNT::chrj"};
+	    $$ret_distance = $cnt_ref->[$c]->{"CNT::distance"};
 	    return $found;
 	}
     }
@@ -953,7 +985,8 @@ sub run_rnaview {
     my $rnaviewfile = "rnaviewf";
     my $sq;
     my @map = (); # map sq to the sequence in the alignment
-
+    my @revmap;
+    
     my $rnaview = "$rscapebin/rnaview";
 
     system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
@@ -963,7 +996,7 @@ sub run_rnaview {
     while(<RF>) {
 	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
 	    $sq = $1;
-	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $sq, \@map);
+	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $sq, \@map, @revmap);
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
@@ -1473,13 +1506,12 @@ sub euclidean_distance {
 }
 
 sub plot_contact_map {
-    my ($mapfile, $len, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
+    my ($nf, $mapfile_ref, $len, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
 
-    my $key = $mapfile;
+    my $key = $mapfile_ref->[0];
     if ($key =~ /([^\/]+)\s*$/) { $key = $1; }
     
-    my $psfile = "$mapfile.ps";
-    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
+    my $psfile = "$mapfile_ref->[0].ps";
     
     open(GP,'|'."$gnuplot") || die "Gnuplot: $!";
     
@@ -1489,6 +1521,7 @@ sub plot_contact_map {
     #print GP "unset key\n";
     print GP "set size ratio -1\n";
     print GP "set size 1,1\n";
+    FUNCS::gnuplot_define_styles (*GP);
 
     print GP "set nokey\n";
     print GP "set xlabel '$xylabel'\n";
@@ -1501,8 +1534,14 @@ sub plot_contact_map {
     print GP "set title \"$title\\n\\n$key\"\n";
     #print GP "set title '$title'\n";
 
-    my $cmd = "x title '' with lines, '$mapfile' using $xfield:$yfield  title '' ls 3, '$mapfile' using $yfield:$xfield  title '' ls 3";
- 
+    my $m = 1114;
+    my $cmd = "x title '' with lines ls 3, ";
+    for (my $f = $nf-1; $f > 0; $f--) {
+	$cmd .= "'$mapfile_ref->[$f]' using $xfield:$yfield  title '' ls $m, '$mapfile_ref->[$f]' using $yfield:$xfield  title '' ls $m, ";
+	$m --;
+    }
+    $cmd .= "'$mapfile_ref->[0]' using $xfield:$yfield  title '' ls $m, '$mapfile_ref->[0]' using $yfield:$xfield  title '' ls $m";
+    
     print GP "plot $cmd\n";
     close (GP);
 
