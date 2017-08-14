@@ -22,6 +22,7 @@ if (!@ARGV) {
 my $afafile = shift;
 my $msafile = "$afafile";
 if ($msafile =~ /^(\S+).afa$/) { $msafile = "$1.msa"; }
+if ($msafile =~ /^(\S+).fas$/) { $msafile = "$1.msa"; }
 
 my $nsq = 0;
 my $name = "";

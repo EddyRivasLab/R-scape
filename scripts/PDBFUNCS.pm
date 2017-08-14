@@ -17,9 +17,9 @@ struct RES => {
 };
 
 struct CNT => {
-    i        => '$', # pdb position
+    i        => '$', # pdb position [1...]
     j        => '$', # 
-    posi     => '$', # alignment position
+    posi     => '$', # alignment position [1..]
     posj     => '$', # 
     chi      => '$', # character
     chj      => '$', # 
@@ -67,6 +67,8 @@ sub pdb2msa {
 
     my $pdblen;
     my $msalen;
+
+    my $maxlen;
     
     my $ncnt;
     my @cnt;
@@ -75,10 +77,10 @@ sub pdb2msa {
 
     my @map;
     my @revmap;
-    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \@map, \@revmap, 
+    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
 			   \$ncnt, \@cnt, $maxD, $minL, $which, $isrna, "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
-    contactlist_maxlen($ncnt, \@cnt, \$pdblen);
+    contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
     my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
     open(MAP,  ">$mapfile")  || die;
@@ -88,7 +90,7 @@ sub pdb2msa {
 
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
-    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $pdblen;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $maxlen;
     $$pdb2msa_ref->{"PDB2MSA::msalen"}    = $msalen;
     
     @{$$pdb2msa_ref->{"PDB2MSA::map"}}    = @map;
@@ -106,7 +108,7 @@ sub pdb2msa {
 
 sub contacts_from_pdbfile {
 	
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
 	$dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
@@ -218,6 +220,7 @@ sub contacts_from_pdbfile {
 	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots); 
     }
 
+    $$ret_pdblen = $len;
     $$ret_msalen = $alen;
     $$ret_ncnt_t = $ncnt_t;
     my $rnaoutfile  = "$pdbfile.out";
@@ -1347,7 +1350,7 @@ sub get_atoms_coord {
 	}
     }
     close(FILE);
-
+    printf "^^ FROM $from TO $to len $len\n";
     
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
@@ -1358,17 +1361,17 @@ sub get_atoms_coord {
 	my $line = $_;
 
 	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
-	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom = $1; }
-	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial = $1; }
+	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom     = $1; }
+	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial   = $1; }
 	    my $atomname = substr($line, 12, 4); if ($atomname =~ /^\s*(\S+)\s*$/) { $atomname = $1; }
-	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc = $1; }
-	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname = aa_conversion($1, $isrna); }
-	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid = $1; }
-	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos = $1; }
-	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode = $1; }
-	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x = $1; }
-	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y = $1; }
-	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z = $1; }
+	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc   = $1; }
+	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname  = aa_conversion($1, $isrna); }
+	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid  = $1; }
+	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos   = $1; }
+	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode    = $1; }
+	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
+	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
+	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
 
 	    # Look for the target chain
 	    if ($chainid ne $chain) { next; }
@@ -1381,29 +1384,18 @@ sub get_atoms_coord {
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 
-	    if ($respos < $respos_first)        { next; }
-
-	    if ($nn == 0 || $id =~ /^$id_prv$/) {
-		$nat = $res_ref->[$l]->{"RES::nat"};
-		${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
-		${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-		${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-		${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-		$res_ref->[$l]->{"RES::nat"}           ++;
-	    }
-	    else {
-		$l ++;
-		if ($nn > 0 && $respos != $respos_prv+1) {
-		    for (my $p = $respos_prv+1; $p < $respos; $p ++) {
-			if ($ismissing[$p-$from]) { $l ++; }
-		    }
-		}	
-	    }
-	    
-	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
-	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
-	    $res_ref->[$l]->{"RES::coor"} = $respos;
+	    $l = $respos - $from;
+	    $nat = $res_ref->[$l]->{"RES::nat"};
+	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
+	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
+	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
+	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
+	    $res_ref->[$l]->{"RES::nat"}           ++;
+	    $res_ref->[$l]->{"RES::coor"}          = $respos;
  
+	    printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
+	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
+
 	    if ($l < 0)     { print "bad lenght\n"; die; }
  	    if ($l >= $len) { print "too long?\n";  die; }
 
@@ -1550,7 +1542,6 @@ sub plot_contact_map {
     }
     $cmd .= "'$mapfile_ref->[0]' using $xfield:$yfield  title '' ls $m, '$mapfile_ref->[0]' using $yfield:$xfield  title '' ls $m";
     
-    print    "plot $cmd\n";
     print GP "plot $cmd\n";
     close (GP);
 

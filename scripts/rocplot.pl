@@ -633,7 +633,7 @@ sub parse_gremlin {
     open(MAPGREM,  ">$mapfile_grem")  || die;
     PDBFUNCS::contactlist_print(\*MAPGREM, $ncnt_grem, \@cnt_grem, 0);
     close(MAPGREM);
-    my $mapfile_grem_f = "$file.maxD$maxD.minL$minL.type$which.map.found";
+    my $mapfile_grem_f = "$file.maxD$maxD.minL$minL.type$which.predicted.map";
     open(MAPGREMF,  ">$mapfile_grem_f")  || die;
     PDBFUNCS::contactlist_print(\*MAPGREMF, $ncnt_grem_f, \@cnt_grem_f, 0);
     close(MAPGREMF);
@@ -648,7 +648,6 @@ sub parse_gremlin {
     $mapfile[1] = $mapfile_grem;
     $mapfile[2] = $pdb2msa->mapfile;
     PDBFUNCS::plot_contact_map($nf, \@mapfile, $pdb2msa->pdblen, $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
-
 
     system("rm $sortfile\n");
 }
