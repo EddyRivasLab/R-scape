@@ -563,8 +563,10 @@ sub parse_gremlin {
     my $t_b = $pdb2msa->nbp;
     my $t_w = $pdb2msa->nwc;
 
-    my $ncnt_grem = 0;
+    my $ncnt_grem   = 0;
+    my $ncnt_grem_f = 0;
     my @cnt_grem;
+    my @cnt_grem_f;
 
     my $target_ncnt = $target_factor*$pdb2msa->pdblen;
     
@@ -583,7 +585,7 @@ sub parse_gremlin {
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
 
-	    if ($ncnt_grem < $target_ncnt) {
+	    if ($pdbj-$pdbi+1 >= $minL && $ncnt_grem < $target_ncnt) {
 		$cnt_grem[$ncnt_grem] = CNT->new();
 		$cnt_grem[$ncnt_grem]->{"CNT::i"}        = $pdbi;
 		$cnt_grem[$ncnt_grem]->{"CNT::j"}        = $pdbj;
@@ -603,8 +605,22 @@ sub parse_gremlin {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
 		$f_c ++;
-		printf "-> $f_c %d | $i $j $pdbi $pdbj\n", $f+1;
+
+		if ($ncnt_grem < $target_ncnt) {
+		    $cnt_grem_f[$ncnt_grem_f] = CNT->new();
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::i"}        = $pdbi;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::j"}        = $pdbj;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::posi"}     = $i;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::posj"}     = $j;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::chri"}     = $chri;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::chrj"}     = $chrj;
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::bptype"}   = "CONTACT";
+		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::distance"} = $cdistance;
+		    $ncnt_grem_f ++;
+		    printf "-> %d | $i $j $pdbi $pdbj\n", $f+1;
+		}
 	    }
+	    
 	    $f ++;
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
@@ -617,16 +633,21 @@ sub parse_gremlin {
     open(MAPGREM,  ">$mapfile_grem")  || die;
     PDBFUNCS::contactlist_print(\*MAPGREM, $ncnt_grem, \@cnt_grem, 0);
     close(MAPGREM);
+    my $mapfile_grem_f = "$file.maxD$maxD.minL$minL.type$which.map.found";
+    open(MAPGREMF,  ">$mapfile_grem_f")  || die;
+    PDBFUNCS::contactlist_print(\*MAPGREMF, $ncnt_grem_f, \@cnt_grem_f, 0);
+    close(MAPGREMF);
 
     my $xfield  = 1;
     my $yfield  = 4;
     my $xylabel = "PDB position";
-    my $title   = "Contacts in pdb sequence - first $target_factor * L";
-    my $nf = 2;
+    my $title   = "First $target_factor * L ($target_ncnt) predictions -- $ncnt_grem_f correct";
+    my $nf = 3;
     my @mapfile;
-    $mapfile[0] = $mapfile_grem;
-    $mapfile[1] = $pdb2msa->mapfile;
-    PDBFUNCS::plot_contact_map($nf, \@mapfile, $pdb2msa->pdblen,  $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
+    $mapfile[0] = $mapfile_grem_f;
+    $mapfile[1] = $mapfile_grem;
+    $mapfile[2] = $pdb2msa->mapfile;
+    PDBFUNCS::plot_contact_map($nf, \@mapfile, $pdb2msa->pdblen, $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
 
 
     system("rm $sortfile\n");

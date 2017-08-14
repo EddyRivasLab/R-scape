@@ -114,7 +114,7 @@ sub calculateF {
     my $ppv;
     my $F;
 
-    if ($tph > $th) { print "trues found $tph > trues $th!!\n"; die; }
+    if ($tph > $th) { print "trues found $tph > trues $th!!\n";  }
     if ($tph > $fh) { print "trues found $tph > found $fh!!\n"; die; }
     $sen = ($th > 0)? $tph/$th : 0.0;
     $ppv = ($fh > 0)? $tph/$fh : 0.0;
@@ -387,8 +387,8 @@ sub gnuplot_define_styles {
     print $gp "set style line 9999   lt 1 lc rgb '#8B4513'      pt 7 pi -1  lw 2 ps 1.0 \nset pointintervalbox 1\n";
 
     print $gp "set style line 1111   lt 1 lc rgb 'black'      pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
-    print $gp "set style line 1112   lt 1 lc rgb 'brown'      pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; 
-    print $gp "set style line 1113   lt 1 lc rgb 'blue'       pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
+    print $gp "set style line 1113   lt 1 lc rgb 'brown'      pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; 
+    print $gp "set style line 1112   lt 1 lc rgb 'blue'       pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
     print $gp "set style line 1116   lt 1 lc rgb '#8A2BE2'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";
     print $gp "set style line 1114   lt 1 lc rgb '#708090'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n"; #dark slate gray
     print $gp "set style line 1115   lt 1 lc rgb '#FF8C00'    pt 31 pi -1  lw 2 ps 0.5 \nset pointintervalbox 1\n";

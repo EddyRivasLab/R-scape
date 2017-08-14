@@ -1509,7 +1509,7 @@ sub plot_contact_map {
     my ($nf, $mapfile_ref, $len, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
 
     my $key = $mapfile_ref->[0];
-    if ($key =~ /([^\/]+)\s*$/) { $key = $1; }
+    if ($key =~ /([^\/]+).map\S*\s*$/) { $key = $1; }
     
     my $psfile = "$mapfile_ref->[0].ps";
     
@@ -1523,12 +1523,20 @@ sub plot_contact_map {
     print GP "set size 1,1\n";
     FUNCS::gnuplot_define_styles (*GP);
 
+    print GP "set style line 100 lt 1   lc rgb 'gray' lw 2\n";
+    print GP "set style line 101 lt 0.5 lc rgb 'gray' lw 1\n";
+    
+    print GP "set xtics 0,10\n";
+    print GP "set ytics 0,10\n";
+    print GP "set grid mytics ytics ls 100, ls 101\n";
+    print GP "set grid mxtics xtics ls 100, ls 101\n";
+
     print GP "set nokey\n";
     print GP "set xlabel '$xylabel'\n";
     print GP "set ylabel '$xylabel'\n";
     if ($len > 0) {
-	print GP "set xrange [1:$len]\n";
-	print GP "set yrange [$len:1]\n";
+	print GP "set xrange [0:$len]\n";
+	print GP "set yrange [$len:0]\n";
     }
 
     print GP "set title \"$title\\n\\n$key\"\n";
@@ -1542,6 +1550,7 @@ sub plot_contact_map {
     }
     $cmd .= "'$mapfile_ref->[0]' using $xfield:$yfield  title '' ls $m, '$mapfile_ref->[0]' using $yfield:$xfield  title '' ls $m";
     
+    print    "plot $cmd\n";
     print GP "plot $cmd\n";
     close (GP);
 
