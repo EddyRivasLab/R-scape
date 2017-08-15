@@ -193,21 +193,21 @@ sub contacts_from_pdbfile {
 	    my $title   = "Contacts in pdb sequence";
 	    my @mapfile;
 	    $mapfile[0] = $map0file;
-	    plot_contact_map(1, \@mapfile, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    plot_contact_map(1, \@mapfile, 1, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	    
 	    $xfield  = 1;
 	    $yfield  = 4;
 	    $xylabel = "PDB position";
 	    $title   = "Contacts in pdb sequence that map to the alignment";
 	    $mapfile[0] = $map1file;
-	    plot_contact_map(1, \@mapfile, -1,    $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    plot_contact_map(1, \@mapfile, -1, -1,   $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	    
 	    $xfield  = 2;
 	    $yfield  = 5;
 	    $xylabel = "Alignment position";
 	    $title   = "Contacts in the alignment";
 	    $mapfile[0] = $mapfile;
-	    plot_contact_map(1, \@mapfile,  $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    plot_contact_map(1, \@mapfile,  1, $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	}
     }
     
@@ -697,26 +697,32 @@ sub parse_pdb_contact_map {
 	    @y2    = @{$res[$l2]->{"RES::y"}};
 	    @z2    = @{$res[$l2]->{"RES::z"}};
 
+	    my $i    = $l1 + 1;           # positions in pdb sequence
+	    my $j    = $l2 + 1;
+	    my $L    = $j - $i  +1;       # distance in pdb sequence
+	    my $posi = $map_ref->[$l1]+1; # positions in alignment
+	    my $posj = $map_ref->[$l2]+1;
+	    
 	    if ($char2 ne $chsq[$l2]) {
 		printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
-		($l2+1), $len, $coor2+1, $len+$atom_offset-1, $char2; 
+		$j, $len, $coor2+1, $len+$atom_offset-1, $char2; 
 		die; 
 	    }
 
 	    $distance = distance($which, $char1, $nat1, \@type1, \@x1, \@y1, \@z1, $char2, $nat2, \@type2, \@x2, \@y2, \@z2);
-
+ 
 	    if ($distance > 0) {
-		if (abs($l1-$l2) >= $minL && $distance <= $maxD) {
+		if ($L >= $minL && $distance < $maxD) {
 		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
 
 		
 		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
 
 			$cnt[$ncnt] = CNT->new();
-			$cnt[$ncnt]->{"CNT::i"}        = $l1+1;
-			$cnt[$ncnt]->{"CNT::j"}        = $l2+1;
-			$cnt[$ncnt]->{"CNT::posi"}     = $map_ref->[$l1]+1;
-			$cnt[$ncnt]->{"CNT::posj"}     = $map_ref->[$l2]+1;
+			$cnt[$ncnt]->{"CNT::i"}        = $i;
+			$cnt[$ncnt]->{"CNT::j"}        = $j;
+			$cnt[$ncnt]->{"CNT::posi"}     = $posi;
+			$cnt[$ncnt]->{"CNT::posj"}     = $posj;
 			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
 			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
 			$cnt[$ncnt]->{"CNT::bptype"}   = "CONTACT";
@@ -752,21 +758,34 @@ sub contactlist_print {
     my $nbp = 0;
     my $nwc = 0;
     
+    my $minpdbx = 1e+50;
+    my $maxpdbx = 0;
+    
     for (my $c = 0; $c < $ncnt; $c ++) {
-
-	my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
-	if    ($bptype =~ /^WWc$/)                           { $nbp ++; $nwc ++; }
-	elsif ($bptype ne "STACKED" && $bptype ne "CONTACT") { $nbp ++; };
 	
     	printf $fp "%d\t%d\t%s\t%d\t%d\t%s\t%s\t%.2f\n", 
-		$cnt_ref->[$c]->{"CNT::i"}, $cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
-		$cnt_ref->[$c]->{"CNT::j"}, $cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
-		$cnt_ref->[$c]->{"CNT::bptype"}, $cnt_ref->[$c]->{"CNT::distance"};
+	$cnt_ref->[$c]->{"CNT::i"}, $cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
+	$cnt_ref->[$c]->{"CNT::j"}, $cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
+	$cnt_ref->[$c]->{"CNT::bptype"}, $cnt_ref->[$c]->{"CNT::distance"};
+
+	if ($addcomments) {	
+	    my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
+	    if    ($bptype =~ /^WWc$/)                           { $nbp ++; $nwc ++; }
+	    elsif ($bptype ne "STACKED" && $bptype ne "CONTACT") { $nbp ++; };
+	    
+	    my $pdbi = $cnt_ref->[$c]->{"CNT::i"};
+	    my $pdbj = $cnt_ref->[$c]->{"CNT::j"};
+	    if ($pdbj > $maxpdbx) { $maxpdbx = $pdbj; }
+	    if ($pdbi < $minpdbx) { $minpdbx = $pdbi; }
+	}
     }
-    if ($addcomments) {
-	printf $fp "# contacts: $ncnt\n";
+    
+    if ($addcomments) {	
+	printf $fp "# contacts $ncnt\n";
 	printf $fp "# bpairs   %d \n", $nbp;
 	printf $fp "# WWc      %d \n", $nwc;
+	printf $fp "# minpdbx  %d \n", $minpdbx;
+	printf $fp "# maxpdbx  %d \n", $maxpdbx;
     }
 }
 
@@ -800,6 +819,36 @@ sub contactlist_maxlen {
     }
     my $maxlen = $jmax - $imin + 1;
     $$ret_maxlen = $maxlen;
+}
+
+sub contactlistfile_parse {
+    my ($mapfile, $ret_minx, $ret_maxx) = @_;
+
+    my $minx = $$ret_minx;
+    my $maxx = $$ret_maxx;
+    my $ncnt = 0;
+
+    open(FILE, "$mapfile") || die;
+    while(<FILE>) {
+	if    (/^\# contacts\s+(\S+)\s*$/) {
+	    $ncnt = $1;
+	}
+	elsif    (/^\# minpdbx\s+(\S+)\s*$/) {
+	    my $min = $1;
+	    if ($min < $minx) { $minx = $min; }
+	}
+	elsif (/^\# maxpdbx\s+(\S+)\s*$/) {
+	    my $max = $1;
+	    if ($max > $maxx) { $maxx = $max; }
+	}
+	  
+    }
+    close(FILE);
+    
+    $$ret_minx = $minx;
+    $$ret_maxx = $maxx;
+    
+    return $ncnt;
 }
 
 sub found_alicoords_in_contactlist {
@@ -1350,8 +1399,8 @@ sub get_atoms_coord {
 	}
     }
     close(FILE);
-    printf "^^ FROM $from TO $to len $len\n";
-    
+    #printf "^^ FROM $from TO $to len $len\n";
+
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
@@ -1393,7 +1442,7 @@ sub get_atoms_coord {
 	    $res_ref->[$l]->{"RES::nat"}           ++;
 	    $res_ref->[$l]->{"RES::coor"}          = $respos;
  
-	    printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
+	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
 
 	    if ($l < 0)     { print "bad lenght\n"; die; }
@@ -1498,10 +1547,11 @@ sub euclidean_distance {
 }
 
 sub plot_contact_map {
-    my ($nf, $mapfile_ref, $len, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
+    my ($nf, $mapfile_ref, $minx, $maxx, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
 
     my $key = $mapfile_ref->[0];
-    if ($key =~ /([^\/]+).map\S*\s*$/) { $key = $1; }
+    if ($key =~ /([^\/]+).pred.map\S*\s*$/) { $key = $1; }
+    if ($key =~ /([^\/]+).tp.map\S*\s*$/)   { $key = $1; }
     
     my $psfile = "$mapfile_ref->[0].ps";
     
@@ -1515,8 +1565,8 @@ sub plot_contact_map {
     print GP "set size 1,1\n";
     FUNCS::gnuplot_define_styles (*GP);
 
-    print GP "set style line 100 lt 1   lc rgb 'gray' lw 2\n";
-    print GP "set style line 101 lt 0.5 lc rgb 'gray' lw 1\n";
+    print GP "set style line 100 lt 1   lc rgb 'grey' lw 2\n";
+    print GP "set style line 101 lt 0.5 lc rgb 'grey' lw 1\n";
     
     print GP "set xtics 0,10\n";
     print GP "set ytics 0,10\n";
@@ -1526,11 +1576,19 @@ sub plot_contact_map {
     print GP "set nokey\n";
     print GP "set xlabel '$xylabel'\n";
     print GP "set ylabel '$xylabel'\n";
-    if ($len > 0) {
-	print GP "set xrange [0:$len]\n";
-	print GP "set yrange [$len:0]\n";
+    if ($minx > 0 && $maxx > 0) {
+	print GP "set xrange [$minx-2:$maxx+2]\n";
+	print GP "set yrange [$maxx+2:$minx-2]\n";
     }
-
+    elsif ($minx > 0) {
+	print GP "set xrange [$minx-2:*]\n";
+	print GP "set yrange [*:$minx-2]\n";
+    }
+    elsif ($maxx > 0) {
+	print GP "set xrange [*:$maxx+2]\n";
+	print GP "set yrange [$maxx+2:*]\n";
+    }
+    
     print GP "set title \"$title\\n\\n$key\"\n";
     #print GP "set title '$title'\n";
 

@@ -3,6 +3,8 @@
 
 use strict;
 use Class::Struct;
+use POSIX;
+
 
 # find directory where the script is installed
 use FindBin;
@@ -10,9 +12,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_T $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('D:G:L:P:rR:W:v');
+getopts ('D:G:L:P:rR:T:W:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -56,6 +58,7 @@ my $minL = 1;
 if ($opt_L) { $minL = $opt_L; }
 
 my $target_factor = 1.5;
+if ($opt_T) { $target_factor = $opt_T; }
 
 my $dornaview = 0;
 if ($opt_r) { $dornaview = 1; }
@@ -63,7 +66,11 @@ if ($opt_r) { $dornaview = 1; }
 my $which = "MIN"; #options: CA CB MIN AVG NOH / C1' (for RNA suggested by Westhof)
 if ($opt_W) { $which = "$opt_W"; }
 
-for (my $f = 0; $f < $F; $f ++) {  $rocfile[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.roc"; }
+# name of the output files
+# .roc
+for (my $f = 0; $f < $F; $f ++) {  
+    $rocfile[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.roc"; 
+}
 
 my $seeplots = 0;
 
@@ -113,16 +120,31 @@ if ($dorandom) {
     $F ++;
 }
 
+my $pdb2msa_r      = ($stofile_rscape)?  $pdb2msa_rscape  : $pdb2msa;
+my $pdb2msa_grem   = ($stofile_gremlin)? $pdb2msa_gremlin : $pdb2msa;
+my $pdb2msa_mfDCA  = $pdb2msa;
+my $pdb2msa_plmDCA = $pdb2msa;
+
+my $target_ncnt_rscape = floor($target_factor*$pdb2msa_rscape->pdblen);
+my $target_ncnt_grem   = floor($target_factor*$pdb2msa_grem->pdblen);
+my $target_ncnt_mfDCA  = floor($target_factor*$pdb2msa_mfDCA->pdblen);
+my $target_ncnt_plmDCA = floor($target_factor*$pdb2msa_plmDCA->pdblen);
+my $target_ncnt_ran    = floor($target_factor*$pdb2msa->pdblen);
+
 my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
-    if (-e $rocfile[$f]) { next; }
+
+    my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
+    
+    my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
+    my $mapfile_tp   = "$prename[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
     
     my $method = "";
     
     if    ($prefile[$f] =~ /results\/(\S+)_filtered\//) { $method = $1; }
     elsif ($prefile[$f] =~ /results\/([^\/]+)\//)       { $method = $1; }
-
+    
     my @his;
     my $N = 1000;
     my $k = 1;
@@ -133,24 +155,50 @@ for (my $f = 0; $f < $F; $f ++) {
     print "\n$method: $prefile[$f]\n";
     if ($method =~ /^R-scape$/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
+	
 	if ($pdbfile =~ //) {
-	    create_rocfile_rscape($rocfile[$f], $prefile[$f], $N, $k, $shift, \@his, $fmax);
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		create_rocfile_rscape($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $target_ncnt_rscape, $N, $k, $shift, \@his, $fmax);
+	    }
 	    $dorandom = 0;
 	}
-	else { create_rocfile_rscape_withpdb($rocfile[$f], $prefile[$f], ($stofile_rscape)?$pdb2msa_rscape:$pdb2msa,     $N, $k, $shift, \@his, $fmax); }
-    }
+	else { 
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		create_rocfile_rscape_withpdb($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa_r, $target_ncnt_rscape, $N, $k, $shift, \@his, $fmax);
+	    }
+	}
+	predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_rscape);
+   }
     elsif ($method =~ /^mfDCA$/) {
-	if ($pdbfile) { create_rocfile_mfDCA  ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA,      $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { 
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile, $pdb2msa_mfDCA, \$alenDCA, \@mapDCA, $target_ncnt_mfDCA, $N, $k, $shift, \@his, $fmax);
+	    }
+	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_mfDCA);
+	}
     }
     elsif ($method =~ /^plmDCA$/) {
-	if ($pdbfile) { create_rocfile_plmDCA ($rocfile[$f], $prefile[$f], $stofile, $pdb2msa, \$alenDCA, \@mapDCA,      $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) { 
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile, $pdb2msa_plmDCA, \$alenDCA, \@mapDCA, $target_ncnt_plmDCA, $N, $k, $shift, \@his, $fmax);
+	    } 
+	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_plmDCA);
+	}
     }
     elsif ($method =~ /^gremlin$/) {
-	if ($pdbfile) { create_rocfile_gremlin($rocfile[$f], $prefile[$f], ($stofile_gremlin)?$pdb2msa_gremlin:$pdb2msa, $N, $k, $shift, \@his, $fmax); }
+	if ($pdbfile) {
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		create_rocfile_gremlin($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa_grem, $target_ncnt_grem, $N, $k, $shift, \@his, $fmax);
+	    }
+	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_grem);
+	}
     }
     elsif ($method =~ /random/) {
-	create_rocfile_random($rocfile[$f], $pdb2msa, $N, $k, $shift, \@his, $fmax);
-    }
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    create_rocfile_random($rocfile[$f], $mapfile_pred, $mapfile_tp, $pdb2msa, $target_ncnt_ran, $N, $k, $shift, \@his, $fmax);
+	}
+	predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_ran);
+   }
     else { print "method $method not implemented yet\n"; die; }
     
     my $hfile = "$rocfile[$f].his";
@@ -181,12 +229,10 @@ rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xma
 
 
 
-
-
 ####################### routines
 
 sub  create_rocfile_rscape {
-    my ($rocfile, $file, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
 
@@ -259,7 +305,7 @@ sub  create_rocfile_rscape {
 }
 
 sub create_rocfile_rscape_withpdb {
-    my ($rocfile, $file, $pdb2msa, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
     
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
     
@@ -306,7 +352,7 @@ sub create_rocfile_rscape_withpdb {
 
 
 sub  create_rocfile_mfDCA {
-    my ($rocfile, $prefile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "mfDCA";
     my $which  = "DI";
@@ -321,13 +367,13 @@ sub  create_rocfile_mfDCA {
 	mapDCA2MSA($stofile, $mapDCA_ref, \$alenDCA);
     }
 
-    parse_mfDCA($rocfile, $prefile, $pdb2msa, $mapDCA_ref, $alenDCA, $N, $k, $shift, $his_ref, $fmax, $which);
+    parse_mfDCA($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax, $which);
     
     $$ret_alenDCA = $alenDCA; 
 }
 
 sub  create_rocfile_plmDCA {
-    my ($rocfile, $prefile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "plmDCA";
   
@@ -336,22 +382,22 @@ sub  create_rocfile_plmDCA {
 	mapDCA2MSA($stofile, $mapDCA_ref, \$alenDCA);
     }
 
-    parse_plmDCA($rocfile, $prefile, $pdb2msa, $mapDCA_ref, $alenDCA, $N, $k, $shift, $his_ref, $fmax);
+    parse_plmDCA($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
 
     $$ret_alenDCA = $alenDCA;
 }
 
 sub  create_rocfile_gremlin {
-    my ($rocfile, $prefile, $pdb2msa, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "gremlin";
   
-    parse_gremlin($rocfile, $prefile, $pdb2msa, $N, $k, $shift, $his_ref, $fmax);
+    parse_gremlin($rocfile, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
 
 }
 
 sub  create_rocfile_random {
-    my ($rocfile, $pdb2msa, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
 
@@ -452,7 +498,7 @@ sub mapDCA2MSA {
 
 
 sub parse_mfDCA {
-    my ($rocfile, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $N, $k, $shift, $his_ref, $fmax, $which) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax, $which) = @_;
 
     my $sortfile = sort_mfDCA($file, $which);
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
@@ -500,7 +546,7 @@ sub parse_mfDCA {
 }
 
 sub parse_plmDCA {
-    my ($rocfile, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_plmDCA($file);
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
@@ -549,7 +595,7 @@ sub parse_plmDCA {
 }
 
 sub parse_gremlin {
-    my ($rocfile, $file, $pdb2msa, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_gremlin($file);
     my @revmap   = @{$pdb2msa->revmap};
@@ -567,8 +613,6 @@ sub parse_gremlin {
     my $ncnt_grem_f = 0;
     my @cnt_grem;
     my @cnt_grem_f;
-
-    my $target_ncnt = $target_factor*$pdb2msa->pdblen;
     
     my $type;
     open(FILE, "$sortfile") || die;
@@ -617,7 +661,6 @@ sub parse_gremlin {
 		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::bptype"}   = "CONTACT";
 		    $cnt_grem_f[$ncnt_grem_f]->{"CNT::distance"} = $cdistance;
 		    $ncnt_grem_f ++;
-		    printf "-> %d | $i $j $pdbi $pdbj\n", $f+1;
 		}
 	    }
 	    
@@ -629,32 +672,48 @@ sub parse_gremlin {
     close(FILE);
     close($fp);
 
-    my $mapfile_grem = "$file.maxD$maxD.minL$minL.type$which.map";
-    open(MAPGREM,  ">$mapfile_grem")  || die;
-    PDBFUNCS::contactlist_print(\*MAPGREM, $ncnt_grem, \@cnt_grem, 0);
-    close(MAPGREM);
-    my $mapfile_grem_f = "$file.maxD$maxD.minL$minL.type$which.predicted.map";
-    open(MAPGREMF,  ">$mapfile_grem_f")  || die;
-    PDBFUNCS::contactlist_print(\*MAPGREMF, $ncnt_grem_f, \@cnt_grem_f, 0);
-    close(MAPGREMF);
+    predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_grem, \@cnt_grem, $ncnt_grem_f, \@cnt_grem_f, $maxD, $minL, $which);
+    system("rm $sortfile\n");
+}
 
+sub predictions_create {
+    my ($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_pred, $cnt_pred_ref, $ncnt_tp, $cnt_tp_ref, $maxD, $minL, $which) = @_;
+    
+    open(MAPPRED,  ">$mapfile_pred")  || die;
+    PDBFUNCS::contactlist_print(\*MAPPRED, $ncnt_pred, $cnt_pred_ref, 1);
+    close(MAPPRED);
+    
+    open(MAPTP,  ">$mapfile_tp")  || die;
+    PDBFUNCS::contactlist_print(\*MAPTP, $ncnt_tp, $cnt_tp_ref, 1);
+    close(MAPTP);    
+}
+
+sub predictions_plot {
+    my ($mapfile_pred, $mapfile_tp, $target_ncnt) = @_;
+
+    if (!-e $mapfile_pred || !-e $mapfile_tp) { return; }
+    
+    my $minpdbx = 1e+50;
+    my $maxpdbx = 0;
+    my $ncnt_pred = PDBFUNCS::contactlistfile_parse($mapfile_pred, \$minpdbx, \$maxpdbx);
+    my $ncnt_tp   = PDBFUNCS::contactlistfile_parse($mapfile_tp,   \$minpdbx, \$maxpdbx);
+    
+    my $frac_ncnt = int($ncnt_tp/$target_ncnt*1000)/10;
     my $xfield  = 1;
     my $yfield  = 4;
     my $xylabel = "PDB position";
-    my $title   = "First $target_factor * L ($target_ncnt) predictions -- $ncnt_grem_f correct";
+    my $title   = "First $target_factor*L($target_ncnt) predictions -- $ncnt_tp($frac_ncnt%) correct";
     my $nf = 3;
     my @mapfile;
-    $mapfile[0] = $mapfile_grem_f;
-    $mapfile[1] = $mapfile_grem;
+    $mapfile[0] = $mapfile_tp;
+    $mapfile[1] = $mapfile_pred;
     $mapfile[2] = $pdb2msa->mapfile;
-    PDBFUNCS::plot_contact_map($nf, \@mapfile, $pdb2msa->pdblen, $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
-
-    system("rm $sortfile\n");
+    PDBFUNCS::plot_contact_map($nf, \@mapfile, $minpdbx, $maxpdbx, $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
 }
 
 sub sort_mfDCA {
     my ($file, $which) = @_;
-
+    
     my $sortfile = "$file.sort";
     my $n = 0;
     my %i;
