@@ -462,7 +462,7 @@ sub  create_rocfile_random {
     while ($f < $npre) {
 	my $i          = int(rand($pdblen-1))+1;
 	my $j          = int(rand($pdblen-1))+1;
-	while ($j == $i) { $j = int(rand($pdblen)); }
+	while ($j == $i) { $j = int(rand($pdblen-1)+1); }
        	my $distance   = $j-$i+1; # distance in the pdbfile
 	my $posi       = $map[$i-1]+1;
 	my $posj       = $map[$j-1]+1;
