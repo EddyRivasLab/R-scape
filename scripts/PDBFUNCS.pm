@@ -1576,17 +1576,22 @@ sub plot_contact_map {
     print GP "set nokey\n";
     print GP "set xlabel '$xylabel'\n";
     print GP "set ylabel '$xylabel'\n";
+    my $ex = 2;
+    my $low;
+    my $high = $maxx + $ex;
     if ($minx > 0 && $maxx > 0) {
-	print GP "set xrange [$minx-2:$maxx+2]\n";
-	print GP "set yrange [$maxx+2:$minx-2]\n";
+	$low = ($minx-$ex>0)? $minx-$ex : 0;
+	print GP "set xrange [$low:$high]\n";
+	print GP "set yrange [$high:$low]\n";
     }
     elsif ($minx > 0) {
-	print GP "set xrange [$minx-2:*]\n";
-	print GP "set yrange [*:$minx-2]\n";
+	$low = ($minx-$ex>0)? $minx-$ex : 0;
+	print GP "set xrange [$low:*]\n";
+	print GP "set yrange [*:$low]\n";
     }
     elsif ($maxx > 0) {
-	print GP "set xrange [*:$maxx+2]\n";
-	print GP "set yrange [$maxx+2:*]\n";
+	print GP "set xrange [*:$high]\n";
+	print GP "set yrange [$high:*]\n";
     }
     
     print GP "set title \"$title\\n\\n$key\"\n";
