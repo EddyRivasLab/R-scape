@@ -337,8 +337,13 @@ sub map_pdbsq {
     my $x = $from_pdb-1;
 
     # y (0..pfamalen-1) is the coord in the pfam alignment of the first aligned position
+    my $pfamalen = length($pfam_asq);
     my $n = 0;
     my $y = 0;
+    while ($pfam_asq[$y] =~ /^[\.\-]$/) { 
+	#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	$y ++;
+    }
     while ($n < $from_pfam-1) {
 	if ($pfam_asq[$y] =~ /^[\.\-]$/) { 
 	    #printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
@@ -348,8 +353,9 @@ sub map_pdbsq {
 	    $n ++; $y ++;
  	}
     }
-    print "^^1st in pdb $x | 1st in pfamali $y\n";
-    
+    printf "^^1st in pdb %d/%d | 1st in ali %d/%d\n", $x+1, $len, $y+1, $pfamalen;
+
+    # create the map
     my $pos = 0;
     while ($pos < $alen) {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
@@ -391,10 +397,13 @@ sub map_pdbsq {
     }
 
     # reverse map
-    for (my $p = 0; $p < $alen; $p ++) { $revmap_ref->[$p] = -1; }
-    for (my $l = 0; $l < $len;  $l ++) { $revmap_ref->[$map_ref->[$l]] = $l; }
+    for (my $p = 0; $p < $pfamalen; $p ++) { $revmap_ref->[$p] = -1; }
+    for (my $l = 0; $l < $len;      $l ++) { $revmap_ref->[$map_ref->[$l]] = $l; }
 
-    return length($pfam_asq);
+    #for (my $p = 0; $p < $pfamalen; $p ++) { printf "rev[%d] = %d\n", $p+1,  $revmap_ref->[$p]+1; }
+    #for (my $l = 0; $l < $len;      $l ++) { printf "map[%d] = %d\n", $l+1,  $map_ref->[$l]+1; }
+    
+    return $alen;
 }
 
 sub alipos_isgap {
@@ -453,9 +462,12 @@ sub find_pdbsq_in_pfam {
     
     $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
 
+ 
+    my $pfamalen = length($pfam_asq);
+    my $alen     = length($ali_pfam);
     if ($pfamsqname ne "") {
 	printf "^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
-	print "^^>$pfamsqname\n$pfam_asq\n";
+	print "^^>$pfamsqname pfamalen=$pfamalen\n$pfam_asq\n";
 	print "^^$ali_pdb\n";
 	print "^^$ali_pfam\n";
     }
@@ -471,7 +483,7 @@ sub find_pdbsq_in_pfam {
     system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
 
-    return length($ali_pfam);
+    return $alen;
 }
 
     

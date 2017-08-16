@@ -338,13 +338,15 @@ sub create_rocfile_rscape_withpdb {
 	    my $i          = $1;
 	    my $j          = $2;
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = $revmap[$i-1]+1;
-	    my $pdbj       = $revmap[$j-1]+1;
+	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
+	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
+	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if ($pdbj-$pdbi+1 < $minL) { next; }
 
-	    if ($pdbj-$pdbi+1 >= $minL && $ncnt_rscape < $target_ncnt) {
+	    if ($ncnt_rscape < $target_ncnt) {
 		$cnt_rscape[$ncnt_rscape] = CNT->new();
 		$cnt_rscape[$ncnt_rscape]->{"CNT::i"}        = $pdbi;
 		$cnt_rscape[$ncnt_rscape]->{"CNT::j"}        = $pdbj;
@@ -469,8 +471,9 @@ sub  create_rocfile_random {
 	my $chri       = "N";
 	my $chrj       = "N";
 	my $cdistance  = -1;
+	if ($j-$i+1 < $minL) { next; }
 
-	if ($j-$i+1 >= $minL && $ncnt_ran < $target_ncnt) {
+	if ($ncnt_ran < $target_ncnt) {
 	    $cnt_ran[$ncnt_ran] = CNT->new();
 	    $cnt_ran[$ncnt_ran]->{"CNT::i"}        = $i;
 	    $cnt_ran[$ncnt_ran]->{"CNT::j"}        = $j;
@@ -606,13 +609,15 @@ sub parse_mfDCA {
 	    my $i          = $mapDCA_ref->[$idca];
 	    my $j          = $mapDCA_ref->[$jdca];
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = $revmap[$i-1]+1;
-	    my $pdbj       = $revmap[$j-1]+1;
+	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
+	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
+	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if ($pdbj-$pdbi+1 < $minL) { next; }
 
-	    if ($pdbj-$pdbi+1 >= $minL && $ncnt_mfDCA < $target_ncnt) {
+	    if ($ncnt_mfDCA < $target_ncnt) {
 		$cnt_mfDCA[$ncnt_mfDCA] = CNT->new();
 		$cnt_mfDCA[$ncnt_mfDCA]->{"CNT::i"}        = $pdbi;
 		$cnt_mfDCA[$ncnt_mfDCA]->{"CNT::j"}        = $pdbj;
@@ -690,13 +695,15 @@ sub parse_plmDCA {
 	    my $i          = $mapDCA_ref->[$idca];
 	    my $j          = $mapDCA_ref->[$jdca];
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = $revmap[$i-1]+1;
-	    my $pdbj       = $revmap[$j-1]+1;
+	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
+	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
+	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if ($pdbj-$pdbi+1 < $minL) { next; }
 
-	    if ($pdbj-$pdbi+1 >= $minL && $ncnt_plmDCA < $target_ncnt) {
+	    if ($ncnt_plmDCA < $target_ncnt) {
 		$cnt_plmDCA[$ncnt_plmDCA] = CNT->new();
 		$cnt_plmDCA[$ncnt_plmDCA]->{"CNT::i"}        = $pdbi;
 		$cnt_plmDCA[$ncnt_plmDCA]->{"CNT::j"}        = $pdbj;
@@ -770,14 +777,16 @@ sub parse_gremlin {
 	elsif (/(\d+)\s+(\d+)\s+\S+\s*$/) {
 	    my $i          = $1;
 	    my $j          = $2;
-	    my $pdbi       = $revmap[$i-1]+1;
-	    my $pdbj       = $revmap[$j-1]+1;
+	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
+	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
 	    my $distance   = $j-$i+1; # distance in the alignment
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
-
-	    if ($pdbj-$pdbi+1 >= $minL && $ncnt_grem < $target_ncnt) {
+	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if ($pdbj-$pdbi+1 < $minL) { next; }
+	    
+	    if ($ncnt_grem < $target_ncnt) {
 		$cnt_grem[$ncnt_grem] = CNT->new();
 		$cnt_grem[$ncnt_grem]->{"CNT::i"}        = $pdbi;
 		$cnt_grem[$ncnt_grem]->{"CNT::j"}        = $pdbj;
@@ -813,6 +822,7 @@ sub parse_gremlin {
 	    }
 	    
 	    $f ++;
+	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
 	}
@@ -1005,8 +1015,11 @@ sub rocplot {
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "\n rocFILE: $psfile\n";
 
-    my $maxpp = 1;
-
+    my $maxpp  = 2;
+    my $maxsen = 30;
+    my $maxppv = 102;
+    my $maxF   = 20;
+    
     my $xlabel;
     my $ylabel;
     my $title  = "$stoname";
@@ -1033,18 +1046,18 @@ sub rocplot {
     $xlabel = "SEN contacts (%)";
     $ylabel = "PPV contacts (%)";
     $x_min = 0;
-    $x_max = 50;
+    $x_max = $maxsen;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxppv;
     $x = 16;
     $y = 17;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "SEN bpairs (%)";
     $ylabel = "PPV bpairs (%)";
     $x_min = 0;
-    $x_max = 50;
+    $x_max = $maxsen;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxppv;
     $x = 19;
     $y = 20;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1055,7 +1068,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxppv;
     $x = 9;
     $y = 17;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1064,7 +1077,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxsen;
     $x = 9;
     $y = 16;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1073,7 +1086,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = 102;
     $x = 9;
     $y = 18;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1084,7 +1097,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxppv;
     $x = 9;
     $y = 20;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1093,7 +1106,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxsen;
     $x = 9;
     $y = 19;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1102,7 +1115,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxF;
     $x = 9;
     $y = 21;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1113,7 +1126,7 @@ sub rocplot {
     $x_min = 1;
     $x_max = $xmax;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxppv;
     $x = 1;
     $y = 17;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1122,7 +1135,7 @@ sub rocplot {
     $x_min = 1;
     $x_max = $xmax;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxsen;
     $x = 1;
     $y = 16;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
@@ -1131,7 +1144,7 @@ sub rocplot {
     $x_min = 1;
     $x_max = $xmax;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxF;
     $x = 1;
     $y = 18;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
