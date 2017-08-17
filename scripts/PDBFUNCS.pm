@@ -1301,19 +1301,20 @@ sub aa_conversion {
 #          the atom resSeq numbering (1-76)
 #     is as follows
 #
-# SEQRES_E G C C C G G A U G A U C  C  U  C  A  G  U  G  G  U  C  U  G  G  G  G  U  G  C  A  G  G
-# resSeq_E 1 2 3 4 5 5 5 6 7 8 9 10 11 12 13 14 15 16 18 19 20 20 21 22 23 24 25 26 27 28 29 30 31
-#                  * * *                             *      *  *
+# SEQRES_E  G C C C G G A U G A U C  C  U  C  A  G  U  G  G  U  C  U  G  G  G  G  U  G  C  A  G  G
+# resSeq_E  1 2 3 4 5 5 5 6 7 8 9 10 11 12 13 14 15 16 18 19 20 20 21 22 23 24 25 26 27 28 29 30 31
+#                   * * *                             *      *  *
 #
-# SEQRES_E C U U C A A A  C  C  U  G  U  A  G  C  U  G  U  C  U  A  G  C  G  A  C  A  G  A  G  U  G  G
-# resSeq_E 0 0 0 0 0 0 0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
-#                                               *  *  *  *  *  *  *  *  *  *  *  *
+# SEQRES_E  C U U C A A A  C  C  U  G  U  A  G  C  U  G  U  C  U  A  G  C  G  A  C  A  G  A  G  U  G  G
+# resSeq_E  0 0 0 0 0 0 0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
+#                                                *  *  *  *  *  *  *  *  *  *  *  *
 #
-#          * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
+#           * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
 #
-# SEQRES_E U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
-# resSeq_E 54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
-#                                              *  *
+#
+# SEQRES_E  U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
+# resSeq_E  54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
+#                                                   *  *
 #
 #                                                                               * -> another documented "missing residue"
 #
@@ -1360,8 +1361,8 @@ sub get_atoms_coord {
 	}
     }
     close(FILE);
-    for (my $r = 0; $r < $to-$from; $r++) {
-	$ismissing[$r] = 0;
+    for (my $r = $from; $r <= $to; $r++) {
+	$ismissing[$r-$from] = 0;
     }
 
     # identify the missing residues
@@ -1372,19 +1373,19 @@ sub get_atoms_coord {
 	}
 	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\S+)\s*$/) {
 	    my $pos = $1;
-	    if ($pos < $from ) {
-		for (my $x = $to; $x <= $from; $x ++) {
+	    if ($pos < $from) {
+		for (my $x = $to; $x >= $from; $x --) {
 		    $ismissing[$x-$pos] = $ismissing[$x-$from];
 		}
 		for (my $x = $pos; $x < $from; $x ++) {
-		    $ismissing[$x-$pos] = 0;  # these don't count as missing
+		    $ismissing[$x-$pos] = 1;  # these don't count as missing
 		}
 		$from = $pos; 
 	    }
 	    elsif ($pos > $to) {
 		$ismissing[$pos-$from] = 1;
 		for (my $x = $to+1; $x < $pos; $x ++) {
-		    $ismissing[$x-$from] = 0;  # these don't count as missing
+		    $ismissing[$x-$from] = 1;  
 		}
 		$to = $pos;
 	    }
@@ -1393,6 +1394,11 @@ sub get_atoms_coord {
     }
     close(FILE);
     
+    # printf "^^1 FROM $from TO $to\n";
+    # for (my $x = $from; $x <= $to; $x ++) {
+    #	print "^^1 pos $x is missing $ismissing[$x-$from]\n";
+    # }
+    
     # now look for the "odd" residues
     # these are not missing
     open(FILE, "$pdbfile") || die;
@@ -1400,7 +1406,7 @@ sub get_atoms_coord {
 	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
 	    my $pos = $1;
 	    if ($pos < $from) {
-		for (my $x = $to; $x <= $from; $x ++) {
+		for (my $x = $to; $x >= $from; $x --) {
 		    $ismissing[$x-$pos] = $ismissing[$x-$from];
 		}
 		for (my $x = $pos; $x < $from; $x ++) {
@@ -1411,8 +1417,11 @@ sub get_atoms_coord {
 	}
     }
     close(FILE);
-    #printf "^^ FROM $from TO $to len $len\n";
-
+    printf "^^ FROM $from TO $to len $len\n";
+    #for (my $x = $from; $x <= $to; $x ++) {
+    #	print "^^ pos $x is missing $ismissing[$x-$from]\n";
+    #}
+    
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
@@ -1420,6 +1429,7 @@ sub get_atoms_coord {
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	my $line = $_;
+	#print "++$line";
 
 	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
 	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom     = $1; }
@@ -1433,6 +1443,7 @@ sub get_atoms_coord {
 	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
 	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
 	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
+	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 
 	    # Look for the target chain
 	    if ($chainid ne $chain) { next; }
@@ -1445,7 +1456,16 @@ sub get_atoms_coord {
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 
-	    $l = $respos - $from;
+	    if ($nn == 0) { $respos_prv = $respos; }
+	    
+	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
+		if ($ismissing[$x-$from]) { 
+		    $l ++; 
+		    $res_ref->[$l]->{"RES::coor"} = $x;
+		}
+	    }
+	    
+	    if ($respos_prv != $respos) { $l ++; }
 	    $nat = $res_ref->[$l]->{"RES::nat"};
 	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
 	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
@@ -1453,28 +1473,28 @@ sub get_atoms_coord {
 	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
 	    $res_ref->[$l]->{"RES::nat"}           ++;
 	    $res_ref->[$l]->{"RES::coor"}          = $respos;
- 
+	    
 	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
-	    if ($l >= $len) { printf("l %d >= len %d\n", $l, $len); die; }
-
-	    if ($l < 0)     { print "bad lenght\n"; die; }
- 	    if ($l >= $len) { print "too long?\n";  die; }
+	    if ($l > $len) { print "$l > $len\n"; die; }
 
 	    $id_prv     = $id;
 	    $respos_prv = $respos;
 	    $nn ++;
+	    
 	}
 	# How to terminate chain
 	elsif ($recording && $line =~ /TER/) { last; }
    }
     close(FILE);
-    
-    for ($l = 0; $l < $len; $l ++) {
-	$nat  = $res_ref->[$l]->{"RES::nat"};	    
-	$coor = $res_ref->[$l]->{"RES::coor"};	    
-	$char = $res_ref->[$l]->{"RES::char"};	    
-	#if ($nat == 0) { print "#res $l has not atoms\n"; }
-	if (0) { printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; }
+
+    if (1) {
+	for ($l = 0; $l < $len; $l ++) {
+	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
+	    $coor = $res_ref->[$l]->{"RES::coor"};	    
+	    $char = $res_ref->[$l]->{"RES::char"};	    
+	    #if ($nat == 0) { print "#res $l has not atoms\n"; }
+	    printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; 
+	}
     }
 }
 

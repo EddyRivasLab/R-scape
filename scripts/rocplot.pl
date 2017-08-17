@@ -230,7 +230,8 @@ for (my $f = 0; $f < $F; $f ++) {
 
 my $xmax = 1000;
 my $viewplots = 0;
-rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $viewplots);
+my $isrna = 0;
+rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $isrna, $viewplots);
 
 
 
@@ -510,7 +511,7 @@ sub  create_rocfile_random {
 	$f ++;
 	if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 
-	writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen);
+	writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen);
     }
 
     close($fp);
@@ -1005,7 +1006,7 @@ sub sort_gremlin {
 }
 
 sub rocplot {
-    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $seeplots) = @_;
+    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $seeplots) = @_;
 
 
    my $psfile = "results/$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
@@ -1018,7 +1019,7 @@ sub rocplot {
     my $maxpp  = 2;
     my $maxsen = 30;
     my $maxppv = 102;
-    my $maxF   = 20;
+    my $maxF   = 40;
     
     my $xlabel;
     my $ylabel;
@@ -1043,26 +1044,6 @@ sub rocplot {
     print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
 
     my $logscale = 0;
-    $xlabel = "SEN contacts (%)";
-    $ylabel = "PPV contacts (%)";
-    $x_min = 0;
-    $x_max = $maxsen;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 16;
-    $y = 17;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "SEN bpairs (%)";
-    $ylabel = "PPV bpairs (%)";
-    $x_min = 0;
-    $x_max = $maxsen;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 19;
-    $y = 20;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-
-    $logscale = 0;
     $xlabel = "number of predictions per position";
     $ylabel = "PPV contacts (%)";
     $x_min = 0.001;
@@ -1086,40 +1067,42 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 102;
+    $y_max = $maxF;
     $x = 9;
     $y = 18;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
     # basepairs
-    $xlabel = "number of predictions per position";
-    $ylabel = "PPV bpairs (%)";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 9;
-    $y = 20;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions per position";
-    $ylabel = "SEN bpairs (%)";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxsen;
-    $x = 9;
-    $y = 19;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions per position";
-    $ylabel = "F bpairs";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxF;
-    $x = 9;
-    $y = 21;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
- 
+    if ($isrna) {
+	$xlabel = "number of predictions per position";
+	$ylabel = "PPV bpairs (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 9;
+	$y = 20;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "SEN bpairs (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxsen;
+	$x = 9;
+	$y = 19;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "F bpairs";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 9;
+	$y = 21;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
     $logscale = 1;
     $xlabel = "number of predictions";
     $ylabel = "PPV contacts (%)";
@@ -1149,7 +1132,28 @@ sub rocplot {
     $y = 18;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
-
+    $logscale = 0;
+    $xlabel = "SEN contacts (%)";
+    $ylabel = "PPV contacts (%)";
+    $x_min = 0;
+    $x_max = $maxsen;
+    $y_min = 0;
+    $y_max = $maxppv;
+    $x = 16;
+    $y = 17;
+    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    if ($isrna) {
+	$xlabel = "SEN bpairs (%)";
+	$ylabel = "PPV bpairs (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 19;
+	$y = 20;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
     close($gp);
 
     if ($seeplots) { system ("open $psfile&\n"); }
