@@ -19,7 +19,7 @@ getopts ('D:G:L:P:rR:T:W:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin>  \n\n";
+        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <key>  \n\n";
         print "options:\n";
 	exit;
 }
@@ -48,6 +48,7 @@ if ($stoname =~ /([^\.]+)\./)  { $stoname = $1; }
 
 my $rscapebin = shift;
 my $gnuplot   = shift;
+my $key       = shift; # tag to identify the benchmark
 
 my $currdir = $ENV{PWD};
 
@@ -231,7 +232,7 @@ for (my $f = 0; $f < $F; $f ++) {
 my $xmax = 1000;
 my $viewplots = 0;
 my $isrna = 0;
-rocplot($gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $isrna, $viewplots);
+rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $isrna, $viewplots);
 
 
 
@@ -346,6 +347,7 @@ sub create_rocfile_rscape_withpdb {
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
 	    if ($pdbj-$pdbi+1 < $minL) { next; }
+	    #if ($j-$i+1 < $minL) { next; }
 
 	    if ($ncnt_rscape < $target_ncnt) {
 		$cnt_rscape[$ncnt_rscape] = CNT->new();
@@ -462,7 +464,7 @@ sub  create_rocfile_random {
     my @cnt_ran_f;
 
     my $type = "";
-    while ($f < $npre) {
+    while ($f < $npre && $f_c < $t_c) {
 	my $i          = int(rand($pdblen-1))+1;
 	my $j          = int(rand($pdblen-1))+1;
 	while ($j == $i) { $j = int(rand($pdblen-1)+1); }
@@ -1006,10 +1008,10 @@ sub sort_gremlin {
 }
 
 sub rocplot {
-    my ($gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $seeplots) = @_;
+    my ($key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $seeplots) = @_;
 
 
-   my $psfile = "results/$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
+   my $psfile = "results/$key-$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
     
     #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
     my $pdffile = $psfile;
@@ -1032,17 +1034,17 @@ sub rocplot {
     open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
  
     print $gp "set terminal postscript color solid 14\n";
-    print $gp "set output '$psfile'\n";    
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 8   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 3   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
-
+    print $gp "set output '$psfile'\n";
+ 
+    print $gp "set style line 1 lc rgb '#084594' pt 65 ps 0.5 lw 3\n"; # very blue
+    print $gp "set style line 2 lc rgb '#1F78B4' pt 65 ps 0.5 lw 3\n"; # dark blue
+    print $gp "set style line 3 lc rgb '#F16913' pt 65 ps 0.5 lw 3\n"; # orange
+    print $gp "set style line 4 lc rgb '#005A32' pt 65 ps 0.5 lw 3\n"; # dark green
+    print $gp "set style line 5 lc rgb '#74C476' pt 65 ps 0.5 lw 3\n"; # light green
+    print $gp "set style line 6 lc rgb '#4A1486' pt 65 ps 0.5 lw 3\n"; # dark purple
+    print $gp "set style line 7 lc rgb '#BCBDDC' pt 65 ps 0.5 lw 3\n"; # light purple
+    print $gp "set style line 8 lc rgb 'red'     pt 65 ps 0.5 lw 3\n"; # red
+    
     my $logscale = 0;
     $xlabel = "number of predictions per position";
     $ylabel = "PPV contacts (%)";
@@ -1166,7 +1168,7 @@ sub roc_oneplot {
     my ($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $xmin, $xmax, $ymin, $ymax, $logscale, $nolines) = @_;
    
     my $cmd = "";
-    my $m = 5;
+    my $m = 1;
     
     print $gp "set title  '$title'\n";
     print $gp "set xlabel '$xlabel'\n";
@@ -1183,7 +1185,7 @@ sub roc_oneplot {
 	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title ''                ls $m, " : "'$file_ref->[$f]' using $x:$y  title ''                ls $m, ";
 	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m, ";
 	}
-	if ($m == 9) { $m = 0; }
+	if ($m == 10) { $m = 0; }
 	$m ++; 
     }
     print $gp "plot $cmd\n";

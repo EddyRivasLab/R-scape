@@ -36,7 +36,7 @@
  * 0 = Ignores gaps when calculating pairwise covariation scores
  *   
  */
-#define GAPASCHAR 1
+#define GAPASCHAR 0
 
 /* System headers
  */

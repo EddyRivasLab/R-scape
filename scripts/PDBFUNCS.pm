@@ -722,7 +722,7 @@ sub parse_pdb_contact_map {
 	    }
 
 	    $distance = distance($which, $char1, $nat1, \@type1, \@x1, \@y1, \@z1, $char2, $nat2, \@type2, \@x2, \@y2, \@z2);
- 
+
 	    if ($distance > 0) {
 		if ($L >= $minL && $distance < $maxD) {
 		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
@@ -1394,9 +1394,9 @@ sub get_atoms_coord {
     }
     close(FILE);
     
-    # printf "^^1 FROM $from TO $to\n";
-    # for (my $x = $from; $x <= $to; $x ++) {
-    #	print "^^1 pos $x is missing $ismissing[$x-$from]\n";
+    #printf "^^1 FROM $from TO $to\n";
+    #for (my $x = $from; $x <= $to; $x ++) {
+    # 	print "^^1 pos $x is missing $ismissing[$x-$from]\n";
     # }
     
     # now look for the "odd" residues
@@ -1417,15 +1417,17 @@ sub get_atoms_coord {
 	}
     }
     close(FILE);
-    printf "^^ FROM $from TO $to len $len\n";
+    
+    #printf "^^ FROM $from TO $to len $len\n";
     #for (my $x = $from; $x <= $to; $x ++) {
-    #	print "^^ pos $x is missing $ismissing[$x-$from]\n";
+    # 	print "^^ pos $x is missing $ismissing[$x-$from]\n";
     #}
     
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
     $l = 0;
+    $respos_prv = $from;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	my $line = $_;
@@ -1456,8 +1458,6 @@ sub get_atoms_coord {
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 
-	    if ($nn == 0) { $respos_prv = $respos; }
-	    
 	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
 		if ($ismissing[$x-$from]) { 
 		    $l ++; 
@@ -1487,7 +1487,7 @@ sub get_atoms_coord {
    }
     close(FILE);
 
-    if (1) {
+    if (0) {
 	for ($l = 0; $l < $len; $l ++) {
 	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
 	    $coor = $res_ref->[$l]->{"RES::coor"};	    
@@ -1561,6 +1561,7 @@ sub distance {
 	    }
 	}
     }
+    else { print "distance method not known $which\n"; die; }
     
     return $distance;
 }
