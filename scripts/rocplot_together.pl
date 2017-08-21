@@ -43,7 +43,7 @@ my $seeplots = 0;
 my $verbose  = 0;
 
 my $N = 2;
-my $k = 10;
+my $k = 50;
 my $shift = 0;
 
 my @plotfile;
@@ -51,7 +51,11 @@ my @plotfile;
 for (my $m = 0; $m < $M; $m++) {
     print "\n$type[$m]\n";
 
-    $plotfile[$m] = "$DIR/results/$string_name.$m.rocplot";
+    my $type = $type[$m];
+    $type =~ s/\//\_/g;
+    if ($type =~ /^R-scape_(\S+)$/) { $type = $1; }
+    
+    $plotfile[$m] = "$DIR/results/$string_name.$type.$string_suffix.plot";
 
     my @his_f;
     my @his_fc;
@@ -72,23 +76,23 @@ for (my $m = 0; $m < $M; $m++) {
     my @family;
     FUNCS::sorted_files($localdir, \@family, $string_suffix);    
     my $F = $#family+1;
-
+    
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
     {
-	my $rocfile = "$family[$f]";
+	my $rocfile = "$localdir/$family[$f]";
 
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
-	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)  { $add = 1; }
+	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)   { $add = 1; }
 	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+$/)  { $add = 1; }
 
 	if ($add == 0) { next; }
 
 	$nf ++;
-	print "ROC $nf: $rocfile\n";
 	
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
+	    
 	    if (/\#/) {
 	    }
 	    elsif (/^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+/) {
@@ -115,6 +119,7 @@ for (my $m = 0; $m < $M; $m++) {
 	}
 	close(FILE);	
     }
+    print "$nf/$F MSA $plotfile[$m]\n";
 
     open (PLOT, ">$plotfile[$m]") || die;
     for (my $i = 0; $i < $N*$k; $i++) {
@@ -137,14 +142,14 @@ sub rocplot {
     my ($F, $file_ref, $type_ref, $gnuplot, $seeplots) = @_;
 
 
-   my $psfile = "$string_name.ps";
+   my $psfile = "$string_name.$string_suffix.ps";
     
     #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "FILE: $psfile\n";
 
-    my $maxpp = 0.5;
+    my $maxpp = 2.0;
 
     my $xlabel;
     my $ylabel;

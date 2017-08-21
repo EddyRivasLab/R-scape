@@ -2517,10 +2517,15 @@ sub stats {
 
 
 sub sorted_files {
-    my ($dir, $files_ref, $index, $n_files_ref) = @_;
+    my ($dir, $files_ref, $suffix, $prefix) = @_;
     local *DIRH;
     opendir DIRH, $dir or die "eh? $dir: $!";
-    @$files_ref = grep { /^\S+\.$index$/ }  
+    if ($prefix) {
+	@$files_ref = grep ( /^$prefix\S+\.$suffix$/, readdir(DIRH));
+    }
+    else {
+	@$files_ref = grep ( /^\S+\.$suffix$/, readdir(DIRH));
+    }
     map { "$dir/$_" } readdir DIRH;
     sort @$files_ref;
 }
