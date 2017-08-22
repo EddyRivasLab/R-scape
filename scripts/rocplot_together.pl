@@ -83,9 +83,10 @@ for (my $m = 0; $m < $M; $m++) {
 	my $rocfile = "$localdir/$family[$f]";
 
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
-	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)   { $add = 1; }
-	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+$/)  { $add = 1; }
-
+	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)   { print "++$rocfile\n"; $add = 1; }
+	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+$/)   { $add = 1; }
+	print "^^famtype $famtype roc $rocfile add $add\n";
+	
 	if ($add == 0) { next; }
 
 	$nf ++;

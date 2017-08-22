@@ -1345,7 +1345,11 @@ sub get_atoms_coord {
 	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l], $isrna);
     }
 
-    my @ismissing;
+    my @status;
+    # 0 = present (in the sequence and has atoms)
+    # 1 = missing (in the sequence but no atoms)
+    # 2 = absent  (not in the sequence, and not missing)
+    
     my $remarknum = 0;
     my $from;
     my $to;
@@ -1362,9 +1366,49 @@ sub get_atoms_coord {
     }
     close(FILE);
     for (my $r = $from; $r <= $to; $r++) {
-	$ismissing[$r-$from] = 0;
+	$status[$r-$from]  = 0; # assume they are all present
     }
 
+    printf "^^1 FROM $from TO $to\n";
+    for (my $x = $from; $x <= $to; $x ++) {
+     	print "^^1 pos $x is status $status[$x-$from] \n";
+     }
+
+    # now look for the "odd" residues
+    # assume they are all present for now
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
+	    my $pos = $1;
+	    if ($pos < $from) {
+		for (my $x = $to; $x >= $from; $x --) {
+		    $status[$x-$pos] = $status[$x-$from]; #leave unchanged
+		}
+		for (my $x = $pos+1; $x < $from; $x ++) {
+		    $status[$x-$pos] = 2;  # absent for now
+		}
+		$status[0] = 0;            # present for now
+		$from = $pos; 
+	    }
+	    elsif ($pos > $to) {
+		$status[$pos-$from] = 0; # present for now
+		for (my $x = $to+1; $x < $pos; $x ++) {
+		    $status[$x-$pos] = 2;  # these are absent for now
+		}
+		$to = $pos;
+	    }
+	    else {
+		$status[$pos-$from] = 0;  # is present for now
+	    }
+	}
+    }
+    close(FILE);
+
+    printf "^^2 FROM $from TO $to\n";
+    for (my $x = $from; $x <= $to; $x ++) {
+     	print "^^2 pos $x status $status[$x-$from] \n";
+     }
+    
     # identify the missing residues
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
@@ -1375,54 +1419,48 @@ sub get_atoms_coord {
 	    my $pos = $1;
 	    if ($pos < $from) {
 		for (my $x = $to; $x >= $from; $x --) {
-		    $ismissing[$x-$pos] = $ismissing[$x-$from];
+		    $status[$x-$pos] = $status[$x-$from]; # leave  unchanged
 		}
 		for (my $x = $pos; $x < $from; $x ++) {
-		    $ismissing[$x-$pos] = 1;  # these don't count as missing
+		    $status[$x-$pos] = 2;  # absent for now
 		}
+		$status[0] = 1;            # missing
 		$from = $pos; 
 	    }
 	    elsif ($pos > $to) {
-		$ismissing[$pos-$from] = 1;
+		$status[$pos-$from] = 1;
 		for (my $x = $to+1; $x < $pos; $x ++) {
-		    $ismissing[$x-$from] = 1;  
+		    $status[$x-$pos] = 2;  # these are absent for now
 		}
 		$to = $pos;
 	    }
-	    else { $ismissing[$pos-$from] = 1;}
-	}
-    }
-    close(FILE);
-    
-    #printf "^^1 FROM $from TO $to\n";
-    #for (my $x = $from; $x <= $to; $x ++) {
-    # 	print "^^1 pos $x is missing $ismissing[$x-$from]\n";
-    # }
-    
-    # now look for the "odd" residues
-    # these are not missing
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
-	    my $pos = $1;
-	    if ($pos < $from) {
-		for (my $x = $to; $x >= $from; $x --) {
-		    $ismissing[$x-$pos] = $ismissing[$x-$from];
-		}
-		for (my $x = $pos; $x < $from; $x ++) {
-		    $ismissing[$x-$pos] = 0;  # these don't count as missing
-		}
-		$from = $pos; 
+	    else { 
+		$status[$pos-$from] = 1;   # missing
 	    }
 	}
     }
     close(FILE);
     
-    #printf "^^ FROM $from TO $to len $len\n";
-    #for (my $x = $from; $x <= $to; $x ++) {
-    # 	print "^^ pos $x is missing $ismissing[$x-$from]\n";
-    #}
-    
+    printf "^^ FROM $from TO $to len $len\n";
+    for (my $x = $from; $x <= $to; $x ++) {
+     	print "^^ pos $x status $status[$x-$from] \n";
+    }
+
+    # check
+    my $nP = 0;
+    my $nM = 0;
+    my $nA = 0;
+    for (my $x = $from; $x <= $to; $x ++) {
+	my $status = $status[$x-$from];
+	if    ($status == 0) { $nP ++; }
+	elsif ($status == 1) { $nM ++; }
+	elsif ($status == 2) { $nA ++; }
+	else                 { print "status? \n"; die; }
+    }
+    if ($nP+$nM != $len) { printf "P+M should be $len but it is %d\n", $nP+$nM; die; }
+	
+
+
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
@@ -1459,7 +1497,7 @@ sub get_atoms_coord {
 	    $recording = 1;
 
 	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
-		if ($ismissing[$x-$from]) { 
+		if ($status[$x-$from] == 1) { # a missing residue moves the counter 
 		    $l ++; 
 		    $res_ref->[$l]->{"RES::coor"} = $x;
 		}
