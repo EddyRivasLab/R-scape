@@ -55,7 +55,7 @@ struct PDB2MSA => {
 
 
 sub pdb2msa {
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $maxD, $minL, $which, $isrna, $seeplots) = @_;
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $which, $isrna, $seeplots) = @_;
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
@@ -78,7 +78,7 @@ sub pdb2msa {
     my @map;
     my @revmap;
     contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $maxD, $minL, $which, $isrna, "", "", $seeplots);
+			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $which, $isrna, "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
@@ -108,8 +108,8 @@ sub pdb2msa {
 
 sub contacts_from_pdbfile {
 	
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $maxD, $minL, $which, 
-	$dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
+	$maxD, $minL, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
     
@@ -149,6 +149,14 @@ sub contacts_from_pdbfile {
         
     for (my $n = 0; $n < $nch; $n ++) {
 
+	my $dochain;
+	if ($usechain) {
+	    if ($usechain =~ /^$chname[$n]$/) { $dochain = 1; }
+	    else                              { $dochain = 0; }
+	}
+	else { $dochain = 1; }
+	if ($dochain == 0) { next; }
+	
 	my $map0file;
 	my $map1file;
 	my $mapfile;
@@ -1369,11 +1377,13 @@ sub get_atoms_coord {
 	$status[$r-$from]  = 0; # assume they are all present
     }
 
-    printf "^^1 FROM $from TO $to\n";
-    for (my $x = $from; $x <= $to; $x ++) {
-     	print "^^1 pos $x is status $status[$x-$from] \n";
-     }
-
+    if (0) {
+	printf "^^1 FROM $from TO $to\n";
+	for (my $x = $from; $x <= $to; $x ++) {
+	    print "^^1 pos $x is status $status[$x-$from] \n";
+	}
+    }
+    
     # now look for the "odd" residues
     # assume they are all present for now
     open(FILE, "$pdbfile") || die;
@@ -1404,10 +1414,12 @@ sub get_atoms_coord {
     }
     close(FILE);
 
-    printf "^^2 FROM $from TO $to\n";
-    for (my $x = $from; $x <= $to; $x ++) {
-     	print "^^2 pos $x status $status[$x-$from] \n";
-     }
+    if (0) {
+	printf "^^2 FROM $from TO $to\n";
+	for (my $x = $from; $x <= $to; $x ++) {
+	    print "^^2 pos $x status $status[$x-$from] \n";
+	}
+    }
     
     # identify the missing residues
     open(FILE, "$pdbfile") || die;
@@ -1443,7 +1455,14 @@ sub get_atoms_coord {
     
     printf "^^ FROM $from TO $to len $len\n";
     for (my $x = $from; $x <= $to; $x ++) {
-     	print "^^ pos $x status $status[$x-$from] \n";
+     	my $status = $status[$x-$from];
+	if ($status == 1) {
+	    print "^^ pos $x missing \n";
+	}
+	if ($status == 2) {
+	    print "^^ pos $x absent \n";
+	}
+	#print "^^ pos $x status $status[$x-$from] \n";
     }
 
     # check

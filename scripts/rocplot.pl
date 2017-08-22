@@ -12,9 +12,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_T $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_T $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('D:G:L:P:rR:T:W:v');
+getopts ('C:D:G:L:P:rR:T:W:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -73,6 +73,9 @@ for (my $f = 0; $f < $F; $f ++) {
     $rocfile[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.roc"; 
 }
 
+my $usechain = "";
+if ($opt_C) { $usechain = "$opt_C"; }
+
 my $seeplots = 0;
 
 my $verbose = 0;
@@ -83,7 +86,7 @@ my $pdbfile = "";
 my $pdb2msa;
 if ($opt_P) { 
     $pdbfile = "$opt_P"; 
-    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile, \$pdb2msa, $maxD, $minL, $which, $dornaview, $seeplots);
+    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile, \$pdb2msa, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
 }
 
 # Map the pdb2msa structure to the stofile used by gremlin
@@ -95,7 +98,7 @@ if ($opt_G) {
 	$pdb2msa_gremlin = $pdb2msa;
     }
     else {
-	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $maxD, $minL, $which, $dornaview, $seeplots);
+	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
     }  
 }
 
@@ -108,7 +111,7 @@ if ($opt_R) {
 	$pdb2msa_rscape = $pdb2msa;
     }
     else {
-	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $maxD, $minL, $which, $dornaview, $seeplots);
+	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
     }  
 }
 
