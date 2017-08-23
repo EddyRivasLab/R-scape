@@ -1370,11 +1370,14 @@ sub get_atoms_coord {
 	    $to       = substr($line, 21, 4); $to    =~ s/ //g;
 	    my $from2 = substr($line, 56, 4); $from2 =~ s/ //g;
 	    my $to2   = substr($line, 63, 4); $to2   =~ s/ //g;
-	    if ($from2 < $from) { $from = $from2; }
-	    if ($to2   > $to)   { $to   = $to2; }
 	}
     }
     close(FILE);
+
+    #OMG this is hard coded for a 1ljr.pdb which has an error in the coordenates
+    # DBREF says 2 244, but it should say 1 244
+    if ($pdbfile =~ /1ljr/) { $from = 1; }
+    
     for (my $r = $from; $r <= $to; $r++) {
 	$status[$r-$from]  = 0; # assume they are all present
     }
