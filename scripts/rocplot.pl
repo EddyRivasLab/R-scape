@@ -19,7 +19,7 @@ getopts ('C:D:G:L:P:rR:T:W:v');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <key>  \n\n";
+        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <gnuplot> <key>  \n\n";
         print "options:\n";
 	exit;
 }

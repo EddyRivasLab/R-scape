@@ -2521,12 +2521,12 @@ sub sorted_files {
     local *DIRH;
     opendir DIRH, $dir or die "eh? $dir: $!";
     if ($prefix) {
-	@$files_ref = grep ( /^$prefix\S+\.$suffix$/, readdir(DIRH));
+	@$files_ref = grep ( /$prefix\S+\.$suffix$/, map { "$dir/$_" } readdir(DIRH));
     }
     else {
-	@$files_ref = grep ( /^\S+\.$suffix$/, readdir(DIRH));
+	@$files_ref = grep ( /^\S+\.$suffix$/, map { "$dir/$_" } readdir(DIRH));
     }
-    map { "$dir/$_" } readdir DIRH;
+    
     sort @$files_ref;
 }
 
