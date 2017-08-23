@@ -691,7 +691,7 @@ sub parse_pdb_contact_map {
     print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
-    get_atoms_coord($pdbfile, \@chsq, $len, $chain, \@res, $isrna);
+    get_atoms_coord($pdbfile, \@chsq, $len, \@chsq, $chain, \@res, $isrna);
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -1328,7 +1328,7 @@ sub aa_conversion {
 #
 #
 sub get_atoms_coord {
-    my ($pdbfile, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
+    my ($pdbfile, $seqres_ref, $len, $chsq_ref, $chain, $res_ref, $isrna) = @_;
 
     my $type;
     my $char;
@@ -1363,13 +1363,15 @@ sub get_atoms_coord {
     my $to;
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if    (/DBREF1\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
-	    $from = $1;
-	    $to   = $2;
-	}
- 	elsif (/DBREF\s+\S+\s+$chain\s+(\S+)\s+(\S+)\s+/) {
-	    $from = $1;
-	    $to   = $2;
+
+	if (/DBREF/) {
+	    my $line = $_;
+	    $from     = substr($line, 15, 4); $from  =~ s/ //g;
+	    $to       = substr($line, 21, 4); $to    =~ s/ //g;
+	    my $from2 = substr($line, 56, 4); $from2 =~ s/ //g;
+	    my $to2   = substr($line, 63, 4); $to2   =~ s/ //g;
+	    if ($from2 < $from) { $from = $from2; }
+	    if ($to2   > $to)   { $to   = $to2; }
 	}
     }
     close(FILE);
@@ -1523,6 +1525,8 @@ sub get_atoms_coord {
 	    }
 	    
 	    if ($respos_prv != $respos) { $l ++; }
+	    if ($chsq_ref->[$l] ne $resname) { printf "at pos %d chsq %s is different from resname %s\n", $l+1, $chsq_ref->[$l], $resname; die; }
+	    
 	    $nat = $res_ref->[$l]->{"RES::nat"};
 	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
 	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;

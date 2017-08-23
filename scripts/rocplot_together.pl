@@ -42,7 +42,7 @@ if ($opt_C) { $famtype = "CAMEO"; }
 my $seeplots = 0;
 my $verbose  = 0;
 
-my $N = 2;
+my $N = 5;
 my $k = 50;
 my $shift = 0;
 
@@ -74,18 +74,17 @@ for (my $m = 0; $m < $M; $m++) {
 
     my $localdir = "$DIR/results/$type[$m]";
     my @family;
-    FUNCS::sorted_files($localdir, \@family, $string_suffix);    
+    FUNCS::sorted_files($localdir, \@family, $string_suffix, );    
     my $F = $#family+1;
     
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
     {
-	my $rocfile = "$localdir/$family[$f]";
+	my $rocfile = "$family[$f]";
 
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
-	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d\S+$/)   { print "++$rocfile\n"; $add = 1; }
-	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF\S+$/)   { $add = 1; }
-	print "^^famtype $famtype roc $rocfile add $add\n";
+	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d[^\/]+$/)   { $add = 1; }
+	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF[^\/]+$/)   { $add = 1; }
 	
 	if ($add == 0) { next; }
 
@@ -150,7 +149,7 @@ sub rocplot {
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "FILE: $psfile\n";
 
-    my $maxpp = 2.0;
+    my $maxpp = 5.0;
 
     my $xlabel;
     my $ylabel;
