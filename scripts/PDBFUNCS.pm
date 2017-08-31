@@ -361,20 +361,24 @@ sub map_pdbsq {
 	    $n ++; $y ++;
  	}
     }
-    printf "^^1st in pdb %d/%d | 1st in ali %d/%d\n", $x+1, $len, $y+1, $pfamalen;
+    printf "^^1st in pdb %d/%d | 1st in ali %d/%d | alen $alen\n", $x+1, $len, $y+1, $pfamalen;
 
     # create the map
     my $pos = 0;
     while ($pos < $alen) {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
 	my $pos_pfam = uc($ali_pfam[$pos]);
+
+	if ($x >= $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
+ 	if ($y >= $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
+     
 	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
 	    #printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
+	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
 	    }
 	    $y ++;	
@@ -460,7 +464,7 @@ sub find_pdbsq_in_pfam {
     system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
     system("          $hmmersearch -E $eval         $hmm  $stofile     >  $hmmout\n");
     system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
-    #system("/usr/bin/more $hmmout\n");
+    #system("/bin/more $hmmout\n");
 
     # take hit with best evalue
     my $pdbasq;
@@ -506,10 +510,23 @@ sub parse_hmmout_for_besthit {
     my $ali_pfam   = "";
     my $pfamsqname = "";
 
+    my $best_dom_E = -1;
+    my $best_dom_sc = -1;
+    my $best_dom_bias = -1;
+    
     my $n = 0;
+    my $b = 0;
+    my $domain = -1;
+    my $thisdomain = 0;
     open(HF, "$hmmout") || die;
     while(<HF>) {
 	if (/#/) {
+	}
+	elsif ($b == 0 && /\S+\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+\d+\s+(\S+)\s* /) {
+	    $best_dom_E    = $1;
+	    $best_dom_sc   = $2;
+	    $best_dom_bias = $3;
+	    $b ++;
 	}
 	elsif (/\>\>\s+(\S+)\s*$/ && $n == 0) {
 	    $pfamsqname = $1;
@@ -520,15 +537,22 @@ sub parse_hmmout_for_besthit {
 	    $n ++;
 	}
 	elsif (/\>\>\s+(\S+)/ && $n > 0) {
+	    if ($domain == -1) { print "could not find domain\n"; die; }
 	    last;
 	}
-	elsif ($n==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif (/^\s*(\d+)\s+\S*\s+$best_dom_sc\s+$best_dom_bias\s+/) {
+	    $domain = $1;
+	}
+	elsif ($n==1 && /^\s*\=\=\s+domain\s+$domain\s+/) {
+	    $thisdomain = 1;
+	}
+	elsif ($n==1 && $thisdomain==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i     = $1;
 	    $ali_pdb .= $2;
 	    $to_pdb   = $3;
 	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
 	}
-	elsif ($n==1 && /^\s*$pfamsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif ($n==1 && $thisdomain==1 && /^\s*$pfamsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i       = $1;
 	    $ali_pfam  .= $2;
 	    $to_pfam    = $3;
@@ -1152,7 +1176,7 @@ sub atom_offset {
     
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)\S*\s+/) {
 	    my $val = $1;
 	    if ($val < $atom_offset) { $atom_offset = $val; }
 	}
@@ -1342,6 +1366,7 @@ sub get_atoms_coord {
     my $recording = 0;
     my $respos_first;
     my $respos_prv;
+    my $icode_prv;
     my $id;
     my $id_prv = -1;
     
@@ -1359,25 +1384,40 @@ sub get_atoms_coord {
     # 2 = absent  (not in the sequence, and not missing)
     
     my $remarknum = 0;
-    my $from;
-    my $to;
+    my $from = " ";
+    my $to   = " ";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 
 	if (/DBREF/) {
 	    my $line = $_;
-	    $from     = substr($line, 15, 4); $from  =~ s/ //g;
-	    $to       = substr($line, 21, 4); $to    =~ s/ //g;
-	    my $from2 = substr($line, 56, 4); $from2 =~ s/ //g;
-	    my $to2   = substr($line, 63, 4); $to2   =~ s/ //g;
+	    my $ch = substr($line, 12, 1);
+	    if ($ch =~ /^$chain$/) {
+		my $lfrom = substr($line, 14, 4); $lfrom  =~ s/ //g;
+		my $lto   = substr($line, 20, 4); $lto    =~ s/ //g;
+
+		if ($from eq " " && $to eq " ") {
+		$from = $lfrom;
+		$to   = $lto;
+		}
+		else {
+		    $from = ($lfrom < $from)? $lfrom : $from;
+		    $to   = ($lto   > $to)?   $lto   : $to;
+		}
+		
+	    }
 	}
     }
     close(FILE);
-
-    #OMG this is hard coded for a 1ljr.pdb which has an error in the coordenates
+    if ($from eq " " || $to eq " ") {
+	print "could not find from $from or to $to\n";
+	die;
+    }
+   
+    # OMG this is hard coded for a 1ljr.pdb which has an error in the coordenates
     # DBREF says 2 244, but it should say 1 244
     if ($pdbfile =~ /1ljr/) { $from = 1; }
-    
+ 
     for (my $r = $from; $r <= $to; $r++) {
 	$status[$r-$from]  = 0; # assume they are all present
     }
@@ -1390,30 +1430,37 @@ sub get_atoms_coord {
     }
     
     # now look for the "odd" residues
-    # assume they are all present for now
+    # assume they are present for now
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\S+)\s+/) {
-	    my $pos = $1;
-	    if ($pos < $from) {
-		for (my $x = $to; $x >= $from; $x --) {
-		    $status[$x-$pos] = $status[$x-$from]; #leave unchanged
-		}
-		for (my $x = $pos+1; $x < $from; $x ++) {
-		    $status[$x-$pos] = 2;  # absent for now
-		}
-		$status[0] = 0;            # present for now
-		$from = $pos; 
-	    }
-	    elsif ($pos > $to) {
-		$status[$pos-$from] = 0; # present for now
-		for (my $x = $to+1; $x < $pos; $x ++) {
-		    $status[$x-$pos] = 2;  # these are absent for now
-		}
-		$to = $pos;
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)(\S*)\s+/) {
+	    my $pos   = $1;
+	    my $icode = $2;
+	    if ($icode =~ /^\S$/) {
+		#ignore inserted residues here
+		next;
 	    }
 	    else {
-		$status[$pos-$from] = 0;  # is present for now
+		if ($pos < $from) {
+		    for (my $x = $to; $x >= $from; $x --) {
+			$status[$x-$pos] = $status[$x-$from]; #leave unchanged
+		    }
+		    for (my $x = $pos+1; $x < $from; $x ++) {
+			$status[$x-$pos] = 2;  # absent for now
+		    }
+		    $status[0] = 0;            # present for now
+		    $from = $pos; 
+		}
+		elsif ($pos > $to) {
+		    $status[$pos-$from] = 0; # present for now
+		    for (my $x = $to+1; $x < $pos; $x ++) {
+			$status[$x-$from] = 2;  # these are absent for now
+		    }
+		    $to = $pos;
+		}
+		else {
+		    $status[$pos-$from] = 0;  # is present for now
+		}
 	    }
 	}
     }
@@ -1427,32 +1474,41 @@ sub get_atoms_coord {
     }
     
     # identify the missing residues
+    my $missing = "";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
 	    $remarknum = $1;
 	}
-	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\S+)\s*$/) {
-	    my $pos = $1;
-	    if ($pos < $from) {
-		for (my $x = $to; $x >= $from; $x --) {
-		    $status[$x-$pos] = $status[$x-$from]; # leave  unchanged
-		}
-		for (my $x = $pos; $x < $from; $x ++) {
-		    $status[$x-$pos] = 2;  # absent for now
-		}
-		$status[0] = 1;            # missing
-		$from = $pos; 
+	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)(\S*)\s*$/) {
+	    my $pos   = $1;
+	    my $icode = $2;
+	    if ($icode =~ /^\S$/) {
+		# cannot annoate here as missing, save in string $missing for later
+		$missing .= " $pos$icode ";
+		print "pos $pos icode $icode $missing\n";
 	    }
-	    elsif ($pos > $to) {
-		$status[$pos-$from] = 1;
-		for (my $x = $to+1; $x < $pos; $x ++) {
-		    $status[$x-$pos] = 2;  # these are absent for now
+	    else {
+		if ($pos < $from) {
+		    for (my $x = $to; $x >= $from; $x --) {
+			$status[$x-$pos] = $status[$x-$from]; # leave  unchanged
+		    }
+		    for (my $x = $pos; $x < $from; $x ++) {
+			$status[$x-$pos] = 2;  # absent for now
+		    }
+		    $status[0] = 1;            # missing
+		    $from = $pos; 
 		}
-		$to = $pos;
-	    }
-	    else { 
-		$status[$pos-$from] = 1;   # missing
+		elsif ($pos > $to) {
+		    $status[$pos-$from] = 1;
+		    for (my $x = $to+1; $x < $pos; $x ++) {
+			$status[$x-$pos] = 2;  # these are absent for now
+		    }
+		    $to = $pos;
+		}
+		else { 
+		    $status[$pos-$from] = 1;   # missing
+		}
 	    }
 	}
     }
@@ -1462,34 +1518,20 @@ sub get_atoms_coord {
     for (my $x = $from; $x <= $to; $x ++) {
      	my $status = $status[$x-$from];
 	if ($status == 1) {
-	    print "^^ pos $x missing \n";
+	    #print "^^ pos $x missing \n";
 	}
 	if ($status == 2) {
-	    print "^^ pos $x absent \n";
+	    #print "^^ pos $x absent \n";
 	}
-	#print "^^ pos $x status $status[$x-$from] \n";
+	print "^^ pos $x status $status[$x-$from] \n";
     }
-
-    # check
-    my $nP = 0;
-    my $nM = 0;
-    my $nA = 0;
-    for (my $x = $from; $x <= $to; $x ++) {
-	my $status = $status[$x-$from];
-	if    ($status == 0) { $nP ++; }
-	elsif ($status == 1) { $nM ++; }
-	elsif ($status == 2) { $nA ++; }
-	else                 { print "status? \n"; die; }
-    }
-    if ($nP+$nM != $len) { printf "P+M should be $len but it is %d\n", $nP+$nM; die; }
-	
-
 
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
     $l = 0;
     $respos_prv = $from;
+    $icode_prv = " ";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	my $line = $_;
@@ -1521,14 +1563,54 @@ sub get_atoms_coord {
 	    $recording = 1;
 
 	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
+		    print "^^X $x from $from to $to status $status[$x-$from] \n";
 		if ($status[$x-$from] == 1) { # a missing residue moves the counter 
-		    $l ++; 
+		    $l ++;
 		    $res_ref->[$l]->{"RES::coor"} = $x;
 		}
+		else { # an absent residue. Mark as such, do nothing
+		    print "^^ABSENT pos $x residue $respos\n";
+		    $status[$x-$from] = 2;
+		}
 	    }
-	    
-	    if ($respos_prv != $respos) { $l ++; }
-	    if ($chsq_ref->[$l] ne $resname) { printf "at pos %d chsq %s is different from resname %s\n", $l+1, $chsq_ref->[$l], $resname; die; }
+
+	    if ($respos_prv != $respos) {
+		
+		# there may be (exmaple 4gud chainB) inserted&missing residues not accounted for yet
+		while ($missing =~ /\s$respos_prv([^\d])\s/) {
+		    $missing =~ s/\s$respos_prv([^\d])//;
+		    my $icode = $1;
+		    for (my $x = $to; $x >= $l; $x --) {
+			$status[$x+1-$from] = $status[$x-$from];
+		    }
+		    $status[$l-$from] = 1;
+		    $l ++; 
+		    print "\n^^INSERT l=$l respos=$respos_prv icode=$icode | $missing\n";
+		    $to  ++;		    
+		}
+		
+		$l ++; 
+	    }
+	    else {
+		# an insertion residue
+		if (($icode_prv =~ /^ $/ && $icode =~ /^\S$/) || ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode))  {
+		    for (my $x = $to; $x >= $l; $x --) {
+			$status[$x+1-$from] = $status[$x-$from];
+		    }
+
+		    # it could be also missing
+		    if ($missing =~ /$respos$icode/) {
+			$status[$l-$from] = 1;			
+		    }
+		    else {
+			$status[$l-$from] = 0;
+		    }
+		    $l ++; 
+		    print "\n^^INSERT l=$l respos=$respos icode=$icode\n";
+		    $to  ++;
+		}
+	    }
+	    if ($chsq_ref->[$l] ne $resname) { printf "at pos %d respos $respos icode $icode chsq %s is different from resname %s\n", $l+1, $chsq_ref->[$l], $resname; die; }
 	    
 	    $nat = $res_ref->[$l]->{"RES::nat"};
 	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
@@ -1543,6 +1625,7 @@ sub get_atoms_coord {
 
 	    $id_prv     = $id;
 	    $respos_prv = $respos;
+	    $icode_prv  = $icode;
 	    $nn ++;
 	    
 	}
@@ -1551,7 +1634,20 @@ sub get_atoms_coord {
    }
     close(FILE);
 
-    if (0) {
+    # check
+    my $nP = 0;
+    my $nM = 0;
+    my $nA = 0;
+    for (my $x = $from; $x <= $to; $x ++) {
+	my $status = $status[$x-$from];
+	if    ($status == 0) { $nP ++; }
+	elsif ($status == 1) { $nM ++; }
+	elsif ($status == 2) { $nA ++; }
+	else                 { print "status? \n"; die; }
+    }
+    if ($nP+$nM != $len) { printf "P+M should be $len but it is %d (%d+%d)\n", $nP+$nM, $nP, $nM; die; }
+
+    if (1) {
 	for ($l = 0; $l < $len; $l ++) {
 	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
 	    $coor = $res_ref->[$l]->{"RES::coor"};	    
@@ -1560,6 +1656,12 @@ sub get_atoms_coord {
 	    printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; 
 	}
     }
+}
+
+sub update_status {
+    my ($pos, $from, $to, $status_ref) = @_;
+
+    
 }
 
 
