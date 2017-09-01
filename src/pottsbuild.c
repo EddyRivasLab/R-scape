@@ -346,13 +346,14 @@ potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf,
 
 // sum_b eij(a,b) = sum_a eij(a,b) = sum_a hi[a] = 0
 //
-// eij(a,b) → eij(a,b) − 1/K * \sum_c eij(c,b) − 1/k * \sum_d eij(a,d) + \1/K^2 * \sum_c \sum_d eij(c,d)
-// hi(a)    → hi(a)    - \sum_{j\neq i} 1/K * \sum_d eij(a,d)
+// eij(a,b) → eij(a,b) − 1/K * \sum_c eij(c,b) − 1/k * \sum_d eij(a,d) + 1/K^2 * \sum_c \sum_d eij(c,d)
+// hi(a)    → hi(a)    + \sum_{j\neq i} 1/K * \sum_d eij(a,d) - 1/K \sum_c hi(c) - 1/K^2 * \sum_c \sum_d eij(c,d)
 int
 potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 {
   int      K = pt->abc->K;
-  int      K2 = K*K; 
+  int      K2 = K*K;
+  double   hi;
   double   sumi[K];
   double   sumj[K];
   double   sumh;
@@ -361,20 +362,28 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   int      a, b;
   int      status;
 
-  for (i = 0; i < pt->L; i++) 
+ for (i = 0; i < pt->L; i++) {
+    hi = 0;
+
+    for (a = 0; a < K; a ++)
+      hi += pt->h[i][a];
+    
     for (a = 0; a < K; a ++) {
       
-      sumh = 0.0;  
+      sumh = 0.0;
+      
       for (j = 0; j < pt->L; j++) {
 	if (i==j) continue;
 	for (b = 0; b < K; b ++) 
 	  sumh += pt->e[i][j][IDX(a,b,K)];
       }
       
-      pt->h[i][a] -= sumh/K;    
+      pt->h[i][a] -= sumh/K + hi/K;    
     }
+  }
   
-  for (i = 0; i < pt->L; i++) 
+  for (i = 0; i < pt->L; i++) {
+    
     for (j = i+1; j < pt->L; j++) {    
       sum = 0;     
       for (a = 0; a < K; a ++) {
@@ -393,6 +402,9 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 	  pt->e[j][i][IDX(a,b,K)]  = pt->e[i][j][IDX(a,b,K)];
 	}
     }
+
+    pt->h[i][a] -= sum/K2;  
+  }
   
 #if 0
   // check it is a zero sum
