@@ -1176,7 +1176,7 @@ sub atom_offset {
     
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)\S*\s+/) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)\S*\s+/ || /SEQADV\s+\S+\s+\S+\s+$chain\s+(\-\d+)\S*\s+/) {
 	    my $val = $1;
 	    if ($val < $atom_offset) { $atom_offset = $val; }
 	}
@@ -1370,7 +1370,8 @@ sub get_atoms_coord {
     my $id;
     my $id_prv = -1;
     
-    
+    # the @res array is indexed in the coords of seqres
+    # which is our ultimately coordinate system.
     for ($l = 0; $l < $len; $l ++) {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
@@ -1378,6 +1379,7 @@ sub get_atoms_coord {
 	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l], $isrna);
     }
 
+    # these are indexed according with the total numbering in the atom list
     my @status;
     # 0 = present (in the sequence and has atoms)
     # 1 = missing (in the sequence but no atoms)
@@ -1419,13 +1421,13 @@ sub get_atoms_coord {
     if ($pdbfile =~ /1ljr/) { $from = 1; }
  
     for (my $r = $from; $r <= $to; $r++) {
-	$status[$r-$from]  = 0; # assume they are all present
+	$status[$r-$from] = 0;        # assume they are all present
     }
 
     if (0) {
 	printf "^^1 FROM $from TO $to\n";
 	for (my $x = $from; $x <= $to; $x ++) {
-	    print "^^1 pos $x is status $status[$x-$from] \n";
+	    print "^^1 pos $x  status $status[$x-$from] \n";
 	}
     }
     
@@ -1433,9 +1435,12 @@ sub get_atoms_coord {
     # assume they are present for now
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)(\S*)\s+/) {
+	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)(\S*)\s+/ ||
+	    /SEQADV\s+\S+\s+\S+\s+$chain\s+(\-\d+)(\S*)\s+/    ) {
 	    my $pos   = $1;
 	    my $icode = $2;
+	    print "^^ADV pos $pos icode $icode\n";
+	    
 	    if ($icode =~ /^\S$/) {
 		#ignore inserted residues here
 		next;
@@ -1443,7 +1448,7 @@ sub get_atoms_coord {
 	    else {
 		if ($pos < $from) {
 		    for (my $x = $to; $x >= $from; $x --) {
-			$status[$x-$pos] = $status[$x-$from]; #leave unchanged
+			$status[$x-$pos] = $status[$x-$from];     #leave unchanged
 		    }
 		    for (my $x = $pos+1; $x < $from; $x ++) {
 			$status[$x-$pos] = 2;  # absent for now
@@ -1452,9 +1457,9 @@ sub get_atoms_coord {
 		    $from = $pos; 
 		}
 		elsif ($pos > $to) {
-		    $status[$pos-$from] = 0; # present for now
+		    $status[$pos-$from] = 0;        # present for now
 		    for (my $x = $to+1; $x < $pos; $x ++) {
-			$status[$x-$from] = 2;  # these are absent for now
+			$status[$x-$from] = 2;       # these are absent for now
 		    }
 		    $to = $pos;
 		}
@@ -1480,34 +1485,38 @@ sub get_atoms_coord {
 	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
 	    $remarknum = $1;
 	}
-	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)(\S*)\s*$/) {
+	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)(\S*)\s*$/   ||
+	       /^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\-\d+)(\S*)\s*$/   ) {
 	    my $pos   = $1;
 	    my $icode = $2;
+
+	    # this is a inserted residue that is also missing 
+	    # have to be treated differently
 	    if ($icode =~ /^\S$/) {
-		# cannot annoate here as missing, save in string $missing for later
+		# cannot annotate here as missing, save in string $missing for later
 		$missing .= " $pos$icode ";
 		print "pos $pos icode $icode $missing\n";
 	    }
 	    else {
 		if ($pos < $from) {
 		    for (my $x = $to; $x >= $from; $x --) {
-			$status[$x-$pos] = $status[$x-$from]; # leave  unchanged
+			$status[$x-$pos]     = $status[$x-$from]; # leave  unchanged
 		    }
 		    for (my $x = $pos; $x < $from; $x ++) {
-			$status[$x-$pos] = 2;  # absent for now
+			$status[$x-$pos]     = 2;  # absent for now
 		    }
-		    $status[0] = 1;            # missing
+		    $status[0]     = 1; # missing
 		    $from = $pos; 
 		}
 		elsif ($pos > $to) {
-		    $status[$pos-$from] = 1;
+		    $status[$pos-$from]     = 1;
 		    for (my $x = $to+1; $x < $pos; $x ++) {
-			$status[$x-$pos] = 2;  # these are absent for now
+			$status[$x-$pos]     = 2;       # these are absent for now
 		    }
 		    $to = $pos;
 		}
 		else { 
-		    $status[$pos-$from] = 1;   # missing
+		    $status[$pos-$from]     = 1;          # missing
 		}
 	    }
 	}
@@ -1529,8 +1538,10 @@ sub get_atoms_coord {
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
-    $l = 0;
-    $respos_prv = $from;
+    my $na = 0;
+    my $ll = -1; 
+    $l     = -1; # counter on seqres
+    $respos_prv = $from-1;
     $icode_prv = " ";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
@@ -1549,7 +1560,6 @@ sub get_atoms_coord {
 	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
 	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
 	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
-	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 
 	    # Look for the target chain
 	    if ($chainid ne $chain) { next; }
@@ -1558,55 +1568,73 @@ sub get_atoms_coord {
 	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
 	    
 	    # An atom to record
+	    $na ++;
 	    $id = "$respos"."$icode";
 	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
 
+	    if ($na == 1) {
+		if ($respos < $from) { print "there is an error here. First atom $respos before fist position $from\n"; die; }
+		$ll = $from-1;
+	    }
+	    printf "     %d %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1, $ll;
+	   
+	    # check for gaps in the numbering
+	    # those could be:
+	    # a missing residue (residue in seqres w/o atoms)
+	    # or
+	    # an absent residue (residue not in seqres nor in atomlist, just a gap in the numbering)
 	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
-		    print "^^X $x from $from to $to status $status[$x-$from] \n";
-		if ($status[$x-$from] == 1) { # a missing residue moves the counter 
-		    $l ++;
+	  
+		if ($status[$ll+1-$from] == 1) { # a missing residue moves the counter 
 		    $res_ref->[$l]->{"RES::coor"} = $x;
+		    $l  ++;
+		    $ll ++;
+		    print "^^MISSING pos l $l ll $y respos $x\n";
 		}
 		else { # an absent residue. Mark as such, do nothing
-		    print "^^ABSENT pos $x residue $respos\n";
-		    $status[$x-$from] = 2;
+		    print "^^ABSENT pos l $l ll $y respos $x\n";
+		    $status[$ll+1-$from] = 2;
+		    $ll ++;
 		}
 	    }
+	    printf "     %d %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1, $ll;
 
 	    if ($respos_prv != $respos) {
-		
-		# there may be (exmaple 4gud chainB) inserted&missing residues not accounted for yet
+		# there may be (example 4gud chainB) inserted&missing residues not accounted for yet
 		while ($missing =~ /\s$respos_prv([^\d])\s/) {
 		    $missing =~ s/\s$respos_prv([^\d])//;
 		    my $icode = $1;
-		    for (my $x = $to; $x >= $l; $x --) {
+		    for (my $x = $to; $x >= $ll; $x --) {
 			$status[$x+1-$from] = $status[$x-$from];
 		    }
-		    $status[$l-$from] = 1;
-		    $l ++; 
-		    print "\n^^INSERT l=$l respos=$respos_prv icode=$icode | $missing\n";
+		    $l  ++;
+		    $ll ++;
+		    $status[$ll-$from] = 1;
+		    print "\n^^INSERT l= $l ll=$ll respos=$respos_prv icode=$icode | $missing\n";
 		    $to  ++;		    
 		}
 		
-		$l ++; 
+		$l  ++;
+		$ll ++;
 	    }
 	    else {
-		# an insertion residue
+		# an insertion residue: 50A...
 		if (($icode_prv =~ /^ $/ && $icode =~ /^\S$/) || ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode))  {
-		    for (my $x = $to; $x >= $l; $x --) {
+		    for (my $x = $to; $x >= $ll; $x --) {
 			$status[$x+1-$from] = $status[$x-$from];
 		    }
 
 		    # it could be also missing
+		    $l  ++;
+		    $ll ++;
 		    if ($missing =~ /$respos$icode/) {
-			$status[$l-$from] = 1;			
+			$status[$ll-$from] = 1;			
 		    }
 		    else {
-			$status[$l-$from] = 0;
+			$status[$ll-$from] = 0;
 		    }
-		    $l ++; 
-		    print "\n^^INSERT l=$l respos=$respos icode=$icode\n";
+		    print "\n^^INSERT l=$l ll=$ll respos=$respos icode=$icode\n";
 		    $to  ++;
 		}
 	    }
