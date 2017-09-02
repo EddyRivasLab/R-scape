@@ -1,0 +1,32 @@
+
+See instructions at
+ https://github.com/EddyRivasLab/hmmer
+
+including...
+
+--------
+to clone a copy of HMMER3 source from github:
+
+You need to clone both the HMMER and Easel repositories, as follows:
+
+  % git clone https://github.com/EddyRivasLab/hmmer
+  % cd hmmer
+  % git clone https://github.com/EddyRivasLab/easel
+  % git checkout develop
+  % (cd easel; git checkout develop)
+  % autoconf
+
+and to build:
+
+  % ./configure
+  % make
+
+
+
+
+
+to know the url:
+>git remote show origin
+ 
+to know the branch: (the one with * is the one)
+>git branch
