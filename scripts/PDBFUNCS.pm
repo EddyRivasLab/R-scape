@@ -1403,7 +1403,6 @@ sub get_atoms_coord {
     my $ll = 0;
     my $nn = 0;
     my @atmres;
-    $respos_prv;
     $icode_prv  = " ";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
@@ -1517,16 +1516,16 @@ sub get_atoms_coord {
     print "atmseqres $asq[1]\n";
 
     my $alen = length($asq[0]);
-    my $l  = 0;
-    my $ll = 0;
+    my $l = 0;
+    my $y = 0;
     for (my $s = 0; $s < $alen; $s ++) {
 	my $s1 = substr($asq[0], $s,  1);
 	my $s2 = substr($asq[1], $s,  1);
 
 	if    ($s1 =~ /^[\.\-]$/ && $s2 =~ /^[\.\-]$/) {  }
 	elsif (                     $s2 =~ /^[\.\-]$/) { $l  ++ }
-	elsif ($s1 =~ /^[\.\-]$/)                      { $ll ++ }
- 	elsif ($s1 eq $s2) { $map[$l+1] = $ll+1; $l ++; $ll ++; }
+	elsif ($s1 =~ /^[\.\-]$/)                      { $y ++ }
+ 	elsif ($s1 eq $s2) { $map[$l+1] = $y+1; $l ++; $y ++; }
 	else { print "$s1 and $s2??\n"; die; }
     }
     
