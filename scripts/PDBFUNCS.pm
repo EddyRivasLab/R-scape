@@ -369,14 +369,14 @@ sub map_pdbsq {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
 	my $pos_pfam = uc($ali_pfam[$pos]);
 
-	if ($x >= $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
- 	if ($y >= $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
+	if ($x > $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
+ 	if ($y > $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
      
 	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
 	    #printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
+	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
 		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
@@ -436,7 +436,7 @@ sub find_pdbsq_in_pfam {
     my $from_pdb;
     my $from_pfam;
     my $pfam_asq = "";
-    my $eval = 1;
+    my $eval = 1e-10;
 
     my $pfamsqname =  $$ret_pfamsqname;
      if ($pfamsqname eq "") {    
@@ -448,6 +448,7 @@ sub find_pdbsq_in_pfam {
     my $hmmer       = "$rscapebin/../lib/hmmer";
     my $hmmbuild    = "$hmmer/src/hmmbuild";
     my $hmmersearch = "$hmmer/src/hmmsearch";
+    my $hmmeralign  = "$hmmer/src/hmmalign";
     
     my $easel    = "$hmmer/easel";
     my $sfetch   = "$easel/miniapps/esl-sfetch";
@@ -459,6 +460,8 @@ sub find_pdbsq_in_pfam {
      
     my $hmm       = "$currdir/$pdbname.hmm";
     my $hmmout    = "$currdir/$pdbname.hmmout";
+    my $hmmali    = "$currdir/$pdbname.hmmali";
+    my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
  
     system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
     system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
@@ -466,15 +469,27 @@ sub find_pdbsq_in_pfam {
     system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
     #system("/bin/more $hmmout\n");
 
-    # take hit with best evalue
-    my $pdbasq;
-    my $asq;
-    parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamsqname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
-    if ($pfamsqname eq "") { print "could not find best hit for chain $chain\n"; }
-    
+    if (hmmout_has_hit($hmmout, \$pfamsqname) == 0) { return 0; }
     $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
+    
+    my $pfamsqfile = "$currdir/$pfamsqname";
+    system("$sfetch $stofile $pfamsqname > $pfamsqfile\n");
+    open(F, ">>$pfamsqfile") || die;
+    print F ">$pdbname\n$pdbsq\n";
+    close(F);
 
- 
+    system("          $hmmeralign         $hmm  $pfamsqfile >  $hmmali\n");
+    system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
+    system("$reformat afa $hmmali > $hmmaliafa\n");
+    #system("/bin/more $hmmaliafa\n");
+
+    my $nsq = 0;
+    my @asq;
+    my @asqname;
+    FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
+
+    $ali_pdb  = $asq[1];
+    $ali_pfam = $asq[0];
     my $pfamalen = length($pfam_asq);
     my $alen     = length($ali_pfam);
     if ($pfamsqname ne "") {
@@ -487,18 +502,42 @@ sub find_pdbsq_in_pfam {
     $$ret_pfamsqname = $pfamsqname;
     $$ret_ali_pdb    = $ali_pdb;
     $$ret_ali_pfam   = $ali_pfam;
-    $$ret_from_pdb   = $from_pdb;
-    $$ret_from_pfam  = $from_pfam;
+    $$ret_from_pdb   = 1;
+    $$ret_from_pfam  = 1;
     $$ret_pfam_asq   = $pfam_asq;
 
     system("/bin/rm $pdbsqfile\n");
+    system("/bin/rm $pfamsqfile\n");
     system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
+    system("/bin/rm $hmmali\n");
+    system("/bin/rm $hmmaliafa\n");
 
     return $alen;
 }
 
-    
+
+sub hmmout_has_hit {
+    my ($hmmout, $ret_pfamsqname) = @_;
+
+    my $hashit = 0;
+    open(HF, "$hmmout") || die;
+    while(<HF>) {
+	if (/#/) {
+	}
+	elsif (/\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s* /) {
+	    $hashit = 1;
+	}
+	elsif (/\>\>\s+(\S+)\s*$/) {
+	    $$ret_pfamsqname = $1;
+	    last;
+	}
+
+    }
+    close(HF);
+    return $hashit;
+}
+
 sub parse_hmmout_for_besthit {
     my ($hmmout, $pdbname, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
 
@@ -543,8 +582,16 @@ sub parse_hmmout_for_besthit {
 	elsif (/^\s*(\d+)\s+\S*\s+$best_dom_sc\s+$best_dom_bias\s+/) {
 	    $domain = $1;
 	}
-	elsif ($n==1 && /^\s*\=\=\s+domain\s+$domain\s+/) {
-	    $thisdomain = 1;
+	elsif ($n==1 && /^\s*\=\=\s+domain\s+(\d+)\s+/) {
+	    my $whichdomain = $1;
+	    if ($whichdomain == $domain) {
+		$thisdomain = 1;
+		print "^^DOMAIN $domain bestE $best_dom_E $best_dom_sc $best_dom_bias\n";
+	    }
+	    else {
+		$thisdomain = 0;
+		last;
+	    }
 	}
 	elsif ($n==1 && $thisdomain==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i     = $1;
@@ -1590,15 +1637,15 @@ sub get_atoms_coord {
 		    $res_ref->[$l]->{"RES::coor"} = $x;
 		    $l  ++;
 		    $ll ++;
-		    print "^^MISSING pos l $l ll $y respos $x\n";
+		    print "^^MISSING pos l $l ll $ll respos $x\n";
 		}
 		else { # an absent residue. Mark as such, do nothing
-		    print "^^ABSENT pos l $l ll $y respos $x\n";
 		    $status[$ll+1-$from] = 2;
 		    $ll ++;
+		    print "^^ABSENT pos l $l ll $ll respos $x\n";
 		}
 	    }
-	    printf "     %d %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1, $ll;
+	    #printf "     %d %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1, $ll;
 
 	    if ($respos_prv != $respos) {
 		# there may be (example 4gud chainB) inserted&missing residues not accounted for yet
