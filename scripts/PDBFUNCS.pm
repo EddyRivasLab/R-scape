@@ -1447,7 +1447,7 @@ sub get_atoms_coord {
 	    }
 			    
 	    # An atom to record
-	    printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $ll;
+	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $ll;
 	    my $nat = $atmres[$ll]->{"RES::nat"};
 	    ${$atmres[$ll]->{"RES::type"}}[$nat] = $atomname;
 	    ${$atmres[$ll]->{"RES::x"}}[$nat]    = $x;
@@ -1536,10 +1536,12 @@ sub get_atoms_coord {
     #check
     for (my $l = 0; $l < $len; $l ++) {
 	my $ll = $map[$l+1] - 1;
-	my $resname = $atmres[$ll]->{"RES::char"} ;
-	if ($seqres_ref->[$l] ne $resname) { 
-	    printf "at pos seqres %d atmres %d seqres %s is different from atmres %s\n", $l+1, $ll+1, $seqres_ref->[$l], $resname;
-	    die; 
+	if ($ll >= 0) {
+	    my $resname = $atmres[$ll]->{"RES::char"} ;
+	    if ($seqres_ref->[$l] ne $resname) { 
+		printf "at pos seqres %d atmres %d seqres %s is different from atmres %s\n", $l+1, $ll+1, $seqres_ref->[$l], $resname;
+		die; 
+	    }
 	}
     }
     
@@ -1547,6 +1549,8 @@ sub get_atoms_coord {
     for (my $l = 0; $l < $len; $l ++) {
 	my $ll = $map[$l+1] - 1;
 
+	if ($ll < 0) { next; }
+	
 	$res_ref->[$l]->{"RES::coor"} = $atmres[$ll]->{"RES::coor"};
 	$res_ref->[$l]->{"RES::nat"}  = $atmres[$ll]->{"RES::nat"};
 	$res_ref->[$l]->{"RES::char"} = $atmres[$ll]->{"RES::char"};
@@ -1560,7 +1564,7 @@ sub get_atoms_coord {
 	}
     }
     
-    if (1) {
+    if (0) {
 	for (my $l = 0; $l < $len; $l ++) {
 	    my $nat  = $res_ref->[$l]->{"RES::nat"};	    
 	    my $coor = $res_ref->[$l]->{"RES::coor"};	    
