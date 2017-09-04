@@ -36,7 +36,6 @@ struct PDB2MSA => {
 
     map       => '@', # map[0..pdblen-1]  to [0..alen-1]
     revmap    => '@', # revmap[0..alen-1] to [0..pdblen-1]
-    
     map0file  => '$', # name of file mapping contacts to pdb sequence
     map1file  => '$', # name of file mapping contacts to pdb sub-sequence  represented in the alignmetn
     mapfile   => '$', # name of file mapping contacts to alignment
@@ -369,14 +368,14 @@ sub map_pdbsq {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
 	my $pos_pfam = uc($ali_pfam[$pos]);
 
-	if ($x >= $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
- 	if ($y >= $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
+	if ($x > $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
+ 	if ($y > $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
      
 	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
 	    #printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
+	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
 	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
 		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
 		$y ++; 
@@ -436,7 +435,7 @@ sub find_pdbsq_in_pfam {
     my $from_pdb;
     my $from_pfam;
     my $pfam_asq = "";
-    my $eval = 1;
+    my $eval = 1e-10;
 
     my $pfamsqname =  $$ret_pfamsqname;
      if ($pfamsqname eq "") {    
@@ -448,6 +447,7 @@ sub find_pdbsq_in_pfam {
     my $hmmer       = "$rscapebin/../lib/hmmer";
     my $hmmbuild    = "$hmmer/src/hmmbuild";
     my $hmmersearch = "$hmmer/src/hmmsearch";
+    my $hmmeralign  = "$hmmer/src/hmmalign";
     
     my $easel    = "$hmmer/easel";
     my $sfetch   = "$easel/miniapps/esl-sfetch";
@@ -459,6 +459,8 @@ sub find_pdbsq_in_pfam {
      
     my $hmm       = "$currdir/$pdbname.hmm";
     my $hmmout    = "$currdir/$pdbname.hmmout";
+    my $hmmali    = "$currdir/$pdbname.hmmali";
+    my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
  
     system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
     system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
@@ -466,15 +468,29 @@ sub find_pdbsq_in_pfam {
     system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
     #system("/bin/more $hmmout\n");
 
-    # take hit with best evalue
-    my $pdbasq;
-    my $asq;
-    parse_hmmout_for_besthit($hmmout, $pdbname, \$pfamsqname, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam);
-    if ($pfamsqname eq "") { print "could not find best hit for chain $chain\n"; }
+    if (hmmout_has_hit($hmmout, \$pfamsqname) == 0) { return 0; }
     
+    my $name = "$pfamsqname";
+    $name =~ s/\//\_/g;
+    my $pfamsqfile = "$currdir/$name";
+    system("$sfetch $stofile $pfamsqname > $pfamsqfile\n");
+    open(F, ">>$pfamsqfile") || die;
+    print F ">$pdbname\n$pdbsq\n";
+    close(F);
     $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
 
- 
+    system("          $hmmeralign         $hmm  $pfamsqfile >  $hmmali\n");
+    system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
+    system("$reformat afa $hmmali > $hmmaliafa\n");
+    system("/bin/more $hmmaliafa\n");
+
+    my $nsq = 0;
+    my @asq;
+    my @asqname;
+    FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
+
+    $ali_pdb  = $asq[1];
+    $ali_pfam = $asq[0];
     my $pfamalen = length($pfam_asq);
     my $alen     = length($ali_pfam);
     if ($pfamsqname ne "") {
@@ -487,18 +503,42 @@ sub find_pdbsq_in_pfam {
     $$ret_pfamsqname = $pfamsqname;
     $$ret_ali_pdb    = $ali_pdb;
     $$ret_ali_pfam   = $ali_pfam;
-    $$ret_from_pdb   = $from_pdb;
-    $$ret_from_pfam  = $from_pfam;
+    $$ret_from_pdb   = 1;
+    $$ret_from_pfam  = 1;
     $$ret_pfam_asq   = $pfam_asq;
 
     system("/bin/rm $pdbsqfile\n");
+    system("/bin/rm $pfamsqfile\n");
     system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
+    system("/bin/rm $hmmali\n");
+    system("/bin/rm $hmmaliafa\n");
 
     return $alen;
 }
 
-    
+
+sub hmmout_has_hit {
+    my ($hmmout, $ret_pfamsqname) = @_;
+
+    my $hashit = 0;
+    open(HF, "$hmmout") || die;
+    while(<HF>) {
+	if (/#/) {
+	}
+	elsif (/\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s* /) {
+	    $hashit = 1;
+	}
+	elsif (/\>\>\s+(\S+)\s*$/) {
+	    $$ret_pfamsqname = $1;
+	    last;
+	}
+
+    }
+    close(HF);
+    return $hashit;
+}
+
 sub parse_hmmout_for_besthit {
     my ($hmmout, $pdbname, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
 
@@ -543,8 +583,16 @@ sub parse_hmmout_for_besthit {
 	elsif (/^\s*(\d+)\s+\S*\s+$best_dom_sc\s+$best_dom_bias\s+/) {
 	    $domain = $1;
 	}
-	elsif ($n==1 && /^\s*\=\=\s+domain\s+$domain\s+/) {
-	    $thisdomain = 1;
+	elsif ($n==1 && /^\s*\=\=\s+domain\s+(\d+)\s+/) {
+	    my $whichdomain = $1;
+	    if ($whichdomain == $domain) {
+		$thisdomain = 1;
+		print "^^DOMAIN $domain bestE $best_dom_E $best_dom_sc $best_dom_bias\n";
+	    }
+	    else {
+		$thisdomain = 0;
+		last;
+	    }
 	}
 	elsif ($n==1 && $thisdomain==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i     = $1;
@@ -615,8 +663,8 @@ sub coordtrans_aseq2sq{
 sub get_asq_from_sto {
     my ($reformat, $stofile, $name, $from) = @_;
     my $asq = "";
-
-    if ($name =~ //) { return $asq; }
+ 
+    if ($name eq "") { return $asq; }
      
     my $afafile = "$stofile";
     if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
@@ -630,7 +678,6 @@ sub get_asq_from_sto {
 	    $found = 1;
 	}
 	elsif ($found == 1 && /^\>/) {
-	    $found = 0;
 	    last;
 	}       
 	elsif ($found == 1 && /^(\S+)$/) {
@@ -639,6 +686,10 @@ sub get_asq_from_sto {
      }
     close(AFA);
     
+    if ($found == 0) {
+	print "sequence $name not found in alignment $stofile\n";
+	die;
+    }
 
     return substr($asq, $from);
 }
@@ -710,12 +761,9 @@ sub parse_pdb_contact_map {
     my $l1;
     my $l2;
     my $distance;
-    my $atom_offset = atom_offset($pdbfile, $chain);
-    if ($atom_offset =~ /^NA$/) { print "could not find atom offset\n"; die; }
-    print "#atom offset $atom_offset chain $chain\n";
 
     my @res;
-    get_atoms_coord($pdbfile, \@chsq, $len, \@chsq, $chain, \@res, $isrna);
+    get_atoms_coord($rscapebin, $currdir, $pdbfile, $pdbname, \@chsq, $len, $chain, \@res, $isrna);
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -727,8 +775,8 @@ sub parse_pdb_contact_map {
 	@z1    = @{$res[$l1]->{"RES::z"}};
 
 	if ($char1 ne $chsq[$l1]) {
-	    printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor1]\n", 
-	    ($l1+1), $len, $coor1+1, $len+$atom_offset-1, $char1; 
+	    printf "#chain$chain;position %d/%d mismatched character %s should be $chsq[$coor1]\n", 
+	    ($l1+1), $len, $char1; 
 	    die;
 	}
        
@@ -748,8 +796,8 @@ sub parse_pdb_contact_map {
 	    my $posj = $map_ref->[$l2]+1;
 	    
 	    if ($char2 ne $chsq[$l2]) {
-		printf "#chain$chain;position %d/%d %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
-		$j, $len, $coor2+1, $len+$atom_offset-1, $char2; 
+		printf "#chain$chain;position %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
+		$j, $len, $char2; 
 		die; 
 	    }
 
@@ -1157,34 +1205,6 @@ sub rnaview2list {
     $$ret_ncnt = $ncnt;
 }
 
-sub atom_offset {
-    my ($pdbfile, $chain) = @_;
-
-    my $atom_offset = "NA";
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/^DBREF1\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
-	    $atom_offset = $1;
-	    last;
-	}
-	elsif (/^DBREF\s+\S+\s+$chain\s+(\S+)\s+\S+\s+\S+\s*/) {
-	    $atom_offset = $1;
-	    last;
-	}
-    }
-    close(FILE);
-    
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)\S*\s+/) {
-	    my $val = $1;
-	    if ($val < $atom_offset) { $atom_offset = $val; }
-	}
-    }
-    close(FILE);
-
-    return $atom_offset;
-}
 
 sub sq_conversion {
     my ($ret_seq, $isrna) = @_;
@@ -1352,190 +1372,41 @@ sub aa_conversion {
 #
 #
 sub get_atoms_coord {
-    my ($pdbfile, $seqres_ref, $len, $chsq_ref, $chain, $res_ref, $isrna) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
 
-    my $type;
-    my $char;
-    my $coor;
-    my $nat;
-    my $x;
-    my $y;
-    my $z;
-    my $l = 0;
-    my $nn = 0;
-    my $recording = 0;
     my $respos_first;
     my $respos_prv;
     my $icode_prv;
-    my $id;
-    my $id_prv = -1;
+    my $recording = 0;
     
+    my $hmmer       = "$rscapebin/../lib/hmmer";
+    my $hmmbuild    = "$hmmer/src/hmmbuild";
+    my $hmmersearch = "$hmmer/src/hmmsearch";
+    my $hmmeralign  = "$hmmer/src/hmmalign";
     
-    for ($l = 0; $l < $len; $l ++) {
+    my $easel    = "$hmmer/easel";
+    my $reformat = "$easel/miniapps/esl-reformat";
+
+    # the @res array is indexed in the coords of seqres
+    # which is our ultimately coordinate system.
+    for (my $l = 0; $l < $len; $l ++) {
 	$res_ref->[$l] = RES->new();
 	$res_ref->[$l]->{"RES::nat"}  = 0;
 	$res_ref->[$l]->{"RES::coor"} = -1;
 	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l], $isrna);
     }
 
-    my @status;
-    # 0 = present (in the sequence and has atoms)
-    # 1 = missing (in the sequence but no atoms)
-    # 2 = absent  (not in the sequence, and not missing)
-    
-    my $remarknum = 0;
-    my $from = " ";
-    my $to   = " ";
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-
-	if (/DBREF/) {
-	    my $line = $_;
-	    my $ch = substr($line, 12, 1);
-	    if ($ch =~ /^$chain$/) {
-		my $lfrom = substr($line, 14, 4); $lfrom  =~ s/ //g;
-		my $lto   = substr($line, 20, 4); $lto    =~ s/ //g;
-
-		if ($from eq " " && $to eq " ") {
-		$from = $lfrom;
-		$to   = $lto;
-		}
-		else {
-		    $from = ($lfrom < $from)? $lfrom : $from;
-		    $to   = ($lto   > $to)?   $lto   : $to;
-		}
-		
-	    }
-	}
-    }
-    close(FILE);
-    if ($from eq " " || $to eq " ") {
-	print "could not find from $from or to $to\n";
-	die;
-    }
-   
-    # OMG this is hard coded for a 1ljr.pdb which has an error in the coordenates
-    # DBREF says 2 244, but it should say 1 244
-    if ($pdbfile =~ /1ljr/) { $from = 1; }
- 
-    for (my $r = $from; $r <= $to; $r++) {
-	$status[$r-$from]  = 0; # assume they are all present
-    }
-
-    if (0) {
-	printf "^^1 FROM $from TO $to\n";
-	for (my $x = $from; $x <= $to; $x ++) {
-	    print "^^1 pos $x is status $status[$x-$from] \n";
-	}
-    }
-    
-    # now look for the "odd" residues
-    # assume they are present for now
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/SEQADV\s+\S+\s+\S+\s+$chain\s+(\d+)(\S*)\s+/) {
-	    my $pos   = $1;
-	    my $icode = $2;
-	    if ($icode =~ /^\S$/) {
-		#ignore inserted residues here
-		next;
-	    }
-	    else {
-		if ($pos < $from) {
-		    for (my $x = $to; $x >= $from; $x --) {
-			$status[$x-$pos] = $status[$x-$from]; #leave unchanged
-		    }
-		    for (my $x = $pos+1; $x < $from; $x ++) {
-			$status[$x-$pos] = 2;  # absent for now
-		    }
-		    $status[0] = 0;            # present for now
-		    $from = $pos; 
-		}
-		elsif ($pos > $to) {
-		    $status[$pos-$from] = 0; # present for now
-		    for (my $x = $to+1; $x < $pos; $x ++) {
-			$status[$x-$from] = 2;  # these are absent for now
-		    }
-		    $to = $pos;
-		}
-		else {
-		    $status[$pos-$from] = 0;  # is present for now
-		}
-	    }
-	}
-    }
-    close(FILE);
-
-    if (0) {
-	printf "^^2 FROM $from TO $to\n";
-	for (my $x = $from; $x <= $to; $x ++) {
-	    print "^^2 pos $x status $status[$x-$from] \n";
-	}
-    }
-    
-    # identify the missing residues
-    my $missing = "";
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/^REMARK\s+(\d+)\s+MISSING\s+RESIDUES/) {
-	    $remarknum = $1;
-	}
-	elsif (/^REMARK\s+$remarknum\s+\S+\s+$chain\s+(\d+)(\S*)\s*$/) {
-	    my $pos   = $1;
-	    my $icode = $2;
-	    if ($icode =~ /^\S$/) {
-		# cannot annoate here as missing, save in string $missing for later
-		$missing .= " $pos$icode ";
-		print "pos $pos icode $icode $missing\n";
-	    }
-	    else {
-		if ($pos < $from) {
-		    for (my $x = $to; $x >= $from; $x --) {
-			$status[$x-$pos] = $status[$x-$from]; # leave  unchanged
-		    }
-		    for (my $x = $pos; $x < $from; $x ++) {
-			$status[$x-$pos] = 2;  # absent for now
-		    }
-		    $status[0] = 1;            # missing
-		    $from = $pos; 
-		}
-		elsif ($pos > $to) {
-		    $status[$pos-$from] = 1;
-		    for (my $x = $to+1; $x < $pos; $x ++) {
-			$status[$x-$pos] = 2;  # these are absent for now
-		    }
-		    $to = $pos;
-		}
-		else { 
-		    $status[$pos-$from] = 1;   # missing
-		}
-	    }
-	}
-    }
-    close(FILE);
-    
-    printf "^^ FROM $from TO $to len $len\n";
-    for (my $x = $from; $x <= $to; $x ++) {
-     	my $status = $status[$x-$from];
-	if ($status == 1) {
-	    #print "^^ pos $x missing \n";
-	}
-	if ($status == 2) {
-	    #print "^^ pos $x absent \n";
-	}
-	print "^^ pos $x status $status[$x-$from] \n";
-    }
 
     # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
     #
     #
-    $l = 0;
-    $respos_prv = $from;
-    $icode_prv = " ";
+    my $ll = 0;
+    my $nn = 0;
+    my @atmres;
+    $icode_prv  = " ";
     open(FILE, "$pdbfile") || die;
     while (<FILE>) {
 	my $line = $_;
-	#print "++$line";
 
 	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
 	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom     = $1; }
@@ -1549,109 +1420,154 @@ sub get_atoms_coord {
 	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
 	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
 	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
-	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
 
 	    # Look for the target chain
 	    if ($chainid ne $chain) { next; }
 	    
 	    # Ignore HOH WAT MN atoms
 	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
-	    
+
 	    # An atom to record
-	    $id = "$respos"."$icode";
-	    if ($recording == 0) { $respos_first = $respos; }
 	    $recording = 1;
-
-	    for (my $x = $respos_prv + 1; $x < $respos; $x ++) {
-		    print "^^X $x from $from to $to status $status[$x-$from] \n";
-		if ($status[$x-$from] == 1) { # a missing residue moves the counter 
-		    $l ++;
-		    $res_ref->[$l]->{"RES::coor"} = $x;
-		}
-		else { # an absent residue. Mark as such, do nothing
-		    print "^^ABSENT pos $x residue $respos\n";
-		    $status[$x-$from] = 2;
-		}
+	    if ($nn == 0) { 
+		$respos_prv = $respos; 
+		$atmres[$ll]->{"RES::nat"} = 0;
 	    }
 
-	    if ($respos_prv != $respos) {
-		
-		# there may be (exmaple 4gud chainB) inserted&missing residues not accounted for yet
-		while ($missing =~ /\s$respos_prv([^\d])\s/) {
-		    $missing =~ s/\s$respos_prv([^\d])//;
-		    my $icode = $1;
-		    for (my $x = $to; $x >= $l; $x --) {
-			$status[$x+1-$from] = $status[$x-$from];
-		    }
-		    $status[$l-$from] = 1;
-		    $l ++; 
-		    print "\n^^INSERT l=$l respos=$respos_prv icode=$icode | $missing\n";
-		    $to  ++;		    
-		}
-		
-		$l ++; 
+	    # a new residue 
+	    if ($respos_prv != $respos) { 
+		$ll ++; 		
+		$atmres[$ll]->{"RES::nat"} = 0;
 	    }
-	    else {
-		# an insertion residue
-		if (($icode_prv =~ /^ $/ && $icode =~ /^\S$/) || ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode))  {
-		    for (my $x = $to; $x >= $l; $x --) {
-			$status[$x+1-$from] = $status[$x-$from];
-		    }
-
-		    # it could be also missing
-		    if ($missing =~ /$respos$icode/) {
-			$status[$l-$from] = 1;			
-		    }
-		    else {
-			$status[$l-$from] = 0;
-		    }
-		    $l ++; 
-		    print "\n^^INSERT l=$l respos=$respos icode=$icode\n";
-		    $to  ++;
-		}
+	    elsif (($icode_prv =~ /^ $/  && $icode =~ /^\S$/)                         || 
+		   ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode)   )  {
+		$ll ++;
+		$atmres[$ll]->{"RES::nat"} = 0;
 	    }
-	    if ($chsq_ref->[$l] ne $resname) { printf "at pos %d respos $respos icode $icode chsq %s is different from resname %s\n", $l+1, $chsq_ref->[$l], $resname; die; }
+			    
+	    # An atom to record
+	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $ll;
+	    my $nat = $atmres[$ll]->{"RES::nat"};
+	    ${$atmres[$ll]->{"RES::type"}}[$nat] = $atomname;
+	    ${$atmres[$ll]->{"RES::x"}}[$nat]    = $x;
+	    ${$atmres[$ll]->{"RES::y"}}[$nat]    = $y;
+	    ${$atmres[$ll]->{"RES::z"}}[$nat]    = $z;
+	    $atmres[$ll]->{"RES::nat"}           ++;
+	    $atmres[$ll]->{"RES::coor"}          = $respos;
+	    $atmres[$ll]->{"RES::char"}          = $resname;
 	    
-	    $nat = $res_ref->[$l]->{"RES::nat"};
-	    ${$res_ref->[$l]->{"RES::type"}}[$nat] = $atomname;
-	    ${$res_ref->[$l]->{"RES::x"}}[$nat]    = $x;
-	    ${$res_ref->[$l]->{"RES::y"}}[$nat]    = $y;
-	    ${$res_ref->[$l]->{"RES::z"}}[$nat]    = $z;
-	    $res_ref->[$l]->{"RES::nat"}           ++;
-	    $res_ref->[$l]->{"RES::coor"}          = $respos;
-	    
-	    #printf "^^at %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $l+1;
-	    if ($l > $len) { print "$l > $len\n"; die; }
-
-	    $id_prv     = $id;
 	    $respos_prv = $respos;
 	    $icode_prv  = $icode;
 	    $nn ++;
-	    
 	}
 	# How to terminate chain
 	elsif ($recording && $line =~ /TER/) { last; }
    }
     close(FILE);
 
-    # check
-    my $nP = 0;
-    my $nM = 0;
-    my $nA = 0;
-    for (my $x = $from; $x <= $to; $x ++) {
-	my $status = $status[$x-$from];
-	if    ($status == 0) { $nP ++; }
-	elsif ($status == 1) { $nM ++; }
-	elsif ($status == 2) { $nA ++; }
-	else                 { print "status? \n"; die; }
+    my $atmlen = $ll+1;
+    my $seqres = "";
+    for (my $l = 0; $l < $len; $l ++) {
+	$seqres .= $seqres_ref->[$l];
     }
-    if ($nP+$nM != $len) { printf "P+M should be $len but it is %d (%d+%d)\n", $nP+$nM, $nP, $nM; die; }
+    my $atmseqres = "";
+    for (my $ll = 0; $ll < $atmlen; $ll ++) {
+	$atmseqres .= $atmres[$ll]->{"RES::char"};
+    }
+    print "seqres    len = $len\n$seqres\n";
+    print "atmseqres len = $atmlen\n$atmseqres\n";
 
-    if (1) {
-	for ($l = 0; $l < $len; $l ++) {
-	    $nat  = $res_ref->[$l]->{"RES::nat"};	    
-	    $coor = $res_ref->[$l]->{"RES::coor"};	    
-	    $char = $res_ref->[$l]->{"RES::char"};	    
+    my @map; # map[1..len] = 1..atmlen
+    for (my $l = 0; $l < $len; $l ++) { $map[$l+1] = 0; }
+    
+    # now map $atmres to seqres
+    my $hmm       = "$currdir/$pdbname.seqres.hmm";
+    my $hmmout    = "$currdir/$pdbname.seqres.hmmout";
+    my $hmmali    = "$currdir/$pdbname.seqres.hmmali";
+    my $hmmaliafa = "$currdir/$pdbname.seqres.hmmali.afa";
+
+    my $seqresfile = "$currdir/$pdbname.seqres.fa";
+    open (F, ">$seqresfile") || die;
+    print F ">$pdbname.seqres\n";
+    print F "$seqres\n";
+    close(F);
+    
+    my $bothsqfile = "$currdir/$pdbname.bothseqres.fa";
+    open (F, ">$bothsqfile") || die;
+    print F ">$pdbname.seqres\n";
+    print F "$seqres\n";
+    print F ">$pdbname.atmseqres\n";
+    print F "$atmseqres\n";
+    close(F);
+ 
+    system("          $hmmbuild   --amino $hmm  $seqresfile   >  /dev/null\n");
+    system("/bin/echo $hmmbuild   --amino $hmm  $seqresfile   >  /dev/null\n");
+    
+    system("          $hmmeralign         $hmm  $bothsqfile >  $hmmali\n");
+    system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
+    system("$reformat afa $hmmali > $hmmaliafa\n");
+    system("/bin/more $hmmaliafa\n");
+    
+    my $nsq = 0;
+    my @asq;
+    my @asqname;
+    FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
+    print "seqres    $asq[0]\n";
+    print "atmseqres $asq[1]\n";
+
+    my $alen = length($asq[0]);
+    my $l = 0;
+    my $y = 0;
+    for (my $s = 0; $s < $alen; $s ++) {
+	my $s1 = substr($asq[0], $s,  1);
+	my $s2 = substr($asq[1], $s,  1);
+
+	if    ($s1 =~ /^[\.\-]$/ && $s2 =~ /^[\.\-]$/) {  }
+	elsif (                     $s2 =~ /^[\.\-]$/) { $l  ++ }
+	elsif ($s1 =~ /^[\.\-]$/)                      { $y ++ }
+ 	elsif ($s1 eq $s2) { $map[$l+1] = $y+1; $l ++; $y ++; }
+	else { print "$s1 and $s2??\n"; die; }
+    }
+    
+    system("rm $seqresfile\n");
+    system("rm $bothsqfile\n");
+    
+    #check
+    for (my $l = 0; $l < $len; $l ++) {
+	my $ll = $map[$l+1] - 1;
+	if ($ll >= 0) {
+	    my $resname = $atmres[$ll]->{"RES::char"} ;
+	    if ($seqres_ref->[$l] ne $resname) { 
+		printf "at pos seqres %d atmres %d seqres %s is different from atmres %s\n", $l+1, $ll+1, $seqres_ref->[$l], $resname;
+		die; 
+	    }
+	}
+    }
+    
+    # fill the final array 
+    for (my $l = 0; $l < $len; $l ++) {
+	my $ll = $map[$l+1] - 1;
+
+	if ($ll < 0) { next; }
+	
+	$res_ref->[$l]->{"RES::coor"} = $atmres[$ll]->{"RES::coor"};
+	$res_ref->[$l]->{"RES::nat"}  = $atmres[$ll]->{"RES::nat"};
+	$res_ref->[$l]->{"RES::char"} = $atmres[$ll]->{"RES::char"};
+
+	my $nat = $res_ref->[$l]->{"RES::nat"};
+	for (my $n = 0; $n < $nat; $n ++) {
+	    ${$res_ref->[$l]->{"RES::type"}}[$n] = ${$atmres[$ll]->{"RES::type"}}[$n];
+	    ${$res_ref->[$l]->{"RES::x"}}[$n]    = ${$atmres[$ll]->{"RES::x"}}[$n];
+	    ${$res_ref->[$l]->{"RES::y"}}[$n]    = ${$atmres[$ll]->{"RES::y"}}[$n];
+	    ${$res_ref->[$l]->{"RES::z"}}[$n]    = ${$atmres[$ll]->{"RES::z"}}[$n];
+	}
+    }
+    
+    if (0) {
+	for (my $l = 0; $l < $len; $l ++) {
+	    my $nat  = $res_ref->[$l]->{"RES::nat"};	    
+	    my $coor = $res_ref->[$l]->{"RES::coor"};	    
+	    my $char = $res_ref->[$l]->{"RES::char"};	    
 	    #if ($nat == 0) { print "#res $l has not atoms\n"; }
 	    printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; 
 	}
