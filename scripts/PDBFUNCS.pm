@@ -1499,9 +1499,11 @@ sub get_atoms_coord {
     print F ">$pdbname.atmseqres\n";
     print F "$atmseqres\n";
     close(F);
+
+    my $mxfile = "$rscapebin/../data/matrices/NOMUT.mat";
  
-    system("          $hmmbuild   --amino $hmm  $seqresfile   >  /dev/null\n");
-    system("/bin/echo $hmmbuild   --amino $hmm  $seqresfile   >  /dev/null\n");
+    system("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
+    system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     
     system("          $hmmeralign         $hmm  $bothsqfile >  $hmmali\n");
     system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
@@ -1526,7 +1528,7 @@ sub get_atoms_coord {
 	elsif (                     $s2 =~ /^[\.\-]$/) { $l  ++ }
 	elsif ($s1 =~ /^[\.\-]$/)                      { $y ++ }
  	elsif ($s1 eq $s2) { $map[$l+1] = $y+1; $l ++; $y ++; }
-	else { print "$s1 and $s2??\n"; die; }
+	else { print "mapping $s1 and $s2  ??\n"; die; }
     }
     
     system("rm $seqresfile\n");
