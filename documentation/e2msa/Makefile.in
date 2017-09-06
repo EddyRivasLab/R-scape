@@ -24,8 +24,8 @@ E2MSA_COPYRIGHT = "@E2MSA_COPYRIGHT@"
 
 INSTALL       = @INSTALL@
 RMAN          = rman
-SEDITION      = ${top_srcdir}/lib/hmmer/lib/easel/devkit/sedition
-RMANPROCESS   = ${top_srcdir}/lib/hmmer/lib/easel/devkit/rmanprocess.pl
+SEDITION      = ${top_srcdir}/lib/hmmer/easel/devkit/sedition
+RMANPROCESS   = ${top_srcdir}/lib/hmmer/easel/devkit/rmanprocess.pl
 
 TEXFILES =\
 	ack.tex\

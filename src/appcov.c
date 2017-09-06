@@ -1447,7 +1447,7 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
     jabs  = paircov[p].jabs;
     if (paircov[p].ptype == TS)     fprintf(fp1, "%d %d\n", iabs, jabs);
     else                            fprintf(fp2, "%d %d\n", iabs, jabs);
-    if (paircov[p].is_bp)         { fprintf(fp3, "%d %d\n", iabs, jabs); if (appcov) fprintf(fp3, "%d %d\n", jabs, iabs); }
+    if (paircov[p].is_bp)         { fprintf(fp3, "%d %d\n", iabs, jabs); if (appwc) fprintf(fp3, "%d %d\n", jabs, iabs); }
   }
   fclose(fp1);
   fclose(fp2);
