@@ -1574,6 +1574,11 @@ sub get_atoms_coord {
 	    printf "res %d coor %d char %s nat %d\n", $l+1, $coor, $char, $nat; 
 	}
     }
+
+    system("/bin/rm $hmm\n");
+    system("/bin/rm $hmmout\n");
+    system("/bin/rm $hmmali\n");
+    system("/bin/rm $hmmaliafa\n");
 }
 
 sub update_status {
