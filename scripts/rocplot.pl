@@ -12,26 +12,28 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C $opt_D $opt_G $opt_L $opt_P $opt_r $opt_R $opt_T $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_D $opt_L $opt_P $opt_r $opt_T $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('C:D:G:L:P:rR:T:W:v');
+getopts ('C:D:L:P:rT:W:v');
 
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-        print "usage:  rocplot.pl [options] <F> <file1>..<fileF> <stofile> <rscapebin> <gnuplot> <key>  \n\n";
-        print "options:\n";
-	exit;
+    print "usage:  rocplot.pl [options] <F> <file1> <stofile1> .. <fileF> <stofileF> <rscapebin> <gnuplot> <key>  \n\n";
+    print "options:\n";
+    exit;
 }
 
 my $F = shift;
 my @prefile;
+my @stofile;
 my @prename;
 my @rocfile;
 my $ID = 1.0;
 my $outname;
  for (my $f = 0; $f < $F; $f ++){
     $prefile[$f]  = shift;
+    $stofile[$f]  = shift;
     $prename[$f] = $prefile[$f];
     if ($prename[$f] =~ /^(\S+)\.sorted.out$/) {
 	$outname = $1;
@@ -41,7 +43,6 @@ my $outname;
 	if ($prename[$f] =~ /\/(ID\S+)\//)    { $ID = $1; $outname .= ".$ID"; }
     }
 }
-my $stofile  = shift;
 my $stoname  = $prefile[0];
 if ($stoname =~ /\/([^\/]+)$/) { $stoname = $1; }
 if ($stoname =~ /([^\.]+)\./)  { $stoname = $1; }
@@ -83,64 +84,41 @@ if ($opt_v) { $verbose = 1; }
 
 # Map the  pdb2msa structure to the input alignment
 my $pdbfile = "";
-my $pdb2msa;
+my @pdb2msa;
 if ($opt_P) { 
-    $pdbfile = "$opt_P"; 
-    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile, \$pdb2msa, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
-}
-
-# Map the pdb2msa structure to the stofile used by gremlin
-my $stofile_gremlin = "";
-my $pdb2msa_gremlin;
-if ($opt_G) { 
-    $stofile_gremlin = "$opt_G";
-    if ($stofile_gremlin =~ /^$stofile$/) {
-	$pdb2msa_gremlin = $pdb2msa;
+    $pdbfile = "$opt_P";
+    for (my $f = 0; $f < $F; $f ++) {
+	my $found = 0;
+	for (my $g = 0; $g < $f; $g ++) {
+	    if ($stofile[$f] =~ /^$stofile[$g]$/) {
+		$pdb2msa[$f] = $pdb2msa[$g];
+		$found = 1;
+		last;
+	    }
+	    if ($found == 0) {
+		PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
+	    }
+	}
     }
-    else {
-	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_gremlin, \$pdb2msa_gremlin, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
-    }  
-}
-
-# Map the pdb2msa structure to the stofile used by rscape (if different from the main one)
-my $stofile_rscape = "";
-my $pdb2msa_rscape;
-if ($opt_R) { 
-    $stofile_rscape = "$opt_R"; 
-    if ($stofile_rscape =~ /^$stofile$/) {
-	$pdb2msa_rscape = $pdb2msa;
-    }
-    else {
-	PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile_rscape, \$pdb2msa_rscape, $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
-    }  
 }
 
 # add a random file
 my $dorandom = 1;
 if ($dorandom) {
+    $pdb2msa[$F] = $pdb2msa[0];
     $prename[$F] = "results/random/$stoname.random";
     $prefile[$F] = "results/random/$stoname.random";
     $rocfile[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.type$which.roc";
     $F ++;
 }
 
-my $pdb2msa_r      = ($stofile_rscape)?  $pdb2msa_rscape  : $pdb2msa;
-my $pdb2msa_grem   = ($stofile_gremlin)? $pdb2msa_gremlin : $pdb2msa;
-my $pdb2msa_mfDCA  = $pdb2msa;
-my $pdb2msa_plmDCA = $pdb2msa;
-
-my $target_ncnt_rscape = floor($target_factor*$pdb2msa_rscape->pdblen);
-my $target_ncnt_grem   = floor($target_factor*$pdb2msa_grem->pdblen);
-my $target_ncnt_mfDCA  = floor($target_factor*$pdb2msa_mfDCA->pdblen);
-my $target_ncnt_plmDCA = floor($target_factor*$pdb2msa_plmDCA->pdblen);
-my $target_ncnt_ran    = floor($target_factor*$pdb2msa->pdblen);
-
 my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
 
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
-    
+
+    my $target_ncnt = floor($target_factor*$pdb2msa[$f]->pdblen);
     my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
     my $mapfile_tp   = "$prename[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
     
@@ -162,62 +140,62 @@ for (my $f = 0; $f < $F; $f ++) {
 	
 	if ($pdbfile =~ //) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_rscape($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $target_ncnt_rscape, 
+		create_rocfile_rscape($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $target_ncnt, 
 				      $N, $k, $shift, \@his, $fmax);
 	    }
 	    $dorandom = 0;
 	}
 	else { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_rscape_withpdb($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa_r, $target_ncnt_rscape, 
+		create_rocfile_rscape_withpdb($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 					      $N, $k, $shift, \@his, $fmax);
 	    }
 	}
-	predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_rscape);
+	predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt);
    }
     elsif ($method =~ /^mfDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile, $pdb2msa_mfDCA, \$alenDCA, \@mapDCA, $target_ncnt_mfDCA, 
+		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], \$alenDCA, \@mapDCA, $target_ncnt, 
 				     $N, $k, $shift, \@his, $fmax);
 	    }
-	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_mfDCA);
+	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
 	}
     }
     elsif ($method =~ /^plmDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile, $pdb2msa_plmDCA, \$alenDCA, \@mapDCA, $target_ncnt_plmDCA, 
+		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], \$alenDCA, \@mapDCA, $target_ncnt, 
 				      $N, $k, $shift, \@his, $fmax);
 	    } 
-	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_plmDCA);
+	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
 	}
     }
     elsif ($method =~ /^gremlin$/) {
 	if ($pdbfile) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_gremlin($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa_grem, $target_ncnt_grem, 
+		create_rocfile_gremlin($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 				       $N, $k, $shift, \@his, $fmax);
 	    }
-	    predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_grem);
+	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
 	}
     }
     elsif ($method =~ /random/) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-	    create_rocfile_random($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa, $target_ncnt_ran, 
+	    create_rocfile_random($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 				  $N, $k, $shift, \@his, $fmax);
 	}
-	predictions_plot($mapfile_pred, $mapfile_tp, $target_ncnt_ran);
+	predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
    }
     else { print "method $method not implemented yet\n"; die; }
     
     my $hfile = "$rocfile[$f].his";
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
     
-    my $pdbname = $pdb2msa->pdbname;
-    my $stoname = $pdb2msa->stoname;
-    my $maxD    = $pdb2msa->maxD;
-    my $which   = $pdb2msa->which;
+    my $pdbname = $pdb2msa[$f]->pdbname;
+    my $stoname = $pdb2msa[$f]->stoname;
+    my $maxD    = $pdb2msa[$f]->maxD;
+    my $which   = $pdb2msa[$f]->which;
     my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1  fmax: $fmax";
     my $xlabel  = "distance in PDB sequence";
     my $ylabel  = "number of contacts";
@@ -853,7 +831,7 @@ sub predictions_create {
 }
 
 sub predictions_plot {
-    my ($mapfile_pred, $mapfile_tp, $target_ncnt) = @_;
+    my ($mapfile_pred, $mapfile_tp, $pdb2msa, $target_ncnt) = @_;
 
     if (!-e $mapfile_pred || !-e $mapfile_tp) { return; }
     
