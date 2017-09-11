@@ -95,10 +95,9 @@ if ($opt_P) {
 		$found = 1;
 		last;
 	    }
-	    if ($found == 0) {
-		PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $which, $dornaview, $seeplots);
-	    }
 	}
+	if ($found == 0) {
+	    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $which, $dornaview, $seeplots);}
     }
 }
 
@@ -118,14 +117,14 @@ for (my $f = 0; $f < $F; $f ++) {
 
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
 
-    my $target_ncnt = floor($target_factor*$pdb2msa[$f]->pdblen);
+    my $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"});
     my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
     my $mapfile_tp   = "$prename[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
     
     my $method = "";
-    
     if    ($prefile[$f] =~ /results\/(\S+)_filtered\//) { $method = $1; }
     elsif ($prefile[$f] =~ /results\/([^\/]+)\//)       { $method = $1; }
+    elsif ($prefile[$f] =~ /test\/([^\/]+)\//)          { $method = $1; }
     
     my @his;
     my $N = 1000;
@@ -135,7 +134,7 @@ for (my $f = 0; $f < $F; $f ++) {
     FUNCS::init_histo_array($N, $k, \@his);
 
     print "\n$method: $prefile[$f]\n";
-    if ($method =~ /^R-scape$/) {
+    if ($method =~ /^R-scape/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
 	if ($pdbfile =~ //) {
@@ -156,8 +155,8 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^mfDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], \$alenDCA, \@mapDCA, $target_ncnt, 
-				     $N, $k, $shift, \@his, $fmax);
+		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
+				     \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
 	    }
 	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
 	}
@@ -165,8 +164,8 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^plmDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], \$alenDCA, \@mapDCA, $target_ncnt, 
-				      $N, $k, $shift, \@his, $fmax);
+		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
+				      \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
 	    } 
 	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
 	}

@@ -85,7 +85,7 @@ sub pdb2msa {
     open(MAP,  ">$mapfile")  || die;
     contactlist_print(\*MAP, $ncnt, \@cnt, 0);
     close(MAP);
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+    #contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
 
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
