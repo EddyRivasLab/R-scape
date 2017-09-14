@@ -51,6 +51,9 @@ my $rscapebin = shift;
 my $gnuplot   = shift;
 my $key       = shift; # tag to identify the benchmark
 
+my $byali = 1;
+print "BYALI $byali\n";
+
 my $currdir = $ENV{PWD};
 
 my $maxD = 8;
@@ -97,7 +100,7 @@ if ($opt_P) {
 	    }
 	}
 	if ($found == 0) {
-	    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $which, $dornaview, $seeplots);}
+	    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);}
     }
 }
 
@@ -139,13 +142,15 @@ for (my $f = 0; $f < $F; $f ++) {
 	
 	if ($pdbfile =~ //) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		print "         $rocfile[$f]\n";
 		create_rocfile_rscape($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $target_ncnt, 
 				      $N, $k, $shift, \@his, $fmax);
 	    }
 	    $dorandom = 0;
 	}
 	else { 
-	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
+		print "         $rocfile[$f]\n";
 		create_rocfile_rscape_withpdb($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 					      $N, $k, $shift, \@his, $fmax);
 	    }
@@ -155,6 +160,7 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^mfDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		print "         $rocfile[$f]\n";
 		create_rocfile_mfDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
 				     \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
 	    }
@@ -164,6 +170,7 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^plmDCA$/) {
 	if ($pdbfile) { 
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		print "         $rocfile[$f]\n";
 		create_rocfile_plmDCA($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
 				      \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
 	    } 
@@ -173,6 +180,7 @@ for (my $f = 0; $f < $F; $f ++) {
     elsif ($method =~ /^gremlin$/) {
 	if ($pdbfile) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+		print "         $rocfile[$f]\n";
 		create_rocfile_gremlin($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 				       $N, $k, $shift, \@his, $fmax);
 	    }
@@ -181,6 +189,7 @@ for (my $f = 0; $f < $F; $f ++) {
     }
     elsif ($method =~ /random/) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    print "         $rocfile[$f]\n";
 	    create_rocfile_random($rocfile[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 				  $N, $k, $shift, \@his, $fmax);
 	}
@@ -294,7 +303,7 @@ sub  create_rocfile_rscape {
 
 sub create_rocfile_rscape_withpdb {
     my ($rocfile, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
-    
+
     my @revmap   = @{$pdb2msa->revmap};
     open my $fp, '>', $rocfile || die "Can't open $rocfile: $!";
     
@@ -326,9 +335,9 @@ sub create_rocfile_rscape_withpdb {
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
-	    if ($pdbj-$pdbi+1 < $minL) { next; }
-	    #if ($j-$i+1 < $minL) { next; }
 
+	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
+	    
 	    if ($ncnt_rscape < $target_ncnt) {
 		$cnt_rscape[$ncnt_rscape] = CNT->new();
 		$cnt_rscape[$ncnt_rscape]->{"CNT::i"}        = $pdbi;
@@ -342,7 +351,7 @@ sub create_rocfile_rscape_withpdb {
 		$ncnt_rscape ++;
 	    }
 
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $pdb2msa->{"PDB2MSA::ncnt"}, 
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $byali, $pdb2msa->{"PDB2MSA::ncnt"}, 
 							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
 		if    ($type ==  0) { $f_w ++; }
@@ -363,7 +372,8 @@ sub create_rocfile_rscape_withpdb {
 		    $ncnt_rscape_f ++;
 		}
 	    }
-	    $f ++;
+	    $f ++;		
+	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"});
 	}
@@ -454,6 +464,7 @@ sub  create_rocfile_random {
 	my $chri       = "N";
 	my $chrj       = "N";
 	my $cdistance  = -1;
+	
 	if ($j-$i+1 < $minL) { next; }
 
 	if ($ncnt_ran < $target_ncnt) {
@@ -469,7 +480,7 @@ sub  create_rocfile_random {
 	    $ncnt_ran ++;
 	}
 
-	if (PDBFUNCS::found_pdbcoords_in_contactlist(($i<$j)?$i:$j, ($j>$i)?$j:$i, $pdb2msa->{"PDB2MSA::minL"}, $pdb2msa->{"PDB2MSA::ncnt"}, 
+	if (PDBFUNCS::found_pdbcoords_in_contactlist(($i<$j)?$i:$j, ($j>$i)?$j:$i, $pdb2msa->{"PDB2MSA::minL"}, $byali, $pdb2msa->{"PDB2MSA::ncnt"}, 
 						     \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$posi, \$posj, \$chri, \$chrj, \$cdistance)) 
 	{
 	    if    ($type ==  0) { $f_w ++; }
@@ -598,7 +609,8 @@ sub parse_mfDCA {
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
-	    if ($pdbj-$pdbi+1 < $minL) { next; }
+
+	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
 	    if ($ncnt_mfDCA < $target_ncnt) {
 		$cnt_mfDCA[$ncnt_mfDCA] = CNT->new();
@@ -613,7 +625,7 @@ sub parse_mfDCA {
 		$ncnt_mfDCA ++;
 	    }
 
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		if    ($type ==  0) { $f_w ++; }
@@ -684,7 +696,8 @@ sub parse_plmDCA {
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
-	    if ($pdbj-$pdbi+1 < $minL) { next; }
+
+	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
 	    if ($ncnt_plmDCA < $target_ncnt) {
 		$cnt_plmDCA[$ncnt_plmDCA] = CNT->new();
@@ -699,7 +712,7 @@ sub parse_plmDCA {
 		$ncnt_plmDCA ++;
 	    }
 
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		if    ($type ==  0) { $f_w ++; }
@@ -767,8 +780,9 @@ sub parse_gremlin {
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
-	    if ($pdbj-$pdbi+1 < $minL) { next; }
 	    
+	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
+
 	    if ($ncnt_grem < $target_ncnt) {
 		$cnt_grem[$ncnt_grem] = CNT->new();
 		$cnt_grem[$ncnt_grem]->{"CNT::i"}        = $pdbi;
@@ -782,7 +796,7 @@ sub parse_gremlin {
 		$ncnt_grem ++;
 	    }
 
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
@@ -998,7 +1012,7 @@ sub rocplot {
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "\n rocFILE: $psfile\n";
 
-    my $maxpp  = 2;
+    my $maxpp  = 5;
     my $maxsen = 30;
     my $maxppv = 102;
     my $maxF   = 40;
@@ -1016,15 +1030,17 @@ sub rocplot {
     print $gp "set terminal postscript color solid 14\n";
     print $gp "set output '$psfile'\n";
  
-    print $gp "set style line 1 lc rgb '#084594' pt 65 ps 0.5 lw 3\n"; # very blue
-    print $gp "set style line 2 lc rgb '#1F78B4' pt 65 ps 0.5 lw 3\n"; # dark blue
-    print $gp "set style line 3 lc rgb '#F16913' pt 65 ps 0.5 lw 3\n"; # orange
-    print $gp "set style line 4 lc rgb '#005A32' pt 65 ps 0.5 lw 3\n"; # dark green
-    print $gp "set style line 5 lc rgb '#74C476' pt 65 ps 0.5 lw 3\n"; # light green
-    print $gp "set style line 6 lc rgb '#4A1486' pt 65 ps 0.5 lw 3\n"; # dark purple
-    print $gp "set style line 7 lc rgb '#BCBDDC' pt 65 ps 0.5 lw 3\n"; # light purple
-    print $gp "set style line 8 lc rgb 'red'     pt 65 ps 0.5 lw 3\n"; # red
-    
+    #print $gp "set style line 1 lc rgb '#084594' pt 65 ps 0.5 lw 3\n"; # very blue
+    #print $gp "set style line 2 lc rgb '#1F78B4' pt 65 ps 0.5 lw 3\n"; # dark blue
+    #print $gp "set style line 3 lc rgb '#F16913' pt 65 ps 0.5 lw 3\n"; # orange
+    #print $gp "set style line 4 lc rgb '#005A32' pt 65 ps 0.5 lw 3\n"; # dark green
+    #print $gp "set style line 5 lc rgb '#74C476' pt 65 ps 0.5 lw 3\n"; # light green
+    #print $gp "set style line 6 lc rgb '#4A1486' pt 65 ps 0.5 lw 3\n"; # dark purple
+    #print $gp "set style line 7 lc rgb '#BCBDDC' pt 65 ps 0.5 lw 3\n"; # light purple
+    #print $gp "set style line 8 lc rgb 'red'     pt 65 ps 0.5 lw 3\n"; # red
+
+    FUNCS::gnuplot_define_styles ($gp);
+
     my $logscale = 0;
     $xlabel = "number of predictions per position";
     $ylabel = "PPV contacts (%)";
@@ -1165,8 +1181,9 @@ sub roc_oneplot {
 	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title ''                ls $m, " : "'$file_ref->[$f]' using $x:$y  title ''                ls $m, ";
 	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m, ";
 	}
-	if ($m == 10) { $m = 0; }
-	$m ++; 
+	if ($m == 10) { $m = 1; }
+	$m ++;
+	if ($m == 5) { $m += 2; }
     }
     print $gp "plot $cmd\n";
     if ($logscale) { print $gp "unset logscale\n"; }
@@ -1209,4 +1226,14 @@ sub writeline {
 	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
 	0, 0, 0, 0, 0, 0, 0, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
     }
+}
+
+
+
+sub discard_pair {
+    my ($i, $j, $pdbi, $pdbj, $minL, $byaly) = @_;
+
+    if ($byaly) {  if ($j-$i+1       < $minL) { return 1; } }
+    else        {  if ($pdbj-$pdbi+1 < $minL) { return 1; } }
+    return 0;	
 }

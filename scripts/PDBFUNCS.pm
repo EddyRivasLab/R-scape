@@ -54,7 +54,7 @@ struct PDB2MSA => {
 
 
 sub pdb2msa {
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $which, $isrna, $seeplots) = @_;
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
@@ -77,7 +77,7 @@ sub pdb2msa {
     my @map;
     my @revmap;
     contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $which, $isrna, "", "", $seeplots);
+			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
@@ -108,7 +108,7 @@ sub pdb2msa {
 sub contacts_from_pdbfile {
 	
     my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
-	$maxD, $minL, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
     
@@ -183,7 +183,7 @@ sub contacts_from_pdbfile {
 	
 	$len = length($chsq[$n]);
 	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
-				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna, $smallout);
+				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
 	close(COR);
 	if (!$smallout) {
 	    close(MAP);
@@ -463,9 +463,9 @@ sub find_pdbsq_in_pfam {
     my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
  
     system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
-    system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+    #system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
     system("          $hmmersearch -E $eval         $hmm  $stofile     >  $hmmout\n");
-    system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
+    #system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
     #system("/bin/more $hmmout\n");
 
     if (hmmout_has_hit($hmmout, \$pfamsqname) == 0) { return 0; }
@@ -480,9 +480,9 @@ sub find_pdbsq_in_pfam {
     $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
 
     system("          $hmmeralign         $hmm  $pfamsqfile >  $hmmali\n");
-    system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
+    #system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
-    system("/bin/more $hmmaliafa\n");
+    #system("/bin/more $hmmaliafa\n");
 
     my $nsq = 0;
     my @asq;
@@ -725,7 +725,7 @@ sub get_first_asq_from_sto {
 
 sub parse_pdb_contact_map {
     my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, 
-	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna, $smallout) = @_;
+	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
@@ -791,9 +791,16 @@ sub parse_pdb_contact_map {
 
 	    my $i    = $l1 + 1;           # positions in pdb sequence
 	    my $j    = $l2 + 1;
-	    my $L    = $j - $i  +1;       # distance in pdb sequence
 	    my $posi = $map_ref->[$l1]+1; # positions in alignment
 	    my $posj = $map_ref->[$l2]+1;
+
+	    my $L;
+	    if ($byali) {
+		$L = abs($posj - $posi) + 1; # distance in alignment positions
+	    }
+	    else {
+		$L = $j - $i  +1;            # distance in pdb sequence
+	    }
 	    
 	    if ($char2 ne $chsq[$l2]) {
 		printf "#chain$chain;position %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
@@ -806,10 +813,8 @@ sub parse_pdb_contact_map {
 	    if ($distance > 0) {
 		if ($L >= $minL && $distance < $maxD) {
 		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
-
-		
+                     
 		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
-
 			$cnt[$ncnt] = CNT->new();
 			$cnt[$ncnt]->{"CNT::i"}        = $i;
 			$cnt[$ncnt]->{"CNT::j"}        = $j;
@@ -944,13 +949,19 @@ sub contactlistfile_parse {
 }
 
 sub found_alicoords_in_contactlist {
-    my ($posi, $posj, $minL, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
+    my ($posi, $posj, $minL, $byali, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	
+	if ($byali) {
+	    if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
+	}
+	else {
+	    if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	}
 	
 	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) {
 	    $found = 1;
@@ -986,13 +997,18 @@ sub found_alicoords_in_contactlist {
     return $found;
 }
 sub found_pdbcoords_in_contactlist {
-    my ($i, $j, $minL, $ncnt, $cnt_ref, $ret_type, $ret_posi, $ret_posj) = @_;
+    my ($i, $j, $minL, $byali, $ncnt, $cnt_ref, $ret_type, $ret_posi, $ret_posj) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	if ($byali) {
+	    if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
+	}
+	else {
+	    if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	}
 	
 	if ($i == $cnt_ref->[$c]->{"CNT::i"} && $j == $cnt_ref->[$c]->{"CNT::j"}) {
 	    $found = 1;
@@ -1503,12 +1519,12 @@ sub get_atoms_coord {
     my $mxfile = "$rscapebin/../data/matrices/NOMUT.mat";
  
     system("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
-    system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
+    #system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     
     system("          $hmmeralign         $hmm  $bothsqfile >  $hmmali\n");
-    system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
+    #system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
-    system("/bin/more $hmmaliafa\n");
+    #system("/bin/more $hmmaliafa\n");
     
     my $nsq = 0;
     my @asq;
@@ -1576,7 +1592,6 @@ sub get_atoms_coord {
     }
 
     system("/bin/rm $hmm\n");
-    system("/bin/rm $hmmout\n");
     system("/bin/rm $hmmali\n");
     system("/bin/rm $hmmaliafa\n");
 }
