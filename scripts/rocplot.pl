@@ -336,9 +336,10 @@ sub create_rocfile_rscape_withpdb {
 	    my $cdistance  = -1;
 	    if ($pdbi == 0 || $pdbj == 0) { next }
 
-	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
+	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { print "       DISCARD    i $i $pdbi j $j $pdbj \n"; next; }
 	    
-	    if ($ncnt_rscape < $target_ncnt) {
+	    $f ++;
+	    if ($ncnt_rscape <= $target_ncnt) {
 		$cnt_rscape[$ncnt_rscape] = CNT->new();
 		$cnt_rscape[$ncnt_rscape]->{"CNT::i"}        = $pdbi;
 		$cnt_rscape[$ncnt_rscape]->{"CNT::j"}        = $pdbj;
@@ -357,9 +358,11 @@ sub create_rocfile_rscape_withpdb {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
 		$f_c ++;
+		print "^^HIT $f_c/$f i $i $pdbi j $j $pdbj \n";
+
 		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 
-		if ($ncnt_rscape < $target_ncnt) {
+		if ($ncnt_rscape <= $target_ncnt) {
 		    $cnt_rscape_f[$ncnt_rscape_f] = CNT->new();
 		    $cnt_rscape_f[$ncnt_rscape_f]->{"CNT::i"}        = $pdbi;
 		    $cnt_rscape_f[$ncnt_rscape_f]->{"CNT::j"}        = $pdbj;
@@ -372,7 +375,7 @@ sub create_rocfile_rscape_withpdb {
 		    $ncnt_rscape_f ++;
 		}
 	    }
-	    $f ++;		
+	    else { print "  NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"});
@@ -699,6 +702,7 @@ sub parse_plmDCA {
 
 	    if (discard_pair($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
+	    $f ++;
 	    if ($ncnt_plmDCA < $target_ncnt) {
 		$cnt_plmDCA[$ncnt_plmDCA] = CNT->new();
 		$cnt_plmDCA[$ncnt_plmDCA]->{"CNT::i"}        = $pdbi;
@@ -718,6 +722,7 @@ sub parse_plmDCA {
 		if    ($type ==  0) { $f_w ++; }
 		elsif ($type <  12) { $f_b ++; }
 		$f_c ++;
+		print "HIT $f_c/$f i $i $pdbi j $j $pdbj \n";
 		
 		if ($ncnt_plmDCA < $target_ncnt) {
 		    $cnt_plmDCA_f[$ncnt_plmDCA_f] = CNT->new();
@@ -732,7 +737,8 @@ sub parse_plmDCA {
 		    $ncnt_plmDCA_f ++;
 		}
 	    }
-	    $f ++;
+	    else { print "  NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
+
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    #writeline(\*STDOUT, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);

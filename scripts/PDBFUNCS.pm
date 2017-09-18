@@ -43,7 +43,10 @@ struct PDB2MSA => {
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms)
     
     maxD      => '$', # maximun spacial distance (A) to define a contact
-    minL      => '$', # minimum backbone distance (in pdbseq) to define a contact 
+    
+    minL      => '$', # minimum backbone distance to define a contact 
+    byali     => '$', # if true minL is calculated in the alignment, otherwise in the pdbseq
+    
     ncnt      => '$', # number of contacts
     cnt       => '@', # a CNT structure for each contact
 
@@ -82,11 +85,6 @@ sub pdb2msa {
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
     my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
-    open(MAP,  ">$mapfile")  || die;
-    contactlist_print(\*MAP, $ncnt, \@cnt, 0);
-    close(MAP);
-    #contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
-
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
     $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $maxlen;
@@ -100,9 +98,16 @@ sub pdb2msa {
     $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
     $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
     $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = $byali;
     $$pdb2msa_ref->{"PDB2MSA::which"}     = $which;
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
     $$pdb2msa_ref->{"PDB2MSA::mapfile"}   = $mapfile;
+
+    open(MAP,  ">$mapfile")  || die;
+    contactlist_print2(\*MAP,    $pdb2msa_ref, 0);
+    contactlist_print2(\*STDOUT, $pdb2msa_ref, 1);
+    close(MAP);
+ 
 }
 
 sub contacts_from_pdbfile {
@@ -220,9 +225,9 @@ sub contacts_from_pdbfile {
     
     if ($coorfile) { close(COORF); }
 
-    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which); }
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which); }
 
-    if (!$smallout) {
+    if (0&&!$smallout) {
 	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.type.$which.his";
 	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots); 
     }
@@ -840,7 +845,6 @@ sub parse_pdb_contact_map {
 	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
     }
 
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
     if (!$smallout) {
 	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
 	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
@@ -884,6 +888,22 @@ sub contactlist_print {
 	printf $fp "# minpdbx  %d \n", $minpdbx;
 	printf $fp "# maxpdbx  %d \n", $maxpdbx;
     }
+}
+
+sub contactlist_print2 {
+    my ($fp, $pdb2msa_ref, $addcomments) = @_;
+
+    if ($addcomments) {	
+	printf $fp "# pdbname  %s (%d)\n",        $$pdb2msa_ref->{"PDB2MSA::pdbname"}, $$pdb2msa_ref->{"PDB2MSA::pdblen"};
+	printf $fp "# stoname  %s (%d)\n",        $$pdb2msa_ref->{"PDB2MSA::stoname"}, $$pdb2msa_ref->{"PDB2MSA::msalen"};
+	printf $fp "# maxD   (A) %s (method=%s)\n", $$pdb2msa_ref->{"PDB2MSA::maxD"},    $$pdb2msa_ref->{"PDB2MSA::which"};
+	printf $fp "# minL     %d (byali=%d)\n",  $$pdb2msa_ref->{"PDB2MSA::minL"},    $$pdb2msa_ref->{"PDB2MSA::byali"};
+    }
+
+    my $ncnt = $$pdb2msa_ref->{"PDB2MSA::ncnt"};
+    my @cnt  = @{$$pdb2msa_ref->{"PDB2MSA::cnt"}};
+
+    contactlist_print($fp, $ncnt, \@cnt, $addcomments);
 }
 
 sub contactlist_bpinfo {
@@ -1076,7 +1096,7 @@ sub addcontact {
 }
 
  sub allcontacts_dump {
-    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $which) = @_;
+    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which) = @_;
     
     if ($file =~ //) { return; }
 
@@ -1087,6 +1107,7 @@ sub addcontact {
     print FILE  "# MSA   $pfamname\n"; 
     print FILE  "# maxD  $maxD\n";
     print FILE  "# minL  $minL\n";
+    print FILE  "# byali $byali\n";
     print FILE  "# type  $which\n";
     for (my $c = 0; $c < $ncnt; $c ++) {
 	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
