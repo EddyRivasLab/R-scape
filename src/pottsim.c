@@ -48,16 +48,17 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
 			 char *msafile, ESL_MSA *msa, int *msamap, int *msarevmap, int abcisRNA, double cntmaxD, char *gnuplot,
 			 int L, double tol, char *errbuf, int verbose)
 {
-  PT    *pt = NULL;
+  PT    *pt    = NULL;
   CLIST *clist = NULL;
-  int    K = abc->K;
+  int    Kg    = abc->K+1;
+  int    Kg2    = Kg*Kg;
   int    i, j;
   int    a;
   int    status = eslOK;
 
   switch(pottsparamtype) {
   case PTP_GAUSS:
-    pt = potts_Create(L, abc->K, abc, 0.0, NONE, SCNONE);
+    pt = potts_Create(L, Kg, abc, 0.0, NONE, SCNONE);
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error allocating GAUSS potts param");
     status = potts_AssignGaussian(r, pt, 0.0, pottsigma);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error sampling GAUSS potts param");
@@ -72,14 +73,14 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error generating potts param from contacts");
     
     // make potts param based on contacts
-    pt = potts_Create(msa->alen, abc->K, abc, 0.0, NONE, SCNONE);
+    pt = potts_Create(msa->alen, Kg, abc, 0.0, NONE, SCNONE);
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error allocating GAUSS potts param");
     potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
     
     for (i = 0; i < L-1; i ++) 
       for (j = i+1; j < L; j ++) 
 	if (!CMAP_IsContactLocal(i+1,j+1,clist)) {
-	for (a = 0; a < K*K; a++) {
+	for (a = 0; a < Kg2; a++) {
 	  pt->e[i][j][a] = 0.;
 	  pt->e[j][i][a] = 0.;
 	}
