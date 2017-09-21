@@ -12,7 +12,9 @@
 
 #include <math.h>
 #include <float.h>
-	
+
+#include <lbfgs.h>
+
 #include "easel.h"
 #include "esl_dmatrix.h"
 #include "esl_vectorops.h"
@@ -461,6 +463,68 @@ min_Bracket(double *x, double *dir, long n, double firststep,
   if (ret_fx != NULL) *ret_fx = fx;
   
    return eslOK;
+}
+
+
+int
+min_LBFGS(long n,
+	  lbfgsfloatval_t (evaluate)(void *instance,
+				     const lbfgsfloatval_t *x,
+				     lbfgsfloatval_t *g,
+				     const int n,
+				     const lbfgsfloatval_t step),
+	  int (progress)(void *instance,
+			 const lbfgsfloatval_t *x,
+			 const lbfgsfloatval_t *g,
+			 const lbfgsfloatval_t fx,
+			 const lbfgsfloatval_t xnorm,
+			 const lbfgsfloatval_t gnorm,
+			 const lbfgsfloatval_t step,
+			 int n,
+			 int k,
+			 int ls),
+	  double tol, double *ret_fx)
+{
+  lbfgsfloatval_t    *x = lbfgs_malloc(n);
+  lbfgsfloatval_t    fx;
+  lbfgs_parameter_t  param;
+  int                i;
+  int                ret = 0;
+  
+  if (x == NULL) {
+        printf("ERROR: Failed to allocate a memory block for variables.\n");
+        return 1;
+    }
+    
+    /* Initialize the variables. */
+    for (i = 0; i < n; i += 2) {
+        x[i]   = -1.2;
+        x[i+1] = 1.0;
+    }
+    
+    /* Initialize the parameters for the L-BFGS optimization. */
+    lbfgs_parameter_init(&param);
+    /*param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;*/
+
+    /* Start the L-BFGS optimization; this will invoke the callback functions
+        evaluate() and progress() when necessary. */
+    ret = lbfgs(n, x, &fx, evaluate, progress, NULL, &param);
+    
+    /* Report the result. */
+    printf("L-BFGS optimization terminated with status code = %d\n", ret);
+    
+    printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
+    
+    lbfgs_free(x);
+
+    /* Bail out if the function is now +/-inf: this can happen if the caller
+     * has screwed something up.
+     */
+    if (fx == eslINFINITY || fx == -eslINFINITY)
+      ESL_EXCEPTION(eslERANGE, "minimum not finite");
+    if (ret_fx != NULL) *ret_fx = fx;
+
+    return eslOK;
 }
 
 
