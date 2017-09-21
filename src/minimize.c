@@ -466,6 +466,16 @@ min_Bracket(double *x, double *dir, long n, double firststep,
 }
 
 
+static int progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g, const lbfgsfloatval_t fx, const lbfgsfloatval_t xnorm,
+		    const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step, int n, int k, int ls)
+{
+    printf("Iteration %d:\n", k);
+    printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
+    printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
+    printf("\n");
+    return 0;
+}
+
 int
 min_LBFGS(long n,
 	  lbfgsfloatval_t (evaluate)(void *instance,
@@ -473,16 +483,6 @@ min_LBFGS(long n,
 				     lbfgsfloatval_t *g,
 				     const int n,
 				     const lbfgsfloatval_t step),
-	  int (progress)(void *instance,
-			 const lbfgsfloatval_t *x,
-			 const lbfgsfloatval_t *g,
-			 const lbfgsfloatval_t fx,
-			 const lbfgsfloatval_t xnorm,
-			 const lbfgsfloatval_t gnorm,
-			 const lbfgsfloatval_t step,
-			 int n,
-			 int k,
-			 int ls),
 	  double tol, double *ret_fx)
 {
   lbfgsfloatval_t    *x = lbfgs_malloc(n);
