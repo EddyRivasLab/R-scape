@@ -1222,12 +1222,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
   if (cfg->mi == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to create mutual_s", cfg->errbuf);
 
-  // POTTS: calculate the couplings first
-  if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
-    if (cfg->pt == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
-  }
-
   // If testing the Yule-Simpson effect, shuffle the alignment by rows,
   // while maintaing the gap structure
   if (cfg->YSeffect) {
@@ -1594,7 +1588,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
   if (title)       free(title);
-  if (cfg->pt) potts_Destroy(cfg->pt);
+  if (cfg->pt)     potts_Destroy(cfg->pt);
   return status;
 }
 

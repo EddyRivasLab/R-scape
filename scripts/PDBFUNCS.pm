@@ -43,7 +43,10 @@ struct PDB2MSA => {
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms)
     
     maxD      => '$', # maximun spacial distance (A) to define a contact
-    minL      => '$', # minimum backbone distance (in pdbseq) to define a contact 
+    
+    minL      => '$', # minimum backbone distance to define a contact 
+    byali     => '$', # if true minL is calculated in the alignment, otherwise in the pdbseq
+    
     ncnt      => '$', # number of contacts
     cnt       => '@', # a CNT structure for each contact
 
@@ -54,7 +57,7 @@ struct PDB2MSA => {
 
 
 sub pdb2msa {
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $which, $isrna, $seeplots) = @_;
+    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
@@ -77,16 +80,11 @@ sub pdb2msa {
     my @map;
     my @revmap;
     contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $which, $isrna, "", "", $seeplots);
+			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
     my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
-    open(MAP,  ">$mapfile")  || die;
-    contactlist_print(\*MAP, $ncnt, \@cnt, 0);
-    close(MAP);
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
-
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
     $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $maxlen;
@@ -100,15 +98,22 @@ sub pdb2msa {
     $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
     $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
     $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = $byali;
     $$pdb2msa_ref->{"PDB2MSA::which"}     = $which;
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
     $$pdb2msa_ref->{"PDB2MSA::mapfile"}   = $mapfile;
+
+    open(MAP,  ">$mapfile")  || die;
+    contactlist_print2(\*MAP,    $pdb2msa_ref, 0);
+    contactlist_print2(\*STDOUT, $pdb2msa_ref, 1);
+    close(MAP);
+ 
 }
 
 sub contacts_from_pdbfile {
 	
     my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
-	$maxD, $minL, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
     
@@ -183,7 +188,7 @@ sub contacts_from_pdbfile {
 	
 	$len = length($chsq[$n]);
 	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
-				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $isrna, $smallout);
+				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
 	close(COR);
 	if (!$smallout) {
 	    close(MAP);
@@ -220,9 +225,9 @@ sub contacts_from_pdbfile {
     
     if ($coorfile) { close(COORF); }
 
-    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which); }
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which); }
 
-    if (!$smallout) {
+    if (0&&!$smallout) {
 	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.type.$which.his";
 	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots); 
     }
@@ -463,9 +468,9 @@ sub find_pdbsq_in_pfam {
     my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
  
     system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
-    system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+    #system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
     system("          $hmmersearch -E $eval         $hmm  $stofile     >  $hmmout\n");
-    system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
+    #system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
     #system("/bin/more $hmmout\n");
 
     if (hmmout_has_hit($hmmout, \$pfamsqname) == 0) { return 0; }
@@ -480,9 +485,9 @@ sub find_pdbsq_in_pfam {
     $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
 
     system("          $hmmeralign         $hmm  $pfamsqfile >  $hmmali\n");
-    system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
+    #system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
-    system("/bin/more $hmmaliafa\n");
+    #system("/bin/more $hmmaliafa\n");
 
     my $nsq = 0;
     my @asq;
@@ -725,7 +730,7 @@ sub get_first_asq_from_sto {
 
 sub parse_pdb_contact_map {
     my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, 
-	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $isrna, $smallout) = @_;
+	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
@@ -791,9 +796,16 @@ sub parse_pdb_contact_map {
 
 	    my $i    = $l1 + 1;           # positions in pdb sequence
 	    my $j    = $l2 + 1;
-	    my $L    = $j - $i  +1;       # distance in pdb sequence
 	    my $posi = $map_ref->[$l1]+1; # positions in alignment
 	    my $posj = $map_ref->[$l2]+1;
+
+	    my $L;
+	    if ($byali) {
+		$L = abs($posj - $posi) + 1; # distance in alignment positions
+	    }
+	    else {
+		$L = $j - $i  +1;            # distance in pdb sequence
+	    }
 	    
 	    if ($char2 ne $chsq[$l2]) {
 		printf "#chain$chain;position %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
@@ -806,10 +818,8 @@ sub parse_pdb_contact_map {
 	    if ($distance > 0) {
 		if ($L >= $minL && $distance < $maxD) {
 		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
-
-		
+                     
 		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
-
 			$cnt[$ncnt] = CNT->new();
 			$cnt[$ncnt]->{"CNT::i"}        = $i;
 			$cnt[$ncnt]->{"CNT::j"}        = $j;
@@ -835,7 +845,6 @@ sub parse_pdb_contact_map {
 	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
     }
 
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
     if (!$smallout) {
 	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
 	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
@@ -879,6 +888,22 @@ sub contactlist_print {
 	printf $fp "# minpdbx  %d \n", $minpdbx;
 	printf $fp "# maxpdbx  %d \n", $maxpdbx;
     }
+}
+
+sub contactlist_print2 {
+    my ($fp, $pdb2msa_ref, $addcomments) = @_;
+
+    if ($addcomments) {	
+	printf $fp "# pdbname  %s (%d)\n",        $$pdb2msa_ref->{"PDB2MSA::pdbname"}, $$pdb2msa_ref->{"PDB2MSA::pdblen"};
+	printf $fp "# stoname  %s (%d)\n",        $$pdb2msa_ref->{"PDB2MSA::stoname"}, $$pdb2msa_ref->{"PDB2MSA::msalen"};
+	printf $fp "# maxD   (A) %s (method=%s)\n", $$pdb2msa_ref->{"PDB2MSA::maxD"},    $$pdb2msa_ref->{"PDB2MSA::which"};
+	printf $fp "# minL     %d (byali=%d)\n",  $$pdb2msa_ref->{"PDB2MSA::minL"},    $$pdb2msa_ref->{"PDB2MSA::byali"};
+    }
+
+    my $ncnt = $$pdb2msa_ref->{"PDB2MSA::ncnt"};
+    my @cnt  = @{$$pdb2msa_ref->{"PDB2MSA::cnt"}};
+
+    contactlist_print($fp, $ncnt, \@cnt, $addcomments);
 }
 
 sub contactlist_bpinfo {
@@ -944,13 +969,19 @@ sub contactlistfile_parse {
 }
 
 sub found_alicoords_in_contactlist {
-    my ($posi, $posj, $minL, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
+    my ($posi, $posj, $minL, $byali, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	
+	if ($byali) {
+	    if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
+	}
+	else {
+	    if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	}
 	
 	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) {
 	    $found = 1;
@@ -986,13 +1017,18 @@ sub found_alicoords_in_contactlist {
     return $found;
 }
 sub found_pdbcoords_in_contactlist {
-    my ($i, $j, $minL, $ncnt, $cnt_ref, $ret_type, $ret_posi, $ret_posj) = @_;
+    my ($i, $j, $minL, $byali, $ncnt, $cnt_ref, $ret_type, $ret_posi, $ret_posj) = @_;
 
     my $found = 0;
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	if ($byali) {
+	    if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
+	}
+	else {
+	    if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	}
 	
 	if ($i == $cnt_ref->[$c]->{"CNT::i"} && $j == $cnt_ref->[$c]->{"CNT::j"}) {
 	    $found = 1;
@@ -1060,7 +1096,7 @@ sub addcontact {
 }
 
  sub allcontacts_dump {
-    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $which) = @_;
+    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which) = @_;
     
     if ($file =~ //) { return; }
 
@@ -1071,6 +1107,7 @@ sub addcontact {
     print FILE  "# MSA   $pfamname\n"; 
     print FILE  "# maxD  $maxD\n";
     print FILE  "# minL  $minL\n";
+    print FILE  "# byali $byali\n";
     print FILE  "# type  $which\n";
     for (my $c = 0; $c < $ncnt; $c ++) {
 	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
@@ -1503,12 +1540,12 @@ sub get_atoms_coord {
     my $mxfile = "$rscapebin/../data/matrices/NOMUT.mat";
  
     system("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
-    system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
+    #system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     
     system("          $hmmeralign         $hmm  $bothsqfile >  $hmmali\n");
-    system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
+    #system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
-    system("/bin/more $hmmaliafa\n");
+    #system("/bin/more $hmmaliafa\n");
     
     my $nsq = 0;
     my @asq;
@@ -1576,7 +1613,6 @@ sub get_atoms_coord {
     }
 
     system("/bin/rm $hmm\n");
-    system("/bin/rm $hmmout\n");
     system("/bin/rm $hmmali\n");
     system("/bin/rm $hmmaliafa\n");
 }
