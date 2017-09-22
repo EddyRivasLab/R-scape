@@ -14,7 +14,7 @@
 
 /* Version info.
  */
-#define RNAVIEW_HOME "/Users/rivase/src/src/mysource/lib/RNAVIEW"
+#define RNAVIEW_HOME "/Users/erivas/src/src/mysource/lib/RNAVIEW"
 
 
 #endif /*rnaviewCONFIG_INCLUDED*/

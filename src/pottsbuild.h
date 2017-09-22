@@ -54,8 +54,9 @@ struct optimize_data {
 };
 
 extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp, float tol, char *errbuf, int verbose);
-extern int   potts_OptimizeGDALL (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
-extern int   potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+extern int   potts_OptimizeGD_ALL (PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+extern int   potts_OptimizeGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
+extern int   potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double mu, PTTRAIN pttrain, PTSCTYPE ptsctype);
 extern void  potts_Destroy(PT *pt);
 extern int   potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma);

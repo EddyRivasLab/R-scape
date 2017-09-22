@@ -26,7 +26,7 @@ PACKAGE_VERSION = 0.7.1
 
 # Installation targets
 #
-prefix      = /Users/rivase/src/src/mysource
+prefix      = /Users/erivas/src/src/mysource
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 bindir      = ${exec_prefix}/bin

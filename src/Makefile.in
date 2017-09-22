@@ -48,11 +48,14 @@ CPPFLAGS  = @CPPFLAGS@
 AR        = @AR@ 
 RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
+LIBTOOLS  = @LIBTOOLS@
 
-LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@ -llbfgs -lm
+LBFGSLIB  = ../lib/liblbfgs-1.10/lib/.libs/liblbfgs.dylib
+LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -lm
 
-IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/lib
+IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
 LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib
+
 
 # beautification magic stolen from git
 #
@@ -184,8 +187,8 @@ SCRIPTS   = \
 all: libsrc.a ${PROGS} 
 
 
-${PROGS}: %: %.o ${OBJS}
-	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
+${PROGS}: %: %.o ${OBJS} $
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LBFGSLIB} ${LIBS} 
 
 
 .c.o:   

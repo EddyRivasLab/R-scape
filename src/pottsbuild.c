@@ -55,11 +55,11 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
      break;
   case ML:
   case PLM:
-    status = potts_OptimizeGDALL(pt, msa, tol, errbuf, verbose);
+    status = potts_OptimizeGD_ALL(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    status = potts_OptimizeGDAPLM(pt, msa, tol, errbuf, verbose);
+    status = potts_OptimizeGD_APLM(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
     break;
   case GINV:
@@ -77,7 +77,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
 }
 
 int
-potts_OptimizeGDALL(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+potts_OptimizeGD_ALL(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   double                *p = NULL;	       /* parameter vector                        */
@@ -137,7 +137,27 @@ potts_OptimizeGDALL(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 }
 
 int
-potts_OptimizeGDAPLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+{
+  double fx;
+  int    L  = msa->alen;
+  int    Kg = msa->abc->K+1;
+  int    np;
+  int    status;
+  
+  np = Kg*(1+L*Kg);     /* the variables hi eij */
+  
+  status = min_LBFGS(np, evaluate, tol, &fx);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "min_LBFGS() failed.");	
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+potts_OptimizeGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   double                *p = NULL;	       /* parameter vector                        */
