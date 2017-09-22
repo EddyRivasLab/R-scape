@@ -34,8 +34,6 @@ static void            optimize_potts_dfunc_aplm        (double *p, int np, void
 static double          logp_potts_ml                             (PT *pt, ESL_MSA *msa,             float tol, char *errbuf, int verbose);
 static double          logp_potts_plm                            (PT *pt, ESL_MSA *msa,             float tol, char *errbuf, int verbose);
 static double          logp_potts_aplm                  (int pos, PT *pt, ESL_MSA *msa,             float tol, char *errbuf, int verbose);
-static double          aplm_lognum                      (int i, int a, PT *pt, ESL_DSQ *sq);
-static double          aplm_logden                      (int i,        PT *pt, ESL_DSQ *sq);
 static int             symmetrize                       (PT *pt);
 static lbfgsfloatval_t evaluate                         (void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step);
 
@@ -44,6 +42,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
 {
   PT              *pt = NULL;
   int              status;
+
+  tol = 0.1;
 
   pt = potts_Create(msa->alen, msa->abc->K+1, msa->abc, ptmu, pttrain, ptsctype);
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
@@ -669,7 +669,7 @@ static void
 optimize_bracket_define_direction(double *u, int np, struct optimize_data *data)
 {
   int x;
-  for (x = 0; x < np; x++) u[x] = 0.1;
+  for (x = 0; x < np; x++) u[x] = 10.1;
   u[np] = 0.1;
 }
 
@@ -734,7 +734,7 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
       resi = sq[i+1];
       if (resi == a) tmp -= 1.;
       
-      val = aplm_lognum(i, a, pt, sq) - aplm_logden(i, pt, sq);
+      val = potts_APLMLognum(i, a, pt, sq) - potts_APLMLogz(i, pt, sq);
       logadd = e2_FLogsum(logadd, val);
     }
     tmp += exp(logadd);
@@ -760,7 +760,7 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
 	  if (resi == a && resj == b) tmp -= 1.;
 
 	  if (resj == b) {
-	    val    = 0.5 * (aplm_lognum(i, a, pt, sq) - aplm_logden(i, pt, sq));
+	    val    = 0.5 * (potts_APLMLognum(i, a, pt, sq) - potts_APLMLogz(i, pt, sq));
 	    logadd = e2_FLogsum(logadd, val);
 	  }	  
 	}
@@ -775,37 +775,6 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
  
 }
 
-static double
-aplm_lognum(int i, int a, PT *pt, ESL_DSQ *sq)
-{
-  double lognum = 0.;
-  int    L      = pt->L;
-  int    Kg     = pt->abc->K+1;
-  int    j;
-  int    b;
-  
-  lognum += pt->h[i][a];
-  
-  for (j = 0; j < L; j++) 
-    for (b = 0; b < Kg; b++) {
-      lognum += 0.5 * pt->e[i][j][IDX(a,b,Kg)];
-    }
-  
-  return lognum;
-}
-
-static double
-aplm_logden(int i, PT *pt, ESL_DSQ *sq)
-{
-  double logden = -eslINFINITY;
-  int    Kg     = pt->abc->K+1;
-  int    a;
-  
-  for (a = 0; a < Kg; a++) 
-    logden = e2_FLogsum(logden, aplm_lognum(i, a, pt, sq));
- 
-  return logden;
-}
 
 static double
 logp_potts_ml(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
@@ -848,7 +817,7 @@ logp_potts_aplm(int pos, PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   status = potts_APLMLogp(pos, pt, msa, &logp, errbuf, verbose);
   if (status != eslOK) { printf("logp_potts_aplm() failed: pos %d. %s\n", pos, errbuf); exit(1); }
   
-#if 0
+#if 1
   printf("pos %d logp APLM %f\n", pos, logp);
 #endif
   
