@@ -14,11 +14,13 @@
 #include "correlators.h"
 #include "pottsbuild.h"
 
-extern int potts_SumH             (PT *pt, ESL_MSA *msa, double *ret_sc,   char *errbuf, int verbose);
-extern int potts_MLLogp           (PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
-extern int potts_PLMLogp          (PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
-extern int potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
-extern int potts_CalculateCOV(struct data_s *data);
-extern int potts_CalculateCOVFrobenius(struct data_s *data);
-extern int potts_CalculateCOVAverage(struct data_s *data);
+extern int    potts_SumH             (PT *pt, ESL_MSA *msa, double *ret_sc,   char *errbuf, int verbose);
+extern int    potts_MLLogp           (PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
+extern int    potts_PLMLogp          (PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
+extern int    potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose);
+extern double potts_APLMLognum(int i, int a, PT *pt, ESL_DSQ *sq);
+extern double potts_APLMLogz  (int i,        PT *pt, ESL_DSQ *sq);
+extern int    potts_CalculateCOV(struct data_s *data);
+extern int    potts_CalculateCOVFrobenius(struct data_s *data);
+extern int    potts_CalculateCOVAverage(struct data_s *data);
 #endif

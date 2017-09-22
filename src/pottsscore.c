@@ -20,7 +20,6 @@
 
 static double potts_score_oneseq(PT *pt, ESL_DSQ *sq);
 static double potts_all_logz(PT *pt);
-static double potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq);
 static double potts_all_regularize(PT *pt);
 static double potts_aplm_regularize(int pos, PT *pt);
 
@@ -99,12 +98,10 @@ potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, in
   double   logp = 0.;
   double   lognum, logden;
   double   sc;
-  double   hi, eij;
   int      Kg = msa->abc->K+1;
   int      sqi, sqj;
   int      resi, resj;
   int      s;
-  int      j;
   int      status;
   
   for (s = 0; s < msa->nseq; s++) {
@@ -113,19 +110,9 @@ potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, in
     sqi  = sq[pos+1];
     resi = esl_abc_XIsCanonical(msa->abc, sqi);
       
-    hi = pt->h[pos][sqi];
-    lognum = hi;
-    
-    for (j = 0; j < pt->L; j ++) {
-      
-      sqj  = sq[j+1];
-      resj = esl_abc_XIsCanonical(msa->abc, sqj);
-      
-      eij = pt->e[pos][j][IDX(sqi,sqj,Kg)];
-      lognum += 0.5 * eij;
-    }
-    logden = potts_aplm_logz(pos, pt, sq);
-    
+    lognum = potts_APLMLognum(pos, sqi, pt, sq);
+    logden = potts_APLMLogz  (pos,      pt, sq);
+   
     if (lognum > logden) {
       if (lognum - logden < tol) {
 	lognum = logden;
@@ -346,8 +333,42 @@ potts_all_logz(PT *pt)
   return logsum;
 }
 
+// hi(a) + \sum_{j\neq i} eij(a,sqj)
+//
+double
+potts_APLMLognum(int i, int a, PT *pt, ESL_DSQ *sq)
+{
+  double lognum = 0.;
+  int    L      = pt->L;
+  int    Kg     = pt->abc->K+1;
+  int    resj;
+  int    j;
+  
+  lognum += pt->h[i][a];
+  
+  for (j = 0; j < L; j++) {
+    resj    = sq[j+1];	  
+    lognum += 0.5 * pt->e[i][j][IDX(a,resj,Kg)];
+  }
+  
+  return lognum;
+}
+
 // log { sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ] }
 //
+double
+potts_APLMLogz(int i, PT *pt, ESL_DSQ *sq)
+{
+  double logz = -eslINFINITY;
+  int    Kg     = pt->abc->K+1;
+  int    a;
+  
+  for (a = 0; a < Kg; a++) 
+    logz = e2_FLogsum(logz, potts_APLMLognum(i, a, pt, sq));
+ 
+  return logz;
+}
+
 static double
 potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
 {
