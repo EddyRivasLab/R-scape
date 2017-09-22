@@ -51,10 +51,10 @@ INSTALL   = @INSTALL@
 LIBTOOLS  = @LIBTOOLS@
 
 LBFGSLIB  = ../lib/liblbfgs-1.10/lib/.libs/liblbfgs.dylib
-LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -lm
+LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -llbfgs -lm
 
 IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
-LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib
+LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib/.libs
 
 
 # beautification magic stolen from git
@@ -188,7 +188,7 @@ all: libsrc.a ${PROGS}
 
 
 ${PROGS}: %: %.o ${OBJS} $
-	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LBFGSLIB} ${LIBS} 
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
 
 
 .c.o:   
