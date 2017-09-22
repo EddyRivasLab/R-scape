@@ -478,11 +478,7 @@ static int progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatva
 
 int
 min_LBFGS(int n,
-	  lbfgsfloatval_t (evaluate)(void *instance,
-				     const lbfgsfloatval_t *x,
-				     lbfgsfloatval_t *g,
-				     const int n,
-				     const lbfgsfloatval_t step),
+	  lbfgsfloatval_t (evaluate)(void *, const lbfgsfloatval_t *, lbfgsfloatval_t *, const int, const lbfgsfloatval_t),
 	  double tol, double *ret_fx)
 {
   lbfgsfloatval_t    *x = lbfgs_malloc(n);
@@ -506,7 +502,7 @@ min_LBFGS(int n,
    * evaluate() and progress() when necessary. 
    */
   ret = lbfgs(n, x, &fx, evaluate, progress, NULL, &param);
-  if (ret != LBFGS_SUCCESS) { printf("LBFGS failed\n"; exit(1); }
+  if (ret != LBFGS_SUCCESS) { printf("LBFGS failed\n"); exit(1); }
     
   /* Bail out if the function is now +/-inf: this can happen if the caller
    * has screwed something up.
