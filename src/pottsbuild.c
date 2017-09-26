@@ -54,8 +54,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmu, PTTRAIN pttrain, PTSCT
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
 
   // Initialize 
-  //status = potts_AssignGaussian(r, pt, 0., 1.0);
-  status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
+  status = potts_AssignGaussian(r, pt, 0., 1.0);
+  //status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
   status = potts_GaugeZeroSum(pt, errbuf, verbose);
@@ -103,7 +103,7 @@ potts_OptimizeCGD_ALL(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   int                    np;
   int                    status;
 
-  np = L*Kg*(1+L*Kg);     /* the variables hi eij */
+  np = L*Kg + (L-1)*Kg*Kg;     /* the variables hi eij */
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
   ESL_ALLOC(u,   sizeof(double) * (np+1));
@@ -165,7 +165,7 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   int                    i;
   int                    status;
 
-  np = Kg*(1+L*Kg);     /* the variables hi eij */
+  np = Kg + (L-1)*Kg*Kg;     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
@@ -205,7 +205,7 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   // symmetrize
   symmetrize(pt);
  
-  if (verbose) potts_Write(stdout, pt);
+  if (1||verbose) potts_Write(stdout, pt);
 
   /* clean up */
   if (u   != NULL) free(u);
@@ -226,7 +226,7 @@ potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   struct optimize_data   data;
   int                    L  = msa->alen;
   int                    Kg = msa->abc->K+1;
-  int                    np = Kg*(1+L*Kg);
+  int                    np = Kg+(L-1)*Kg*Kg;
   lbfgsfloatval_t       *x = lbfgs_malloc(np+1);
   lbfgsfloatval_t        fx;
   lbfgs_parameter_t      param;
@@ -469,7 +469,8 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   
   for (i = 0; i < pt->L; i++)    
     for (j = 0; j < pt->L; j++) {
-      
+      if (j==i) continue;
+
       sum = 0;     
       for (a = 0; a < Kg; a ++) {
 	sumi[a] = 0;
@@ -621,11 +622,13 @@ potts_Write(FILE *fp, PT *pt)
   
   for (i = 0; i < L; i++) 
     for (j = i+1; j < L; j++) {
-      fprintf(fp, "%d %d ", i, j);
-      for (a = 0; a < Kg; a ++) 
+      fprintf(fp, "%d %d\n", i, j);
+      for (a = 0; a < Kg; a ++) {
 	for (b = 0; b < Kg; b ++) {
-	  fprintf(fp, "%f ", pt->e[i][j][IDX(a,b,Kg)]);
+	  fprintf(fp, "%4.4f ", pt->e[i][j][IDX(a,b,Kg)]);
 	}
+	fprintf(fp, "\n");
+      }
       fprintf(fp, "\n");
     }
 }
@@ -645,9 +648,12 @@ optimize_all_pack_paramvector(double *p, int np, struct optimize_data *data)
 
   for (i = 0; i < L; i++) {
     for (a = 0; a < Kg; a++)      p[x++] = data->pt->h[i][a];
-    for (j = 0; j < L; j++) 
-      for (a = 0; a < Kg2; a++) { p[x++] = data->pt->e[i][j][a]; p[x++] = data->pt->e[j][i][a]; }
+    for (j = 0; j < L; j++) {
+      if (j==i) continue;
+      for (a = 0; a < Kg2; a++)   p[x++] = data->pt->e[i][j][a];
+    }
   }
+  
   return eslOK;  
 }
 
@@ -664,8 +670,10 @@ optimize_aplm_pack_paramvector(double *p, int np, struct optimize_data *data)
 
   for (a = 0; a < Kg; a++)    p[x++] = data->pt->h[i][a];
   for (j = 0; j < L; j++) {
+    if (j==i) continue;
     for (a = 0; a < Kg2; a++) p[x++] = data->pt->e[i][j][a];
   }
+  
   return eslOK;  
 }
 static int
@@ -681,6 +689,7 @@ optimize_aplm_lbfgs_pack_paramvector(lbfgsfloatval_t *p, int np, struct optimize
 
   for (a = 0; a < Kg; a++)    p[x++] = (lbfgsfloatval_t)data->pt->h[i][a];
   for (j = 0; j < L; j++) {
+    if (j==i) continue;
     for (a = 0; a < Kg2; a++) p[x++] = (lbfgsfloatval_t)data->pt->e[i][j][a];
   }
   return eslOK;  
@@ -698,13 +707,12 @@ optimize_all_unpack_paramvector(double *p, int np, struct optimize_data *data)
   int    a;
   
   for (i = 0; i < L; i++) {
-    for (a = 0; a < Kg; a++)   data->pt->h[i][a]    = p[x++];
-    for (j = 0; j < L; j++) 
-      for (a = 0; a < Kg2; a++) {
-	eij = p[x++];
-	eji = p[x++];
-	data->pt->e[i][j][a] = data->pt->e[j][i][a] = 0.5*(eij+eji);
-      }
+    for (a = 0; a < Kg; a++)    data->pt->h[i][a]    = p[x++];
+    
+    for (j = 0; j < L; j++) {
+      if (j==i) continue;
+      for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = p[x++];
+    }
   }
 
  return eslOK;
@@ -723,7 +731,8 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   
   for (a = 0; a < Kg; a++)      data->pt->h[i][a]    = p[x++];
     for (j = 0; j < L; j++) {
-      for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = p[x++];
+      if (j==i) continue;
+      for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = p[x++]; 
   }
   
   return eslOK;
@@ -742,6 +751,7 @@ optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimi
   
   for (a = 0; a < Kg; a++)      data->pt->h[i][a]    = (double)p[x++];
     for (j = 0; j < L; j++) {
+      if (j==i) continue;
       for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = (double)p[x++];
   }
   
@@ -753,8 +763,8 @@ static void
 optimize_bracket_define_direction(double *u, int np, struct optimize_data *data)
 {
   int x;
-  for (x = 0; x < np; x++) u[x] = 10.1;
-  u[np] = 0.1;
+  for (x = 0; x < np; x++) u[x] = 0.5;
+  u[np] = 0.5;
 }
 
 static double
@@ -830,7 +840,10 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
     dx[x++] = tmp;
   }
   
-  for (j = 0; j < L; j++) 
+  for (j = 0; j < L; j++)  {
+
+    if (j==i) continue;
+    
     for (a = 0; a < Kg; a++) 
       for (b = 0; b < Kg; b++) {
 	tmp    = 0.;
@@ -855,6 +868,7 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
 	tmp += pt->mu * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
 	
 	dx[x++] = tmp;
+      }
   }
  
 }

@@ -269,6 +269,7 @@ potts_APLMLognum(int i, int a, PT *pt, ESL_DSQ *sq)
   lognum += pt->h[i][a];
   
   for (j = 0; j < L; j++) {
+    if (j==i) continue;
     resj    = sq[j+1];	  
     lognum += 0.5 * pt->e[i][j][IDX(a,resj,Kg)];
   }
@@ -312,6 +313,8 @@ potts_score_oneseq(PT *pt, ESL_DSQ *sq)
     sc += hi;
     
     for (j = 0; j < L; j ++) {
+      if (j==i) continue;
+      
       sqj  = sq[j+1];
       resj = esl_abc_XIsCanonical(abc, sqj);
       
@@ -345,8 +348,10 @@ potts_all_logz(PT *pt)
     sc = 0.;
     for (i = 0; i < L; i ++) {
       sc += pt->h[i][a[i]];	
-      for (j = 0; j < L; j ++) 
+      for (j = 0; j < L; j ++)  {
+	if (j==i) continue;
 	sc += pt->e[i][j][IDX(a[i],a[j],Kg)];
+      }
     }
     logsum = e2_FLogsum(logsum, sc);
  
