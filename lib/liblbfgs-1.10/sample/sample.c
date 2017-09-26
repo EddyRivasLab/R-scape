@@ -36,7 +36,7 @@ static int progress(
     )
 {
     printf("Iteration %d:\n", k);
-    printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
+    printf("  fx = %f\n", fx);
     printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
     printf("\n");
     return 0;

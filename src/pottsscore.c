@@ -94,7 +94,7 @@ int
 potts_APLMLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, char *errbuf, int verbose)
 {
   ESL_DSQ *sq;
-  double   tol = 1e-3;
+  double   tol = 1e-2;
   double   logp = 0.;
   double   lognum, logden;
   double   sc;

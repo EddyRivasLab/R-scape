@@ -466,57 +466,6 @@ min_Bracket(double *x, double *dir, long n, double firststep,
 }
 
 
-static int progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g, const lbfgsfloatval_t fx, const lbfgsfloatval_t xnorm,
-		    const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step, int n, int k, int ls)
-{
-    printf("Iteration %d:\n", k);
-    printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
-    printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
-    printf("\n");
-    return 0;
-}
-
-int
-min_LBFGS(int n,
-	  lbfgsfloatval_t (evaluate)(void *, const lbfgsfloatval_t *, lbfgsfloatval_t *, const int, const lbfgsfloatval_t),
-	  double tol, double *ret_fx)
-{
-  lbfgsfloatval_t    *x = lbfgs_malloc(n);
-  lbfgsfloatval_t    fx;
-  lbfgs_parameter_t  param;
-  int                i;
-  int                ret = 0;
-  int                status;
-  
-  if (x == NULL) { printf("ERROR: Failed to allocate a memory block for variables.\n"); return eslFAIL; }
-  
-  /* Initialize the variables. */
-  for (i = 0; i < n; i ++) 
-    x[i] = 1.0;
-  
-  /* Initialize the parameters for the L-BFGS optimization. */
-  lbfgs_parameter_init(&param);
-  // param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
-  
-  /* Start the L-BFGS optimization; this will invoke the callback functions
-   * evaluate() and progress() when necessary. 
-   */
-  ret = lbfgs(n, x, &fx, evaluate, progress, NULL, &param);
-  if (ret != LBFGS_SUCCESS) { printf("LBFGS failed\n"); exit(1); }
-    
-  /* Bail out if the function is now +/-inf: this can happen if the caller
-   * has screwed something up.
-   */
-  if (fx == eslINFINITY || fx == -eslINFINITY)
-    ESL_EXCEPTION(eslERANGE, "minimum not finite");
-  
-  lbfgs_free(x);
-  
-  if (ret_fx != NULL) *ret_fx = fx;
-  
-  return eslOK;
-}
-
 
 static int
 NelderMead_initsimplex(double *x, double *u, long n, ESL_DMATRIX *simplex)

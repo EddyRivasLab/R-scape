@@ -1088,7 +1088,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
-  msamanip_ConvertDegen2N(msa);
+  if (cfg->covmethod == POTTS) msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
+  else                        msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
   
   /* given msa aveid and avematch */
