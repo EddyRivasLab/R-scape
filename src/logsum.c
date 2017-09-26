@@ -85,7 +85,22 @@ e2_FLogsum(float a, float b)
   const float min = ESL_MIN(a, b);
 
   ESL_DASSERT1(( logsum_initialized ));
+  
+#ifdef e2_LOGSUM_SLOWEXACT
+  return (logsum_max || min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + log(1.0 + exp(min-max));  
+#else
+  return               (min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + flogsum_lookup[(int)((max-min)*e2_LOGSUM_SCALE)];
+#endif
+}
 
+double
+e2_DLogsum(double a, double b)
+{
+  const double max = ESL_MAX(a, b);
+  const double min = ESL_MIN(a, b);
+
+  ESL_DASSERT1(( logsum_initialized ));
+  
 #ifdef e2_LOGSUM_SLOWEXACT
   return (logsum_max || min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + log(1.0 + exp(min-max));  
 #else

@@ -9,7 +9,8 @@
 
 /* logsum.c */
 extern int       e2_FLogsumInit(void);
-extern float     e2_FLogsum(float a, float b);
+extern float     e2_FLogsum(float  a, float  b);
+extern double    e2_DLogsum(double a, double b);
 
 extern int       e2_FLogdiffInit(void);
 extern float     e2_FLogdiffval  (float a, float b);

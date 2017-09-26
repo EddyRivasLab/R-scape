@@ -286,7 +286,7 @@ potts_APLMLogz(int i, PT *pt, ESL_DSQ *sq)
   int    a;
   
   for (a = 0; a < Kg; a++) 
-    logz = e2_FLogsum(logz, potts_APLMLognum(i, a, pt, sq));
+    logz = e2_DLogsum(logz, potts_APLMLognum(i, a, pt, sq));
  
   return logz;
 }

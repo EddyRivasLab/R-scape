@@ -410,14 +410,8 @@ potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf,
   }
   
   for (i = 0; i < L; i++) 
-    for (a = 0; a < Kg; a ++) {
-      hi = 0;
-      
-      for (j = 0; j < L; j++)
-	for (b = 0; b < Kg; b ++) 
-	  hi += pt->e[i][j][IDX(a,b,Kg)];
-      pt->h[i][a] = hi/Kg;
-    }
+    for (a = 0; a < Kg; a ++) 
+     pt->h[i][a] = 0.;
 
   //potts_Write(stdout, pt);
 
