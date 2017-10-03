@@ -21,6 +21,38 @@
 
 #include "minimize.h"
 
+/* Return the negative gradient at a point, determined 
+ * numerically.
+ */
+static void
+numeric_derivative(double *x, double *u, int n, 
+		   double (*func)(double *, int, void*),
+		   void *prm, double relstep,
+		   double *dx)
+{
+  int    i;
+  double delta;
+  double f1, f2;
+  double tmp;
+
+  for (i = 0; i < n; i++)
+    {
+      delta = fabs(u[i] * relstep);
+
+      tmp = x[i]; 
+      x[i] = tmp + delta;
+      f1  = (*func)(x, n, prm);
+      x[i] = tmp - delta;
+      f2  = (*func)(x, n, prm);
+      x[i] = tmp;
+
+      dx[i] = (-0.5 * (f1-f2)) / delta;
+
+      ESL_DASSERT1((! isnan(dx[i])));
+    }
+}
+
+
 /* bracket():
  * SRE, Wed Jul 27 11:43:32 2005 [St. Louis]
  *
@@ -84,8 +116,8 @@
  * Xref:      STL9/130.
  */
 static int
-bracket(double *ori, double *d, long n, double firststep,
-	double (*func)(double *, long, void *), void *prm, 
+bracket(double *ori, double *d, int n, double firststep,
+	double (*func)(double *, int, void *), void *prm, 
 	double *wrk, 
 	double *ret_ax, double *ret_bx, double *ret_cx,
 	double *ret_fa, double *ret_fb, double *ret_fc)
@@ -251,8 +283,8 @@ bracket(double *ori, double *d, long n, double firststep,
  *            Numerical Recipes [Press88].
  */
 static void
-brent(double *ori, double *dir, long n,
-      double (*func)(double *, long, void *), void *prm,
+brent(double *ori, double *dir, int n,
+      double (*func)(double *, int, void *), void *prm,
       double a, double b, double eps, double t,
       double *xvec, double *ret_x, double *ret_fx)
 {
@@ -340,6 +372,213 @@ brent(double *ori, double *dir, long n,
   ESL_DPRINTF2(("xx=%10.8f fx=%10.1f\n", x, fx));
 }
 
+/* Function:  esl_min_ConjugateGradientDescent()
+ * Incept:    SRE, Wed Jun 22 08:49:42 2005 [St. Louis]
+ *
+ * Purpose:   n-dimensional minimization by conjugate gradient descent.
+ *           
+ *            An initial point is provided by <x>, a vector of <n>
+ *            components. The caller also provides a function <*func()> that 
+ *            compute the objective function f(x) when called as 
+ *            <(*func)(x, n, prm)>, and a function <*dfunc()> that can
+ *            compute the gradient <dx> at <x> when called as 
+ *            <(*dfunc)(x, n, prm, dx)>, given an allocated vector <dx>
+ *            to put the derivative in. Any additional data or fixed
+ *            parameters that these functions require are passed by
+ *            the void pointer <prm>.
+ *            
+ *            The first step of each iteration is to try to bracket
+ *            the minimum along the current direction. The initial step
+ *            size is controlled by <u[]>; the first step will not exceed 
+ *            <u[i]> for any dimension <i>. (You can think of <u> as
+ *            being the natural "units" to use along a graph axis, if
+ *            you were plotting the objective function.)
+ *
+ *            The caller also provides an allocated workspace sufficient to
+ *            hold four allocated n-vectors. (4 * sizeof(double) * n).
+ *
+ *            Iterations continue until the objective function has changed
+ *            by less than a fraction <tol>. This should not be set to less than
+ *            sqrt(<DBL_EPSILON>). 
+ *
+ *            Upon return, <x> is the minimum, and <ret_fx> is f(x),
+ *            the function value at <x>.
+ *            
+ * Args:      x        - an initial guess n-vector; RETURN: x at the minimum
+ *            u        - "units": maximum initial step size along gradient when bracketing.
+ *            n        - dimensionality of all vectors
+ *            *func()  - function for computing objective function f(x)
+ *            *dfunc() - function for computing a gradient at x
+ *            prm      - void ptr to any data/params func,dfunc need 
+ *            tol      - convergence criterion applied to f(x)
+ *            wrk      - allocated 4xn-vector for workspace
+ *            ret_fx   - optRETURN: f(x) at the minimum
+ *
+ * Returns:   <eslOK> on success.
+ *
+ * Throws:    <eslENOHALT> if it fails to converge in MAXITERATIONS.
+ *            <eslERANGE> if the minimum is not finite, which may
+ *            indicate a problem in the implementation or choice of <*func()>.
+ *
+ * Xref:      STL9/101.
+ */
+int
+min_ConjugateGradientDescent(double *x, double *u, int n, 
+			     double (*func)(double *, int, void *),
+			     double (*bothfunc)(double *, int, void *, double *),
+			     void *prm, double tol, double *wrk, double *ret_fx)
+{
+  double oldfx;
+  double coeff;
+  int    i, i1;
+  double *dx, *cg, *w1, *w2;
+  double cvg;
+  double fa,fb,fc;
+  double ax,bx,cx;
+  double fx;
+
+  dx = wrk;
+  cg = wrk + n;
+  w1 = wrk + 2*n;
+  w2 = wrk + 3*n;
+
+  if (bothfunc == NULL) 
+    oldfx = (*func)(x, n, prm);	/* init the objective function */
+  else 
+    oldfx = (*bothfunc)(x, n, prm, dx);	/* init the objective function */
+  
+  /* Bail out if the function is +/-inf or nan: this can happen if the caller
+   * has screwed something up, or has chosen a bad start point.
+   */
+  if (! isfinite(oldfx)) ESL_EXCEPTION(eslERANGE, "minimum not finite");
+
+  if (bothfunc == NULL) 
+    numeric_derivative(x, u, n, func, prm, 1e-4, dx); /* resort to brute force */
+  else 
+    esl_vec_DScale(dx, n, -1.0);
+  esl_vec_DCopy(dx, n, cg);  /* and make that the first conjugate direction, cg  */
+ 
+  /* (failsafe) convergence test: a zero direction can happen, 
+   * and it either means we're stuck or we're finished (most likely stuck)
+   */
+  for (i1 = 0; i1 < n; i1++) 
+    if (cg[i1] != 0.) break;
+  if  (i1 == n) {
+    if (ret_fx != NULL) *ret_fx = oldfx;
+    return eslOK;
+  }
+  
+  for (i = 0; i < MAXITERATIONS; i++)
+  {
+
+      /* Figure out the initial step size.
+       */
+       bx = fabs(u[0] / cg[0]);
+       for (i1 = 1; i1 < n; i1++)
+	 {
+	   cx = fabs(u[i1] / cg[i1]);
+	   if (cx < bx) bx = cx;
+	 }
+ 
+       /* Bracket the minimum.
+	*/
+       bracket(x, cg, n, bx, func, prm, w1,
+	      &ax, &bx, &cx, 
+	      &fa, &fb, &fc);
+
+       /* Minimize along the line given by the conjugate gradient <cg> */
+       brent(x, cg, n, func, prm, ax, cx, 1e-3, 1e-8, w2, NULL, &fx);
+       esl_vec_DCopy(w2, n, x);
+
+      /* Bail out if the function is now +/-inf: this can happen if the caller
+       * has screwed something up.
+       */
+      if (fx == eslINFINITY || fx == -eslINFINITY)
+    	  ESL_EXCEPTION(eslERANGE, "minimum not finite");
+
+      /* Find the negative gradient at that point (temporarily in w1) */
+      if (bothfunc != NULL) 
+	{
+	  (*bothfunc)(x, n, prm, w1);
+	  esl_vec_DScale(w1, n, -1.0);
+	}
+      else numeric_derivative(x, u, n, func, prm, 1e-4, w1); /* resort to brute force */
+      
+      /* Calculate the Polak-Ribiere coefficient */
+      for (coeff = 0., i1 = 0; i1 < n; i1++)
+	coeff += (w1[i1] - dx[i1]) * w1[i1];
+      coeff /= esl_vec_DDot(dx, dx, n);
+      
+      /* Calculate the next conjugate gradient direction in w2 */
+      esl_vec_DCopy(w1, n, w2);
+      esl_vec_DAddScaled(w2, cg, coeff, n);
+      
+      /* Finishing set up for next iteration: */
+      esl_vec_DCopy(w1, n, dx);
+      esl_vec_DCopy(w2, n, cg);
+
+      /* Now: x is the current point; 
+       *      fx is the function value at that point;
+       *      dx is the current gradient at x;
+       *      cg is the current conjugate gradient direction. 
+       */
+
+      /* Main convergence test. 1e-9 factor is fudging the case where our
+       * minimum is at exactly f()=0.
+       */
+      cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
+
+//      fprintf(stderr, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
+//      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
+
+#if eslDEBUGLEVEL >= 2
+      printf("\nesl_min_ConjugateGradientDescent():\n");
+      printf("new point:     ");
+      for (i1 = 0; i1 < n; i1++)
+	    printf("%g ", x[i1]);
+
+      printf("\nnew gradient:    ");
+      for (i1 = 0; i1 < n; i1++)
+	    printf("%g ", dx[i1]);
+
+      numeric_derivative(x, u, n, func, prm, 1e-4, w1);
+      printf("\n(numeric grad):  ");
+      for (i1 = 0; i1 < n; i1++)
+	    printf("%g ", w1[i1]);
+
+      printf("\nnew direction: ");
+      for (i1 = 0; i1 < n; i1++)
+	    printf("%g ", cg[i1]);
+
+      printf("\nOld f() = %g    New f() = %g    Convergence = %g\n\n", oldfx, fx, cvg);
+#endif
+
+     if (cvg <= tol) break;
+
+      /* Second (failsafe) convergence test: a zero direction can happen, 
+       * and it either means we're stuck or we're finished (most likely stuck)
+       */
+      for (i1 = 0; i1 < n; i1++) 
+	     if (cg[i1] != 0.) break;
+      if  (i1 == n) break;
+
+      oldfx = fx;
+    }
+
+
+	if (ret_fx != NULL) *ret_fx = fx;
+
+    if (i == MAXITERATIONS)
+	  ESL_FAIL(eslENOHALT, NULL, " ");
+// 	  ESL_EXCEPTION(eslENOHALT, "Failed to converge in ConjugateGradientDescent()");
+
+
+
+  return eslOK;
+}
+
+
+
 /* Function:  min_Braket()
  * Incept:    ER, Wed Jun 22 08:49:42 2005 [janelia]
  * function from esl_minimize.c wrap as esl_min_GradientDescent()
@@ -406,8 +645,8 @@ brent(double *ori, double *dir, long n,
  * Xref:      STL9/130.
  */
 int
-min_Bracket(double *x, double *dir, long n, double firststep,
-	   double (*func)(double *, long, void *),
+min_Bracket(double *x, double *dir, int n, double firststep,
+	   double (*func)(double *, int, void *),
 	   void *prm, double tol, double *wrk, double *ret_fx)
 {
   double  oldfx;
@@ -467,8 +706,11 @@ min_Bracket(double *x, double *dir, long n, double firststep,
 
 
 
+
+
+
 static int
-NelderMead_initsimplex(double *x, double *u, long n, ESL_DMATRIX *simplex)
+NelderMead_initsimplex(double *x, double *u, int n, ESL_DMATRIX *simplex)
 {
   int i;
   int j;
@@ -481,7 +723,7 @@ NelderMead_initsimplex(double *x, double *u, long n, ESL_DMATRIX *simplex)
 }
 
 static int
-NelderMead_indices(double *fx, ESL_DMATRIX *simplex, double (*func)(double *, long, void *), void *prm, 
+NelderMead_indices(double *fx, ESL_DMATRIX *simplex, double (*func)(double *, int, void *), void *prm, 
 		   int *ret_ih, int *ret_is, int *ret_il, double *ret_fh, double *ret_fs, double *ret_fl)
 {
   double fl = +eslINFINITY;
@@ -512,7 +754,7 @@ NelderMead_indices(double *fx, ESL_DMATRIX *simplex, double (*func)(double *, lo
 }
 
 static int
-NelderMead_transform(double *w1, double *w2, double *fx, ESL_DMATRIX *simplex, double *c, double (*func)(double *, long, void *), void *prm, 
+NelderMead_transform(double *w1, double *w2, double *fx, ESL_DMATRIX *simplex, double *c, double (*func)(double *, int, void *), void *prm, 
 		     double alpha, double beta, double gamma, double delta, 
 		     int *ret_ih, int *ret_is, int *ret_il, double *ret_fh, double *ret_fs, double *ret_fl, enum NMtransf_e  *ret_transf)
 {
@@ -597,7 +839,7 @@ NelderMead_transform(double *w1, double *w2, double *fx, ESL_DMATRIX *simplex, d
 }
 
 static double
-NelderMead_volume_update(double oldv, long n, double alpha, double beta, double gamma, double delta, enum NMtransf_e  transf)
+NelderMead_volume_update(double oldv, int n, double alpha, double beta, double gamma, double delta, enum NMtransf_e  transf)
 {
   double v;
 
@@ -674,8 +916,8 @@ NelderMead_centroid_update(double *c, ESL_DMATRIX *simplex, int ih, int il, enum
  *            ret_fx   - optRETURN: f(x) at the minimum
  */
 int
-min_NelderMead(double *x, double *u, long n, 
-	       double (*func)(double *, long, void *),
+min_NelderMead(double *x, double *u, int n, 
+	       double (*func)(double *, int, void *),
 	       void *prm, double tol, double *wrk, ESL_DMATRIX *wrks, double *ret_fx)
 {
   ESL_DMATRIX        *simplex;

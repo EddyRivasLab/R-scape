@@ -166,7 +166,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nbpairs_cyk;
 
   
-  double           ptmu;
+  double           ptmuh;               // regularization coefficients
+  double           ptmue;
   PTTRAIN          pttrain;
   PTSCTYPE         ptsctype;
   PT              *pt;
@@ -305,7 +306,8 @@ static ESL_OPTIONS options[] = {
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
    /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
-  { "--ptmu",         eslARG_REAL,    "0.01",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training",                                              1 },
+  { "--ptmuh",        eslARG_REAL,    "0.02",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
+  { "--ptmue",        eslARG_REAL,    "0.02",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
@@ -552,8 +554,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.covmethod = POTTS; }
 
   // potts model
-  cfg.pt = NULL;
-  cfg.ptmu    = esl_opt_GetReal(go, "--ptmu");
+  cfg.pt      = NULL;
+  cfg.ptmuh   = esl_opt_GetReal(go, "--ptmuh");
+  cfg.ptmue   = esl_opt_GetReal(go, "--ptmue");
   cfg.pttrain = NONE;
   if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
   else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
@@ -1467,7 +1470,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   // POTTS: calculate the couplings 
   if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmu, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
     if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
   
