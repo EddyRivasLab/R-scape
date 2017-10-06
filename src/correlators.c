@@ -1107,8 +1107,8 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
     printf("%s-[%f,%f] \n", covtype,  mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if ((i==0&&j==44)||(i==2&&j==43)||(i==7&&j==34)||(i==9&&j==32)) printf("%s-[%d][%d] = %f | COV %f | COVx %f COVy %f | COVavg %f\n", 
-				 covtype, i, j, mi->COV->mx[i][j], COV->mx[i][j], COVx[i], COVx[j], COVavg);
+	printf("%s-[%d][%d] = %f | COV %f | COVx %f COVy %f | COVavg %f\n", 
+	       covtype, i, j, mi->COV->mx[i][j], COV->mx[i][j], COVx[i], COVx[j], COVavg);
       } 
   }
 
@@ -1225,7 +1225,6 @@ corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS miclass)
   mi->type  = mitype;
   mi->class = miclass;
 
-  
   if (mi->COV) esl_dmatrix_SetZero(mi->COV);
 
   mi->besthreshCOV = -eslINFINITY;

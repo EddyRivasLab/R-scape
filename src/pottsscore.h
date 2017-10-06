@@ -20,4 +20,8 @@ extern int    potts_APLM_NLogp(int pos, PT *pt, ESL_MSA *msa, double *ret_logp, 
 extern int    potts_CalculateCOV         (struct data_s *data);
 extern int    potts_CalculateCOVFrobenius(struct data_s *data);
 extern int    potts_CalculateCOVAverage  (struct data_s *data);
+
+extern double potts_aplm_H   (int i, int a, PT *pt, ESL_DSQ *sq);
+extern  double potts_aplm_logz(int i,        PT *pt, ESL_DSQ *sq);
+
 #endif

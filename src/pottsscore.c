@@ -12,6 +12,7 @@
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_msa.h"
+#include "esl_vectorops.h"
 
 #include "correlators.h"
 #include "logsum.h"
@@ -21,8 +22,6 @@
 static double potts_seqH   (PT *pt, ESL_DSQ *sq);
 static double potts_sumH   (PT *pt, ESL_MSA *msa);
 static double potts_ml_logz(PT *pt);
-static double potts_aplm_H   (int i, int a, PT *pt, ESL_DSQ *sq);
-static double potts_aplm_logz(int i,        PT *pt, ESL_DSQ *sq);
 static double potts_plm_regularize_l2        (PT *pt);
 static double potts_plm_regularize_l1        (PT *pt);
 static double potts_aplm_regularize_l2(int i, PT *pt);
@@ -55,43 +54,145 @@ potts_ML_NLogp(PT *pt, ESL_MSA *msa, double *ret_nlogp, char *errbuf, int verbos
 int
 potts_PLM_NLogp(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *errbuf, int verbose)
 {
-  double   nlogp = 0.;
-  double   sc;
-  int      L  = msa->alen;
-  int      Kg = msa->abc->K+1;
-  int      i;
-  int      idx;
+  ESL_DSQ *sq;
+  double  *H = NULL;
+  double   nlogp;
+  double   nlogpi;
+  double   logzi; 
+  double   logdv, logadd;
+  double   lwgt;
+  int      L   = msa->alen;
+  int      Kg  = msa->abc->K+1;
+  int      Kg2 = Kg*Kg;
+  int      dim = L*Kg + 0.5*L*(L-1)*Kg2;
+  int      dofunc;
+  int      dodfunc;
+  int      resi, resj;
+  int      x;
+  int      s;
+  int      i, j;
+  int      a, b;
   int      status;
-  
-  for (i = 0; i < pt->L; i ++) {
-    idx = i * ((L-1)*Kg*Kg + Kg);
-    
-    status = potts_APLM_NLogp(i, pt, msa, &sc, idx, dnlogp, errbuf, verbose);
-    if (status != eslOK) return status;
-    
-    nlogp += sc;
-  } 
-  
-  *ret_nlogp = nlogp;
-  if (nlogp < 0) ESL_XFAIL(eslFAIL, errbuf, "potts_PLM_NLogp %f is negative!\n", nlogp); 
-  
-  return eslOK;
 
+  dofunc  = (ret_nlogp)? TRUE : FALSE;
+  dodfunc = (dnlogp)?    TRUE : FALSE;
+  
+  /* allocate */
+  ESL_ALLOC(H, sizeof(double) * Kg);
+  
+  // Initialize
+  if (dofunc)  nlogp = 0.0;
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.);
+  
+  for (i = 0; i < L; i ++) {
+    // Initialize
+    if (dofunc)  nlogpi = 0.0;
+    
+    for (s = 0; s < msa->nseq; s++) {
+      // Initialize
+      x     = Kg*i + Kg2*i*(L - 0.5*i - 0.5) ; //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
+      sq    = msa->ax[s];
+      resi  = sq[i+1];
+      logzi = -eslINFINITY;
+      lwgt  = log(msa->wgt[s]);
+      
+      for (a = 0; a < Kg; a++) {
+	H[a] = potts_aplm_H(i, a, pt, sq);
+	logzi = e2_DLogsum(logzi, H[a]); 
+      }
+      if (dofunc) nlogpi += msa->wgt[s] * (-H[resi] + logzi);
+      
+      if (dodfunc == FALSE) continue;
+
+      // assign
+      // derivative respect to hi(a)
+      for (a = 0; a < Kg; a++) {
+	logdv       = log(dnlogp[x]);
+	logdv       = e2_DLogsum(logdv, H[a]-logzi+lwgt); 
+	dnlogp[x++] = exp(logdv);	       
+      }
+      
+      // derivative respect to eij(a,b)
+      for (j = i+1; j < L; j ++) {
+	resj = sq[j+1];
+	for (a = 0; a < Kg; a++)
+	  for (b = 0; b < Kg; b++) {
+	    logdv       = log(dnlogp[x]);
+	    logadd      = (b==resj)? H[a]-logzi+lwgt : -eslINFINITY;
+	    logdv       = e2_DLogsum(logdv, logadd); 
+	    dnlogp[x++] = exp(logdv);
+	  }
+      }
+    } // for all sequences
+    
+    if (dofunc) nlogp += nlogpi;
+  }
+  
+  if (dodfunc) {
+    for (i = 0; i < L; i ++) {
+      for (s = 0; s < msa->nseq; s++) {
+	// Initialize
+	x    = Kg*i + Kg2*i*(L - 0.5*i - 0.5) ; //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
+	sq   = msa->ax[s];
+	resi = sq[i+1];
+	
+	// derivative respect to hi(a)
+	for (a = 0; a < Kg; a++)
+	  dnlogp[x++] += (a==resi)? -msa->wgt[s]:0.;
+	
+	// derivative respect to eij(a,b)
+	for (j = i+1; j < L; j ++) {
+	  resj = sq[j+1];
+	  for (a = 0; a < Kg; a++)
+	    for (b = 0; b < Kg; b++) 
+	      dnlogp[x++] += (a==resi && b==resj)? -msa->wgt[s]:0.;
+	}      
+      }
+    }
+  }
+  
+  // l2-regularization
+  if (dofunc) {
+    nlogp += potts_plm_regularize_l2(pt);
+    if (nlogp < 0) ESL_XFAIL(eslFAIL, errbuf, "potts_PLM_NLogp %f is negative!\n", nlogp);
+  }
+  
+  if (dodfunc) {
+    x = 0;
+    for (i = 0; i < L; i ++) {     
+      for (a = 0; a < Kg; a++) dnlogp[x++] += pt->muh * 2.0 * pt->h[i][a];         
+      for (j = i+1; j < L; j ++)
+	for (a = 0; a < Kg; a++)
+	  for (b = 0; b < Kg; b++) 
+	    dnlogp[x++] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
+    }
+  }
+  
+  // return
+  if (dofunc) *ret_nlogp = nlogp;
+  
+  free(H);
+  return eslOK;
+  
  ERROR:
+  if (H) free(H);
   return status;
 }
-
+  
 int
 potts_APLM_NLogp(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, int x0, double *dnlogp, char *errbuf, int verbose)
 {
   ESL_DSQ *sq;
-  double  *H     = NULL;
-  double  *dlogz = NULL;
+  double  *H = NULL;
   double   logz; 
   double   nlogp;
+  double   logdv, logadd;
+  double   lwgt;
   int      L  = msa->alen;
   int      Kg = msa->abc->K+1;
-  int      gradient;
+  int      dim = Kg + (L-1)*Kg*Kg;
+  int      dofunc;
+  int      dodfunc;
   int      resi, resj;
   int      x;
   int      s;
@@ -99,18 +200,20 @@ potts_APLM_NLogp(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, int x0, double 
   int      a, b;
   int      status;
 
-  gradient = (dnlogp)? TRUE:FALSE;
+  dofunc  = (ret_nlogp)? TRUE : FALSE;
+  dodfunc = (dnlogp)?    TRUE : FALSE;
 
   /* allocate */
-  ESL_ALLOC(H,       sizeof(double) * Kg);
-  if (gradient) 
-    ESL_ALLOC(dlogz, sizeof(double) * Kg);
+  ESL_ALLOC(H, sizeof(double) * Kg);
 
   // Initialize
-  nlogp = 0.0;
+  if (dofunc)  nlogp = 0.0;
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.);
   
   for (s = 0; s < msa->nseq; s++) {
-      
+
+    lwgt = log(msa->wgt[s]);
+    
     // Initialize
     x    = x0;
     sq   = msa->ax[s];
@@ -121,38 +224,75 @@ potts_APLM_NLogp(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, int x0, double 
       H[a] = potts_aplm_H(i, a, pt, sq);
       logz = e2_DLogsum(logz, H[a]); 
     }
-    nlogp += msa->wgt[s] * (-H[resi] + logz);
+    if (dofunc) nlogp += msa->wgt[s] * (-H[resi] + logz);
  
-    if (gradient) {
-      for (a = 0; a < Kg; a++) dlogz[a] = msa->wgt[s] * exp(H[a] - logz);
+    if (dodfunc == FALSE) continue;
+    
+    // assign
+    // derivative respect to hi(a)
+    for (a = 0; a < Kg; a++) {
+      logdv       = log(dnlogp[x]);
+      logdv       = e2_DLogsum(logdv, H[a]-logz+lwgt); 
+      dnlogp[x++] = exp(logdv);	       
+    }
+    
+    // derivative respect to eij(a,b)
+    for (j = 0; j < i; j ++) {
+      resj = sq[j+1];
+      for (a = 0; a < Kg; a++)
+	for (b = 0; b < Kg; b++) {
+	  logdv       = log(dnlogp[x]);
+	  logadd      = (b==resj)? H[a]-logz+lwgt : -eslINFINITY;
+	  logdv       = e2_DLogsum(logdv, logadd); 
+	  dnlogp[x++] = exp(logdv);	       
+	}
+    }
+    for (j = i+1; j < L; j ++) {
+      resj = sq[j+1];
+      for (a = 0; a < Kg; a++)
+	for (b = 0; b < Kg; b++) {
+	  logdv       = log(dnlogp[x]);
+	  logadd      = (b==resj)? H[a]-logz+lwgt : -eslINFINITY;
+	  logdv       = e2_DLogsum(logdv, logadd); 
+	  dnlogp[x++] = exp(logdv);
+	}
+    }
+  } // for all sequences
 
-      // assign
+  if (dodfunc) {
+    for (s = 0; s < msa->nseq; s++) {
+      // Initialize
+      x    = x0;
+      sq   = msa->ax[s];
+      resi = sq[i+1];
+      
       // derivative respect to hi(a)
       for (a = 0; a < Kg; a++)
-	dnlogp[x++] -= msa->wgt[s] * ( ((a==resi)? 1:0) - dlogz[a]);
-
+	dnlogp[x++] += (a==resi)? -msa->wgt[s]:0.;
+      
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
 	resj = sq[j+1];
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) 
-	    dnlogp[x++] -= msa->wgt[s] * ( ((a==resi && b==resj)? 1:0) - ((b==resj)? dlogz[a]:0) );
+	    dnlogp[x++] += (a==resi && b==resj)? -msa->wgt[s]:0.;
       }
       for (j = i+1; j < L; j ++) {
 	resj = sq[j+1];
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) 
-	    dnlogp[x++] -= msa->wgt[s] * ( ((a==resi && b==resj)? 1:0) - ((b==resj)? dlogz[a]:0) );
-      }
+	    dnlogp[x++] += (a==resi && b==resj)? -msa->wgt[s]:0.;
+      }      
     }
-    
-  } // for all sequences
-  
+  }
+ 
   // l2-regularization
-  nlogp += potts_aplm_regularize_l2(i, pt);
-  if (nlogp < 0) ESL_XFAIL(eslFAIL, errbuf, "potts_APLMNLogp %f is negative!\n", nlogp); 
+  if (dofunc) {
+    nlogp += potts_aplm_regularize_l2(i, pt);
+    if (nlogp < 0) ESL_XFAIL(eslFAIL, errbuf, "potts_APLM_NLogp %f is negative!\n", nlogp);
+  }
 
-  if (gradient) {
+  if (dodfunc) {
     x = x0;
     for (a = 0; a < Kg; a++) dnlogp[x++] += pt->muh * 2.0 * pt->h[i][a];
     
@@ -167,15 +307,13 @@ potts_APLM_NLogp(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, int x0, double 
   }
   
   // return
-  *ret_nlogp = nlogp;
+  if (dofunc) *ret_nlogp = nlogp;
 
   free(H);
-  if (dlogz) free(dlogz);
   return eslOK;
 
  ERROR:
-  if (H)     free(H);
-  if (dlogz) free(dlogz);
+  if (H) free(H);
   return status;
 }
 
@@ -250,7 +388,7 @@ potts_CalculateCOVFrobenius(struct data_s *data)
       cov = sqrt(cov);
       if (cov > mi->maxCOV) { mi->maxCOV = cov; }
       if (cov < mi->minCOV) { mi->minCOV = cov; }
-      mi->COV->mx[i][j]  = cov;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = cov;
     }
   }
 
@@ -286,7 +424,7 @@ potts_CalculateCOVAverage(struct data_s *data)
 	}
       if (cov > mi->maxCOV) { mi->maxCOV = cov; }
       if (cov < mi->minCOV) { mi->minCOV = cov; }
-      mi->COV->mx[i][j] = cov;
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = cov;
     }
   }
 
@@ -390,7 +528,7 @@ potts_ml_logz(PT *pt)
 
 // hi(a) + \sum_{j\neq i} eij(a,sqj)
 //
-static double
+double
 potts_aplm_H(int i, int a, PT *pt, ESL_DSQ *sq)
 {
   double lognum = 0.;
@@ -415,7 +553,7 @@ potts_aplm_H(int i, int a, PT *pt, ESL_DSQ *sq)
 
 // log { sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ] }
 //
-static double
+double
 potts_aplm_logz(int i, PT *pt, ESL_DSQ *sq)
 {
   double logz = -eslINFINITY;
