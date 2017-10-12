@@ -22,6 +22,7 @@
 #define e2_LOGSUM_TBL   16000
 
 static float flogsum_lookup[e2_LOGSUM_TBL]; // e7_LOGSUM_TBL=16000: (A-B) = 0..16 nats, steps of 0.001 
+static float dlogsum_lookup[e2_LOGSUM_TBL]; // e7_LOGSUM_TBL=16000: (A-B) = 0..16 nats, steps of 0.001 
 static int   logsum_initialized = FALSE;    // A flag to allow us to crash out of FLogsum() if lookup table wasn't initialized
 static int   logsum_max         = FALSE;    // Some debugging tests force FLogsum() to do max(), and we need a flag to get the slow/exact mode to do it
 
@@ -49,6 +50,20 @@ e2_FLogsumInit(void)
 
   for (i = 0; i < e2_LOGSUM_TBL; i++) 
     flogsum_lookup[i] = log(1. + exp(- ((double) i + 0.5) / e2_LOGSUM_SCALE)); // +0.5 serves to reduce roundoff error.
+  logsum_initialized = TRUE;
+  logsum_max         = FALSE;
+  return eslOK;
+}
+
+int
+e2_DLogsumInit(void)
+{
+  int i;
+
+  if (logsum_initialized) return eslOK;
+
+  for (i = 0; i < e2_LOGSUM_TBL; i++) 
+    dlogsum_lookup[i] = log(1. + exp(- ((double) i + 0.5) / e2_LOGSUM_SCALE)); // +0.5 serves to reduce roundoff error.
   logsum_initialized = TRUE;
   logsum_max         = FALSE;
   return eslOK;
@@ -104,7 +119,7 @@ e2_DLogsum(double a, double b)
 #ifdef e2_LOGSUM_SLOWEXACT
   return (logsum_max || min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + log(1.0 + exp(min-max));  
 #else
-  return               (min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + flogsum_lookup[(int)((max-min)*e2_LOGSUM_SCALE)];
+  return               (min == -eslINFINITY || (max-min) >= 15.7f) ? max : max + dlogsum_lookup[(int)((max-min)*e2_LOGSUM_SCALE)];
 #endif
 } 
 
