@@ -53,6 +53,7 @@ done
 
 
 last minute steps to make an R-scape tarball:
+(0) update INSTALL file with correct version
 (1) copy the userguide
 (2) distclean
 (3) make tar and zip
