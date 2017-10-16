@@ -498,7 +498,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
        /* Minimize along the line given by the conjugate gradient <cg> */
        brent(x, cg, n, func, prm, ax, cx, 1e-3, 1e-8, w2, &t, &fx);
        esl_vec_DCopy(w2, n, x);
-       printf("t %f\n", t);
 #else
        t = 1.;
        esl_vec_DAddScaled(x, cg, t, n);   

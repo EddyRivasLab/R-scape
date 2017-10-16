@@ -26,9 +26,11 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define PACKED  0
+#define PACKED  1
 #define VERBOSE 1
 #define MYCGD   1
+
+#define INITGT  0
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_unpack_paramvector       (double *p,          int np, struct optimize_data *data);
@@ -44,7 +46,6 @@ static double          optimize_potts_bothfunc_aplm          (double *p,        
 static void            optimize_potts_dfunc_plm              (double *p,          int np, void *dptr, double *dx);
 static void            optimize_potts_dfunc_aplm             (double *p,          int np, void *dptr, double *dx);
 static int             symmetrize                            (PT *pt);
-static void            optimize_potts_dfunc_aplm_slow        (double *p,          int np, void *dptr, double *dx);
 static int             progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g, const lbfgsfloatval_t fx,
 				const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step,
 				int n, int k, int ls);
@@ -147,7 +148,7 @@ potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf,
   if (L > 1) ggtt /= (double)L * ((double)L-1.);
   ggtt *= 2.;
   
-  //gtx
+  //ggtx
   ESL_ALLOC(ggtx, sizeof(double) * L);
   for (i = 0; i < L; i++) {
     ggtx[i] = 0.0;
@@ -233,8 +234,8 @@ PT *
 potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,
 	    float tol, char *errbuf, int verbose)
 {
-  PT              *pt = NULL;
-  int              status;
+  PT  *pt = NULL;
+  int  status;
 
   tol   = 1e-1;
   ptmuh *= msa->alen;
@@ -245,10 +246,13 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   pt = potts_Create(msa->alen, msa->abc->K+1, msa->abc, ptmuh, ptmue, pttrain, ptsctype);
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
 
-  // Initialize 
-  //status = potts_AssignZero(r, pt, errbuf, verbose);
-  //status = potts_AssignGaussian(r, pt, 0., 1.0, errbuf, verbose);
+  // Initialize
+#if INITGT
   status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
+#else
+  status = potts_AssignZero(r, pt, errbuf, verbose);
+#endif
+  //status = potts_AssignGaussian(r, pt, 0., 1.0, errbuf, verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
   /* init */
@@ -827,17 +831,16 @@ potts_Write(FILE *fp, PT *pt)
 static int
 optimize_plm_pack_paramvector(double *p, int np, struct optimize_data *data)
 {
-  int   L   = data->msa->alen;
-  int   Kg  = data->msa->abc->K+1;
-  int   Kg2 = Kg*Kg;
-  int   x   = 0;
+  int   L  = data->msa->alen;
+  int   Kg = data->msa->abc->K+1;
+  int   x  = 0;
   int   i, j;
-  int   a;
+  int   a, b;
 
   for (i = 0; i < L; i++) {
     for (a = 0; a < Kg; a++)    p[x++] = data->pt->h[i][a];
     for (j = i+1; j < L; j++)
-      for (a = 0; a < Kg2; a++) p[x++] = data->pt->e[i][j][a];
+      for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) p[x++] = data->pt->e[i][j][IDX(a,b,Kg)];
   }
   
   return eslOK;  
@@ -898,10 +901,7 @@ optimize_plm_unpack_paramvector(double *p, int np, struct optimize_data *data)
     for (j = i+1; j < L; j++) 
       for (a = 0; a < Kg; a++)
 	for (b = 0; b < Kg; b++)
-	  {
-	    data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
-	    data->pt->e[j][i][IDX(b,a,Kg)] = data->pt->e[i][j][IDX(a,b,Kg)];
-	  }
+	  data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
   }
   
   return eslOK;
@@ -974,10 +974,10 @@ optimize_potts_func_plm(double *p, int np, void *dptr)
   int                   status;
 
 #if PACKED
-  status = potts_PLM_NLogp_Packed(np, p, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM_Packed(np, p, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
 #else
   optimize_plm_unpack_paramvector(p, np, data);
-  status = potts_PLM_NLogp(data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM(data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
 #endif
   
 #if VERBOSE
@@ -996,10 +996,10 @@ optimize_potts_dfunc_plm(double *p, int np, void *dptr, double *dx)
   int                   status;
 
 #if PACKED
-  status = potts_PLM_NLogp_Packed(np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM_Packed(np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #else
   optimize_plm_unpack_paramvector(p, np, data);
-  status = potts_PLM_NLogp(data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM(data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #endif
   
 #if VERBOSE
@@ -1015,10 +1015,10 @@ optimize_potts_bothfunc_plm(double *p, int np, void *dptr, double *dx)
   int                   status;
 
 #if PACKED
-  status = potts_PLM_NLogp_Packed(np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM_Packed(np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #else
   optimize_plm_unpack_paramvector(p, np, data);
-  status = potts_PLM_NLogp(data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM(data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #endif
   
 #if VERBOSE
@@ -1035,10 +1035,10 @@ optimize_potts_func_aplm(double *p, int np, void *dptr)
   int                   status;
 
 #if PACKED
-  status = potts_APLM_NLogp_Packed(data->pos, np, p, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM_Packed(data->pos, np, p, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
 #else
   optimize_aplm_unpack_paramvector(p, np, data);
-  status = potts_APLM_NLogp(data->pos, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, &nlogp, NULL, data->errbuf, data->verbose);
 #endif
   
 #if VERBOSE
@@ -1056,10 +1056,10 @@ optimize_potts_bothfunc_aplm(double *p, int np, void *dptr, double *dx)
   int                   status;
 
 #if PACKED
-  status = potts_APLM_NLogp_Packed(data->pos, np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM_Packed(data->pos, np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #else
   optimize_aplm_unpack_paramvector(p, np, data);
-  status = potts_APLM_NLogp(data->pos, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #endif
   
 #if VERBOSE
@@ -1077,90 +1077,15 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
   int                   status;
 
 #if PACKED
-  status = potts_APLM_NLogp_Packed(data->pos, np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM_Packed(data->pos, np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #else
   optimize_aplm_unpack_paramvector(p, np, data);
-  status = potts_APLM_NLogp(data->pos, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #endif
 
 #if VERBOSE
   if (status != eslOK) { printf("optimize_potts_bothfunc_aplm2() APLM failed\n"); exit(1); }
 #endif
-}
-
-static void
-optimize_potts_dfunc_aplm_slow(double *p, int np, void *dptr, double *dx)
-{
-  struct optimize_data *data = (struct optimize_data *) dptr;
-  ESL_DSQ              *sq;
-  double                tmp;
-  double                logadd;
-  double                val;
-  PT                   *pt  = data->pt;
-  int                   nsq = data->msa->nseq;
-  int                   L   = data->msa->alen;
-  int                   Kg  = data->msa->abc->K+1;
-  int                   Kg2 = Kg*Kg;
-  int                   i   = data->pos;
-  int                   x   = 0;
-  int                   j;
-  int                   resi, resj;
-  int                   a, b;
-  int                   s;
-
-  optimize_aplm_unpack_paramvector(p, np, data);
-
-  for (a = 0; a < Kg; a++) {
-    tmp    = 0.;
-    logadd = -eslINFINITY;
-    
-    for (s = 0; s < nsq; s++) {
-      sq   = data->msa->ax[s];
-      resi = sq[i+1];
-      if (resi == a) tmp -= data->msa->wgt[s];
-      
-      val     = potts_APLM_H(i, a, pt, sq) - potts_APLM_logz(i, pt, sq);
-      val    += log(data->msa->wgt[s]);
-      logadd  = e2_DLogsum(logadd, val);
-    }
-    tmp += exp(logadd);
-    
-    // add regularization term
-    tmp += pt->muh * 2.0 * pt->h[i][a];
-
-    dx[x++] = tmp;
-  }
-  
-  for (j = 0; j < L; j++) {
-    if (j==i) continue;
-    
-    for (a = 0; a < Kg; a++) 
-      for (b = 0; b < Kg; b++) {
-	tmp    = 0.;
-	logadd = -eslINFINITY;
-	
-	for (s = 0; s < nsq; s++) {
-	  sq   = data->msa->ax[s];
-	  resi = sq[i+1];
-	  resj = sq[j+1];
-	  
-	  if (resi == a && resj == b) tmp -= data->msa->wgt[s];
-	  
-	  if (resj == b) {
-	    val     = potts_APLM_H(i, a, pt, sq) - potts_APLM_logz(i, pt, sq);
-	    val    += log(data->msa->wgt[s]);
-	    logadd  = e2_DLogsum(logadd, val);
-	  }	  
-	}
-	tmp += exp(logadd);
-	
-	// add regularization term
-	tmp += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
-	
-	dx[x++] = tmp;
-      }
-  }
-  
 }
 
 

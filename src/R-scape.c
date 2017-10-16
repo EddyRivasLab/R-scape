@@ -1077,7 +1077,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
 
   msa = *omsa;
-   /* remove columns with gaps.
+  /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
   if (cfg->consensus) {
@@ -1198,7 +1198,20 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
+
+    // POTTS: calculate the couplings
+  if (cfg->covmethod == POTTS) {
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
+  }
   
+  /* produce a tree
+   */
+  if (cfg->covmethod == AKMAEV) {
+    status = create_tree(go, cfg, msa);
+    if (status != eslOK)  { esl_fatal(cfg->errbuf); }
+  }
+
 #if 0
   msamanip_CalculateBC(msa, cfg->ct, &cfg->ft, &cfg->fbp, &cfg->fnbp, cfg->errbuf);
   esl_vec_DDump(stdout, cfg->ft,   cfg->abc->K, "total BC");
@@ -1368,7 +1381,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int              status;
 
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
-  
+
   /* weigth the sequences */
   if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
   else                             esl_msaweight_PB(msa);
@@ -1427,7 +1440,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
   if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
-  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (1||cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
 
   return eslOK;
 
@@ -1445,7 +1458,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
   HITLIST         *hitlist = NULL;
-  int              nnodes;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -1466,20 +1478,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
-  }
-
-  // POTTS: calculate the couplings 
-  if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
-    if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
-  }
-  
-  /* produce a tree
-   */
-  if (cfg->covmethod == AKMAEV) {
-    status = create_tree(go, cfg, msa);
-    if (status != eslOK)  { esl_fatal(cfg->errbuf); }
-    nnodes = (cfg->T->N > 1)? cfg->T->N-1 : cfg->T->N;
   }
 
   /* write MSA info to the sumfile */
@@ -1582,8 +1580,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
-  if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
-
   return eslOK;
   
  ERROR:
@@ -1945,10 +1941,11 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
       status = calculate_width_histo(go, cfg, shmsa);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the widt of the histogram", cfg->errbuf);
     }
+
     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
-   
+
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR;
 
