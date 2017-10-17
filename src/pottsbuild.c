@@ -27,7 +27,7 @@
 #include "correlators.h"
 
 #define PACKED  1
-#define VERBOSE 1
+#define VERBOSE 0
 #define MYCGD   1
 
 #define INITGT  0
@@ -461,7 +461,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   int                    np;
   int                    status;
 
-  np = L*Kg + 0.5*L*(L-1)*Kg*Kg;     /* the variables hi eij */
+  np = PLMDIM(L,L,Kg);     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
@@ -470,11 +470,11 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   
  /* Copy shared info into the "data" structure
    */
-  data.pt         = pt;
-  data.msa        = msa;
-  data.tol        = tol;
-  data.errbuf     = errbuf;
-  data.verbose    = verbose;
+  data.pt      = pt;
+  data.msa     = msa;
+  data.tol     = tol;
+  data.errbuf  = errbuf;
+  data.verbose = verbose;
  
   /* Create the parameter vector.
    */
@@ -532,7 +532,7 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   int                    i;
   int                    status;
 
-  np = Kg + (L-1)*Kg*Kg;     /* the variables hi eij */
+  np = APLMDIM(L,Kg);     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
@@ -542,12 +542,12 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   for (i = 0; i < L; i ++) {
     /* Copy shared info into the "data" structure
      */
-    data.pt         = pt;
-    data.msa        = msa;
-    data.pos        = i;
-    data.tol        = tol;
-    data.errbuf     = errbuf;
-    data.verbose    = verbose;
+    data.pt      = pt;
+    data.msa     = msa;
+    data.pos     = i;
+    data.tol     = tol;
+    data.errbuf  = errbuf;
+    data.verbose = verbose;
 
     /* Create the parameter vector.
      */
@@ -574,6 +574,8 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
     if (1||verbose) printf("END POTTS CGD APLM OPTIMIZATION for position %d\n", i);
+     potts_Write(stdout, pt);
+
   }
   if (verbose) printf("END POTTS CGD APLM OPTIMIZATION\n");
 
@@ -603,7 +605,7 @@ potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   struct optimize_data   data;
   int                    L  = msa->alen;
   int                    Kg = msa->abc->K+1;
-  int                    np = Kg+(L-1)*Kg*Kg;
+  int                    np = APLMDIM(L,Kg);
   lbfgsfloatval_t       *x = lbfgs_malloc(np+1);
   lbfgsfloatval_t        fx;
   lbfgs_parameter_t      param;
@@ -615,11 +617,11 @@ potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   
   /* Copy shared info into the "data" structure
    */
-  data.pt         = pt;
-  data.msa        = msa;
-  data.tol        = tol;
-  data.errbuf     = errbuf;
-  data.verbose    = verbose;
+  data.pt      = pt;
+  data.msa     = msa;
+  data.tol     = tol;
+  data.errbuf  = errbuf;
+  data.verbose = verbose;
   
   for (i = 0; i < L; i ++) {
 
@@ -765,7 +767,7 @@ potts_Write(FILE *fp, PT *pt)
   double dimh, dime;
   double maxh, minh;
   double maxe, mine;
-  double z     = 2.0;
+  double z     = 0.0;
   int    L     = pt->L;
   int    Kg    = pt->abc->K+1;
   int    Kg2   = Kg*Kg;

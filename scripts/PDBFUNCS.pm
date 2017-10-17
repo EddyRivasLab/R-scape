@@ -80,7 +80,7 @@ sub pdb2msa {
     my @map;
     my @revmap;
     contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $seeplots);
+			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
@@ -109,6 +109,7 @@ sub pdb2msa {
     close(MAP);
  
 }
+
 
 sub contacts_from_pdbfile {
 	
@@ -151,7 +152,7 @@ sub contacts_from_pdbfile {
     print     "# chains:     $nch\n";
     print     "# resolution: $resolution\n";
         
-    for (my $n = 0; $n < $nch; $n ++) {
+   for (my $n = 0; $n < $nch; $n ++) {
 
 	my $dochain;
 	if ($usechain) {
@@ -159,6 +160,7 @@ sub contacts_from_pdbfile {
 	    else                              { $dochain = 0; }
 	}
 	else { $dochain = 1; }
+ 	print "^^ALEB $dochain\n";
 	if ($dochain == 0) { next; }
 	
 	my $map0file;
@@ -169,7 +171,7 @@ sub contacts_from_pdbfile {
 	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$pfamname.map";
 	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
 	}
-	my $corfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
+	my $corfile   = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
@@ -195,10 +197,11 @@ sub contacts_from_pdbfile {
 	    close(MAP0);
 	    close(MAP1);
 	}
-
 	if ($alen == 0) { next; }
 
 	if ($gnuplot) {
+	    print "\n^^ gnuplot $gnuplot\n";
+	    
 	    my $xfield  = 1;
 	    my $yfield  = 3;
 	    my $xylabel = "PDB position";

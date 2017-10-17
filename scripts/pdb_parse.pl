@@ -53,6 +53,12 @@ if ($opt_P) { $seeplots = 1; }
 my $ncnt_t = 0; ## total contacts from all chains
 my @cnt_t;
 my $msalen;
+my $pdblen;
 
-PDBFUNCS::contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$ncnt_t, \@cnt_t, $maxD, $minL, 
-				 $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots);
+my $byali = 0; # minL relative to pdb sequence
+my $usechain = "";  # define if want to use a specific chain
+my @map;
+my @revmap;
+PDBFUNCS::contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
+				 \$ncnt_t, \@cnt_t, $usechain, $maxD, $minL, $byali, $which, $dornaview, 
+				 $coorfile, $mapallfile, $smallout, $seeplots);
