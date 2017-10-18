@@ -375,7 +375,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
 	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
 	}
 	for (j = 0; j < i; j ++) {
-	  resj = sq[j+1];
+	  resj      = sq[j+1];
 	  x         = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
 	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
 	}
@@ -780,7 +780,8 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   for (i = 0; i < pt->L; i ++) {
     for (j = i+1; j < pt->L; j ++) {
       cov = 0;
-      
+
+      // only for residues -- no gaps
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
 	  idx  = IDX(a,b,Kg);
@@ -818,6 +819,7 @@ potts_CalculateCOVAverage(struct data_s *data)
     for (j = i+1; j < pt->L; j ++) {
       cov = 0;
       
+      // only for residues -- no gaps
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
 	  idx  = IDX(a,b,Kg);

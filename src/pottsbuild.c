@@ -238,8 +238,6 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   int  status;
 
   tol   = 1e-1;
-  ptmuh *= msa->alen;
-  ptmue *= msa->alen;
 
   e2_DLogsumInit();
 
@@ -261,10 +259,16 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
+    pt->muh *= msa->alen;
+    pt->mue *= msa->alen;
+
     status = potts_OptimizeCGD_PLM(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
+    //pt->muh *= msa->nseq;
+    //pt->mue *= msa->nseq;
+
     status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
@@ -574,14 +578,13 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
     if (1||verbose) printf("END POTTS CGD APLM OPTIMIZATION for position %d\n", i);
-     potts_Write(stdout, pt);
 
+    // symmetrize
+    symmetrize(pt);
   }
   if (verbose) printf("END POTTS CGD APLM OPTIMIZATION\n");
 
-  // symmetrize
-  symmetrize(pt);
- 
+
   if (1||verbose) potts_Write(stdout, pt);
 
   /* clean up */
@@ -767,7 +770,7 @@ potts_Write(FILE *fp, PT *pt)
   double dimh, dime;
   double maxh, minh;
   double maxe, mine;
-  double z     = 0.0;
+  double z     = 1.0;
   int    L     = pt->L;
   int    Kg    = pt->abc->K+1;
   int    Kg2   = Kg*Kg;
@@ -840,7 +843,7 @@ optimize_plm_pack_paramvector(double *p, int np, struct optimize_data *data)
   int   a, b;
 
   for (i = 0; i < L; i++) {
-    for (a = 0; a < Kg; a++)    p[x++] = data->pt->h[i][a];
+    for (a = 0; a < Kg; a++)                            p[x++] = data->pt->h[i][a];
     for (j = i+1; j < L; j++)
       for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) p[x++] = data->pt->e[i][j][IDX(a,b,Kg)];
   }
@@ -925,9 +928,9 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   
   for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = p[x++];
   for (j = 0;   j < i; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++]; 
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++]; 
   for (j = i+1; j < L; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
 
   return eslOK;
 
@@ -940,18 +943,17 @@ optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimi
 {
   int    L   = data->msa->alen;
   int    Kg  = data->msa->abc->K+1;
-  int    Kg2 = Kg*Kg;
   int    x   = 0;
   int    i   = data->pos;
   int    j;
-  int    a;
+  int    a, b;
   int    status;
   
-  for (a = 0; a < Kg; a++)    data->pt->h[i][a]    = (double)p[x++];
+  for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = (double)p[x++];
   for (j = 0;   j < i; j++) 
-    for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = (double)p[x++];
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = (double)p[x++];
   for (j = i+1; j < L; j++) 
-    for (a = 0; a < Kg2; a++) data->pt->e[i][j][a] = (double)p[x++];
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = (double)p[x++];
   
   return eslOK;
 
