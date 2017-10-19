@@ -417,10 +417,8 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
       }
       
       for (a = 0; a < Kg; a ++) 
-	for (b = 0; b < Kg; b ++) {
+	for (b = 0; b < Kg; b ++) 
 	  pt->e[i][j][IDX(a,b,Kg)] -= sumi[b]/Kg + sumj[a]/Kg - sum/Kg2;
-	  pt->e[j][i][IDX(a,b,Kg)]  = pt->e[i][j][IDX(a,b,Kg)];
-	}
     } 
   
   
@@ -508,7 +506,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
 					    tol, wrk, &logp);
 #endif
   if (status != eslOK) 
-    esl_fatal("optimize_potts(): ConjugateGradientDescent failed");	
+    esl_fatal("potts_OptimizeCGD_PLM(): ConjugateGradientDescent failed");	
   
   /* unpack the final parameter vector */
   optimize_plm_unpack_paramvector(p, (int)np, &data);
@@ -585,7 +583,7 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
     					      tol, wrk, &logp);
 #endif
     if (status != eslOK) 
-      esl_fatal("optimize_potts(): ConjugateGradientDescent failed");	
+      esl_fatal("potts_OptimizeCGD_APLM(): ConjugateGradientDescent failed");	
     
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
@@ -679,7 +677,11 @@ potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   }
   if (verbose) printf("END POTTS LBFGS APLM OPTIMIZATION\n");
 
-  // symmetrize
+  /* First, transform all results to the zero-sum gauge */
+  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
+  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
+  
+  // Then, symmetrize
   symmetrize(pt);
  
   if (verbose) potts_Write(stdout, pt);
