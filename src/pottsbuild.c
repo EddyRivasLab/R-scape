@@ -272,6 +272,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
       pt->muh = 0.1 - (0.1-0.01)*neff/500; 
       pt->mue = pt->muh;
     }
+    pt->muh *= neff; // scaled by neff
+    pt->mue *= neff;
 
     status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
@@ -509,6 +511,10 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   /* unpack the final parameter vector */
   optimize_plm_unpack_paramvector(p, (int)np, &data);
   if (1||verbose) printf("END POTTS PLM OPTIMIZATION\n");
+  
+  /* transform results to the zero-sum gauge */
+  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
+  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
   if (1||verbose) potts_Write(stdout, pt);
 
@@ -582,13 +588,16 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
     if (1||verbose) printf("END POTTS CGD APLM OPTIMIZATION for position %d\n", i);
-
-    // symmetrize
-    symmetrize(pt);
   }
   if (verbose) printf("END POTTS CGD APLM OPTIMIZATION\n");
 
+  /* first, transform all results to the zero-sum gauge */
+  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
+  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
+  // then, symmetrize
+  symmetrize(pt);
+ 
   if (1||verbose) potts_Write(stdout, pt);
 
   /* clean up */
@@ -932,9 +941,9 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   
   for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = p[x++];
   for (j = 0;   j < i; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++]; 
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++]; 
   for (j = i+1; j < L; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
 
   return eslOK;
 
