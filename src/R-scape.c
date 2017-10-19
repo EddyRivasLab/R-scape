@@ -306,8 +306,8 @@ static ESL_OPTIONS options[] = {
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
    /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
-  { "--ptmuh",        eslARG_REAL,    "0.02",    NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
-  { "--ptmue",        eslARG_REAL,    "0.02",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
+  { "--ptmuh",        eslARG_REAL,    "0.001",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
+  { "--ptmue",        eslARG_REAL,    "0.2",     NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
@@ -555,8 +555,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   // potts model
   cfg.pt      = NULL;
-  cfg.ptmuh   = esl_opt_GetReal(go, "--ptmuh");
-  cfg.ptmue   = esl_opt_GetReal(go, "--ptmue");
   cfg.pttrain = NONE;
   if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
   else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
@@ -568,7 +566,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--PTFp")) cfg.ptsctype = FROEB;
   else if (esl_opt_GetBoolean(go, "--PTAp")) cfg.ptsctype = AVG;
   else if (esl_opt_GetBoolean(go, "--PTDp")) cfg.ptsctype = DI;
-
+  // regularization parameters
+  if      (cfg.pttrain == PLM) {  // defaults in gremlin (scaled by alignment length)
+    cfg.ptmuh = 0.01;
+    cfg.ptmue = 0.20;
+  }
+  else if (cfg.pttrain == APLM) { // defaults in plmDCA (scaled by number of sequences if < 500)
+    cfg.ptmuh = 0.01;
+    cfg.ptmue = cfg.ptmuh;
+  }
+  // override with options
+  if (esl_opt_IsOn(go, "--ptmuh")) cfg.ptmuh = esl_opt_GetReal(go, "--ptmuh");
+  if (esl_opt_IsOn(go, "--ptmue")) cfg.ptmue = esl_opt_GetReal(go, "--ptmue");
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;

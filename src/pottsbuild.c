@@ -234,10 +234,11 @@ PT *
 potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,
 	    float tol, char *errbuf, int verbose)
 {
-  PT  *pt = NULL;
-  int  status;
+  PT     *pt = NULL;
+  double  neff;
+  int     status;
 
-  tol   = 1e-1;
+  tol   = 1e-1; // ad hoc compromise for good time
 
   e2_DLogsumInit();
 
@@ -259,15 +260,18 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
-    pt->muh *= msa->alen;
+    pt->muh *= msa->alen; // scaled by length
     pt->mue *= msa->alen;
 
     status = potts_OptimizeCGD_PLM(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    //pt->muh *= msa->nseq;
-    //pt->mue *= msa->nseq;
+    neff = esl_vec_DSum(msa->wgt, msa->nseq);
+    if (neff < 500) { // scaled by number of sequences
+      pt->muh = 0.1 - (0.1-0.01)*neff/500; 
+      pt->mue = pt->muh;
+    }
 
     status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
