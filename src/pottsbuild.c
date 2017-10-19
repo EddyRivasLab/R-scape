@@ -274,13 +274,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
       pt->muh = 0.1 - (0.1-0.01)*neff/500; 
       pt->mue = pt->muh;
     }
-    pt->muh *= neff; // scaled by neff
-<<<<<<< HEAD
-    pt->mue *= neff;
-=======
+    pt->muh *= neff;    // scaled by neff
     pt->mue *= neff/2.;
-    
->>>>>>> 7f131ed4d262d2050df1ba26e8e5c9186243c1d8
 
     status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
@@ -598,11 +593,11 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   }
   if (verbose) printf("END POTTS CGD APLM OPTIMIZATION\n");
 
-  /* first, transform all results to the zero-sum gauge */
+  /* First, transform all results to the zero-sum gauge */
   status = potts_GaugeZeroSum(pt, errbuf,  verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
-  // then, symmetrize
+  // Then, symmetrize
   symmetrize(pt);
  
   if (1||verbose) potts_Write(stdout, pt);
@@ -949,15 +944,8 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = p[x++];
   for (j = 0;   j < i; j++) 
     for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++]; 
-<<<<<<< HEAD
   for (j = i+1; j < L; j++) 
     for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
-=======
-  //for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++]; 
-  for (j = i+1; j < L; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
-  //for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
->>>>>>> 7f131ed4d262d2050df1ba26e8e5c9186243c1d8
 
   return eslOK;
 
