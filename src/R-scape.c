@@ -567,11 +567,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--PTAp")) cfg.ptsctype = AVG;
   else if (esl_opt_GetBoolean(go, "--PTDp")) cfg.ptsctype = DI;
   // regularization parameters
-  if      (cfg.pttrain == PLM) {  // defaults in gremlin (scaled by alignment length)
+  if      (cfg.pttrain == PLM) {  // defaults in gremlin_v2 (scaled by alignment length)
     cfg.ptmuh = 0.01;
     cfg.ptmue = 0.20;
   }
-  else if (cfg.pttrain == APLM) { // defaults in plmDCA (scaled by number of sequences if < 500)
+  else if (cfg.pttrain == APLM) { // defaults in plmDCA_asymmetric_v2 (scaled by number of sequences if < 500)
     cfg.ptmuh = 0.01;
     cfg.ptmue = cfg.ptmuh;
   }

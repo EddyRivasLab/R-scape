@@ -260,6 +260,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
+    // follows gremling_v2
     pt->muh *= msa->alen; // scaled by length
     pt->mue *= msa->alen;
 
@@ -267,13 +268,19 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
+    // follows plmDCA_asymmetric_v2
     neff = esl_vec_DSum(msa->wgt, msa->nseq);
     if (neff < 500) { // scaled by number of sequences
       pt->muh = 0.1 - (0.1-0.01)*neff/500; 
       pt->mue = pt->muh;
     }
     pt->muh *= neff; // scaled by neff
+<<<<<<< HEAD
     pt->mue *= neff;
+=======
+    pt->mue *= neff/2.;
+    
+>>>>>>> 7f131ed4d262d2050df1ba26e8e5c9186243c1d8
 
     status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
@@ -942,8 +949,15 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = p[x++];
   for (j = 0;   j < i; j++) 
     for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++]; 
+<<<<<<< HEAD
   for (j = i+1; j < L; j++) 
     for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
+=======
+  //for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++]; 
+  for (j = i+1; j < L; j++) 
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = p[x++];
+  //for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
+>>>>>>> 7f131ed4d262d2050df1ba26e8e5c9186243c1d8
 
   return eslOK;
 
