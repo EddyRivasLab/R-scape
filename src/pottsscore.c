@@ -341,7 +341,8 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
   // Initialize
   if (dofunc)  nlogp = 0.0;
   if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
-  
+  ESL_ALLOC(Hi, sizeof(double)*Kg);
+ 
   for (i = 0; i < L; i ++) {
     // Initialize
     x0i = PLMDIM(i,L,Kg); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)] 
@@ -471,7 +472,8 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
   // Initialize 
   if (dofunc)  nlogp = 0.;
   if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
-  
+  ESL_ALLOC(Hi, sizeof(double)*Kg);
+ 
   for (s = 0; s < msa->nseq; s++) {
     
     // Initialize
