@@ -238,7 +238,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  neff;
   int     status;
 
-  tol   = 1e-1; // ad hoc compromise for good time
+  tol   = 1e-5; // ad hoc compromise for good time
 
   e2_DLogsumInit();
 

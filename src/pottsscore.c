@@ -28,8 +28,8 @@ static double potts_aplm_regularize_l2(int i, PT *pt);
 static double potts_aplm_regularize_l1(int i, PT *pt);
 static double potts_plm_regularize_l2_packed        (double *p, PT *pt);
 static double potts_aplm_regularize_l2_packed(int i, double *p, PT *pt);
-static double potts_logzi_packed_plm (int i, double *p, int L, int Kg, ESL_DSQ *sq, double **ret_Hi);
-static double potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double **ret_Hi);
+static double potts_logzi_packed_plm (int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi);
+static double potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi);
 
 int
 potts_NLogp_ML(PT *pt, ESL_MSA *msa, double *ret_nlogp, char *errbuf, int verbose)
@@ -81,6 +81,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
   // Initialize
   if (dofunc)  nlogp = 0.0;
   if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
+  ESL_ALLOC(Hi, sizeof(double)*Kg);
   
   for (i = 0; i < L; i ++) {
     // Initialize
@@ -96,7 +97,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
       // and logzi    = log \sum_a exp H^s_i[a]
-      logzi = potts_Logzi(i, pt, sq, &Hi);
+      logzi = potts_Logzi(i, pt, sq, Hi);
        
       // the function 
       if (dofunc) nlogpi += msa->wgt[s] * (-Hi[resi] + logzi);
@@ -214,7 +215,8 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
   // Initialize
   if (dofunc)  nlogp = 0.0;
   if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in logspace
-  
+  ESL_ALLOC(Hi, sizeof(double)*Kg);
+
   for (s = 0; s < msa->nseq; s++) {
 
     // Initialize
@@ -225,7 +227,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
     // and logzi    = log \sum_a exp H^s_i[a]
-    logzi = potts_Logzi(i, pt, sq, &Hi);   
+    logzi = potts_Logzi(i, pt, sq, Hi);   
 
     // the function
     if (dofunc)
@@ -354,7 +356,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
       // and logzi    = log \sum_a exp H^s_i[a]
-      logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, &Hi);   
+      logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, Hi);   
 
       // the function
       if (dofunc) nlogpi += msa->wgt[s] * (-Hi[resi] + logzi);
@@ -480,7 +482,7 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
     // and logzi    = log \sum_a exp H^s_i[a]
-    logzi = potts_logzi_packed_aplm(i, p, L, Kg, sq, &Hi);   
+    logzi = potts_logzi_packed_aplm(i, p, L, Kg, sq, Hi);   
     
     // the function
     if (dofunc)
@@ -642,81 +644,63 @@ potts_Hi_PLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq)
 // log { sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ] }
 //
 double
-potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double **ret_Hi)
+potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
 {
-  double *Hi = NULL;
   double  Ha;
   double  logzi = -eslINFINITY;
   int     Kg    = pt->abc->K+1;
   int     a;
   int     status;
 
-  if (ret_Hi) ESL_ALLOC(Hi, sizeof(double)*Kg);
-  
   for (a = 0; a < Kg; a++) {
     Ha = potts_Hi(i, a, pt, sq);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
   }
-
-  if (ret_Hi) *ret_Hi = Hi;
   return logzi;
 
  ERROR:
-  if (Hi) free(Hi);
   return status;
 }
 
 static double
-potts_logzi_packed_plm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double **ret_Hi)
+potts_logzi_packed_plm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
 {
-  double *Hi = NULL;
   double  Ha;
   double  logzi = -eslINFINITY;
   int     a;
   int     status;
 
-  if (ret_Hi) ESL_ALLOC(Hi, sizeof(double)*Kg);
-  
   for (a = 0; a < Kg; a++) {
     Ha = potts_Hi_PLM_Packed(i, a, p, L, Kg, sq);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
   }
-
-  if (ret_Hi) *ret_Hi = Hi;
   return logzi;
 
  ERROR:
-  if (Hi) free(Hi);
   return status;
 }
 
 static double
-potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double **ret_Hi)
+potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
 {
-  double *Hi = NULL;
   double  Ha;
   double  logzi = -eslINFINITY;
   int     a;
   int     status;
 
-  if (ret_Hi) ESL_ALLOC(Hi, sizeof(double)*Kg);
-  
   for (a = 0; a < Kg; a++) {
     Ha = potts_Hi_APLM_Packed(i, a, p, L, Kg, sq);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
   }
-
-  if (ret_Hi) *ret_Hi = Hi;
   return logzi;
 
  ERROR:
-  if (Hi) free(Hi);
   return status;
 }
 
