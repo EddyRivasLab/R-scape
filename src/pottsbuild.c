@@ -238,7 +238,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  neff;
   int     status;
 
-  tol   = 1e-5; // ad hoc compromise for good time
+  tol   = 1e-3; // ad hoc compromise for good time
 
   e2_DLogsumInit();
 
@@ -260,9 +260,9 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
-    // follows gremling_v2
-    pt->muh *= msa->alen; // scaled by length
-    pt->mue *= msa->alen;
+    // follows gremling_v2.1
+    pt->muh = 0.01 * msa->alen; // scaled by length
+    pt->mue = 0.20 * msa->alen;
 
     status = potts_OptimizeCGD_PLM(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");

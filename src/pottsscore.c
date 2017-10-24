@@ -337,6 +337,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
   
   dofunc  = (ret_nlogp)? TRUE : FALSE;
   dodfunc = (dnlogp)?    TRUE : FALSE;
+ printf("\n^^ START\n");
   
   // Initialize
   if (dofunc)  nlogp = 0.0;
@@ -388,6 +389,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
     if (dofunc) nlogp += nlogpi;
   
   } // for all positions i
+  printf("^^ end1\n");
 
   // one more term to the gradient
   if (dodfunc) {
@@ -419,11 +421,13 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
 	}      
       }
     }
+  printf("^^ end2\n");
   }
 
   // l2-regularization
   if (dofunc) 
     nlogp += potts_plm_regularize_l2_packed(p, pt);
+  printf("^^ end3\n");
   if (dodfunc) {
     x = 0;
     for (i = 0; i < L; i ++) {     
@@ -432,6 +436,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) { dnlogp[x] += pt->mue * 2.0 * p[x]; x ++; }
     }
+  printf("^^ end4\n");
   }
   
   // return

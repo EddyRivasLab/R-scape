@@ -306,7 +306,7 @@ static ESL_OPTIONS options[] = {
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
    /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
-  { "--ptmuh",        eslARG_REAL,    "0.001",   NULL,     "x>=0",   NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
+  { "--ptmuh",        eslARG_REAL,    "0.01",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
   { "--ptmue",        eslARG_REAL,    "0.2",     NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
