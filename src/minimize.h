@@ -12,7 +12,7 @@
 
 #include "lbfgs.h"
 
-#define MAXITERATIONS 50
+#define MAXITER 50
 
 enum NMtransf_e {
   REFLECT   = 0,

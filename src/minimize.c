@@ -423,7 +423,7 @@ brent(double *ori, double *dir, int n,
  *
  * Returns:   <eslOK> on success.
  *
- * Throws:    <eslENOHALT> if it fails to converge in MAXITERATIONS.
+ * Throws:    <eslENOHALT> if it fails to converge in MAXITER.
  *            <eslERANGE> if the minimum is not finite, which may
  *            indicate a problem in the implementation or choice of <*func()>.
  *
@@ -476,7 +476,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
     return eslOK;
   }
   
-  for (i = 0; i < MAXITERATIONS; i++)
+  for (i = 0; i < MAXITER; i++)
     {
       printf("^^ IT %d \n", i);
       
@@ -580,7 +580,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 
   if (ret_fx != NULL) *ret_fx = fx;
   
-  //if (i == MAXITERATIONS) ESL_EXCEPTION(eslENOHALT, "Failed to converge in ConjugateGradientDescent()");
+  //if (i == MAXITER) ESL_EXCEPTION(eslENOHALT, "Failed to converge in ConjugateGradientDescent()");
   
   return eslOK;
 }
