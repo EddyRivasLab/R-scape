@@ -33,8 +33,10 @@
 #define INITGT  0
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
+static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
 static int             optimize_plm_unpack_paramvector       (double *p,          int np, struct optimize_data *data);
 static int             optimize_aplm_pack_paramvector        (double *p,          int np, struct optimize_data *data);
+static int             optimize_aplm_pack_gradient           (double *dx,          int np, struct optimize_data *data);
 static int             optimize_aplm_unpack_paramvector      (double *p,          int np, struct optimize_data *data);
 static int             optimize_aplm_lbfgs_pack_paramvector  (lbfgsfloatval_t *p, int np, struct optimize_data *data);
 static int             optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data);
@@ -52,7 +54,7 @@ static int             progress(void *instance, const lbfgsfloatval_t *x, const 
 static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step);
 
 int
-potts_AssignZero(ESL_RANDOMNESS *r, PT *pt, char *errbuf, int verbose)
+potts_AssignZero(PT *pt, char *errbuf, int verbose)
 {
   int L  = pt->L;
   int Kg = pt->Kg;
@@ -249,7 +251,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
 #if INITGT
   status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
 #else
-  status = potts_AssignZero(r, pt, errbuf, verbose);
+  status = potts_AssignZero(pt, errbuf, verbose);
 #endif
   //status = potts_AssignGaussian(r, pt, 0., 1.0, errbuf, verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
@@ -464,6 +466,7 @@ int
 potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
+  PT                   *gr   = NULL;           /* the gradient */
   double                *p   = NULL;	       /* parameter vector                        */
   double                *u   = NULL;           /* max initial step size vector            */
   double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
@@ -480,10 +483,12 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   ESL_ALLOC(p,   sizeof(double) * (np+1));
   ESL_ALLOC(u,   sizeof(double) * (np+1));
   ESL_ALLOC(wrk, sizeof(double) * (np+1) * 4);
+  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, SCNONE);
   
  /* Copy shared info into the "data" structure
    */
   data.pt      = pt;
+  data.gr      = gr;
   data.msa     = msa;
   data.tol     = tol;
   data.errbuf  = errbuf;
@@ -522,12 +527,14 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
+  if (gr  != NULL) potts_Destroy(gr);
   if (u   != NULL) free(u);
   if (p   != NULL) free(p);
   if (wrk != NULL) free(wrk);
   return eslOK;
 
  ERROR:
+  if (gr  != NULL) potts_Destroy(gr);
   if (p   != NULL) free(p);
   if (u   != NULL) free(u);
   if (wrk != NULL) free(wrk);
@@ -539,6 +546,7 @@ int
 potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
+  PT                   *gr   = NULL;           /* the gradient */
   double                *p   = NULL;	       /* parameter vector                        */
   double                *u   = NULL;           /* max initial step size vector            */
   double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
@@ -556,11 +564,13 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   ESL_ALLOC(p,   sizeof(double) * (np+1));
   ESL_ALLOC(u,   sizeof(double) * (np+1));
   ESL_ALLOC(wrk, sizeof(double) * (np+1) * 4);
+  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, SCNONE);
 
   for (i = 0; i < L; i ++) {
     /* Copy shared info into the "data" structure
      */
     data.pt      = pt;
+    data.gr      = gr;
     data.msa     = msa;
     data.pos     = i;
     data.tol     = tol;
@@ -605,12 +615,14 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
+  if (gr  != NULL) potts_Destroy(gr);
   if (u   != NULL) free(u);
   if (p   != NULL) free(p);
   if (wrk != NULL) free(wrk);
   return eslOK;
 
  ERROR:
+  if (gr  != NULL) potts_Destroy(gr);
   if (p   != NULL) free(p);
   if (u   != NULL) free(u);
   if (wrk != NULL) free(wrk);
@@ -874,6 +886,23 @@ optimize_plm_pack_paramvector(double *p, int np, struct optimize_data *data)
   
   return eslOK;  
 }
+static int
+optimize_plm_pack_gradient(double *dx, int np, struct optimize_data *data)
+{
+  int   L  = data->msa->alen;
+  int   Kg = data->pt->Kg;
+  int   x  = 0;
+  int   i, j;
+  int   a, b;
+
+  for (i = 0; i < L; i++) {
+    for (a = 0; a < Kg; a++)                            dx[x++] = data->gr->h[i][a];
+    for (j = i+1; j < L; j++)
+      for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) dx[x++] = data->gr->e[i][j][IDX(a,b,Kg)];
+  }
+  
+  return eslOK;  
+}
 
 static int
 optimize_aplm_pack_paramvector(double *p, int np, struct optimize_data *data)
@@ -893,6 +922,25 @@ optimize_aplm_pack_paramvector(double *p, int np, struct optimize_data *data)
   
   return eslOK;  
 }
+static int
+optimize_aplm_pack_gradient(double *dx, int np, struct optimize_data *data)
+{
+  int   L   = data->msa->alen;
+  int   Kg  = data->pt->Kg;
+  int   x   = 0;
+  int   i   = data->pos;
+  int   j;
+  int   a, b;
+
+  for (a = 0; a < Kg; a++)                            dx[x++] = data->gr->h[i][a];
+  for (j = 0;   j < i; j++) 
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) dx[x++] = data->gr->e[i][j][IDX(a,b,Kg)]; 
+  for (j = i+1; j < L; j++) 
+    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) dx[x++] = data->gr->e[i][j][IDX(a,b,Kg)]; 
+  
+  return eslOK;  
+}
+
 static int
 optimize_aplm_lbfgs_pack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data)
 {
@@ -1027,7 +1075,8 @@ optimize_potts_dfunc_plm(double *p, int np, void *dptr, double *dx)
   status = potts_NLogp_PLM_Packed(np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #else
   optimize_plm_unpack_paramvector(p, np, data);
-  status = potts_NLogp_PLM(data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM(data->pt, data->msa, NULL, data->gr, data->errbuf, data->verbose);
+  optimize_plm_pack_gradient(dx, np, data);
 #endif
   
 #if VERBOSE
@@ -1046,7 +1095,8 @@ optimize_potts_bothfunc_plm(double *p, int np, void *dptr, double *dx)
   status = potts_NLogp_PLM_Packed(np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #else
   optimize_plm_unpack_paramvector(p, np, data);
-  status = potts_NLogp_PLM(data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_PLM(data->pt, data->msa, &nlogp, data->gr, data->errbuf, data->verbose);
+  optimize_plm_pack_gradient(dx, np, data);
 #endif
   
 #if VERBOSE
@@ -1088,7 +1138,8 @@ optimize_potts_bothfunc_aplm(double *p, int np, void *dptr, double *dx)
   status = potts_NLogp_APLM_Packed(data->pos, np, p, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
 #else
   optimize_aplm_unpack_paramvector(p, np, data);
-  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, &nlogp, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, &nlogp, data->gr, data->errbuf, data->verbose);
+  optimize_aplm_pack_gradient(dx, np, data);
 #endif
   
 #if VERBOSE
@@ -1109,7 +1160,8 @@ optimize_potts_dfunc_aplm(double *p, int np, void *dptr, double *dx)
   status = potts_NLogp_APLM_Packed(data->pos, np, p, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
 #else
   optimize_aplm_unpack_paramvector(p, np, data);
-  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, NULL, dx, data->errbuf, data->verbose);
+  status = potts_NLogp_APLM(data->pos, data->pt, data->msa, NULL, data->gr, data->errbuf, data->verbose);
+  optimize_aplm_pack_gradient(dx, np, data);
 #endif
 
 #if VERBOSE

@@ -48,6 +48,7 @@ typedef struct potts_s {
 struct optimize_data {
   ESL_RANDOMNESS *r;
   PT             *pt;
+  PT             *gr; // the gradient of the objective func relative to the parameters
   ESL_MSA        *msa;
   int             pos;
   double          tol;
@@ -55,7 +56,7 @@ struct optimize_data {
   int             verbose;
 };
 
-extern int   potts_AssignZero(ESL_RANDOMNESS *r, PT *pt, char *errbuf, int verbose);
+extern int   potts_AssignZero(PT *pt, char *errbuf, int verbose);
 extern int   potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *errbuf, int verbose);
 extern int   potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
 extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,

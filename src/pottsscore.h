@@ -22,9 +22,9 @@
 #define APLMIDXL(j,K,K2)    ( (K) + (j)*(K2) )       // j < i
 #define APLMIDXG(j,K,K2)    ( (K) + ((j)-1)*(K2) )   // j > i
 
-extern int    potts_NLogp_ML                (PT *pt, ESL_MSA *msa, double *ret_logp,                char *errbuf, int verbose);
-extern int    potts_NLogp_PLM               (PT *pt, ESL_MSA *msa, double *ret_logp, double *dlogp, char *errbuf, int verbose);
-extern int    potts_NLogp_APLM       (int i, PT *pt, ESL_MSA *msa, double *ret_logp, double *dlogp, char *errbuf, int verbose);
+extern int    potts_NLogp_ML                (PT *pt, ESL_MSA *msa, double *ret_logp,         char *errbuf, int verbose);
+extern int    potts_NLogp_PLM               (PT *pt, ESL_MSA *msa, double *ret_logp, PT *gr, char *errbuf, int verbose);
+extern int    potts_NLogp_APLM       (int i, PT *pt, ESL_MSA *msa, double *ret_logp, PT *gr, char *errbuf, int verbose);
 extern int    potts_NLogp_PLM_Packed        (int np, double *p, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *errbuf, int verbose);
 extern int    potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *errbuf, int verbose);
 
