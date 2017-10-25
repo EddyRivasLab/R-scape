@@ -40,6 +40,8 @@ typedef struct potts_s {
   double        mue;      /* regularization constant for eij */
   
   ESL_ALPHABET *abc;
+  int           Kg;       /* abc->K+1 */
+  int           Kg2;
 } PT;
 
 

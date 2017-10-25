@@ -28,8 +28,10 @@ static double potts_aplm_regularize_l2(int i, PT *pt);
 static double potts_aplm_regularize_l1(int i, PT *pt);
 static double potts_plm_regularize_l2_packed        (double *p, PT *pt);
 static double potts_aplm_regularize_l2_packed(int i, double *p, PT *pt);
-static double potts_logzi_packed_plm (int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi);
-static double potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi);
+static double potts_logzi_packed_plm (int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi);
+static double potts_logzi_packed_aplm(int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi);
+static double potts_Zi_packed_plm (int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi);
+static double potts_Zi_packed_aplm(int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi);
 
 int
 potts_NLogp_ML(PT *pt, ESL_MSA *msa, double *ret_nlogp, char *errbuf, int verbose)
@@ -60,12 +62,13 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
   double  *Hi = NULL;
   double   nlogp;
   double   nlogpi;
-  double   logzi; 
+  double   zi; 
   double   add;
   double   wgt;
   int      L   = msa->alen;
-  int      Kg  = msa->abc->K+1;
-  int      dim = PLMDIM(L,L,Kg);
+  int      Kg  = pt->Kg;
+  int      Kg2 = pt->Kg2;
+  int      dim = PLMDIM(L,L,Kg,Kg2);
   int      dofunc;
   int      dodfunc;
   int      resi, resj;
@@ -85,7 +88,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
   
   for (i = 0; i < L; i ++) {
     // Initialize
-    x0i = PLMDIM(i,L,Kg); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
+    x0i = PLMDIM(i,L,Kg,Kg2); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
     if (dofunc)  nlogpi = 0.0;
     
     for (s = 0; s < msa->nseq; s++) {
@@ -96,16 +99,19 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
 
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
-      // and logzi    = log \sum_a exp H^s_i[a]
-      logzi = potts_Logzi(i, pt, sq, Hi);
+      // and logzi = log \sum_a exp H^s_i[a]
+      // and zi    = \sum_a exp H^s_i[a]
+      //logzi = potts_Logzi(i, pt, sq, Hi);
+      zi = potts_Zi(i, pt, sq, Hi);
        
       // the function 
-      if (dofunc) nlogpi += wgt * (-Hi[resi] + logzi);
+      if (dofunc) nlogpi += wgt * (-Hi[resi] + log(zi));
       
       // the gradient
       if (dodfunc == FALSE) continue;
       for (a = 0; a < Kg; a++) {
-	add = wgt * exp(Hi[a]-logzi);
+	//add = wgt * exp(Hi[a]-logzi);
+	add = wgt * exp(Hi[a]) / zi;
 
 	// derivative respect to hi(a)
 	x          = x0i + a;
@@ -114,13 +120,13 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
 	// derivative respect to eij(a,b) 
 	for (j = i+1; j < L; j ++) {
 	  resj       = sq[j+1];
-	  x          = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
+	  x          = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(a,resj,Kg);
 	  dnlogp[x] += add;
 	}
       
 	for (j = 0; j < i; j ++) {
 	  resj       = sq[j+1];
-	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
+	  x          = PLMIDX(j,i,L,Kg,Kg2) + IDX(resj,a,Kg);
 	  dnlogp[x] += add;
 	}
       }
@@ -133,12 +139,12 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
       // derivative respect to eij(resi,resj)
       for (j = i+1; j < L; j ++) {
 	resj       = sq[j+1];
-	x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
+	x          = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(resi,resj,Kg);
 	dnlogp[x] -= wgt;	    
       }      
       for (j = 0; j < i; j ++) {
 	resj       = sq[j+1];
-	x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
+	x          = PLMIDX(j,i,L,Kg,Kg2) + IDX(resj,resi,Kg);
 	dnlogp[x] -= wgt;
       }      
       
@@ -178,13 +184,14 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
 {
   ESL_DSQ *sq;
   double  *Hi = NULL;
-  double   logzi; 
+  double   zi; 
   double   nlogp;
   double   add;
   double   wgt;
   int      L   = msa->alen;
-  int      Kg  = msa->abc->K+1;
-  int      dim = APLMDIM(L,Kg);
+  int      Kg  = pt->Kg;
+  int      Kg2 = pt->Kg2;
+  int      dim = APLMDIM(L,Kg,Kg2);
   int      dofunc;
   int      dodfunc;
   int      resi, resj;
@@ -212,16 +219,18 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
     // and logzi    = log \sum_a exp H^s_i[a]
-    logzi = potts_Logzi(i, pt, sq, Hi);   
+    // and zi       = \sum_a exp H^s_i[a]
+    //logzi = potts_Logzi(i, pt, sq, Hi);   
+    zi = potts_Zi(i, pt, sq, Hi);   
 
     // the function
     if (dofunc)
-      nlogp += wgt * (-Hi[resi] + logzi);
+      nlogp += wgt * (-Hi[resi] + log(zi));
     
     // the gradient
     if (dodfunc == FALSE) continue;
     for (a = 0; a < Kg; a++) {
-      add = wgt * exp(Hi[a]-logzi);
+      add = wgt * exp(Hi[a]) / zi;
       
       // derivative respect to hi(a)
       dnlogp[a] += add;
@@ -229,12 +238,12 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
 	resj       = sq[j+1];
-	x          = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
+	x          = APLMIDXL(j,Kg,Kg2) + IDX(a,resj,Kg);
   	dnlogp[x] += add;
       }
       for (j = i+1; j < L; j ++) {
 	resj       = sq[j+1];
-	x          = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
+	x          = APLMIDXG(j,Kg,Kg2) + IDX(a,resj,Kg);
   	dnlogp[x] += add;
       }
     }
@@ -246,12 +255,12 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
     // derivative respect to eij(resi,resj)
     for (j = 0; j < i; j ++) {
       resj       = sq[j+1];
-      x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
+      x          = APLMIDXL(j,Kg,Kg2) + IDX(resi,resj,Kg);
       dnlogp[x] -= wgt;
     }
     for (j = i+1; j < L; j ++) {
       resj       = sq[j+1];
-      x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
+      x          = APLMIDXG(j,Kg,Kg2) + IDX(resi,resj,Kg);
       dnlogp[x] -= wgt;
     }
     
@@ -266,13 +275,13 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
     for (j = 0; j < i; j ++)
       for (a = 0; a < Kg; a++)
 	for (b = 0; b < Kg; b++) {
-	  x          = APLMIDXL(j,Kg) + IDX(a,b,Kg);
+	  x          = APLMIDXL(j,Kg,Kg2) + IDX(a,b,Kg);
 	  dnlogp[x] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
 	}
     for (j = i+1; j < L; j ++)
       for (a = 0; a < Kg; a++)
 	for (b = 0; b < Kg; b++) {
-	  x          = APLMIDXG(j,Kg) + IDX(a,b,Kg);
+	  x          = APLMIDXG(j,Kg,Kg2) + IDX(a,b,Kg);
 	  dnlogp[x] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
 	}
   }
@@ -295,12 +304,13 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
   double  *Hi = NULL;
   double   nlogp;
   double   nlogpi;
-  double   logzi; 
+  double   zi; 
   double   add;
   double   wgt;
   int      L   = msa->alen;
-  int      Kg  = msa->abc->K+1;
-  int      dim = PLMDIM(L,L,Kg);
+  int      Kg  = pt->Kg;
+  int      Kg2 = pt->Kg2;
+  int      dim = PLMDIM(L,L,Kg,Kg2);
   int      dofunc;
   int      dodfunc;
   int      resi, resj;
@@ -320,7 +330,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
  
   for (i = 0; i < L; i ++) {
     // Initialize
-    x0i = PLMDIM(i,L,Kg); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)] 
+    x0i = PLMDIM(i,L,Kg,Kg2); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)] 
     if (dofunc) nlogpi = 0.0;
     
     for (s = 0; s < msa->nseq; s++) {
@@ -332,15 +342,17 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
       // and logzi    = log \sum_a exp H^s_i[a]
-      logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, Hi);   
+      // and zi       = \sum_a exp H^s_i[a]
+      //logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, Hi);   
+      zi = potts_Zi_packed_plm(i, p, L, Kg, Kg2, sq, Hi);   
 
       // the function
-      if (dofunc) nlogpi += wgt * (-Hi[resi] + logzi);
+      if (dofunc) nlogpi += wgt * (-Hi[resi] + log(zi));
       
       // the gradient
       if (dodfunc == FALSE) continue;
       for (a = 0; a < Kg; a++) {
-	add = wgt * exp(Hi[a]-logzi);
+	add = wgt * exp(Hi[a]) / zi;
 
 	// derivative respect to hi(a)
 	x          = x0i + a;
@@ -349,12 +361,12 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
 	// derivative respect to eij(a,b)
 	for (j = i+1; j < L; j ++) {
 	  resj       = sq[j+1];
-	  x          = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
+	  x          = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(a,resj,Kg);
 	  dnlogp[x] += add;
 	}
 	for (j = 0; j < i; j ++) {
 	  resj       = sq[j+1];
-	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
+	  x          = PLMIDX(j,i,L,Kg,Kg2) + IDX(resj,a,Kg);
 	  dnlogp[x] += add;
 	}
       }
@@ -367,12 +379,12 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       // derivative respect to eij(resi,resj)
       for (j = i+1; j < L; j ++) {
 	resj       = sq[j+1];
-	x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
+	x          = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(resi,resj,Kg);
 	dnlogp[x] -= wgt;
       }      
       for (j = 0; j < i; j ++) {
 	resj       = sq[j+1];
-	x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
+	x          = PLMIDX(j,i,L,Kg,Kg2) + IDX(resj,resi,Kg);
 	dnlogp[x] -= wgt;
       }      
 
@@ -411,13 +423,14 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
 {
   ESL_DSQ *sq;
   double  *Hi = NULL;
-  double   logzi; 
+  double   zi; 
   double   nlogp;
   double   add;
   double   wgt;
   int      L   = msa->alen;
-  int      Kg  = msa->abc->K+1;
-  int      dim = APLMDIM(L,Kg);
+  int      Kg  = pt->Kg;
+  int      Kg2 = pt->Kg2;
+  int      dim = APLMDIM(L,Kg,Kg2);
   int      dofunc;
   int      dodfunc;
   int      resi, resj;
@@ -445,16 +458,18 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
     // and logzi    = log \sum_a exp H^s_i[a]
-    logzi = potts_logzi_packed_aplm(i, p, L, Kg, sq, Hi);   
+    // and zi       = \sum_a exp H^s_i[a]
+    //logzi = potts_logzi_packed_aplm(i, p, L, Kg, sq, Hi);   
+    zi = potts_Zi_packed_aplm(i, p, L, Kg, Kg2, sq, Hi);   
     
     // the function
     if (dofunc)
-      nlogp += wgt * (-Hi[resi] + logzi);
+      nlogp += wgt * (-Hi[resi] + log(zi));
     
      // the gradient
     if (dodfunc == FALSE) continue;
     for (a = 0; a < Kg; a++) {
-      add = wgt * exp(Hi[a]-logzi);
+      add = wgt * exp(Hi[a]) / zi;
       
       // derivative respect to hi(a)
       dnlogp[a] += add;
@@ -462,12 +477,12 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
 	resj       = sq[j+1];
- 	x          = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
+ 	x          = APLMIDXL(j,Kg,Kg2) + IDX(a,resj,Kg);
 	dnlogp[x] += add;
       }
       for (j = i+1; j < L; j ++) {
 	resj       = sq[j+1];
-	x          = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
+	x          = APLMIDXG(j,Kg,Kg2) + IDX(a,resj,Kg);
 	dnlogp[x] += add;
       }
     }
@@ -479,12 +494,12 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
     // derivative respect to eij(resi,resj)
     for (j = 0; j < i; j ++) {
       resj       = sq[j+1];
-      x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
+      x          = APLMIDXL(j,Kg,Kg2) + IDX(resi,resj,Kg);
       dnlogp[x] -= wgt;
     }
     for (j = i+1; j < L; j ++) {
       resj       = sq[j+1];
-      x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
+      x          = APLMIDXG(j,Kg,Kg2) + IDX(resi,resj,Kg);
       dnlogp[x] -= wgt;
     }      
     
@@ -527,7 +542,7 @@ potts_Hi(int i, int a, PT *pt, ESL_DSQ *sq)
 {
   double val = 0.;
   int    L   = pt->L;
-  int    Kg  = pt->abc->K+1;
+  int    Kg  = pt->Kg;
   int    resj;
   int    j;
   
@@ -545,7 +560,7 @@ potts_Hi(int i, int a, PT *pt, ESL_DSQ *sq)
   return val;
 }
 double
-potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq)
+potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq)
 {
   double val = 0.;
   int    resj;
@@ -556,12 +571,12 @@ potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq)
  
   for (j = 0; j < i; j++) {
     resj  = sq[j+1];	  
-    x     = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
+    x     = APLMIDXL(j,Kg,Kg2) + IDX(a,resj,Kg);
     val  += p[x];
   }
   for (j = i+1; j < L; j++) {
     resj  = sq[j+1];	  
-    x     = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
+    x     = APLMIDXG(j,Kg,Kg2) + IDX(a,resj,Kg);
     val  += p[x];
   }
   return val;
@@ -569,24 +584,25 @@ potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq)
 
 //exp[ hi(a) + \sum_{j\neq i} eij(a,sqj)
 double
-potts_Hi_PLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq)
+potts_Hi_PLM_Packed(int i, int a, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq)
 {
   double val = 0.;
+  int    x0i = PLMDIM(i,L,Kg,Kg2);
   int    resj;
   int    j;
   int    x;
   
-  x    = PLMDIM(i,L,Kg) + a;
+  x    = x0i + a;
   val += p[x];
   
   for (j = i+1; j < L; j++) {
     resj  = sq[j+1];
-    x     = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
+    x     = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(a,resj,Kg);
     val  += p[x];
   }
   for (j = 0; j < i; j++) {
     resj  = sq[j+1];
-    x     = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
+    x     = PLMIDX(j,i,L,Kg,Kg2) + IDX(resj,a,Kg);
     val  += p[x];
   }
   return val;
@@ -599,7 +615,7 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
 {
   double  Ha;
   double  logzi = -eslINFINITY;
-  int     Kg    = pt->abc->K+1;
+  int     Kg    = pt->Kg;
   int     a;
   int     status;
 
@@ -614,9 +630,29 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
  ERROR:
   return status;
 }
+double
+potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
+{
+  double  Ha;
+  double  Zi = 0.;
+  int     Kg = pt->Kg;
+  int     a;
+  int     status;
+
+  for (a = 0; a < Kg; a++) {
+    Ha = potts_Hi(i, a, pt, sq);
+    if (Hi) Hi[a] = Ha;
+     
+    Zi += exp(Ha);
+  }
+  return Zi;
+
+ ERROR:
+  return status;
+}
 
 static double
-potts_logzi_packed_plm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
+potts_logzi_packed_plm(int i, double *p, int L, int Kg, int Kg2,  ESL_DSQ *sq, double *Hi)
 {
   double  Ha;
   double  logzi = -eslINFINITY;
@@ -624,7 +660,7 @@ potts_logzi_packed_plm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
   int     status;
 
   for (a = 0; a < Kg; a++) {
-    Ha = potts_Hi_PLM_Packed(i, a, p, L, Kg, sq);
+    Ha = potts_Hi_PLM_Packed(i, a, p, L, Kg, Kg2, sq);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
@@ -634,9 +670,28 @@ potts_logzi_packed_plm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
  ERROR:
   return status;
 }
+static double
+potts_Zi_packed_plm(int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi)
+{
+  double  Ha;
+  double  Zi = 0.0;
+  int     a;
+  int     status;
+
+  for (a = 0; a < Kg; a++) {
+    Ha = potts_Hi_PLM_Packed(i, a, p, L, Kg, Kg2, sq);
+    if (Hi) Hi[a] = Ha;
+     
+    Zi += exp(Ha);
+  }
+  return Zi;
+
+ ERROR:
+  return status;
+}
 
 static double
-potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi)
+potts_logzi_packed_aplm(int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi)
 {
   double  Ha;
   double  logzi = -eslINFINITY;
@@ -644,12 +699,31 @@ potts_logzi_packed_aplm(int i, double *p, int L, int Kg, ESL_DSQ *sq, double *Hi
   int     status;
 
   for (a = 0; a < Kg; a++) {
-    Ha = potts_Hi_APLM_Packed(i, a, p, L, Kg, sq);
+    Ha = potts_Hi_APLM_Packed(i, a, p, L, Kg, Kg2, sq);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
   }
   return logzi;
+
+ ERROR:
+  return status;
+}
+static double
+potts_Zi_packed_aplm(int i, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq, double *Hi)
+{
+  double  Ha;
+  double  Zi = 0.0;
+  int     a;
+  int     status;
+
+  for (a = 0; a < Kg; a++) {
+    Ha = potts_Hi_APLM_Packed(i, a, p, L, Kg, Kg2, sq);
+    if (Hi) Hi[a] = Ha;
+     
+    Zi += exp(Ha);
+  }
+  return Zi;
 
  ERROR:
   return status;
@@ -701,8 +775,8 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   char            *errbuf = data->errbuf;
   double           cov;
   double           eij;
-  int              K = pt->abc->K;
-  int              Kg = K+1;
+  int              K  = pt->abc->K;
+  int              Kg = pt->Kg;
   int              i, j;
   int              a, b;
   int              idx;
@@ -744,7 +818,7 @@ potts_CalculateCOVAverage(struct data_s *data)
   double           cov;
   double           eij;
   int              K  = pt->abc->K;
-  int              Kg = K+1;
+  int              Kg = pt->Kg;
   int              i, j;
   int              a, b;
   int              idx;
@@ -776,10 +850,9 @@ potts_CalculateCOVAverage(struct data_s *data)
 static double
 potts_H(PT *pt, ESL_DSQ *sq)
 {
-  ESL_ALPHABET *abc = pt->abc;
   double        H = 0.;
   int           L = pt->L;
-  int           Kg = abc->K+1;
+  int           Kg = pt->Kg;
   int           resi, resj;
   int           i, j;
   
@@ -816,7 +889,7 @@ potts_ml_logz(PT *pt)
   double  logsum = -eslINFINITY;
   double  sc;
   int     L  = pt->L;
-  int     Kg = pt->abc->K+1;
+  int     Kg = pt->Kg;
   int     x = 0;
   int     i, j;
   int     status;
@@ -863,7 +936,7 @@ potts_plm_regularize_l2(PT *pt)
   double reg = 0.;
   double hi, eij;
   int    L  = pt->L;
-  int    Kg = pt->abc->K+1;
+  int    Kg = pt->Kg;
   int    i, j;
   int    a, b;
   
@@ -889,21 +962,22 @@ potts_plm_regularize_l2_packed(double *p, PT *pt)
   double reg = 0.;
   double hi, eij;
   int    L  = pt->L;
-  int    Kg = pt->abc->K+1;
+  int    Kg  = pt->Kg;
+  int    Kg2 = pt->Kg2;
   int    x0i, x;
   int    i, j;
   int    a, b;
   
   // l2-regularization
   for (i = 0; i < L; i ++) {
-    x0i = PLMDIM(i,L,Kg);
+    x0i = PLMDIM(i,L,Kg,Kg2);
     for (a = 0; a < Kg; a ++) {
       hi   = p[x0i+a];
       reg += pt->muh * hi * hi;
   
       for (j = i+1; j < L; j ++) 
 	for (b = 0; b < Kg; b ++) {
-	  x    = PLMIDX(i,j,L,Kg) + IDX(a,b,Kg);
+	  x    = x0i + PLMIDXR(i,j,L,Kg,Kg2) + IDX(a,b,Kg);
 	  eij  = p[x];
 	  reg += pt->mue * eij * eij;
 	}
@@ -918,7 +992,7 @@ potts_plm_regularize_l1(PT *pt)
 {
   double reg = 0.;
   double hi, eij;
-  int    Kg = pt->abc->K+1;
+  int    Kg = pt->Kg;
   int    i, j;
   int    a, b;
   
@@ -943,7 +1017,7 @@ potts_aplm_regularize_l2(int i, PT *pt)
 {
   double reg = 0.;
   double hi, eij;
-  int    Kg = pt->abc->K+1;
+  int    Kg = pt->Kg;
   int    j;
   int    a, b;
   
@@ -972,7 +1046,8 @@ potts_aplm_regularize_l2_packed(int i, double *p, PT *pt)
   double reg = 0.;
   double hi, eij;
   int    L = pt->L;
-  int    Kg = pt->abc->K+1;
+  int    Kg  = pt->Kg;
+  int    Kg2 = pt->Kg2;
   int    x;
   int    j;
   int    a, b;
@@ -984,13 +1059,13 @@ potts_aplm_regularize_l2_packed(int i, double *p, PT *pt)
     
     for (j = 0; j < i; j ++) 
       for (b = 0; b < Kg; b ++) {
-	x    = APLMIDXL(j,Kg) + IDX(a,b,Kg);
+	x    = APLMIDXL(j,Kg,Kg2) + IDX(a,b,Kg);
 	eij  = p[x];
 	reg += pt->mue * eij * eij;
       }  
     for (j = i+1; j < L; j ++) 
       for (b = 0; b < Kg; b ++) {
-	x    = APLMIDXG(j,Kg) + IDX(a,b,Kg);
+	x    = APLMIDXG(j,Kg,Kg2) + IDX(a,b,Kg);
 	eij  = p[x];
 	reg += pt->mue * eij * eij;
       }
@@ -1003,7 +1078,7 @@ potts_aplm_regularize_l1(int i, PT *pt)
 {
   double reg = 0;
   double hi, eij;
-  int    Kg = pt->abc->K+1;
+  int    Kg = pt->Kg;
   int    j;
   int    a, b;
   

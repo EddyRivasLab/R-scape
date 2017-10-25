@@ -14,12 +14,13 @@
 #include "correlators.h"
 #include "pottsbuild.h"
 
-#define PLMDIM(i,L,K)    ( (i)*(K) + (i)*((L)-1)*(K)*(K) - 0.5*(i)*((i)-1)*(K)*(K) ) // \sum_{j=0}^{i-1} [ K + K*K*(L-1-j) ]
-#define PLMIDX(i,j,L,K)  ( PLMDIM(i,L,K) + (K) + ((j)-(i)-1)*(K)*(K) )
+#define PLMDIM(i,L,K,K2)    ( (i)*(K) + (i)*((L)-1)*(K2) - 0.5*(i)*((i)-1)*(K2) ) // \sum_{j=0}^{i-1} [ K + K*K*(L-1-j) ]
+#define PLMIDX(i,j,L,K,K2)  ( PLMDIM(i,L,K,K2) + (K) + ((j)-(i)-1)*(K2) )
+#define PLMIDXR(i,j,L,K,K2) ( (K) + ((j)-(i)-1)*(K2) )
 
-#define APLMDIM(L,K)     ( (K) + ((L)-1)*(K)*(K) )   // number of parameters to optimize for a given i
-#define APLMIDXL(j,K)    ( (K) + (j)*(K)*(K) )       // j < i
-#define APLMIDXG(j,K)    ( (K) + ((j)-1)*(K)*(K) )   // j > i
+#define APLMDIM(L,K,K2)     ( (K) + ((L)-1)*(K2) )   // number of parameters to optimize for a given i
+#define APLMIDXL(j,K,K2)    ( (K) + (j)*(K2) )       // j < i
+#define APLMIDXG(j,K,K2)    ( (K) + ((j)-1)*(K2) )   // j > i
 
 extern int    potts_NLogp_ML                (PT *pt, ESL_MSA *msa, double *ret_logp,                char *errbuf, int verbose);
 extern int    potts_NLogp_PLM               (PT *pt, ESL_MSA *msa, double *ret_logp, double *dlogp, char *errbuf, int verbose);
@@ -29,8 +30,9 @@ extern int    potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA 
 
 extern double potts_Hi   (int i, int a, PT *pt, ESL_DSQ *sq);
 extern double potts_Logzi(int i,        PT *pt, ESL_DSQ *sq, double *Hi);
-extern double potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, ESL_DSQ *sq);
-extern double potts_Hi_PLM_Packed (int i, int a, double *p, int L, int Kg, ESL_DSQ *sq);
+extern double potts_Zi   (int i,        PT *pt, ESL_DSQ *sq, double *Hi);
+extern double potts_Hi_APLM_Packed(int i, int a, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq);
+extern double potts_Hi_PLM_Packed (int i, int a, double *p, int L, int Kg, int Kg2, ESL_DSQ *sq);
 
 extern int    potts_CalculateCOV         (struct data_s *data);
 extern int    potts_CalculateCOVFrobenius(struct data_s *data);

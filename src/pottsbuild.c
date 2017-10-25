@@ -55,7 +55,7 @@ int
 potts_AssignZero(ESL_RANDOMNESS *r, PT *pt, char *errbuf, int verbose)
 {
   int L  = pt->L;
-  int Kg = pt->abc->K+1;
+  int Kg = pt->Kg;
   int i, j;
   int a, b;
   int status;
@@ -80,7 +80,7 @@ int
 potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *errbuf, int verbose)
 {
   int L  = pt->L;
-  int Kg = pt->abc->K+1;
+  int Kg = pt->Kg;
   int i, j;
   int a, b;
   int status;
@@ -309,6 +309,8 @@ potts_Create(int64_t L, int Kg, ESL_ALPHABET *abc, double muh, double mue, PTTRA
   ESL_ALLOC(pt, sizeof(PT));
   pt->L      = L;
   pt->abc    = abc;
+  pt->Kg     = abc->K+1;
+  pt->Kg2    = Kg*Kg;
   pt->muh    = muh;
   pt->mue    = mue;
   pt->train  = pttrain;
@@ -364,8 +366,8 @@ potts_Destroy(PT *pt)
 int
 potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 {
-  int      Kg = pt->abc->K+1;
-  int      Kg2 = Kg*Kg;
+  int      Kg  = pt->Kg;
+  int      Kg2 = pt->Kg2;
   double   suma;
   double   sumi[Kg];
   double   sumj[Kg];
@@ -462,16 +464,17 @@ int
 potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
-  double                *p = NULL;	       /* parameter vector                        */
-  double                *u = NULL;             /* max initial step size vector            */
+  double                *p   = NULL;	       /* parameter vector                        */
+  double                *u   = NULL;           /* max initial step size vector            */
   double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
   double                 logp;
-  int                    L = msa->alen;
-  int                    Kg = msa->abc->K+1;
+  int                    L   = msa->alen;
+  int                    Kg  = pt->Kg;
+  int                    Kg2 = pt->Kg2;
   int                    np;
   int                    status;
 
-  np = PLMDIM(L,L,Kg);     /* the variables hi eij */
+  np = PLMDIM(L,L,Kg,Kg2);     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
@@ -536,17 +539,18 @@ int
 potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
-  double                *p = NULL;	       /* parameter vector                        */
-  double                *u = NULL;             /* max initial step size vector            */
+  double                *p   = NULL;	       /* parameter vector                        */
+  double                *u   = NULL;           /* max initial step size vector            */
   double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
   double                 logp;
-  int                    L = msa->alen;
-  int                    Kg = msa->abc->K+1;
+  int                    L   = msa->alen;
+  int                    Kg  = pt->Kg;
+  int                    Kg2 = pt->Kg2;
   int                    np;
   int                    i;
   int                    status;
 
-  np = APLMDIM(L,Kg);     /* the variables hi eij */
+  np = APLMDIM(L,Kg,Kg2);     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
@@ -619,10 +623,11 @@ int
 potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
-  int                    L  = msa->alen;
-  int                    Kg = msa->abc->K+1;
-  int                    np = APLMDIM(L,Kg);
-  lbfgsfloatval_t       *x = lbfgs_malloc(np+1);
+  int                    L   = msa->alen;
+  int                    Kg  = pt->Kg;
+  int                    Kg2 = pt->Kg2;
+  int                    np  = APLMDIM(L,Kg,Kg2);
+  lbfgsfloatval_t       *x  = lbfgs_malloc(np+1);
   lbfgsfloatval_t        fx;
   lbfgs_parameter_t      param;
   int                    i;
@@ -737,6 +742,8 @@ potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf)
   if (abc) {
     if (Kg != abc->K+1) ESL_XFAIL(eslFAIL, errbuf, "wrong alphabet for file %s", paramfile);
     pt->abc = abc;
+    pt->Kg  = Kg;
+    pt->Kg2 = Kg*Kg;
   }
   
   // now the real parsing
@@ -789,8 +796,8 @@ potts_Write(FILE *fp, PT *pt)
   double maxe, mine;
   double z     = 1.0;
   int    L     = pt->L;
-  int    Kg    = pt->abc->K+1;
-  int    Kg2   = Kg*Kg;
+  int    Kg    = pt->Kg;
+  int    Kg2   = pt->Kg2;
   int    i, j;
   int    a, b;
 
@@ -854,7 +861,7 @@ static int
 optimize_plm_pack_paramvector(double *p, int np, struct optimize_data *data)
 {
   int   L  = data->msa->alen;
-  int   Kg = data->msa->abc->K+1;
+  int   Kg = data->pt->Kg;
   int   x  = 0;
   int   i, j;
   int   a, b;
@@ -872,7 +879,7 @@ static int
 optimize_aplm_pack_paramvector(double *p, int np, struct optimize_data *data)
 {
   int   L   = data->msa->alen;
-  int   Kg  = data->msa->abc->K+1;
+  int   Kg  = data->pt->Kg;
   int   x   = 0;
   int   i   = data->pos;
   int   j;
@@ -890,7 +897,7 @@ static int
 optimize_aplm_lbfgs_pack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data)
 {
   int   L   = data->msa->alen;
-  int   Kg  = data->msa->abc->K+1;
+  int   Kg  = data->pt->Kg;
   int   Kg2 = Kg*Kg;
   int   x   = 0;
   int   i   = data->pos;
@@ -911,7 +918,7 @@ optimize_plm_unpack_paramvector(double *p, int np, struct optimize_data *data)
 {
   double eij, eji;
   int    L   = data->msa->alen;
-  int    Kg  = data->msa->abc->K+1;
+  int    Kg  = data->pt->Kg;
   int    x   = 0;
   int    i, j;
   int    a, b;
@@ -936,7 +943,7 @@ static int
 optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
 {
   int    L   = data->msa->alen;
-  int    Kg  = data->msa->abc->K+1;
+  int    Kg  = data->pt->Kg;
   int    x   = 0;
   int    i   = data->pos;
   int    j;
@@ -959,7 +966,7 @@ static int
 optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data)
 {
   int    L   = data->msa->alen;
-  int    Kg  = data->msa->abc->K+1;
+  int    Kg  = data->pt->Kg;
   int    x   = 0;
   int    i   = data->pos;
   int    j;
@@ -1116,7 +1123,7 @@ symmetrize(PT *pt)
 {
   double eij, eji;
   int    L  = pt->L;
-  int    Kg = pt->abc->K+1;
+  int    Kg = pt->Kg;
   int    i, j;
   int    a, b;
 
