@@ -96,9 +96,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
 
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
-      // and logzi = log \sum_a exp H^s_i[a]
       // and zi    = \sum_a exp H^s_i[a]
-      //logzi = potts_Logzi(i, pt, sq, Hi);
       zi = potts_Zi(i, pt, sq, Hi);
        
       // the function 
@@ -107,7 +105,6 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
       // the gradient
       if (dodfunc == FALSE) continue;
       for (a = 0; a < Kg; a++) {
-	//add = wgt * exp(Hi[a]-logzi);
 	add = wgt * exp(Hi[a]) / zi;
 
 	// derivative respect to hi(a)
@@ -211,9 +208,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
-    // and logzi    = log \sum_a exp H^s_i[a]
     // and zi       = \sum_a exp H^s_i[a]
-    //logzi = potts_Logzi(i, pt, sq, Hi);   
     zi = potts_Zi(i, pt, sq, Hi);   
 
     // the function
@@ -235,7 +230,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
       }
       for (j = i+1; j < L; j ++) {
 	resj = sq[j+1];
-  	gr->e[j][i][IDX(resj,a,Kg)] += add;
+  	gr->e[i][j][IDX(a,resj,Kg)] += add;
       }
     }
 
@@ -250,7 +245,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     }
     for (j = i+1; j < L; j ++) {
       resj       = sq[j+1];
-      gr->e[j][i][IDX(resj,resi,Kg)] -= wgt;
+      gr->e[i][j][IDX(resi,resj,Kg)] -= wgt;
      }
     
   } // for all sequences
@@ -327,9 +322,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
-      // and logzi    = log \sum_a exp H^s_i[a]
       // and zi       = \sum_a exp H^s_i[a]
-      //logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, Hi);   
       zi = potts_Zi_packed_plm(i, p, L, Kg, Kg2, sq, Hi);   
 
       // the function
@@ -443,9 +436,7 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
    
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
-    // and logzi    = log \sum_a exp H^s_i[a]
     // and zi       = \sum_a exp H^s_i[a]
-    //logzi = potts_logzi_packed_aplm(i, p, L, Kg, sq, Hi);   
     zi = potts_Zi_packed_aplm(i, p, L, Kg, Kg2, sq, Hi);   
     
     // the function
