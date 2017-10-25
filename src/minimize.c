@@ -419,6 +419,7 @@ brent(double *ori, double *dir, int n,
  *            *dfunc() - function for computing a gradient at x
  *            prm      - void ptr to any data/params func,dfunc need 
  *            tol      - convergence criterion applied to f(x)
+ *            stol     - convergence criterion applied to the line search
  *            wrk      - allocated 4xn-vector for workspace
  *            ret_fx   - optRETURN: f(x) at the minimum
  *
@@ -434,14 +435,13 @@ int
 min_ConjugateGradientDescent(double *x, double *u, int n, 
 			     double (*func)(double *, int, void *),
 			     double (*bothfunc)(double *, int, void *, double *),
-			     void *prm, double tol, double *wrk, double *ret_fx)
+			     void *prm, double tol, double stol, double *wrk, double *ret_fx)
 {
   double oldfx;
   double coeff;
   int    i, i1;
   double *dx, *cg, *w1, *w2;
   double cvg;
-  double t;        // the step lentgh (x = x + t*cg)
   double fa,fb,fc;
   double ax,bx,cx;
   double fx;
@@ -501,7 +501,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       printf("^^end bracket\n");
       
       /* Minimize along the line given by the conjugate gradient <cg> */
-      brent(x, cg, n, func, prm, ax, cx, 1e-0, 1e-8, w2, &t, NULL);
+      brent(x, cg, n, func, prm, ax, cx, stol, 1e-8, w2, NULL, NULL);
       esl_vec_DCopy(w2, n, x);
       
       /* Calculate fx then

@@ -237,6 +237,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
 	    float tol, char *errbuf, int verbose)
 {
   PT     *pt = NULL;
+  double  stol;
   double  neff;
   int     status;
 
@@ -262,15 +263,17 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
+    stol = 1e-0;
     // follows gremling_v2.1
     pt->muh = 0.01 * msa->alen; // scaled by length
     pt->mue = 0.20 * msa->alen;
 
-    status = potts_OptimizeCGD_PLM(pt, msa, tol, errbuf, verbose);
+    status = potts_OptimizeCGD_PLM(pt, msa, tol, stol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    // follows plmDCA_asymmetric_v2
+    stol = 1e-3;
+#if 0 // follows plmDCA_asymmetric_v2
     neff = esl_vec_DSum(msa->wgt, msa->nseq);
     if (neff < 500) { // scaled by number of sequences
       pt->muh = 0.1 - (0.1-0.01)*neff/500; 
@@ -278,8 +281,12 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     }
     pt->muh *= neff;    // scaled by neff
     pt->mue *= neff/2.;
-
-    status = potts_OptimizeCGD_APLM(pt, msa, tol, errbuf, verbose);
+#else // gremlin's 
+    pt->muh = 0.01 * msa->alen; // scaled by length
+    pt->mue = 0.20 * msa->alen;
+#endif
+    
+    status = potts_OptimizeCGD_APLM(pt, msa, tol, stol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
     break;
@@ -463,7 +470,7 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 }
 
 int
-potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   PT                   *gr   = NULL;           /* the gradient */
@@ -506,7 +513,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   status = min_ConjugateGradientDescent(p, u, np, 
 					&optimize_potts_func_plm, &optimize_potts_bothfunc_plm,
 					(void *) (&data),					   
-					tol, wrk, &logp);
+					tol, stol, wrk, &logp);
 #else
   status = esl_min_ConjugateGradientDescent(p, u, np, 
 					    &optimize_potts_func_plm, &optimize_potts_dfunc_plm,
@@ -543,7 +550,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
 
 
 int
-potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
+potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   PT                   *gr   = NULL;           /* the gradient */
@@ -586,10 +593,10 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
     optimize_bracket_define_direction(u, (int)np, &data);
 
 #if MYCGD
-        status = min_ConjugateGradientDescent(p, u, np, 
+    status = min_ConjugateGradientDescent(p, u, np, 
 					  &optimize_potts_func_aplm, &optimize_potts_bothfunc_aplm, 
 					  (void *) (&data), 
-					  tol, wrk, &logp);
+					  tol, stol, wrk, &logp);
 #else
     status = esl_min_ConjugateGradientDescent(p, u, np, 
     					      &optimize_potts_func_aplm, &optimize_potts_dfunc_aplm,
