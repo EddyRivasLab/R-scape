@@ -157,7 +157,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
       for (j = i+1; j < L; j ++)
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) 
-	    gr->e[i][j][IDX(a,b,Kg)] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
+	    gr->e[j][i][IDX(b,a,Kg)] += pt->mue * 2.0 * pt->e[j][i][IDX(b,a,Kg)];
     }
   }
   
@@ -240,11 +240,11 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     
     // derivative respect to eij(resi,resj)
     for (j = 0; j < i; j ++) {
-      resj       = sq[j+1];
+      resj = sq[j+1];
       gr->e[i][j][IDX(resi,resj,Kg)] -= wgt;
     }
     for (j = i+1; j < L; j ++) {
-      resj       = sq[j+1];
+      resj = sq[j+1];
       gr->e[i][j][IDX(resi,resj,Kg)] -= wgt;
      }
     
@@ -253,6 +253,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
   // l2-regularization
   if (dofunc) 
     nlogp += potts_aplm_regularize_l2(i, pt);
+  
   if (dodfunc) {
     for (a = 0; a < Kg; a++) gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
     
