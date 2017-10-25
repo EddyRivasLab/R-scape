@@ -27,7 +27,7 @@
 #include "correlators.h"
 
 #define PACKED  1
-#define VERBOSE 0
+#define VERBOSE 1
 #define MYCGD   1
 
 #define INITGT  0
@@ -100,7 +100,7 @@ potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *e
   status = potts_GaugeZeroSum(pt, errbuf,  verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
-  potts_Write(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
 
   return eslOK;
 
@@ -215,7 +215,7 @@ potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf,
     for (a = 0; a < Kg; a ++) 
       pt->h[i][a] = 0.;
   
-  potts_Write(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
   
   free(gtp);
   free(gtx);
@@ -238,7 +238,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  neff;
   int     status;
 
-  tol   = 1e-3; // ad hoc compromise for good time
+  tol   = 1e-5; // ad hoc compromise for good time
 
   e2_DLogsumInit();
 
@@ -516,7 +516,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose
   status = potts_GaugeZeroSum(pt, errbuf,  verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
-  if (1||verbose) potts_Write(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
   if (u   != NULL) free(u);
@@ -598,7 +598,7 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbos
   // Then, symmetrize
   symmetrize(pt);
  
-  if (1||verbose) potts_Write(stdout, pt);
+  if (verbose) potts_Write(stdout, pt);
 
   /* clean up */
   if (u   != NULL) free(u);
@@ -1044,6 +1044,7 @@ optimize_potts_bothfunc_plm(double *p, int np, void *dptr, double *dx)
   
 #if VERBOSE
   if (status != eslOK) { printf("optimize_potts_bothfunc_plm() failed \n"); exit(1); }
+  printf("plm BOTHFUNC %f\n", nlogp);
 #endif  
   return nlogp;
 }

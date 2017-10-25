@@ -138,7 +138,8 @@ bracket(double *ori, double *d, int n, double firststep,
    * are initially at 0.0 and <firststep>.
    */
   ax = 0.;  /* always start w/ ax at the origin, ax=0 */
-  fa = (*func)(ori, n, prm);
+  //fa = (*func)(ori, n, prm);
+  fa = *ret_fa;
 
   bx = firststep;
   esl_vec_DCopy(ori, n, wrk);
@@ -374,7 +375,7 @@ brent(double *ori, double *dir, int n,
   esl_vec_DCopy(ori, n, xvec);  /* build final xvec from ori, dir, x */
   esl_vec_DAddScaled(xvec, dir, x, n);
   if (ret_x  != NULL) *ret_x  = x;
-  if (ret_fx != NULL) *ret_fx = fx;
+  if (ret_fx != NULL) *ret_fx = (*func)(xvec, n, prm);
   ESL_DPRINTF2(("\nbrent(): %d iterations\n", niter));
   ESL_DPRINTF2(("xx=%10.8f fx=%10.1f\n", x, fx));
 }
@@ -450,10 +451,11 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   w1 = wrk + 2*n;
   w2 = wrk + 3*n;
 
+  /* init the objective function */
   if (bothfunc == NULL) 
-    oldfx = (*func)(x, n, prm);	/* init the objective function */
-  else 
-    oldfx = (*bothfunc)(x, n, prm, dx);	/* init the objective function */
+    oldfx = (*func)(x, n, prm);	
+  else
+    oldfx = (*bothfunc)(x, n, prm, dx);	
   
   /* Bail out if the function is +/-inf or nan: this can happen if the caller
    * has screwed something up, or has chosen a bad start point.
@@ -464,6 +466,9 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
     numeric_derivative(x, u, n, func, prm, 1e-4, dx); /* resort to brute force */
   else 
     esl_vec_DScale(dx, n, -1.0);
+
+  // First x, fx, dx, cg
+  fx = oldfx;
   esl_vec_DCopy(dx, n, cg);  /* and make that the first conjugate direction, cg  */
  
   /* (failsafe) convergence test: a zero direction can happen, 
@@ -477,9 +482,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   }
   
   for (i = 0; i < MAXITER; i++)
-    {
-      printf("^^ IT %d \n", i);
-      
+    {     
       /* Figure out the initial step size.
        */
       bx = fabs(u[0] / cg[0]);
@@ -491,14 +494,15 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       
       /* Bracket the minimum.
        */
+      fa = fx; // always start at the origin, already calculated
       bracket(x, cg, n, bx, func, prm, w1,
 	      &ax, &bx, &cx, 
 	      &fa, &fb, &fc);
+      printf("^^end bracket\n");
       
       /* Minimize along the line given by the conjugate gradient <cg> */
-      brent(x, cg, n, func, prm, ax, cx, 1e-1, 1e-8, w2, &t, &fx);
+      brent(x, cg, n, func, prm, ax, cx, 1e-0, 1e-8, w2, &t, NULL);
       esl_vec_DCopy(w2, n, x);
-      printf("^^ fund new direction\n");
       
       /* Calculate fx then
        * Find the negative gradient at that point (temporarily in w1) */
@@ -513,16 +517,23 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 	if (fx == eslINFINITY || fx == -eslINFINITY) ESL_EXCEPTION(eslERANGE, "minimum not finite");
 	numeric_derivative(x, u, n, func, prm, 1e-4, w1); /* resort to brute force */
       }
-     printf("^^ both\n");
+        
+      /* Main convergence test. 1e-9 factor is fudging the case where our
+       * minimum is at exactly f()=0.
+       */
+      cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
+      if (cvg <= tol) break;
       
-       
+      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
+
+      if (i == MAXITER-1) continue;
+      
       /* Calculate the Polak-Ribiere coefficient */
       for (coeff = 0., i1 = 0; i1 < n; i1++)
 	coeff += (w1[i1] - dx[i1]) * w1[i1];
       coeff /= esl_vec_DDot(dx, dx, n);
       
-      printf("^^ coeff\n");
-     /* Calculate the next conjugate gradient direction in w2 */
+      /* Calculate the next conjugate gradient direction in w2 */
       esl_vec_DCopy(w1, n, w2);
       esl_vec_DAddScaled(w2, cg, coeff, n);
       
@@ -535,15 +546,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
        *      dx is the current gradient at x;
        *      cg is the current conjugate gradient direction. 
        */
-      
-      /* Main convergence test. 1e-9 factor is fudging the case where our
-       * minimum is at exactly f()=0.
-       */
-      cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
-      
-      //fprintf(stderr, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
-      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
-      
+
 #if eslDEBUGLEVEL >= 2
       printf("\nesl_min_ConjugateGradientDescent():\n");
       printf("new point:     ");
@@ -565,8 +568,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       
       printf("\nOld f() = %g    New f() = %g    Convergence = %g\n\n", oldfx, fx, cvg);
 #endif
-      
-      if (cvg <= tol) break;
       
       /* Second (failsafe) convergence test: a zero direction can happen, 
        * and it either means we're stuck or we're finished (most likely stuck)

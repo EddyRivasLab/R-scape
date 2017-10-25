@@ -61,8 +61,8 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
   double   nlogp;
   double   nlogpi;
   double   logzi; 
-  double   logadd;
-  double   wgt, lwgt;
+  double   add;
+  double   wgt;
   int      L   = msa->alen;
   int      Kg  = msa->abc->K+1;
   int      dim = PLMDIM(L,L,Kg);
@@ -80,7 +80,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
   
   // Initialize
   if (dofunc)  nlogp = 0.0;
-  if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.); 
   ESL_ALLOC(Hi, sizeof(double)*Kg);
   
   for (i = 0; i < L; i ++) {
@@ -90,9 +90,9 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
     
     for (s = 0; s < msa->nseq; s++) {
       // Initialize
-      sq    = msa->ax[s];
-      resi  = sq[i+1];
-      lwgt  = log(msa->wgt[s]);
+      sq   = msa->ax[s];
+      resi = sq[i+1];
+      wgt  = msa->wgt[s];
 
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
@@ -100,68 +100,53 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp, char *e
       logzi = potts_Logzi(i, pt, sq, Hi);
        
       // the function 
-      if (dofunc) nlogpi += msa->wgt[s] * (-Hi[resi] + logzi);
+      if (dofunc) nlogpi += wgt * (-Hi[resi] + logzi);
       
       // the gradient
       if (dodfunc == FALSE) continue;
       for (a = 0; a < Kg; a++) {
-	logadd    = Hi[a]-logzi+lwgt;
+	add = wgt * exp(Hi[a]-logzi);
 
 	// derivative respect to hi(a)
-	x         = x0i + a;
-  	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	x          = x0i + a;
+  	dnlogp[x] += add;
     
 	// derivative respect to eij(a,b) 
 	for (j = i+1; j < L; j ++) {
-	  resj      = sq[j+1];
-	  x         = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
-	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	  resj       = sq[j+1];
+	  x          = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
+	  dnlogp[x] += add;
 	}
       
 	for (j = 0; j < i; j ++) {
-	  resj      = sq[j+1];
-	  x         = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
-	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	  resj       = sq[j+1];
+	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
+	  dnlogp[x] += add;
 	}
       }
+      
+      // one more term to the gradient
+      // derivative respect to hi(resi)
+      x          = x0i + resi;
+      dnlogp[x] -= wgt;
+
+      // derivative respect to eij(resi,resj)
+      for (j = i+1; j < L; j ++) {
+	resj       = sq[j+1];
+	x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
+	dnlogp[x] -= wgt;	    
+      }      
+      for (j = 0; j < i; j ++) {
+	resj       = sq[j+1];
+	x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
+	dnlogp[x] -= wgt;
+      }      
       
     } // for all sequences
     
     if (dofunc) nlogp += nlogpi;
   } // for all positions i
 
-  
-  // one more term to the gradient
-  if (dodfunc) {
-    esl_vec_DExp(dnlogp, dim);
-    
-    for (i = 0; i < L; i ++) {
-      x0i = PLMDIM(i,L,Kg); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
-      
-      for (s = 0; s < msa->nseq; s++) {
-	// Initialize
-	sq   = msa->ax[s];
-	resi = sq[i+1];
-	wgt  = msa->wgt[s];
-	
-	// derivative respect to hi(a)
-	x          = x0i + resi;
-	dnlogp[x] -= wgt;
-	
-	// derivative respect to eij(a,b)
-	for (j = i+1; j < L; j ++) {
-	  resj       = sq[j+1];
-	  x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
-	  dnlogp[x] -= wgt;	    
-	}      
-	for (j = 0; j < i; j ++) {
-	  resj       = sq[j+1];
-	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
-	  dnlogp[x] -= wgt;
-	}      
-      }
-    }
-  }
   
   // l2-regularization
   if (dofunc) 
@@ -195,8 +180,8 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
   double  *Hi = NULL;
   double   logzi; 
   double   nlogp;
-  double   logadd;
-  double   wgt, lwgt;
+  double   add;
+  double   wgt;
   int      L   = msa->alen;
   int      Kg  = msa->abc->K+1;
   int      dim = APLMDIM(L,Kg);
@@ -214,7 +199,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
 
   // Initialize
   if (dofunc)  nlogp = 0.0;
-  if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in logspace
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.);
   ESL_ALLOC(Hi, sizeof(double)*Kg);
 
   for (s = 0; s < msa->nseq; s++) {
@@ -222,7 +207,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
     // Initialize
     sq   = msa->ax[s];
     resi = sq[i+1];
-    lwgt = log(msa->wgt[s]);
+    wgt = msa->wgt[s];
     
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
@@ -231,57 +216,47 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, double *dnlogp,
 
     // the function
     if (dofunc)
-      nlogp += msa->wgt[s] * (-Hi[resi] + logzi);
+      nlogp += wgt * (-Hi[resi] + logzi);
     
     // the gradient
     if (dodfunc == FALSE) continue;
     for (a = 0; a < Kg; a++) {
-      logadd = Hi[a]-logzi+lwgt;
+      add = wgt * exp(Hi[a]-logzi);
       
       // derivative respect to hi(a)
-      dnlogp[a] = e2_DLogsum(dnlogp[a], logadd);
+      dnlogp[a] += add;
       
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
-	resj      = sq[j+1];
-	x         = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
-  	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	resj       = sq[j+1];
+	x          = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
+  	dnlogp[x] += add;
       }
       for (j = i+1; j < L; j ++) {
-	resj      = sq[j+1];
-	x         = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
-  	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	resj       = sq[j+1];
+	x          = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
+  	dnlogp[x] += add;
       }
     }
+
+    // one more term to the gradient
+    // derivative respect to hi(resi)
+    dnlogp[resi] -= wgt;
+    
+    // derivative respect to eij(resi,resj)
+    for (j = 0; j < i; j ++) {
+      resj       = sq[j+1];
+      x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
+      dnlogp[x] -= wgt;
+    }
+    for (j = i+1; j < L; j ++) {
+      resj       = sq[j+1];
+      x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
+      dnlogp[x] -= wgt;
+    }
+    
   } // for all sequences
   
-  // one more term to the gradient
-  if (dodfunc) {
-    esl_vec_DExp(dnlogp, dim);
-    
-    for (s = 0; s < msa->nseq; s++) {
-      // Initialize
-      sq   = msa->ax[s];
-      resi = sq[i+1];
-      wgt  = msa->wgt[s];
-      
-      // derivative respect to hi(a)
-      dnlogp[resi] -= wgt;
-      
-      // derivative respect to eij(a,b)
-      for (j = 0; j < i; j ++) {
-	resj       = sq[j+1];
-	x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
-	dnlogp[x] -= wgt;
-      }
-      for (j = i+1; j < L; j ++) {
-	resj       = sq[j+1];
-	x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
-	dnlogp[x] -= wgt;
-      }     
-    }
-  }
- 
   // l2-regularization
   if (dofunc) 
     nlogp += potts_aplm_regularize_l2(i, pt);
@@ -321,8 +296,8 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
   double   nlogp;
   double   nlogpi;
   double   logzi; 
-  double   logadd;
-  double   wgt, lwgt;
+  double   add;
+  double   wgt;
   int      L   = msa->alen;
   int      Kg  = msa->abc->K+1;
   int      dim = PLMDIM(L,L,Kg);
@@ -337,11 +312,10 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
   
   dofunc  = (ret_nlogp)? TRUE : FALSE;
   dodfunc = (dnlogp)?    TRUE : FALSE;
- printf("\n^^ START\n");
   
   // Initialize
   if (dofunc)  nlogp = 0.0;
-  if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.0); 
   ESL_ALLOC(Hi, sizeof(double)*Kg);
  
   for (i = 0; i < L; i ++) {
@@ -353,7 +327,7 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       // Initialize
       sq   = msa->ax[s];
       resi = sq[i+1];
-      lwgt = log(msa->wgt[s]);
+      wgt  = msa->wgt[s];
       
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
@@ -361,73 +335,56 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
       logzi = potts_logzi_packed_plm(i, p, L, Kg, sq, Hi);   
 
       // the function
-      if (dofunc) nlogpi += msa->wgt[s] * (-Hi[resi] + logzi);
+      if (dofunc) nlogpi += wgt * (-Hi[resi] + logzi);
       
       // the gradient
       if (dodfunc == FALSE) continue;
       for (a = 0; a < Kg; a++) {
-	logadd = Hi[a]-logzi+lwgt;
+	add = wgt * exp(Hi[a]-logzi);
 
 	// derivative respect to hi(a)
-	x         = x0i + a;
-	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	x          = x0i + a;
+	dnlogp[x] += add;
 	
 	// derivative respect to eij(a,b)
 	for (j = i+1; j < L; j ++) {
-	  resj      = sq[j+1];
-	  x         = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
-	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	  resj       = sq[j+1];
+	  x          = PLMIDX(i,j,L,Kg) + IDX(a,resj,Kg);
+	  dnlogp[x] += add;
 	}
 	for (j = 0; j < i; j ++) {
-	  resj      = sq[j+1];
-	  x         = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
-	  dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	  resj       = sq[j+1];
+	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,a,Kg);
+	  dnlogp[x] += add;
 	}
       }
+
+      // one more term to the gradient
+      // derivative respect to hi(resi)
+      x          = x0i + resi;
+      dnlogp[x] -= wgt;
+      
+      // derivative respect to eij(resi,resj)
+      for (j = i+1; j < L; j ++) {
+	resj       = sq[j+1];
+	x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
+	dnlogp[x] -= wgt;
+      }      
+      for (j = 0; j < i; j ++) {
+	resj       = sq[j+1];
+	x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
+	dnlogp[x] -= wgt;
+      }      
+
     } // for all sequences
     
     if (dofunc) nlogp += nlogpi;
   
   } // for all positions i
-  printf("^^ end1\n");
-
-  // one more term to the gradient
-  if (dodfunc) {
-    esl_vec_DExp(dnlogp, dim);
-      
-    for (i = 0; i < L; i ++) {
-      x0i = PLMDIM(i,L,Kg); //\sum_{j=0}^{i-1} [ Kg + Kg2*(L-1-j)]
-      
-      for (s = 0; s < msa->nseq; s++) {
-	// Initialize
-	sq   = msa->ax[s];
-	resi = sq[i+1];
-	wgt  = msa->wgt[s];
-	      
-	// derivative respect to hi(a)
-	x          = x0i + resi;
-	dnlogp[x] -= wgt;
-	
-	// derivative respect to eij(a,b)
-	for (j = i+1; j < L; j ++) {
-	  resj       = sq[j+1];
-	  x          = PLMIDX(i,j,L,Kg) + IDX(resi,resj,Kg);
-	  dnlogp[x] -= wgt;
-	}      
-	for (j = 0; j < i; j ++) {
-	  resj       = sq[j+1];
-	  x          = PLMIDX(j,i,L,Kg) + IDX(resj,resi,Kg);
-	  dnlogp[x] -= wgt;
-	}      
-      }
-    }
-  printf("^^ end2\n");
-  }
 
   // l2-regularization
   if (dofunc) 
     nlogp += potts_plm_regularize_l2_packed(p, pt);
-  printf("^^ end3\n");
   if (dodfunc) {
     x = 0;
     for (i = 0; i < L; i ++) {     
@@ -436,7 +393,6 @@ potts_NLogp_PLM_Packed(int npt, double *p, PT *pt, ESL_MSA *msa, double *ret_nlo
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) { dnlogp[x] += pt->mue * 2.0 * p[x]; x ++; }
     }
-  printf("^^ end4\n");
   }
   
   // return
@@ -457,8 +413,8 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
   double  *Hi = NULL;
   double   logzi; 
   double   nlogp;
-  double   logadd;
-  double   wgt, lwgt;
+  double   add;
+  double   wgt;
   int      L   = msa->alen;
   int      Kg  = msa->abc->K+1;
   int      dim = APLMDIM(L,Kg);
@@ -476,7 +432,7 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
 
   // Initialize 
   if (dofunc)  nlogp = 0.;
-  if (dodfunc) esl_vec_DSet(dnlogp, dim, -eslINFINITY); // working in log space
+  if (dodfunc) esl_vec_DSet(dnlogp, dim, 0.0); 
   ESL_ALLOC(Hi, sizeof(double)*Kg);
  
   for (s = 0; s < msa->nseq; s++) {
@@ -484,7 +440,7 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
     // Initialize
     sq   = msa->ax[s];
     resi = sq[i+1];
-    lwgt = log(msa->wgt[s]);
+    wgt  = msa->wgt[s];
    
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
@@ -493,59 +449,47 @@ potts_NLogp_APLM_Packed(int i, int np, double *p, PT *pt, ESL_MSA *msa, double *
     
     // the function
     if (dofunc)
-      nlogp += msa->wgt[s] * (-Hi[resi] + logzi);
+      nlogp += wgt * (-Hi[resi] + logzi);
     
      // the gradient
     if (dodfunc == FALSE) continue;
     for (a = 0; a < Kg; a++) {
-      logadd = Hi[a]-logzi+lwgt;
+      add = wgt * exp(Hi[a]-logzi);
       
       // derivative respect to hi(a)
-      dnlogp[a] = e2_DLogsum(dnlogp[a], logadd);
+      dnlogp[a] += add;
      
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
-	resj      = sq[j+1];
- 	x         = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
-	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	resj       = sq[j+1];
+ 	x          = APLMIDXL(j,Kg) + IDX(a,resj,Kg);
+	dnlogp[x] += add;
       }
       for (j = i+1; j < L; j ++) {
-	resj      = sq[j+1];
-	x         = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
-	dnlogp[x] = e2_DLogsum(dnlogp[x], logadd);
+	resj       = sq[j+1];
+	x          = APLMIDXG(j,Kg) + IDX(a,resj,Kg);
+	dnlogp[x] += add;
       }
     }
+
+    // one more term to the gradient
+    // derivative respect to hi(resi)
+    dnlogp[resi] -= wgt;
+    
+    // derivative respect to eij(resi,resj)
+    for (j = 0; j < i; j ++) {
+      resj       = sq[j+1];
+      x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
+      dnlogp[x] -= wgt;
+    }
+    for (j = i+1; j < L; j ++) {
+      resj       = sq[j+1];
+      x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
+      dnlogp[x] -= wgt;
+    }      
     
   } // for all sequences
   
-  // one more term to the gradient
-  if (dodfunc) {
-    esl_vec_DExp(dnlogp, dim); // first exponentiate
-    
-    for (s = 0; s < msa->nseq; s++) {
-      
-      // Initialize
-      sq   = msa->ax[s];
-      resi = sq[i+1];
-      wgt  = msa->wgt[s];
-      
-      // derivative respect to hi(a)
-      dnlogp[resi] -= wgt;
-      
-      // derivative respect to eij(a,b)
-      for (j = 0; j < i; j ++) {
-	resj       = sq[j+1];
-	x          = APLMIDXL(j,Kg) + IDX(resi,resj,Kg);
-	dnlogp[x] -= wgt;
-      }
-      for (j = i+1; j < L; j ++) {
-	resj       = sq[j+1];
-	x          = APLMIDXG(j,Kg) + IDX(resi,resj,Kg);
-	dnlogp[x] -= wgt;
-      }      
-    }
-  }
- 
   // l2-regularization
   if (dofunc) 
     nlogp += potts_aplm_regularize_l2_packed(i, p, pt);
