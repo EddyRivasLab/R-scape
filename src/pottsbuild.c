@@ -26,7 +26,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define PACKED  1
+#define PACKED  0
 #define VERBOSE 1
 #define MYCGD   1
 
