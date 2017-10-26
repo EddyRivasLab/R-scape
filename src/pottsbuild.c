@@ -241,7 +241,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  neff;
   int     status;
 
-  tol = 1e-3; // ad hoc compromise for good time
+  tol = 1e-4; // ad hoc compromise for good time
 
   e2_DLogsumInit();
 
@@ -263,7 +263,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
      break;
   case PLM:
-    stol = 1.0;
+    stol = 0.5;
     // follows gremling_v2.1
     pt->muh = 0.01 * msa->alen; // scaled by length
     pt->mue = 0.20 * msa->alen;
@@ -272,7 +272,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    stol = 0.1;
+    stol = 0.5;
 #if 0 // follows plmDCA_asymmetric_v2
     neff = esl_vec_DSum(msa->wgt, msa->nseq);
     if (neff < 500) { // scaled by number of sequences
