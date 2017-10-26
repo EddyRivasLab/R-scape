@@ -114,8 +114,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
 	for (j = i+1; j < L; j ++) {
 	  resj = sq[j+1];
 	  gr->e[i][j][IDX(a,resj,Kg)] += add;
-	}
-      
+	}      
 	for (j = 0; j < i; j ++) {
 	  resj = sq[j+1];
 	  gr->e[j][i][IDX(resj,a,Kg)] += add;
@@ -132,7 +131,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
 	gr->e[i][j][IDX(resi,resj,Kg)] -= wgt;
       }      
       for (j = 0; j < i; j ++) {
-	resj       = sq[j+1];
+	resj = sq[j+1];
 	gr->e[j][i][IDX(resj,resi,Kg)] -= wgt;
       }      
       
@@ -148,7 +147,8 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
   
   if (dodfunc) {
     for (i = 0; i < L; i ++) {     
-      for (a = 0; a < Kg; a++) gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
+      for (a = 0; a < Kg; a++)
+	gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
       
       for (j = 0; j < i; j ++)
 	for (a = 0; a < Kg; a++)
@@ -204,7 +204,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     // Initialize
     sq   = msa->ax[s];
     resi = sq[i+1];
-    wgt = msa->wgt[s];
+    wgt  = msa->wgt[s];
     
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
@@ -255,13 +255,13 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     nlogp += potts_aplm_regularize_l2(i, pt);
   
   if (dodfunc) {
-    for (a = 0; a < Kg; a++) gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
+    for (a = 0; a < Kg; a++)
+      gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
     
     for (j = 0; j < i; j ++)
       for (a = 0; a < Kg; a++)
 	for (b = 0; b < Kg; b++) 
 	  gr->e[i][j][IDX(a,b,Kg)] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
-    
     for (j = i+1; j < L; j ++)
       for (a = 0; a < Kg; a++)
 	for (b = 0; b < Kg; b++) 

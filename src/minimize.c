@@ -380,6 +380,86 @@ brent(double *ori, double *dir, int n,
   ESL_DPRINTF2(("xx=%10.8f fx=%10.1f\n", x, fx));
 }
 
+#if 0
+/* Armijo():
+ * ER, Wed Oct 25 23:42:41 EDT 2017 [Cambridge]
+ *
+ * Purpose:   Backtracking linesearch to satisfy Armijo condition.
+ *            Derived from ArmijoBacktracking.m by Mark Schmidt
+ *
+ *
+ *
+ * Args:      x       - n-vector 
+ *            ret_f   - f(x)
+ *            g       - the gradien of f(x)
+ *            d       - direction vector we're following from x
+ *            n       - dimensionality of x, g, and d
+ *            c1      - coefficient for the Armijo condition
+ *            ret_t   - optRETURN: the step size
+ *
+ * Returns:   (void)
+ *
+ * Reference: 
+ */
+static int Armijo(double *x, double *ret_f, double *g, double *d, int n, double c1,
+		  double (*bothfunc)(double *, int, void *, double *), void *prm,
+		  double *ret_t, double tol, char *errbuf, int verbose)
+{
+  double finit = *ret_f;                  // initial f
+  double dginit = esl_vec_Ddot(d, g, n);  // initial d'*g
+  double f;
+  double dg;
+  double width;
+  double dec = 0.5;
+  double inc = 2.1;
+  double t = *ret_t;          // initial step size
+  int    nit = 0;
+  int    status;
+  
+  /* Check inputs */
+  if (t     <= 0.) ESL_EXCEPTION(eslENORESULT, "Step size is negative");
+  if (dginit > 0.) ESL_EXCEPTION(eslENORESULT, "Not a descent direction");
+  
+  while (1) {
+    //new x, f, g
+    esl_vec_DAddScaled(x, d, t, n);  
+    f = (*bothfunc)(x, n, prm, g); 
+    nit ++;
+      
+      if (f > finit + t*c1*dginit) {
+	width = dec;
+      } else {
+	/* The sufficient decrease condition (Armijo condition) */
+	if (lsopt == LINESEARCH_BACKTRACKING_ARMIJO) // Exit with the Armijo condition
+	  return eslOK;
+	
+	/* Check the Wolfe condition */
+	dg = esl_vec_ddot(d, g, n);
+	if (dg < c2 * dginit) {
+	  width = inc;
+	}
+	else {
+	  if(lsopt == LINESEARCH_BACKTRACKING_WOLFE) //Exit with the regular Wolfe condition
+	    return eslOK;
+	  
+	  /* Check the strong Wolfe condition */
+	  if (dg <= -c2 * dginit) return eslOK;
+	  width = dec;
+	}
+      }
+      
+      if (t   < min_step) esl_XFAIL(eslFAIL, errbuf, "step reached the min value");
+      if (t   > max_step) esl_XFAIL(eslFAIL, errbuf, "step reached the max value");
+      if (nit > maxiter)  esl_XFAIL(eslFAIL, errbuf, "reached is the max number of iterations");
+      
+      t *= width;
+    }
+    
+    return eslOK;
+}
+
+#endif
+
 /* Function:  esl_min_ConjugateGradientDescent()
  * Incept:    SRE, Wed Jun 22 08:49:42 2005 [St. Louis]
  *
