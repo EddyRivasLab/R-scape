@@ -30,8 +30,6 @@
 #define VERBOSE 1
 #define MYCGD   1
 
-#define INITGT  0
-
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
 static int             optimize_plm_unpack_paramvector       (double *p,          int np, struct optimize_data *data);
@@ -55,7 +53,7 @@ static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsf
 
 
 PT *
-potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,
+potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, PTINIT ptinit, FILE *pottsfp,
 	    float tol, char *errbuf, int verbose)
 {
   PT     *pt = NULL;
@@ -71,12 +69,22 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
 
   // Initialize
-#if INITGT
-  status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
-#else
-  status = potts_InitZero(pt, errbuf, verbose);
-#endif
-  //status = potts_InitGaussian(r, pt, 0., 1.0, errbuf, verbose);
+  switch(ptinit) {
+  case INIT_ZERO:
+     status = potts_InitZero(pt, errbuf, verbose);
+    break;
+  case INIT_GAUSS:
+    status = potts_InitGaussian(r, pt, 0., 1.0, errbuf, verbose);
+    break;
+  case INIT_GREM:
+    status = potts_InitGremlin(r, msa, pt, tol, errbuf, verbose);
+    break;
+  case INIT_GT:
+    status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
+    break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "unknown potts init type");
+  }
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
   /* init */
@@ -349,33 +357,56 @@ potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *err
 
 
 int
-potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
+potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *errbuf, int verbose)
 {
-  struct mutual_s *mi = NULL;
-  int              L = pt->L;
-  int              K = msa->abc->K;
-  int              i;
-  int              a;
-  int              status;
+  double **p = NULL;
+  double   subs;
+  double   pseudo = 1.;
+  int      L      = pt->L;
+  int      K      = msa->abc->K;
+  int      Kg     = pt->Kg;
+  int      s;
+  int      i;
+  int      resi;
+  int      a;
+  int      status;
 
-   mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
-  if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
+  // calculate frequecies per position pi
+  ESL_ALLOC(p,    sizeof(double *)*L);
+  ESL_ALLOC(p[0], sizeof(double  )*L*Kg);
+  for (i = 1; i < L; i ++) p[i] = p[0] + i*Kg;
 
-  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, FALSE, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
+  // init pi to pseudocounts
+  for (i = 0; i < L; i ++) esl_vec_DSet(p[i], Kg, pseudo);
 
-  potts_InitZero(pt, errbuf, verbose);
-
-  // init hi[a] to log(pi[a])
-  for (i = 0; i < L; i++)     
-    for (a = 0; a < K; a ++)
-      pt->h[i][a] = log(mi->pm[i][a]);
+  // add counts (including gaps)
+  for (i = 0; i < L; i ++) {
+    for (s = 0; s < msa->nseq; s ++) {
+      resi = msa->ax[s][i+1];
+      if (resi < 0 || resi > Kg) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", resi);
+      p[i][resi] += msa->wgt[s];
+    }
+    
+    // normalize
+    esl_vec_DNorm(p[i], Kg);
+  }
   
-  corr_Destroy(mi);
+  potts_InitZero(pt, errbuf, verbose);
+  
+  // init hi[a] to log(pi[a]) - log(pi[-])
+  for (i = 0; i < L; i++) {
+    subs = log(p[i][K]);
+    for (a = 0; a < K; a ++)
+      pt->h[i][a] = log(p[i][a]) - subs;
+  }
+
+  free(p[0]);
+  free(p);
   return eslOK;
   
  ERROR:
-  if (mi) corr_Destroy(mi);
+  if (p[0]) free(p[0]);
+  if (p)    free(p);
   return status;
 }
 

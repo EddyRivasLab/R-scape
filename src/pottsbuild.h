@@ -44,6 +44,12 @@ typedef struct potts_s {
   int           Kg2;
 } PT;
 
+typedef enum {
+  INIT_ZERO  = 0,
+  INIT_GAUSS = 1,
+  INIT_GREM  = 2,
+  INIT_GT    = 3,
+} PTINIT;
 
 struct optimize_data {
   ESL_RANDOMNESS *r;
@@ -56,13 +62,13 @@ struct optimize_data {
   int             verbose;
 };
 
-extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,
+extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, PTINIT ptinit, FILE *pottsfp,
 			 float tol, char *errbuf, int verbose);
 extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain, PTSCTYPE ptsctype);
 extern void  potts_Destroy(PT *pt);
 extern int   potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose);
 extern int   potts_InitZero(PT *pt, char *errbuf, int verbose);
-extern int   potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
+extern int   potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *errbuf, int verbose);
 extern int   potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *errbuf, int verbose);
 extern int   potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
 extern int   potts_OptimizeCGD_PLM (PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose);

@@ -1340,6 +1340,66 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
 }
 
 
+
+int
+esl_msaweight_Gremlin(ESL_MSA *msa, double reweight, char *errbuf, int verbose)
+{
+  ESL_DMATRIX *hamm = NULL;
+  double       diff;
+  double       val;
+  int          nsq = msa->nseq;
+  int          L   = msa->alen;
+  int          K   = msa->abc->K;
+  int          Kg  = K+1;
+  int          s1, s2;
+  int          res1i, res2i;
+  int          i;
+  int          status;
+
+  esl_vec_DSet(msa->wgt, nsq, 0.);
+
+  // The Hamming distance
+  hamm = esl_dmatrix_Create(nsq, nsq);
+  esl_dmatrix_SetZero(hamm);
+  
+  for (s1 = 0; s1 < nsq-1; s1 ++) 
+    for (s2 = s1+1; s2 < nsq; s2 ++) {
+      diff = 0.;
+      
+      for (i = 0; i < L; i ++) {
+	res1i = msa->ax[s1][i+1];
+ 	res2i = msa->ax[s2][i+1];
+	if (res1i < 0 || res1i > K) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", res1i);
+	if (res2i < 0 || res2i > K) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", res2i);
+	if (res1i != res2i) diff += 1.;
+      }     
+      hamm->mx[s1][s2] = hamm->mx[s2][s1] = diff/(double)L;
+    }
+  
+  // weight of sequences a la gremlin
+  //
+  // if hamm(s,s') < reweight -> val(s,s') = 1
+  // else                        val(s.s') = 0
+  //
+  // wgt(s) = 1 / ( 1 + \sum_s' val(s,s') )
+  //
+  for (s1 = 0; s1 < nsq; s1 ++) {
+    val = 0.;
+    
+    for (s2 = 0; s2 < nsq; s2 ++) 
+      val += (hamm->mx[s1][s2]<reweight && s1!=s2)? 1.0 : 0.0 ;
+ 
+    msa->wgt[s1] = 1./(1.+val);
+  }
+  
+  esl_dmatrix_Destroy(hamm);
+  return eslOK;
+
+ ERROR:
+  if (hamm) esl_dmatrix_Destroy(hamm);
+  return status;
+}
+
 static int
 shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *shallmsa, int *usecol, char *errbuf, int verbose)
 {

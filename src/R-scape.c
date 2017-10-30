@@ -170,6 +170,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           ptmue;
   PTTRAIN          pttrain;
   PTSCTYPE         ptsctype;
+  PTINIT           ptinit;
   PT              *pt;
   char            *outpottsfile;
   FILE            *outpottsfp;
@@ -556,6 +557,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // potts model
   cfg.pt      = NULL;
   cfg.pttrain = NONE;
+  cfg.ptinit  = INIT_GREM;
+  
   if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
   else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
   else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pttrain = APLM;
@@ -1144,11 +1147,31 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   ESL_MSA  *msa = *ret_msa;
   ESL_MSA  *YSmsa = NULL;
   char     *outname = NULL;
+  double    reweight = 0.2;
+  double    neff = 0.;
   int       nshuffle;
   int       analyze;
+  int       s;
   int       status;
   
   if (msa == NULL) return eslOK;
+
+  /* weigth the sequences */
+  if (cfg->covmethod == POTTS) {
+    status = esl_msaweight_Gremlin(msa, reweight, cfg->errbuf, cfg->verbose);
+    if (status != eslOK)  esl_fatal(cfg->errbuf); 
+  }
+  else {
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+    else                             esl_msaweight_PB(msa);
+  }  
+  if (1||cfg->verbose) {
+    for (s = 0; s < msa->nseq; s ++) {
+      neff += msa->wgt[s];
+      //printf("s %d wgt %f neff %f\n", s, msa->wgt[s], neff);
+    }
+    printf("Nseq %d Neff %f\n", msa->nseq, neff);
+  }
   
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
@@ -1210,7 +1233,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
     // POTTS: calculate the couplings
   if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->ptinit, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
     if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
   
@@ -1391,10 +1414,6 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
 
-  /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
-  else                             esl_msaweight_PB(msa);
-
   /* main function */
   data.outfp         = NULL;
   data.outsrtfp      = NULL;
@@ -1473,10 +1492,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   corr_Reuse(mi, (cfg->mode == RANSS)? TRUE : FALSE, cfg->covtype, cfg->covclass);
   
-  /* weigth the sequences */
-  if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
-  else                             esl_msaweight_PB(msa);
-
   /* print to stdout */
   if (cfg->verbose) {
     MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -1622,6 +1637,10 @@ null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   for (s = 0; s < nshuffle; s ++) {
     msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
 
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
+
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
@@ -1685,6 +1704,10 @@ null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
     msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
 
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
+
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
@@ -1738,6 +1761,10 @@ null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
 
    for (s = 0; s < nshuffle; s ++) {
      msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
+
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
 
      if (s == 0) {
        status = calculate_width_histo(go, cfg, shmsa);
@@ -1796,6 +1823,10 @@ null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RA
    */
    for (s = 0; s < nshuffle; s ++) {
      shmsa = esl_msa_Clone(msa);
+
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
 
      if (s == 0) {
        status = calculate_width_histo(go, cfg, shmsa);
@@ -1858,6 +1889,10 @@ null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     msamanip_ShuffleColumns     (cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
     msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
+
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
 
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
@@ -1936,6 +1971,10 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
+
+    /* weigth the sequences */
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
+    else                             esl_msaweight_PB(shmsa);
 
     /* output null msas to file if requested */
     if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);

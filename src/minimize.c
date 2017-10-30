@@ -581,10 +581,9 @@ static int Wolfe(double *ori, double fori, double *g, double *dori, int n,
   dg = esl_vec_DDot(dori, g, n);
    
   while (nit < MAXITER) {
-
     if ( (f        <  fori + c1*t*dgori) && // Armijo condition 
 	 (fabs(dg) <= -c2*dgori)            // strong Wolfe conditions
-	) found = TRUE;  
+	 ) { found = TRUE;  break; }
 
     if (!found) {
       min_step = t + 0.01 * (t-t_prv);
@@ -594,7 +593,7 @@ static int Wolfe(double *ori, double fori, double *g, double *dori, int n,
      // calculate a new step (t) by cubic interpolation
       t_cur = t;
       t     = cubic_interpolation(t_prv, f_prv, dg_prv, t_cur, f, dg, min_step, max_step);
-      printf("^^t %f || %f %f %f || %f %f %f\n", t, t_prv, f_prv, dg_prv, t_cur, f, dg);
+      printf("^^wolfe it %d t %f || %f %f %f || %f %f %f\n", nit, t, t_prv, f_prv, dg_prv, t_cur, f, dg);
 
       t_prv  = t_cur;
       f_prv  = f;
@@ -607,8 +606,7 @@ static int Wolfe(double *ori, double fori, double *g, double *dori, int n,
       dg = esl_vec_DDot(dori, g, n);
       
       nit ++;
-    }
-    
+    } 
   }
   if (nit == MAXITER) ESL_EXCEPTION(eslERANGE, "reached is the max number of iterations");
  
