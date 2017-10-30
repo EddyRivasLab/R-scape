@@ -80,7 +80,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
   
   // Initialize
   if (dofunc)  nlogp = 0.0;
-  if (dodfunc) potts_AssignZero(gr, errbuf, verbose);
+  if (dodfunc) potts_InitZero(gr, errbuf, verbose);
   
   ESL_ALLOC(Hi, sizeof(double)*Kg);
   
@@ -99,7 +99,8 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
       // and zi    = \sum_a exp H^s_i[a]
       zi = potts_Zi(i, pt, sq, Hi);
        
-      // the function 
+      // the function
+      if (i ==0 && s == 0) printf("^^func %f| resi %d wgt %f Hi %f logz %f\n", wgt * (-Hi[resi] + log(zi)), resi, wgt, Hi[resi], log(zi));
       if (dofunc) nlogpi += wgt * (-Hi[resi] + log(zi));
       
       // the gradient
@@ -196,7 +197,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
 
   // Initialize
   if (dofunc)  nlogp = 0.0;
-  if (dodfunc) potts_AssignZero(gr, errbuf, verbose);
+  if (dodfunc) potts_InitZero(gr, errbuf, verbose);
   ESL_ALLOC(Hi, sizeof(double)*Kg);
 
   for (s = 0; s < msa->nseq; s++) {

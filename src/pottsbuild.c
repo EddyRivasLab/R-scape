@@ -53,184 +53,6 @@ static int             progress(void *instance, const lbfgsfloatval_t *x, const 
 				int n, int k, int ls);
 static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step);
 
-int
-potts_AssignZero(PT *pt, char *errbuf, int verbose)
-{
-  int L  = pt->L;
-  int Kg = pt->Kg;
-  int i, j;
-  int a, b;
-  int status;
-  
-  for (i = 0; i < L; i++) {
-    for (a = 0; a < Kg; a ++)
-      pt->h[i][a] = 0.0;
-    
-    for (j = i; j < L; j++)
-      for (a = 0; a < Kg; a ++) 
-	for (b = 0; b < Kg; b ++) 
-	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = 0.0;
-  }
-
-  return eslOK;
-
- ERROR:
-  return status;
-}
-
-int
-potts_AssignGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *errbuf, int verbose)
-{
-  int L  = pt->L;
-  int Kg = pt->Kg;
-  int i, j;
-  int a, b;
-  int status;
-  
-  for (i = 0; i < L; i++) {
-    for (a = 0; a < Kg; a ++)
-      pt->h[i][a] = esl_rnd_Gaussian(r, mu, sigma);
-    
-    for (j = i; j < L; j++)
-      for (a = 0; a < Kg; a ++) 
-	for (b = 0; b < Kg; b ++) {
-	  pt->e[i][j][IDX(a,b,Kg)] = (i==j)? 0 : esl_rnd_Gaussian(r, mu, sigma);
-	  pt->e[j][i][IDX(b,a,Kg)] = pt->e[i][j][IDX(a,b,Kg)];
-      }
-  }
-
-  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
-  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-
-  if (verbose) potts_Write(stdout, pt);
-
-  return eslOK;
-
- ERROR:
-  return status;
-}
-
-
-int
-potts_AssignGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
-{
-  struct mutual_s *mi = NULL;
-  double           exp;
-  double           obs;
-  double          *ggtx = NULL;
-  double           ggtt = 0.0;
-  double          *gtp = NULL;
-  double          *gtx = NULL;
-  double          *gtt = NULL;
-  double           pseudoc = 0.01;
-  double           gt;
-  double           gtp_l2norm;
-  int              L  = pt->L;
-  int              K  = pt->abc->K;
-  int              Kg = K+1;
-  int              i, j;
-  int              xi, xj;
-  int              a, b, ab;
-  int              dim = K*K;
-  int              status;
-
-  mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
-  if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
-
-  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, FALSE, tol, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-  
-  status = corr_CalculateGT_C16(mi, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  // ggtt
-  for (i = 0; i < L-1; i++) 
-    for (j = i+1; j < L; j++) 
-      ggtt += mi->COV->mx[i][j];
-  if (L > 1) ggtt /= (double)L * ((double)L-1.);
-  ggtt *= 2.;
-  
-  //ggtx
-  ESL_ALLOC(ggtx, sizeof(double) * L);
-  for (i = 0; i < L; i++) {
-    ggtx[i] = 0.0;
-    for (j = 0; j < L; j++) {
-      if (j != i) ggtx[i] += mi->COV->mx[i][j];
-    }
-    if (L > 1) ggtx[i] /= (double)L-1.;
-  }
-
-  ESL_ALLOC(gtx, sizeof(double) * dim * L);
-  ESL_ALLOC(gtt, sizeof(double) * dim);
-  for (a = 0; a < K; a ++) 
-    for (b = 0; b < K; b ++) {
-      ab      = IDX(a,b,K);
-      gtt[ab] = 0;
-      
-      for (i = 0; i < L; i++) {
-	xi      = i*dim + ab;
-	gtx[xi] = 0;
-	
-	for (j = 0; j < L; j++) {
-	  if (j==i) continue;
-	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
-	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
-	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
-	  
-	  gtx[xi] += gt;
-	  gtt[ab] += gt;
-	  
-	}
-	if (L > 1) gtx[xi] /= (double)L-1.;
-      }
-      if (L > 0) gtt[ab] /= (double)L;
-    }
-  
-  ESL_ALLOC(gtp, sizeof(double) * dim);
-  for (i = 0; i < L; i++) 
-    for (j = i+1; j < L; j++) {
-      
-      gtp_l2norm = 0;
-      
-      for (a = 0; a < K; a ++) 
-	for (b = 0; b < K; b ++) {
-	  
-	  ab  = IDX(a,b,K);
-	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
-	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
-	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
-	  
-	  xi = i*dim + ab;
-	  xj = j*dim + IDX(b,a,K);
-	  //gtp[ab] = gt - ((fabs(gtt[ab])>0)?gtx[xi]*gtx[xj]/gtt[ab]:0.);
-	  gtp[ab] = gt - ((fabs(ggtt)>0)?ggtx[i]*gtx[j]/ggtt:0.);
-	  gtp_l2norm += gtp[ab]*gtp[ab];
-	}
-      gtp_l2norm = sqrt(gtp_l2norm);
-      
-      for (a = 0; a < K; a ++) 
-	for (b = 0; b < K; b ++) 
-	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = (gtp_l2norm > 0)? gtp[IDX(a,b,K)]/gtp_l2norm : 0.0;
-    }
-  
-  for (i = 0; i < L; i++) 
-    for (a = 0; a < Kg; a ++) 
-      pt->h[i][a] = 0.;
-  
-  if (verbose) potts_Write(stdout, pt);
-  
-  free(gtp);
-  free(gtx);
-  free(ggtx);
-  corr_Destroy(mi);
-  return eslOK;
-  
- ERROR:
-  if (gtp)  free(gtp);
-  if (ggtx) free(ggtx);
-  if (mi)   corr_Destroy(mi);
-  return status;
-}
 
 PT *
 potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, FILE *pottsfp,
@@ -250,11 +72,11 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
 
   // Initialize
 #if INITGT
-  status = potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
+  status = potts_InitGT(r, msa, pt, tol, errbuf, verbose);
 #else
-  status = potts_AssignZero(pt, errbuf, verbose);
+  status = potts_InitZero(pt, errbuf, verbose);
 #endif
-  //status = potts_AssignGaussian(r, pt, 0., 1.0, errbuf, verbose);
+  //status = potts_InitGaussian(r, pt, 0., 1.0, errbuf, verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
   /* init */
@@ -466,6 +288,215 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   return eslOK;
 
  ERROR:
+  return status;
+}
+
+int
+potts_InitZero(PT *pt, char *errbuf, int verbose)
+{
+  int L  = pt->L;
+  int Kg = pt->Kg;
+  int i, j;
+  int a, b;
+  int status;
+  
+  for (i = 0; i < L; i++) {
+    esl_vec_DSet(pt->h[i], pt->Kg, 0.0);
+	
+    for (j = i; j < L; j++)
+      for (a = 0; a < Kg; a ++) 
+	for (b = 0; b < Kg; b ++) 
+	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = 0.0;
+  }
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *errbuf, int verbose)
+{
+  int L  = pt->L;
+  int Kg = pt->Kg;
+  int i, j;
+  int a, b;
+  int status;
+  
+  for (i = 0; i < L; i++) {
+    for (a = 0; a < Kg; a ++)
+      pt->h[i][a] = esl_rnd_Gaussian(r, mu, sigma);
+    
+    for (j = i; j < L; j++)
+      for (a = 0; a < Kg; a ++) 
+	for (b = 0; b < Kg; b ++) {
+	  pt->e[i][j][IDX(a,b,Kg)] = (i==j)? 0 : esl_rnd_Gaussian(r, mu, sigma);
+	  pt->e[j][i][IDX(b,a,Kg)] = pt->e[i][j][IDX(a,b,Kg)];
+      }
+  }
+
+  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
+  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
+
+  if (verbose) potts_Write(stdout, pt);
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+
+int
+potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
+{
+  struct mutual_s *mi = NULL;
+  int              L = pt->L;
+  int              K = msa->abc->K;
+  int              i;
+  int              a;
+  int              status;
+
+   mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
+  if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
+
+  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, FALSE, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  potts_InitZero(pt, errbuf, verbose);
+
+  // init hi[a] to log(pi[a])
+  for (i = 0; i < L; i++)     
+    for (a = 0; a < K; a ++)
+      pt->h[i][a] = log(mi->pm[i][a]);
+  
+  corr_Destroy(mi);
+  return eslOK;
+  
+ ERROR:
+  if (mi) corr_Destroy(mi);
+  return status;
+}
+
+int
+potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
+{
+  struct mutual_s *mi = NULL;
+  double           exp;
+  double           obs;
+  double          *ggtx = NULL;
+  double           ggtt = 0.0;
+  double          *gtp = NULL;
+  double          *gtx = NULL;
+  double          *gtt = NULL;
+  double           pseudoc = 0.01;
+  double           gt;
+  double           gtp_l2norm;
+  int              L  = pt->L;
+  int              K  = pt->abc->K;
+  int              Kg = K+1;
+  int              i, j;
+  int              xi, xj;
+  int              a, b, ab;
+  int              dim = K*K;
+  int              status;
+
+  mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
+  if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
+
+  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, FALSE, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  
+  status = corr_CalculateGT_C16(mi, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+
+  // ggtt
+  for (i = 0; i < L-1; i++) 
+    for (j = i+1; j < L; j++) 
+      ggtt += mi->COV->mx[i][j];
+  if (L > 1) ggtt /= (double)L * ((double)L-1.);
+  ggtt *= 2.;
+  
+  //ggtx
+  ESL_ALLOC(ggtx, sizeof(double) * L);
+  for (i = 0; i < L; i++) {
+    ggtx[i] = 0.0;
+    for (j = 0; j < L; j++) {
+      if (j != i) ggtx[i] += mi->COV->mx[i][j];
+    }
+    if (L > 1) ggtx[i] /= (double)L-1.;
+  }
+
+  ESL_ALLOC(gtx, sizeof(double) * dim * L);
+  ESL_ALLOC(gtt, sizeof(double) * dim);
+  for (a = 0; a < K; a ++) 
+    for (b = 0; b < K; b ++) {
+      ab      = IDX(a,b,K);
+      gtt[ab] = 0;
+      
+      for (i = 0; i < L; i++) {
+	xi      = i*dim + ab;
+	gtx[xi] = 0;
+	
+	for (j = 0; j < L; j++) {
+	  if (j==i) continue;
+	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
+	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
+	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
+	  
+	  gtx[xi] += gt;
+	  gtt[ab] += gt;
+	  
+	}
+	if (L > 1) gtx[xi] /= (double)L-1.;
+      }
+      if (L > 0) gtt[ab] /= (double)L;
+    }
+  
+  ESL_ALLOC(gtp, sizeof(double) * dim);
+  for (i = 0; i < L; i++) 
+    for (j = i+1; j < L; j++) {
+      
+      gtp_l2norm = 0;
+      
+      for (a = 0; a < K; a ++) 
+	for (b = 0; b < K; b ++) {
+	  
+	  ab  = IDX(a,b,K);
+	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
+	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
+	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
+	  
+	  xi = i*dim + ab;
+	  xj = j*dim + IDX(b,a,K);
+	  //gtp[ab] = gt - ((fabs(gtt[ab])>0)?gtx[xi]*gtx[xj]/gtt[ab]:0.);
+	  gtp[ab] = gt - ((fabs(ggtt)>0)?ggtx[i]*gtx[j]/ggtt:0.);
+	  gtp_l2norm += gtp[ab]*gtp[ab];
+	}
+      gtp_l2norm = sqrt(gtp_l2norm);
+      
+      for (a = 0; a < K; a ++) 
+	for (b = 0; b < K; b ++) 
+	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = (gtp_l2norm > 0)? gtp[IDX(a,b,K)]/gtp_l2norm : 0.0;
+    }
+  
+  for (i = 0; i < L; i++) 
+    for (a = 0; a < Kg; a ++) 
+      pt->h[i][a] = 0.;
+  
+  if (verbose) potts_Write(stdout, pt);
+  
+  free(gtp);
+  free(gtx);
+  free(ggtx);
+  corr_Destroy(mi);
+  return eslOK;
+  
+ ERROR:
+  if (gtp)  free(gtp);
+  if (ggtx) free(ggtx);
+  if (mi)   corr_Destroy(mi);
   return status;
 }
 

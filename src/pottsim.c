@@ -60,7 +60,7 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
   case PTP_GAUSS:
     pt = potts_Create(L, Kg, abc, 0.0, 0.0, NONE, SCNONE);
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error allocating GAUSS potts param");
-    status = potts_AssignGaussian(r, pt, 0.0, pottsigma, errbuf, verbose);
+    status = potts_InitGaussian(r, pt, 0.0, pottsigma, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error sampling GAUSS potts param");
     break;
   case PTP_FILE:
@@ -75,7 +75,7 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
     // make potts param based on contacts
     pt = potts_Create(msa->alen, Kg, abc, 0.0, 0.0, NONE, SCNONE);
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error allocating GAUSS potts param");
-    potts_AssignGT(r, msa, pt, tol, errbuf, verbose);
+    potts_InitGT(r, msa, pt, tol, errbuf, verbose);
     
     for (i = 0; i < L-1; i ++) 
       for (j = i+1; j < L; j ++) 
