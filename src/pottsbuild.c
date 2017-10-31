@@ -95,8 +95,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   case PLM:
     stol = 0.5;
     // follows gremling_v2.1
-    pt->muh = 0.01 * msa->alen; // scaled by length
-    pt->mue = 0.20 * msa->alen;
+    pt->muh = 0.01; 
+    pt->mue = 0.20 * msa->alen; // scaled by length
 
     status = potts_OptimizeCGD_PLM(pt, msa, tol, stol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
@@ -112,8 +112,8 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     pt->muh *= neff;    // scaled by neff
     pt->mue *= neff/2.;
 #else // gremlin's 
-    pt->muh = 0.01 * msa->alen; // scaled by length
-    pt->mue = 0.20 * msa->alen;
+    pt->muh = 0.01;
+    pt->mue = 0.20 * msa->alen; // scaled by length
 #endif
     
     status = potts_OptimizeCGD_APLM(pt, msa, tol, stol, errbuf, verbose);
