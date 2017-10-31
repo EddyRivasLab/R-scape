@@ -26,9 +26,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define PACKED  0
 #define VERBOSE 1
-#define MYCGD   1
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
@@ -53,21 +51,21 @@ static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsf
 
 
 PT *
-potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTSCTYPE ptsctype, PTINIT ptinit, FILE *pottsfp,
-	    float tol, char *errbuf, int verbose)
+potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTMIN ptmin, PTSCTYPE ptsctype, PTREG ptreg, PTINIT ptinit,
+	    FILE *pottsfp, float tol, char *errbuf, int verbose)
 {
   PT     *pt = NULL;
   double  stol;
   double  neff;
   int     status;
-
+  
   tol = 1e-4; // ad hoc compromise for good time
-
+  
   e2_DLogsumInit();
-
-  pt = potts_Create(msa->alen, msa->abc->K+1, msa->abc, ptmuh, ptmue, pttrain, ptsctype);
+  
+  pt = potts_Create(msa->alen, msa->abc->K+1, msa->abc, ptmuh, ptmue, pttrain, ptmin, ptsctype, ptreg);
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error creating potts");
-
+  
   // Initialize
   switch(ptinit) {
   case INIT_ZERO:
@@ -87,38 +85,51 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   }
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
 
-  /* init */
+  // Regularization
   switch (pt->train) {
-  case NONE:
-   ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
-     break;
-  case PLM:
-    stol = 0.5;
+  case REGNONE:
+    pt->muh = 0.0; 
+    pt->mue = 0.0;
+    break;
+  case REGL2: // already assigned - constants
+  case REGL1:
+    break;
+  case REGL2_GREM:
     // follows gremling_v2.1
     pt->muh = 0.01; 
     pt->mue = 0.20 * msa->alen; // scaled by length
-
-    status = potts_OptimizeCGD_PLM(pt, msa, tol, stol, errbuf, verbose);
+    break;
+  case REGL2_PLMD:
+    // follows plmDCA_asymmetric_v2
+    neff = esl_vec_DSum(msa->wgt, msa->nseq);
+    if (neff < 500) pt->mue = 0.1 - (0.1-0.01)*neff/500; // scaled by the # of sequences
+    else            pt->mue = 0.01; 
+    pt->muh = pt->mue;
+    
+    // scaled by neff
+    pt->muh *= neff;    
+    pt->mue *= neff/2.;
+    break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "unknown regularization type");
+    break;
+  }
+  
+  // Train
+  switch (pt->train) {
+  case NONE:
+    ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
+    break;
+  case PLM:
+    stol = 0.5;
+    status = potts_Optimize_PLM(pt, msa, tol, stol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    stol = 0.5;
-#if 0 // follows plmDCA_asymmetric_v2
-    neff = esl_vec_DSum(msa->wgt, msa->nseq);
-    if (neff < 500) { // scaled by number of sequences
-      pt->muh = 0.1 - (0.1-0.01)*neff/500; 
-      pt->mue = pt->muh;
-    }
-    pt->muh *= neff;    // scaled by neff
-    pt->mue *= neff/2.;
-#else // gremlin's 
-    pt->muh = 0.01;
-    pt->mue = 0.20 * msa->alen; // scaled by length
-#endif
-    
-    status = potts_OptimizeCGD_APLM(pt, msa, tol, stol, errbuf, verbose);
+    stol = 0.5;    
+    status = potts_Optimize_APLM(pt, msa, tol, stol, errbuf, verbose);
     //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
-     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
     break;
   case ML:
   case GINV:
@@ -127,16 +138,16 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     ESL_XFAIL(eslFAIL, errbuf, "error optimization method not implemented");
     break;
   }
-
+  
   if (pottsfp) potts_Write(pottsfp, pt);
- return pt;
-
+  return pt;
+  
  ERROR:
- return NULL;
+  return NULL;
 }
 
 PT *
-potts_Create(int64_t L, int Kg, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain, PTSCTYPE  ptsctype)
+potts_Create(int64_t L, int Kg, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain, PTMIN ptmintype, PTSCTYPE  ptsctype, PTREG  ptreg)
 {
   PT  *pt  = NULL;
   int  Kg2 = Kg * Kg;
@@ -146,14 +157,16 @@ potts_Create(int64_t L, int Kg, ESL_ALPHABET *abc, double muh, double mue, PTTRA
   if (abc && Kg != abc->K+1) return NULL;
   
   ESL_ALLOC(pt, sizeof(PT));
-  pt->L      = L;
-  pt->abc    = abc;
-  pt->Kg     = abc->K+1;
-  pt->Kg2    = Kg*Kg;
-  pt->muh    = muh;
-  pt->mue    = mue;
-  pt->train  = pttrain;
-  pt->sctype = ptsctype;
+  pt->L       = L;
+  pt->abc     = abc;
+  pt->Kg      = abc->K+1;
+  pt->Kg2     = Kg*Kg;
+  pt->muh     = muh;
+  pt->mue     = mue;
+  pt->train   = pttrain;
+  pt->mintype = ptmintype;
+  pt->sctype  = ptsctype;
+  pt->regtype = ptreg;
 
   ESL_ALLOC(pt->e,            sizeof(double **) * L);
   ESL_ALLOC(pt->h,            sizeof(double  *) * L);
@@ -355,7 +368,15 @@ potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sigma, char *err
   return status;
 }
 
-
+// This is how gremlin v2.1 inits the weights in function LLM2_initbias.m
+//
+// eij(ab) = 0
+// hi(a)   = log(p[i][a]) - log(p[a][-])
+// hi(-)   = 0
+//
+// the p[i][a] are calculated including gaps, and not taking the weights of the
+//             the sequences into account.
+//
 int
 potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *errbuf, int verbose)
 {
@@ -379,12 +400,12 @@ potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *err
   // init pi to pseudocounts
   for (i = 0; i < L; i ++) esl_vec_DSet(p[i], Kg, pseudo);
 
-  // add counts (including gaps)
+  // add counts (including gaps), just counts (no sq weights)
   for (i = 0; i < L; i ++) {
     for (s = 0; s < msa->nseq; s ++) {
       resi = msa->ax[s][i+1];
-      if (resi < 0 || resi > Kg) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", resi);
-      p[i][resi] += msa->wgt[s];
+      if (resi < 0 || resi > K) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", resi);
+      p[i][resi] += 1.0;
     }
     
     // normalize
@@ -512,9 +533,11 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = (gtp_l2norm > 0)? gtp[IDX(a,b,K)]/gtp_l2norm : 0.0;
     }
   
-  for (i = 0; i < L; i++) 
-    for (a = 0; a < Kg; a ++) 
-      pt->h[i][a] = 0.;
+  for (i = 0; i < L; i++) {
+    pt->h[i][K] = 0.;
+    for (a = 0; a < K; a ++) 
+      pt->h[i][a] = log(mi->pm[i][a]);
+  }
   
   if (verbose) potts_Write(stdout, pt);
   
@@ -532,7 +555,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 }
 
 int
-potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
+potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
   PT                   *gr   = NULL;           /* the gradient */
@@ -552,7 +575,7 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf,
   ESL_ALLOC(p,   sizeof(double) * (np+1));
   ESL_ALLOC(u,   sizeof(double) * (np+1));
   ESL_ALLOC(wrk, sizeof(double) * (np+1) * 4);
-  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, SCNONE);
+  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, MINNONE, SCNONE, REGNONE);
   
  /* Copy shared info into the "data" structure
    */
@@ -571,19 +594,29 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf,
    */
   optimize_bracket_define_direction(u, (int)np, &data);
   
-#if MYCGD
-  status = min_ConjugateGradientDescent(p, u, np, 
-					&optimize_potts_func_plm, &optimize_potts_bothfunc_plm,
-					(void *) (&data),					   
-					tol, stol, wrk, &logp);
-#else
-  status = esl_min_ConjugateGradientDescent(p, u, np, 
-					    &optimize_potts_func_plm, &optimize_potts_dfunc_plm,
-					    (void *) (&data), 
-					    tol, wrk, &logp);
-#endif
-  if (status != eslOK) 
-    esl_fatal("potts_OptimizeCGD_PLM(): ConjugateGradientDescent failed");	
+  switch(pt->mintype) {
+  case MINNONE:
+      break;
+  case CGD_WOLFE:
+    status = min_ConjugateGradientDescent(p, u, np,
+                                          &optimize_potts_func_plm, &optimize_potts_bothfunc_plm,
+                                          (void *) (&data),					   
+                                          tol, stol, wrk, &logp);
+    break;
+  case CGD_BRENT:
+    status = esl_min_ConjugateGradientDescent(p, u, np,
+					      &optimize_potts_func_plm, &optimize_potts_dfunc_plm,
+					      (void *) (&data), 
+					      tol, wrk, &logp);
+    break;
+  case LBFGS:
+    ESL_XFAIL(eslFAIL, errbuf, "LBFGS not implemented yet");
+    break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "unknown minimization method");
+    break;
+  }
+  if (status != eslOK) esl_fatal("potts_Optimize_PLM() failed");	
   
   /* unpack the final parameter vector */
   optimize_plm_unpack_paramvector(p, (int)np, &data);
@@ -592,16 +625,16 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf,
   /* transform results to the zero-sum gauge */
   status = potts_GaugeZeroSum(pt, errbuf,  verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-
+  
   if (verbose) potts_Write(stdout, pt);
-
+  
   /* clean up */
   if (gr  != NULL) potts_Destroy(gr);
   if (u   != NULL) free(u);
   if (p   != NULL) free(p);
   if (wrk != NULL) free(wrk);
   return eslOK;
-
+  
  ERROR:
   if (gr  != NULL) potts_Destroy(gr);
   if (p   != NULL) free(p);
@@ -612,9 +645,9 @@ potts_OptimizeCGD_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf,
 
 
 int
-potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
+potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
-  struct optimize_data   data;
+  struct optimize_data  data;
   PT                   *gr   = NULL;           /* the gradient */
   double                *p   = NULL;	       /* parameter vector                        */
   double                *u   = NULL;           /* max initial step size vector            */
@@ -626,15 +659,15 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf
   int                    np;
   int                    i;
   int                    status;
-
+  
   np = APLMDIM(L,Kg,Kg2);     /* the variables hi eij */
   
   /* allocate */
   ESL_ALLOC(p,   sizeof(double) * (np+1));
   ESL_ALLOC(u,   sizeof(double) * (np+1));
   ESL_ALLOC(wrk, sizeof(double) * (np+1) * 4);
-  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, SCNONE);
-
+  gr = potts_Create(msa->alen, Kg, pt->abc, 0.0, 0.0, NONE, MINNONE, SCNONE, REGNONE);
+  
   for (i = 0; i < L; i ++) {
     /* Copy shared info into the "data" structure
      */
@@ -645,44 +678,54 @@ potts_OptimizeCGD_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf
     data.tol     = tol;
     data.errbuf  = errbuf;
     data.verbose = verbose;
-
+    
     /* Create the parameter vector.
      */
     optimize_aplm_pack_paramvector(p, (int)np, &data);
-  
+    
     /* pass problem to the optimizer
      */
     optimize_bracket_define_direction(u, (int)np, &data);
-
-#if MYCGD
-    status = min_ConjugateGradientDescent(p, u, np, 
-					  &optimize_potts_func_aplm, &optimize_potts_bothfunc_aplm, 
-					  (void *) (&data), 
-					  tol, stol, wrk, &logp);
-#else
-    status = esl_min_ConjugateGradientDescent(p, u, np, 
-    					      &optimize_potts_func_aplm, &optimize_potts_dfunc_aplm,
-    					      (void *) (&data), 
-    					      tol, wrk, &logp);
-#endif
-    if (status != eslOK) 
-      esl_fatal("potts_OptimizeCGD_APLM(): ConjugateGradientDescent failed");	
+    
+    switch(pt->mintype) {
+    case MINNONE:
+      break;
+    case CGD_WOLFE:
+      status = min_ConjugateGradientDescent(p, u, np,
+					    &optimize_potts_func_aplm, &optimize_potts_bothfunc_aplm,
+					    (void *) (&data),					   
+					    tol, stol, wrk, &logp);
+      break;
+    case CGD_BRENT:
+      status = esl_min_ConjugateGradientDescent(p, u, np,
+						&optimize_potts_func_aplm, &optimize_potts_dfunc_aplm,
+						(void *) (&data), 
+						tol, wrk, &logp);
+      break;
+    case LBFGS:
+      ESL_XFAIL(eslFAIL, errbuf, "LBFGS APLM not implemented yet");
+      break;
+    default:
+      ESL_XFAIL(eslFAIL, errbuf, "unknown APLM minimization method");
+      break;
+    }
+    if (status != eslOK) esl_fatal("potts_Optimize_APLM() failed");	
     
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
-    if (1||verbose) printf("END POTTS CGD APLM OPTIMIZATION for position %d\n", i);
+    if (1||verbose) printf("END POTTS APLM OPTIMIZATION for position %d\n", i);
   }
-  if (verbose) printf("END POTTS CGD APLM OPTIMIZATION\n");
-
+  if (verbose) printf("END POTTS APLM OPTIMIZATION\n");
+  
   /* First, transform all results to the zero-sum gauge */
   status = potts_GaugeZeroSum(pt, errbuf,  verbose);
   if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-
+  
   // Then, symmetrize
   symmetrize(pt);
- 
+  
   if (verbose) potts_Write(stdout, pt);
-
+  
   /* clean up */
   if (gr  != NULL) potts_Destroy(gr);
   if (u   != NULL) free(u);
@@ -819,7 +862,7 @@ potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf)
   esl_fileparser_Close(efp);
   printf("L %d K %d\n", L, Kg);
 
-  pt = potts_Create(L, Kg, NULL, 0.0, 0.0, NONE, SCNONE);
+  pt = potts_Create(L, Kg, NULL, 0.0, 0.0, NONE, MINNONE, SCNONE, REGNONE);
   if (abc) {
     if (Kg != abc->K+1) ESL_XFAIL(eslFAIL, errbuf, "wrong alphabet for file %s", paramfile);
     pt->abc = abc;

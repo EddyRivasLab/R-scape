@@ -134,7 +134,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
     if (dofunc) nlogp += nlogpi;
   } // for all positions i
 
-  printf("\n^^nlogp sans reg %f \n", nlogp);
+  printf("\n^^nlogp sans reg %f %f\n", nlogp, potts_plm_regularize_l2(pt));
   
   // l2-regularization
   if (dofunc) 
@@ -566,7 +566,7 @@ potts_plm_regularize_l2(PT *pt)
 	  eij  = pt->e[i][j][IDX(a,b,Kg)];
 	  reg += pt->mue * eij * eij;
 	}
-    }
+     }
   
   return reg;
 }

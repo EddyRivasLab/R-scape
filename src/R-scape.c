@@ -169,11 +169,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double           ptmuh;               // regularization coefficients
   double           ptmue;
   PTTRAIN          pttrain;
+  PTMIN            ptmin;
   PTSCTYPE         ptsctype;
+  PTREG            ptreg;
   PTINIT           ptinit;
   PT              *pt;
   char            *outpottsfile;
   FILE            *outpottsfp;
+  int              isgremlin;
+  int              isplmDCA;
   
   char            *pdbfile;            // pdfb file
   char            *pdbname;
@@ -310,12 +314,15 @@ static ESL_OPTIONS options[] = {
   { "--ptmuh",        eslARG_REAL,    "0.01",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
   { "--ptmue",        eslARG_REAL,    "0.2",     NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
-  { "--APLM",         eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--PLM",          eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--outpotts",  eslARG_OUTFILE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters to file <f>,",                                              1 },
+  /* reproduce gremlin (a particular potts implementation */
+  { "--gremlin",          eslARG_NONE,      FALSE,   NULL,    NULL,  NULL,    NULL,  NULL,               "reproduce gremlin",                                                                         0 },
+  { "--plmDCA",           eslARG_NONE,      FALSE,   NULL,    NULL,  NULL,    NULL,  NULL,               "reproduce plmDCA",                                                                          0 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -555,9 +562,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.covmethod = POTTS; }
 
   // potts model
-  cfg.pt      = NULL;
-  cfg.pttrain = NONE;
-  cfg.ptinit  = INIT_GREM;
+  cfg.pt       = NULL;
+  cfg.pttrain  = NONE;
+  cfg.ptmin    = CGD_BRENT;
+  cfg.ptreg    = REGNONE;
+  cfg.ptsctype = SCNONE;
+  cfg.ptinit   = INIT_ZERO;
   
   if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
   else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
@@ -565,7 +575,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pttrain = GINV;
   else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pttrain = ACE;
   else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pttrain = BML;
-  cfg.ptsctype = SCNONE;
+  
   if      (esl_opt_GetBoolean(go, "--PTFp")) cfg.ptsctype = FROEB;
   else if (esl_opt_GetBoolean(go, "--PTAp")) cfg.ptsctype = AVG;
   else if (esl_opt_GetBoolean(go, "--PTDp")) cfg.ptsctype = DI;
@@ -581,6 +591,30 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // override with options
   if (esl_opt_IsOn(go, "--ptmuh")) cfg.ptmuh = esl_opt_GetReal(go, "--ptmuh");
   if (esl_opt_IsOn(go, "--ptmue")) cfg.ptmue = esl_opt_GetReal(go, "--ptmue");
+
+  // options that make a reproduction of gremlin v2.1
+  cfg.isgremlin = FALSE;
+  cfg.isplmDCA  = FALSE;
+  if (esl_opt_IsOn(go, "--gremlin")) {
+    cfg.isgremlin = TRUE;
+    cfg.covmethod = POTTS;
+    cfg.covtype   = PTFp;
+    cfg.pttrain   = PLM;
+    cfg.ptmin     = CGD_WOLFE;
+    cfg.ptinit    = INIT_GREM;
+    cfg.ptmuh     = 0.01;
+    cfg.ptmue     = 0.20;
+    cfg.ptreg     = REGL2_GREM;
+  }
+  if (esl_opt_IsOn(go, "--plmDCA")) {
+    cfg.isplmDCA  = TRUE;
+    cfg.covmethod = POTTS;
+    cfg.covtype   = PTFp;
+    cfg.pttrain   = APLM;
+    cfg.ptmin     = LBFGS;
+    cfg.ptinit    = INIT_ZERO;
+    cfg.ptreg     = REGL2_PLMD;
+  }
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
@@ -1147,31 +1181,25 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   ESL_MSA  *msa = *ret_msa;
   ESL_MSA  *YSmsa = NULL;
   char     *outname = NULL;
-  double    reweight = 0.2;
-  double    neff = 0.;
+  double    reweight_thresh;
   int       nshuffle;
   int       analyze;
-  int       s;
   int       status;
   
   if (msa == NULL) return eslOK;
 
   /* weigth the sequences */
-  if (cfg->covmethod == POTTS) {
-    status = esl_msaweight_Gremlin(msa, reweight, cfg->errbuf, cfg->verbose);
+  if (cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
+    reweight_thresh = 0.2;
+    status = esl_msaweight_Gremlin(msa, reweight_thresh, cfg->isplmDCA, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  esl_fatal(cfg->errbuf); 
   }
   else {
     if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
     else                             esl_msaweight_PB(msa);
   }  
-  if (1||cfg->verbose) {
-    for (s = 0; s < msa->nseq; s ++) {
-      neff += msa->wgt[s];
-      //printf("s %d wgt %f neff %f\n", s, msa->wgt[s], neff);
-    }
-    printf("Nseq %d Neff %f\n", msa->nseq, neff);
-  }
+  if (1||cfg->verbose) 
+    printf("Nseq %d Neff %f\n", msa->nseq, esl_vec_DSum(msa->wgt, msa->nseq));
   
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
@@ -1233,7 +1261,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
     // POTTS: calculate the couplings
   if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptsctype, cfg->ptinit, cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
+			  cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
     if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
   

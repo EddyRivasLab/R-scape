@@ -67,7 +67,7 @@ extern int msamanip_CBaseComp(const ESL_ALPHABET *abc, ESL_MSA *msa, float *prio
 extern int msamanip_XBaseComp(ESL_MSA *msa, float *prior, float **ret_msafreq);
 
 extern int esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA **ret_newmsa);
-extern int esl_msaweight_Gremlin(ESL_MSA *msa, double reweight, char *errbuf, int verbose);
+extern int esl_msaweight_Gremlin(ESL_MSA *msa, double reweight_thresh, int isplmDCA, char *errbuf, int verbose);
 extern int esl_dst_CPairId_Overmaxid(const char *asq1, const char *asq2, double maxid);
 extern int esl_dst_XPairId_Overmaxid(const ESL_ALPHABET *abc, const ESL_DSQ *ax1, const ESL_DSQ *ax2, double maxid);
 #endif /*MSAMANIP_INCLUDED*/

@@ -1342,7 +1342,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
 
 
 int
-esl_msaweight_Gremlin(ESL_MSA *msa, double reweight, char *errbuf, int verbose)
+esl_msaweight_Gremlin(ESL_MSA *msa, double reweight_thresh, int isplmDCA, char *errbuf, int verbose)
 {
   ESL_DMATRIX *hamm = NULL;
   double       diff;
@@ -1385,10 +1385,13 @@ esl_msaweight_Gremlin(ESL_MSA *msa, double reweight, char *errbuf, int verbose)
   //
   for (s1 = 0; s1 < nsq; s1 ++) {
     val = 0.;
-    
-    for (s2 = 0; s2 < nsq; s2 ++) 
-      val += (hamm->mx[s1][s2]<reweight && s1!=s2)? 1.0 : 0.0 ;
- 
+
+    for (s2 = 0; s2 < nsq; s2 ++) {
+      if (isplmDCA)
+	val += (hamm->mx[s1][s2] <= reweight_thresh && s1!=s2)? 1.0 : 0.0 ;
+      else
+	val += (hamm->mx[s1][s2]  < reweight_thresh && s1!=s2)? 1.0 : 0.0 ;
+    }
     msa->wgt[s1] = 1./(1.+val);
   }
   
