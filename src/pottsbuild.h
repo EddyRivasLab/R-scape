@@ -62,7 +62,8 @@ typedef struct potts_s {
   PTREG         regtype;
   double        muh;      /* regularization constant for hi */
   double        mue;      /* regularization constant for eij */
-  
+
+  int           gremlin;  // it calculates the objective function differently
   ESL_ALPHABET *abc;
   int           Kg;       /* abc->K+1 */
   int           Kg2;
@@ -82,8 +83,9 @@ struct optimize_data {
 
 extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue,
 			 PTTRAIN pttrain, PTMIN ptmintype, PTSCTYPE ptsctype, PTREG ptreg, PTINIT ptinit,
-			 FILE *pottsfp, float tol, char *errbuf, int verbose);
-extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain, PTMIN ptmintype, PTSCTYPE ptsctype, PTREG ptreg);
+			 FILE *pottsfp, int isgremlin, float tol, char *errbuf, int verbose);
+extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain,
+			  PTMIN ptmintype, PTSCTYPE ptsctype, PTREG ptreg, int isgremlin);
 extern void  potts_Destroy(PT *pt);
 extern int   potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose);
 extern int   potts_InitZero(PT *pt, char *errbuf, int verbose);

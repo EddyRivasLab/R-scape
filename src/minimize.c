@@ -32,9 +32,9 @@ static double cubic_interpolation(double xa, double fa, double ga, double xb, do
 static int    Armijo(double *ori, double fori, double *gori, double *dori, int n, double firststep, double c1,
 		     double (*bothfunc)(double *, int, void *, double *), void *prm,
 		     double *x, double *g, double *ret_f, double *ret_dg, double *ret_step, double tol);
-static int    Wolfe(double *ori, double fori, double *g, double *dori, int n, double firststep, double c1, double c2,
+static int    Wolfe(double *ori, double fori, double *gori, double *dori, int n, double firststep, double c1, double c2,
 		    double (*bothfunc)(double *, int, void *, double *), void *prm,
-		    double *x, double *ret_f, double *ret_step, double tol);
+		    double *x, double *ret_step, double *ret_f, double *g, double tol);
 
 /* Return the gradient at a point, determined numerically.
  */
@@ -418,7 +418,7 @@ static double cubic_interpolation(double xa, double fa, double ga, double xb, do
   
   // we assume xb > xa
   if (xa == xb) ESL_EXCEPTION(eslENORESULT, "xa has to be different from xb");
-  if (xa > xb)
+  if (xa >  xb)
     {
       swapper = xa; xa = xb; xb = swapper;
       swapper = fa; fa = fb; fb = swapper;
@@ -428,13 +428,13 @@ static double cubic_interpolation(double xa, double fa, double ga, double xb, do
   da = ga + gb - 3.*(fa-fb)/(xa-xb);
   db = da*da - ga*gb;
   
-  if (db < 0.) xc = 0.5 * (xmin + xmax);
-  else {
+  if (db >= 0.) {
     db = sqrt(db);
     xc = xb - (xb-xa) * (gb + db - da) / (gb - ga + 2.*db);
+    xm = ESL_MIN(ESL_MAX(xc,xmin),xmax);
   }
-  
-  xm = ESL_MIN(ESL_MAX(xc,xmin),xmax);
+  else
+    xm = 0.5 * (xmin + xmax);
   
   return xm;
 }
@@ -549,69 +549,134 @@ static int Armijo(double *ori, double fori, double *gori, double *dori, int n,
  *
  * Reference: 
  */
-static int Wolfe(double *ori, double fori, double *g, double *dori, int n,
+static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
 		 double firststep, double c1, double c2,
 		 double (*bothfunc)(double *, int, void *, double *), void *prm,
-		 double *x, double *ret_f, double *ret_step, double tol)
+		 double *x, double *ret_step, double *ret_fx, double *g, double tol)
 {
-  double dgori = esl_vec_DDot(dori, g, n);  // initial d'*g
+  double dgori = esl_vec_DDot(dori, gori, n);  // initial d'*g
   double f, f_prv;
   double dg, dg_prv;
-  double t, t_prv, t_cur;
+  double t, t_prv, t_new;
   double min_step;
   double max_step;
-  int    nit = 1;
+  int    nit = 0;
   int    found = FALSE;
   int    status;
-  
+
+  printf("\nwolfe firststep %.20f gtd %f\n", firststep, dgori);
+
   // Check inputs 
   if (firststep <= 0.) ESL_EXCEPTION(eslENORESULT, "Step size is negative");
   if (dgori      > 0.) ESL_EXCEPTION(eslENORESULT, "Not a descent direction");
 
-  // init
+  // init (t_prv,f_prv,g_prv)
   t_prv  = 0.;
   f_prv  = fori;
   dg_prv = dgori;
   
-  // Calculate the first new point
+  // The first new point (t,f,g)
+  // using x = xori + firststep*dori
   t  = firststep; 
   esl_vec_DCopy(ori, n, x);
   esl_vec_DAddScaled(x, dori, t, n);
   f  = (*bothfunc)(x, n, prm, g);
   dg = esl_vec_DDot(dori, g, n);
-   
+
   while (nit < MAXITER) {
-    if ( (f        <  fori + c1*t*dgori) && // Armijo condition 
-	 (fabs(dg) <= -c2*dgori)            // strong Wolfe conditions
-	 ) { found = TRUE;  break; }
+    printf("^^wolfe it %d || %.20f %f %f || %.20f %f %f\n armijo? %f -%f = %f < 0? || wolfe? %f - %f = %f <= 0\n",
+	   nit, t_prv, f_prv, dg_prv, t, f, dg, f, fori + c1*t*dgori, f-(fori + c1*t*dgori), fabs(dg), -c2*dgori, fabs(dg)+c2*dgori);
+    
+    if (f > fori + c1*t*dgori || (nit > 0 && f >= f_prv)) // Armijo not satisfied 
+      break;
+    else if  (fabs(dg) <= -c2*dgori) {                    // Armijo + strong_Wolfe satisfied, you are done
+      found = TRUE;
+      break;
+    }
+    else if (dg > 0.)
+      break;
 
-    if (!found) {
-      min_step = t + 0.01 * (t-t_prv);
-      max_step = t * 10;
- 
- 
-     // calculate a new step (t) by cubic interpolation
-      t_cur = t;
-      t     = cubic_interpolation(t_prv, f_prv, dg_prv, t_cur, f, dg, min_step, max_step);
-      printf("^^wolfe it %d t %f || %f %f %f || %f %f %f\n", nit, t, t_prv, f_prv, dg_prv, t_cur, f, dg);
+    // we are still here (have not bailed out with either a solution or a bracket, then
+    //
+    // calculate a new step (t_new) by cubic interpolation between (t_prv,f_prv,g_prv) and (t,f,g)
+    min_step = t + 0.01 * (t-t_prv);
+    max_step = t * 10;
+    t_new  = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
+    printf("^^wolfe new t %.20f\n", t_new);
 
-      t_prv  = t_cur;
-      f_prv  = f;
-      dg_prv = dg;
-
-      // calculate the new point (x) for new step (t)
-      esl_vec_DCopy(ori, n, x);
-      esl_vec_DAddScaled(x, dori, t, n);
-      f  = (*bothfunc)(x, n, prm, g);
-      dg = esl_vec_DDot(dori, g, n);
-      
-      nit ++;
-    } 
+    // (t,f,g) becomes (t_prv,f_prv,g_prv)
+    t_prv  = t;
+    f_prv  = f;
+    dg_prv = dg;
+    
+    // calculate the new point (t=t_new,f,g)
+    // at x = xori + t_new * dori
+    t  = t_new;
+    esl_vec_DCopy(ori, n, x);
+    esl_vec_DAddScaled(x, dori, t, n);
+    f  = (*bothfunc)(x, n, prm, g);
+    dg = esl_vec_DDot(dori, g, n);
+    
+    nit ++;
   }
-  if (nit == MAXITER) ESL_EXCEPTION(eslERANGE, "reached is the max number of iterations");
  
-  if (ret_f)    *ret_f    = f;
-  if (ret_step) *ret_step = t;
+  // now we either have a solution (found = TRUE)
+  // or a bracket (ta,fa,ga) (tb,fb,gb)
+  // such that fa < fb
+  if (f < f_prv) {
+    ta  = t;  tb  = t_prv;
+    fa  = f;  fb  = f_prv;
+    dga = dg; dgb = dg_prv;
+  }
+  else {
+    tb  = t;  ta  = t_prv;
+    fb  = f;  fa  = f_prv;
+    dgb = dg; dga = dg_prv;
+  }
+
+  // refine the bracket
+  while (found == FALSE) {
+    printf("^^ ta %f fa %f tb %f  fb %f\n", ta, fa, tb, fb);
+    
+    // calculate a new step (t) by cubic interpolation
+    t  = cubic_interpolation(ta, fa, dga, tb, fb, dgb, ESL_MIN(ta,tb), ESL_MAX(ta,tb));
+    printf("^^wolfe new new t %.20f\n", t);
+
+    // calculate the new point (t,f,g)
+    // at x = xori + t_new * dori
+    esl_vec_DCopy(ori, n, x);
+    esl_vec_DAddScaled(x, dori, t, n);
+    f  = (*bothfunc)(x, n, prm, g);
+    dg = esl_vec_DDot(dori, g, n);
+
+    if (f > fori + c1*t*dgori ||   // Armijo not satisfied 
+	(nit > 0 && f >= fa)    )  // or new f is not lowest
+      {
+	tb  = t;
+	fb  = f;
+	dgb = dg;
+      }
+    else if (fabs(dg) <= - c2*dgori) {  // strong Wolfe satisfied - we are done
+      found = TRUE;
+    }
+    else if (gd*fabs(tb-ta) >= 0) {
+      // we have a new low
+	tb  = ta;
+	fb  = fa;
+	dgb = dga;
+	
+	ta  = t;
+	fa  = f;
+	dga = dg;
+    }
+    
+
+    nit ++;
+  }
+  if (nit == MAXITER) printf("reached the max number of iterations\n");
+     
+  if (ret_fx)    *ret_fx  = fa;
+  if (ret_step) *ret_step = ta;
   
   return eslOK;
 }
@@ -676,6 +741,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 {
   double oldfx;
   double coeff;
+  double num, den;
   int    i, i1;
   double *gx, *cg, *w1, *w2;
   double cvg;
@@ -683,6 +749,9 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   double ax,bx,cx;
   double c1, c2;
   double fx;
+  double gtd;
+  double firststep;
+  double sum;
 
   gx = wrk;
   cg = wrk + n;
@@ -704,7 +773,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
     numeric_derivative(x, u, n, func, prm, 1e-4, gx); /* resort to brute force */
 
   // First x, fx, gx, cg
-  fx = oldfx;
   esl_vec_DCopy(gx, n, cg);  /* and make that the first conjugate direction, cg = -gx  */
   esl_vec_DScale(cg, n, -1.0);
 
@@ -720,58 +788,54 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   
   for (i = 0; i < MAXITER; i++)
     {
-      /* Figure out the initial step size */
-      bx = fabs(u[0] / cg[0]);
-      for (i1 = 1; i1 < n; i1++)
-	{
-	  cx = fabs(u[i1] / cg[i1]);
-	  if (cx < bx) bx = cx;
-	}
       
-#if 0 // esl_min_ConjugateGradientDescent() line search algorithm
-      /* Bracket the minimum */
-      fa = fx; // always start at the origin, already calculated
-      bracket(x, cg, n, bx, func, prm, w1, &ax, &bx, &cx, &fa, &fb, &fc);
-      printf("^^end bracket\n");
-      
-      /* Minimize along the line given by the conjugate gradient <cg> */
-      brent(x, cg, n, func, prm, ax, cx, stol, 1e-8, w2, NULL, NULL);
-#else // Strong Wolfe condition
+      // Initial step size
+      if (i == 0) {
+	sum = 0.;
+	for (i1 = 0; i1 < n; i1 ++)
+	  sum += fabs(gx[i1]);
+	firststep = ESL_MIN(1.0, ((sum > 0.)? 1./sum:1.0) );
+      }
+      else {
+	gtd       = esl_vec_DDot(gx, cg, n);
+	firststep = ESL_MIN(1.0, 2.*(fx-oldfx)/gtd);
+	printf("\n^^f %f fold %f gtd %f firststep %.20f\n", fx, oldfx, gtd, firststep);
+	oldfx = fx;
+      }
+
+      // Strong Wolfe condition
+      //
+      // the new param are temporarily in w2
+      // the negative gradient is temporarily in w1
       c1 = 1e-4;
       c2 = 0.2;
-      Wolfe(x, fx, gx, cg, n, bx, c1, c2, bothfunc, prm, w2, NULL, NULL, tol);
+      Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, NULL, &fx, w1, tol);
       printf("^^end wolfe\n");
-#endif
-     esl_vec_DCopy(w2, n, x);
-     
-      /* Calculate fx then
-       * Find the negative gradient at that point (temporarily in w1) */
-      if (bothfunc != NULL) 
-	{
-	  fx = (*bothfunc)(x, n, prm, w1);
-	  if (fx == eslINFINITY || fx == -eslINFINITY) ESL_EXCEPTION(eslERANGE, "minimum not finite");
-	}
-      else {
-	fx = (*func)(x, n, prm);
-	if (fx == eslINFINITY || fx == -eslINFINITY) ESL_EXCEPTION(eslERANGE, "minimum not finite");
-	numeric_derivative(x, u, n, func, prm, 1e-4, w1); /* resort to brute force */
-      }
-        
+      esl_vec_DCopy(w2, n, x); 
+      
       /* Main convergence test. 1e-9 factor is fudging the case where our
        * minimum is at exactly f()=0.
        */
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
       if (cvg <= tol) break;
       
-      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i, oldfx, fx, cvg);
+      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i+1, oldfx, fx, cvg);
 
       if (i == MAXITER-1) continue;
-      
+
+#if 0
       /* Calculate the Polak-Ribiere coefficient */
       for (coeff = 0., i1 = 0; i1 < n; i1++)
 	coeff += (w1[i1] - gx[i1]) * w1[i1];
       coeff /= esl_vec_DDot(gx, gx, n);
-      
+#endif
+      /* Calculate the Hestenes-Stiefel coefficient */
+      for (num = 0., i1 = 0; i1 < n; i1++)
+	num += (w1[i1] - gx[i1]) * w1[i1];
+      for (den = 0., i1 = 0; i1 < n; i1++)
+	den += (w1[i1] - gx[i1]) * cg[i1];
+      coeff = (den != 0)? num/den:0. ;
+     
       /* Calculate the next conjugate gradient direction in w2 = -gx + coeff*cg */
       esl_vec_DCopy(w1, n, w2);
       esl_vec_DScale(w2, n, -1.0);
@@ -815,8 +879,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       for (i1 = 0; i1 < n; i1++) 
 	if (cg[i1] != 0.) break;
       if  (i1 == n) break;
-      
-      oldfx = fx;
+
     }
 
   if (ret_fx != NULL) *ret_fx = fx;

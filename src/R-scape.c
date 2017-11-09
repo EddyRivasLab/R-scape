@@ -1262,7 +1262,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     // POTTS: calculate the couplings
   if (cfg->covmethod == POTTS) {
     cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
-			  cfg->outpottsfp, cfg->tol, cfg->errbuf, cfg->verbose);
+			  cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
     if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
   }
   

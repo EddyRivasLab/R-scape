@@ -37,8 +37,9 @@ man1ext     = .1
 
 # Compiler configuration
 #
-CC        = @CC@
+CC        = @CC@ 
 CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ 
+#CFLAGS    = -fopenmp @CFLAGS@ @PTHREAD_CFLAGS@ 
 LDFLAGS   = -static @LDFLAGS@
 SIMDFLAGS = @SIMD_CFLAGS@
 CPPFLAGS  = @CPPFLAGS@

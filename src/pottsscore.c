@@ -9,6 +9,9 @@
 #include <float.h>
 #include <limits.h>
 
+//#include <omp.h>
+
+
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_msa.h"
@@ -91,7 +94,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
       // the hamiltonian
       //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
       // and zi    = \sum_a exp H^s_i[a]
-      zi = potts_Zi(i, pt, sq, Hi);
+      zi = potts_Zi(i, pt, sq, Hi, pt->gremlin);
        
       // the function
       if (dofunc) nlogpi += wgt * (-Hi[resi] + log(zi));
@@ -102,7 +105,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
 	add = wgt * exp(Hi[a]) / zi;
 
 	// derivative respect to hi(a)
-  	gr->h[i][a] += add;
+  	if (a < Kg-1 || !pt->gremlin) gr->h[i][a] += add;
     
 	// derivative respect to eij(a,b) 
 	for (j = i+1; j < L; j ++) {
@@ -117,7 +120,7 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
       
       // one more term to the gradient
       // derivative respect to hi(resi)
-      gr->h[i][resi] -= wgt;
+      if (resi < Kg-1 || !pt->gremlin) gr->h[i][resi] -= wgt;
 
       // derivative respect to eij(resi,resj)
       for (j = i+1; j < L; j ++) {
@@ -134,28 +137,25 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
     if (dofunc) nlogp += nlogpi;
   } // for all positions i
 
-  printf("\n^^nlogp sans reg %f %f\n", nlogp, potts_plm_regularize_l2(pt));
-  
+  printf("\n^^nlogp sans reg %f %f \n",
+	 nlogp, potts_plm_regularize_l2(pt));
+
   // l2-regularization
   if (dofunc) 
     nlogp += potts_plm_regularize_l2(pt);
-  
+
   if (dodfunc) {
-    for (i = 0; i < L; i ++) {     
-      for (a = 0; a < Kg; a++)
+    for (i = 0; i < L; i ++)     
+      for (a = 0; a < Kg; a++) 
 	gr->h[i][a] += pt->muh * 2.0 * pt->h[i][a];
-      
-      for (j = 0; j < i; j ++)
+	     
+    for (i = 0; i < L-1; i ++)     
+      for (j = i+1; j < L; j ++) 	
 	for (a = 0; a < Kg; a++)
 	  for (b = 0; b < Kg; b++) 
 	    gr->e[i][j][IDX(a,b,Kg)] += pt->mue * 2.0 * pt->e[i][j][IDX(a,b,Kg)];
-      for (j = i+1; j < L; j ++)
-	for (a = 0; a < Kg; a++)
-	  for (b = 0; b < Kg; b++) 
-	    gr->e[j][i][IDX(b,a,Kg)] += pt->mue * 2.0 * pt->e[j][i][IDX(b,a,Kg)];
-    }
   }
-  
+
   // return
   if (dofunc) *ret_nlogp = nlogp;
   
@@ -204,7 +204,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
     // the hamiltonian
     //     H^s_i[a] = hi[a] + \sum_j(\neq i) eij(a,sj)
     // and zi       = \sum_a exp H^s_i[a]
-    zi = potts_Zi(i, pt, sq, Hi);   
+    zi = potts_Zi(i, pt, sq, Hi, pt->gremlin);   
 
     // the function
     if (dofunc)
@@ -216,7 +216,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
       add = wgt * exp(Hi[a]) / zi;
       
       // derivative respect to hi(a)
-      gr->h[i][a] += add;
+      if (a < Kg-1 || !pt->gremlin) gr->h[i][a] += add;
       
       // derivative respect to eij(a,b)
       for (j = 0; j < i; j ++) {
@@ -231,7 +231,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
 
     // one more term to the gradient
     // derivative respect to hi(resi)
-    gr->h[i][resi] -= wgt;
+    if (resi < Kg-1 || !pt->gremlin) gr->h[i][resi] -= wgt;
     
     // derivative respect to eij(resi,resj)
     for (j = 0; j < i; j ++) {
@@ -278,16 +278,16 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
 // hi(a) + \sum_{j\neq i} eij(a,sqj)
 //
 double
-potts_Hi(int i, int a, PT *pt, ESL_DSQ *sq)
+potts_Hi(int i, int a, PT *pt, ESL_DSQ *sq, int gremlin)
 {
   double val = 0.;
   int    L   = pt->L;
   int    Kg  = pt->Kg;
   int    resj;
   int    j;
-  
-  val += pt->h[i][a];
 
+  if (a < Kg-1 || !gremlin) val += pt->h[i][a]; // gremlin never considers hi[-]
+  
   for (j = 0; j < i; j++) {
     resj  = sq[j+1];	  
     val  += pt->e[i][j][IDX(a,resj,Kg)];
@@ -304,7 +304,7 @@ potts_Hi(int i, int a, PT *pt, ESL_DSQ *sq)
 // log { sum_{a} exp[ hi(a) + \sum_{j\neq i} eij(a,sqj) ] }
 //
 double
-potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
+potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
 {
   double  Ha;
   double  logzi = -eslINFINITY;
@@ -313,7 +313,7 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
   int     status;
 
   for (a = 0; a < Kg; a++) {
-    Ha = potts_Hi(i, a, pt, sq);
+    Ha = potts_Hi(i, a, pt, sq, gremlin);
     if (Hi) Hi[a] = Ha;
      
     logzi = e2_DLogsum(logzi, Ha);
@@ -324,7 +324,7 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
   return status;
 }
 double
-potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
+potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
 {
   double  Ha;
   double  Zi = 0.;
@@ -333,7 +333,7 @@ potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi)
   int     status;
 
   for (a = 0; a < Kg; a++) {
-    Ha = potts_Hi(i, a, pt, sq);
+    Ha = potts_Hi(i, a, pt, sq, gremlin);
     if (Hi) Hi[a] = Ha;
      
     Zi += exp(Ha);
@@ -465,14 +465,14 @@ potts_CalculateCOVAverage(struct data_s *data)
 static double
 potts_H(PT *pt, ESL_DSQ *sq)
 {
-  double        H = 0.;
-  int           L = pt->L;
+  double        H  = 0.;
+  int           L  = pt->L;
   int           Kg = pt->Kg;
   int           resi, resj;
   int           i, j;
   
   for (i = 0; i < L; i ++) 
-    H += potts_Hi(i, sq[i+1], pt, sq);
+    H += potts_Hi(i, sq[i+1], pt, sq, pt->gremlin);
   
   return H;
 }
