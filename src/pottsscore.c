@@ -135,10 +135,8 @@ potts_NLogp_PLM(PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *errbuf, i
     } // for all sequences
     
     if (dofunc) nlogp += nlogpi;
+    
   } // for all positions i
-
-  printf("\n^^nlogp sans reg %f %f \n",
-	 nlogp, potts_plm_regularize_l2(pt));
 
   // l2-regularization
   if (dofunc) 

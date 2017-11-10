@@ -232,6 +232,21 @@ msamanip_ConvertDegen2N(ESL_MSA *msa)
   }
   return eslOK;
 }
+int
+msamanip_ConvertDegen2Gap(ESL_MSA *msa)
+{ 
+  int     n;
+  int64_t i;
+
+  if (! (msa->flags & eslMSA_DIGITAL)) ESL_EXCEPTION(eslEINVAL, "msamanip_ConvertDegen2RandomCanonical only works on digital sequences");
+  
+  for (n = 0; n < msa->nseq; n++) {
+    for (i = 1; msa->ax[n][i] != eslDSQ_SENTINEL; i++)  
+      if (esl_abc_XIsDegenerate(msa->abc, msa->ax[n][i]))
+	msa->ax[n][i] = esl_abc_XGetGap(msa->abc);
+  }
+  return eslOK;
+}
 
 int
 msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa)

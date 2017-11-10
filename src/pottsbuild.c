@@ -26,7 +26,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
@@ -392,6 +392,7 @@ potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *err
   int      resi;
   int      a;
   int      status;
+  double   sum;
 
   // calculate frequecies per position pi
   ESL_ALLOC(p,    sizeof(double *)*L);
@@ -408,20 +409,20 @@ potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *err
       if (resi < 0 || resi > K) ESL_XFAIL(eslFAIL, errbuf, "bad residue %d\n", resi);
       p[i][resi] += 1.0;
     }
-    
+
     // normalize
     esl_vec_DNorm(p[i], Kg);
   }
   
   potts_InitZero(pt, errbuf, verbose);
-  
+
   // init hi[a] to log(pi[a]) - log(pi[-])
   for (i = 0; i < L; i++) {
     subs = log(p[i][K]);
-    for (a = 0; a < K; a ++)
+    for (a = 0; a < K; a ++) 
       pt->h[i][a] = log(p[i][a]) - subs;
   }
-
+ 
   free(p[0]);
   free(p);
   return eslOK;

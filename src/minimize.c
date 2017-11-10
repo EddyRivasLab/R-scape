@@ -23,11 +23,6 @@
 
 static void   numeric_derivative(double *x, double *u, int n, double (*func)(double *, int, void*),
 				 void *prm, double relstep, double *gx);
-static int    bracket(double *ori, double *d, int n, double firststep, double (*func)(double *, int, void *), void *prm, double *wrk,
-		      double *ret_ax, double *ret_bx, double *ret_cx, double *ret_fa, double *ret_fb, double *ret_fc);
-static void   brent(double *ori, double *dir, int n, double (*func)(double *, int, void *), void *prm,
-		    double a, double b, double eps, double t, double *xvec, double *ret_x, double *ret_fx);
-
 static double cubic_interpolation(double xa, double fa, double ga, double xb, double fb, double gb, double xmin, double xmax);
 static int    Armijo(double *ori, double fori, double *gori, double *dori, int n, double firststep, double c1,
 		     double (*bothfunc)(double *, int, void *, double *), void *prm,
@@ -65,328 +60,6 @@ numeric_derivative(double *x, double *u, int n,
       ESL_DASSERT1((! isnan(gx[i])));
     }
 }
-
-
-/* bracket():
- * SRE, Wed Jul 27 11:43:32 2005 [St. Louis]
- *
- * Purpose:   Bracket a minimum. 
- *
- *            The minimization is quasi-one-dimensional, 
- *            starting from an initial <n>-dimension vector <ori>
- *            in the <n>-dimensional direction <d>.
- *            
- *            Caller passes a ptr to the objective function <*func()>,
- *            and a void pointer to any necessary conditional 
- *            parameters <prm>. The objective function will
- *            be evaluated at a point <x> by calling
- *            <(*func)(x, n, prm)>. The caller's function
- *            is responsible to casting <prm> to whatever it's
- *            supposed to be, which might be a ptr to a structure,
- *            for example; typically, for a parameter optimization
- *            problem, this holds the observed data.
- *            
- *            The routine works in scalar multipliers relative
- *            to origin <ori> and direction <d>; that is, a new <n>-dimensional
- *            point <b> is defined as <ori> + <bx><d>, for a scalar <bx>.
- *            
- *            The routine identifies a triplet <ax>, <bx>, <cx> such
- *            that $a < b < c$ and such that a minimum is known to
- *            exist in the $(a,b)$ interval because $f(b) < f(a),
- *            f(c)$. Also, the <a..b> and <b...c> intervals are in
- *            a golden ratio; the <b..c> interval is 1.618 times larger
- *            than <a..b>.
- *
- *            Since <d> is usually in the direction of the gradient,
- *            the points <ax>,<bx>,<cx> might be expected to be $\geq 0$;
- *            however, when <ori> is already close to the minimum, 
- *            it is often faster to bracket the minimum using
- *            a negative <ax>. The caller might then try to be "clever"
- *            and assume that the minimum is in the <bx..cx> interval
- *            when <ax> is negative, rather than the full <ax..cx>
- *            interval. That cleverness can fail, though, if <ori>
- *            is already in fact the minimum, because the line minimizer
- *            in brent() assumes a non-inclusive interval. Use
- *            <ax..cx> as the bracket.
- *            
- * Args:      ori       - n-dimensional starting vector
- *            d         - n-dimensional direction to minimize along
- *            n         - # of dimensions
- *            firststep - bx is initialized to this scalar multiplier
- *            *func()   - objective function to minimize
- *            prm       - void * to any constant data that *func() needs
- *            wrk       - workspace: 1 allocated n-dimensional vector
- *            ret_ax    - RETURN:  ax < bx < cx scalar bracketing triplet
- *            ret_bx    - RETURN:    ...ax may be negative
- *            ret_cx    - RETURN:    
- *            ret_fa    - RETURN:  function evaluated at a,b,c
- *            ret_fb    - RETURN:    ... f(b) < f(a),f(c)
- *            ret_fc    - RETURN:
- *
- * Returns:   <eslOK> on success.
- *
- * Throws:    <eslENOHALT> if it fails to converge.
- *
- * Xref:      STL9/130.
- */
-static int
-bracket(double *ori, double *d, int n, double firststep,
-	double (*func)(double *, int, void *), void *prm, 
-	double *wrk, 
-	double *ret_ax, double *ret_bx, double *ret_cx,
-	double *ret_fa, double *ret_fb, double *ret_fc)
-{
-  double ax,bx,cx;		/* scalar multipliers */
-  double fa,fb,fc;		/* f() evaluations at those points */
-  double swapper;
-  int    niter;
-  
-  /* Set and evaluate our first two points f(a) and f(b), which
-   * are initially at 0.0 and <firststep>.
-   */
-  ax = 0.;  /* always start w/ ax at the origin, ax=0 */
-  //fa = (*func)(ori, n, prm);
-  fa = *ret_fa;
-
-  bx = firststep;
-  esl_vec_DCopy(ori, n, wrk);
-  esl_vec_DAddScaled(wrk, d, bx, n);
-  fb = (*func)(wrk, n, prm);
-
-  /* In principle, we usually know that the minimum m lies to the
-   * right of a, m>=a, because d is likely to be a gradient.  You
-   * might think we want 0 = a < b < c.  In practice, there's problems
-   * with that. It's far easier to identify bad points (f(x) > f(a))
-   * than to identify good points (f(x) < f(a)), because letting f(x)
-   * blow up to infinity is fine as far as bracketing is concerned.
-   * It can be almost as hard to identify a point b that f(b) < f(a)
-   * as it is to find the minimum in the first place!
-   * Counterintuitively, in cases where f(b)>f(a), it's better
-   * to just swap the a,b labels and look for c on the wrong side
-   * of a! This often works immediately, if f(a) was reasonably
-   * close to the minimum and f(b) and f(c) are both terrible.
-   */
-  if (fb > fa)
-    {
-      swapper = ax; ax = bx; bx = swapper;
-      swapper = fa; fa = fb; fb = swapper;
-    }
-
-  /* Make our first guess at c.
-   * Remember, we don't know that b>a any more, and c might go negative.
-   * We'll either have:      a..b...c with a=0;
-   *                or:  c...b..a     with b=0.
-   * In many cases, we'll immediately be done.
-   */
-  cx = bx + (bx-ax)*1.618;
-  esl_vec_DCopy(ori, n, wrk);
-  esl_vec_DAddScaled(wrk, d, cx, n);
-  fc = (*func)(wrk, n, prm);
-  
-  /* We're not satisfied until fb < fa, fc; 
-   * throughout the routine, we guarantee that fb < fa;
-   * so we just check fc.
-   */
-  niter = 0;
-  while (fc <= fb)
-    {
-      /* Slide over, discarding the a point; choose 
-       * new c point even further away.
-       */
-      ax = bx; bx = cx;
-      fa = fb; fb = fc;
-      cx = bx+(bx-ax)*1.618;
-      esl_vec_DCopy(ori, n, wrk);
-      esl_vec_DAddScaled(wrk, d, cx, n);
-      fc = (*func)(wrk, n, prm);
-
-      /* This is a rare instance. We've reach the minimum
-       * by trying to bracket it. Also check that not all
-       * three points are the same.
-       */
-      if (ax != bx && bx != cx && fa == fb && fb == fc) break;
-
-      niter++;
-      if (niter > 100)
-    	  ESL_EXCEPTION(eslENORESULT, "Failed to bracket a minimum.");
-    }
-
-  /* We're about to return. Assure the caller that the points
-   * are in order a < b < c, not the other way.
-   */
-  if (ax > cx)
-    {
-      swapper = ax; ax = cx; cx = swapper;
-      swapper = fa; fa = fc; fc = swapper;
-    }
-
-  /* Return.
-   */
-  ESL_DPRINTF2(("\nbracket(): %d iterations\n", niter));
-  ESL_DPRINTF2(("bracket(): triplet is %g  %g  %g along current direction\n", 
-		ax, bx, cx));
-  ESL_DPRINTF2(("bracket(): f()'s there are: %g  %g  %g\n\n", 
-		fa, fb, fc));
-
-  *ret_ax = ax;  *ret_bx = bx;  *ret_cx = cx;
-  *ret_fa = fa;  *ret_fb = fb;  *ret_fc = fc;
-  return eslOK;
-}
-
-
-/* brent():
- * SRE, Sun Jul 10 19:07:05 2005 [St. Louis]
- *
- * Purpose:   Quasi-one-dimensional minimization of a function <*func()>
- *            in <n>-dimensions, along vector <dir> starting from a
- *            point <ori>. Identifies a scalar $x$ that approximates
- *            the position of the minimum along this direction, in a
- *            given bracketing interval (<a,b>).  The minimum must
- *            have been bracketed by the caller in the <(a,b)>
- *            interval.  <a> is often 0, because we often start at the
- *            <ori>.
- *
- *            A quasi-1D scalar coordinate $x$ (such as <a> or <b>) is
- *            transformed to a point $\mathbf{p}$ in n-space as:
- *            $\mathbf{p} = \mathbf{\mbox{ori}} + x
- *            \mathbf{\mbox{dir}}$.
- *
- *            Any extra (fixed) data needed to calculate <func> can be
- *            passed through the void <prm> pointer.
- *
- *            <eps> and <t> define the relative convergence tolerance,
- *            $\mbox{tol} = \mbox{eps} |x| + t$. <eps> should not be
- *            less than the square root of the machine precision.  The
- *            <DBL_EPSILON> is 2.2e-16 on many machines with 64-bit
- *            doubles, so <eps> is on the order of 1e-8 or more. <t>
- *            is a yet smaller number, used to avoid nonconvergence in
- *            the pathological case $x=0$.
- *
- *            Upon convergence (which is guaranteed), returns <xvec>,
- *            the n-dimensional minimum. Optionally, will also return
- *            <ret_x>, the scalar <x> that resulted in that
- *            n-dimensional minimum, and <ret_fx>, the objective
- *            function <*func(x)> at the minimum.
- *
- *            This is an implementation of the R.P. Brent (1973)
- *            algorithm for one-dimensional minimization without
- *            derivatives (modified from Brent's ALGOL60 code). Uses a
- *            combination of bisection search and parabolic
- *            interpolation; should exhibit superlinear convergence in
- *            most functions.
- *
- *
- * Args:      ori     - n-vector at origin
- *            dir     - direction vector (gradient) we're following from ori
- *            n       - dimensionality of ori, dir, and xvec
- *            (*func) - ptr to caller's objective function
- *            prm     - ptr to any additional data (*func)() needs
- *            a,b     - minimum is bracketed on interval [a,b]
- *            eps     - tol = eps |x| + t; eps >= 2 * relative machine precision
- *            t       - additional factor for tol to avoid x=0 case.
- *            xvec    - RETURN: minimum, as an n-vector (caller allocated)
- *            ret_x   - optRETURN: scalar multiplier that gave xvec
- *            ret_fx  - optRETURN: f(x)
- *
- * Returns:   (void)
- *
- * Reference: See [Brent73], Chapter 5. My version is derived directly
- *            from Brent's description and his ALGOL60 code. I've
- *            preserved his variable names as much as possible, to
- *            make the routine follow his published description
- *            closely. The Brent algorithm is also discussed in
- *            Numerical Recipes [Press88].
- */
-static void
-brent(double *ori, double *dir, int n,
-      double (*func)(double *, int, void *), void *prm,
-      double a, double b, double eps, double t,
-      double *xvec, double *ret_x, double *ret_fx)
-{
-  double w,x,v,u;               /* with [a,b]: Brent's six points     */
-  double m;                     /* midpoint of current [a,b] interval */
-  double tol;                   /* tolerance = eps|x| + t */
-  double fu,fv,fw,fx;           /* function evaluations */
-  double p,q;                   /* numerator, denominator of parabolic interpolation */
-  double r;
-  double d,e;                   /* last, next-to-last values of p/q  */
-  double c = 1. - (1./eslCONST_GOLD); /* Brent's c; 0.381966; golden ratio */
-  int    niter;			/* number of iterations */
-
-  x=v=w= a + c*(b-a);           /* initial guess of x by golden section */
-  esl_vec_DCopy(ori, n, xvec);  /* build xvec from ori, dir, x */
-  esl_vec_DAddScaled(xvec, dir, x, n);
-  fx=fv=fw = (*func)(xvec, n, prm);   /* initial function evaluation */
-
-  e     = 0.;
-  niter = 0;
-  while (1) /* algorithm is guaranteed to converge. */
-    {
-      m   = 0.5 * (a+b);
-      tol = eps*fabs(x) + t;
-      if (fabs(x-m) <= 2*tol - 0.5*(b-a)) break; /* convergence test. */
-      niter++;
-
-      p = q = r = 0.;
-      if (fabs(e) > tol)
-        { /* Compute parabolic interpolation, u = x + p/q */
-          r = (x-w)*(fx-fv);
-          q = (x-v)*(fx-fw);
-          p = (x-v)*q - (x-w)*r;
-          q = 2*(q-r);
-          if (q > 0) { p = -p; } else {q = -q;}
-          r = e;
-          e=d;                  /* e is now the next-to-last p/q  */
-        }
-
-      if (fabs(p) - fabs(0.5*q*r) < -1e-6  || p - q*(a-x) < -1e-6 || p - q*(b-x) < -1e-6)
-        { /* Seems well-behaved? Use parabolic interpolation to compute new point u */
-          d = p/q;              /* d remembers last p/q */
-          u = x+d;              /* trial point, for now... */
-
-          if (2.0*(u-a) < tol || 2.0*(b-u) < tol) /* don't evaluate func too close to a,b */
-            d = (x < m)? tol : -tol;
-        }
-      else /* Badly behaved? Use golden section search to compute u. */
-        {
-          e = (x<m)? b-x : a-x;  /* e = largest interval */
-          d = c*e;
-         }
-
-      /* Evaluate f(), but not too close to x.  */
-      if      (fabs(d) >= tol) u = x+d;
-      else if (d > 0)          u = x+tol;
-      else                     u = x-tol;
-      esl_vec_DCopy(ori, n, xvec);  /* build xvec from ori, dir, u */
-      esl_vec_DAddScaled(xvec, dir, u, n);
-      fu = (*func)(xvec, n, prm);   /* f(u) */
- 
-      /* Bookkeeping.  */
-     if (fu <= fx)
-        {
-          if (u < x) b = x; else a = x;
-          v = w; fv = fw; w = x; fw = fx; x = u; fx = fu;
-        }
-      else
-        {
-          if (u < x) a = u; else b = u;
-          if (fu <= fw || w == x)
-            { v = w; fv = fw; w = u; fw = fu; }
-          else if (fu <= fv || v==x || v ==w)
-            { v = u; fv = fu; }
-        }
-    }
-
-  /* Return.
-   */
-  esl_vec_DCopy(ori, n, xvec);  /* build final xvec from ori, dir, x */
-  esl_vec_DAddScaled(xvec, dir, x, n);
-  if (ret_x  != NULL) *ret_x  = x;
-  if (ret_fx != NULL) *ret_fx = (*func)(xvec, n, prm);
-  ESL_DPRINTF2(("\nbrent(): %d iterations\n", niter));
-  ESL_DPRINTF2(("xx=%10.8f fx=%10.1f\n", x, fx));
-}
-
 
 /* cubic_interpolation():
  *
@@ -560,11 +233,12 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   double t, t_prv, t_new;
   double min_step;
   double max_step;
+  double ta, tb;
+  double fa, fb;
+  double dga, dgb;
   int    nit = 0;
   int    found = FALSE;
   int    status;
-
-  printf("\nwolfe firststep %.20f gtd %f\n", firststep, dgori);
 
   // Check inputs 
   if (firststep <= 0.) ESL_EXCEPTION(eslENORESULT, "Step size is negative");
@@ -584,9 +258,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   dg = esl_vec_DDot(dori, g, n);
 
   while (nit < MAXITER) {
-    printf("^^wolfe it %d || %.20f %f %f || %.20f %f %f\n armijo? %f -%f = %f < 0? || wolfe? %f - %f = %f <= 0\n",
-	   nit, t_prv, f_prv, dg_prv, t, f, dg, f, fori + c1*t*dgori, f-(fori + c1*t*dgori), fabs(dg), -c2*dgori, fabs(dg)+c2*dgori);
-    
+
     if (f > fori + c1*t*dgori || (nit > 0 && f >= f_prv)) // Armijo not satisfied 
       break;
     else if  (fabs(dg) <= -c2*dgori) {                    // Armijo + strong_Wolfe satisfied, you are done
@@ -602,7 +274,6 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     min_step = t + 0.01 * (t-t_prv);
     max_step = t * 10;
     t_new  = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
-    printf("^^wolfe new t %.20f\n", t_new);
 
     // (t,f,g) becomes (t_prv,f_prv,g_prv)
     t_prv  = t;
@@ -635,15 +306,13 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   }
 
   // refine the bracket
-  while (found == FALSE) {
-    printf("^^ ta %f fa %f tb %f  fb %f\n", ta, fa, tb, fb);
+  while (found == FALSE && nit < MAXITER) {
     
     // calculate a new step (t) by cubic interpolation
     t  = cubic_interpolation(ta, fa, dga, tb, fb, dgb, ESL_MIN(ta,tb), ESL_MAX(ta,tb));
-    printf("^^wolfe new new t %.20f\n", t);
 
     // calculate the new point (t,f,g)
-    // at x = xori + t_new * dori
+    // at x = xori + t*dori
     esl_vec_DCopy(ori, n, x);
     esl_vec_DAddScaled(x, dori, t, n);
     f  = (*bothfunc)(x, n, prm, g);
@@ -656,25 +325,27 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
 	fb  = f;
 	dgb = dg;
       }
-    else if (fabs(dg) <= - c2*dgori) {  // strong Wolfe satisfied - we are done
-      found = TRUE;
-    }
-    else if (gd*fabs(tb-ta) >= 0) {
-      // we have a new low
+    else {
+      if (fabs(dg) <= - c2*dgori) {  // strong Wolfe satisfied - we are done
+	found = TRUE;
+      }
+      else if (dg*fabs(tb-ta) >= 0) {
+	// old fb becomes new fa
 	tb  = ta;
 	fb  = fa;
 	dgb = dga;
-	
-	ta  = t;
-	fa  = f;
-	dga = dg;
+      }
+         
+      // new point becomes fa
+      ta  = t;
+      fa  = f;
+      dga = dg;
     }
     
-
     nit ++;
   }
   if (nit == MAXITER) printf("reached the max number of iterations\n");
-     
+
   if (ret_fx)    *ret_fx  = fa;
   if (ret_step) *ret_step = ta;
   
@@ -682,8 +353,8 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
 }
 
 
-/* Function:  esl_min_ConjugateGradientDescent()
- * Incept:    SRE, Wed Jun 22 08:49:42 2005 [St. Louis]
+/* Function:  min_ConjugateGradientDescent()
+ * Incept:    ER, Fri Nov 10 10:18:00 EST 2017 [Cambridge]
  *
  * Purpose:   n-dimensional minimization by conjugate gradient descent.
  *           
@@ -799,7 +470,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       else {
 	gtd       = esl_vec_DDot(gx, cg, n);
 	firststep = ESL_MIN(1.0, 2.*(fx-oldfx)/gtd);
-	printf("\n^^f %f fold %f gtd %f firststep %.20f\n", fx, oldfx, gtd, firststep);
 	oldfx = fx;
       }
 
@@ -810,7 +480,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       c1 = 1e-4;
       c2 = 0.2;
       Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, NULL, &fx, w1, tol);
-      printf("^^end wolfe\n");
       esl_vec_DCopy(w2, n, x); 
       
       /* Main convergence test. 1e-9 factor is fudging the case where our
@@ -819,7 +488,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
       if (cvg <= tol) break;
       
-      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i+1, oldfx, fx, cvg);
+      //fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i+1, oldfx, fx, cvg);
 
       if (i == MAXITER-1) continue;
 

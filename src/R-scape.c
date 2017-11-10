@@ -1137,7 +1137,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
-  if (cfg->covmethod == POTTS) msamanip_ConvertDegen2RandomCanonical(cfg->r, msa);
+  if (cfg->covmethod == POTTS) msamanip_ConvertDegen2Gap(msa); // what gremlin does
   else                         msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
   
@@ -1198,7 +1198,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
     else                             esl_msaweight_PB(msa);
   }  
-  if (1||cfg->verbose) 
+  if (cfg->verbose) 
     printf("Nseq %d Neff %f\n", msa->nseq, esl_vec_DSum(msa->wgt, msa->nseq));
   
   // reset the docyk flag in case it changed with the previous alignment
