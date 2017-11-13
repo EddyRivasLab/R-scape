@@ -18,8 +18,6 @@
 #include "esl_stats.h"
 #include "esl_vectorops.h"
 
-#include <lbfgs.h>
-
 #include "logsum.h"
 #include "minimize.h"
 #include "pottsbuild.h"
@@ -34,8 +32,6 @@ static int             optimize_plm_unpack_paramvector       (double *p,        
 static int             optimize_aplm_pack_paramvector        (double *p,          int np, struct optimize_data *data);
 static int             optimize_aplm_pack_gradient           (double *dx,          int np, struct optimize_data *data);
 static int             optimize_aplm_unpack_paramvector      (double *p,          int np, struct optimize_data *data);
-static int             optimize_aplm_lbfgs_pack_paramvector  (lbfgsfloatval_t *p, int np, struct optimize_data *data);
-static int             optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data);
 static void            optimize_bracket_define_direction     (double *p,          int np, struct optimize_data *data);
 static double          optimize_potts_func_plm               (double *p,          int np, void *dptr);
 static double          optimize_potts_func_aplm              (double *p,          int np, void *dptr);
@@ -44,10 +40,6 @@ static double          optimize_potts_bothfunc_aplm          (double *p,        
 static void            optimize_potts_dfunc_plm              (double *p,          int np, void *dptr, double *dx);
 static void            optimize_potts_dfunc_aplm             (double *p,          int np, void *dptr, double *dx);
 static int             symmetrize                            (PT *pt);
-static int             progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g, const lbfgsfloatval_t fx,
-				const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step,
-				int n, int k, int ls);
-static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step);
 
 
 PT *
@@ -973,26 +965,6 @@ optimize_aplm_pack_gradient(double *dx, int np, struct optimize_data *data)
 }
 
 static int
-optimize_aplm_lbfgs_pack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data)
-{
-  int   L   = data->msa->alen;
-  int   Kg  = data->pt->Kg;
-  int   Kg2 = data->pt->Kg2;
-  int   x   = 0;
-  int   i   = data->pos;
-  int   j;
-  int   a, a2;
-
-  for (a = 0; a < Kg; a++)       p[x++] = (lbfgsfloatval_t)data->pt->h[i][a];
-  for (j = 0;   j < i; j++) 
-    for (a2 = 0; a2 < Kg2; a2++) p[x++] = (lbfgsfloatval_t)data->pt->e[i][j][a2];
-  for (j = i+1; j < L; j++) 
-    for (a2 = 0; a2 < Kg2; a2++) p[x++] = (lbfgsfloatval_t)data->pt->e[i][j][a2];
-  
-  return eslOK;  
-}
-
-static int
 optimize_plm_unpack_paramvector(double *p, int np, struct optimize_data *data)
 {
   double eij, eji;
@@ -1042,30 +1014,6 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
  ERROR:
   return status;
 }
-
-static int
-optimize_aplm_lbfgs_unpack_paramvector(lbfgsfloatval_t *p, int np, struct optimize_data *data)
-{
-  int    L   = data->msa->alen;
-  int    Kg  = data->pt->Kg;
-  int    x   = 0;
-  int    i   = data->pos;
-  int    j;
-  int    a, b;
-  int    status;
-  
-  for (a = 0; a < Kg; a++)                            data->pt->h[i][a]              = (double)p[x++];
-  for (j = 0;   j < i; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = (double)p[x++];
-  for (j = i+1; j < L; j++) 
-    for (a = 0; a < Kg; a++) for (b = 0; b < Kg; b++) data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = (double)p[x++];
-  
-  return eslOK;
-
- ERROR:
-  return status;
-}
-
 
 static void
 optimize_bracket_define_direction(double *u, int np, struct optimize_data *data)
@@ -1198,28 +1146,4 @@ symmetrize(PT *pt)
 	}
   
   return eslOK;  
-}
-
-static int progress(void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g, const lbfgsfloatval_t fx, const lbfgsfloatval_t xnorm,
-		    const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step, int n, int k, int ls)
-{
-    printf("Iteration %d:\n", k);
-    printf("  fx = %f\n", fx);
-    printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
-    printf("\n");
-    return 0;
-}
-
-static lbfgsfloatval_t evaluate(void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step)
-{
-  lbfgsfloatval_t  fx;
-  int              i;
-  int              status;
-
-  fx = optimize_potts_bothfunc_aplm((double *)x, n, instance, (double *)g);
-
-  return fx;
-
- ERROR:
-  return -eslINFINITY;
 }
