@@ -26,7 +26,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
@@ -128,7 +128,6 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   case APLM:
     stol = 0.5;    
     status = potts_Optimize_APLM(pt, msa, tol, stol, errbuf, verbose);
-    //status = potts_OptimizeLBFGS_APLM(pt, msa, tol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
     break;
   case ML:
@@ -622,7 +621,7 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
   
   /* unpack the final parameter vector */
   optimize_plm_unpack_paramvector(p, (int)np, &data);
-  if (1||verbose) printf("END POTTS PLM OPTIMIZATION\n");
+  if (verbose) printf("END POTTS PLM OPTIMIZATION\n");
   
   if (verbose) potts_Write(stdout, pt);
   
@@ -711,7 +710,7 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
     
     /* unpack the final parameter vector */
     optimize_aplm_unpack_paramvector(p, (int)np, &data);
-    if (1||verbose) printf("END POTTS APLM OPTIMIZATION for position %d\n", i);
+    if (verbose) printf("END POTTS APLM OPTIMIZATION for position %d\n", i);
   }
   if (verbose) printf("END POTTS APLM OPTIMIZATION\n");
   
@@ -734,88 +733,6 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
   if (wrk != NULL) free(wrk);
   return status;
 }
-
-
-
-int
-potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose)
-{
-  struct optimize_data   data;
-  int                    L   = msa->alen;
-  int                    Kg  = pt->Kg;
-  int                    Kg2 = pt->Kg2;
-  int                    np  = APLMDIM(L,Kg,Kg2);
-  lbfgsfloatval_t       *x  = lbfgs_malloc(np+1);
-  lbfgsfloatval_t        fx;
-  lbfgs_parameter_t      param;
-  int                    i;
-  int                    ret = 0;
-  int                    status;
-  
-  if (x == NULL) { printf("ERROR: Failed to allocate a memory block for variables.\n"); return eslFAIL; }
-  
-  /* Copy shared info into the "data" structure
-   */
-  data.pt      = pt;
-  data.msa     = msa;
-  data.tol     = tol;
-  data.errbuf  = errbuf;
-  data.verbose = verbose;
-  
-  for (i = 0; i < L; i ++) {
-
-    data.pos = i;
-    
-    // Initialize the variables.
-    optimize_aplm_lbfgs_pack_paramvector(x, (int)np, &data);
-
-    /* Initialize the parameters for the L-BFGS optimization. */
-    lbfgs_parameter_init(&param);
-    //param.linesearch = LBFGS_LINESEARCH_DEFAULT;
-    //param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
-    // param.m              = 3;
-    //param.max_iterations = 50;
-    //param.epsilon        = 0.01;
-    //param.xtol            = 1e-50;
-    printf("xtol %.50f\n", param.xtol);
-
-    // The L-BFGS optimization
-    ret = lbfgs(np, x, &fx, evaluate, progress, (void *)(&data), &param);
-    if (ret == LBFGS_ALREADY_MINIMIZED) { printf("LBFGS_ALREADY_MINIMIZED \n"); }
-    if (ret < 0) {
-      if (ret == LBFGSERR_ROUNDING_ERROR)  printf("LBFGSERR_ROUNDING_ERROR\n");
-      else                                 printf("LBFGS failed with code %d\n", ret);
-      exit(1);
-    }
-    
-    /* Bail out if the function is now +/-inf: this can happen if the caller
-     * has screwed something up.
-     */
-    if (fx == eslINFINITY || fx == -eslINFINITY) ESL_EXCEPTION(eslERANGE, "minimum not finite");
-
-    // recover the variable into data->pt
-    optimize_aplm_lbfgs_unpack_paramvector(x, (int)np, &data);
-    
-    if (1||verbose) printf("END POTTS LBFGS APLM OPTIMIZATION for position %d\n", i);
-  }
-  if (verbose) printf("END POTTS LBFGS APLM OPTIMIZATION\n");
-
-  // Simmetrize
-  symmetrize(pt);
- 
-  if (verbose) potts_Write(stdout, pt);
-  
-  lbfgs_free(x); x = NULL;
-  return eslOK;
-
- ERROR:
-  if (x) lbfgs_free(x);
-  return status;
-}
-
-
-
-
 
 PT *
 potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf)

@@ -682,12 +682,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.clist = NULL;
   cfg.msa2pdb = NULL;
 
-  /* potts */
+  /* potts output parameter values */
   cfg.outpottsfile = NULL;
   cfg.outpottsfp   = NULL;
   if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) {
     esl_sprintf(&cfg.outpottsfile, "%s", esl_opt_GetString(go, "--outpotts"));
-    if ((cfg.outpottsfp = fopen(cfg.outpottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s", cfg.outpottsfile);
+    if ((cfg.outpottsfp = fopen(cfg.outpottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s for writing", cfg.outpottsfile);
   } 
 
   /*  rocplot file */

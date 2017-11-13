@@ -54,8 +54,10 @@ LIBTOOLS  = @LIBTOOLS@
 LBFGSLIB  = ../lib/liblbfgs-1.10/lib/.libs/liblbfgs.dylib
 LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -llbfgs -lm
 
-IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
-LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib/.libs
+#IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
+#LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib/.libs
+IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src 
+LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src 
 
 
 # beautification magic stolen from git

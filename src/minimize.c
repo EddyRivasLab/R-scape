@@ -289,7 +289,6 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     dg = esl_vec_DDot(dori, g, n);
     
     nit ++;
-    printf("Wolfe it %d new t %.20f\n", nit, t);
   }
  
   // now we either have a solution (found = TRUE)
@@ -344,7 +343,6 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     }
     
     nit ++;
-    printf("Wolfe it %d new t %.20f\n", nit, t);
   }
   if (nit == MAXITER) printf("reached the max number of iterations\n");
 
@@ -485,7 +483,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       c1 = 1e-4;  // parameter values in minFunc.m by Mark Schmidt
       c2 = 0.2;   
       Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, &t, &fx, w1, tol);
-      printf("WOLFE end t %.20f\n", t);
       esl_vec_DCopy(w2, n, x); 
       
       /* Main convergence test. 1e-9 factor is fudging the case where our
@@ -494,7 +491,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
       if (cvg <= tol) break;
       
-      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
+      //fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
 
       if (nit == MAXITER-1) continue;
 

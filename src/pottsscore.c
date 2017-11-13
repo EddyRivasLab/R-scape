@@ -423,13 +423,11 @@ potts_CalculateCOVFrobenius(struct data_s *data)
 	for (b = 0; b < K; b ++) {
 	  eij  = pt->e[i][j][IDX(a,b,Kg)];
 	  cov += eij * eij;
-	  if (i==0 && j==1) printf("^^eij(%d,%d) %f mean %f subs %f | cov %f\n", a+1, b+1, pt->e[i][j][IDX(a,b,Kg)], mean, eij, cov);
 	}
       cov = sqrt(cov);
       if (cov > mi->maxCOV) { mi->maxCOV = cov; }
       if (cov < mi->minCOV) { mi->minCOV = cov; }
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = cov;
-      printf("^^ norm2 %d %d = %f\n", i, j, cov);
     }
   }
 

@@ -94,7 +94,6 @@ extern int   potts_InitGaussian(ESL_RANDOMNESS *r, PT *pt, double mu, double sig
 extern int   potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose);
 extern int   potts_Optimize_PLM (PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose);
 extern int   potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose);
-extern int   potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verbose);
 extern PT   *potts_Read(char *paramfile, ESL_ALPHABET *abc, char *errbuf);
 extern void  potts_Write(FILE *fp, PT *pt);
 
