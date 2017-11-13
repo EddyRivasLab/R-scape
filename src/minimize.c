@@ -88,7 +88,7 @@ static double cubic_interpolation(double xa, double fa, double ga, double xb, do
   double swapper;
   
   // we assume xb > xa
-  if (xa == xb) ESL_EXCEPTION(eslENORESULT, "xa has to be different from xb");
+  if (xa == xb) ESL_EXCEPTION(eslENORESULT, "cubic interpolation(): xa has to be different from xb");
   if (xa >  xb)
     {
       swapper = xa; xa = xb; xb = swapper;
@@ -234,6 +234,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   double ta, tb;
   double fa, fb;
   double dga, dgb;
+  double tmax, tmin;
   int    nit = 0;
   int    found = FALSE;
   int    status;
@@ -271,7 +272,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     // calculate a new step (t_new) by cubic interpolation between (t_prv,f_prv,g_prv) and (t,f,g)
     min_step = t + 0.01 * (t-t_prv);
     max_step = t * 10;
-    t_new  = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
+    t_new = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
 
     // (t,f,g) becomes (t_prv,f_prv,g_prv)
     t_prv  = t;
@@ -307,15 +308,26 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   while (found == FALSE && nit < MAXITER) {
     
     // calculate a new step (t) by cubic interpolation
-    t  = cubic_interpolation(ta, fa, dga, tb, fb, dgb, ESL_MIN(ta,tb), ESL_MAX(ta,tb));
+    tmax = ESL_MAX(ta,tb);
+    tmin = ESL_MIN(ta,tb);
+    
+    t = cubic_interpolation(ta, fa, dga, tb, fb, dgb, tmin, tmax);
 
+    // test we are making enough progress
+    if (ESL_MIN(tmax-t,t-tmin) / (tmax-tmin) < 0.1) {
+      if (fabs(tmax-t) < fabs(t-tmin)) t = tmax - 0.1*(tmax-tmin);
+      else                             t = tmin + 0.1*(tmax-tmin);
+    }
+  
     // calculate the new point (t,f,g)
     // at x = xori + t*dori
     esl_vec_DCopy(ori, n, x);
     esl_vec_DAddScaled(x, dori, t, n);
     f  = (*bothfunc)(x, n, prm, g);
     dg = esl_vec_DDot(dori, g, n);
-
+    
+    if (fabs(ta-tb)*dg < 1e-6) break; // no more progress is possible
+	 
     if (f > fori + c1*t*dgori ||   // Armijo not satisfied 
 	(nit > 0 && f >= fa)    )  // or new f is not lowest
       {
@@ -339,6 +351,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
       fa  = f;
       dga = dg;
     }
+
     
     nit ++;
   }
