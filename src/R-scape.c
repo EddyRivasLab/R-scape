@@ -44,6 +44,8 @@
 --RAF,--RAFa,--RAFp,\
 --RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa,\
+"              
+#define POTTSCOVOPTS  "\
 --PTFp,--PTAp,--PTDp\
 "              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
@@ -290,9 +292,10 @@ static ESL_OPTIONS options[] = {
   { "--CCFa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenius norm ASC corrected statistic",                       1 },
   { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                     1 },
   { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                  1 },
-  { "--PTFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                  1 },
-  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                  1 },
-  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                  1 },
+  // potts covariation options */
+  { "--PTFp",         eslARG_NONE,     "TRUE",   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                  1 },
+  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                  1 },
+  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                  1 },
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
@@ -312,7 +315,7 @@ static ESL_OPTIONS options[] = {
   { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
    /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
   { "--ptmuh",        eslARG_REAL,    "0.01",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
-  { "--ptmue",        eslARG_REAL,    "0.2",     NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
+  { "--ptmue",        eslARG_REAL,    "0.20",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--PLM",          eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
@@ -557,18 +560,23 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--CCFa"))  { cfg.covtype = CCFa;  cfg.covmethod = NONPARAM; }
   else if (esl_opt_GetBoolean(go, "--CCFp"))  { cfg.covtype = CCFp;  cfg.covmethod = NONPARAM; }
   else if (esl_opt_GetBoolean(go, "--CCF"))   { cfg.covtype = CCF;   cfg.covmethod = NONPARAM; }
-  else if (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.covmethod = POTTS; }
-  else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.covmethod = POTTS; }
-  else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.covmethod = POTTS; }
-
-  // potts model
-  cfg.pt       = NULL;
-  cfg.pttrain  = NONE;
-  cfg.ptmin    = CGD_BRENT;
-  cfg.ptreg    = REGNONE;
-  cfg.ptsctype = SCNONE;
-  cfg.ptinit   = INIT_ZERO;
   
+  if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
+  else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
+  else                                        cfg.covclass = CSELECT;
+  
+  
+  /* POTTS model */
+  cfg.pt = NULL;
+  
+  // potts - covariation measure: PTFp or PTAp  (implemented for now)
+  //                     default is  PTFp = FROEB (froebenious norm) + APC (average product correction)
+  //                     default is  APC corrected (only option implemented)
+  if      (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.ptsctype = FROEB; cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.ptsctype = AVG;   cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.ptsctype = DI;    cfg.covmethod = POTTS; }
+  
+  // potts - training: PLM or APLM (implemented for now)
   if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
   else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
   else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pttrain = APLM;
@@ -576,23 +584,21 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pttrain = ACE;
   else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pttrain = BML;
   
-  if      (esl_opt_GetBoolean(go, "--PTFp")) cfg.ptsctype = FROEB;
-  else if (esl_opt_GetBoolean(go, "--PTAp")) cfg.ptsctype = AVG;
-  else if (esl_opt_GetBoolean(go, "--PTDp")) cfg.ptsctype = DI;
-  // regularization parameters
-  if      (cfg.pttrain == PLM) {  // defaults in gremlin_v2 (scaled by alignment length)
-    cfg.ptmuh = 0.01;
-    cfg.ptmue = 0.20;
-  }
-  else if (cfg.pttrain == APLM) { // defaults in plmDCA_asymmetric_v2 (scaled by number of sequences if < 500)
-    cfg.ptmuh = 0.01;
-    cfg.ptmue = cfg.ptmuh;
-  }
+  // potts - training: optimization
+  //           default is CGD_WOLFE (conjugate gradient descent using the strong Wolfe condition)
+  cfg.ptmin    = CGD_WOLFE;  // not an option yet  (gremlin default)
+  cfg.ptinit   = INIT_GREM;  // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
+  
+  // potts - training: regularization parameters
+  //        using defaults in gremlin_v2 (scaled by alignment length)
+  cfg.ptreg = REGL2_GREM; // not an option yet  (gremlin default)
+  cfg.ptmuh = 0.01;
+  cfg.ptmue = 0.20;
   // override with options
   if (esl_opt_IsOn(go, "--ptmuh")) cfg.ptmuh = esl_opt_GetReal(go, "--ptmuh");
   if (esl_opt_IsOn(go, "--ptmue")) cfg.ptmue = esl_opt_GetReal(go, "--ptmue");
 
-  // options that make a reproduction of gremlin v2.1
+  // options that make a reproduction of gremlin v2.1 (overides any previous options)
   cfg.isgremlin = FALSE;
   cfg.isplmDCA  = FALSE;
   if (esl_opt_IsOn(go, "--gremlin")) {
@@ -602,9 +608,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.pttrain   = PLM;
     cfg.ptmin     = CGD_WOLFE;
     cfg.ptinit    = INIT_GREM;
+    cfg.ptreg     = REGL2_GREM;
     cfg.ptmuh     = 0.01;
     cfg.ptmue     = 0.20;
-    cfg.ptreg     = REGL2_GREM;
+    
+    cfg.gapthresh = 1.0;        // don't touch alignment
+    cfg.idthresh  = 1.0;
   }
   if (esl_opt_IsOn(go, "--plmDCA")) {
     cfg.isplmDCA  = TRUE;
@@ -614,12 +623,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.ptmin     = LBFGS;
     cfg.ptinit    = INIT_ZERO;
     cfg.ptreg     = REGL2_PLMD;
+    cfg.ptmuh     = 0.01;       // defaults in plmDCA_asymmetric_v2 (scaled by number of sequences if < 500)
+    cfg.ptmue     = cfg.ptmuh;
   }
   
-  if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
-  else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
-  else                                        cfg.covclass = CSELECT;
-     
   /* default is Watson-Crick plus U:G, G:U pairs */
   cfg.allowpair = esl_dmatrix_Create(4, 4);
   esl_dmatrix_SetZero(cfg.allowpair);

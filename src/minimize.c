@@ -289,6 +289,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     dg = esl_vec_DDot(dori, g, n);
     
     nit ++;
+    printf("Wolfe it %d new t %.20f\n", nit, t);
   }
  
   // now we either have a solution (found = TRUE)
@@ -343,6 +344,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     }
     
     nit ++;
+    printf("Wolfe it %d new t %.20f\n", nit, t);
   }
   if (nit == MAXITER) printf("reached the max number of iterations\n");
 
@@ -413,7 +415,8 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   double oldfx;
   double coeff;
   double num, den;
-  int    i, i1;
+  int    nit;
+  int    i;
   double *gx, *cg, *w1, *w2;
   double cvg;
   double fa,fb,fc;
@@ -422,6 +425,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   double fx;
   double gtd;
   double firststep;
+  double t;        // step after Worfe algorithm
   double sum;
 
   gx = wrk;
@@ -450,21 +454,21 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   /* (failsafe) convergence test: a zero direction can happen, 
    * and it either means we're stuck or we're finished (most likely stuck)
    */
-  for (i1 = 0; i1 < n; i1++) 
-    if (cg[i1] != 0.) break;
-  if  (i1 == n) {
+  for (i = 0; i < n; i++) 
+    if (cg[i] != 0.) break;
+  if  (i == n) {
     if (ret_fx != NULL) *ret_fx = oldfx;
     return eslOK;
   }
   
-  for (i = 0; i < MAXITER; i++)
+  for (nit = 0; nit < MAXITER; nit++)
     {
       
       // Initial step size
-      if (i == 0) {
+      if (nit == 0) {
 	sum = 0.;
-	for (i1 = 0; i1 < n; i1 ++)
-	  sum += fabs(gx[i1]);
+	for (i = 0; i < n; i ++)
+	  sum += fabs(gx[i]);
 	firststep = ESL_MIN(1.0, ((sum > 0.)? 1./sum:1.0) );
       }
       else {
@@ -477,9 +481,11 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       //
       // the new param are temporarily in w2
       // the negative gradient is temporarily in w1
-      c1 = 1e-4;
-      c2 = 0.2;
-      Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, NULL, &fx, w1, tol);
+      //
+      c1 = 1e-4;  // parameter values in minFunc.m by Mark Schmidt
+      c2 = 0.2;   
+      Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, &t, &fx, w1, tol);
+      printf("WOLFE end t %.20f\n", t);
       esl_vec_DCopy(w2, n, x); 
       
       /* Main convergence test. 1e-9 factor is fudging the case where our
@@ -488,21 +494,21 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
       if (cvg <= tol) break;
       
-      //fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", i+1, oldfx, fx, cvg);
+      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
 
-      if (i == MAXITER-1) continue;
+      if (nit == MAXITER-1) continue;
 
 #if 0
       /* Calculate the Polak-Ribiere coefficient */
-      for (coeff = 0., i1 = 0; i1 < n; i1++)
-	coeff += (w1[i1] - gx[i1]) * w1[i1];
+      for (coeff = 0., i = 0; i < n; i++)
+	coeff += (w1[i] - gx[i]) * w1[i];
       coeff /= esl_vec_DDot(gx, gx, n);
 #endif
       /* Calculate the Hestenes-Stiefel coefficient */
-      for (num = 0., i1 = 0; i1 < n; i1++)
-	num += (w1[i1] - gx[i1]) * w1[i1];
-      for (den = 0., i1 = 0; i1 < n; i1++)
-	den += (w1[i1] - gx[i1]) * cg[i1];
+      for (num = 0., i = 0; i < n; i++)
+	num += (w1[i] - gx[i]) * w1[i];
+      for (den = 0., i = 0; i < n; i++)
+	den += (w1[i] - gx[i]) * cg[i];
       coeff = (den != 0)? num/den:0. ;
      
       /* Calculate the next conjugate gradient direction in w2 = -gx + coeff*cg */
@@ -523,21 +529,21 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 #if eslDEBUGLEVEL >= 2
       printf("\nesl_min_ConjugateGradientDescent():\n");
       printf("new point:     ");
-      for (i1 = 0; i1 < n; i1++)
-	printf("%g ", x[i1]);
+      for (i = 0; i < n; i++)
+	printf("%g ", x[i]);
       
       printf("\nnew gradient:    ");
-      for (i1 = 0; i1 < n; i1++)
-	printf("%g ", gx[i1]);
+      for (i = 0; i < n; i++)
+	printf("%g ", gx[i]);
       
       numeric_derivative(x, u, n, func, prm, 1e-4, w1);
       printf("\n(numeric grad):  ");
-      for (i1 = 0; i1 < n; i1++)
-	printf("%g ", w1[i1]);
+      for (i = 0; i < n; i++)
+	printf("%g ", w1[i]);
       
       printf("\nnew direction: ");
-      for (i1 = 0; i1 < n; i1++)
-	printf("%g ", cg[i1]);
+      for (i = 0; i < n; i++)
+	printf("%g ", cg[i]);
       
       printf("\nOld f() = %g    New f() = %g    Convergence = %g\n\n", oldfx, fx, cvg);
 #endif
@@ -545,15 +551,15 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       /* Second (failsafe) convergence test: a zero direction can happen, 
        * and it either means we're stuck or we're finished (most likely stuck)
        */
-      for (i1 = 0; i1 < n; i1++) 
-	if (cg[i1] != 0.) break;
-      if  (i1 == n) break;
+      for (i = 0; i < n; i++) 
+	if (cg[i] != 0.) break;
+      if  (i == n) break;
 
     }
 
   if (ret_fx != NULL) *ret_fx = fx;
   
-  //if (i == MAXITER) ESL_EXCEPTION(eslENOHALT, "Failed to converge in ConjugateGradientDescent()");
+  if (nit == MAXITER) printf("min_ConjugateGradientDescent() reached the max number of iterations %d\n", nit);
   
   return eslOK;
 }

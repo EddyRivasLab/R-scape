@@ -26,7 +26,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
@@ -138,7 +138,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     ESL_XFAIL(eslFAIL, errbuf, "error optimization method not implemented");
     break;
   }
-  
+
   if (pottsfp) potts_Write(pottsfp, pt);
   return pt;
   
@@ -624,10 +624,6 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
   optimize_plm_unpack_paramvector(p, (int)np, &data);
   if (1||verbose) printf("END POTTS PLM OPTIMIZATION\n");
   
-  /* transform results to the zero-sum gauge */
-  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
-  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-  
   if (verbose) potts_Write(stdout, pt);
   
   /* clean up */
@@ -719,11 +715,7 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
   }
   if (verbose) printf("END POTTS APLM OPTIMIZATION\n");
   
-  /* First, transform all results to the zero-sum gauge */
-  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
-  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-  
-  // Then, symmetrize
+  // Symmetrize
   symmetrize(pt);
   
   if (verbose) potts_Write(stdout, pt);
@@ -808,11 +800,7 @@ potts_OptimizeLBFGS_APLM(PT *pt, ESL_MSA *msa, float tol, char *errbuf, int verb
   }
   if (verbose) printf("END POTTS LBFGS APLM OPTIMIZATION\n");
 
-  /* First, transform all results to the zero-sum gauge */
-  status = potts_GaugeZeroSum(pt, errbuf,  verbose);
-  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
-  
-  // Then, symmetrize
+  // Simmetrize
   symmetrize(pt);
  
   if (verbose) potts_Write(stdout, pt);

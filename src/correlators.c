@@ -1042,7 +1042,7 @@ corr_CalculateCCF_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int shiftnonneg)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -1052,6 +1052,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
   ESL_DMATRIX     *COV  = NULL;
   double          *COVx = NULL;
   double           COVavg = 0.0;
+  int              L = mi->alen;
   int              i, j;
   int              status = eslOK;
   
@@ -1070,27 +1071,30 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
   corr_ReuseCOV(mi, mi->type, mi->class);  
  
   // COVavg
-  for (i = 0; i < mi->alen-1; i++) 
-    for (j = i+1; j < mi->alen; j++) 
+  for (i = 0; i < L-1; i++) 
+    for (j = i+1; j < L; j++) 
       COVavg += COV->mx[i][j];
-  if (mi->alen > 1) COVavg /= (double)mi->alen * ((double)mi->alen-1.);
+  if (L > 1) COVavg /= (double)L * ((double)L-1.);
   COVavg *= 2.;
 
   //COVx
-  ESL_ALLOC(COVx, sizeof(double) * mi->alen);
-  for (i = 0; i < mi->alen; i++) {
+  ESL_ALLOC(COVx, sizeof(double) * L);
+  for (i = 0; i < L; i++) {
     COVx[i] = 0.0;
-    for (j = 0; j < mi->alen; j++) {
+    for (j = 0; j < L; j++) {
       if (j != i) COVx[i] += COV->mx[i][j];
     }
-    if (mi->alen > 1) COVx[i] /= (double)mi->alen-1.;
+    if (L > 1) COVx[i] /= (double)L-1.;
   }
 
   //COVp
-  for (i = 0; i < mi->alen; i++) 
-    for (j = 0; j < mi->alen; j++) {
-
-      if (actype == APC) 
+  mi->minCOV = +eslINFINITY;
+  mi->maxCOV = -eslINFINITY;
+  for (i = 0; i < L; i++) 
+    for (j = 0; j < L; j++) {
+      if (i == j) continue;
+      
+      if      (actype == APC) 
 	mi->COV->mx[i][j] = (COVavg != 0.0)? COV->mx[i][j] - COVx[i] * COVx[j] / COVavg : 0.0;
       else if (actype == ASC) 
 	mi->COV->mx[i][j] = COV->mx[i][j] - (COVx[i] + COVx[j] - COVavg); 
@@ -1103,10 +1107,16 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
     }
 
+  if (shiftnonneg) {
+    for (i = 0; i < L; i ++) 
+      for (j = 0; j < L; j ++) 
+	if (i != j) mi->COV->mx[i][j] -= mi->minCOV;
+  }
+
   if (verbose) {
     printf("%s-[%f,%f] \n", covtype,  mi->minCOV, mi->maxCOV);
-    for (i = 0; i < mi->alen-1; i++) 
-      for (j = i+1; j < mi->alen; j++) {
+    for (i = 0; i < L-1; i++) 
+      for (j = i+1; j < L; j++) {
 	printf("%s-[%d][%d] = %f | COV %f | COVx %f COVy %f | COVavg %f\n", 
 	       covtype, i, j, mi->COV->mx[i][j], COV->mx[i][j], COVx[i], COVx[j], COVavg);
       } 

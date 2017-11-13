@@ -348,6 +348,7 @@ potts_CalculateCOV(struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   PT              *pt = data->pt;
+  int              L  = data->pt->L;
   int              i, j;
   int              status;
 
@@ -366,11 +367,11 @@ potts_CalculateCOV(struct data_s *data)
     ESL_XFAIL(eslFAIL, data->errbuf, "potts_CalculateCOVDI() not implemented yet");
     break;
   }
-  
+
   if (data->verbose) {
     printf("POTTS[%f,%f]\n", mi->minCOV, mi->maxCOV);
-    for (i = 0; i < pt->L-1; i++) 
-      for (j = i+1; j < pt->L; j++) {
+    for (i = 0; i < L-1; i++) 
+      for (j = i+1; j < L; j++) {
 	printf("POTTS[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
@@ -388,6 +389,7 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   char            *errbuf = data->errbuf;
   double           cov;
   double           eij;
+  double           mean;
   int              K  = pt->abc->K;
   int              Kg = pt->Kg;
   int              i, j;
@@ -396,24 +398,38 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   int              status = eslOK;
 
   // Use the Frobenius norm with zero-sum gauge
-  status = potts_GaugeZeroSum(pt, data->errbuf, data->verbose);
-  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "zerosum gauge failed");
+  // gremlin does not shift parameters to the zero gauge
+  //
+  //status = potts_GaugeZeroSum(pt, data->errbuf, data->verbose);
+  //if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "zerosum gauge failed");
  
-  for (i = 0; i < pt->L; i ++) {
+  for (i = 0; i < pt->L-1; i ++) {
     for (j = i+1; j < pt->L; j ++) {
-      cov = 0;
+      cov = 0.;
 
+      // gremlin subtracts the mean in misc/compute_edges_norm.m
+      // t=t-mean(t(:)); %can always subtract a constant from any energy term and not change likelihood
+      // but this line (which I don't understand, seems to make no effect in t
+      /* 
+	 mean = 0.;
+	 for (a = 0; a < K; a ++)
+	 for (b = 0; b < K; b ++) 
+	 mean += pt->e[i][j][IDX(a,b,Kg)];
+	 mean /= pt->Kg2;
+      */
+      
       // only for residues -- no gaps
       for (a = 0; a < K; a ++)
 	for (b = 0; b < K; b ++) {
-	  idx  = IDX(a,b,Kg);
-	  eij  = pt->e[i][j][idx];
+	  eij  = pt->e[i][j][IDX(a,b,Kg)];
 	  cov += eij * eij;
+	  if (i==0 && j==1) printf("^^eij(%d,%d) %f mean %f subs %f | cov %f\n", a+1, b+1, pt->e[i][j][IDX(a,b,Kg)], mean, eij, cov);
 	}
       cov = sqrt(cov);
       if (cov > mi->maxCOV) { mi->maxCOV = cov; }
       if (cov < mi->minCOV) { mi->minCOV = cov; }
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = cov;
+      printf("^^ norm2 %d %d = %f\n", i, j, cov);
     }
   }
 
@@ -439,7 +455,7 @@ potts_CalculateCOVAverage(struct data_s *data)
 
   for (i = 0; i < pt->L; i ++) {
     for (j = i+1; j < pt->L; j ++) {
-      cov = 0;
+      cov = 0.;
       
       // only for residues -- no gaps
       for (a = 0; a < K; a ++)

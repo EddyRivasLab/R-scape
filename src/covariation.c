@@ -59,6 +59,9 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
   COVCLASS       covclass = data->mi->class;
+  int            L  = data->pt->L;
+  int            i, j;
+  int            shiftnonneg = FALSE;
   int            status;
 
   /* Calculate the covariation matrix */
@@ -78,21 +81,22 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case PTFp:
   case PTAp:
   case PTDp:
+    shiftnonneg = TRUE; // gremling shifts scores to be nonnegative
     status = potts_CalculateCOV(data);
     if (status != eslOK) goto ERROR; 
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
-    if (status != eslOK) goto ERROR; 
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    if (status != eslOK) goto ERROR;
     break;
   case CHIa: 
     status = corr_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CHIp:
     status = corr_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case CHI: 
@@ -102,13 +106,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case GTa: 
     status = corr_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case GTp: 
     status = corr_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
      if (status != eslOK) goto ERROR; 
      break;
   case GT: 
@@ -118,13 +122,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case MIa: 
     status = corr_CalculateMI          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIp: 
     status = corr_CalculateMI          (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MI: 
@@ -134,13 +138,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case MIra: 
     status = corr_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIrp:
     status = corr_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case MIr: 
@@ -150,13 +154,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case MIga: 
     status = corr_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIgp:
     status = corr_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case MIg: 
@@ -166,13 +170,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case OMESa: 
     status = corr_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESp: 
     status = corr_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case OMES: 
@@ -182,13 +186,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
  case RAFa: 
    status = corr_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFp: 
     status = corr_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAF:
@@ -198,13 +202,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case RAFSa: 
     status = corr_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFSp: 
     status = corr_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFS: 
@@ -214,13 +218,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case CCFa: 
     status = corr_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,     data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(ASC,     data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CCFp: 
     status = corr_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,     data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCOVCorrected(APC,     data, analyze, &ranklist, &hitlist, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CCF: 
@@ -823,27 +827,27 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
     jh = hitlist->hit[h].j;
     
     if (hitlist->hit[h].bptype == WWc)      { 
-      fprintf(fp, "*\t%10d\t%10d\t%.2f\t%g\n", 
+      fprintf(fp, "*\t%10d\t%10d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
     else if (hitlist->hit[h].bptype < STACKED) { 
-      fprintf(fp, "**\t%10d\t%10d\t%.2f\t%g\n", 
+      fprintf(fp, "**\t%10d\t%10d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "c~\t%10d\t%10d\t%.2f\t%g\n", 
+      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
    else if (hitlist->hit[h].bptype < BPNONE) { 
-      fprintf(fp, "c\t%10d\t%10d\t%.2f\t%g\n", 
+      fprintf(fp, "c\t%10d\t%10d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
     else if (hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "~\t%10d\t%10d\t%.2f\t%g\n", 
+      fprintf(fp, "~\t%10d\t%10d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }
     else { 
-      fprintf(fp, " \t%10d\t%10d\t%.2f\t%g\n",
+      fprintf(fp, " \t%10d\t%10d\t%.5f\t%g\n",
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
     }  
   }
@@ -907,27 +911,27 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
     jh = hitlist->srthit[h]->j;
     
     if (hitlist->srthit[h]->bptype == WWc) { 
-      fprintf(fp, "*\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "*\t%8d\t%8d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->bptype < STACKED) { 
-      fprintf(fp, "**\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "**\t%8d\t%8d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "c~\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "c~\t%8d\t%8d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE) { 
-      fprintf(fp, "c\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "c\t%8d\t%8d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else if (hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "~\t%8d\t%8d\t%.2f\t%g\n", 
+      fprintf(fp, "~\t%8d\t%8d\t%.5f\t%g\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }
     else { 
-      fprintf(fp, " \t%8d\t%8d\t%.2f\t%g\n",
+      fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\n",
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
     }  
   }
