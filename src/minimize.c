@@ -13,8 +13,6 @@
 #include <math.h>
 #include <float.h>
 
-#include <lbfgs.h>
-
 #include "easel.h"
 #include "esl_dmatrix.h"
 #include "esl_vectorops.h"
