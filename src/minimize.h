@@ -10,8 +10,6 @@
 #include "easel.h"
 #include "esl_dmatrix.h"
 
-#include "lbfgs.h"
-
 #define MAXITER 50
 
 enum NMtransf_e {
