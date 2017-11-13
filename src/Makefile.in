@@ -52,7 +52,7 @@ INSTALL   = @INSTALL@
 LIBTOOLS  = @LIBTOOLS@
 
 LBFGSLIB  = ../lib/liblbfgs-1.10/lib/.libs/liblbfgs.dylib
-LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -llbfgs -lm
+LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -lm
 
 #IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
 #LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib/.libs
