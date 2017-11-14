@@ -51,7 +51,7 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  neff;
   int     status;
   
-  tol = 1e-4; // ad hoc compromise for good time
+  tol = 1e-6; // most time convergece is not reached, just stop at MAXIT
   
   e2_DLogsumInit();
   

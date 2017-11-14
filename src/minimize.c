@@ -180,7 +180,7 @@ static int Armijo(double *ori, double fori, double *gori, double *dori, int n,
     esl_vec_DAddScaled(x, dori, t, n);
     f = (*bothfunc)(x, n, prm, g);
     
-    if (nit > MAXITER) ESL_EXCEPTION(eslENORESULT, "reached is the max number of iterations");
+    //if (nit > MAXITER) printf("Armijo() reached is the max number of iterations\n");
     
     t_prv = t;
   }
@@ -355,7 +355,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     
     nit ++;
   }
-  if (nit == MAXITER) printf("reached the max number of iterations\n");
+  //if (nit == MAXITER) printf("Wolfe() reached the max number of iterations\n");
 
   if (ret_fx)    *ret_fx  = fa;
   if (ret_step) *ret_step = ta;
@@ -481,7 +481,9 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 	firststep = ESL_MIN(1.0, ((sum > 0.)? 1./sum:1.0) );
       }
       else {
-	gtd       = esl_vec_DDot(gx, cg, n);
+	gtd = esl_vec_DDot(gx, cg, n);
+	if (gtd > -tol) break;  // Check this is a good direction
+
 	firststep = ESL_MIN(1.0, 2.*(fx-oldfx)/gtd);
 	oldfx = fx;
       }
@@ -494,9 +496,9 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       c1 = 1e-4;  // parameter values in minFunc.m by Mark Schmidt
       c2 = 0.2;   
       Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, &t, &fx, w1, tol);
-      esl_vec_DCopy(w2, n, x); 
+      esl_vec_DCopy(w2, n, x); //new parameters
       
-      /* Main convergence test. 1e-9 factor is fudging the case where our
+      /* Main convergence test. 1e-10 factor is fudging the case where our
        * minimum is at exactly f()=0.
        */
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
@@ -506,12 +508,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 
       if (nit == MAXITER-1) continue;
 
-#if 0
-      /* Calculate the Polak-Ribiere coefficient */
-      for (coeff = 0., i = 0; i < n; i++)
-	coeff += (w1[i] - gx[i]) * w1[i];
-      coeff /= esl_vec_DDot(gx, gx, n);
-#endif
       /* Calculate the Hestenes-Stiefel coefficient */
       for (num = 0., i = 0; i < n; i++)
 	num += (w1[i] - gx[i]) * w1[i];
@@ -567,7 +563,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
 
   if (ret_fx != NULL) *ret_fx = fx;
   
-  if (nit == MAXITER) printf("min_ConjugateGradientDescent() reached the max number of iterations %d\n", nit);
+  //if (nit == MAXITER) printf("min_ConjugateGradientDescent() reached the max number of iterations %d\n", nit);
   
   return eslOK;
 }

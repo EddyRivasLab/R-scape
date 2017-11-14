@@ -390,6 +390,7 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   double           cov;
   double           eij;
   double           mean;
+  int              L  = pt->L;
   int              K  = pt->abc->K;
   int              Kg = pt->Kg;
   int              i, j;
@@ -403,12 +404,14 @@ potts_CalculateCOVFrobenius(struct data_s *data)
   //status = potts_GaugeZeroSum(pt, data->errbuf, data->verbose);
   //if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "zerosum gauge failed");
  
-  for (i = 0; i < pt->L-1; i ++) {
-    for (j = i+1; j < pt->L; j ++) {
+  for (i = 0; i < L-1; i ++) {
+    for (j = i+1; j < L; j ++) {
       cov = 0.;
 
-      // gremlin subtracts the mean in misc/compute_edges_norm.m
+      // gremlin subtracts the mean in misc/compute_edges_norm.m, using this line:
+      //
       // t=t-mean(t(:)); %can always subtract a constant from any energy term and not change likelihood
+      //
       // but this line (which I don't understand, seems to make no effect in t
       /* 
 	 mean = 0.;

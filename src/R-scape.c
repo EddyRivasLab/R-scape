@@ -245,10 +245,10 @@ static ESL_OPTIONS options[] = {
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              1 },
-  /* Control of pdf contacts */
-  { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--cyk",              "read pdb file from file <f>",                                                               0 },
-  { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        0 },
+  /* Control of pdb contacts */
+  { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--cyk",              "read pdb file from file <f>",                                                               1 },
+  { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
@@ -293,9 +293,9 @@ static ESL_OPTIONS options[] = {
   { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                     1 },
   { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                  1 },
   // potts covariation options */
-  { "--PTFp",         eslARG_NONE,     "TRUE",   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                  1 },
-  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                  1 },
-  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                  1 },
+  { "--PTFp",         eslARG_NONE,     "TRUE",   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                 1 },
+  { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                 1 },
+  { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                 1 },
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
@@ -310,9 +310,9 @@ static ESL_OPTIONS options[] = {
   { "--potts",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "potts couplings",                                                                           1 },
   { "--akmaev",       eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "akmaev-style MI statistics",                                                                0 },
   /* alphabet type */
-  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
-  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
-  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      0 },  
+  { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use DNA alphabet",                                                                          1 },
+  { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          1 },
+  { "--amino",        eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use protein alphabet",                                                                      1 },  
    /* Control for potts-derived covatiation measures (--PTFp and --PTAp) */
   { "--ptmuh",        eslARG_REAL,    "0.01",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
   { "--ptmue",        eslARG_REAL,    "0.20",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
@@ -324,8 +324,7 @@ static ESL_OPTIONS options[] = {
   { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--outpotts",  eslARG_OUTFILE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters to file <f>,",                                              1 },
   /* reproduce gremlin (a particular potts implementation */
-  { "--gremlin",          eslARG_NONE,      FALSE,   NULL,    NULL,  NULL,    NULL,  NULL,               "reproduce gremlin",                                                                         0 },
-  { "--plmDCA",           eslARG_NONE,      FALSE,   NULL,    NULL,  NULL,    NULL,  NULL,               "reproduce plmDCA",                                                                          0 },
+  { "--gremlin",          eslARG_NONE,      FALSE,   NULL,    NULL,  NULL,    NULL,  NULL,               "reproduce gremlin",                                                                         1 },
    /* Control of scoring system - ribosum */
   { "--ribofile",     eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
@@ -338,10 +337,10 @@ static ESL_OPTIONS options[] = {
   { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
-  { "--tol",          eslARG_REAL,    "1e-3",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
+  { "--tol",          eslARG_REAL,    "1e-5",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.05",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
+  { "--pmass",        eslARG_REAL,    "0.05",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                1 },
   { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                            0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
@@ -586,8 +585,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   // potts - training: optimization
   //           default is CGD_WOLFE (conjugate gradient descent using the strong Wolfe condition)
-  cfg.ptmin    = CGD_WOLFE;  // not an option yet  (gremlin default)
-  cfg.ptinit   = INIT_GREM;  // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
+  cfg.ptmin  = CGD_WOLFE;  // not an option yet  (gremlin default)
+  cfg.ptinit = INIT_GT;    // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
   
   // potts - training: regularization parameters
   //        using defaults in gremlin_v2 (scaled by alignment length)
@@ -615,8 +614,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.gapthresh = 1.0;        // don't touch alignment
     cfg.idthresh  = 1.0;
   }
-  if (esl_opt_IsOn(go, "--plmDCA")) {
-    cfg.isplmDCA  = TRUE;
+  else if (cfg.isplmDCA) {
     cfg.covmethod = POTTS;
     cfg.covtype   = PTFp;
     cfg.pttrain   = APLM;
@@ -1195,8 +1193,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   
   if (msa == NULL) return eslOK;
 
-  /* weigth the sequences */
-  if (cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
+  /* weight the sequences */
+  if (cfg->covmethod == POTTS || cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
     reweight_thresh = 0.2;
     status = esl_msaweight_Gremlin(msa, reweight_thresh, cfg->isplmDCA, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  esl_fatal(cfg->errbuf); 
