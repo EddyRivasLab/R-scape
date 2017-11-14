@@ -430,11 +430,9 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
   struct mutual_s *mi = NULL;
   double           exp;
   double           obs;
+  double          *gtp  = NULL;
   double          *ggtx = NULL;
   double           ggtt = 0.0;
-  double          *gtp = NULL;
-  double          *gtx = NULL;
-  double          *gtt = NULL;
   double           pseudoc = 0.01;
   double           gt;
   double           gtp_l2norm;
@@ -464,6 +462,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
   ggtt *= 2.;
   
   //ggtx
+  ESL_ALLOC(gtp,  sizeof(double) * dim);
   ESL_ALLOC(ggtx, sizeof(double) * L);
   for (i = 0; i < L; i++) {
     ggtx[i] = 0.0;
@@ -473,33 +472,6 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
     if (L > 1) ggtx[i] /= (double)L-1.;
   }
 
-  ESL_ALLOC(gtx, sizeof(double) * dim * L);
-  ESL_ALLOC(gtt, sizeof(double) * dim);
-  for (a = 0; a < K; a ++) 
-    for (b = 0; b < K; b ++) {
-      ab      = IDX(a,b,K);
-      gtt[ab] = 0;
-      
-      for (i = 0; i < L; i++) {
-	xi      = i*dim + ab;
-	gtx[xi] = 0;
-	
-	for (j = 0; j < L; j++) {
-	  if (j==i) continue;
-	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
-	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
-	  gt  = (exp > 0. && obs > 0.) ? log (obs / exp) : pseudoc;
-	  
-	  gtx[xi] += gt;
-	  gtt[ab] += gt;
-	  
-	}
-	if (L > 1) gtx[xi] /= (double)L-1.;
-      }
-      if (L > 0) gtt[ab] /= (double)L;
-    }
-  
-  ESL_ALLOC(gtp, sizeof(double) * dim);
   for (i = 0; i < L; i++) 
     for (j = i+1; j < L; j++) {
       
@@ -513,10 +485,9 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
 	  gt  = (exp > 0. && obs > 0.) ? log (obs / exp) : pseudoc;
 	   
-	  xi = i*dim + ab;
-	  xj = j*dim + IDX(b,a,K);
-	  //gtp[ab] = gt - ((fabs(gtt[ab])>0)?gtx[xi]*gtx[xj]/gtt[ab]:0.);
-	  gtp[ab] = gt - ((fabs(ggtt)>0)?ggtx[i]*gtx[j]/ggtt:0.);
+	  xi  = i*dim + ab;
+	  xj  = j*dim + IDX(b,a,K);
+	  gtp[ab] = gt - ((fabs(ggtt)>0)?ggtx[i]*ggtx[j]/ggtt:0.);
 	  gtp_l2norm += gtp[ab]*gtp[ab];
 	}
       gtp_l2norm = sqrt(gtp_l2norm);
@@ -533,15 +504,14 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
   }
   
   if (verbose) potts_Write(stdout, pt);
-  
+
   free(gtp);
-  free(gtx);
   free(ggtx);
   corr_Destroy(mi);
   return eslOK;
   
  ERROR:
-  if (gtp)  free(gtp);
+  if (gtp) free(gtp);
   if (ggtx) free(ggtx);
   if (mi)   corr_Destroy(mi);
   return status;
