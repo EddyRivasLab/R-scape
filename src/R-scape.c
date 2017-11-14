@@ -1195,6 +1195,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   /* weight the sequences */
   if (cfg->covmethod == POTTS || cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
+  //if (cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
     reweight_thresh = 0.2;
     status = esl_msaweight_Gremlin(msa, reweight_thresh, cfg->isplmDCA, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  esl_fatal(cfg->errbuf); 

@@ -488,7 +488,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 	  if (j==i) continue;
 	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
 	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
-	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
+	  gt  = (exp > 0. && obs > 0.) ? log (obs / exp) : pseudoc;
 	  
 	  gtx[xi] += gt;
 	  gtt[ab] += gt;
@@ -511,8 +511,8 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
 	  ab  = IDX(a,b,K);
 	  exp = mi->nseff[i][j] * mi->pm[i][a] * mi->pm[j][b];
 	  obs = mi->nseff[i][j] * mi->pp[i][j][ab];
-	  gt  = (exp > 0. && obs > 0.) ? 2.0 * obs * log (obs / exp) : pseudoc;
-	  
+	  gt  = (exp > 0. && obs > 0.) ? log (obs / exp) : pseudoc;
+	   
 	  xi = i*dim + ab;
 	  xj = j*dim + IDX(b,a,K);
 	  //gtp[ab] = gt - ((fabs(gtt[ab])>0)?gtx[xi]*gtx[xj]/gtt[ab]:0.);

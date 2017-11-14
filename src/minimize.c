@@ -267,12 +267,20 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     else if (dg > 0.)
       break;
 
+    if (t-t_prv < 1e-6) break; // not enough progress
+    
     // we are still here (have not bailed out with either a solution or a bracket, then
     //
     // calculate a new step (t_new) by cubic interpolation between (t_prv,f_prv,g_prv) and (t,f,g)
     min_step = t + 0.01 * (t-t_prv);
     max_step = t * 10;
     t_new = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
+
+    // test we are making enough progress
+    if (ESL_MIN(tmax-t,t-tmin) / (tmax-tmin) < 0.1) {
+      if (fabs(tmax-t) < fabs(t-tmin)) t = tmax - 0.1*(tmax-tmin);
+      else                             t = tmin + 0.1*(tmax-tmin);
+    }
 
     // (t,f,g) becomes (t_prv,f_prv,g_prv)
     t_prv  = t;
@@ -310,7 +318,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     // calculate a new step (t) by cubic interpolation
     tmax = ESL_MAX(ta,tb);
     tmin = ESL_MIN(ta,tb);
-    
+
     t = cubic_interpolation(ta, fa, dga, tb, fb, dgb, tmin, tmax);
 
     // test we are making enough progress
@@ -352,7 +360,6 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
       dga = dg;
     }
 
-    
     nit ++;
   }
   //if (nit == MAXITER) printf("Wolfe() reached the max number of iterations\n");
