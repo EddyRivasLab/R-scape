@@ -59,7 +59,7 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
   if ((treefp = fopen(tmptreefile, "r"))                               == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for writing", tmptreefile);
   if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))               != eslOK) goto ERROR;
   if ((status = esl_tree_Validate(T, NULL))                            != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
-    
+
   /* make sure the seq has the same index in msa and T */
   if ((status = Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)) != eslOK) goto ERROR;
       
@@ -103,9 +103,14 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
     esl_sprintf(&args, "%s -quiet -nt %s > %s", cmd, tmpmsafile, tmptreefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
-  if (verbose) { printf("%s\n", args); }
+  if (verbose) printf("%s\n", args);  
   status = system(args);
   if (status == -1) ESL_XFAIL(eslFAIL, errbuf, "failed to run FastTree");
+  
+  if (verbose) {
+    esl_sprintf(&args, "/usr/bin/more %s\n", tmptreefile);
+    system(args);
+  }
     
   remove(tmpmsafile);
   

@@ -293,7 +293,7 @@ static ESL_OPTIONS options[] = {
   { "--CCFp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm  APC corrected statistic",                     1 },
   { "--CCF",          eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "Correlation Coefficient with Frobenious norm   statistic",                                  1 },
   // potts covariation options */
-  { "--PTFp",         eslARG_NONE,     "TRUE",   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                 1 },
+  { "--PTFp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Frobenious ASC corrected statistic",                                                 1 },
   { "--PTAp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS Averages   ASC corrected statistic",                                                 1 },
   { "--PTDp",         eslARG_NONE,      FALSE,   NULL,       NULL,POTTSCOVOPTS, NULL,  NULL,              "POTTS DI         ASC corrected statistic",                                                 1 },
   /* covariation class */
