@@ -32,7 +32,7 @@ struct PDB2MSA => {
     pdbname   => '$', # pdb  name
     stoname   => '$', # alignment name
     pdblen    => '$', # length of pdb sequence
-    msalen    => '$', # length of pfam alignment
+    msalen    => '$', # length of fam alignment
 
     map       => '@', # map[0..pdblen-1]  to [0..alen-1]
     revmap    => '@', # revmap[0..alen-1] to [0..pdblen-1]
@@ -125,8 +125,8 @@ sub contacts_from_pdbfile {
     my $stoname = $stofile;
     my $stodir = "";
     if ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
-    my $pfamname = $stofile;
-    if ($pfamname =~ /\/([^\/]+)\.[^\/]+$/) { $pfamname = $1; }
+    my $famname = $stofile;
+    if ($famname =~ /\/([^\/]+)\.[^\/]+$/) { $famname = $1; }
     
     my $hmmer       = "$rscapebin/../lib/hmmer";
     my $hmmbuild    = "$hmmer/src/hmmbuild";
@@ -147,7 +147,7 @@ sub contacts_from_pdbfile {
     
     my $resolution;
     my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
-    print     "# PFAM:       $stofile\n";
+    print     "# ALI:        $stofile\n";
     print     "# PDB:        $pdbname\n";
     print     "# chains:     $nch\n";
     print     "# resolution: $resolution\n";
@@ -160,15 +160,14 @@ sub contacts_from_pdbfile {
 	    else                              { $dochain = 0; }
 	}
 	else { $dochain = 1; }
- 	print "^^ALEB $dochain\n";
-	if ($dochain == 0) { next; }
+ 	if ($dochain == 0) { next; }
 	
 	my $map0file;
 	my $map1file;
 	my $mapfile;
 	if (!$smallout) {
 	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.type$which.map";
-	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$pfamname.map";
+	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$famname.map";
 	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
 	}
 	my $corfile   = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
@@ -189,9 +188,11 @@ sub contacts_from_pdbfile {
 	print COR  "# chain $chname[$n]\n";
 	
 	$len = length($chsq[$n]);
-	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
+	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
 				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
 	close(COR);
+	print "\n DONE with contact map chain $chname[$n]\n";
+
 	if (!$smallout) {
 	    close(MAP);
 	    close(MAP0);
@@ -200,8 +201,6 @@ sub contacts_from_pdbfile {
 	if ($alen == 0) { next; }
 
 	if ($gnuplot) {
-	    print "\n^^ gnuplot $gnuplot\n";
-	    
 	    my $xfield  = 1;
 	    my $yfield  = 3;
 	    my $xylabel = "PDB position";
@@ -228,11 +227,11 @@ sub contacts_from_pdbfile {
     
     if ($coorfile) { close(COORF); }
 
-    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which); }
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $byali, $which); }
 
     if (0&&!$smallout) {
 	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.type.$which.his";
-	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots); 
+	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots); 
     }
 
     $$ret_pdblen = $len;
@@ -303,123 +302,124 @@ sub parse_pdb {
 
 # map[0..pdblen-1] taking values in 0..msa_alen-1
 sub map_pdbsq {
-    my ($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chname, $pdbsq, $map_ref, $revmap_ref) = @_;
+    my ($rscapebin, $currdir, $stofile, $pdbname, $famname, $chname, $pdbsq, $map_ref, $revmap_ref, $isrna) = @_;
 
     my $len = length($pdbsq);
     for (my $l = 0; $l < $len; $l ++) {
 	$map_ref->[$l] = -1;
     }
 
-    my $pfam_name = "";
-    my $pfam_asq  = "";
+    my $fam_name = "";
+    my $fam_asq  = "";
     my $i;
     my $j;
     open(STO, "$stofile") || die;
     while (<STO>) {
 	if (/^\#\=GS\s+(\S+)\s+DR PDB\;\s+\S*$pdbname\S*\s+$chname\;\s+(\d+)\-(\d+)\;/) {
-	    $pfam_name = $1;
+	    $fam_name = $1;
 	    $i         = $2;
 	    $j         = $3;
-	    #print "# $pfam_name $i $j\n";
+	    #print "# $fam_name $i $j\n";
 	}
 	elsif (/^\#\=GS\s+(\S+)\s+AC\s+\S*$pdbname\S*\s*$/) {
-	    $pfam_name = $1;
+	    $fam_name = $1;
 	    $i         = 1;
 	    $j         = -1;
-	    #print "# $pfam_name\n";
+	    #print "# $fam_name\n";
 	}
-	elsif (/^$pfam_name\s+(\S+)\s*$/) {
-	    $pfam_asq .= uc $1;
+	elsif (/^$fam_name\s+(\S+)\s*$/) {
+	    $fam_asq .= uc $1;
 	}
     }
     close(STO);
 
     my $from_pdb;
-    my $from_pfam;
+    my $from_fam;
     my $ali_pdb;
-    my $ali_pfam;
-    my $alen = find_pdbsq_in_pfam($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, 
-				  \$pfam_name, \$from_pdb, \$ali_pdb, \$from_pfam, \$ali_pfam, \$pfam_asq);
-    if ($alen == 0 || $pfamname =~ //) {
+    my $ali_fam;
+    my $alen = find_pdbsq_in_ali($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, $isrna,
+				 \$fam_name, \$from_pdb, \$ali_pdb, \$from_fam, \$ali_fam, \$fam_asq);
+    
+    if ($alen == 0 || $famname eq '') {
 	print "could not find $pdbname chain $chname in sto file\n";
 	return 0;
     }
 
     # x (0..len-1) is coord in the pbdseq of the first aligned position
-    my @ali_pdb  = split(//,$ali_pdb);
-    my @ali_pfam = split(//,$ali_pfam);
-    my @pfam_asq = split(//,$pfam_asq);
+    my @ali_pdb = split(//,$ali_pdb);
+    my @ali_fam = split(//,$ali_fam);
+    my @fam_asq = split(//,$fam_asq);
     my $x = $from_pdb-1;
 
-    # y (0..pfamalen-1) is the coord in the pfam alignment of the first aligned position
-    my $pfamalen = length($pfam_asq);
+    # y (0..famalen-1) is the coord in the fam alignment of the first aligned position
+    my $famalen = length($fam_asq);
     my $n = 0;
     my $y = 0;
-    while ($pfam_asq[$y] =~ /^[\.\-]$/) { 
-	#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+    while ($fam_asq[$y] =~ /^[\.\-]$/) { 
+	#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
 	$y ++;
     }
-    while ($n < $from_pfam-1) {
-	if ($pfam_asq[$y] =~ /^[\.\-]$/) { 
-	    #printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+    while ($n < $from_fam-1) {
+	if ($fam_asq[$y] =~ /^[\.\-]$/) { 
+	    #printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
 	    $y ++;
 	}
 	else {
 	    $n ++; $y ++;
  	}
     }
-    printf "^^1st in pdb %d/%d | 1st in ali %d/%d | alen $alen\n", $x+1, $len, $y+1, $pfamalen;
+    printf "^^1st in pdb %d/%d | 1st in ali %d/%d | alen $alen\n", $x+1, $len, $y+1, $famalen;
 
     # create the map
     my $pos = 0;
     while ($pos < $alen) {
 	my $pos_pdb  = uc($ali_pdb[$pos]);
-	my $pos_pfam = uc($ali_pfam[$pos]);
+	my $pos_fam = uc($ali_fam[$pos]);
 
 	if ($x > $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
- 	if ($y > $pfamalen) { print "pfamalen = $pfamalen y = $y at pos $pos\n"; die; }
+ 	if ($y > $famalen) { print "famalen = $famalen y = $y at pos $pos\n"; die; }
      
-	if ($pos_pdb =~ /^[\.\-]$/  && $pos_pfam =~ /^[\.\-]$/  ) { 
+	if ($pos_pdb =~ /^[\.\-]$/  && $pos_fam =~ /^[\.\-]$/  ) { 
 	    #printf "# double gap at pos %d\n", $pos; 
 	}
 	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    #printf "# pdb gap | move pfam %d $pos_pfam\n", $y;
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	    #printf "# pdb gap | move fam %d $pos_fam\n", $y;
+	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
+		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
 		$y ++; 
 	    }
 	    $y ++;	
 	}
-	elsif ($pos_pfam =~ /^[\.\-]$/)  { 
-	    #printf "# pfam gap | move pdb $x $pos_pdb \n"; 
+	elsif ($pos_fam =~ /^[\.\-]$/)  { 
+	    #printf "# fam gap | move pdb $x $pos_pdb \n"; 
 	    $x ++; 
 	}
-	elsif ($pos_pfam =~ /^$pos_pdb$/)  { 
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	elsif ($pos_fam =~ /^$pos_pdb$/)  { 
+	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
+		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
 		$y ++; 
 	    }
 	    $map_ref->[$x] = $y;  
-	    #printf "# match $x $pos_pdb | %d $pos_pfam\n", $y; 
+	    #printf "# match $x $pos_pdb | %d $pos_fam\n", $y; 
 	    $x ++; $y ++; 
 	}
 	else {
-	    while($pfam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip pfam gap $y %s \n", $pfam_asq[$y]; 
+	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
+		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
 		$y ++; 
 	    }
 	    $map_ref->[$x] = $y;  
-	    #printf "# mismach $x $pos_pdb | %d $pos_pfam\n", $y; 
+	    #printf "# mismach $x $pos_pdb | %d $pos_fam\n", $y; 
 	    $x ++; $y ++;
 	}
 	$pos ++;
     }
 
     # reverse map
-    for (my $p = 0; $p < $pfamalen; $p ++) { $revmap_ref->[$p] = -1; }
+    for (my $p = 0; $p < $famalen; $p ++) { $revmap_ref->[$p] = -1; }
     for (my $l = 0; $l < $len;      $l ++) { $revmap_ref->[$map_ref->[$l]] = $l; }
 
-    #for (my $p = 0; $p < $pfamalen; $p ++) { printf "rev[%d] = %d\n", $p+1,  $revmap_ref->[$p]+1; }
+    #for (my $p = 0; $p < $famalen; $p ++) { printf "rev[%d] = %d\n", $p+1,  $revmap_ref->[$p]+1; }
     #for (my $l = 0; $l < $len;      $l ++) { printf "map[%d] = %d\n", $l+1,  $map_ref->[$l]+1; }
     
     return $alen;
@@ -434,19 +434,19 @@ sub alipos_isgap {
     return 0;
 }
 
-sub find_pdbsq_in_pfam {
-    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $ret_pfamsqname, 
-	$ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam, $ret_pfam_asq) = @_;
- 
-    my $ali_pdb  = "";
-    my $ali_pfam = "";
-    my $from_pdb;
-    my $from_pfam;
-    my $pfam_asq = "";
-    my $eval = 1e-10;
+sub find_pdbsq_in_ali {
+    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $isrna, $ret_famsqname, 
+	$ret_from_pdb, $ret_ali_pdb, $ret_from_fam, $ret_ali_fam, $ret_fam_asq) = @_;
 
-    my $pfamsqname =  $$ret_pfamsqname;
-     if ($pfamsqname eq "") {    
+    my $ali_pdb  = "";
+    my $ali_fam = "";
+    my $from_pdb;
+    my $from_fam;
+    my $fam_asq = "";
+    my $eval = 1.;
+
+    my $famsqname =  $$ret_famsqname;
+     if ($famsqname eq "") {    
 	print "could not find $pdbname chain $chain in sto file... trying by homology\n";
     }
 
@@ -469,54 +469,60 @@ sub find_pdbsq_in_pfam {
     my $hmmout    = "$currdir/$pdbname.hmmout";
     my $hmmali    = "$currdir/$pdbname.hmmali";
     my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
- 
-    system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
-    #system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
-    system("          $hmmersearch -E $eval         $hmm  $stofile     >  $hmmout\n");
-    #system("/bin/echo $hmmersearch -E $eval         $hmm  $stofile \n");
-    #system("/bin/more $hmmout\n");
 
-    if (hmmout_has_hit($hmmout, \$pfamsqname) == 0) { return 0; }
-    
-    my $name = "$pfamsqname";
+    if ($isrna) {
+	system("          $hmmbuild             --rna $hmm  $pdbsqfile   >  /dev/null\n");
+ 	#system("/bin/echo $hmmbuild             --rna $hmm  $pdbsqfile  \n");
+    }
+    else {
+	system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+	#system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+    }
+    system("          $hmmersearch -E $eval --max          $hmm  $stofile     >  $hmmout\n");
+    #system("/bin/echo $hmmersearch -E $eval --max          $hmm  $stofile \n");
+    #system("/usr/bin/more $hmmout\n");
+
+    if (hmmout_has_hit($hmmout, \$famsqname) == 0) { return 0; }
+
+    my $name = "$famsqname";
     $name =~ s/\//\_/g;
-    my $pfamsqfile = "$currdir/$name";
-    system("$sfetch $stofile $pfamsqname > $pfamsqfile\n");
-    open(F, ">>$pfamsqfile") || die;
+    my $famsqfile = "$currdir/$name";
+    system("$sfetch $stofile $famsqname > $famsqfile\n");
+    open(F, ">>$famsqfile") || die;
     print F ">$pdbname\n$pdbsq\n";
     close(F);
-    $pfam_asq = get_asq_from_sto($reformat, $stofile, $pfamsqname, 0);
+ 
+    $fam_asq = get_asq_from_sto($reformat, $stofile, $famsqname, 0);
 
-    system("          $hmmeralign         $hmm  $pfamsqfile >  $hmmali\n");
-    #system("/bin/echo $hmmeralign         $hmm  $pfamsqfile \n");
+    system("          $hmmeralign         $hmm  $famsqfile >  $hmmali\n");
+    #system("/bin/echo $hmmeralign         $hmm  $famsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
-    #system("/bin/more $hmmaliafa\n");
 
     my $nsq = 0;
     my @asq;
     my @asqname;
     FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
 
-    $ali_pdb  = $asq[1];
-    $ali_pfam = $asq[0];
-    my $pfamalen = length($pfam_asq);
-    my $alen     = length($ali_pfam);
-    if ($pfamsqname ne "") {
+    $ali_pdb = $asq[1];
+    $ali_fam = $asq[0];
+    my $famalen = length($fam_asq);
+    my $alen    = length($ali_fam);
+    if ($famsqname ne "") {
 	printf "^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
-	print "^^>$pfamsqname pfamalen=$pfamalen\n$pfam_asq\n";
+	print "^^>$famsqname famalen=$famalen\n$fam_asq\n";
 	print "^^$ali_pdb\n";
-	print "^^$ali_pfam\n";
+	print "^^$ali_fam\n";
     }
     
-    $$ret_pfamsqname = $pfamsqname;
-    $$ret_ali_pdb    = $ali_pdb;
-    $$ret_ali_pfam   = $ali_pfam;
-    $$ret_from_pdb   = 1;
-    $$ret_from_pfam  = 1;
-    $$ret_pfam_asq   = $pfam_asq;
+    $$ret_famsqname = $famsqname;
+    $$ret_ali_pdb   = $ali_pdb;
+    $$ret_ali_fam   = $ali_fam;
+    $$ret_from_pdb  = 1;
+    $$ret_from_fam  = 1;
+    $$ret_fam_asq   = $fam_asq;
 
     system("/bin/rm $pdbsqfile\n");
-    system("/bin/rm $pfamsqfile\n");
+    system("/bin/rm $famsqfile\n");
     system("/bin/rm $hmm\n");
     system("/bin/rm $hmmout\n");
     system("/bin/rm $hmmali\n");
@@ -527,7 +533,7 @@ sub find_pdbsq_in_pfam {
 
 
 sub hmmout_has_hit {
-    my ($hmmout, $ret_pfamsqname) = @_;
+    my ($hmmout, $ret_famsqname) = @_;
 
     my $hashit = 0;
     open(HF, "$hmmout") || die;
@@ -538,7 +544,7 @@ sub hmmout_has_hit {
 	    $hashit = 1;
 	}
 	elsif (/\>\>\s+(\S+)\s*$/) {
-	    $$ret_pfamsqname = $1;
+	    $$ret_famsqname = $1;
 	    last;
 	}
 
@@ -548,15 +554,15 @@ sub hmmout_has_hit {
 }
 
 sub parse_hmmout_for_besthit {
-    my ($hmmout, $pdbname, $ret_pfamsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_pfam, $ret_ali_pfam) = @_;
+    my ($hmmout, $pdbname, $ret_famsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_fam, $ret_ali_fam) = @_;
 
     my $from_pdb   = -1;
     my $to_pdb     = -1;
-    my $from_pfam  = -1;
-    my $to_pfam    = -1;
+    my $from_fam  = -1;
+    my $to_fam    = -1;
     my $ali_pdb    = "";
-    my $ali_pfam   = "";
-    my $pfamsqname = "";
+    my $ali_fam   = "";
+    my $famsqname = "";
 
     my $best_dom_E = -1;
     my $best_dom_sc = -1;
@@ -577,10 +583,10 @@ sub parse_hmmout_for_besthit {
 	    $b ++;
 	}
 	elsif (/\>\>\s+(\S+)\s*$/ && $n == 0) {
-	    $pfamsqname = $1;
-	    $ali_pfam   = "";
+	    $famsqname = $1;
+	    $ali_fam   = "";
 	    $ali_pdb    = "";
-	    $from_pfam  = 123456789;
+	    $from_fam  = 123456789;
 	    $from_pdb   = 123456789;
 	    $n ++;
 	}
@@ -595,7 +601,6 @@ sub parse_hmmout_for_besthit {
 	    my $whichdomain = $1;
 	    if ($whichdomain == $domain) {
 		$thisdomain = 1;
-		print "^^DOMAIN $domain bestE $best_dom_E $best_dom_sc $best_dom_bias\n";
 	    }
 	    else {
 		$thisdomain = 0;
@@ -608,20 +613,20 @@ sub parse_hmmout_for_besthit {
 	    $to_pdb   = $3;
 	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
 	}
-	elsif ($n==1 && $thisdomain==1 && /^\s*$pfamsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif ($n==1 && $thisdomain==1 && /^\s*$famsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i       = $1;
-	    $ali_pfam  .= $2;
-	    $to_pfam    = $3;
-	    $from_pfam  = ($i < $from_pfam)? $i:$from_pfam;
+	    $ali_fam  .= $2;
+	    $to_fam    = $3;
+	    $from_fam  = ($i < $from_fam)? $i:$from_fam;
 	}
     }
     close(HF);
 
     $$ret_from_pdb   = $from_pdb;
-    $$ret_from_pfam  = $from_pfam;
-    $$ret_pfamsqname = ($from_pfam<0)? "":$pfamsqname;
+    $$ret_from_fam  = $from_fam;
+    $$ret_famsqname = ($from_fam<0)? "":$famsqname;
     $$ret_ali_pdb    = $ali_pdb;
-    $$ret_ali_pfam   = $ali_pfam;
+    $$ret_ali_fam   = $ali_fam;
 }
 
 sub coordtrans_seq2asq{
@@ -677,6 +682,7 @@ sub get_asq_from_sto {
     my $afafile = "$stofile";
     if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
     elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
+    elsif ($afafile =~ /^(\S+).stk$/) { $afafile = "$1.afa"; }
     if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
 
     my $found = 0;
@@ -695,7 +701,7 @@ sub get_asq_from_sto {
     close(AFA);
     
     if ($found == 0) {
-	print "sequence $name not found in alignment $stofile\n";
+	print "sequence $name not found in alignment $afafile\n";
 	die;
     }
 
@@ -732,7 +738,7 @@ sub get_first_asq_from_sto {
 
 
 sub parse_pdb_contact_map {
-    my ($rscapebin, $currdir, $pdbfile, $pdbname, $pfamname, $map_ref, $revmap_ref, 
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, 
 	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
 
     my $len  = length($chsq);
@@ -742,7 +748,7 @@ sub parse_pdb_contact_map {
     printf COR  "# minL  $minL\n";
     printf COR  "# type  $which\n";
     
-    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $chsq, $map_ref, $revmap_ref);
+    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
@@ -840,9 +846,11 @@ sub parse_pdb_contact_map {
 	}
     }
 
-    ## If RNA, run rnaview to extract the bptypes
-    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $minL, \$ncnt, \@cnt, $isrna); }
+    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
     
+    ## If RNA, run rnaview to extract the bptypes
+    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
+   
     # add all contacts from this chain to the list of total contacts if new
     for (my $c = 0; $c < $ncnt; $c ++) {
 	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
@@ -1099,15 +1107,15 @@ sub addcontact {
 }
 
  sub allcontacts_dump {
-    my ($file, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $byali, $which) = @_;
+    my ($file, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $byali, $which) = @_;
     
-    if ($file =~ //) { return; }
+    if ($file eq '') { return; }
 
     my $nbp = 0;
     my $nwc = 0;
     open(FILE,  ">$file")  || die;
     print FILE  "# PDB   $pdbname\n"; 
-    print FILE  "# MSA   $pfamname\n"; 
+    print FILE  "# MSA   $famname\n"; 
     print FILE  "# maxD  $maxD\n";
     print FILE  "# minL  $minL\n";
     print FILE  "# byali $byali\n";
@@ -1135,7 +1143,7 @@ sub addcontact {
 }
 
 sub allcontacts_histogram {
-    my ($hfile, $ncnt, $cnt_ref, $pdbname, $pfamname, $maxD, $minL, $which, $gnuplot, $seeplots) = @_;
+    my ($hfile, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots) = @_;
     
     my @his;
     my $N = 50;
@@ -1149,7 +1157,7 @@ sub allcontacts_histogram {
 
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
     
-    my $title = "PDB: $pdbname   MSA: $pfamname   maxD: $maxD   minL: $minL type: $which\n";
+    my $title = "PDB: $pdbname   MSA: $famname   maxD: $maxD   minL: $minL type: $which\n";
     my $xlabel = "euclidian minimum distance (Angstroms)";
     my $ylabel = "number of contacts";
     my $key = "";
@@ -1163,24 +1171,26 @@ sub allcontacts_histogram {
 }
 
 sub run_rnaview {
-    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $pfamname, $chain, $minL, $ret_ncnt, $cnt_ref, $isrna) = @_;
+    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, $ret_ncnt, $cnt_ref) = @_;
 
     my $ncnt = $$ret_ncnt;
     my $rnaviewfile = "rnaviewf";
     my $sq;
     my @map = (); # map sq to the sequence in the alignment
     my @revmap;
-    
+
+    my $isrna = 1;
     my $rnaview = "$rscapebin/rnaview";
 
     system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
+    #system("echo $rnaview -c $chain $pdbfile \n");
     system("/usr/bin/more $rnaviewfile\n");
 
     open(RF, "$rnaviewfile") || die;
     while(<RF>) {
 	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
 	    $sq = $1;
-	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $pfamname, $chain, $sq, \@map, @revmap);
+	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $sq, \@map, \@revmap, $isrna);
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
@@ -1188,8 +1198,8 @@ sub run_rnaview {
 	    my $j      = $2;
 	    my $posi   = $map[$i-1]+1;
 	    my $posj   = $map[$j-1]+1;
-	    my $chri   = aa_conversion($3, $isrna);
-	    my $chrj   = aa_conversion($4, $isrna);
+	    my $chri   = aa_conversion($3, 1);
+	    my $chrj   = aa_conversion($4, 1);
 	    my $bptype = $5;
 
 	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {

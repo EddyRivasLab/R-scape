@@ -67,6 +67,7 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
       len = atoi(tok);
   
       while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+	    
 	if (n <= len) {
 	  ch[0] = er_aa_conversion(tok);
 	  esl_strcat(&sq, -1, ch, -1);
@@ -349,7 +350,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 // resSeq_E 0 0 0 0 0 0 0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
 //                                               *  *  *  *  *  *  *  *  *  *  *  *
 //
-//          * * * * * * * -> these are documented "missing residudues" but those do not affect the ordering
+//          * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
 //
 // SEQRES_E U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
 // resSeq_E 54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
@@ -397,6 +398,7 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
     
     esl_sprintf(&s, ResName[rb]);
     esl_strtok(&s, " ", &name);
+
     name[0] = er_aa_conversion(name);
     name[1] = '\0';
     icode = Miscs[rb][2];
@@ -488,7 +490,10 @@ er_ListDump(FILE *fp, LIST *list)
 static char
 er_aa_conversion(char *s) {
   char new;
-
+  
+  // check for residues named something  like A23 (as in 1u6b)
+  if (strlen(s) > 1 && s[1] >= '0' && s[1] <= '9') s[1] = '\0';
+ 
   if      (!strcmp(s,  "ALA"))  new = 'A';
   else if (!strcmp(s,  "CYS"))  new = 'C';
   else if (!strcmp(s,  "ASP"))  new = 'D';

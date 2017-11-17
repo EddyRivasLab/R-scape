@@ -184,7 +184,7 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
-  if (verbose) printf("%s\n", args);
+  if (1||verbose) printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
 

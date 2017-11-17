@@ -1298,6 +1298,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     printf("Alignment is too long to calculate a structure\n");
     cfg->docyk = FALSE;
   }
+  if (cfg->docyk && cfg->omsacykfile == NULL) {
+    esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
+    if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
+  }
+
   
   // Print some alignment information
   MSA_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -1365,6 +1370,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* main function */
   cfg->mode = GIVSS;
   analyze = TRUE;
+
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
@@ -1618,6 +1624,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
+ 
     data.mode = CYKSS;
     status = cov_CYKCOVCT(&data, msa, &cykct, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
@@ -2159,12 +2166,14 @@ write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
   
   for (i = 0; i < L; i++) 
     if (cykct[i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykct[i+1]-1]+1;
-
+ 
   if (omsa->ss_cons == NULL) {
     ESL_ALLOC(omsa->ss_cons, sizeof(char)*(omsa->alen+1));
     omsa->ss_cons[omsa->alen] = '\0';
   }
+   
   esl_ct2wuss(ct, omsa->alen, omsa->ss_cons);
+
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
 
   free(ct);
