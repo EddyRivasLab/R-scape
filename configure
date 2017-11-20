@@ -757,8 +757,6 @@ MPICC
 CPP
 PIC_FLAGS'
 ac_subdirs_all='lib/hmmer
-lib/hmmer/easel
-lib/hmmer/libdivsufsort
 lib/R2R/NotByZasha/infernal-0.7/squid'
 
 # Initialize some variables set by options.
@@ -7445,10 +7443,6 @@ ac_config_headers="$ac_config_headers src/e2_config.h src/rscape_config.h lib/RN
 
 
 subdirs="$subdirs lib/hmmer"
-
-subdirs="$subdirs lib/hmmer/easel"
-
-subdirs="$subdirs lib/hmmer/libdivsufsort"
 
 subdirs="$subdirs lib/R2R/NotByZasha/infernal-0.7/squid"
 

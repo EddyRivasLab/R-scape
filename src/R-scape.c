@@ -1222,7 +1222,26 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* add the name of the pdbfile used to extract the structure (if any) */
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
-  
+
+  // Special cases under which to produce or not a --cyk structure
+  // (1) use --cyk if no structure is given
+  // (2) unless it is too long.
+  if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
+  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if no given one
+    printf("No structure given or pdbfile to read one, we continue with --cyk option\n");
+    cfg->docyk = TRUE;  
+  }
+  if (msa->alen > cfg->cykLmax) { // unless alignment is too long
+    printf("Alignment is too long to calculate a structure\n");
+    cfg->docyk = FALSE;
+  }
+  if (cfg->docyk) {
+    if (cfg->omsacykfile == NULL) {
+      esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
+      if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
+    }
+  }
+
   if (cfg->outdir) {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
@@ -1285,23 +1304,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   esl_vec_DDump(stdout, cfg->fbp,  cfg->abc->K, "basepairs BC");
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
-
-  // Special cases under which to produce or not a --cyk structure
-  // (1) use --cyl if no structure is given
-  // (2) unless it is too long.
-  if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
-  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if no given one
-    printf("No structure given or pdbfile to read one, we continue with --cyk option\n");
-    cfg->docyk = TRUE;  
-  }
-  if (msa->alen > cfg->cykLmax) { // unless alignment is too long
-    printf("Alignment is too long to calculate a structure\n");
-    cfg->docyk = FALSE;
-  }
-  if (cfg->docyk && cfg->omsacykfile == NULL) {
-    esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
-    if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
-  }
 
   
   // Print some alignment information
@@ -1624,7 +1626,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
- 
+
     data.mode = CYKSS;
     status = cov_CYKCOVCT(&data, msa, &cykct, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;

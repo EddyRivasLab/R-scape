@@ -45,8 +45,7 @@ static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h,
 					   int linespoints, int style1, int style2);
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
-static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, 
-				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
+static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
@@ -1108,7 +1107,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
   for (i = 1; i <= msa->alen; i ++) {
     if (cykct[i] >= 0 && i < cykct[i]) data->nbpairs_cyk ++;
   }
-  
+
   if (data->nbpairs_cyk > 0) {
     /* R2R */
     status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
@@ -1361,7 +1360,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   pipe = popen(gnuplot, "w");
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", covhisfile);
-    fprintf(pipe, "set terminal svg dynamic fname 'Arial' fsize 12 \n");
+    fprintf(pipe, "set terminal svg font 'Arial,12'\n");
     pointype    = 66;
     pointsize   = 0.6;
     pointintbox = 0.4;
@@ -1560,7 +1559,7 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   pipe = popen(gnuplot, "w");
   if (dosvg) {
     esl_sprintf(&outplot, "%s.svg", covhisfile);
-    fprintf(pipe, "set terminal svg dynamic fname 'Arial' fsize 12 \n");
+    fprintf(pipe, "set terminal svg font 'Arial,12'\n");
     pointype    = 71;
     pointsize   = 0.6;
     pointintbox = 0.4;
@@ -1672,7 +1671,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
     ps_max = 1.00;
     ps_min = 0.3;
     esl_sprintf(&outplot, "%s.svg", dplotfile);
-    fprintf(pipe, "set terminal svg fname 'Arial' fsize 12 \n");
+    fprintf(pipe, "set terminal svg font 'Arial,12'\n");
   }
   else {
     ps_max = 1.40;

@@ -609,8 +609,6 @@ lib/RNAVIEW/src/rnaview_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
-AC_CONFIG_SUBDIRS(lib/hmmer/easel)
-AC_CONFIG_SUBDIRS(lib/hmmer/libdivsufsort)
 AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
 
 AC_CONFIG_FILES([
