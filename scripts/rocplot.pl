@@ -78,7 +78,7 @@ if ($opt_W) { $which = "$opt_W"; }
 for (my $f = 0; $f < $F; $f ++) {  
     $rocfile[$f]   = "$prename[$f].maxD$maxD.minL$minL.type$which.roc"; 
     $scat1file[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.scat1"; 
-    $scat2file[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.scat2"; 
+    $scat2file[$f] = "$prename[$f].maxD$maxD.minL$minL.type$which.scat2";
 }
 
 my $usechain = "";
@@ -905,7 +905,7 @@ sub parse_gremlin {
 
 sub predictions_create {
     my ($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_pred, $cnt_pred_ref, $ncnt_tp, $cnt_tp_ref, $maxD, $minL, $which) = @_;
-    
+
     open(MAPPRED,  ">$mapfile_pred")  || die;
     PDBFUNCS::contactlist_print(\*MAPPRED, $ncnt_pred, $cnt_pred_ref, 1);
     close(MAPPRED);

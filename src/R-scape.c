@@ -45,9 +45,7 @@
 --RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa,\
 "              
-#define POTTSCOVOPTS  "\
---PTFp,--PTAp,--PTDp\
-"              
+#define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
 #define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
@@ -571,22 +569,25 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // potts - covariation measure: PTFp or PTAp  (implemented for now)
   //                     default is  PTFp = FROEB (froebenious norm) + APC (average product correction)
   //                     default is  APC corrected (only option implemented)
+  cfg.covtype  = PTFp;
+  cfg.ptsctype = FROEB;
   if      (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.ptsctype = FROEB; cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.ptsctype = AVG;   cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.ptsctype = DI;    cfg.covmethod = POTTS; }
   
   // potts - training: PLM or APLM (implemented for now)
-  if      (esl_opt_GetBoolean(go, "--ML"))   cfg.pttrain = ML;
-  else if (esl_opt_GetBoolean(go, "--PLM"))  cfg.pttrain = PLM;
-  else if (esl_opt_GetBoolean(go, "--APLM")) cfg.pttrain = APLM;
-  else if (esl_opt_GetBoolean(go, "--DCA"))  cfg.pttrain = GINV;
-  else if (esl_opt_GetBoolean(go, "--ACE"))  cfg.pttrain = ACE;
-  else if (esl_opt_GetBoolean(go, "--BML"))  cfg.pttrain = BML;
+  if      (esl_opt_GetBoolean(go, "--ML"))   { cfg.pttrain = ML;   cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--PLM"))  { cfg.pttrain = PLM;  cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--APLM")) { cfg.pttrain = APLM; cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--DCA"))  { cfg.pttrain = GINV; cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--ACE"))  { cfg.pttrain = ACE;  cfg.covmethod = POTTS; }
+  else if (esl_opt_GetBoolean(go, "--BML"))  { cfg.pttrain = BML;  cfg.covmethod = POTTS; }
+ 
   
   // potts - training: optimization
   //           default is CGD_WOLFE (conjugate gradient descent using the strong Wolfe condition)
   cfg.ptmin  = CGD_WOLFE;  // not an option yet  (gremlin default)
-  cfg.ptinit = INIT_GT;    // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
+  cfg.ptinit = INIT_GREM;  // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
   
   // potts - training: regularization parameters
   //        using defaults in gremlin_v2 (scaled by alignment length)
@@ -604,6 +605,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.isgremlin = TRUE;
     cfg.covmethod = POTTS;
     cfg.covtype   = PTFp;
+    cfg.ptsctype  = FROEB;
     cfg.pttrain   = PLM;
     cfg.ptmin     = CGD_WOLFE;
     cfg.ptinit    = INIT_GREM;
@@ -617,6 +619,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (cfg.isplmDCA) {
     cfg.covmethod = POTTS;
     cfg.covtype   = PTFp;
+    cfg.ptsctype  = FROEB;
     cfg.pttrain   = APLM;
     cfg.ptmin     = LBFGS;
     cfg.ptinit    = INIT_ZERO;
@@ -1223,6 +1226,12 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
+  /* the structure/contact map */
+  status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
+		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
+
+
   // Special cases under which to produce or not a --cyk structure
   // (1) use --cyk if no structure is given
   // (2) unless it is too long.
@@ -1278,11 +1287,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
     if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
   }
-
-  /* the structure/contact map */
-  status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
-		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
     // POTTS: calculate the couplings
   if (cfg->covmethod == POTTS) {

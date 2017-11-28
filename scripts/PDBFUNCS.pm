@@ -1183,7 +1183,7 @@ sub run_rnaview {
     my $rnaview = "$rscapebin/rnaview";
 
     system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
-    #system("echo $rnaview -c $chain $pdbfile \n");
+    system("echo $rnaview -c $chain $pdbfile \n");
     system("/usr/bin/more $rnaviewfile\n");
 
     open(RF, "$rnaviewfile") || die;
@@ -1203,7 +1203,7 @@ sub run_rnaview {
 	    my $bptype = $5;
 
 	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
-		rnaview2list($i, $posi, $chri, $j, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
+		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
 	    }
 	}
     }
@@ -1216,7 +1216,7 @@ sub run_rnaview {
 }
 
 sub rnaview2list {
-    my ($i, $posi, $chri, $j, $posj, $chrj, $bptype, $ret_ncnt, $cnt_ref) = @_;
+    my ($posi, $chri, $posj, $chrj, $bptype, $ret_ncnt, $cnt_ref) = @_;
 
     my $ncnt = $$ret_ncnt;
     my $found = 0;
@@ -1229,17 +1229,17 @@ sub rnaview2list {
 		$cnt_ref->[$c]->{"CNT::bptype"} = $bptype;
 	    }
 	    else { 
-		printf "pdbi %d i %d %s %s %d\n", $i, $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"}, $cnt_ref->[$c]->{"CNT::i"} ; 
-		printf "pdbj %d j %d %s %s %d\n", $j, $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"}, $cnt_ref->[$c]->{"CNT::j"} ; 
-		print "bad rnaview correspondence at $c/$ncnt\n"; 
-		
+		printf "i %d %s %s %d\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"}, $cnt_ref->[$c]->{"CNT::i"} ; 
+		printf "j %d %s %s %d\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"}, $cnt_ref->[$c]->{"CNT::j"} ; 
+		print "bad rnaview correspondence at $c/$ncnt type $bptype\n"; 
+		die; 
 	    }
 	}
 	if ($found == 1) { last; }
     }
 
     if ($found == 0) {
-	printf "new bpair: pdbi %d i %d %s pdbj %d j %d %s\n", $i, $posi, $chri, $j, $posj, $chrj; 
+	printf "new bpair: i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
 	
 	$cnt_ref->[$ncnt] = CNT->new();
 	$cnt_ref->[$ncnt]->{"CNT::i"}        = 0;

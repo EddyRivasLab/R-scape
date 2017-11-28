@@ -799,6 +799,7 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
   */
   base_info(num_residue, bseq, seidx, RY, AtomName, ResName, ChainID,
 	    ResSeq, Miscs, xyz,  orien, org, Nxyz, o3_p, BPRS);    
+  printf("^^ bseq %c %c\n", bseq[118], bseq[119]);
   
   /* find all the base-pairs */
   //printf("Finding all the base pairs...\n");    

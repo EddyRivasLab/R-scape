@@ -43,7 +43,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   long  from, to;
   char  errbuf[eslERRBUFSIZE];
   int   status;
-  
+
   base_single = cmatrix(0, num_residue, 0, 120);
   base_sugar = cmatrix(0, num_residue, 0, 120);
   base_p = cmatrix(0, num_residue, 0, 120);
@@ -117,6 +117,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   syn_or_anti(num_residue, AtomName, seidx, xyz,RY, sugar_syn);
   
   for (i = 1; i < num_residue; i++) {
+
     ir = seidx[i][1];
     ichain_idx = er_ChainIdx(ChainID[ir], nchain_tot, chain_name);
     from = chain_f[ichain_idx];
@@ -291,7 +292,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    }
 	  }
 	  LW_Saenger_correspond(bseq[i], bseq[j], type, corresp);
-          
+
 	  fprintf(fout, "%9s\t%c: %5ld %c %c %5ld %c: %7s %c %s%s %s\n",
 		  work_num,
 		  ChainID[ir], ResSeq[ir], bseq[i], bseq[j],ResSeq[jr],
@@ -324,8 +325,8 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	  list->pair[num_bp].D      = +eslINFINITY;
 	  list->pair[num_bp].chi    = ChainID[ir];
 	  list->pair[num_bp].chj    = ChainID[jr];
-	  list->pair[num_bp].ic     = bseq[i];
-	  list->pair[num_bp].jc     = bseq[j];
+	  list->pair[num_bp].ic     = bseq[list->pair[num_bp].i];
+	  list->pair[num_bp].jc     = bseq[list->pair[num_bp].j];
 	  status = CMAP_String2BPTYPE(type, &list->pair[num_bp].bptype, errbuf);
 	  if (status != eslOK)  {
 	    printf("wrong BYTYPE %s\n", type);
@@ -373,13 +374,13 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
         
 	if(rtn_val[1] > BPRS[2] ) continue; /*dist between origins */
 	if(rtn_val[2] > BPRS[3] + 0.3) continue; /* projection onto mean normal */
-	if( rtn_val[3] > BPRS[4]) continue;/* angle between base normals */
+	if(rtn_val[3] > BPRS[4]) continue;/* angle between base normals */
         
 	base_stack(i, j, bseq, seidx, AtomName, xyz,rtn_val, &stack_key);
 	
 	if(stack_key>0) { /*rid of base-base stacked case */
 	  if(rtn_val[3]<40){
-	    fprintf(fout, "%9s\t%c: %5ld %c %c %5ld %c: stacked\n",
+ 	    fprintf(fout, "%9s\t%c: %5ld %c %c %5ld %c: stacked\n",
 		    work_num, ChainID[ir],
 		    ResSeq[ir], bseq[i], bseq[j],
 		    ResSeq[jr],ChainID[jr]);
@@ -400,9 +401,16 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    list->pair[num_bp].D      = +eslINFINITY;
 	    list->pair[num_bp].chi    = ChainID[ir];
 	    list->pair[num_bp].chj    = ChainID[jr];
-	    list->pair[num_bp].ic     = bseq[i];
-	    list->pair[num_bp].jc     = bseq[j];
+	    list->pair[num_bp].ic     = bseq[list->pair[num_bp].i];
+	    list->pair[num_bp].jc     = bseq[list->pair[num_bp].i];
 	    list->pair[num_bp].bptype = STACKED;
+	    printf("\n^^ i %d/%d j %d i %d j %d ir %d jr %d ch %c %c resseq %d %d atomnum %d %d\n^^%s\n",
+		   i, num_residue,j,
+		   list->pair[num_bp].i,list->pair[num_bp].j,
+		   list->pair[num_bp].ir,list->pair[num_bp].jr,
+		   list->pair[num_bp].ic,list->pair[num_bp].jc,
+		   ResSeq[ir], ResSeq[jr], AtomNum[ir], AtomNum[jr],
+		   bseq);
 
 	  num_bp++;
 	  list->np = num_bp;
