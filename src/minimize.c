@@ -257,6 +257,8 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   dg = esl_vec_DDot(dori, g, n);
 
   while (nit < MAXITER) {
+    printf("^^\nWOLFE it %d | %.20f %f %f | %.20f %f %f | f -(fori + c1*t*dgori) < 0 %f | wollfe <= 0 %f\n",
+	   nit, t_prv, f_prv, dg_prv, t, f, dg, f - (fori + c1*t*dgori), fabs(dg) + c2*dgori);
 
     if (f > fori + c1*t*dgori || (nit > 0 && f >= f_prv)) // Armijo not satisfied 
       break;
@@ -267,7 +269,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     else if (dg > 0.)
       break;
 
-    if (t-t_prv < 1e-6) break; // not enough progress
+    if (fabs(f-f_prv) < 1e-6) break; // not enough progress
     
     // we are still here (have not bailed out with either a solution or a bracket, then
     //
@@ -275,12 +277,7 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
     min_step = t + 0.01 * (t-t_prv);
     max_step = t * 10;
     t_new = cubic_interpolation(t_prv, f_prv, dg_prv, t, f, dg, min_step, max_step);
-
-    // test we are making enough progress
-    if (ESL_MIN(tmax-t,t-tmin) / (tmax-tmin) < 0.1) {
-      if (fabs(tmax-t) < fabs(t-tmin)) t = tmax - 0.1*(tmax-tmin);
-      else                             t = tmin + 0.1*(tmax-tmin);
-    }
+    printf("^^cubic new %.20f | t %.20f f %f dg %f | t %.20f f %f dg %f\n", t_new, t_prv, f_prv, dg_prv, t, f, dg);
 
     // (t,f,g) becomes (t_prv,f_prv,g_prv)
     t_prv  = t;
@@ -314,7 +311,8 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
 
   // refine the bracket
   while (found == FALSE && nit < MAXITER) {
-    
+    printf("^^zoom phse nit %d | t %.20f f %f dg %f | t %.20f f %f dg %f\n", nit, ta, fa, dga, tb, fb, dgb);
+
     // calculate a new step (t) by cubic interpolation
     tmax = ESL_MAX(ta,tb);
     tmin = ESL_MIN(ta,tb);
@@ -511,7 +509,7 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
       if (cvg <= tol) break;
       
-      //fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
+      fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
 
       if (nit == MAXITER-1) continue;
 

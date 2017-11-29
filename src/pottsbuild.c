@@ -24,7 +24,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
