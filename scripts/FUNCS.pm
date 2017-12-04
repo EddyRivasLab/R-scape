@@ -1010,9 +1010,9 @@ sub  hit2trace {
 	    ${$tr_ref->[$ntr]->{"TRACE::i"}}[$N] = $i;
 
 	    if    (!FUNCS::isgap($qchar) && !FUNCS::isgap($tchar)) { $k += $addk; $i += $addi; $st = 0; $tsq .= uc($tchar); } # match
-	    elsif (!FUNCS::isgap($qchar))                   { $k += $addk;              $st = 1;                     } # deletion
-	    elsif (!FUNCS::isgap($tchar))                   {              $i += $addi; $st = 2; $tsq .= lc($tchar); } # insertion
-	    else                                     { print "cannot have two gaps\n";                   die; }
+	    elsif (!FUNCS::isgap($qchar))                          { $k += $addk;              $st = 1;                     } # deletion
+	    elsif (!FUNCS::isgap($tchar))                          {              $i += $addi; $st = 2; $tsq .= lc($tchar); } # insertion
+	    else                                                   { print "cannot have two gaps\n";                   die; }
 
 	    ${$tr_ref->[$ntr]->{"TRACE::k"}}[$N]  = $k;
 	    ${$tr_ref->[$ntr]->{"TRACE::st"}}[$N] = $st;
@@ -1022,8 +1022,7 @@ sub  hit2trace {
 	$tr_ref->[$ntr]->{"TRACE::N"}  = $N;
 	$tr_ref->[$ntr]->{"TRACE::sq"} = $tsq;
 
-	if (1||$verbose) {
-	    #printtrace($tr_ref->[$ntr]);
+	if ($verbose) {
 	    printhit($hit_ref->[$h]);
 	}
 
@@ -1141,7 +1140,7 @@ sub make_msa {
 	my $N    = $tr_ref->[$t]->{"TRACE::N"};
 	my $sq   = $tr_ref->[$t]->{"TRACE::sq"};
 	my $ib   = ${$tr_ref->[$t]->{"TRACE::i"}}[0];
- 	my $ie   = ${$tr_ref->[$t]->{"TRACE::i"}}[$N-1];
+ 	my $ie   = ($N>0)? ${$tr_ref->[$t]->{"TRACE::i"}}[$N-1] : $ib-1;
  	my $apos = 0;
 
 	for (my $z = 0; $z < $N ; $z++) 
@@ -1693,6 +1692,8 @@ sub parse_hmmout {
 
     my $hashits = 0;
     my $tname;
+
+    my $bit = 0;
     
     print "\nquery $whichQ: getting hits from file: $file\n";
     open (FILE, "$file") || die;
@@ -1721,21 +1722,14 @@ sub parse_hmmout {
 	    $tname = "$targetname\/$loci";
 	    if ($NHIT > 0 && $nhit+1 >= $NHIT) { last; }
 	}
-	elsif($thisquery && $annote && 
-	      /(\S+)\s+\S+\s+(\S+)\s+\d+\s+\d+\s[\.\[][\.\]]\s+\d+\s+\d+\s[\.\[][\.\]]\s+\d+\s+\d+\s[\.\[][\.\]]\s+(\d+)\s+\S+\s*$/) {
-	    $sc        = $1;
-	    $Eval      = $2;
-	    $targetlen = $3;
-	    $complete_hit = 0;
-
-	    if ($nhit >= 0) {
-		if ( abs($hit[$nhit]->{"HIT::qj"}-$hit[$nhit]->{"HIT::qi"})+1 == $querylen) { $complete_hit = 1; }
-	    }
-	    if ($complete_hit) { last; }
+  	elsif($thisquery && $annote && 
+	      /==\s+domain\s+\d+\s+score:\s+(\S+)\s+bits\;\s+conditional E-value:\s+(\S+)\s*/) {
+	    $sc    = $1;
+	    $Eval  = $2;
 	    
 	    if (takehit($targetname, $loci, $nsp, $species_ref, $loci_ref) && ($targetE < 0 || $Eval <= $targetE)) {
 		$nhit ++;
-		print "...new nhit $tname Eval $Eval\n";
+		print "...new nhit $nhit $tname Eval $Eval\n";
 		if ($Eval < $min_eval) { $min_eval = $Eval; }
 		if ($Eval > $max_eval) { $max_eval = $Eval; }
 		
@@ -1755,29 +1749,45 @@ sub parse_hmmout {
 	    }
 	    else { $thisquery = 0; }
 	}
-	elsif($thisquery && /^\s*$queryname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	elsif($thisquery && $bit == 0 && /^\s*$queryname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i = $1;
 	    my $j = $3;
+	    $bit = 1;
+	    if ($nhit < 0) { print " you should have found a hit here already\n"; die; }
+	    
 	    if ($hit[$nhit]->{"HIT::qi"} == 0) { $hit[$nhit]->{"HIT::qi"} = $i; }
 	    $hit[$nhit]->{"HIT::qj"} = $j; 
 
+	    if ($nhit == 2316) {
+		printf("i $i qj $j\n");
+	    }
+
+	    if ($i == 0 || $j == 0 || $j-$i < 0) { printf("bad query bounds for hit $nhit targetname $targetname\n"); die; }
+	    
 	    $hit[$nhit]->{"HIT::qasq"} .= $2;
 	}
 	elsif($thisquery && /\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
 	    my $i = $1;
 	    my $j = $3;
+	    if ($nhit < 0) { print " you should have found a hit here already\n"; die; }
+	    
 	    if ($hit[$nhit]->{"HIT::ti"} == 0) { $hit[$nhit]->{"HIT::ti"} = $i; }
-	    $hit[$nhit]->{"HIT::tj"} = $j; 
-						 
+	    $hit[$nhit]->{"HIT::tj"} = $j;
+	    if ($nhit == 2316) {
+		printf("ti $i tj $j\n");
+	    }
+
+	    if ($i == 0 || $j == 0 || $j-$i < 0) { printf("bad target bound for hit $nhit targetname $targetname\n"); die; }
+
 	    $hit[$nhit]->{"HIT::tasq"} .= $2;
+	    $bit = 0;
 	}
     }
     close (FILE);
     $nhit ++;
 
-    print "..nhits $nhit\n";
-
     trimhits_by_query (\$nhit, \@hit, $hmmfrom, $hmmto);
+    
     trimhits_by_target(\$nhit, \@hit, $target, $targetfrom, $targetto);
     hit2trace($nhit, \@hit, $ret_ntr, $tr_ref, $verbose);
 
@@ -2386,8 +2396,8 @@ sub plot_id2bench {
 sub  printhit {
     my ($hit) = @_;
     
-    printf "query:  %d-%d\n%s\n", $hit->{"HIT::qi"}, $hit->{"HIT::qj"}, $hit->{"HIT::qasq"};
-    printf "target: %d-%d\n%s\n", $hit->{"HIT::ti"}, $hit->{"HIT::tj"}, $hit->{"HIT::tasq"};
+    printf "query %s:  %d-%d\n%s\n", $hit->{"HIT::qname"}, $hit->{"HIT::qi"}, $hit->{"HIT::qj"}, $hit->{"HIT::qasq"};
+    printf "target %s: %d-%d\n%s\n", $hit->{"HIT::tname"}, $hit->{"HIT::ti"}, $hit->{"HIT::tj"}, $hit->{"HIT::tasq"};
 }
 
 sub  printtrace {
@@ -2611,7 +2621,7 @@ sub  trimhits_by_query {
 	$hit_ref->[$h]->{"HIT::qj"} = $newqj;
 	$hit_ref->[$h]->{"HIT::ti"} = $newti;
 	$hit_ref->[$h]->{"HIT::tj"} = $newtj;
-
+	
 	$hit_ref->[$h]->{"HIT::qasq"} = $newqasq;
  	$hit_ref->[$h]->{"HIT::tasq"} = $newtasq;
 	

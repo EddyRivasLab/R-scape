@@ -24,7 +24,7 @@
 #include "pottsscore.h"
 #include "correlators.h"
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 static int             optimize_plm_pack_paramvector         (double *p,          int np, struct optimize_data *data);
 static int             optimize_plm_pack_gradient            (double *dx,         int np, struct optimize_data *data);
@@ -50,8 +50,6 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
   double  stol;
   double  neff;
   int     status;
-  
-  tol = 1e-6; // most time convergece is not reached, just stop at MAXIT
   
   e2_DLogsumInit();
   
@@ -113,12 +111,14 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     ESL_XFAIL(eslFAIL, errbuf, "error, you should not be here");
     break;
   case PLM:
-    stol = 0.5;
+    tol  = 1e-6;   // most time convergence is not reached, just stop at MAXIT
+    stol = 1e-6;
     status = potts_Optimize_PLM(pt, msa, tol, stol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error all optimizing potts");
     break;
   case APLM:
-    stol = 0.5;    
+    tol  = 1e-6;   // most time convergence is not reached, just stop at MAXIT
+    stol = 1e-1;    
     status = potts_Optimize_APLM(pt, msa, tol, stol, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error aplm optimizing potts");
     break;
@@ -564,7 +564,7 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
     status = min_ConjugateGradientDescent(p, u, np,
                                           &optimize_potts_func_plm, &optimize_potts_bothfunc_plm,
                                           (void *) (&data),					   
-                                          tol, stol, wrk, &logp);
+                                          tol, stol, wrk, &logp, MAXITER);
     break;
   case CGD_BRENT:
     status = esl_min_ConjugateGradientDescent(p, u, np,
@@ -653,7 +653,7 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
       status = min_ConjugateGradientDescent(p, u, np,
 					    &optimize_potts_func_aplm, &optimize_potts_bothfunc_aplm,
 					    (void *) (&data),					   
-					    tol, stol, wrk, &logp);
+					    tol, stol, wrk, &logp, MAXITER);
       break;
     case CGD_BRENT:
       status = esl_min_ConjugateGradientDescent(p, u, np,

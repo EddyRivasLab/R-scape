@@ -177,7 +177,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *outpottsfile;
   FILE            *outpottsfp;
   int              isgremlin;
-  int              isplmDCA;
   
   char            *pdbfile;            // pdfb file
   char            *pdbname;
@@ -335,7 +334,7 @@ static ESL_OPTIONS options[] = {
   { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
-  { "--tol",          eslARG_REAL,    "1e-5",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
+  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
   { "--pmass",        eslARG_REAL,    "0.05",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                1 },
@@ -569,7 +568,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // potts - covariation measure: PTFp or PTAp  (implemented for now)
   //                     default is  PTFp = FROEB (froebenious norm) + APC (average product correction)
   //                     default is  APC corrected (only option implemented)
-  cfg.covtype  = PTFp;
   cfg.ptsctype = FROEB;
   if      (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.ptsctype = FROEB; cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.ptsctype = AVG;   cfg.covmethod = POTTS; }
@@ -587,7 +585,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // potts - training: optimization
   //           default is CGD_WOLFE (conjugate gradient descent using the strong Wolfe condition)
   cfg.ptmin  = CGD_WOLFE;  // not an option yet  (gremlin default)
-  cfg.ptinit = INIT_GREM;  // not at option yet  (gremlin default, eij = 0 hi(a) = log pi(a) ) 
+  cfg.ptinit = INIT_GREM;  // default
   
   // potts - training: regularization parameters
   //        using defaults in gremlin_v2 (scaled by alignment length)
@@ -600,7 +598,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   // options that make a reproduction of gremlin v2.1 (overides any previous options)
   cfg.isgremlin = FALSE;
-  cfg.isplmDCA  = FALSE;
   if (esl_opt_IsOn(go, "--gremlin")) {
     cfg.isgremlin = TRUE;
     cfg.covmethod = POTTS;
@@ -608,25 +605,27 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.ptsctype  = FROEB;
     cfg.pttrain   = PLM;
     cfg.ptmin     = CGD_WOLFE;
-    cfg.ptinit    = INIT_GREM;
+    cfg.ptinit    = INIT_GREM;   // gremlin's init: eij = 0 hi(a) = log pi(a) 
     cfg.ptreg     = REGL2_GREM;
     cfg.ptmuh     = 0.01;
     cfg.ptmue     = 0.20;
     
     cfg.gapthresh = 1.0;        // don't touch alignment
     cfg.idthresh  = 1.0;
+
+    cfg.tol       = 1e-6;
   }
-  else if (cfg.isplmDCA) {
-    cfg.covmethod = POTTS;
-    cfg.covtype   = PTFp;
-    cfg.ptsctype  = FROEB;
-    cfg.pttrain   = APLM;
-    cfg.ptmin     = LBFGS;
-    cfg.ptinit    = INIT_ZERO;
-    cfg.ptreg     = REGL2_PLMD;
-    cfg.ptmuh     = 0.01;       // defaults in plmDCA_asymmetric_v2 (scaled by number of sequences if < 500)
-    cfg.ptmue     = cfg.ptmuh;
-  }
+  // plmDCA defaults (not implemented
+  /*  cfg.covmethod = POTTS;
+   *  cfg.covtype   = PTFp;
+   *  cfg.ptsctype  = FROEB;
+   *  cfg.pttrain   = APLM;
+   *  cfg.ptmin     = LBFGS;
+   *  cfg.ptinit    = INIT_ZERO;
+   *  cfg.ptreg     = REGL2_PLMD;
+   *  cfg.ptmuh     = 0.01;       // defaults in plmDCA_asymmetric_v2 (scaled by number of sequences if < 500)
+   *  cfg.ptmue     = cfg.ptmuh;
+   */
   
   /* default is Watson-Crick plus U:G, G:U pairs */
   cfg.allowpair = esl_dmatrix_Create(4, 4);
@@ -1197,13 +1196,13 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (msa == NULL) return eslOK;
 
   /* weight the sequences */
-  if (cfg->covmethod == POTTS || cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
-  //if (cfg->isgremlin || cfg->isplmDCA ) { // Both use the same weighting algorithm (except: < reweight (grem) <= reweight (plmDCA)
+  //if (cfg->covmethod == POTTS) { // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
+  if (cfg->isgremlin) { // // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
     reweight_thresh = 0.2;
-    status = esl_msaweight_Gremlin(msa, reweight_thresh, cfg->isplmDCA, cfg->errbuf, cfg->verbose);
+    status = esl_msaweight_Gremlin(msa, reweight_thresh, FALSE, cfg->errbuf, cfg->verbose);
     if (status != eslOK)  esl_fatal(cfg->errbuf); 
   }
-  else {
+  else { // use R-scape's default
     if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
     else                             esl_msaweight_PB(msa);
   }  

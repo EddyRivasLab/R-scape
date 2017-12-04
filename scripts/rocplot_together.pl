@@ -55,7 +55,7 @@ for (my $m = 0; $m < $M; $m++) {
     $type =~ s/\//\_/g;
     if ($type =~ /^R-scape_(\S+)$/) { $type = $1; }
     
-    $plotfile[$m] = "$DIR/results/$string_name.$type.$string_suffix.plot";
+    $plotfile[$m] = "$DIR/$string_name.$type.$string_suffix.plot";
 
     my @his_f;
     my @his_fc;
@@ -72,7 +72,7 @@ for (my $m = 0; $m < $M; $m++) {
     FUNCS::init_histo_array($N, $k, \@his_tb);
     FUNCS::init_histo_array($N, $k, \@his_tw);
 
-    my $localdir = "$DIR/results/$type[$m]";
+    my $localdir = "$DIR/$type[$m]";
     my @family;
     FUNCS::sorted_files($localdir, \@family, $string_suffix, );    
     my $F = $#family+1;

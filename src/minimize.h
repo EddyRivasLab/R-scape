@@ -24,7 +24,7 @@ enum NMtransf_e {
 extern int min_ConjugateGradientDescent(double *x, double *u, int n, 
 					double (*func)(double *, int, void *),
 					double (*bothfunc)(double *, int, void *, double *),
-					void *prm, double tol, double stol, double *wrk, double *ret_fx);
+					void *prm, double tol, double stol, double *wrk, double *ret_fx, int maxiter);
 
 
 #endif /*MINIMIZE_INCLUDED*/
