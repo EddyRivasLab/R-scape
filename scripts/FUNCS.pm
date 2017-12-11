@@ -1280,6 +1280,7 @@ sub merge_aseqs {
 	    my $coords1;
 	    get_name($asqname_ref->[$s1], \$name1, \$coords1);
 	    
+	    if($name=~/60_9HOMO/&&$name1=~/60_9HOMO/) { printf("$name\n$asq\n$asq1 aredist? %d\n", are_disjoint($asq, $asq1)); }
 	    if ($name1 =~ /^$name$/ && are_disjoint($asq, $asq1)) {
 		printf "  .... MERGE ($s1) %s with ($s) %s new_NASQ = %d\n", $asqname_ref->[$s1], $asqname_ref->[$s], $nasq-1;
 		$asqname_ref->[$s] = "$name/$coords//$coords1";
@@ -1758,11 +1759,7 @@ sub parse_hmmout {
 	    if ($hit[$nhit]->{"HIT::qi"} == 0) { $hit[$nhit]->{"HIT::qi"} = $i; }
 	    $hit[$nhit]->{"HIT::qj"} = $j; 
 
-	    if ($nhit == 2316) {
-		printf("i $i qj $j\n");
-	    }
-
-	    if ($i == 0 || $j == 0 || $j-$i < 0) { printf("bad query bounds for hit $nhit targetname $targetname\n"); die; }
+	    if ($i == 0 || $j == 0) { printf("bad query bounds for hit $nhit [$i,$j] targetname $targetname\n"); die; }
 	    
 	    $hit[$nhit]->{"HIT::qasq"} .= $2;
 	}
@@ -1777,7 +1774,7 @@ sub parse_hmmout {
 		printf("ti $i tj $j\n");
 	    }
 
-	    if ($i == 0 || $j == 0 || $j-$i < 0) { printf("bad target bound for hit $nhit targetname $targetname\n"); die; }
+	    if ($i == 0 || $j == 0) { printf("bad target bound for hit $nhit [$i,$j] targetname $targetname\n"); die; }
 
 	    $hit[$nhit]->{"HIT::tasq"} .= $2;
 	    $bit = 0;

@@ -48,7 +48,7 @@
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
-#define NULLOPTS     "--null1,--null1b,--null2,--null2b,--null3,--null4"                                          
+#define NULLOPTS     "--null"                                          
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
 
@@ -146,8 +146,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_TREE        *T;
   double           treeavgt;
  
-  NULLTYPE         nulltype;
-
   char                *ribofile;
   struct ribomatrix_s *ribosum;
 
@@ -176,6 +174,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   PT              *pt;
   char            *outpottsfile;
   FILE            *outpottsfp;
+  double           potts_reweight_thresh;
   int              isgremlin;
   
   char            *pdbfile;            // pdfb file
@@ -250,12 +249,6 @@ static ESL_OPTIONS options[] = {
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled alignments",                                                             1 },   
-  { "--null1",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1:  shuffle alignment columns",                                                         0 },
-  { "--null1b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null1b: shuffle bp_columns and nonbp_columns independently",                                0 },
-  { "--null2",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2:  shuffle res within a column",                                                       0 },
-  { "--null2b",       eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null2b: shuffle res within a column that appear canonical (i,j) pairs ",                    0 },
-  { "--null3",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null3:  null1(b)+null2",                                                                    0 },
-  { "--null4",        eslARG_NONE,      FALSE,   NULL,       NULL,  NULLOPTS, NULL,  NULL,               "null4: break the structure, maintain the phylogeny",                                        0 },
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all contacts (default for amino acids)",               1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all 12-type basepairs (default for RNA/DNA)",          1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is WWc basepairs only",                                   1 },
@@ -314,7 +307,7 @@ static ESL_OPTIONS options[] = {
   { "--ptmuh",        eslARG_REAL,    "0.01",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training hi's",                                         1 },
   { "--ptmue",        eslARG_REAL,    "0.20",    NULL,      "x>=0",  NULL,    NULL,  NULL,               "potts regularization parameters for training eij's",                                        1 },
   { "--ML",           eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
-  { "--PLM",          eslARG_NONE,    "TRUE",    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
+  { "--PLM",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--APLM",         eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 1 },
   { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
   { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
@@ -348,18 +341,14 @@ static int rscape_banner(FILE *fp, char *progname, char *banner);
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist,
 		      int analyze);
 static int run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
 static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int null1_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null2_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null2b_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null3_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null4_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
 
@@ -503,20 +492,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
-  cfg.nulltype = NullNONE;
-  if      (esl_opt_GetBoolean(go, "--null1"))  cfg.nulltype = Null1;
-  else if (esl_opt_GetBoolean(go, "--null1b")) cfg.nulltype = Null1b;
-  else if (esl_opt_GetBoolean(go, "--null2"))  cfg.nulltype = Null2;
-  else if (esl_opt_GetBoolean(go, "--null2b")) cfg.nulltype = Null2b;
-  else if (esl_opt_GetBoolean(go, "--null3"))  cfg.nulltype = Null3;
-  else if (esl_opt_GetBoolean(go, "--null4"))  cfg.nulltype = Null4;
-
   cfg.YSeffect = FALSE;
   if (esl_opt_GetBoolean(go, "--YS"))  cfg.YSeffect = TRUE;
 
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
   if (esl_opt_IsOn(go, "-E")) { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
-    if (cfg.nulltype == NullNONE) cfg.nulltype = Null4; 
   }
 
   cfg.mi = NULL;
@@ -559,8 +539,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
-  else                                        cfg.covclass = CSELECT;
-  
+  else                                        cfg.covclass = CSELECT;  
   
   /* POTTS model */
   cfg.pt = NULL;
@@ -572,15 +551,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--PTFp"))  { cfg.covtype = PTFp;  cfg.ptsctype = FROEB; cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PTAp"))  { cfg.covtype = PTAp;  cfg.ptsctype = AVG;   cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PTDp"))  { cfg.covtype = PTDp;  cfg.ptsctype = DI;    cfg.covmethod = POTTS; }
-  
+
   // potts - training: PLM or APLM (implemented for now)
+  cfg.pttrain = PLM; // default
   if      (esl_opt_GetBoolean(go, "--ML"))   { cfg.pttrain = ML;   cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--PLM"))  { cfg.pttrain = PLM;  cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--APLM")) { cfg.pttrain = APLM; cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--DCA"))  { cfg.pttrain = GINV; cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--ACE"))  { cfg.pttrain = ACE;  cfg.covmethod = POTTS; }
   else if (esl_opt_GetBoolean(go, "--BML"))  { cfg.pttrain = BML;  cfg.covmethod = POTTS; }
- 
   
   // potts - training: optimization
   //           default is CGD_WOLFE (conjugate gradient descent using the strong Wolfe condition)
@@ -598,6 +577,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   // options that make a reproduction of gremlin v2.1 (overides any previous options)
   cfg.isgremlin = FALSE;
+  cfg.potts_reweight_thresh = 0.2; // default both in gremlin and plmDCA
   if (esl_opt_IsOn(go, "--gremlin")) {
     cfg.isgremlin = TRUE;
     cfg.covmethod = POTTS;
@@ -610,7 +590,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.ptmuh     = 0.01;
     cfg.ptmue     = 0.20;
     
-    cfg.gapthresh = 1.0;        // don't touch alignment
+    if (!cfg.abcisRNA) cfg.gapthresh = 1.0;        // don't touch alignment for proteins
     cfg.idthresh  = 1.0;
 
     cfg.tol       = 1e-6;
@@ -1180,6 +1160,26 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 }
 
 static int
+msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+{
+  int status;
+
+  //if (cfg->covmethod == POTTS) { // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
+  if (cfg->isgremlin) { // // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
+    status = esl_msaweight_Gremlin(msa, cfg->potts_reweight_thresh, FALSE, cfg->errbuf, cfg->verbose);
+    if (status != eslOK)  esl_fatal(cfg->errbuf); 
+  }
+  else { // use R-scape's default
+    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
+    else                             esl_msaweight_PB(msa);
+  }
+  
+  if (cfg->verbose) printf("Nseq %d Neff %f\n", msa->nseq, esl_vec_DSum(msa->wgt, msa->nseq));
+  
+  return eslOK;
+}
+
+static int
 rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 {
   RANKLIST *ranklist_null = NULL;
@@ -1188,7 +1188,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   ESL_MSA  *msa = *ret_msa;
   ESL_MSA  *YSmsa = NULL;
   char     *outname = NULL;
-  double    reweight_thresh;
   int       nshuffle;
   int       analyze;
   int       status;
@@ -1196,19 +1195,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (msa == NULL) return eslOK;
 
   /* weight the sequences */
-  //if (cfg->covmethod == POTTS) { // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
-  if (cfg->isgremlin) { // // Use the same gremlin/plmDCA weighting algorithm (they use the same, except: < reweight (grem) <= reweight (plmDCA)
-    reweight_thresh = 0.2;
-    status = esl_msaweight_Gremlin(msa, reweight_thresh, FALSE, cfg->errbuf, cfg->verbose);
-    if (status != eslOK)  esl_fatal(cfg->errbuf); 
-  }
-  else { // use R-scape's default
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(msa);
-    else                             esl_msaweight_PB(msa);
-  }  
-  if (cfg->verbose) 
-    printf("Nseq %d Neff %f\n", msa->nseq, esl_vec_DSum(msa->wgt, msa->nseq));
-  
+  msaweight(go, cfg, msa);
+
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
   
@@ -1287,13 +1275,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
   }
 
-  // POTTS: calculate the couplings
-  if (cfg->covmethod == POTTS) {
-    cfg->pt = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
-			  cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
-    if (cfg->pt == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
-  }
-  
   /* produce a tree
    */
   if (cfg->covmethod == AKMAEV) {
@@ -1336,35 +1317,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
     
     cfg->mode = RANSS;
-    if (cfg->nulltype == Null1) {
-      status = null1_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1 rscape", cfg->errbuf);
-    }
-    else if (cfg->nulltype == Null1b) {
-      status = null1b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null1b rscape", cfg->errbuf);
-    }
-    else if (cfg->nulltype == Null2) {
-      status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-    }
-    else if (cfg->nulltype == Null2b) {
-      cfg->nulltype = Null2;
-      status = null2_rscape(go, cfg, nshuffle, msa, &ranklist_aux);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-      cfg->nulltype = Null2b;
-      status = null2b_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null2b rscape", cfg->errbuf);
-    }
-    else if (cfg->nulltype == Null3) {
-      status = null3_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null3 rscape", cfg->errbuf);
-    }
-    else if (cfg->nulltype == Null4) {
-      cfg->nulltype = Null4;
-      status = null4_rscape(go, cfg, nshuffle, msa, &ranklist_null);
-      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
-    }
+    status = null_rscape(go, cfg, nshuffle, msa, &ranklist_null);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null_rscape", cfg->errbuf);
   }
   
   if (cfg->allbranchfile) {
@@ -1456,10 +1410,20 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   struct mutual_s *mi = cfg->mi;
   struct data_s    data;
+  PT              *ptlocal = NULL;
   int              status;
 
+  if (cfg->covmethod == POTTS) {
+    if (cfg->pt == NULL) {
+      ptlocal = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
+			    cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
+      if (ptlocal == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
+    }
+    else ptlocal = cfg->pt;
+  }
+  
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
-
+  
   /* main function */
   data.outfp         = NULL;
   data.outsrtfp      = NULL;
@@ -1476,7 +1440,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ranklist_null = NULL;
   data.ranklist_aux  = NULL;
   data.mi            = cfg->mi;
-  data.pt            = cfg->pt;
+  data.pt            = ptlocal;
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
@@ -1503,7 +1467,6 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
-  data.donull2b      = FALSE;
   data.ignorebps     = FALSE;
 
   status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
@@ -1515,10 +1478,13 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
-
+  
+  if (cfg->pt == NULL) potts_Destroy(ptlocal);
+  
   return eslOK;
 
  ERROR:
+  if (cfg->pt) potts_Destroy(cfg->pt);
   return status;
 }
 
@@ -1528,6 +1494,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   char            *title = NULL;
   struct mutual_s *mi = cfg->mi;
   struct data_s    data;
+  PT              *ptlocal = NULL;
   int             *cykct = NULL;
   RANKLIST        *ranklist = NULL;
   RANKLIST        *cykranklist = NULL;
@@ -1535,6 +1502,16 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
+
+  // POTTS: calculate the couplings
+  if (cfg->covmethod == POTTS) {
+    if (cfg->pt == NULL) {
+      ptlocal = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
+			    cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
+      if (ptlocal == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
+    }
+    else ptlocal = cfg->pt;
+  }
 
   corr_Reuse(mi, (cfg->mode == RANSS)? TRUE : FALSE, cfg->covtype, cfg->covclass);
   
@@ -1579,7 +1556,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.ranklist_null = ranklist_null;
   data.ranklist_aux  = ranklist_aux;
   data.mi            = cfg->mi;
-  data.pt            = cfg->pt;
+  data.pt            = ptlocal;
   data.covtype       = cfg->covtype;
   data.allowpair     = cfg->allowpair;
   data.thresh        = cfg->thresh;
@@ -1607,7 +1584,6 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
-  data.donull2b      = (cfg->mode == RANSS && cfg->nulltype == Null2b)? TRUE : FALSE;
   data.ignorebps     = FALSE;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
@@ -1651,6 +1627,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
+   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
@@ -1659,332 +1636,16 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cykranklist) cov_FreeRankList(cykranklist);
   if (hitlist)     cov_FreeHitList(hitlist);
   if (title)       free(title);
-  if (cfg->pt)     potts_Destroy(cfg->pt);
+  if (ptlocal)     potts_Destroy(ptlocal);
   return status;
 }
 
 
-
-/* shuffle all the alignment columns, leave the ss intact */
-static int
-null1_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
-{
-  ESL_MSA   *shmsa = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       *useme = NULL;
-  int        n;                   // index for alignment positions
-  int        s;                   // index for shuffles
-  int        status;
-
-  /* shuffle all the columns */
-  ESL_ALLOC(useme, sizeof(int) * msa->alen);
-  for (n = 0; n < msa->alen; n ++) useme[n] = TRUE;
-
-  for (s = 0; s < nshuffle; s ++) {
-    msamanip_ShuffleColumns(cfg->r, msa, &shmsa, useme, cfg->errbuf, cfg->verbose);
-
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
-    if (s == 0) {
-      status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-    }
-    
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s. Failed to run null1_rscape", cfg->errbuf);
-
-     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-     if (status != eslOK) goto ERROR;
-     
-    esl_msa_Destroy(shmsa); shmsa = NULL;
-    cov_FreeRankList(ranklist); ranklist = NULL;
-  }
-
-  /* outout null msas to file if requested */
-  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-  
-  if (cfg->verbose) {
-    printf("null1 distribution - cummulative\n");
-    printf("imin %d imax %d xmax %f xmin %f\n", 
-	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, cumranklist->h);
-    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-  }
-  
-  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
-  
-  *ret_cumranklist = cumranklist;
-  free(useme);
-  return eslOK;
-  
- ERROR:
-  if (useme) free(useme);
-  if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) cov_FreeRankList(ranklist);
-  if (cumranklist) cov_FreeRankList(cumranklist);
-  return status;
-}
-
-/* shuffle the paired alignment columns and the unpaired columns independently, leave the ss intact */
-static int
-null1b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
-{
-  ESL_MSA   *shmsa = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       *useme1 = NULL;
-  int       *useme2 = NULL;
-  int        n;                   // index for alignment positions
-  int        s;                   // index for shuffles
-  int        status;
-
-  /* shuffle all the columns */
-  ESL_ALLOC(useme1, sizeof(int) * msa->alen);
-  ESL_ALLOC(useme2, sizeof(int) * msa->alen);
-  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
-  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
-
-  for (s = 0; s < nshuffle; s ++) {
-    msamanip_ShuffleColumns(cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
-    msamanip_ShuffleColumns(cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
-
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
-    if (s == 0) {
-      status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-    }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null1b rscape", cfg->errbuf);
-   
-     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-     if (status != eslOK) goto ERROR;
-     
-     esl_msa_Destroy(shmsa); shmsa = NULL;
-     cov_FreeRankList(ranklist); ranklist = NULL;
-  }
-
-  /* outout null msas to file if requested */
-  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-    
-  if (cfg->verbose) {
-    printf("null1b distribution - cummulative\n");
-    printf("imin %d imax %d xmax %f xmin %f\n", 
-	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, cumranklist->h);
-    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-  }
-
-  *ret_cumranklist = cumranklist;
-  free(useme1);
-  free(useme2);
-  return eslOK;
-  
- ERROR:
-  if (useme1) free(useme1);
-  if (useme2) free(useme2);
-  if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) cov_FreeRankList(ranklist);
-  if (cumranklist) cov_FreeRankList(cumranklist);
-  return status;
-}
-
-
-/* shuffle residues within each column */
-static int
-null2_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
-{
-  ESL_MSA   *shmsa = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       s;
-  int       status;
-
-   for (s = 0; s < nshuffle; s ++) {
-     msamanip_ShuffleWithinColumn(cfg->r, msa, &shmsa, cfg->errbuf, cfg->verbose);
-
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
-     if (s == 0) {
-       status = calculate_width_histo(go, cfg, shmsa);
-       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-     }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2 rscape", cfg->errbuf);
-     
-     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-     if (status != eslOK) goto ERROR;
-
-     esl_msa_Destroy(shmsa); shmsa = NULL;
-     cov_FreeRankList(ranklist); ranklist = NULL;
-   }
-
-   /* outout null msas to file if requested */
-   if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-   
-   if (cfg->verbose) {
-     printf("null2 distribution - cummulative\n");
-     printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-     //esl_histogram_Plot(stdout, cumranklist->h);
-     //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-   }
-   
-   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
-   
-   *ret_cumranklist = cumranklist;
-   return eslOK;
-
- ERROR:
-   if (shmsa) esl_msa_Destroy(shmsa);
-   if (ranklist) cov_FreeRankList(ranklist);
-   if (cumranklist) cov_FreeRankList(cumranklist);
-   return status;
-}
-
-/* shuffle residues within each column in a pair-dependent manner:
- * for two columns i,j shuffle the residues of column i (j) that have
- * a partner in column j (i) forming a canonical pair.
- */
-static int
-null2b_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
-{
-  ESL_MSA   *shmsa = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       s;
-  int       status;
-
-  /* this shuffle is comparisond dependent, cannot create a general shmsa,
-   * shuffling needs to be done on the spot.
-   * We make a copy of the original msa anyway.
-   */
-   for (s = 0; s < nshuffle; s ++) {
-     shmsa = esl_msa_Clone(msa);
-
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
-     if (s == 0) {
-       status = calculate_width_histo(go, cfg, shmsa);
-       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-     }
-     
-     status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-     if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run null2b rscape", cfg->errbuf);
-
-     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-     if (status != eslOK) goto ERROR;
-
-     esl_msa_Destroy(shmsa); shmsa = NULL;
-     cov_FreeRankList(ranklist); ranklist = NULL;
-   }
-
-   /* outout null msas to file if requested */
-   if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-    
-   if (cfg->verbose) {
-     printf("null2b distribution - cummulative\n");
-     printf("imin %d imax %d xmax %f xmin %f\n", 
-	    cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-     //esl_histogram_Plot(stdout, cumranklist->h);
-     //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-   }
-   
-   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
-   
-   *ret_cumranklist = cumranklist;
-   return eslOK;
-
- ERROR:
-   if (shmsa) esl_msa_Destroy(shmsa);
-   if (ranklist) cov_FreeRankList(ranklist);
-   if (cumranklist) cov_FreeRankList(cumranklist);
-   return status;
-}
-
-/* mull1(b) + null2 */
-static int
-null3_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
-{
-  ESL_MSA   *shmsa = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       *useme1 = NULL;
-  int       *useme2 = NULL;
-  int        n;                   // index for alignment positions
-  int        s;                   // index for shuffles
-  int        status;
-
-  /* shuffle all the columns */
-  ESL_ALLOC(useme1, sizeof(int) * msa->alen);
-  ESL_ALLOC(useme2, sizeof(int) * msa->alen);
-  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] >  0) useme1[n] = TRUE; else useme1[n] = FALSE;
-  for (n = 0; n < msa->alen; n ++) if (cfg->ct[n+1] == 0) useme2[n] = TRUE; else useme2[n] = FALSE;
-
-  for (s = 0; s < nshuffle; s ++) {
-    msamanip_ShuffleColumns     (cfg->r, msa,   &shmsa, useme1, cfg->errbuf, cfg->verbose);
-    msamanip_ShuffleColumns     (cfg->r, shmsa, &shmsa, useme2, cfg->errbuf, cfg->verbose);
-    msamanip_ShuffleWithinColumn(cfg->r, shmsa, &shmsa,         cfg->errbuf, cfg->verbose);
-
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
-    if (s == 0) {
-      status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-    }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "%s.\nFailed to run rscape shuffled", cfg->errbuf);
-
-     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-     if (status != eslOK) goto ERROR;
-
-    esl_msa_Destroy(shmsa); shmsa = NULL;
-    cov_FreeRankList(ranklist); ranklist = NULL;
-  }
-  
-  /* outout null msas to file if requested */
-  if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-  
-  if (cfg->verbose) {
-    printf("null3 distribution - cummulative\n");
-    printf("imin %d imax %d xmax %f xmin %f\n", 
-	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, cumranklist->h);
-    //esl_histogram_PlotSurvival(stdout, cumranklist->h);
-  }
-
-  *ret_cumranklist = cumranklist;
-  free(useme1);
-  free(useme2);
-  return eslOK;
-  
- ERROR:
-  if (useme1) free(useme1);
-  if (useme2) free(useme2);
-  if (shmsa) esl_msa_Destroy(shmsa);
-  if (ranklist) cov_FreeRankList(ranklist);
-  if (cumranklist) cov_FreeRankList(cumranklist);
-  return status;
-}
 
 
 /* use a tree to generate residues independently for each alignment column */
 static int
-null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
 {
   ESL_MSA   *allmsa = NULL;
   ESL_MSA   *shmsa = NULL;
@@ -1994,6 +1655,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   int       *usecol = NULL;
   int       sc;
   int       s;
+  int       n;
   int       status;
 
   status = create_tree(go, cfg, msa);
@@ -2008,7 +1670,6 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   esl_vec_ISet(usecol, msa->alen+1, TRUE);
 
   for (s = 0; s < nshuffle; s ++) {
-
     status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
     if (cfg->verbose) {
@@ -2017,12 +1678,14 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     }
     
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
 
-    /* weigth the sequences */
-    if (msa->nseq <= cfg->maxsq_gsc) esl_msaweight_GSC(shmsa);
-    else                             esl_msaweight_PB(shmsa);
-
+    /* Weigth the sequences.
+     * Null sequences don't need to be weigted as they have the same phylogeny
+     * and basecomp than the original alignment. We just copy the weights
+     */
+    for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
+    
     /* output null msas to file if requested */
     if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
     
@@ -2034,13 +1697,13 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
     
     if (s == 0) {
       status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the widt of the histogram", cfg->errbuf);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null4 rscape", cfg->errbuf);
-    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
-
+ 
+   status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
+   if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
+   if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
+   
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
     if (status != eslOK) goto ERROR;
 
@@ -2050,7 +1713,7 @@ null4_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RAN
   }
   
   if (cfg->verbose) {
-    printf("null4 distribution - cumulative\n");
+    printf("null distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
 	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
     //esl_histogram_Plot(stdout, cumranklist->ha);

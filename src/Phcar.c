@@ -916,7 +916,6 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
-  data.donull2b      = FALSE;
   data.ignorebps     = TRUE;
 
   status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
@@ -1016,7 +1015,6 @@ run_phcar(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_n
   data.nofigures     = cfg->nofigures;
   data.verbose       = cfg->verbose;
   data.errbuf        = cfg->errbuf;
-  data.donull2b      = FALSE;
   data.ignorebps     = TRUE;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   

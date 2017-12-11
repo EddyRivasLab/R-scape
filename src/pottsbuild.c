@@ -428,6 +428,54 @@ int
 potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
 {
   struct mutual_s *mi = NULL;
+  double           pseudoc = 0.01;
+  double           exp, obs;
+  double           gt;
+  int              L  = pt->L;
+  int              K  = pt->abc->K;
+  int              Kg = pt->Kg;
+  int              i, j;
+  int              a, b;
+  int              status;
+
+  mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
+  if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
+  
+  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  
+  for (i = 0; i < L; i++) {
+    
+    pt->h[i][K] = 0.;
+    for (a = 0; a < K; a ++) pt->h[i][a] = log(mi->pm[i][a]);
+    
+    for (j = i+1; j < L; j++) {
+      
+      for (a = 0; a < K; a ++) 
+	for (b = 0; b < K; b ++) {
+	  
+	  exp = mi->pm[i][a] * mi->pm[j][b];
+	  obs = mi->pp[i][j][IDX(a,b,K)];
+	  gt  = (exp > 0. && obs > 0.) ? log (obs / exp) : pseudoc;
+	  
+	  pt->e[i][j][IDX(a,b,Kg)] = pt->e[j][i][IDX(b,a,Kg)] = gt;
+	}
+    }
+  }
+  if (verbose) potts_Write(stdout, pt);
+  
+  corr_Destroy(mi);
+  return eslOK;
+  
+ ERROR:
+  if (mi) corr_Destroy(mi);
+  return status;
+}
+  
+int
+potts_InitGTold(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, int verbose)
+{
+  struct mutual_s *mi = NULL;
   double           exp;
   double           obs;
   double          *gtp  = NULL;
@@ -448,7 +496,7 @@ potts_InitGT(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, float tol, char *errbuf, i
   mi = corr_Create(L, msa->nseq, FALSE, 0, 0, pt->abc, C16);
   if (mi == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not create mi");
 
-  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, FALSE, tol, verbose, errbuf);
+  status = corr_Probs(r, msa, NULL, NULL, mi, POTTS, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;
   
   status = corr_CalculateGT_C16(mi, verbose, errbuf);

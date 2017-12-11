@@ -23,17 +23,6 @@
 #define W     0.5       // default histogram width
 
 
-typedef enum {
-  NullNONE = 0,
-  Null1    = 1,
-  Null1b   = 2,
-  Null2    = 3,
-  Null2b   = 4,
-  Null3    = 5,
-  Null4    = 6,
-} NULLTYPE;
-
-
 extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, int analize);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);

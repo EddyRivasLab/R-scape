@@ -70,7 +70,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   case POTTS:
     if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
 	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
-      status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->covmethod, data->donull2b, data->tol, data->verbose, data->errbuf);
+      status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->covmethod, data->tol, data->verbose, data->errbuf);
       if (status != eslOK) goto ERROR;
     }
     break;

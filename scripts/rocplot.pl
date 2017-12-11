@@ -12,9 +12,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C $opt_D $opt_L $opt_P $opt_r $opt_T $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_D $opt_f $opt_L $opt_p $opt_P $opt_r $opt_s $opt_T $opt_W $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('C:D:L:P:rT:W:v');
+getopts ('C:D:f:L:p:P:rs:T:W:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -54,7 +54,7 @@ my $gnuplot   = shift;
 my $key       = shift; # tag to identify the benchmark
 
 my $byali = 0;
-print "BYALI $byali\n";
+#print "BYALI $byali\n";
 
 my $currdir = $ENV{PWD};
 
@@ -109,7 +109,7 @@ if ($opt_P) {
 }
 
 # add a random file
-my $dorandom = 1;
+my $dorandom = ($opt_P)? 1:0;
 if ($dorandom) {
     $pdb2msa[$F]   = $pdb2msa[0];
     $prename[$F]   = "results/random/$stoname.random";
@@ -127,7 +127,9 @@ for (my $f = 0; $f < $F; $f ++) {
 
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
 
-    my $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"});
+    my $target_ncnt = 100;
+    if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
+    
     my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
     my $mapfile_tp   = "$prename[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
     
@@ -144,23 +146,23 @@ for (my $f = 0; $f < $F; $f ++) {
     FUNCS::init_histo_array($N, $k, \@his);
 
     print "\n$method: $prefile[$f]\n";
-    if ($method =~ /^R-scape/) {
+    if ($method =~ /^R-scape/ || $method =~ /^GTp/ || $method =~ /^PTFp/ || $method =~ /^neogremlin/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
-	if ($pdbfile =~ //) {
+	if ($pdbfile) {
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
+		print "         $rocfile[$f]\n";
+		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
+					      $N, $k, $shift, \@his, $fmax);
+	    }
+	}
+	else {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 		print "         $rocfile[$f]\n";
 		create_rocfile_rscape($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $target_ncnt, 
 				      $N, $k, $shift, \@his, $fmax);
 	    }
 	    $dorandom = 0;
-	}
-	else { 
-	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
-		print "         $rocfile[$f]\n";
-		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
-					      $N, $k, $shift, \@his, $fmax);
-	    }
 	}
 	predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt);
    }
@@ -207,10 +209,10 @@ for (my $f = 0; $f < $F; $f ++) {
     my $hfile = "$rocfile[$f].his";
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
     
-    my $pdbname = $pdb2msa[$f]->pdbname;
-    my $stoname = $pdb2msa[$f]->stoname;
-    my $maxD    = $pdb2msa[$f]->maxD;
-    my $which   = $pdb2msa[$f]->which;
+    my $pdbname = ($pdbfile)? $pdb2msa[$f]->pdbname : "";
+    my $stoname = ($pdbfile)? $pdb2msa[$f]->stoname : $prename[$f];
+    my $maxD    = ($pdbfile)? $pdb2msa[$f]->maxD    : $maxD;
+    my $which   = ($pdbfile)? $pdb2msa[$f]->which   : $which;
     my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1  fmax: $fmax";
     my $xlabel  = "distance in PDB sequence";
     my $ylabel  = "number of contacts";
@@ -228,7 +230,22 @@ for (my $f = 0; $f < $F; $f ++) {
 my $xmax = 1000;
 my $viewplots = 0;
 my $isrna = 0;
-rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $isrna, $viewplots);
+
+my $maxpp  = 5;
+if ($opt_p) { $maxpp = $opt_p; }
+
+my $maxppv = 102;
+my $maxsen = 30;
+if ($opt_s) { $maxsen = $opt_s; }
+
+my $maxF   = 40;
+if ($opt_f) { $maxF = $opt_f; }
+
+
+$maxpp  = 0.6;
+$maxsen = 102;
+$maxF   = 102;
+rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $viewplots);
 
 
 
@@ -292,7 +309,7 @@ sub  create_rocfile_rscape {
 	    
 	    $f ++;
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen);
+	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, ($pdblen>0)?$pdblen:$alen);
 	    
 	}
  	elsif (/\s+(\d+)\s+(\d+)\s+\S+\s+\S+\s*$/) { # Not annotated as a contact		
@@ -302,8 +319,7 @@ sub  create_rocfile_rscape {
 	    my $distance = $j-$i+1; # distance in the alignment
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen);
-	    
+	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, ($pdblen>0)?$pdblen:$alen);	    
 	}
     }
     close(FILE);
@@ -315,7 +331,7 @@ sub  create_rocfile_rscape {
 sub create_rocfile_rscape_withpdb {
     my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
 
-    my @revmap   = @{$pdb2msa->revmap};
+    my @revmap = @{$pdb2msa->revmap};
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
     open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
     open my $sp2, '>', $scat2file || die "Can't open $scat2file: $!";
@@ -1074,7 +1090,7 @@ sub sort_gremlin {
 }
 
 sub rocplot {
-    my ($key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $seeplots) = @_;
+    my ($key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
 
 
    my $psfile = "results/$key-$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
@@ -1084,11 +1100,6 @@ sub rocplot {
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "\n rocFILE: $psfile\n";
 
-    my $maxpp  = 5;
-    my $maxsen = 30;
-    my $maxppv = 102;
-    my $maxF   = 40;
-    
     my $xlabel;
     my $ylabel;
     my $title  = "$stoname";

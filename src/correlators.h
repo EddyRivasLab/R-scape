@@ -216,7 +216,6 @@ struct data_s {
   char                *errbuf;
   int                  doR2R;
   int                  doDotPlot;
-  int                  donull2b;
   int                  ignorebps;  // FALSE for R-scape, TRUE for Pfcar
 };
 
@@ -248,12 +247,12 @@ extern struct mutual_s *corr_Create(int64_t alen, int64_t nseq, int isshuffled, 
 extern int              corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass);
 extern int              corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             corr_Destroy(struct mutual_s *mi);
-extern int              corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf);
+extern int              corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              corr_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              corr_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);
 extern int              corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-				   METHOD method, int donull2b, double tol, int verbose, char *errbuf);
+				   METHOD method, double tol, int verbose, char *errbuf);
 extern int              corr_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              corr_COVTYPEString(char **ret_covtype, COVTYPE type, char *errbuf);
 extern int              corr_String2COVTYPE(char *covtype, COVTYPE *ret_type, char *errbuf);

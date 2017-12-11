@@ -492,7 +492,7 @@ er_aa_conversion(char *s) {
   char new;
   
   // check for residues named something  like A23 (as in 1u6b)
-  if (strlen(s) > 1 && s[1] >= '0' && s[1] <= '9') s[1] = '\0';
+  if (strlen(s) ==3 && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9') s[1] = '\0';
  
   if      (!strcmp(s,  "ALA"))  new = 'A';
   else if (!strcmp(s,  "CYS"))  new = 'C';

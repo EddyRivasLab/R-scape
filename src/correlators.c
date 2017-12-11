@@ -39,10 +39,9 @@ static int    is_wc(int x, int y);
 static int    is_allowed_pair(int x, int y, ESL_DMATRIX *allowpair);
 static int    number_pairs(int L, int *ct);
 static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
-				int donull2b, double tol, int verbose, char *errbuf);
+				double tol, int verbose, char *errbuf);
 static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi,
 				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
-static int    shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
 
 int                 
@@ -1272,7 +1271,7 @@ corr_Destroy(struct mutual_s *mi)
 
 
 int 
-corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b, double tol, int verbose, char *errbuf)
+corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int64_t alen = msa->alen;
   int     i, j;
@@ -1280,7 +1279,7 @@ corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, int donull2b,
 
   for (i = 0; i < alen-1; i ++)
     for (j = i+1; j < alen; j ++) {
-      status = mutual_naive_ppij(r, i, j, msa, mi, donull2b, tol, verbose, errbuf);
+      status = mutual_naive_ppij(r, i, j, msa, mi, tol, verbose, errbuf);
       if (status != eslOK) goto ERROR;
     }
   
@@ -1376,7 +1375,7 @@ corr_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct
 
 int                 
 corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
-	   METHOD method, int donull2b, double tol, int verbose, char *errbuf)
+	   METHOD method, double tol, int verbose, char *errbuf)
 {
   int i, j;
   int x, y;
@@ -1390,7 +1389,7 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
   switch(method) {
   case NONPARAM:
   case POTTS:
-    status = corr_NaivePP(r, msa, mi, donull2b, tol, verbose, errbuf);
+    status = corr_NaivePP(r, msa, mi, tol, verbose, errbuf);
     if (status != eslOK) goto ERROR;    
     break;
   case AKMAEV:
@@ -1636,7 +1635,7 @@ number_pairs(int L, int *ct)
 
 static int    
 mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
-		  int donull2b, double tol, int verbose, char *errbuf)
+		  double tol, int verbose, char *errbuf)
 {
   int    *coli = NULL;
   int    *colj = NULL;
@@ -1664,16 +1663,9 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   }
 
   /* shuffle in each column residues that appear to be canonical (i,j) pairs */
-  if (donull2b) {
-    status = shuffle_null2b_col(r, msa->abc, msa->nseq, coli, colj, &shcoli, errbuf);
-    if (status != eslOK) goto ERROR;
-    status = shuffle_null2b_col(r, msa->abc, msa->nseq, colj, coli, &shcolj, errbuf);
-    if (status != eslOK) goto ERROR;
-  }
-
   for (s = 0; s < msa->nseq; s ++) {
-    resi = (donull2b)? shcoli[s] : coli[s];
-    resj = (donull2b)? shcolj[s] : colj[s];
+    resi = coli[s];
+    resj = colj[s];
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { 
       mi->nseff[i][j]                += msa->wgt[s];
@@ -1867,36 +1859,6 @@ mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix
   return status;
 }
 
-int 
-shuffle_null2b_col(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int nseq, int *col, int *paircol, int **ret_shcol, char *errbuf)
-{
-  int *useme = NULL;
-  int *shcol = NULL;
-  int  s;
-  int  status;
-  
-  /* allocation */
-  ESL_ALLOC(useme, sizeof(int) * nseq); // vecto to mark residues in the column
- 
-  /* shuffle only positions with residues and with canonical pair in the other column */
-  esl_vec_ISet(useme, nseq, FALSE);
-  for (s = 0; s < nseq; s ++) 
-    if ( esl_abc_XIsResidue(abc,col[s]) && is_wc(col[s], paircol[s]) ) useme[s] = TRUE;
- 
-  /* within colum permutation */
-  status = shuffle_col(r, nseq, useme, col, &shcol, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  *ret_shcol = shcol;
-
-  free(useme);
-  return eslOK;
-  
- ERROR:
-  if (shcol)  free(shcol);
-  if (useme)  free(useme);
-  return status;
-}
 
 int 
 shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf)
