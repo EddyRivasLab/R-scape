@@ -10,9 +10,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C $opt_P $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_f $opt_p $opt_P $opt_s $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('CPv');
+getopts ('Cf:p:Pvs:');
 
 
 # Print a helpful message if the user provides no input file.
@@ -42,7 +42,7 @@ if ($opt_C) { $famtype = "CAMEO"; }
 my $seeplots = 0;
 my $verbose  = 0;
 
-my $N = 5;
+my $N = 50;
 my $k = 50;
 my $shift = 0;
 
@@ -76,6 +76,7 @@ for (my $m = 0; $m < $M; $m++) {
     my @family;
     FUNCS::sorted_files($localdir, \@family, $string_suffix, );    
     my $F = $#family+1;
+    if ($F == 0) { print "no files found in dir $localdir with suffix $string_suffix\n"; die; }
     
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
@@ -89,7 +90,8 @@ for (my $m = 0; $m < $M; $m++) {
 	if ($add == 0) { next; }
 
 	$nf ++;
-	
+
+	print "ROC: $rocfile\n";
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
 	    
@@ -136,10 +138,15 @@ for (my $m = 0; $m < $M; $m++) {
     
 }
 
-rocplot($M, \@plotfile, \@type, $gnuplot, $seeplots);
+my $maxpp  = 1.5; if ($opt_p) { $maxpp  = $opt_p; }
+my $maxsen = 40;  if ($opt_s) { $maxsen = $opt_s; }
+my $maxF   = 100; if ($opt_f) { $maxF   = $opt_f; }
+
+
+rocplot($M, \@plotfile, \@type, $gnuplot, $maxpp, $maxsen, $maxF, $seeplots);
 
 sub rocplot {
-    my ($F, $file_ref, $type_ref, $gnuplot, $seeplots) = @_;
+    my ($F, $file_ref, $type_ref, $gnuplot, $maxpp, $maxsen, $maxF, $seeplots) = @_;
 
 
    my $psfile = "$string_name.$string_suffix.ps";
@@ -148,8 +155,6 @@ sub rocplot {
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
     print "FILE: $psfile\n";
-
-    my $maxpp = 1.5;
 
     my $xlabel;
     my $ylabel;
@@ -165,23 +170,23 @@ sub rocplot {
     print $gp "set terminal postscript color solid 14\n";
     print $gp "set output '$psfile'\n";
 
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 4   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 5   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 6   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 7   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 1\n";
-    #print $gp "set style line 7   lt 1 ls rgb '#1F78B4' pt 1 ps 0.5 lw 1\n"; # dark blue
-    print $gp "set style line 8   lt 1 lc rgb '#005A32' pt 1 ps 0.5 lw 1\n"; # dark green
-    print $gp "set style line 9   lt 1 lc rgb '#74C476' pt 1 ps 0.5 lw 1\n"; # light green
-    print $gp "set style line 10  lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 4   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 5   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 6   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 7   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
+    #print $gp "set style line 7   lt 1 ls rgb '#1F78B4' pt 1 ps 0.5 lw 3\n"; # dark blue
+    print $gp "set style line 8   lt 1 lc rgb '#005A32' pt 1 ps 0.5 lw 3\n"; # dark green
+    print $gp "set style line 9   lt 1 lc rgb '#74C476' pt 1 ps 0.5 lw 3\n"; # light green
+    print $gp "set style line 10  lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 3\n";
 
     my $logscale = 0;
     $xlabel = "SEN contacts";
     $ylabel = "PPV contacts";
     $x_min = 0;
-    $x_max = 40;
+    $x_max = $maxsen;
     $y_min = 0;
     $y_max = 100;
     $x = 2;
@@ -221,7 +226,7 @@ sub rocplot {
     $x_min = 0.001;
     $x_max = $maxpp;
     $y_min = 0;
-    $y_max = 100;
+    $y_max = $maxF;
     $x = 1;
     $y = 4;
     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);

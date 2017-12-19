@@ -12,14 +12,14 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C $opt_D $opt_f $opt_L $opt_p $opt_P $opt_r $opt_s $opt_T $opt_W $opt_v);  # required if strict used
+use vars qw ($opt_C $opt_D $opt_f $opt_L $opt_p $opt_P $opt_R $opt_r $opt_s $opt_T $opt_W $opt_v $opt_x);  # required if strict used
 use Getopt::Std;
-getopts ('C:D:f:L:p:P:rs:T:W:v');
+getopts ('C:D:f:L:p:PRrs:T:W:vx:');
 
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-    print "usage:  rocplot.pl [options] <F> <file1> <stofile1> .. <fileF> <stofileF> <rscapebin> <gnuplot> <key>  \n\n";
+    print "usage:  rocplot.pl [options] <F> <file1> <stofile1> <strfile1> .. <fileF> <stofileF> <strfileF> <rscapebin> <gnuplot> <key>  \n\n";
     print "options:\n";
     exit;
 }
@@ -27,6 +27,7 @@ if (!@ARGV) {
 my $F = shift;
 my @prefile;
 my @stofile;
+my @strfile;
 my @prename;
 my @rocfile;
 my @scat1file;
@@ -36,7 +37,8 @@ my $outname;
  for (my $f = 0; $f < $F; $f ++){
     $prefile[$f]  = shift;
     $stofile[$f]  = shift;
-    $prename[$f] = $prefile[$f];
+    $strfile[$f]  = shift;
+    $prename[$f]  = $prefile[$f];
     if ($prename[$f] =~ /^(\S+)\.sorted.out$/) {
 	$outname = $1;
  
@@ -90,23 +92,33 @@ my $verbose = 0;
 if ($opt_v) { $verbose = 1; }
 
 # Map the  pdb2msa structure to the input alignment
-my $pdbfile = "";
 my @pdb2msa;
-if ($opt_P) { 
-    $pdbfile = "$opt_P";
-    for (my $f = 0; $f < $F; $f ++) {
+for (my $f = 0; $f < $F; $f ++) {
+    if ($strfile[$f]) { 
 	my $found = 0;
 	for (my $g = 0; $g < $f; $g ++) {
-	    if ($stofile[$f] =~ /^$stofile[$g]$/) {
+	    if ($stofile[$f] =~ /^$stofile[$g]$/ && $strfile[$f] =~ /^$strfile[$g]$/) {
 		$pdb2msa[$f] = $pdb2msa[$g];
 		$found = 1;
 		last;
 	    }
 	}
 	if ($found == 0) {
-	    PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $pdbfile, $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);}
+	    if ($strfile[$f] =~ /\.pdb/) {
+		PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
+	    }
+	    elsif ($strfile[$f] =~ /\.EC\.interaction/) {
+		structure_from_ecfile($strfile[$f], \$pdb2msa[$f], $maxD, $minL);
+	    }
+	}
     }
+    else {
+	structure_from_msa($stofile[$f], \$pdb2msa[$f], $maxD, $minL);
+    }
+    
+    printf "ncnt %d nbp %d nwc %d\n", $pdb2msa[$f]->{"PDB2MSA::ncnt"}, $pdb2msa[$f]->{"PDB2MSA::nbp"}, $pdb2msa[$f]->{"PDB2MSA::nwc"} ;	
 }
+
 
 # add a random file
 my $dorandom = ($opt_P)? 1:0;
@@ -125,9 +137,12 @@ my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
 
+    my $pdbfile = ($strfile[$f] =~ /\.pdb/)? 1 : 0;
+    my $ecfile  = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
+    
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
 
-    my $target_ncnt = 100;
+    my $target_ncnt = 1e+10;
     if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
     
     my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
@@ -149,7 +164,7 @@ for (my $f = 0; $f < $F; $f ++) {
     if ($method =~ /^R-scape/ || $method =~ /^GTp/ || $method =~ /^PTFp/ || $method =~ /^neogremlin/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
-	if ($pdbfile) {
+	if ($pdbfile || $ecfile) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
 		print "         $rocfile[$f]\n";
 		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
@@ -164,37 +179,40 @@ for (my $f = 0; $f < $F; $f ++) {
 	    }
 	    $dorandom = 0;
 	}
-	predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt);
-   }
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
+    }
     elsif ($method =~ /^mfDCA$/) {
-	if ($pdbfile) { 
-	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		print "         $rocfile[$f]\n";
-		create_rocfile_mfDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
-				     \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
-	    }
-	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
-	}
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    print "         $rocfile[$f]\n";
+	    create_rocfile_mfDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
+				 \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
+	  }  
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt); }
     }
     elsif ($method =~ /^plmDCA$/) {
-	if ($pdbfile) { 
-	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		print "         $rocfile[$f]\n";
-		create_rocfile_plmDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
-				      \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
-	    } 
-	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    print "         $rocfile[$f]\n";
+	    create_rocfile_plmDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
+				  \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
 	}
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
     }
     elsif ($method =~ /^gremlin$/) {
-	if ($pdbfile) {
-	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
-		print "         $rocfile[$f]\n";
-		create_rocfile_gremlin($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
-				       $N, $k, $shift, \@his, $fmax);
-	    }
-	    predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    print "         $rocfile[$f]\n";
+	    create_rocfile_gremlin($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
+				   $N, $k, $shift, \@his, $fmax);
 	}
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt); }
+    }
+    elsif ($method =~ /^plmc$/) {
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
+	    print "         $rocfile[$f]\n";
+	    create_rocfile_plmc($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
+				$N, $k, $shift, \@his, $fmax);
+	}
+	
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
     }
     elsif ($method =~ /random/) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
@@ -202,7 +220,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	    create_rocfile_random($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
 				  $N, $k, $shift, \@his, $fmax);
 	}
-	predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt);
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
    }
     else { print "method $method not implemented yet\n"; die; }
     
@@ -227,9 +245,12 @@ for (my $f = 0; $f < $F; $f ++) {
     FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot);
 }
 
-my $xmax = 1000;
+my $xmax = 100;
+if ($opt_x) { $xmax = $opt_x; }
+
 my $viewplots = 0;
 my $isrna = 0;
+if ($opt_R) { $isrna = 1; }
 
 my $maxpp  = 5;
 if ($opt_p) { $maxpp = $opt_p; }
@@ -267,7 +288,7 @@ sub  create_rocfile_rscape {
     my $t_b = 0;
     my $t_w = 0;
 
-   my $pdblen = 0;
+    my $pdblen = 0;
     my $alen = 0;
     my $type = "";
     open(FILE, "$file") || die;
@@ -359,12 +380,12 @@ sub create_rocfile_rscape_withpdb {
 	    my $j          = $2;
 	    my $score      = $3;
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
-	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
+	    my $pdbi       = (@revmap)? (($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0) : 0;
+	    my $pdbj       = (@revmap)? (($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0) : 0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
-	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
 	    
 	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { 
 		#print "       DISCARD    i $i $pdbi j $j $pdbj \n"; 
@@ -390,12 +411,12 @@ sub create_rocfile_rscape_withpdb {
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $byali, $pdb2msa->{"PDB2MSA::ncnt"}, 
 							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
-		if    ($type ==  0) { $f_w ++; }
-		elsif ($type <  12) { $f_b ++; }
+		if ($type ==  0) { $f_w ++; }
+		if ($type <  12) { $f_b ++; }
 		$f_c ++;
 		#print "^^HIT $f_c/$f i $i $pdbi j $j $pdbj \n";
 
-		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
+		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		
 		printf $sp2 "$f_c $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
 		
@@ -412,7 +433,7 @@ sub create_rocfile_rscape_withpdb {
 		    $ncnt_rscape_f ++;
 		}
 	    }
-	    #else { print "  NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
+	    #else { print "    ^^NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"});
@@ -423,8 +444,8 @@ sub create_rocfile_rscape_withpdb {
     close($sp1);
     close($sp2);
 
-    predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_rscape, \@cnt_rscape, $ncnt_rscape_f, \@cnt_rscape_f, $maxD, $minL, $which);
-    plot_scat("R-scape", $scat1file, $scat2file);
+    if (@revmap) { predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_rscape, \@cnt_rscape, $ncnt_rscape_f, \@cnt_rscape_f, $maxD, $minL, $which); }
+    if (@revmap) { plot_scat("R-scape", $scat1file, $scat2file); }
 }
 
 
@@ -472,6 +493,15 @@ sub  create_rocfile_gremlin {
     my $method = "gremlin";
   
     parse_gremlin($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
+
+}
+
+sub  create_rocfile_plmc {
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+
+    my $method = "plmc";
+  
+    parse_plmc($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $prefile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
 
 }
 
@@ -531,8 +561,8 @@ sub  create_rocfile_random {
 	if (PDBFUNCS::found_pdbcoords_in_contactlist(($i<$j)?$i:$j, ($j>$i)?$j:$i, $pdb2msa->{"PDB2MSA::minL"}, $byali, $pdb2msa->{"PDB2MSA::ncnt"}, 
 						     \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$posi, \$posj, \$chri, \$chrj, \$cdistance)) 
 	{
-	    if    ($type ==  0) { $f_w ++; }
-	    elsif ($type <  12) { $f_b ++; }
+	    if ($type ==  0) { $f_w ++; }
+	    if ($type <  12) { $f_b ++; }
 	    $f_c ++;
 	    
 	    printf $sp2 "$f_c $i $j %d 0\n", $j-$i+1;
@@ -561,7 +591,7 @@ sub  create_rocfile_random {
     close($sp2);
     
     predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $prefile, $ncnt_ran, \@cnt_ran, $ncnt_ran_f, \@cnt_ran_f, $maxD, $minL, $which);
-    plot_scat("random", $scat1file, $scat2file);
+    if (@map) { plot_scat("random", $scat1file, $scat2file); }
 }
 
 
@@ -659,12 +689,12 @@ sub parse_mfDCA {
 	    my $i          = $mapDCA_ref->[$idca];
 	    my $j          = $mapDCA_ref->[$jdca];
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
-	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
+	    my $pdbi       = (@revmap)?(($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0):0;
+	    my $pdbj       = (@revmap)?(($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0):0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
-	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
 
 	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
@@ -686,9 +716,9 @@ sub parse_mfDCA {
 
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
-		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
-		if    ($type ==  0) { $f_w ++; }
-		elsif ($type <  12) { $f_b ++; }
+		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
+		if ($type ==  0) { $f_w ++; }
+		if ($type <  12) { $f_b ++; }
 		$f_c ++;
 		
 		printf $sp2 "$f_c $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
@@ -717,7 +747,7 @@ sub parse_mfDCA {
     close($sp2);
 
     predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_mfDCA, \@cnt_mfDCA, $ncnt_mfDCA_f, \@cnt_mfDCA_f, $maxD, $minL, $which);
-    plot_scat("mfDCA", $scat1file, $scat2file);
+    if (@revmap) { plot_scat("mfDCA", $scat1file, $scat2file); }
     
     system("rm $sortfile\n");
 }
@@ -757,12 +787,12 @@ sub parse_plmDCA {
 	    my $i          = $mapDCA_ref->[$idca];
 	    my $j          = $mapDCA_ref->[$jdca];
 	    my $distance   = $j-$i+1; # distance in the alignment
-	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
-	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
+	    my $pdbi       = (@revmap)?(($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0):0;
+	    my $pdbj       = (@revmap)?(($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0):0;
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
-	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
 
 	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
@@ -785,9 +815,9 @@ sub parse_plmDCA {
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) {
 		
-		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
-		if    ($type ==  0) { $f_w ++; }
-		elsif ($type <  12) { $f_b ++; }
+		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
+		if ($type ==  0) { $f_w ++; }
+		if ($type <  12) { $f_b ++; }
 		$f_c ++;
 		#print "HIT $f_c/$f i $i $pdbi j $j $pdbj \n";
 		
@@ -819,7 +849,7 @@ sub parse_plmDCA {
     close($sp2);
     
     predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_plmDCA, \@cnt_plmDCA, $ncnt_plmDCA_f, \@cnt_plmDCA_f, $maxD, $minL, $which);
-    plot_scat("plmDCA", $scat1file, $scat2file);
+    if (@revmap) { plot_scat("plmDCA", $scat1file, $scat2file); }
     system("rm $sortfile\n");
 }
 
@@ -855,13 +885,13 @@ sub parse_gremlin {
 	    my $i          = $1;
 	    my $j          = $2;
 	    my $score      = $3;
-	    my $pdbi       = ($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0;
-	    my $pdbj       = ($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0;
+	    my $pdbi       = (@revmap)?(($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0):0;
+	    my $pdbj       = (@revmap)?(($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0):0;
 	    my $distance   = $j-$i+1; # distance in the alignment
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
-	    if ($pdbi == 0 || $pdbj == 0) { next }
+	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
 	    
 	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
 
@@ -884,9 +914,9 @@ sub parse_gremlin {
 	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
 							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
-		if ($pdbi <= 0 || $pdbj <= 0) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
-		if    ($type ==  0) { $f_w ++; }
-		elsif ($type <  12) { $f_b ++; }
+		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
+		if ($type ==  0) { $f_w ++; }
+		if ($type <  12) { $f_b ++; }
 		$f_c ++;
 
 		printf $sp2 "$f_c $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
@@ -915,7 +945,103 @@ sub parse_gremlin {
     close($sp2);
 
     predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_grem, \@cnt_grem, $ncnt_grem_f, \@cnt_grem_f, $maxD, $minL, $which);
-    plot_scat("gremlin", $scat1file, $scat2file);
+    if (@revmap) { plot_scat("gremlin", $scat1file, $scat2file); }
+    system("rm $sortfile\n");
+}
+
+sub parse_plmc {
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+
+    my $sortfile = sort_plmc($file);
+    my @revmap   = @{$pdb2msa->revmap};
+    
+    open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
+    open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
+    open my $sp2, '>', $scat2file || die "Can't open $scat2file: $!";
+
+    my $f   = 0;
+    my $f_c = 0;
+    my $f_b = 0;
+    my $f_w = 0;
+    my $t_c = $pdb2msa->ncnt;
+    my $t_b = $pdb2msa->nbp;
+    my $t_w = $pdb2msa->nwc;
+
+    my $ncnt_plmc   = 0;
+    my $ncnt_plmc_f = 0;
+    my @cnt_plmc;
+    my @cnt_plmc_f;
+    
+    my $type;
+    open(FILE, "$sortfile") || die;
+    while(<FILE>) {
+	if (/^\#/) {
+	}
+	elsif (/(\d+)\s+(\d+)\s+(\S+)\s*$/) {
+	    my $i          = $1;
+	    my $j          = $2;
+	    my $score      = $3;
+	    my $pdbi       = (@revmap)?(($revmap[$i-1]>0)? $revmap[$i-1]+1 : 0):0;
+	    my $pdbj       = (@revmap)?(($revmap[$j-1]>0)? $revmap[$j-1]+1 : 0):0;
+	    my $distance   = $j-$i+1; # distance in the alignment
+	    my $chri       = "N";
+	    my $chrj       = "N";
+	    my $cdistance  = -1;
+	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
+	    
+	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
+
+	    $f ++;
+	    printf $sp1 "$f $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
+
+	    if ($ncnt_plmc < $target_ncnt) {
+		$cnt_plmc[$ncnt_plmc] = CNT->new();
+		$cnt_plmc[$ncnt_plmc]->{"CNT::i"}        = $pdbi;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::j"}        = $pdbj;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::posi"}     = $i;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::posj"}     = $j;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::chri"}     = $chri;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::chrj"}     = $chrj;
+		$cnt_plmc[$ncnt_plmc]->{"CNT::bptype"}   = "CONTACT";
+		$cnt_plmc[$ncnt_plmc]->{"CNT::distance"} = $cdistance;
+		$ncnt_plmc ++;
+	    }
+
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->minL, $byali, $pdb2msa->ncnt, \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
+	    {
+		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
+		if ($type ==  0) { $f_w ++; }
+		if ($type <  12) { $f_b ++; }
+		$f_c ++;
+
+		printf $sp2 "$f_c $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
+
+		if ($ncnt_plmc < $target_ncnt) {
+		    $cnt_plmc_f[$ncnt_plmc_f] = CNT->new();
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::i"}        = $pdbi;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::j"}        = $pdbj;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::posi"}     = $i;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::posj"}     = $j;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::chri"}     = $chri;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::chrj"}     = $chrj;
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::bptype"}   = "CONTACT";
+		    $cnt_plmc_f[$ncnt_plmc_f]->{"CNT::distance"} = $cdistance;
+		    $ncnt_plmc_f ++;
+		}
+	    }
+	    
+	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
+	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
+	}
+    }
+    close(FILE);
+    close($fp);
+    close($sp1);
+    close($sp2);
+
+    predictions_create($mapfile_pred, $mapfile_tp, $pdb2msa, $file, $ncnt_plmc, \@cnt_plmc, $ncnt_plmc_f, \@cnt_plmc_f, $maxD, $minL, $which);
+    if (@revmap) { plot_scat("plmclin", $scat1file, $scat2file); }
     system("rm $sortfile\n");
 }
 
@@ -1089,6 +1215,48 @@ sub sort_gremlin {
     return $sortfile;
 }
 
+sub sort_plmc {
+    my ($file) = @_;
+
+    my $sortfile = "$file.sort";
+
+    my $n = 0;
+    my %i;
+    my %j;
+    my %sc;
+    my $di;
+    my $mi;
+    my %newi;
+    my %newj;
+    my %newsc;
+    
+    open(SORT, ">$sortfile") || die;
+    open(FILE, "$file") || print "FILE DOES NOT EXIST\n";
+    while(<FILE>) {
+	if (/^(\d+)\s\-\s(\d+)\s\-\s\S+\s+(\S+)\s*$/) {
+	    $i{$n}  = $1;
+	    $j{$n}  = $2;
+	    $sc{$n} = $3;
+	    $n ++;
+	}
+    }
+    close(FILE);
+    
+    my @newkey = sort { $sc{$b} <=> $sc{$a} } keys(%sc);
+    my @newi   = @i{@newkey};
+    my @newj   = @j{@newkey};
+    my @newsc  = @sc{@newkey};
+
+    for(my $x = 0; $x < $n; $x ++) {
+	print SORT "$newi[$x] $newj[$x] $newsc[$x]\n";
+    }
+    close(SORT);
+
+    if (0) { system("more $sortfile\n"); }
+    
+    return $sortfile;
+}
+
 sub rocplot {
     my ($key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
 
@@ -1143,7 +1311,7 @@ sub rocplot {
     $y_max = $maxppv;
     $x = 9;
     $y = 17;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "SEN contacts";
     $x_min = 0.001;
@@ -1152,7 +1320,7 @@ sub rocplot {
     $y_max = $maxsen;
     $x = 9;
     $y = 16;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions per position";
     $ylabel = "F contacts (%)";
     $x_min = 0.001;
@@ -1161,7 +1329,7 @@ sub rocplot {
     $y_max = $maxF;
     $x = 9;
     $y = 18;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
     # basepairs
     if ($isrna) {
@@ -1173,7 +1341,7 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 9;
 	$y = 20;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions per position";
 	$ylabel = "SEN bpairs (%)";
 	$x_min = 0.001;
@@ -1182,7 +1350,7 @@ sub rocplot {
 	$y_max = $maxsen;
 	$x = 9;
 	$y = 19;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions per position";
 	$ylabel = "F bpairs";
 	$x_min = 0.001;
@@ -1191,10 +1359,38 @@ sub rocplot {
 	$y_max = $maxF;
 	$x = 9;
 	$y = 21;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	
+	$xlabel = "number of predictions per position";
+	$ylabel = "PPV WC (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 9;
+	$y = 23;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "SEN WC (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxsen;
+	$x = 9;
+	$y = 22;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "F WC";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 9;
+	$y = 24;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     }
     
-    $logscale = 1;
+    $logscale = 0;
     $xlabel = "number of predictions";
     $ylabel = "PPV contacts (%)";
     $x_min = 1;
@@ -1210,8 +1406,10 @@ sub rocplot {
     $x_max = $xmax;
     $y_min = 0;
     $y_max = $maxsen;
+    #$y_max = 450;
     $x = 1;
     $y = 16;
+    #$y = 2;
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "number of predictions";
     $ylabel = "F contacts (%)";
@@ -1221,8 +1419,73 @@ sub rocplot {
     $y_max = $maxF;
     $x = 1;
     $y = 18;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    
+    # basepairs
+    if ($isrna) {
+	$logscale = 0;
+	$xlabel = "number of predictions";
+	$ylabel = "PPV bpairs (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 1;
+	$y = 20;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "SEN bpairs (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxsen;
+	#$y_max = 450;
+	$x = 1;
+	$y = 19;
+	#$y = 2;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "F contacts (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 1;
+	$y = 21;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
+	$logscale = 0;
+	$xlabel = "number of predictions";
+	$ylabel = "PPV WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 1;
+	$y = 23;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "SEN WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxsen;
+	#$y_max = 450;
+	$x = 1;
+	$y = 22;
+	#$y = 2;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "F WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 1;
+	$y = 24;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
     $logscale = 0;
     $xlabel = "SEN contacts (%)";
     $ylabel = "PPV contacts (%)";
@@ -1242,7 +1505,16 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 19;
 	$y = 20;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "SEN WC (%)";
+	$ylabel = "PPV WC (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 22;
+	$y = 23;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     }
     
     close($gp);
@@ -1357,7 +1629,122 @@ sub plot_scat {
     #print $gp "set xrange [$xmin:$xmax]\n";
     #print $gp "set yrange [$ymin:$ymax]\n";
     $cmd = "'$scat1file' using 4:5  title 'F'            ls 5, ";
-    $cmd .= "'$scat2file' using 4:5  title 'TP'                ls 4";
+    $cmd .= "'$scat2file' using 4:5  title 'TP'          ls 4";
     print $gp "plot $cmd\n";
     close($gp);   
+}
+
+
+sub structure_from_msa {
+    my ($stofile, $pdb2msa_ref, $maxD, $minL) = @_;
+
+    $$pdb2msa_ref = PDB2MSA->new();
+    my $stoname = $stofile;
+    if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
+    if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
+ 
+    my $nsq;
+    my @name;
+    my @sq;
+    my @ct;
+    my $ss;
+    FUNCS::parse_stofile($stofile, \$nsq, \@name, \@sq, \$ss, \@ct);
+    my $ncnt = 0;
+    my @cnt;
+    
+    my $msalen  = $#ct + 1;
+    for (my $x = 0; $x < $msalen; $x ++) {
+	if ($ct[$x] >= 0 && $ct[$x] > $x) {
+	    
+	    my $posi = $x+1;
+	    my $posj = $ct[$x]+1;
+	    if ($posj - $posi + 1 >= $minL) {
+		$cnt[$ncnt] = CNT->new();
+		$cnt[$ncnt]->{"CNT::i"}        = -1;
+		$cnt[$ncnt]->{"CNT::j"}        = -1;
+		$cnt[$ncnt]->{"CNT::posi"}     = $posi;
+		$cnt[$ncnt]->{"CNT::posj"}     = $posj;
+		$cnt[$ncnt]->{"CNT::chri"}     = substr($sq[0], $x,      1);
+		$cnt[$ncnt]->{"CNT::chrj"}     = substr($sq[0], $ct[$x], 1);
+		$cnt[$ncnt]->{"CNT::bptype"}   = "WWc";
+		$cnt[$ncnt]->{"CNT::distance"} = -1;
+		$ncnt ++;
+	    }
+	}
+    }
+    $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = "";
+    $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = -1;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = $msalen;
+    
+   
+    $$pdb2msa_ref->{"PDB2MSA::ncnt"}      = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nbp"}       = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
+    $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = 0;
+    $$pdb2msa_ref->{"PDB2MSA::which"}     = 0;
+    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
+
+}
+
+
+sub structure_from_ecfile {
+    my ($ecfile, $pdb2msa_ref, $maxD, $minL) = @_;
+
+    $$pdb2msa_ref = PDB2MSA->new();
+    my $ecname = $ecfile;
+    if ($ecname =~ /([^\.]+)\./) { $ecname = $1; }
+
+    my $ncnt = 0;
+    my $nbp  = 0;
+    my $nwc  = 0;
+    my @cnt;
+    open(FILE, "$ecfile") || die;
+    while(<FILE>) {
+	if (/^(\S+)\s+(\d+)\s+(\d+)\s+\d+\s+(\S)\s+\d+\s+(\S)\s+\d+\s+(\S+)\s+(\S+)\s*$/) {
+	    my $sc       = $1;
+	    my $i        = $2;
+	    my $j        = $3;
+	    my $chri     = $4;
+	    my $chrj     = $5;
+	    my $distance = $6;
+	    my $type     = $7;
+
+	    if ($j-$i+1 >= $minL && $distance <= $maxD) {
+		if    ($type =~ /^None$/) { $type = "CONTACT"; }
+		elsif ($type =~ /^cWW$/)  { $type = "WWc";     $nwc ++; $nbp ++ }
+		else                                                  { $nbp ++ }
+		
+		$cnt[$ncnt] = CNT->new();
+		$cnt[$ncnt]->{"CNT::i"}        = -1;
+		$cnt[$ncnt]->{"CNT::j"}        = -1;
+		$cnt[$ncnt]->{"CNT::posi"}     = $i+1;
+		$cnt[$ncnt]->{"CNT::posj"}     = $j+1;
+		$cnt[$ncnt]->{"CNT::chri"}     = $chri;
+		$cnt[$ncnt]->{"CNT::chrj"}     = $chrj;
+		$cnt[$ncnt]->{"CNT::bptype"}   = $type;
+		$cnt[$ncnt]->{"CNT::distance"} = $distance;
+		$ncnt ++;
+	    }
+	}
+    }
+    close(FILE);
+	
+    $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = "";
+    $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $ecname;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = -1;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = -1;
+    
+   
+    $$pdb2msa_ref->{"PDB2MSA::ncnt"}      = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nbp"}       = $nbp;
+    $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
+    $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
+    $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = 0;
+    $$pdb2msa_ref->{"PDB2MSA::which"}     = 0;
+    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
+
 }

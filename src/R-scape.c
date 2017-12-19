@@ -1220,14 +1220,17 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
 
   // Special cases under which to produce or not a --cyk structure
-  // (1) use --cyk if no structure is given
+  // (1) use --cyk if no structure is given unless --naive
   // (2) unless it is too long.
   if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
   else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if no given one
+    if (cfg->statsmethod == NAIVE) cfg->docyk = FALSE;
+    else {
     printf("No structure given or pdbfile to read one, we continue with --cyk option\n");
-    cfg->docyk = TRUE;  
+    cfg->docyk = TRUE;
+    }
   }
-  if (msa->alen > cfg->cykLmax) { // unless alignment is too long
+  if (cfg->docyk && msa->alen > cfg->cykLmax) { // unless alignment is too long
     printf("Alignment is too long to calculate a structure\n");
     cfg->docyk = FALSE;
   }

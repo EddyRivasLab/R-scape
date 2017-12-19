@@ -1012,7 +1012,7 @@ sub found_alicoords_in_contactlist {
 	    elsif ($bptype =~ /^HSt$/)     { $type = 11; }
 	    elsif ($bptype =~ /^STACKED$/) { $type = 12; }
 	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
-	    else { print "uh? bptype = $bptype\n"; die;  }
+	    else                           { $type = 1;  print "uh? bptype = $bptype\n"; } # assign arbitraryly to WWt
 	    
 	    $$ret_type     = $type;
 	    $$ret_pdbi     = $cnt_ref->[$c]->{"CNT::i"};
@@ -1059,7 +1059,7 @@ sub found_pdbcoords_in_contactlist {
 	    elsif ($bptype =~ /^HSt$/)     { $type = 11; }
 	    elsif ($bptype =~ /^STACKED$/) { $type = 12; }
 	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
-	    else { print "uh? bptype = $bptype\n"; die;  }
+	    else                           { $type = 1;  print "uh? bptype = $bptype\n"; } # assign arbitraryly to WWt
 	    
 	    $$ret_type = $type;
 	    $$ret_posi = $cnt_ref->[$c]->{"CNT::posi"};

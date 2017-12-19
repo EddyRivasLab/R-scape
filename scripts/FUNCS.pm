@@ -1926,12 +1926,12 @@ sub parse_stofile {
 	    $b ++;
 	    $nsq = 0;
 	}
-	elsif ($b < 2 && /^(\S+)\s+(\S+)\s*$/) {
+	elsif (/^([^#]\S+)\s+(\S+)\s*$/) {
 	    $name_ref->[$nsq]  = $1;
 	    $sq_ref->[$nsq]   .= "$2";
 	    $nsq ++;
 	}
-	elsif ($b > 1 && /^(\S+)\s+(\S+)\s*$/) {
+	elsif ($nsq > 0 && /^(\S+)\s+(\S+)\s*$/) {
 	    my $name  = $1;
 	    my $sq    = $2;
 	    
@@ -1939,7 +1939,7 @@ sub parse_stofile {
 		$sq_ref->[$nsq] .= "$sq";
 		$nsq ++;
 	    }
-	    else { print "bad sq\n"; die; }
+	    else { print "bad sq $name | $name_ref->[$nsq]\n"; die; }
 	}
     }
     close(FILE);
