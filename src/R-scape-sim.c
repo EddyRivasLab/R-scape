@@ -783,7 +783,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   case SAMPLE_POTTS:
     if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull,
 				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->abcisRNA, cfg->cntmaxD, cfg->gnuplot,
-				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->noindels, FALSE, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nFailed to generate the simulated potts alignment", cfg->errbuf);
     break;
   }

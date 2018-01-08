@@ -22,13 +22,13 @@
 int
 potts_GenerateAlignment(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, TREETYPE treetype, int N, int L, double atbl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, E1_RATE *e1rateB,
 			ESL_MSA **ret_msafull, char *msafile, ESL_MSA *msa, int *msamap, int *msarevmap, int abcisRNA, double cntmaxD, char *gnuplot,
-			POTTSPARAM pottsparamtype, double pottsigma, char *pottsfile, char *pdbfile, int noindels, double tol, char *errbuf, int verbose)
+			POTTSPARAM pottsparamtype, double pottsigma, char *pottsfile, char *pdbfile, int noindels, int onlypdb, double tol, char *errbuf, int verbose)
 {
   ESL_MSA *msafull = NULL;
   PT      *pt = NULL;
   int      status;
 
-  pt = potts_GenerateParameters(r, abc, pottsparamtype, pottsigma, pottsfile, pdbfile, msafile, msa, msamap, msarevmap, abcisRNA, cntmaxD, gnuplot, L, tol, errbuf, verbose);
+  pt = potts_GenerateParameters(r, abc, pottsparamtype, pottsigma, pottsfile, pdbfile, msafile, msa, msamap, msarevmap, abcisRNA, cntmaxD, gnuplot, L, onlypdb, tol, errbuf, verbose);
   if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "%s. Error generating potts parameters", errbuf);
   
   if (verbose) esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
@@ -46,7 +46,7 @@ potts_GenerateAlignment(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, TREETYPE treetype,
 PT *
 potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsparamtype, double pottsigma, char *pottsfile, char *pdbfile,
 			 char *msafile, ESL_MSA *msa, int *msamap, int *msarevmap, int abcisRNA, double cntmaxD, char *gnuplot,
-			 int L, double tol, char *errbuf, int verbose)
+			 int L, int onlypdb, double tol, char *errbuf, int verbose)
 {
   PT    *pt    = NULL;
   CLIST *clist = NULL;
@@ -68,8 +68,8 @@ potts_GenerateParameters(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, POTTSPARAM pottsp
     if (pt == NULL) ESL_XFAIL(eslFAIL, errbuf, "error generating potts param from file %s", pottsfile);
     break;
   case PTP_CONTACT:
-    status = ContactMap(pdbfile, msafile, gnuplot, msa, msa->alen, msamap, msarevmap, abcisRNA,
-			NULL, NULL, &clist, NULL, cntmaxD, 0.0, errbuf, verbose);
+    status = ContactMap(NULL, pdbfile, msafile, gnuplot, msa, msa->alen, msamap, msarevmap, abcisRNA,
+			NULL, NULL, &clist, NULL, cntmaxD, 0.0, onlypdb, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error generating potts param from contacts");
     
     // make potts param based on contacts
