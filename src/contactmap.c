@@ -32,14 +32,15 @@
 
 static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf);
 static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf);
-static int isnewcontact(int posi,int  posj, CLIST *clist);
+static int isnewcontact(int posi,int  posj, BPTYPE bptype, CLIST *clist);
 
 int
-ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
-	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
-	   double cntmaxD, int cntmind, char *errbuf, int verbose)
+ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
+	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb, double cntmaxD, int cntmind, int onlypdb,
+	   char *errbuf, int verbose)
 {
   CLIST   *clist = NULL;
+  FILE    *cmapfp = NULL;
   int     *ct = NULL;
   int     *msa2pdb = NULL;
   char    *ss = NULL;
@@ -57,25 +58,27 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, 
   clist->mind = cntmind;
   clist->L    = L;       // length of the analysed alignment
   clist->alen = alen;    // length of the original alignment
+
+  // the ss_cons in the alignment
+  status = msamanip_CalculateCT(msa, &ct, &ct_nbpairs, -1.0, errbuf);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
   
-  // A PDB annotation takes precedent over a secondary structure
-  if (pdbfile != NULL) {
-    status = ContactMap_FromPDB(pdbfile, msafile, msa, omsa2msa, abcisRNA, &ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
-  }
-  else {
-    status = msamanip_CalculateCT(msa, &ct, &ct_nbpairs, -1.0, errbuf);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
-    
+  // Look at the structural annotation
+  if (onlypdb == FALSE) {    
     status = ContacMap_FromCT(clist, L, ct, cntmind, msa2omsa, msa2pdb);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from stockholm file", errbuf);
+   }
+  if (pdbfile != NULL) {
+    if (onlypdb) esl_vec_ISet(ct, L+1, 0); // if onlypdb ignore the ss in the alignmet
+    status = ContactMap_FromPDB(pdbfile, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
   }
 
 #if 0
    for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
    if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
 #endif
-
+   
    if (abcisRNA) {
      /* Impose the new ct on the msa GC line 'cons_ss' */
      ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
@@ -86,8 +89,17 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, 
    }
    
    *ret_nbpairs = clist->nbps;
+
+   if (cmapfile) {
+     if ((cmapfp = fopen(cmapfile, "w")) == NULL) ESL_XFAIL(eslFAIL, "failed to open cmapfile", errbuf);
+     CMAP_Dump(cmapfp, clist);
+     fclose(cmapfp);
+   }
    
-   if (1||verbose) CMAP_Dump(stdout, clist);
+   if (1||verbose) {
+     CMAP_Dump(stdout, clist);
+     printf("%s\n", ss);
+   }
 
    if (ret_ct)      *ret_ct      = ct;      else free(ct);
    if (ret_clist)   *ret_clist   = clist;   else free(clist);
@@ -107,11 +119,12 @@ ContactMap(char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, 
 int
 ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb)
 {
-  int    ncnt = 0;
+  int    ncnt = clist->ncnt;
   int    i;
+  int    ii, jj;
+  int    posi, posj;
+  BPTYPE bptype;
   int    status;
-
-  CMAP_ReuseCList(clist);
 
   clist->mind = cntmind;
   
@@ -124,17 +137,23 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
       ESL_REALLOC(clist->cnt,    sizeof(CNT)   * clist->alloc_ncnt);
       ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * clist->alloc_ncnt);
     }
-    
-    if (ct[i+1] > i+1 && (ct[i+1] - i) >= cntmind) {
+
+    ii     = i+1;
+    jj     = ct[ii];
+    posi   = msa2omsa[i]+1;
+    posj   = msa2omsa[jj-1]+1;
+    bptype = WWc;
+    if (jj > ii && jj - ii >= cntmind && isnewcontact(posi, posj, bptype, clist) )  {
+      
       /* assign */
-      clist->cnt[ncnt].i      = i+1;
-      clist->cnt[ncnt].j      = ct[i+1];
-      clist->cnt[ncnt].posi   = msa2omsa[i]+1;
-      clist->cnt[ncnt].posj   = msa2omsa[ct[i+1]-1]+1;
+      clist->cnt[ncnt].i      = ii;
+      clist->cnt[ncnt].j      = jj;
+      clist->cnt[ncnt].posi   = posi;
+      clist->cnt[ncnt].posj   = posj;
       clist->cnt[ncnt].pdbi   = -1;
       clist->cnt[ncnt].pdbj   = -1;
       clist->cnt[ncnt].isbp   = TRUE;
-      clist->cnt[ncnt].bptype = WWc;
+      clist->cnt[ncnt].bptype = bptype;
       clist->cnt[ncnt].D      = +eslINFINITY;
       clist->cnt[ncnt].sc     = -eslINFINITY;
       clist->nbps ++;
@@ -151,7 +170,7 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
 }
 
 int
-ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int **ret_ct, CLIST *clist, int *msa2pdb,
+ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
 		   double cntmaxD, int cntmind, char *errbuf, int verbose)
 {
   char     tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
@@ -159,13 +178,9 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   FILE    *tmpfp  = NULL;
   char    *cmd  = NULL;
   char    *args = NULL;
-  int     *ct = NULL;
   int      L = msa->alen;
   int      status;
   
-  ESL_ALLOC(ct, sizeof(int) * (L+1));
-  esl_vec_ISet(ct, L+1, 0);
-
   if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
   fclose(tmpfp);
   if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
@@ -195,8 +210,6 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   status = read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ct, clist, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading contacts", errbuf);
   remove(tmpcfile);
-
-  *ret_ct = ct;
   
   if (cmd)  free(cmd);
   if (args) free(args);
@@ -530,14 +543,14 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbcfile);
       D = atof(tok);
 
-      if (i > 0 && j > 0 && (j-i+1) >= clist->mind && isnewcontact(posi, posj, clist)) {
+      if (i > 0 && j > 0 && (j-i+1) >= clist->mind && isnewcontact(posi, posj, bptype, clist)) {
 	
 	if (ncnt == clist->alloc_ncnt - 1) {
 	  clist->alloc_ncnt += alloc_ncnt;
 	  ESL_REALLOC(clist->cnt,    sizeof(CNT)   * clist->alloc_ncnt);
 	  ESL_REALLOC(clist->srtcnt, sizeof(CNT *) * clist->alloc_ncnt);
 	}
-	
+
 	clist->cnt[ncnt].posi   = posi;
 	clist->cnt[ncnt].posj   = posj;
 	clist->cnt[ncnt].i      = i;
@@ -550,7 +563,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	clist->cnt[ncnt].isbp   = (bptype < STACKED)? TRUE : FALSE;
 	if (bptype <  STACKED) clist->nbps ++;
 	if (bptype == WWc)     clist->nwwc ++;
-
+	
 	// ct = 0 not paired, ct[i]=j a base pair
 	if (bptype == WWc) {
 	  if (ct[i] == 0 && ct[j] == 0) {
@@ -579,11 +592,11 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 }
 
 static int
-isnewcontact(int posi, int  posj, CLIST *clist)
+isnewcontact(int posi, int  posj, BPTYPE bptype, CLIST *clist)
 {
   int h;
   for (h = 0; h < clist->ncnt; h ++) {
-    if (posi == clist->cnt[h].posi && posj == clist->cnt[h].posj) return FALSE;
+    if (posi == clist->cnt[h].posi && posj == clist->cnt[h].posj && clist->cnt[h].bptype == bptype) return FALSE;
   }
   return TRUE;
 }

@@ -43,7 +43,7 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
   int              num = 0;
   char             ch[2];
   char            *tok;
-  int              len;
+  int              len = -1;
   int              L = -1;
   int              n = 1;
   int              i;
@@ -74,12 +74,14 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
 	}
 	n ++;
       }
+	    
     }
   esl_fileparser_Close(efp);
 
   // identify missing residues in the atom description
-  L = to - from + 1;
-  if (L <= 0) return eslFAIL;
+  L = len;
+  if (L <= 0) ESL_XFAIL(eslFAIL, errbuf, "wrong sequence length %d from file %s", L, pdbfile);
+  
   ESL_ALLOC(ismissing, sizeof(int) * L);
   for (i = 0; i < L; i ++) ismissing[i] = FALSE;
 
@@ -251,7 +253,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     if (!chain_isnucl[c]) continue;
 
     status = er_PDB_GetSeq(pdbfile, ch, &from, &to, &sq, &ismissing, errbuf);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get chain sequence", errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s\ner_PrintChainSeqs(): could not get chain sequence", errbuf);
 
     fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%lu\n", ChainID[rb], from, from+strlen(sq)-1);
     fprintf(stdout, "# seq_%c ", ChainID[rb]);
@@ -263,7 +265,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     chain_name[c] = ChainID[rb];
 
     status = er_SEQRES2ResSeq(sq, from, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get the coords correspondence", errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s\ner_PrintChainSeqs(): could not get the coords correspondence", errbuf);
 
     free(ismissing); ismissing = NULL;
     free(sq); sq = NULL;
@@ -365,7 +367,6 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
   char *name;
   char *s = NULL;
   char  new[2];
-  char  icode;
   int   len = strlen(sq);
   int   l;
   long  i;
@@ -388,29 +389,30 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
 
   pos_prv = ResSeq[seidx[ib][1]];
   for (i = ib; i <= ie; i++){
+    
     rb  = seidx[i][1];
     pos = ResSeq[rb];
 
     ANum = AtomNum[rb];
 
-    if (pos - from > len) continue;
-    if (pos < from) continue;
-    
     esl_sprintf(&s, ResName[rb]);
     esl_strtok(&s, " ", &name);
 
     name[0] = er_aa_conversion(name);
     name[1] = '\0';
-    icode = Miscs[rb][2];
 
-    if (pos != pos_prv+1) {
+    if (pos - from > len) { // an insert
+    }
+    else if (pos < from) { // and instert, also possible
+    }
+    else if (pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
 	if (ismissing[p-from]) { l ++; }
       }
     }
-    if (l >= len) { printf("this should not happen: l %d >= len %d\n", l, len); return eslFAIL; }
+    if (l >= len) ESL_XFAIL(eslFAIL, errbuf, "this should not happen: l %d >= len %d\n", l, len);
     strncpy(new, sq+l, 1);
-    
+
     map[l]  = pos;
     pos_prv = pos;
     Atom2SEQ[ANum] = l+1;

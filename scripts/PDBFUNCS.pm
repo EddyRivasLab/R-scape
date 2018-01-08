@@ -4,6 +4,10 @@ use strict;
 use warnings;
 use Class::Struct;
 
+use FindBin;
+use lib $FindBin::Bin;
+use FUNCS;
+
 our $VERSION = "1.00"; 
 
 struct RES => {
@@ -40,8 +44,7 @@ struct PDB2MSA => {
     map1file  => '$', # name of file mapping contacts to pdb sub-sequence  represented in the alignmetn
     mapfile   => '$', # name of file mapping contacts to alignment
     
-    which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms)
-    
+    which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms) 
     maxD      => '$', # maximun spacial distance (A) to define a contact
     
     minL      => '$', # minimum backbone distance to define a contact 
@@ -323,8 +326,8 @@ sub map_pdbsq {
 	}
 	elsif (/^\#\=GS\s+(\S+)\s+AC\s+\S*$pdbname\S*\s*$/) {
 	    $fam_name = $1;
-	    $i         = 1;
-	    $j         = -1;
+	    $i        = 1;
+	    $j        = -1;
 	    #print "# $fam_name\n";
 	}
 	elsif (/^$fam_name\s+(\S+)\s*$/) {
@@ -345,85 +348,174 @@ sub map_pdbsq {
 	return 0;
     }
 
-    # x (0..len-1) is coord in the pbdseq of the first aligned position
-    my @ali_pdb = split(//,$ali_pdb);
-    my @ali_fam = split(//,$ali_fam);
-    my @fam_asq = split(//,$fam_asq);
-    my $x = $from_pdb-1;
-
-    # y (0..famalen-1) is the coord in the fam alignment of the first aligned position
-    my $famalen = length($fam_asq);
-    my $n = 0;
-    my $y = 0;
-    while ($fam_asq[$y] =~ /^[\.\-]$/) { 
-	#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
-	$y ++;
-    }
-    while ($n < $from_fam-1) {
-	if ($fam_asq[$y] =~ /^[\.\-]$/) { 
-	    #printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
-	    $y ++;
-	}
-	else {
-	    $n ++; $y ++;
- 	}
-    }
-    printf "^^1st in pdb %d/%d | 1st in ali %d/%d | alen $alen\n", $x+1, $len, $y+1, $famalen;
-
-    # create the map
-    my $pos = 0;
-    while ($pos < $alen) {
-	my $pos_pdb  = uc($ali_pdb[$pos]);
-	my $pos_fam = uc($ali_fam[$pos]);
-
-	if ($x > $len)      { print "pdblen   = $len      x = $x at pos $pos\n"; die; }
- 	if ($y > $famalen) { print "famalen = $famalen y = $y at pos $pos\n"; die; }
-     
-	if ($pos_pdb =~ /^[\.\-]$/  && $pos_fam =~ /^[\.\-]$/  ) { 
-	    #printf "# double gap at pos %d\n", $pos; 
-	}
-	elsif ($pos_pdb =~ /^[\.\-]$/)  { 
-	    #printf "# pdb gap | move fam %d $pos_fam\n", $y;
-	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
-		$y ++; 
-	    }
-	    $y ++;	
-	}
-	elsif ($pos_fam =~ /^[\.\-]$/)  { 
-	    #printf "# fam gap | move pdb $x $pos_pdb \n"; 
-	    $x ++; 
-	}
-	elsif ($pos_fam =~ /^$pos_pdb$/)  { 
-	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
-		$y ++; 
-	    }
-	    $map_ref->[$x] = $y;  
-	    #printf "# match $x $pos_pdb | %d $pos_fam\n", $y; 
-	    $x ++; $y ++; 
-	}
-	else {
-	    while($fam_asq[$y] =~ /^[\.\-]$/) { 
-		#printf "# skip fam gap $y %s \n", $fam_asq[$y]; 
-		$y ++; 
-	    }
-	    $map_ref->[$x] = $y;  
-	    #printf "# mismach $x $pos_pdb | %d $pos_fam\n", $y; 
-	    $x ++; $y ++;
-	}
-	$pos ++;
-    }
-
-    # reverse map
-    for (my $p = 0; $p < $famalen; $p ++) { $revmap_ref->[$p] = -1; }
-    for (my $l = 0; $l < $len;      $l ++) { $revmap_ref->[$map_ref->[$l]] = $l; }
-
-    #for (my $p = 0; $p < $famalen; $p ++) { printf "rev[%d] = %d\n", $p+1,  $revmap_ref->[$p]+1; }
-    #for (my $l = 0; $l < $len;      $l ++) { printf "map[%d] = %d\n", $l+1,  $map_ref->[$l]+1; }
-    
+    my $fam_pdb;
+    my @ali_asq;
+    my @fam_asq;
+    $ali_asq[0] = $ali_fam;
+    $fam_asq[0] = $fam_asq;
+    mapsq2msa($ali_pdb, 1, \@ali_asq, \@fam_asq, $from_pdb, $from_fam, $map_ref, $revmap_ref, \$fam_pdb, 0);
+	    
     return $alen;
 }
+
+#  ali_asq1 u-uuuuuu
+#  ali_asq2 xx-xxxxx (len2 = 7)
+#
+#  msa_asq1 u--u--uuuu-u (msalen = 12)
+#
+#  map[0] = 1  
+#  map[1] = -1  
+#  map[2] = 7
+#  map[3] = 8  
+#  map[4] = 9  
+#  map[5] = 10  
+#  map[6] = 12  
+
+# map   [0..len2-1]   in [0..msalen-1]
+# revmap[0..msalen-1] in [0..len2-1]
+#
+sub mapsq2msa {
+    my ($ali_asq, $nsq, $ali_asq_ref, $msa_asq_ref, $from_sq, $from_msa, $map_ref, $revmap_ref, $ret_msa_asq, $verbose) = @_;
+    
+    my $msa_asq = "";
+    my $msalen = length($msa_asq_ref->[0]);
+
+    my $alen = length($ali_asq_ref->[0]);
+    if (length($ali_asq) != $alen) { print "map() ali_sq  not aligned\n"; die; }
+    
+    my $sq = $ali_asq;
+    $sq =~ s/\.//g;
+    $sq =~ s/\-//g;
+    $sq =~ s/\n//g;
+    my $len = length($sq);
+
+    if (1||$verbose) {
+	printf "\nSQ      len =$len\n$sq\n";
+	printf "ali_asq  alen=$alen\n$ali_asq\n";
+    }
+    
+    # x (0..len-1) is coord aseq of the first aligned position
+    my @asq = split(//,$ali_asq);
+    
+    for (my $s = 0; $s < $nsq; $s++) {
+
+	if (1||$verbose) {
+	    printf "\nali_asq    alen=$alen\n$ali_asq\n";
+	    printf "ali_asq[$s] alen=$alen\n$ali_asq_ref->[$s]\n";
+	    printf "msa_asq[$s] msalen=$msalen\n$msa_asq_ref->[$s]\n";
+	}
+	
+	my @ali_asq = split(//,$ali_asq_ref->[$s]);
+	my @msa_asq = split(//,$msa_asq_ref->[$s]);
+	my $x = $from_sq-1;
+
+	my $pos = 0; # [0..alen-1] position in "ali" 
+
+	# y (0..msalen-1) is the coord in the msa of the first aligned position
+	my $n = 0;
+	my $y = 0;
+	while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+	if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+	$y ++;
+	}
+	while ($n < $from_msa-1) {
+	    if ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		if ($verbose) { printf "#apos $pos msapos $y | skip msa $y %s \n", $msa_asq[$y]; }
+		$y ++;
+	    }
+	    else {
+		$n ++; $y ++;
+	    }
+	}
+	if (1||$verbose) { 
+	    printf "^^1st in sq2 %d/%d | 1st in msa %d/%d | alen $alen\n", $x+1, $len, $y+1, $msalen;
+	}
+    
+	# create the map
+	while ($pos < $alen) {
+	    my $pos_asq2 = uc($asq[$pos]);
+	    my $pos_asq1 = uc($ali_asq[$pos]);
+	    
+	    if ($x > $len)    { print "sqlen  = $len    x = $x at pos $pos\n"; die; }
+	    if ($y > $msalen) { print "msalen = $msalen y = $y at pos $pos\n"; die; }
+	
+	    if ($pos_asq1 =~ /^[\.\-]$/  && $pos_asq2 =~ /^[\.\-]$/  ) { 
+		if ($verbose) { printf "#apos $pos msapos $y | double gap at pos %d\n", $pos; }
+	    }
+	    elsif ($pos_asq2 =~ /^[\.\-]$/)  { 
+		if ($verbose) { printf "#apos $pos msapos $y | asq2 gap | move msa %d $pos_asq1\n", $y; }
+		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+		    $y ++; 
+		}
+		$y ++;	
+	    }
+	    elsif ($pos_asq1 =~ /^[\.\-]$/)  { 
+		if ($verbose) { printf "#apos $pos msapos $y | skip sq1 gap | move sq2 $x $pos_asq2 \n"; }
+		$x ++; 
+	    }
+	    elsif ($pos_asq1 =~ /^$pos_asq2$/)  { 
+		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+		    $y ++; 
+		}
+		$map_ref->[$x] = $y;  
+		if ($verbose) { printf "#apos $pos msapos $y | match $x $pos_asq2 | %d $pos_asq1\n", $y; }
+		$x ++; $y ++; 
+	    }
+	    else {
+		while($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; } 
+		    $y ++; 
+		}
+		$map_ref->[$x] = $y;  
+		if ($verbose) { printf "#apos $pos msapos $y | mismach $x $pos_asq2 | %d $pos_asq1\n", $y; }
+		$x ++; $y ++;
+	    }
+	    
+	    $pos ++;
+	}
+
+	# final gaps in msa?
+	while ($y < $msalen && $msa_asq[$y] =~ /^[\.\-]$/) { 
+	    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+	    $y ++; 
+	}
+
+	if ($pos != $alen || $y != $msalen) { print "bad mapsq2msa() for sequence $s. pos $pos should be $alen. msapos $y should be $msalen\n"; die; }
+    }
+    #for (my $l = 0; $l < $len; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }
+    
+    # the reverse map
+    for (my $p = 0; $p < $msalen; $p ++) { $revmap_ref->[$p] = -1; }
+    for (my $l = 0; $l < $len;    $l ++) { if ($map_ref->[$l] >= 0 ) { $revmap_ref->[$map_ref->[$l]] = $l; } }
+    #for (my $p = 0; $p < $mnsalen; $p ++) { printf "rev[%d] = %d\n", $p,  $revmap_ref->[$p]; }
+
+    $msa_asq = align_sq2msa($sq, $msalen, $revmap_ref);
+ 
+    $$ret_msa_asq = $msa_asq;
+    
+}
+
+sub align_sq2msa {
+    my ($sq, $msalen, $revmap_ref) = @_;
+    
+    my $asq = "";
+    my $len = length($sq);
+    
+    for (my $a = 0; $a < $msalen; $a ++) {
+	if ($revmap_ref->[$a] >= 0) {
+	    $asq .= substr($sq, $revmap_ref->[$a], 1);
+	}
+	else { $asq .= "."; }
+    }
+
+    my $alen = length($asq);
+    print "\nSQ aligned alen = $alen\n$asq\n";
+
+    return $asq;
+}
+
 
 sub alipos_isgap {
     my ($char) = @_;
@@ -450,12 +542,20 @@ sub find_pdbsq_in_ali {
 	print "could not find $pdbname chain $chain in sto file... trying by homology\n";
     }
 
+    my $stoannote = "$stofile.annote";
     my $pdbsqfile = "$currdir/$pdbname";
 
-    my $hmmer       = "$rscapebin/../lib/hmmer";
-    my $hmmbuild    = "$hmmer/src/hmmbuild";
-    my $hmmersearch = "$hmmer/src/hmmsearch";
-    my $hmmeralign  = "$hmmer/src/hmmalign";
+    my $hmmer     = "$rscapebin/../lib/hmmer";
+    my $hmmbuild  = "$hmmer/src/hmmbuild";
+    my $hmmsearch = "$hmmer/src/hmmsearch";
+    my $hmmalign  = "$hmmer/src/hmmalign";
+    my $hmmemit   = "$hmmer/src/hmmemit";
+    
+    my $infernal    = "$rscapebin/../lib/infernal-1.1.2/";
+    my $cmbuild     = "$infernal/src/cmbuild";
+    my $cmcalibrate = "$infernal/src/cmcalibrate";
+    my $cmsearch    = "$infernal/src/cmsearch";
+    my $cmalign     = "$infernal/src/cmalign";
     
     my $easel    = "$hmmer/easel";
     my $sfetch   = "$easel/miniapps/esl-sfetch";
@@ -470,47 +570,98 @@ sub find_pdbsq_in_ali {
     my $hmmali    = "$currdir/$pdbname.hmmali";
     my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
 
+    my $cm       = "$currdir/$pdbname.cm";
+    my $cmout    = "$currdir/$pdbname.cmout";
+
+    my $use_infernal = 1;
+    my $famsqfile = "";
+    # use hmmer decide if the pdbsq in homolog to the chain seq
     if ($isrna) {
-	system("          $hmmbuild             --rna $hmm  $pdbsqfile   >  /dev/null\n");
- 	#system("/bin/echo $hmmbuild             --rna $hmm  $pdbsqfile  \n");
+	#system("/bin/echo $hmmbuild             --rna $hmm  $stofile  \n");
+	system ("          $hmmbuild             --rna $hmm  $stofile   >  /dev/null\n");
     }
     else {
-	system("          $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
-	#system("/bin/echo $hmmbuild             --amino $hmm  $pdbsqfile   >  /dev/null\n");
+	#system("/bin/echo $hmmbuild             --amino $hmm  -O $stoannote $stofile   >  /dev/null\n");
+	system ("          $hmmbuild             --amino $hmm  -O $stoannote $stofile   >  /dev/null\n");
     }
-    system("          $hmmersearch -E $eval --max          $hmm  $stofile     >  $hmmout\n");
-    #system("/bin/echo $hmmersearch -E $eval --max          $hmm  $stofile \n");
+    
+    #system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
+    system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
     #system("/usr/bin/more $hmmout\n");
+    if (hmmout_has_hit($hmmout) == 0) { return 0; }
+    
+    # there is a hit, now use hmmalign or cmalign to place the pdbsq in the alignment
+    print "\n$pdbname chain $chain found by homology\n";
+    if ($isrna && $use_infernal) {
+	system ("          $cmbuild -F      -O $stoannote $cm  $stofile   >  /dev/null\n");
+	#system("/bin/echo $cmbuild -F      -O $stoannote $cm  $stofile      \n");
+    }
+    #system("more $stoannote\n");
+  
+    my $onsq;
+    my $oss;
+    my @oct;
+    my @osq;
+    my @osqname;
+    my $orfasq;
+    FUNCS::parse_stofile($stofile, \$onsq, \@osqname, \@osq, \$oss, \@oct, \$orfasq);
 
-    if (hmmout_has_hit($hmmout, \$famsqname) == 0) { return 0; }
-
-    my $name = "$famsqname";
+    my $nsq;
+    my $ss;
+    my @ct;
+    my @sq;
+    my @sqname;
+    my $rfasq;
+    FUNCS::parse_stofile($stoannote, \$nsq, \@sqname, \@sq, \$ss, \@ct, \$rfasq);
+    my $rfsq = $rfasq;
+    $rfsq =~ s/\.//g;
+    $rfsq =~ s/\-//g;
+    
+    my $name = "$stofile";
+    if ($name =~ /(\S+).sto/) { $name = $1; }
+    if ($name =~ /(\S+).stk/) { $name = $1; }
     $name =~ s/\//\_/g;
-    my $famsqfile = "$currdir/$name";
-    system("$sfetch $stofile $famsqname > $famsqfile\n");
-    open(F, ">>$famsqfile") || die;
+    $famsqfile = "$currdir/$name";
+    open(F, ">$famsqfile") || die;
+    print F ">consensus\n$rfsq\n";
     print F ">$pdbname\n$pdbsq\n";
-    close(F);
- 
-    $fam_asq = get_asq_from_sto($reformat, $stofile, $famsqname, 0);
+    close(F);    
+    system("more $famsqfile\n");
 
-    system("          $hmmeralign         $hmm  $famsqfile >  $hmmali\n");
-    #system("/bin/echo $hmmeralign         $hmm  $famsqfile \n");
+    my @cmap;
+    my @crevmap;
+    my $verbose = 1;
+    mapsq2msa($rfasq, $nsq, \@sq, \@osq, 1, 1, \@cmap, \@crevmap, \$fam_asq, $verbose);
+    
+    if ($isrna && $use_infernal) {
+	system ("          $cmalign         $cm  $famsqfile >  $hmmali\n");
+	#system("/bin/echo $cmalign         $cm  $famsqfile \n");
+    }
+    else {
+	system ("          $hmmalign         $hmm  $famsqfile >  $hmmali\n");
+	#system("/bin/echo $hmmalign         $hmm  $famsqfile \n");
+    }
+    
     system("$reformat afa $hmmali > $hmmaliafa\n");
+    #system("more $hmmaliafa\n");
 
-    my $nsq = 0;
+    $nsq = 0;
     my @asq;
     my @asqname;
     FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
 
     $ali_pdb = $asq[1];
     $ali_fam = $asq[0];
+    $ali_pdb =~ s/\-/\./g;
+    $ali_fam =~ s/\-/\./g;
+    
+    $famsqname = "consensus";
     my $famalen = length($fam_asq);
     my $alen    = length($ali_fam);
     if ($famsqname ne "") {
-	printf "^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
+	printf "\n^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
 	print "^^>$famsqname famalen=$famalen\n$fam_asq\n";
-	print "^^$ali_pdb\n";
+	print "\n^^$ali_pdb\n";
 	print "^^$ali_fam\n";
     }
     
@@ -524,9 +675,11 @@ sub find_pdbsq_in_ali {
     system("/bin/rm $pdbsqfile\n");
     system("/bin/rm $famsqfile\n");
     system("/bin/rm $hmm\n");
+    if ($isrna && $use_infernal) {system("/bin/rm $cm\n"); }
     system("/bin/rm $hmmout\n");
     system("/bin/rm $hmmali\n");
     system("/bin/rm $hmmaliafa\n");
+
 
     return $alen;
 }
@@ -986,12 +1139,14 @@ sub found_alicoords_in_contactlist {
     my $type = 14; # not a contact 
 
     for (my $c = 0; $c < $ncnt; $c ++) {
-	
-	if ($byali) {
-	    if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
-	}
-	else {
-	    if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+
+	if ($byali >= 0) {
+	    if ($byali) {
+		if ($cnt_ref->[$c]->{"CNT::posj"}-$cnt_ref->[$c]->{"CNT::posi"}+1 < $minL) { next; } # too close in alignment distance
+	    }
+	    else {
+		if ($cnt_ref->[$c]->{"CNT::j"}-$cnt_ref->[$c]->{"CNT::i"}+1 < $minL) { next; } # too close in pdbseq distance
+	    }
 	}
 	
 	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) {
@@ -1004,12 +1159,18 @@ sub found_alicoords_in_contactlist {
 	    elsif ($bptype =~ /^HHt$/)     { $type = 3;  }
 	    elsif ($bptype =~ /^SSc$/)     { $type = 4;  }
 	    elsif ($bptype =~ /^SSt$/)     { $type = 5;  }
-	    elsif ($bptype =~ /^WHc$/)     { $type = 6;  }
-	    elsif ($bptype =~ /^WHt$/)     { $type = 7;  }
-	    elsif ($bptype =~ /^WSc$/)     { $type = 8;  }
-	    elsif ($bptype =~ /^WSt$/)     { $type = 9;  }
-	    elsif ($bptype =~ /^HSc$/)     { $type = 10; }
-	    elsif ($bptype =~ /^HSt$/)     { $type = 11; }
+	    elsif ($bptype =~ /^WHc$/ ||
+		   $bptype =~ /^HWc$/   )  { $type = 6;  }
+	    elsif ($bptype =~ /^WHt$/ ||
+		   $bptype =~ /^HWt$/   )  { $type = 7;  }
+	    elsif ($bptype =~ /^WSc$/ ||
+		   $bptype =~ /^SWc$/   )  { $type = 8;  }
+	    elsif ($bptype =~ /^WSt$/ ||
+		   $bptype =~ /^SWt$/   )  { $type = 9;  }
+	    elsif ($bptype =~ /^HSc$/ ||
+		   $bptype =~ /^SHc$/   )  { $type = 10; }
+	    elsif ($bptype =~ /^HSt$/ ||
+		   $bptype =~ /^SHt$/   )  { $type = 11; }
 	    elsif ($bptype =~ /^STACKED$/) { $type = 12; }
 	    elsif ($bptype =~ /^CONTACT$/) { $type = 13; }
 	    else                           { $type = 1;  print "uh? bptype = $bptype\n"; } # assign arbitraryly to WWt
@@ -1431,8 +1592,8 @@ sub get_atoms_coord {
     
     my $hmmer       = "$rscapebin/../lib/hmmer";
     my $hmmbuild    = "$hmmer/src/hmmbuild";
-    my $hmmersearch = "$hmmer/src/hmmsearch";
-    my $hmmeralign  = "$hmmer/src/hmmalign";
+    my $hmmsearch = "$hmmer/src/hmmsearch";
+    my $hmmalign  = "$hmmer/src/hmmalign";
     
     my $easel    = "$hmmer/easel";
     my $reformat = "$easel/miniapps/esl-reformat";
@@ -1552,11 +1713,11 @@ sub get_atoms_coord {
 
     my $mxfile = "$rscapebin/../data/matrices/NOMUT.mat";
  
-    system("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
+    system ("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     #system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     
-    system("          $hmmeralign         $hmm  $bothsqfile >  $hmmali\n");
-    #system("/bin/echo $hmmeralign         $hmm  $bothsqfile \n");
+    system("          $hmmalign         $hmm  $bothsqfile >  $hmmali\n");
+    #system("/bin/echo $hmmalign         $hmm  $bothsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
     #system("/bin/more $hmmaliafa\n");
     

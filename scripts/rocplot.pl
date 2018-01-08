@@ -109,6 +109,11 @@ for (my $f = 0; $f < $F; $f ++) {
 	    }
 	    elsif ($strfile[$f] =~ /\.EC\.interaction/) {
 		structure_from_ecfile($strfile[$f], \$pdb2msa[$f], $maxD, $minL);
+		$byali = -1; # minL cutoff already used in the annotation
+	    }
+	    elsif ($strfile[$f] =~ /\.cmap/) {
+		structure_from_contactmapfile($strfile[$f], \$pdb2msa[$f], $maxD, $minL);
+		$byali = -1; # minL cutoff already used in the annotation
 	    }
 	}
     }
@@ -118,7 +123,6 @@ for (my $f = 0; $f < $F; $f ++) {
     
     printf "ncnt %d nbp %d nwc %d\n", $pdb2msa[$f]->{"PDB2MSA::ncnt"}, $pdb2msa[$f]->{"PDB2MSA::nbp"}, $pdb2msa[$f]->{"PDB2MSA::nwc"} ;	
 }
-
 
 # add a random file
 my $dorandom = ($opt_P)? 1:0;
@@ -137,8 +141,9 @@ my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
 
-    my $pdbfile = ($strfile[$f] =~ /\.pdb/)? 1 : 0;
-    my $ecfile  = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
+    my $pdbfile  = ($strfile[$f] =~ /\.pdb/)? 1 : 0;
+    my $ecfile   = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
+    my $cmapfile = ($strfile[$f] =~ /\.cmap/)? 1 : 0;
     
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
 
@@ -164,7 +169,7 @@ for (my $f = 0; $f < $F; $f ++) {
     if ($method =~ /^R-scape/ || $method =~ /^GTp/ || $method =~ /^PTFp/ || $method =~ /^neogremlin/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
-	if ($pdbfile || $ecfile) {
+	if ($pdbfile || $ecfile || $cmapfile) {
 	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
 		print "         $rocfile[$f]\n";
 		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $pdb2msa[$f], $target_ncnt, 
@@ -954,7 +959,7 @@ sub parse_plmc {
 
     my $sortfile = sort_plmc($file);
     my @revmap   = @{$pdb2msa->revmap};
-    
+
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
     open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
     open my $sp2, '>', $scat2file || die "Can't open $scat2file: $!";
@@ -987,6 +992,7 @@ sub parse_plmc {
 	    my $chri       = "N";
 	    my $chrj       = "N";
 	    my $cdistance  = -1;
+	    
 	    if (@revmap && ($pdbi == 0 || $pdbj == 0)) { next; }
 	    
 	    if (discard_pair_by_minL($i, $j, $pdbi, $pdbj, $minL, $byali)) { next; }
@@ -1234,7 +1240,7 @@ sub sort_plmc {
     open(FILE, "$file") || print "FILE DOES NOT EXIST\n";
     while(<FILE>) {
 	if (/^(\d+)\s\-\s(\d+)\s\-\s\S+\s+(\S+)\s*$/) {
-	    $i{$n}  = $1;
+	    $i{$n}  = $1;  # this plmc file uses notation: 1....
 	    $j{$n}  = $2;
 	    $sc{$n} = $3;
 	    $n ++;
@@ -1432,7 +1438,7 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 1;
 	$y = 20;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions";
 	$ylabel = "SEN bpairs (%)";
 	$x_min = 1;
@@ -1443,7 +1449,7 @@ sub rocplot {
 	$x = 1;
 	$y = 19;
 	#$y = 2;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions";
 	$ylabel = "F contacts (%)";
 	$x_min = 1;
@@ -1463,7 +1469,7 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 1;
 	$y = 23;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions";
 	$ylabel = "SEN WC (%)";
 	$x_min = 1;
@@ -1474,7 +1480,7 @@ sub rocplot {
 	$x = 1;
 	$y = 22;
 	#$y = 2;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "number of predictions";
 	$ylabel = "F WC (%)";
 	$x_min = 1;
@@ -1505,7 +1511,7 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 19;
 	$y = 20;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "SEN WC (%)";
 	$ylabel = "PPV WC (%)";
 	$x_min = 0;
@@ -1514,7 +1520,7 @@ sub rocplot {
 	$y_max = $maxppv;
 	$x = 22;
 	$y = 23;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     }
     
     close($gp);
@@ -1642,17 +1648,18 @@ sub structure_from_msa {
     my $stoname = $stofile;
     if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
     if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
- 
+    if ($stoname =~ /([^\.]+)\./)   { $stoname = $1; }
+    
     my $nsq;
     my @name;
     my @sq;
     my @ct;
     my $ss;
-    FUNCS::parse_stofile($stofile, \$nsq, \@name, \@sq, \$ss, \@ct);
+    my $rfasq;
+    my $msalen = FUNCS::parse_stofile($stofile, \$nsq, \@name, \@sq, \$ss, \@ct, \$rfasq);
     my $ncnt = 0;
     my @cnt;
-    
-    my $msalen  = $#ct + 1;
+
     for (my $x = 0; $x < $msalen; $x ++) {
 	if ($ct[$x] >= 0 && $ct[$x] > $x) {
 	    
@@ -1672,6 +1679,7 @@ sub structure_from_msa {
 	    }
 	}
     }
+    
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = "";
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
     $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = -1;
@@ -1713,14 +1721,14 @@ sub structure_from_ecfile {
 	    my $type     = $7;
 
 	    if ($j-$i+1 >= $minL && $distance <= $maxD) {
-		if    ($type =~ /^None$/) { $type = "CONTACT"; }
-		elsif ($type =~ /^cWW$/)  { $type = "WWc";     $nwc ++; $nbp ++ }
-		else                                                  { $nbp ++ }
+		if    ($type =~ /^None$/) { next; }
+		elsif ($type =~ /^cWW$/)  { $type = "WWc"; $nwc ++; $nbp ++ }
+		else                                              { $nbp ++ }
 		
 		$cnt[$ncnt] = CNT->new();
 		$cnt[$ncnt]->{"CNT::i"}        = -1;
 		$cnt[$ncnt]->{"CNT::j"}        = -1;
-		$cnt[$ncnt]->{"CNT::posi"}     = $i+1;
+		$cnt[$ncnt]->{"CNT::posi"}     = $i+1; # this file uses notation: 0... 
 		$cnt[$ncnt]->{"CNT::posj"}     = $j+1;
 		$cnt[$ncnt]->{"CNT::chri"}     = $chri;
 		$cnt[$ncnt]->{"CNT::chrj"}     = $chrj;
@@ -1743,7 +1751,67 @@ sub structure_from_ecfile {
     $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
     $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
     $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
-    $$pdb2msa_ref->{"PDB2MSA::byali"}     = 0;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = -1;
+    $$pdb2msa_ref->{"PDB2MSA::which"}     = 0;
+    @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
+
+}
+
+sub structure_from_contactmapfile {
+    my ($cmapfile, $pdb2msa_ref, $target_maxD, $target_minL) = @_;
+
+    $$pdb2msa_ref = PDB2MSA->new();
+    my $cmapname = $cmapfile;
+    if ($cmapname =~ /([^\.]+)\./) { $cmapname = $1; }
+
+    my $ncnt = 0;
+    my $nbp  = 0;
+    my $nwc  = 0;
+    my @cnt;
+    open(FILE, "$cmapfile") || die;
+    while(<FILE>) {
+	if (/^\#\s+(\d+)\s+(\d+)\s+\|\s+bptype\s+(\S+)\s*$/) {
+	    my $i        = $1;
+	    my $j        = $2;
+	    my $type     = $3;
+
+	    if    ($type =~ /^CONTACT$/) { }
+	    elsif ($type =~ /^WWc$/)     { $nbp ++; $nwc ++ }
+	    else                         { $nbp ++; }
+	    
+	    $cnt[$ncnt] = CNT->new();
+	    $cnt[$ncnt]->{"CNT::i"}        = -1;
+	    $cnt[$ncnt]->{"CNT::j"}        = -1;
+	    $cnt[$ncnt]->{"CNT::posi"}     = $i; # this file uses notation: 1..len 
+	    $cnt[$ncnt]->{"CNT::posj"}     = $j;
+	    $cnt[$ncnt]->{"CNT::chri"}     = '';
+	    $cnt[$ncnt]->{"CNT::chrj"}     = '';
+	    $cnt[$ncnt]->{"CNT::bptype"}   = $type;
+	    $cnt[$ncnt]->{"CNT::distance"} = -1;
+	    $ncnt ++;	    
+	}
+	elsif (/^\# maxD\s+(\S+)/) {
+	    my $maxD = $1;
+	    if ($target_maxD != $maxD) { print "change maxD from $maxD to $target_maxD in cmapfile $cmapfile\n"; die; }
+	}
+	elsif (/^\# mind\s+(\S+)/) {
+	    my $minL = $1;
+	    if ($target_minL != $minL) { print "change minL from $minL to $target_minL in cmapfile $cmapfile\n"; die; }
+	}
+    }
+    close(FILE);
+	
+    $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = "";
+    $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $cmapname;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = -1;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = -1;
+       
+    $$pdb2msa_ref->{"PDB2MSA::ncnt"}      = $ncnt;
+    $$pdb2msa_ref->{"PDB2MSA::nbp"}       = $nbp;
+    $$pdb2msa_ref->{"PDB2MSA::nwc"}       = $nwc;
+    $$pdb2msa_ref->{"PDB2MSA::maxD"}      = $maxD;
+    $$pdb2msa_ref->{"PDB2MSA::minL"}      = $minL;
+    $$pdb2msa_ref->{"PDB2MSA::byali"}     = -1;
     $$pdb2msa_ref->{"PDB2MSA::which"}     = 0;
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
 

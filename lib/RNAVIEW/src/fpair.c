@@ -404,13 +404,6 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	    list->pair[num_bp].ic     = bseq[i];
 	    list->pair[num_bp].jc     = bseq[j];
 	    list->pair[num_bp].bptype = STACKED;
-	    printf("\n^^ i %d/%d j %d i %d j %d ir %d jr %d ch %c %c resseq %d %d atomnum %d %d\n^^%s\n",
-		   i, num_residue,j,
-		   list->pair[num_bp].i,list->pair[num_bp].j,
-		   list->pair[num_bp].ir,list->pair[num_bp].jr,
-		   list->pair[num_bp].ic,list->pair[num_bp].jc,
-		   ResSeq[ir], ResSeq[jr], AtomNum[ir], AtomNum[jr],
-		   bseq);
 
 	  num_bp++;
 	  list->np = num_bp;

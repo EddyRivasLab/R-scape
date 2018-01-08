@@ -26,29 +26,22 @@ my $stofile   = shift;
 my $rscapebin = shift;
 my $gnuplot   = shift;
 
-my $coorfile = "";
-if ($opt_C) { $coorfile = "$opt_C";}
-my $mapallfile = "";
-if ($opt_M) { $mapallfile = "$opt_M"; }
+my $coorfile = "";   if ($opt_C) { $coorfile   = "$opt_C"; }
+my $mapallfile = ""; if ($opt_M) { $mapallfile = "$opt_M"; }
 
 my $smallout = 0;
 if ($opt_S) { $smallout = 1; }
 
-my $maxD = 8;
-if ($opt_D) { $maxD = $opt_D; }
+my $maxD = 8; if ($opt_D) { $maxD = $opt_D; }
 $maxD = int($maxD*100)/100;
-my $minL = 1;
-if ($opt_L) { $minL = $opt_L; }
+my $minL = 1; if ($opt_L) { $minL = $opt_L; }
 
-my $dornaview = 0;
-if ($opt_R) { $dornaview = 1; }
+my $dornaview = 0; if ($opt_R) { $dornaview = 1; }
 
 #options: CA CB C MIN AVG NOH / C1' (for RNA suggested by Westhof)
-my $which = "MIN";
-if ($opt_W) { $which = "$opt_W"; }
+my $which = "MIN"; if ($opt_W) { $which = "$opt_W"; }
 
-my $seeplots = 0;
-if ($opt_P) { $seeplots = 1; }
+my $seeplots = 0; if ($opt_P) { $seeplots = 1; }
 
 my $ncnt_t = 0; ## total contacts from all chains
 my @cnt_t;

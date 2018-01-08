@@ -181,8 +181,11 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char            *pdbname;
   double           cntmaxD;            // max distance in pdb structure to call a contact
   int              cntmind;            // mindis in pdb sequence allowed
+  int              onlypdb;            // annotate only the structure in the pdb file, discard annoation in msa if any
   CLIST           *clist;              // list of pdb contact at a distance < cntmaxD
   int             *msa2pdb;            // map of the pdb sequence to the analyzed alignment
+
+  char            *cmapfile;           // cmapfile has the contacts (including bpairs) mapped to the input alignment coordinates
   
   int              voutput;
   int              doroc;
@@ -245,6 +248,7 @@ static ESL_OPTIONS options[] = {
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
   { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--cyk",              "read pdb file from file <f>",                                                               1 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
+  { "--onlypdb",     eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdbfile",NULL,              "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
@@ -630,7 +634,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* the pdb contacts */
   cfg.pdbfile = NULL;
   cfg.pdbname = NULL;
+  cfg.onlypdb = FALSE;
   if ( esl_opt_IsOn(go, "--pdbfile") ) {
+    cfg.onlypdb = esl_opt_GetBoolean(go, "--onlypdb");
     cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
     if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
 
@@ -714,6 +720,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.allbranchfile, "%s", esl_opt_GetString(go, "--allbranch"));
   } 
  
+
   /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rcykfile = NULL;
@@ -740,6 +747,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T) != eslOK) esl_fatal("Failed to read tree file %s", cfg.treefile);
   }
 
+  /* cmap file outputs all the contacts mapped to the input aligment  */
+  cfg.cmapfile = NULL;
+  
   cfg.ct = NULL;
   cfg.onbpairs = 0;
   cfg.nbpairs  = 0;
@@ -1047,7 +1057,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
   msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, -1., cfg->errbuf);
-  if (cfg->pdbfile) cfg->onbpairs = 0; // do not read the bpairs from the alignment but the pdbfile
+  if (cfg->pdbfile && cfg->onlypdb) cfg->onbpairs = 0; // do not read the bpairs from the alignment but the pdbfile
   
   /* print some info */
   if (cfg->verbose) {
@@ -1213,12 +1223,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
-  /* the structure/contact map */
-  status = ContactMap(cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
-		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
-
-
   // Special cases under which to produce or not a --cyk structure
   // (1) use --cyk if no structure is given unless --naive
   // (2) unless it is too long.
@@ -1245,11 +1249,17 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
     if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
+
+    /* contact map file */
+    esl_sprintf(&cfg->cmapfile,      "%s/%s.cmap",     cfg->outdir, outname);
   }
   else {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s.surv",     outname);
     if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", outname);
+    
+    /* contact map file */
+    esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
   }
   
   /* R2R annotated sto file */
@@ -1277,6 +1287,12 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
     if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
   }
+
+  /* the structure/contact map */
+  status = ContactMap(cfg->cmapfile, cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
+		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
+
 
   /* produce a tree
    */
@@ -1354,6 +1370,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile);
   if (cfg->R2Rcykfile) free(cfg->R2Rcykfile);
+  if (cfg->cmapfile) free(cfg->cmapfile);
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
 
@@ -1419,7 +1436,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->covmethod == POTTS) {
     if (cfg->pt == NULL) {
       ptlocal = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
-			    cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
+			    NULL, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
       if (ptlocal == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
     }
     else ptlocal = cfg->pt;
@@ -1510,7 +1527,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cfg->covmethod == POTTS) {
     if (cfg->pt == NULL) {
       ptlocal = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
-			    cfg->outpottsfp, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
+			    (cfg->mode == GIVSS)? cfg->outpottsfp:NULL, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
       if (ptlocal == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
     }
     else ptlocal = cfg->pt;

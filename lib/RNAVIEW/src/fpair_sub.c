@@ -545,10 +545,7 @@ long **residue_idx(long num, long *ResSeq, char **Miscs, char *ChainID,
   seidx[1][1] = 1;
 
   *num_residue = n;
-
-  for (i = 1; i <= n; i++)
-    printf("^^ i %d seidx %d %d\n",i, seidx[i][1], seidx[i][2]);
-    
+   
   free_cmatrix(bidx, 1, num, 0, 12);
   free_lvector(temp, 1, num);
   
@@ -622,7 +619,6 @@ void get_seq(FILE *fout, long num_residue, long **seidx, char **AtomName,
         ib = seidx[i][1];
         ie = seidx[i][2];
         RY[i] = residue_ident(AtomName, xyz, ib, ie);
-	printf("^^i %d RY %d ib %d ie %d  %s %s -- ", i, RY[i], ib, ie, ResName[ib], ResName[ie]);
         if (RY[i] >= 0) {
             sprintf(idmsg, "residue %3s %4ld%c on chain %c [#%ld]",
                     ResName[ib], ResSeq[ib], Miscs[ib][2], ChainID[ib], i);
@@ -662,7 +658,6 @@ void get_seq(FILE *fout, long num_residue, long **seidx, char **AtomName,
                 
             }
         }
-	printf("^^ bi %c \n", bseq[i]);
     }
     *num_modify = n;
 }

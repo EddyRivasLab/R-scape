@@ -1905,20 +1905,24 @@ sub parse_sqfile {
 }
 
 sub parse_stofile {
-    my ($sqfile, $ret_nsq, $name_ref, $sq_ref, $ret_ss, $ct_ref) = @_;
+    my ($sqfile, $ret_nsq, $name_ref, $sq_ref, $ret_ss, $ct_ref, $ret_rfsq) = @_;
 
     my $nsq = 0;
     my $sq = "";
     my $ss = "";
     my $name = "";
+    my $rfsq = "";
 
     my $b = 0;
     open(FILE, "$sqfile") || die;
     while (<FILE>) {
 	if (/# STO/) {
 	}
-	elsif (/#=GC SS_cons\s+(\S+)\s*$/) {
+	elsif (/#=GC\s+SS_cons\s+(\S+)\s*$/) {
 	    $ss .= "$1";
+	}
+	elsif (/#=GC\s+RF\s+(\S+)\s*$/) {
+	    $rfsq .= "$1";
 	}
 	elsif (/^#/) {
 	}
@@ -1946,8 +1950,9 @@ sub parse_stofile {
 
     ss2ct($ss, $ct_ref);
 
-    $$ret_ss = $ss;
-    $$ret_nsq = $nsq;
+    $$ret_ss   = $ss;
+    $$ret_rfsq = $rfsq;
+    $$ret_nsq  = $nsq;
  
     return length($ss);
 }
@@ -1956,6 +1961,8 @@ sub ss2ct {
     my ($ss, $ct_ref) = @_;
 
     my $len = length($ss);
+    if ($len <= 0) { return; }
+    
     my @pda;
     my @pdapk;
     my $pair;
