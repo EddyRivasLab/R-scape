@@ -1768,6 +1768,8 @@ sub structure_from_contactmapfile {
     my $nbp  = 0;
     my $nwc  = 0;
     my @cnt;
+    my $alen;
+    my $pdblen;
     open(FILE, "$cmapfile") || die;
     while(<FILE>) {
 	if (/^\#\s+(\d+)\s+(\d+)\s+\|\s+bptype\s+(\S+)\s*$/) {
@@ -1798,13 +1800,19 @@ sub structure_from_contactmapfile {
 	    my $minL = $1;
 	    if ($target_minL != $minL) { print "change minL from $minL to $target_minL in cmapfile $cmapfile\n"; die; }
 	}
+	elsif (/^\# alen\s+(\S+)/) {
+	    $alen = $1;
+	}
+	elsif (/^\# pdblen\s+(\S+)/) {
+	    $pdblen = $1;
+	}
     }
     close(FILE);
 	
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = "";
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $cmapname;
-    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = -1;
-    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = -1;
+    $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $pdblen;
+    $$pdb2msa_ref->{"PDB2MSA::msalen"}    = $alen;
        
     $$pdb2msa_ref->{"PDB2MSA::ncnt"}      = $ncnt;
     $$pdb2msa_ref->{"PDB2MSA::nbp"}       = $nbp;

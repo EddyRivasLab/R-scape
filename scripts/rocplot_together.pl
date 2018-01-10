@@ -10,9 +10,9 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C $opt_f $opt_p $opt_P $opt_s $opt_v);  # required if strict used
+use vars qw ($opt_M $opt_C $opt_f $opt_p $opt_P $opt_s $opt_v);  # required if strict used
 use Getopt::Std;
-getopts ('Cf:p:Pvs:');
+getopts ('C:f:M:p:P:s:v');
 
 
 # Print a helpful message if the user provides no input file.
@@ -27,6 +27,9 @@ my $string_name   = shift;
 my $string_type   = shift;
 my $string_suffix = shift;
 my $gnuplot       = shift;
+
+my $string_prefix = "";
+if ($opt_P) { $string_prefix = $opt_M; }
  
 my @type = split(/\s+/, $string_type);
 my $M = $#type+1;
@@ -42,8 +45,8 @@ if ($opt_C) { $famtype = "CAMEO"; }
 my $seeplots = 0;
 my $verbose  = 0;
 
-my $N = 50;
-my $k = 50;
+my $N = 1;
+my $k = 300;
 my $shift = 0;
 
 my @plotfile;
@@ -74,15 +77,23 @@ for (my $m = 0; $m < $M; $m++) {
 
     my $localdir = "$DIR/$type[$m]";
     my @family;
-    FUNCS::sorted_files($localdir, \@family, $string_suffix, );    
+    FUNCS::sorted_files($localdir, \@family, $string_suffix, $string_prefix);    
     my $F = $#family+1;
     if ($F == 0) { print "no files found in dir $localdir with suffix $string_suffix\n"; die; }
+    
+    my @f_tot;
+    my @fc_tot;
+    my @fb_tot;
+    my @fw_tot;
+    my @tc_tot;
+    my @tb_tot;
+    my @tw_tot;
     
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
     {
 	my $rocfile = "$family[$f]";
-
+	
 	my $add = ($famtype =~ /^ALL$/)? 1 : 0;
 	if ($famtype =~ /^CAMEO$/ && $rocfile =~ /\/\d[^\/]+$/)   { $add = 1; }
 	if ($famtype =~ /^PFAM$/  && $rocfile =~ /\/PF[^\/]+$/)   { $add = 1; }
@@ -91,6 +102,7 @@ for (my $m = 0; $m < $M; $m++) {
 
 	$nf ++;
 
+	my $h = 0;
 	print "ROC: $rocfile\n";
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
@@ -115,6 +127,15 @@ for (my $m = 0; $m < $M; $m++) {
 		    FUNCS::fill_histo_array($tc,      $fpp, $N, $k, $shift, \@his_tc);
 		    FUNCS::fill_histo_array($tb,      $fpp, $N, $k, $shift, \@his_tb);
 		    FUNCS::fill_histo_array($tw,      $fpp, $N, $k, $shift, \@his_tw);
+		    
+		    $f_tot[$h]  += $f;
+		    $fc_tot[$h] += $fc;
+		    $fb_tot[$h] += $fb;
+		    $fw_tot[$h] += $fw;
+		    $tc_tot[$h] += $tc;
+		    $tb_tot[$h] += $tb;
+		    $tw_tot[$h] += $tw;
+		    $h ++;
 		}
 		else { last; }
 	    }
@@ -123,7 +144,7 @@ for (my $m = 0; $m < $M; $m++) {
     }
     print "$nf/$F MSA $plotfile[$m]\n";
 
-    open (PLOT, ">$plotfile[$m]") || die;
+   open (PLOT, ">$plotfile[$m]") || die;
     for (my $i = 0; $i < $N*$k; $i++) {
 	my $fpp = $i / $k;
 	my $sen_c, my $ppv_c, my $F_c;
@@ -132,6 +153,9 @@ for (my $m = 0; $m < $M; $m++) {
 	FUNCS::calculateF($his_fc[$i], $his_tc[$i], $his_f[$i], \$sen_c, \$ppv_c, \$F_c);
 	FUNCS::calculateF($his_fb[$i], $his_tb[$i], $his_f[$i], \$sen_b, \$ppv_b, \$F_b);
 	FUNCS::calculateF($his_fw[$i], $his_tw[$i], $his_f[$i], \$sen_w, \$ppv_w, \$F_w);
+	#FUNCS::calculateF($fc_tot[$i], $tc_tot[$i], $f_tot[$i], \$sen_c, \$ppv_c, \$F_c);
+	#FUNCS::calculateF($fb_tot[$i], $tb_tot[$i], $f_tot[$i], \$sen_b, \$ppv_b, \$F_b);
+	#FUNCS::calculateF($fw_tot[$i], $tw_tot[$i], $f_tot[$i], \$sen_w, \$ppv_w, \$F_w);
 	print PLOT "$fpp\t$sen_c\t$ppv_c\t$F_c\t$sen_b\t$ppv_b\t$F_b\t$sen_w\t$ppv_w\t$F_w\n";
     }
     close(PLOT);
@@ -200,6 +224,15 @@ sub rocplot {
     $y_max = 100;
     $x = 5;
     $y = 6;
+    oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "SEN wc";
+    $ylabel = "PPV wc";
+    $x_min = 0;
+    $x_max = 100;
+    $y_min = 0;
+    $y_max = 100;
+    $x = 8;
+    $y = 9;
     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
     $logscale = 0;

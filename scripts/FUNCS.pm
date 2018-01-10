@@ -2534,8 +2534,9 @@ sub sorted_files {
     my ($dir, $files_ref, $suffix, $prefix) = @_;
     local *DIRH;
     opendir DIRH, $dir or die "eh? $dir: $!";
+    
     if ($prefix) {
-	@$files_ref = grep ( /$prefix\S+\.$suffix$/, map { "$dir/$_" } readdir(DIRH));
+	@$files_ref = grep ( /\S*$prefix\S+\.$suffix$/, map { "$dir/$_" } readdir(DIRH));
     }
     else {
 	@$files_ref = grep ( /^\S+\.$suffix$/, map { "$dir/$_" } readdir(DIRH));
