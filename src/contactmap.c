@@ -98,7 +98,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
    
    if (1||verbose) {
      CMAP_Dump(stdout, clist);
-     printf("%s\n", ss);
+     if (abcisRNA) printf("%s\n", ss);
    }
 
    if (ret_ct)      *ret_ct      = ct;      else free(ct);
