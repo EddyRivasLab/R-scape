@@ -85,6 +85,7 @@ sub pdb2msa {
     contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
 			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
+    
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
     my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
@@ -1080,7 +1081,7 @@ sub contactlist_bpinfo {
 
 	my $bptype = $cnt_ref->[$c]->{"CNT::bptype"};
 	if    ($bptype =~ /^WWc$/)                           { $nbp ++; $nwc ++; }
-	elsif ($bptype ne "STACKED" && $bptype ne "CONTACT") { $nbp ++; };
+	elsif ($bptype ne "STACKED" && $bptype ne "CONTACT") { $nbp ++; }
     }
     $$ret_nbp = $nbp;
     $$ret_nwc = $nwc;

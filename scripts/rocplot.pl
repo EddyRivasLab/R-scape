@@ -34,14 +34,14 @@ my @scat1file;
 my @scat2file;
 my $ID = 1.0;
 my $outname;
- for (my $f = 0; $f < $F; $f ++){
+for (my $f = 0; $f < $F; $f ++){
     $prefile[$f]  = shift;
     $stofile[$f]  = shift;
     $strfile[$f]  = shift;
     $prename[$f]  = $prefile[$f];
     if ($prename[$f] =~ /^(\S+)\.sorted.out$/) {
 	$outname = $1;
- 
+	
 	$prename[$f] = "$outname.rscape";
 	if ($outname     =~ /\/([^\/]+)\s*$/) { $outname = $1; }
 	if ($prename[$f] =~ /\/(ID\S+)\//)    { $ID = $1; $outname .= ".$ID"; }
@@ -124,6 +124,9 @@ for (my $f = 0; $f < $F; $f ++) {
     printf "ncnt %d nbp %d nwc %d\n", $pdb2msa[$f]->{"PDB2MSA::ncnt"}, $pdb2msa[$f]->{"PDB2MSA::nbp"}, $pdb2msa[$f]->{"PDB2MSA::nwc"} ;	
 }
 
+my $maxlen = $pdb2msa[0]->{"PDB2MSA::pdblen"};
+for (my $f = 0; $f < $F; $f ++) { $maxlen = ($pdb2msa[$f]->{"PDB2MSA::pdblen"} > $maxlen)? $pdb2msa[$f]->{"PDB2MSA::pdblen"} : $maxlen;}
+
 # add a random file
 my $dorandom = ($opt_P)? 1:0;
 if ($dorandom) {
@@ -140,15 +143,15 @@ if ($dorandom) {
 my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
-
+    
     my $pdbfile  = ($strfile[$f] =~ /\.pdb/)? 1 : 0;
     my $ecfile   = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
     my $cmapfile = ($strfile[$f] =~ /\.cmap/)? 1 : 0;
     
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
-
+    
     my $target_ncnt = 1e+10;
-    if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
+    #if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
     
     my $mapfile_pred = "$prename[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
     my $mapfile_tp   = "$prename[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
@@ -162,10 +165,11 @@ for (my $f = 0; $f < $F; $f ++) {
     my $N = 1000;
     my $k = 1;
     my $shift = 0;
-    my $fmax = 100;
+    my $fmax = 1e+100;
     FUNCS::init_histo_array($N, $k, \@his);
-
+    
     print "\n$method: $prefile[$f]\n";
+    print "annotation: $strfile[$f]\n";
     if ($method =~ /^R-scape/ || $method =~ /^GTp/ || $method =~ /^PTFp/ || $method =~ /^neogremlin/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
@@ -191,7 +195,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_mfDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $prefile[$f], $stofile[$f], $pdb2msa[$f], 
 				 \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
-	  }  
+	}  
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt); }
     }
     elsif ($method =~ /^plmDCA$/) {
@@ -226,7 +230,7 @@ for (my $f = 0; $f < $F; $f ++) {
 				  $N, $k, $shift, \@his, $fmax);
 	}
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
-   }
+    }
     else { print "method $method not implemented yet\n"; die; }
     
     my $hfile = "$rocfile[$f].his";
@@ -250,8 +254,6 @@ for (my $f = 0; $f < $F; $f ++) {
     FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot);
 }
 
-my $xmax = 100;
-if ($opt_x) { $xmax = $opt_x; }
 
 my $viewplots = 0;
 my $isrna = 0;
@@ -259,6 +261,9 @@ if ($opt_R) { $isrna = 1; }
 
 my $maxpp  = 5;
 if ($opt_p) { $maxpp = $opt_p; }
+
+my $xmax = $maxpp*$maxlen;
+if ($opt_x) { $xmax = $opt_x; }
 
 my $maxppv = 102;
 my $maxsen = 30;
@@ -280,11 +285,11 @@ rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@prename, $maxD, $minL, $which
 
 sub  create_rocfile_rscape {
     my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
-
+    
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
     open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
     open my $sp2, '>', $scat2file || die "Can't open $scat2file: $!";
-
+    
     my $f   = 0;
     my $f_c = 0;
     my $f_b = 0;
@@ -292,7 +297,7 @@ sub  create_rocfile_rscape {
     my $t_c = 0;
     my $t_b = 0;
     my $t_w = 0;
-
+    
     my $pdblen = 0;
     my $alen = 0;
     my $type = "";
@@ -316,7 +321,7 @@ sub  create_rocfile_rscape {
 	    my $i        = $2;
 	    my $j        = $3;
 	    my $distance = $j-$i+1; # distance in the alignment
-	
+	    
 	    if    ($type =~ /^\*$/)   {  # A WWc basepair
 		$f_w ++;
 		$f_b ++;
@@ -356,7 +361,7 @@ sub  create_rocfile_rscape {
 
 sub create_rocfile_rscape_withpdb {
     my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
-
+    
     my @revmap = @{$pdb2msa->revmap};
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
     open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
@@ -374,7 +379,7 @@ sub create_rocfile_rscape_withpdb {
     my $ncnt_rscape_f = 0;
     my @cnt_rscape;
     my @cnt_rscape_f;
-
+    
     my $type = "";
     open(FILE, "$file") || die;
     while(<FILE>) {
@@ -397,7 +402,6 @@ sub create_rocfile_rscape_withpdb {
 		next; 
 	    }
 	    
-	    
 	    $f ++;
 	    printf $sp1 "$f $pdbi $pdbj %d $score\n", $pdbj-$pdbi+1;
 	    if ($ncnt_rscape <= $target_ncnt) {
@@ -413,13 +417,19 @@ sub create_rocfile_rscape_withpdb {
 		$ncnt_rscape ++;
 	    }
 
-	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $byali, $pdb2msa->{"PDB2MSA::ncnt"}, 
-							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
+	    if (PDBFUNCS::found_alicoords_in_contactlist($i, $j, $pdb2msa->{"PDB2MSA::minL"}, $byali, 
+							 $pdb2msa->{"PDB2MSA::ncnt"}, 
+							 \@{$pdb2msa->{"PDB2MSA::cnt"}}, 
+							 \$type, \$pdbi, \$pdbj, \$chri, \$chrj, \$cdistance)) 
 	    {
-		if ($type ==  0) { $f_w ++; }
-		if ($type <  12) { $f_b ++; }
+		if ($type ==  0) { $f_w ++;
+				   # print "^^WC fw $f_w/$t_w f $f i $i $pdbi j $j $pdbj \n";
+		}
+		if ($type <  12) { $f_b ++; 
+				   #print "^^BP type $type fb $f_b/$t_b f $f i $i $pdbi j $j $pdbj \n"; 
+		}
 		$f_c ++;
-		#print "^^HIT $f_c/$f i $i $pdbi j $j $pdbj \n";
+		#print "^^CONTACT fc $f_c f $f $f_c/$f i $i $pdbi j $j $pdbj \n";
 
 		if (@revmap && ($pdbi <= 0 || $pdbj <= 0)) { print "bad contact found: pdbi $pdbi pdbj $pdbj\n"; die; }
 		
@@ -1504,22 +1514,34 @@ sub rocplot {
     roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     if ($isrna) {
 	$xlabel = "SEN bpairs (%)";
-	$ylabel = "PPV bpairs (%)";
+	$ylabel = "PPV contacts (%)";
 	$x_min = 0;
 	$x_max = $maxsen;
 	$y_min = 0;
 	$y_max = $maxppv;
 	$x = 19;
-	$y = 20;
+	#$y = 20; #PPV bpairs
+	$y = 17; #PPV contacts
 	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 	$xlabel = "SEN WC (%)";
-	$ylabel = "PPV WC (%)";
+	$ylabel = "PPV contacts (%)";
 	$x_min = 0;
 	$x_max = $maxsen;
 	$y_min = 0;
 	$y_max = $maxppv;
 	$x = 22;
-	$y = 23;
+	#$y = 23; # PPV WC
+	$y = 17; # PPV contacts
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "SEN NON-WC (%)";
+	$ylabel = "PPV contacts (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 25;
+	#$y = 26; # PPB non-wc
+	$y = 17; # PPV contacts
 	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     }
     
@@ -1563,13 +1585,17 @@ sub roc_oneplot {
 sub writeline {
     my ($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen) = @_;
 
-    my $sen_c, my $sen_b, my $sen_w;
-    my $ppv_c, my $ppv_b, my $ppv_w;
-    my $F_c,   my $F_b,   my $F_w;
+    my $sen_c, my $sen_b, my $sen_w, my $sen_o;
+    my $ppv_c, my $ppv_b, my $ppv_w, my $ppv_o;
+    my $F_c,   my $F_b,   my $F_w, my $F_o;
+
+    my $f_o = $f_b - $f_w;
+    my $t_o = $t_b - $t_w;
     
     FUNCS::calculateF($f_c, $t_c, $f, \$sen_c, \$ppv_c, \$F_c);
     FUNCS::calculateF($f_b, $t_b, $f, \$sen_b, \$ppv_b, \$F_b);
     FUNCS::calculateF($f_w, $t_w, $f, \$sen_w, \$ppv_w, \$F_w);
+    FUNCS::calculateF($f_o, $t_o, $f, \$sen_o, \$ppv_o, \$F_o);
 
     # tab separated fields
     # ---------------------
@@ -1589,13 +1615,18 @@ sub writeline {
     # sen_w  ppv_w  F_w
     # 22     23     24
     #
+    # sen_o  ppv_o  F_o
+    # 25     26     27
+    #
     if ($pdblen > 0) {
-	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-	$f/$pdblen, $f_c/$pdblen, $f_b/$pdblen, $f_w/$pdblen, $t_c/$pdblen, $t_b/$pdblen, $t_w/$pdblen, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
+	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+	    $f/$pdblen, $f_c/$pdblen, $f_b/$pdblen, $f_w/$pdblen, $t_c/$pdblen, $t_b/$pdblen, $t_w/$pdblen, 
+	    $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $sen_o, $ppv_o, $F_o;
     }
     else {
-	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-	0, 0, 0, 0, 0, 0, 0, $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w;
+	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+	    0, 0, 0, 0, 0, 0, 0, 
+	    $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $F_w, $sen_o, $ppv_o, $F_o;
     }
 }
 
@@ -1777,9 +1808,9 @@ sub structure_from_contactmapfile {
 	    my $j        = $2;
 	    my $type     = $3;
 
-	    if    ($type =~ /^CONTACT$/) { }
-	    elsif ($type =~ /^WWc$/)     { $nbp ++; $nwc ++ }
-	    else                         { $nbp ++; }
+	    if    ($type =~ /^CONTACT$/ || $type =~ /^STACKED$/) { }
+	    elsif ($type =~ /^WWc$/)                             { $nbp ++; $nwc ++ }
+	    else                                                 { $nbp ++; }
 	    
 	    $cnt[$ncnt] = CNT->new();
 	    $cnt[$ncnt]->{"CNT::i"}        = -1;

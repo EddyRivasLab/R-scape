@@ -45,8 +45,8 @@ if ($opt_C) { $famtype = "CAMEO"; }
 my $seeplots = 0;
 my $verbose  = 0;
 
-my $N = 1;
-my $k = 300;
+my $N = 5;
+my $k = 100;
 my $shift = 0;
 
 my @plotfile;
@@ -64,16 +64,20 @@ for (my $m = 0; $m < $M; $m++) {
     my @his_fc;
     my @his_fb;
     my @his_fw;
+    my @his_fo;
     my @his_tc;
     my @his_tb;
     my @his_tw;
+    my @his_to;
     FUNCS::init_histo_array($N, $k, \@his_f);
     FUNCS::init_histo_array($N, $k, \@his_fc);
     FUNCS::init_histo_array($N, $k, \@his_fb);
     FUNCS::init_histo_array($N, $k, \@his_fw);
+    FUNCS::init_histo_array($N, $k, \@his_fo);
     FUNCS::init_histo_array($N, $k, \@his_tc);
     FUNCS::init_histo_array($N, $k, \@his_tb);
     FUNCS::init_histo_array($N, $k, \@his_tw);
+    FUNCS::init_histo_array($N, $k, \@his_to);
 
     my $localdir = "$DIR/$type[$m]";
     my @family;
@@ -84,10 +88,12 @@ for (my $m = 0; $m < $M; $m++) {
     my @f_tot;
     my @fc_tot;
     my @fb_tot;
+    my @fo_tot;
     my @fw_tot;
     my @tc_tot;
     my @tb_tot;
     my @tw_tot;
+    my @to_tot;
     
     my $nf = 0;
     for (my $f = 0; $f < $F; $f++)
@@ -119,22 +125,29 @@ for (my $m = 0; $m < $M; $m++) {
 		my $tw  = $7;
 		my $fpp = $8; # predictions per position
 
+		my $fo = $fb - $fw; # non-wc basepairs
+		my $to = $tb - $tw; # non-wc basepairs
+		
 		if ($fpp <= $N) {
 		    FUNCS::fill_histo_array($f,       $fpp, $N, $k, $shift, \@his_f);
 		    FUNCS::fill_histo_array($fc,      $fpp, $N, $k, $shift, \@his_fc);
 		    FUNCS::fill_histo_array($fb,      $fpp, $N, $k, $shift, \@his_fb);
 		    FUNCS::fill_histo_array($fw,      $fpp, $N, $k, $shift, \@his_fw);
+		    FUNCS::fill_histo_array($fo,      $fpp, $N, $k, $shift, \@his_fo);
 		    FUNCS::fill_histo_array($tc,      $fpp, $N, $k, $shift, \@his_tc);
 		    FUNCS::fill_histo_array($tb,      $fpp, $N, $k, $shift, \@his_tb);
 		    FUNCS::fill_histo_array($tw,      $fpp, $N, $k, $shift, \@his_tw);
+		    FUNCS::fill_histo_array($to,      $fpp, $N, $k, $shift, \@his_to);
 		    
 		    $f_tot[$h]  += $f;
 		    $fc_tot[$h] += $fc;
 		    $fb_tot[$h] += $fb;
+		    $fo_tot[$h] += $fo;
 		    $fw_tot[$h] += $fw;
 		    $tc_tot[$h] += $tc;
 		    $tb_tot[$h] += $tb;
 		    $tw_tot[$h] += $tw;
+		    $to_tot[$h] += $to;
 		    $h ++;
 		}
 		else { last; }
@@ -150,13 +163,15 @@ for (my $m = 0; $m < $M; $m++) {
 	my $sen_c, my $ppv_c, my $F_c;
 	my $sen_b, my $ppv_b, my $F_b;
 	my $sen_w, my $ppv_w, my $F_w;
+	my $sen_o, my $ppv_o, my $F_o;
 	FUNCS::calculateF($his_fc[$i], $his_tc[$i], $his_f[$i], \$sen_c, \$ppv_c, \$F_c);
 	FUNCS::calculateF($his_fb[$i], $his_tb[$i], $his_f[$i], \$sen_b, \$ppv_b, \$F_b);
 	FUNCS::calculateF($his_fw[$i], $his_tw[$i], $his_f[$i], \$sen_w, \$ppv_w, \$F_w);
+	FUNCS::calculateF($his_fo[$i], $his_to[$i], $his_f[$i], \$sen_o, \$ppv_o, \$F_o);
 	#FUNCS::calculateF($fc_tot[$i], $tc_tot[$i], $f_tot[$i], \$sen_c, \$ppv_c, \$F_c);
 	#FUNCS::calculateF($fb_tot[$i], $tb_tot[$i], $f_tot[$i], \$sen_b, \$ppv_b, \$F_b);
 	#FUNCS::calculateF($fw_tot[$i], $tw_tot[$i], $f_tot[$i], \$sen_w, \$ppv_w, \$F_w);
-	print PLOT "$fpp\t$sen_c\t$ppv_c\t$F_c\t$sen_b\t$ppv_b\t$F_b\t$sen_w\t$ppv_w\t$F_w\n";
+	print PLOT "$fpp\t$sen_c\t$ppv_c\t$F_c\t$sen_b\t$ppv_b\t$F_b\t$sen_w\t$ppv_w\t$F_w\t$sen_o\t$ppv_o\t$F_o\n";
     }
     close(PLOT);
     
@@ -217,23 +232,46 @@ sub rocplot {
     $y = 3;
     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
     $xlabel = "SEN bpairs";
-    $ylabel = "PPV bpairs";
+    $ylabel = "PPV contacts";
     $x_min = 0;
     $x_max = 100;
     $y_min = 0;
     $y_max = 100;
     $x = 5;
-    $y = 6;
+    #$y = 6; # PPV bpairs
+    $y = 3;  # PPV contacts
     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "SEN wc";
-    $ylabel = "PPV wc";
+    $xlabel = "SEN WC";
+    $ylabel = "PPV contacts";
     $x_min = 0;
     $x_max = 100;
     $y_min = 0;
     $y_max = 100;
     $x = 8;
-    $y = 9;
+    #$y = 9; # PPV WC
+    $y = 3;  # PPV contacts
     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "SEN WC";
+    $ylabel = "PPV WC";
+    $x_min = 0;
+    $x_max = 100;
+    $y_min = 0;
+    $y_max = 100;
+    $x = 8;
+    $y = 9; # PPV WC
+    #$y = 3;  # PPV contacts
+    oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "SEN non-wc";
+    $ylabel = "PPV bpairs";
+    $x_min = 0;
+    $x_max = 100;
+    $y_min = 0;
+    $y_max = 100;
+    $x = 11;
+    #$y = 12; # PPV non-wc
+    #$y = 3;   # PPV contacts
+    $y = 6;   # PPV bpairs
+     oneplot($gp, $F, $file_ref, $type_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
 
     $logscale = 0;
     $xlabel = "number of predictions per position";
