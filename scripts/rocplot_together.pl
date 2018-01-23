@@ -223,7 +223,6 @@ for (my $m = 0; $m < $M; $m++) {
 	#FUNCS::calculateF($fb_tot[$i], $tb_tot[$i], $f_tot[$i], \$sen_b, \$ppv_b, \$F_b);
 	#FUNCS::calculateF($fw_tot[$i], $tw_tot[$i], $f_tot[$i], \$sen_w, \$ppv_w, \$F_w);
 	print PLOT "$fpp\t$sen_c\t$ppv_c\t$F_c\t$sen_b\t$ppv_b\t$F_b\t$sen_w\t$ppv_w\t$F_w\t$sen_o\t$ppv_o\t$F_o\n";
-	print  "^^$fpp\t$sen_c\t$ppv_c\t$F_c\n";
     }
     close(PLOT);
     
