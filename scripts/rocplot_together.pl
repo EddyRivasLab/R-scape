@@ -45,8 +45,8 @@ if ($opt_C) { $famtype = "CAMEO"; }
 my $seeplots = 0;
 my $verbose  = 0;
 
-my $N = 5;
-my $k = 100;
+my $N = 3;
+my $k = 20;
 my $shift = 0;
 
 my @plotfile;
@@ -109,6 +109,29 @@ for (my $m = 0; $m < $M; $m++) {
 	$nf ++;
 
 	my $h = 0;
+	my $fpp = 0;
+	my $f   = 0;
+	my $fc  = 0;
+	my $fb  = 0;
+	my $fw  = 0;
+	my $fo  = 0;
+	my $tc  = 0;
+	my $tb  = 0;
+	my $tw  = 0;
+	my $to  = 0;
+	my $fpp_prv = 0;
+	my $f_prv   = 0;
+	my $fc_prv  = 0;
+	my $fb_prv  = 0;
+	my $fw_prv  = 0;
+	my $fo_prv  = 0;
+	my $tc_prv  = 0;
+	my $tb_prv  = 0;
+	my $tw_prv  = 0;
+	my $to_prv  = 0;
+
+	my $nidx;
+	my $nidx_prv = -1;
 	print "ROC: $rocfile\n";
 	open (FILE, "$rocfile") || print "\nFILE NOT FOUND\n";
 	while(<FILE>) {
@@ -116,28 +139,38 @@ for (my $m = 0; $m < $M; $m++) {
 	    if (/\#/) {
 	    }
 	    elsif (/^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+/) {
-		my $f   = $1;
-		my $fc  = $2;
-		my $fb  = $3;
-		my $fw  = $4;
-		my $tc  = $5;
-		my $tb  = $6;
-		my $tw  = $7;
-		my $fpp = $8; # predictions per position
+		$f   = $1;
+		$fc  = $2;
+		$fb  = $3;
+		$fw  = $4;
+		$tc  = $5;
+		$tb  = $6;
+		$tw  = $7;
+		$fpp = $8; # predictions per position
 
-		my $fo = $fb - $fw; # non-wc basepairs
-		my $to = $tb - $tw; # non-wc basepairs
-		
-		if ($fpp <= $N) {
-		    FUNCS::fill_histo_array($f,       $fpp, $N, $k, $shift, \@his_f);
-		    FUNCS::fill_histo_array($fc,      $fpp, $N, $k, $shift, \@his_fc);
-		    FUNCS::fill_histo_array($fb,      $fpp, $N, $k, $shift, \@his_fb);
-		    FUNCS::fill_histo_array($fw,      $fpp, $N, $k, $shift, \@his_fw);
-		    FUNCS::fill_histo_array($fo,      $fpp, $N, $k, $shift, \@his_fo);
-		    FUNCS::fill_histo_array($tc,      $fpp, $N, $k, $shift, \@his_tc);
-		    FUNCS::fill_histo_array($tb,      $fpp, $N, $k, $shift, \@his_tb);
-		    FUNCS::fill_histo_array($tw,      $fpp, $N, $k, $shift, \@his_tw);
-		    FUNCS::fill_histo_array($to,      $fpp, $N, $k, $shift, \@his_to);
+		$fo = $fb - $fw; # non-wc basepairs
+		$to = $tb - $tw; # non-wc basepairs
+
+		$nidx = int($fpp*$k);
+		if ($fpp <= $N && $nidx > $nidx_prv) {
+		    FUNCS::fill_histo_array($f_prv,       $fpp_prv, $N, $k, $shift, \@his_f);
+		    FUNCS::fill_histo_array($fc_prv,      $fpp_prv, $N, $k, $shift, \@his_fc);
+		    FUNCS::fill_histo_array($fb_prv,      $fpp_prv, $N, $k, $shift, \@his_fb);
+		    FUNCS::fill_histo_array($fw_prv,      $fpp_prv, $N, $k, $shift, \@his_fw);
+		    FUNCS::fill_histo_array($fo_prv,      $fpp_prv, $N, $k, $shift, \@his_fo);
+		    FUNCS::fill_histo_array($tc_prv,      $fpp_prv, $N, $k, $shift, \@his_tc);
+		    FUNCS::fill_histo_array($tb_prv,      $fpp_prv, $N, $k, $shift, \@his_tb);
+		    FUNCS::fill_histo_array($tw_prv,      $fpp_prv, $N, $k, $shift, \@his_tw);
+		    FUNCS::fill_histo_array($to_prv,      $fpp_prv, $N, $k, $shift, \@his_to);
+
+		    my $sen;
+		    my $ppv;
+		    my $F;
+		    my $i = $nidx_prv;
+		    #FUNCS::calculateF($his_fc[$i], $his_tc[$i], $his_f[$i], \$sen, \$ppv, \$F);
+		    #print "\n^^fpp $fpp_prv nidx $nidx_prv f $f_prv fc $fc_prv fb $fb_prv fwc $fw_prv tc $tc_prv tb $tb_prv tw $tw_prv\n";
+		    #print "i $i sen $sen ppv $ppv F $F f $his_f[$i] fc $his_fc[$i] fb $his_fb[$i] fwc $his_fw[$i] tc $his_tc[$i] tb $his_tb[$i] tw $his_tw[$i] \n";
+		    
 		    
 		    $f_tot[$h]  += $f;
 		    $fc_tot[$h] += $fc;
@@ -149,10 +182,26 @@ for (my $m = 0; $m < $M; $m++) {
 		    $tw_tot[$h] += $tw;
 		    $to_tot[$h] += $to;
 		    $h ++;
+
+		    $f_prv   = $f;
+		    $fc_prv  = $fc;
+		    $fb_prv  = $fb;
+		    $fw_prv  = $fw;
+		    $fo_prv  = $fo;
+		    $tc_prv  = $tc;
+		    $tb_prv  = $tb;
+		    $tw_prv  = $tw;
+		    $to_prv  = $to;
+		    $fpp_prv = $fpp;
+		    
 		}
-		else { last; }
+
+		$nidx_prv = $nidx;		
 	    }
+	    else { last; }
+	    
 	}
+  
 	close(FILE);	
     }
     print "$nf/$F MSA $plotfile[$m]\n";
@@ -160,6 +209,8 @@ for (my $m = 0; $m < $M; $m++) {
    open (PLOT, ">$plotfile[$m]") || die;
     for (my $i = 0; $i < $N*$k; $i++) {
 	my $fpp = $i / $k;
+	#print "^^plotfile fpp $fpp f $his_f[$i] fc $his_fc[$i] fb $his_fb[$i] fwc $his_fw[$i] tc $his_tc[$i] tb $his_tb[$i] tw $his_tw[$i] \n";
+	
 	my $sen_c, my $ppv_c, my $F_c;
 	my $sen_b, my $ppv_b, my $F_b;
 	my $sen_w, my $ppv_w, my $F_w;
@@ -172,6 +223,7 @@ for (my $m = 0; $m < $M; $m++) {
 	#FUNCS::calculateF($fb_tot[$i], $tb_tot[$i], $f_tot[$i], \$sen_b, \$ppv_b, \$F_b);
 	#FUNCS::calculateF($fw_tot[$i], $tw_tot[$i], $f_tot[$i], \$sen_w, \$ppv_w, \$F_w);
 	print PLOT "$fpp\t$sen_c\t$ppv_c\t$F_c\t$sen_b\t$ppv_b\t$F_b\t$sen_w\t$ppv_w\t$F_w\t$sen_o\t$ppv_o\t$F_o\n";
+	print  "^^$fpp\t$sen_c\t$ppv_c\t$F_c\n";
     }
     close(PLOT);
     
