@@ -385,7 +385,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }  
 
-  if (msa->alen == 0) ESL_XFAIL(eslFAIL, errbuf, "no positions left after grap trimming");
+  if (msa->alen == 0) ESL_XFAIL(eslFAIL, errbuf, "no positions left after gap trimming");
   ESL_ALLOC(map, sizeof(int) * msa->alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos + startpos;

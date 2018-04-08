@@ -1750,11 +1750,13 @@ sub structure_from_ecfile {
 	    my $chrj     = $5;
 	    my $distance = $6;
 	    my $type     = $7;
-
+	    
 	    if ($j-$i+1 >= $minL && $distance <= $maxD) {
-		if    ($type =~ /^None$/) { next; }
-		elsif ($type =~ /^cWW$/)  { $type = "WWc"; $nwc ++; $nbp ++ }
-		else                                              { $nbp ++ }
+		if    ($type =~ /^None$/) {  }
+		elsif ($type =~ /^N\/A$/) {  }
+		elsif ($type =~ /^cWW$/)  { $nwc ++; $nbp ++; }
+		elsif ($type =~ /^nc/)    {          $nbp ++; }
+		else                      {                   }
 		
 		$cnt[$ncnt] = CNT->new();
 		$cnt[$ncnt]->{"CNT::i"}        = -1;

@@ -2768,8 +2768,8 @@ sub write_ave_histogram {
     my $ave;
     my $std;
     histo_stats($N, $k, $shift, $histo_ref, \$median, \$ave, \$std);
-    if ($verbose) { printf "ave = %.4f +/- %.4f MEDIAN = %f file %s\n", $ave, $std, $median, $hfile; }
-    if ($his) { printf $his "#ave = %.4f +/- %.4f MEDIAN = %.4f\n", $ave, $std, $median; }
+    if ($verbose) { printf      " ave = %.4f +/- %.4f MEDIAN = %f file %s\n", $ave, $std, $median, $hfile; }
+    if ($his)     { printf $his "#ave = %.4f +/- %.4f MEDIAN = %.4f\n", $ave, $std, $median; }
 
     for (my $i=0; $i<=$dim; $i++) { 
 	my $len = $i/$k + 0.5/$k - $shift;
