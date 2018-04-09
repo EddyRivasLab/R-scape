@@ -424,7 +424,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   ESL_DSQ *dsq = NULL;
   int     *useme = NULL;
   double   flen;
-  int64_t  clen = 0;           // seq_cons length 
+  double   clen = 0.;           // seq_cons length, otherwise avg lenght of sequences
   int64_t  alen;
   int64_t  len;
   int      n;
@@ -435,28 +435,32 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   for (n = 0; n < omsa->ngc; n++) {
     if (strcmp(omsa->gc_tag[n], "seq_cons") == 0) {
       esl_abc_CreateDsq(omsa->abc, omsa->gc[n], &dsq);
-      clen = esl_abc_dsqrlen(omsa->abc, dsq);
+      clen = (double)esl_abc_dsqrlen(omsa->abc, dsq);
       alen = esl_abc_dsqlen(dsq);
       break;
     }
   }
-  
+
+  // if consensus length is not given, calculate fragments relative to
+  //  the average length of all the sequences
   ESL_ALLOC(useme, sizeof(int) * omsa->nseq);
-  if (clen == 0) { /* calculate fragments relative to the largest sequence */
+  if (clen == 0) { 
     for (i = 0; i < omsa->nseq; i++)  {
       useme[i] = 0;
       for (x = 1; x < omsa->alen; x++) { 
 	if (esl_abc_XIsResidue(omsa->abc, omsa->ax[i][x])) useme[i] ++;
       }
-      if (useme[i] > clen) clen = useme[i];
+      clen += (double)useme[i];
     }
-    flen = (double)clen * fragfrac;
+    clen /= (omsa->nseq > 0)? (double)omsa->nseq : 0;
+    
+    flen = clen * fragfrac;
     for (i = 0; i < omsa->nseq; i++)  {
        useme[i] = (useme[i] <= flen)? FALSE : TRUE;
     }
   } 
   else { /* for each seq in msa, calculate number of residues that match the seq_cons */
-    flen = (double)clen * fragfrac;
+    flen = clen * fragfrac;
     
     for (i = 0; i < omsa->nseq; i++)  {
       len = 0;
