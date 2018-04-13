@@ -60,7 +60,7 @@ struct PDB2MSA => {
 
 
 sub pdb2msa {
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
+    my ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
@@ -82,7 +82,7 @@ sub pdb2msa {
 
     my @map;
     my @revmap;
-    contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
+    contacts_from_pdbfile ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
 			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", "", $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     
@@ -117,12 +117,10 @@ sub pdb2msa {
 
 sub contacts_from_pdbfile {
 	
-    my ($gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
+    my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
 	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
-    
-    my $currdir = $ENV{PWD};
 
     if ($coorfile) { open(COORF,  ">$coorfile")  || die; }
 
@@ -576,19 +574,19 @@ sub find_pdbsq_in_ali {
 
     my $use_infernal = 1;
     my $famsqfile = "";
-    # use hmmer decide if the pdbsq in homolog to the chain seq
+    # use hmmer to decide if the pdbsq in homolog to the chain seq
     if ($isrna) {
 	#system("/bin/echo $hmmbuild             --rna $hmm  $stofile  \n");
 	system ("          $hmmbuild             --rna $hmm  $stofile   >  /dev/null\n");
     }
     else {
-	#system("/bin/echo $hmmbuild             --amino $hmm  -O $stoannote $stofile   >  /dev/null\n");
-	system ("          $hmmbuild             --amino $hmm  -O $stoannote $stofile   >  /dev/null\n");
+	system("/bin/echo $hmmbuild             --amino -O $stoannote $hmm $stofile \n");
+	system ("          $hmmbuild             --amino -O $stoannote $hmm $stofile   >  /dev/null\n");
     }
     
-    #system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
+    system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
     system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
-    #system("/usr/bin/more $hmmout\n");
+    system("/usr/bin/more $hmmout\n");
     if (hmmout_has_hit($hmmout) == 0) { return 0; }
     
     # there is a hit, now use hmmalign or cmalign to place the pdbsq in the alignment

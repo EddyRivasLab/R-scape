@@ -19,7 +19,7 @@ getopts ('C:D:f:L:p:PRrs:T:W:vx:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-    print "usage:  rocplot.pl [options] <F> <resfile1> <stofile1> <strfile1> .. <resfileF> <stofileF> <strfileF> <outdir> <rscapebin> <gnuplot> <key>  \n\n";
+    print "usage:  rocplot.pl [options] <F> <resfile1> <stofile1> <msainfo1> <strfile1> .. <resfileF> <stofileF> <msainfoF> <strfileF> <outdir> <rscapebin> <gnuplot> <key>  \n\n";
     print "options:\n";
     exit;
 }
@@ -27,6 +27,7 @@ if (!@ARGV) {
 my $F = shift;
 my @resfile;
 my @stofile;
+my @msainfo;
 my @strfile;
 my @resname;
 my @rocfile;
@@ -37,6 +38,7 @@ my $outname;
 for (my $f = 0; $f < $F; $f ++){
     $resfile[$f]  = shift;
     $stofile[$f]  = shift;
+    $msainfo[$f]  = shift;
     $strfile[$f]  = shift;
     $resname[$f]  = $resfile[$f];
     if ($resname[$f] =~ /^(\S+)\.sorted.out$/) {
@@ -95,6 +97,10 @@ if ($opt_v) { $verbose = 1; }
 # Map the  pdb2msa structure to the input alignment
 my @pdb2msa;
 for (my $f = 0; $f < $F; $f ++) {
+    
+    my $dir = $stofile[$f];
+    if ($dir =~ /^(\S+)\/[^\/]+\s*$/) { $dir = $1; } else { $dir = $ENV{PWD}; }
+    
     if ($strfile[$f]) { 
 	my $found = 0;
 	for (my $g = 0; $g < $f; $g ++) {
@@ -106,7 +112,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	}
 	if ($found == 0) {
 	    if ($strfile[$f] =~ /\.pdb/ || $strfile[$f] =~ /\.cif/) {
-		PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
+		PDBFUNCS::pdb2msa($dir, $gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
 	    }
 	    elsif ($strfile[$f] =~ /\.EC\.interaction/) {
 		structure_from_ecfile($strfile[$f], \$pdb2msa[$f], $maxD, $minL);
@@ -148,13 +154,17 @@ for (my $f = 0; $f < $F; $f ++) {
     my $pdbfile  = ($strfile[$f] =~ /\.pdb/ || $strfile[$f] =~ /\.cif/)? 1 : 0;
     my $ecfile   = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
     my $cmapfile = ($strfile[$f] =~ /\.cmap/)? 1 : 0;
+
+    my @msainfo = split(',',$msainfo[$f]);
+    my $msa_alen   = $msainfo[0];
+    my $msa_avglen = $msainfo[1];
     
     my $exist_rocfile = (-e $rocfile[$f])? 1 : 0;
     
     my $target_ncnt = 1e+10;
     #if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
     
-    my $mapfile_resd = "$resname[$f].maxD$maxD.minL$minL.type$which.resd.map"; 
+    my $mapfile_pred = "$resname[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
     my $mapfile_tp   = "$resname[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
     
     my $method = "";
@@ -180,27 +190,27 @@ for (my $f = 0; $f < $F; $f ++) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
 	if ($pdbfile || $ecfile || $cmapfile) {
-	    if (!$exist_rocfile || !-e $mapfile_resd || !-e $mapfile_tp) {
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) {
 		print "         $rocfile[$f]\n";
-		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_resd, $mapfile_tp, $resfile[$f], $pdb2msa[$f], $target_ncnt, 
-					      $N, $k, $shift, \@his, $fmax);
+		create_rocfile_rscape_withpdb($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $pdb2msa[$f], $target_ncnt, 
+					      $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	    }
 	}
 	else {
-	    if (!$exist_rocfile || !-e $mapfile_resd || !-e $mapfile_tp) { 
+	    if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 		print "         $rocfile[$f]\n";
-		create_rocfile_rscape($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_resd, $mapfile_tp, $resfile[$f], $target_ncnt, 
-				      $N, $k, $shift, \@his, $fmax);
+		create_rocfile_rscape($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $target_ncnt, 
+				      $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	    }
 	    $dorandom = 0;
 	}
-	if ($pdbfile) { predictions_plot($mapfile_resd, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
+	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
     }
     elsif ($method =~ /^mfDCA$/) {
-	if (!$exist_rocfile || !-e $mapfile_resd || !-e $mapfile_tp) { 
+	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_mfDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $stofile[$f], $pdb2msa[$f], 
-				 \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
+				 \$alenDCA, \@mapDCA, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	}  
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt); }
     }
@@ -208,7 +218,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_plmDCA($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $stofile[$f], $pdb2msa[$f], 
-				  \$alenDCA, \@mapDCA, $target_ncnt, $N, $k, $shift, \@his, $fmax);
+				  \$alenDCA, \@mapDCA, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	}
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
     }
@@ -216,7 +226,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_gremlin($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $pdb2msa[$f], $target_ncnt, 
-				   $N, $k, $shift, \@his, $fmax);
+				   $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	}
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f],$target_ncnt); }
     }
@@ -224,7 +234,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_plmc($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $pdb2msa[$f], $target_ncnt, 
-				$N, $k, $shift, \@his, $fmax);
+				$msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	}
 	
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
@@ -233,7 +243,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	if (!$exist_rocfile || !-e $mapfile_pred || !-e $mapfile_tp) { 
 	    print "         $rocfile[$f]\n";
 	    create_rocfile_random($rocfile[$f], $scat1file[$f], $scat2file[$f], $mapfile_pred, $mapfile_tp, $resfile[$f], $pdb2msa[$f], $target_ncnt, 
-				  $N, $k, $shift, \@his, $fmax);
+				  $msa_alen, $msa_avglen, $N, $k, $shift, \@his, $fmax);
 	}
 	if ($pdbfile) { predictions_plot($mapfile_pred, $mapfile_tp, $pdb2msa[$f], $target_ncnt); }
     }
@@ -243,7 +253,7 @@ for (my $f = 0; $f < $F; $f ++) {
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
     
     my $pdbname = ($pdbfile)? $pdb2msa[$f]->pdbname : "";
-    my $stoname = ($pdbfile)? $pdb2msa[$f]->stoname : $prename[$f];
+    my $stoname = ($pdbfile)? $pdb2msa[$f]->stoname : $resname[$f];
     my $maxD    = ($pdbfile)? $pdb2msa[$f]->maxD    : $maxD;
     my $which   = ($pdbfile)? $pdb2msa[$f]->which   : $which;
     my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1  fmax: $fmax";
@@ -282,7 +292,7 @@ if ($opt_f) { $maxF = $opt_f; }
 $maxpp  = 0.6;
 $maxsen = 102;
 $maxF   = 102;
-rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@resname, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $viewplots);
+rocplot($outdir, $key, $gnuplot, $stoname, $F, \@rocfile, \@resname, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $viewplots);
 
 
 
@@ -290,12 +300,12 @@ rocplot($key, $gnuplot, $stoname, $F, \@rocfile, \@resname, $maxD, $minL, $which
 ####################### routines
 
 sub  create_rocfile_rscape {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
     
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
     open my $sp1, '>', $scat1file || die "Can't open $scat1file: $!";
     open my $sp2, '>', $scat2file || die "Can't open $scat2file: $!";
-    
+
     my $f   = 0;
     my $f_c = 0;
     my $f_b = 0;
@@ -346,8 +356,8 @@ sub  create_rocfile_rscape {
 	    
 	    $f ++;
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, ($pdblen>0)?$pdblen:$alen);
-	    
+
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen);	    
 	}
  	elsif (/\s+(\d+)\s+(\d+)\s+\S+\s+\S+\s*$/) { # Not annotated as a contact		
 	    $f   ++;
@@ -356,17 +366,19 @@ sub  create_rocfile_rscape {
 	    my $distance = $j-$i+1; # distance in the alignment
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, ($pdblen>0)?$pdblen:$alen);	    
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen);	    
 	}
     }
     close(FILE);
+
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
 }
 
 sub create_rocfile_rscape_withpdb {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
     
     my @revmap = @{$pdb2msa->revmap};
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
@@ -457,10 +469,12 @@ sub create_rocfile_rscape_withpdb {
 	    #else { print "    ^^NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"});
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"}, $msa_alen, $msa_avglen);	    
 	}
     }
     close(FILE);
+
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdb2msa->{"PDB2MSA::pdblen"}, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -473,7 +487,8 @@ sub create_rocfile_rscape_withpdb {
 
 
 sub  create_rocfile_mfDCA {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, 
+	$msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "mfDCA";
     my $which  = "DI";
@@ -488,13 +503,15 @@ sub  create_rocfile_mfDCA {
 	mapDCA2MSA($stofile, $mapDCA_ref, \$alenDCA);
     }
 
-    parse_mfDCA($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax, $which);
+    parse_mfDCA($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, 
+		$msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax, $which);
     
     $$ret_alenDCA = $alenDCA; 
 }
 
 sub  create_rocfile_plmDCA {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, 
+	$msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "plmDCA";
   
@@ -503,31 +520,32 @@ sub  create_rocfile_plmDCA {
 	mapDCA2MSA($stofile, $mapDCA_ref, \$alenDCA);
     }
 
-    parse_plmDCA($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
+    parse_plmDCA($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, 
+		 $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax);
 
     $$ret_alenDCA = $alenDCA;
 }
 
 sub  create_rocfile_gremlin {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "gremlin";
   
-    parse_gremlin($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
+    parse_gremlin($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax);
 
 }
 
 sub  create_rocfile_plmc {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $method = "plmc";
   
-    parse_plmc($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax);
+    parse_plmc($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax);
 
 }
 
 sub  create_rocfile_random {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $resfile, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
     
     my @map   = @{$pdb2msa->map};
     open my $fp,  '>', $rocfile   || die "Can't open $rocfile: $!";
@@ -604,9 +622,10 @@ sub  create_rocfile_random {
 	}
 	if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
 
-	writeline($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen);
+	write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen);	    
     }
 
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -616,6 +635,13 @@ sub  create_rocfile_random {
 }
 
 
+sub discard_pair_by_minL {
+    my ($i, $j, $pdbi, $pdbj, $minL, $byaly) = @_;
+
+    if ($byaly) {  if ($j-$i+1       < $minL) { return 1; } }
+    else        {  if ($pdbj-$pdbi+1 < $minL) { return 1; } }
+    return 0;	
+}
 
 # map the coordenates in DCA output files to those of the input alignment
 #
@@ -676,7 +702,7 @@ sub mapDCA2MSA {
 
 
 sub parse_mfDCA {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax, $which) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax, $which) = @_;
 
     my $sortfile = sort_mfDCA($file, $which);
     my @revmap   = @{$pdb2msa->revmap};
@@ -759,10 +785,12 @@ sub parse_mfDCA {
 
 	    }
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
-	}
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);	    
+ 	}
     }
     close(FILE);
+    
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -774,7 +802,8 @@ sub parse_mfDCA {
 }
 
 sub parse_plmDCA {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, 
+	$msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_plmDCA($file);
     my @revmap   = @{$pdb2msa->revmap};
@@ -860,11 +889,12 @@ sub parse_plmDCA {
 	    #else { print "  NOHIT $f_c/$f i $i $pdbi j $j $pdbj \n"; }
 
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    #writeline(\*STDOUT, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
-	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);	    
 	}
     }
     close(FILE);
+
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -875,7 +905,7 @@ sub parse_plmDCA {
 }
 
 sub parse_gremlin {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_gremlin($file);
     my @revmap   = @{$pdb2msa->revmap};
@@ -957,10 +987,12 @@ sub parse_gremlin {
 	    }
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);	    
 	}
     }
     close(FILE);
+
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -971,7 +1003,7 @@ sub parse_gremlin {
 }
 
 sub parse_plmc {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $N, $k, $shift, $his_ref, $fmax) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax) = @_;
 
     my $sortfile = sort_plmc($file);
     my @revmap   = @{$pdb2msa->revmap};
@@ -1054,10 +1086,12 @@ sub parse_plmc {
 	    }
 	    
 	    if ($f <= $fmax) { FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, $his_ref); }
-	    writeline($fp,      $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen);
+	    write_rocplot_line($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);	    
 	}
     }
     close(FILE);
+
+    write_rocplot_header($fp, $t_c, $t_b, $t_w, $pdb2msa->pdblen, $msa_alen, $msa_avglen);
     close($fp);
     close($sp1);
     close($sp2);
@@ -1103,6 +1137,350 @@ sub predictions_plot {
     $mapfile[1] = $mapfile_pred;
     $mapfile[2] = $pdb2msa->mapfile;
     PDBFUNCS::plot_contact_map($nf, \@mapfile, $minpdbx, $maxpdbx, $xfield, $yfield, $title, $xylabel, $gnuplot, 0);
+}
+
+
+sub rocplot {
+    my ($outdir, $key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
+
+
+   my $psfile = "$outdir/$key-$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
+    
+    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
+    my $pdffile = $psfile;
+    if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
+    print "\n rocFILE: $psfile\n";
+
+    my $xlabel;
+    my $ylabel;
+    my $title  = "$stoname";
+    my $x;
+    my $y;
+    my $x_max, my $x_min;
+    my $y_max, my $y_min;
+    
+    open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
+ 
+    print $gp "set terminal postscript color solid 14\n";
+    print $gp "set output '$psfile'\n";
+
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 4   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 5   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 6   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 7   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 1\n";
+    #print $gp "set style line 7   lt 1 ls rgb '#1F78B4' pt 1 ps 0.5 lw 1\n"; # dark blue
+    print $gp "set style line 8   lt 1 lc rgb '#005A32' pt 1 ps 0.5 lw 1\n"; # dark green
+    print $gp "set style line 9   lt 1 lc rgb '#74C476' pt 1 ps 0.5 lw 1\n"; # light green
+    print $gp "set style line 10  lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 1\n";
+ 
+    #print $gp "set style line 1 lc rgb '#084594' pt 65 ps 0.5 lw 3\n"; # very blue
+    #print $gp "set style line 2 lc rgb '#1F78B4' pt 65 ps 0.5 lw 3\n"; # dark blue
+    #print $gp "set style line 3 lc rgb '#F16913' pt 65 ps 0.5 lw 3\n"; # orange
+    #print $gp "set style line 4 lc rgb '#005A32' pt 65 ps 0.5 lw 3\n"; # dark green
+    #print $gp "set style line 5 lc rgb '#74C476' pt 65 ps 0.5 lw 3\n"; # light green
+    #print $gp "set style line 6 lc rgb '#4A1486' pt 65 ps 0.5 lw 3\n"; # dark purple
+    #print $gp "set style line 7 lc rgb '#BCBDDC' pt 65 ps 0.5 lw 3\n"; # light purple
+    #print $gp "set style line 8 lc rgb 'red'     pt 65 ps 0.5 lw 3\n"; # red
+
+    my $logscale = 0;
+    $xlabel = "number of predictions per position";
+    $ylabel = "PPV contacts (%)";
+    $x_min = 0.001;
+    $x_max = $maxpp;
+    $y_min = 0;
+    $y_max = $maxppv;
+    $x = 5;
+    $y = 18;
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "number of predictions per position";
+    $ylabel = "SEN contacts";
+    $x_min = 0.001;
+    $x_max = $maxpp;
+    $y_min = 0;
+    $y_max = $maxsen;
+    $x = 5;
+    $y = 17;
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "number of predictions per position";
+    $ylabel = "F contacts (%)";
+    $x_min = 0.001;
+    $x_max = $maxpp;
+    $y_min = 0;
+    $y_max = $maxF;
+    $x = 5;
+    $y = 19;
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+
+    # basepairs
+    if ($isrna) {
+	$xlabel = "number of predictions per position";
+	$ylabel = "PPV bpairs (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 5;
+	$y = 21;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "SEN bpairs (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxsen;
+	$x = 5;
+	$y = 20;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "F bpairs";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 5;
+	$y = 22;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	
+	$xlabel = "number of predictions per position";
+	$ylabel = "PPV WC (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 5;
+	$y = 24;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "SEN WC (%)";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxsen;
+	$x = 5;
+	$y = 23;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions per position";
+	$ylabel = "F WC";
+	$x_min = 0.001;
+	$x_max = $maxpp;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 5;
+	$y = 25;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
+    $logscale = 0;
+    $xlabel = "number of predictions";
+    $ylabel = "PPV contacts (%)";
+    $x_min = 1;
+    $x_max = $xmax;
+    $y_min = 0;
+    $y_max = $maxppv;
+    $x = 1;
+    $y = 18;
+    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "number of predictions";
+    $ylabel = "SEN contacts (%)";
+    $x_min = 1;
+    $x_max = $xmax;
+    $y_min = 0;
+    $y_max = $maxsen;
+    #$y_max = 450;
+    $x = 1;
+    $y = 17;
+    #$y = 2;
+    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    $xlabel = "number of predictions";
+    $ylabel = "F contacts (%)";
+    $x_min = 1;
+    $x_max = $xmax;
+    $y_min = 0;
+    $y_max = $maxF;
+    $x = 1;
+    $y = 19;
+    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    
+    # basepairs
+    if ($isrna) {
+	$logscale = 0;
+	$xlabel = "number of predictions";
+	$ylabel = "PPV bpairs (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 1;
+	$y = 21;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "SEN bpairs (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxsen;
+	#$y_max = 450;
+	$x = 1;
+	$y = 20;
+	#$y = 2;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "F contacts (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 1;
+	$y = 22;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+
+	$logscale = 0;
+	$xlabel = "number of predictions";
+	$ylabel = "PPV WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 1;
+	$y = 24;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "SEN WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxsen;
+	#$y_max = 450;
+	$x = 1;
+	$y = 23;
+	#$y = 2;
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "number of predictions";
+	$ylabel = "F WC (%)";
+	$x_min = 1;
+	$x_max = $xmax;
+	$y_min = 0;
+	$y_max = $maxF;
+	$x = 1;
+	$y = 25;
+	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
+    $logscale = 0;
+    $xlabel = "SEN contacts (%)";
+    $ylabel = "PPV contacts (%)";
+    $x_min = 0;
+    $x_max = $maxsen;
+    $y_min = 0;
+    $y_max = $maxppv;
+    $x = 17;
+    $y = 18;
+    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    if ($isrna) {
+	$xlabel = "SEN bpairs (%)";
+	$ylabel = "PPV contacts (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 20;
+	#$y = 21; #PPV bpairs
+	$y = 18; #PPV contacts
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "SEN WC (%)";
+	$ylabel = "PPV contacts (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 23;
+	#$y = 24; # PPV WC
+	$y = 18; # PPV contacts
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+	$xlabel = "SEN NON-WC (%)";
+	$ylabel = "PPV contacts (%)";
+	$x_min = 0;
+	$x_max = $maxsen;
+	$y_min = 0;
+	$y_max = $maxppv;
+	$x = 26;
+	#$y = 27; # PPB non-wc
+	$y = 18; # PPV contacts
+	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
+    }
+    
+    close($gp);
+
+    if ($seeplots) { system ("open $psfile&\n"); }
+
+    
+}
+
+
+sub roc_oneplot {
+    my ($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $xmin, $xmax, $ymin, $ymax, $logscale, $nolines) = @_;
+   
+    my $cmd = "";
+    my $m = 1;
+    
+    print $gp "set title  '$title'\n";
+    print $gp "set xlabel '$xlabel'\n";
+    print $gp "set ylabel '$ylabel'\n";
+    print $gp "set xrange [$xmin:$xmax]\n";
+    print $gp "set yrange [$ymin:$ymax]\n";
+    if ($logscale) { print $gp "set logscale x\n"; }
+    for (my $f = 0; $f < $F; $f++) {
+	my $key = $prename_ref->[$f];
+	if ($nolines) {
+	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key'            ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key'            ls $m, ";
+	}
+	else {
+	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title ''                ls $m, " : "'$file_ref->[$f]' using $x:$y  title ''                ls $m, ";
+	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m, ";
+	}
+	$m ++;
+	if ($m == 11) { $m = 1; }
+
+    }
+    print $gp "plot $cmd\n";
+    if ($logscale) { print $gp "unset logscale\n"; }
+}
+
+
+
+
+sub plot_scat {
+    my ($method, $scat1file, $scat2file) = @_;
+
+    my $psfile = "$scat1file.ps";
+    
+    print "          $psfile\n";
+   
+    my $xlabel = "backbone distance";
+    my $ylabel = "score";
+    my $title  = "$method";
+    my $x;
+    my $y;
+    open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
+ 
+    print $gp "set terminal postscript color solid 14\n";
+    print $gp "set output '$psfile'\n";
+    FUNCS::gnuplot_define_styles ($gp);
+    
+    my $cmd = "";
+    
+    print $gp "set title  '$title'\n";
+    print $gp "set xlabel '$xlabel'\n";
+    print $gp "set ylabel '$ylabel'\n";
+    #print $gp "set xrange [$xmin:$xmax]\n";
+    #print $gp "set yrange [$ymin:$ymax]\n";
+    $cmd = "'$scat1file' using 4:5  title 'F'            ls 5, ";
+    $cmd .= "'$scat2file' using 4:5  title 'TP'          ls 4";
+    print $gp "plot $cmd\n";
+    close($gp);   
 }
 
 sub sort_mfDCA {
@@ -1278,394 +1656,6 @@ sub sort_plmc {
     
     return $sortfile;
 }
-
-sub rocplot {
-    my ($key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
-
-
-   my $psfile = "results/$key-$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
-    
-    #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
-    my $pdffile = $psfile;
-    if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
-    print "\n rocFILE: $psfile\n";
-
-    my $xlabel;
-    my $ylabel;
-    my $title  = "$stoname";
-    my $x;
-    my $y;
-    my $x_max, my $x_min;
-    my $y_max, my $y_min;
-    
-    open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
- 
-    print $gp "set terminal postscript color solid 14\n";
-    print $gp "set output '$psfile'\n";
-
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 4   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 5   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 6   lt 1 lc rgb 'blue'    pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 7   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 1\n";
-    #print $gp "set style line 7   lt 1 ls rgb '#1F78B4' pt 1 ps 0.5 lw 1\n"; # dark blue
-    print $gp "set style line 8   lt 1 lc rgb '#005A32' pt 1 ps 0.5 lw 1\n"; # dark green
-    print $gp "set style line 9   lt 1 lc rgb '#74C476' pt 1 ps 0.5 lw 1\n"; # light green
-    print $gp "set style line 10  lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 1\n";
- 
-    #print $gp "set style line 1 lc rgb '#084594' pt 65 ps 0.5 lw 3\n"; # very blue
-    #print $gp "set style line 2 lc rgb '#1F78B4' pt 65 ps 0.5 lw 3\n"; # dark blue
-    #print $gp "set style line 3 lc rgb '#F16913' pt 65 ps 0.5 lw 3\n"; # orange
-    #print $gp "set style line 4 lc rgb '#005A32' pt 65 ps 0.5 lw 3\n"; # dark green
-    #print $gp "set style line 5 lc rgb '#74C476' pt 65 ps 0.5 lw 3\n"; # light green
-    #print $gp "set style line 6 lc rgb '#4A1486' pt 65 ps 0.5 lw 3\n"; # dark purple
-    #print $gp "set style line 7 lc rgb '#BCBDDC' pt 65 ps 0.5 lw 3\n"; # light purple
-    #print $gp "set style line 8 lc rgb 'red'     pt 65 ps 0.5 lw 3\n"; # red
-
-    my $logscale = 0;
-    $xlabel = "number of predictions per position";
-    $ylabel = "PPV contacts (%)";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 9;
-    $y = 17;
-    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions per position";
-    $ylabel = "SEN contacts";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxsen;
-    $x = 9;
-    $y = 16;
-    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions per position";
-    $ylabel = "F contacts (%)";
-    $x_min = 0.001;
-    $x_max = $maxpp;
-    $y_min = 0;
-    $y_max = $maxF;
-    $x = 9;
-    $y = 18;
-    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-
-    # basepairs
-    if ($isrna) {
-	$xlabel = "number of predictions per position";
-	$ylabel = "PPV bpairs (%)";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 9;
-	$y = 20;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions per position";
-	$ylabel = "SEN bpairs (%)";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxsen;
-	$x = 9;
-	$y = 19;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions per position";
-	$ylabel = "F bpairs";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxF;
-	$x = 9;
-	$y = 21;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	
-	$xlabel = "number of predictions per position";
-	$ylabel = "PPV WC (%)";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 9;
-	$y = 23;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions per position";
-	$ylabel = "SEN WC (%)";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxsen;
-	$x = 9;
-	$y = 22;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions per position";
-	$ylabel = "F WC";
-	$x_min = 0.001;
-	$x_max = $maxpp;
-	$y_min = 0;
-	$y_max = $maxF;
-	$x = 9;
-	$y = 24;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    }
-    
-    $logscale = 0;
-    $xlabel = "number of predictions";
-    $ylabel = "PPV contacts (%)";
-    $x_min = 1;
-    $x_max = $xmax;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 1;
-    $y = 17;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions";
-    $ylabel = "SEN contacts (%)";
-    $x_min = 1;
-    $x_max = $xmax;
-    $y_min = 0;
-    $y_max = $maxsen;
-    #$y_max = 450;
-    $x = 1;
-    $y = 16;
-    #$y = 2;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    $xlabel = "number of predictions";
-    $ylabel = "F contacts (%)";
-    $x_min = 1;
-    $x_max = $xmax;
-    $y_min = 0;
-    $y_max = $maxF;
-    $x = 1;
-    $y = 18;
-    #roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    
-    # basepairs
-    if ($isrna) {
-	$logscale = 0;
-	$xlabel = "number of predictions";
-	$ylabel = "PPV bpairs (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 1;
-	$y = 20;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions";
-	$ylabel = "SEN bpairs (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxsen;
-	#$y_max = 450;
-	$x = 1;
-	$y = 19;
-	#$y = 2;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions";
-	$ylabel = "F contacts (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxF;
-	$x = 1;
-	$y = 21;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-
-	$logscale = 0;
-	$xlabel = "number of predictions";
-	$ylabel = "PPV WC (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 1;
-	$y = 23;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions";
-	$ylabel = "SEN WC (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxsen;
-	#$y_max = 450;
-	$x = 1;
-	$y = 22;
-	#$y = 2;
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "number of predictions";
-	$ylabel = "F WC (%)";
-	$x_min = 1;
-	$x_max = $xmax;
-	$y_min = 0;
-	$y_max = $maxF;
-	$x = 1;
-	$y = 24;
-	#roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    }
-    
-    $logscale = 0;
-    $xlabel = "SEN contacts (%)";
-    $ylabel = "PPV contacts (%)";
-    $x_min = 0;
-    $x_max = $maxsen;
-    $y_min = 0;
-    $y_max = $maxppv;
-    $x = 16;
-    $y = 17;
-    roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    if ($isrna) {
-	$xlabel = "SEN bpairs (%)";
-	$ylabel = "PPV contacts (%)";
-	$x_min = 0;
-	$x_max = $maxsen;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 19;
-	#$y = 20; #PPV bpairs
-	$y = 17; #PPV contacts
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "SEN WC (%)";
-	$ylabel = "PPV contacts (%)";
-	$x_min = 0;
-	$x_max = $maxsen;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 22;
-	#$y = 23; # PPV WC
-	$y = 17; # PPV contacts
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-	$xlabel = "SEN NON-WC (%)";
-	$ylabel = "PPV contacts (%)";
-	$x_min = 0;
-	$x_max = $maxsen;
-	$y_min = 0;
-	$y_max = $maxppv;
-	$x = 25;
-	#$y = 26; # PPB non-wc
-	$y = 17; # PPV contacts
-	roc_oneplot($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $x_min, $x_max, $y_min, $y_max, $logscale);
-    }
-    
-    close($gp);
-
-    if ($seeplots) { system ("open $psfile&\n"); }
-
-    
-}
-
-
-sub roc_oneplot {
-    my ($gp, $F, $file_ref, $prename_ref, $x, $y, $xlabel, $ylabel, $title, $xmin, $xmax, $ymin, $ymax, $logscale, $nolines) = @_;
-   
-    my $cmd = "";
-    my $m = 1;
-    
-    print $gp "set title  '$title'\n";
-    print $gp "set xlabel '$xlabel'\n";
-    print $gp "set ylabel '$ylabel'\n";
-    print $gp "set xrange [$xmin:$xmax]\n";
-    print $gp "set yrange [$ymin:$ymax]\n";
-    if ($logscale) { print $gp "set logscale x\n"; }
-    for (my $f = 0; $f < $F; $f++) {
-	my $key = $prename_ref->[$f];
-	if ($nolines) {
-	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key'            ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key'            ls $m, ";
-	}
-	else {
-	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title ''                ls $m, " : "'$file_ref->[$f]' using $x:$y  title ''                ls $m, ";
-	    $cmd .= ($f == $F-1)? "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m"   : "'$file_ref->[$f]' using $x:$y  title '$key' with lines ls $m, ";
-	}
-	$m ++;
-	if ($m == 11) { $m = 1; }
-
-    }
-    print $gp "plot $cmd\n";
-    if ($logscale) { print $gp "unset logscale\n"; }
-}
-
-sub writeline {
-    my ($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $alen, $avglen) = @_;
-
-    my $sen_c, my $sen_b, my $sen_w, my $sen_o;
-    my $ppv_c, my $ppv_b, my $ppv_w, my $ppv_o;
-    my $F_c,   my $F_b,   my $F_w, my $F_o;
-
-    my $f_o = $f_b - $f_w;
-    my $t_o = $t_b - $t_w;
-    
-    FUNCS::calculateF($f_c, $t_c, $f, \$sen_c, \$ppv_c, \$F_c);
-    FUNCS::calculateF($f_b, $t_b, $f, \$sen_b, \$ppv_b, \$F_b);
-    FUNCS::calculateF($f_w, $t_w, $f, \$sen_w, \$ppv_w, \$F_w);
-    FUNCS::calculateF($f_o, $t_o, $f, \$sen_o, \$ppv_o, \$F_o);
-
-    # tab separated fields
-    # ---------------------
-    #
-    # f    fc    fb    fw    tc    tb     tw    pdblen alen avglen
-    # 1    2     3     4     5      6      7    8      9    10
-    #
-    # sen_c  ppv_c  F_c
-    # 11     12     13
-    #
-    # sen_b  ppv_b  F_b
-    # 14     15     16
-    #
-    # sen_w  ppv_w  F_w
-    # 17     18     19
-    #
-    # sen_o  ppv_o  F_o
-    # 20     21     21
-    #
-    printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t$alen\t$avglen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
-	$sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $F_w, $sen_o, $ppv_o, $F_o;
-}
-
-
-
-sub discard_pair_by_minL {
-    my ($i, $j, $pdbi, $pdbj, $minL, $byaly) = @_;
-
-    if ($byaly) {  if ($j-$i+1       < $minL) { return 1; } }
-    else        {  if ($pdbj-$pdbi+1 < $minL) { return 1; } }
-    return 0;	
-}
-
-sub plot_scat {
-    my ($method, $scat1file, $scat2file) = @_;
-
-    my $psfile = "$scat1file.ps";
-    
-    print "          $psfile\n";
-   
-    my $xlabel = "backbone distance";
-    my $ylabel = "score";
-    my $title  = "$method";
-    my $x;
-    my $y;
-    open(my $gp, '|'."gnuplot") || die "Gnuplot: $!";
- 
-    print $gp "set terminal postscript color solid 14\n";
-    print $gp "set output '$psfile'\n";
-    FUNCS::gnuplot_define_styles ($gp);
-    
-    my $cmd = "";
-    
-    print $gp "set title  '$title'\n";
-    print $gp "set xlabel '$xlabel'\n";
-    print $gp "set ylabel '$ylabel'\n";
-    #print $gp "set xrange [$xmin:$xmax]\n";
-    #print $gp "set yrange [$ymin:$ymax]\n";
-    $cmd = "'$scat1file' using 4:5  title 'F'            ls 5, ";
-    $cmd .= "'$scat2file' using 4:5  title 'TP'          ls 4";
-    print $gp "plot $cmd\n";
-    close($gp);   
-}
-
 
 sub structure_from_msa {
     my ($stofile, $pdb2msa_ref, $maxD, $minL) = @_;
@@ -1852,3 +1842,63 @@ sub structure_from_contactmapfile {
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
 
 }
+
+
+sub write_rocplot_header {
+    my ($fp, $t_c, $t_b, $t_w, $pdblen, $msa_alen, $msa_avglen) = @_;
+
+    printf $fp "# LEN:  %d %d %f\n", $pdblen, $msa_alen, $msa_avglen;
+    printf $fp "# TRUE: %d %d %d \n", $t_c, $t_b, $t_w;
+}
+sub write_rocplot_line {
+    my ($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $alen, $avglen) = @_;
+
+    my $sen_c, my $sen_b, my $sen_w, my $sen_o;
+    my $ppv_c, my $ppv_b, my $ppv_w, my $ppv_o;
+    my $F_c,   my $F_b,   my $F_w, my $F_o;
+
+    my $f_o = $f_b - $f_w;
+    my $t_o = $t_b - $t_w;
+    
+    FUNCS::calculateF($f_c, $t_c, $f, \$sen_c, \$ppv_c, \$F_c);
+    FUNCS::calculateF($f_b, $t_b, $f, \$sen_b, \$ppv_b, \$F_b);
+    FUNCS::calculateF($f_w, $t_w, $f, \$sen_w, \$ppv_w, \$F_w);
+    FUNCS::calculateF($f_o, $t_o, $f, \$sen_o, \$ppv_o, \$F_o);
+
+    # tab separated fields
+    # ---------------------
+    #
+    # f           fc           fb           fw    
+    # 1           2            3            4     
+    #
+    # f/pdblen    fc/pdblen    fb/pdblen    fw/pdblen  
+    # 5           6            7            8     
+    #
+    # f/alen      fc/alen      fb/alen      fw/alen    
+    # 9           10           11           12     
+    #
+    # f/avglen    fc/avglen    fb/avglen    fw/avglen   
+    # 13          14           15           16    
+    #
+    # sen_c  ppv_c  F_c
+    # 17     18     19
+    #
+    # sen_b  ppv_b  F_b
+    # 20     21     22
+    #
+    # sen_w  ppv_w  F_w
+    # 23     24     25
+    #
+    # sen_o  ppv_o  F_o
+    # 26     27     28
+    #
+    printf                    $fp "%f\t%f\t%f\t", $f,         $f_c,         $f_b,         $f_w;
+    if ($pdblen > 0) { printf $fp "%f\t%f\t%f\t", $f/$pdblen, $f_c/$pdblen, $f_c/$pdblen, $f_w/$pdblen; } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
+    if ($alen   > 0) { printf $fp "%f\t%f\t%f\t", $f/$alen,   $f_c/$alen,   $f_c/$alen,   $f_w/$alen;   } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
+    if ($avglen > 0) { printf $fp "%f\t%f\t%f\t", $f/$avglen, $f_c/$avglen, $f_c/$avglen, $f_w/$avglen; } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
+    printf $fp "%f\t%f\t%f\t", $sen_c, $ppv_c, $F_c;
+    printf $fp "%f\t%f\t%f\t", $sen_b, $ppv_b, $F_b;
+    printf $fp "%f\t%f\t%f\t", $sen_w, $ppv_w, $F_w;
+    printf $fp "%f\t%f\t%f\n", $sen_o, $ppv_o, $F_o;
+}
+
