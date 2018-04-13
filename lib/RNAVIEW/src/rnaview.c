@@ -14,7 +14,7 @@
 #include "rna.h"
 #include "erfiles.h"
 
-long PS=0, VRML=0, ANAL=0, CHAIN=0, ALL=0; /*globle variables */
+long PS=0, VRML=0, ANAL=0, CHAIN=0, ALL=0; /* globle variables */
 long ARGC=0, XML=0, HETA=1; /* include all Heta atoms */
 char **ARGV; 
 
@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
   clock_t start, finish;
   long    i;
   
-  ARGV=cmatrix(0, 6, 0, 40);/*6 argument and 40 length each */
+  ARGV=cmatrix(0, 6, 0, 40);/* 6 argument and 40 length each */
   
-  ARGC=argc;
-  for(i=0; i<argc; i++){
+  ARGC = argc;
+  for(i = 0; i < argc; i++){
     strcpy(ARGV[i], argv[i]);
   }
   
@@ -43,8 +43,6 @@ int main(int argc, char *argv[])
     process_multiple_file(argc, argv); 
   }
   else{
-    //if(XML==0) printf("Processing a single PDB file\n");
-    //else       printf("Processing a single RNAML file\n");
     process_single_file(argc, argv);
   }
   
@@ -59,10 +57,10 @@ int main(int argc, char *argv[])
 void process_single_file(int argc, char *argv[])
 /* processing a single PDB (or CIF or RNAML) file */
 {
-  char inpfile[BUF512],pdbfile[BUF512], outfile[BUF512];
-  long i, j,  key, base_all;
-  long type_stat[20]; /* maxmum 20 different pairs */
-  long **pair_stat; /* maxmum 20 different pairs */
+  char   inpfile[BUF512],pdbfile[BUF512], outfile[BUF512];
+  long   i, j,  key, base_all;
+  long   type_stat[20]; /* maxmum 20 different pairs */
+  long **pair_stat;      /* maxmum 20 different pairs */
   static long A[4],U[4],G[4],C[4],T[4],P[4],I[4];
   FILE  *fstat;
   
@@ -73,9 +71,9 @@ void process_single_file(int argc, char *argv[])
     type_stat[i] =0;        
   }
   /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
-  for (i = 0; i <20; i++) 
-    for (j = 0; j <40; j++)
-      pair_stat[i][j]=0;
+  for (i = 0; i < 20; i++) 
+    for (j = 0; j < 40; j++)
+      pair_stat[i][j] = 0;
   
   /* ps>0 draw 2D RNA/DNA;
      vrml>0 draw 3D  RNA/DNA;
@@ -112,12 +110,12 @@ void process_single_file(int argc, char *argv[])
 	finp = fopen(pdbfile,"r");
   */
   check_nmr_xray(pdbfile, &key, outfile); /* key=0 nmr; key=1 xray */
-  if(key==0){
+  if (key == 0){
     strcpy(pdbfile, outfile);
   }
   
   rna(pdbfile, type_stat, pair_stat, &base_all);
-  if(XML==0)
+  if(XML == 0)
     base_edge_stat(pdbfile, A, U, G, C, T, P, I);
   
   fprintf(fstat,"\nNumber of the total bases = %ld\n", base_all);
@@ -130,18 +128,18 @@ void process_single_file(int argc, char *argv[])
   delete_file("", "best_pair.out");
   delete_file(pdbfile, "_patt_tmp.out");
   /*    delete_file(pdbfile, ".xml");*/
-  delete_file(pdbfile, "_sort.out");/* do not delete for web*/
-  delete_file(pdbfile, "_patt.out");/* do not delete for web*/
-  delete_file(pdbfile, "_tmp.pdb");/* do not delete for web*/  
+  delete_file(pdbfile, "_sort.out"); /* do not delete for web */
+  delete_file(pdbfile, "_patt.out"); /* do not delete for web */
+  delete_file(pdbfile, "_tmp.pdb");  /* do not delete for web */  
 }
 
 void delete_file(char *pdbfile, char *extension)
 {
   char command[512];
   
-  strcpy(command,"rm -f ");
-  strcat(command,pdbfile);
-  strcat(command,extension);
+  strcpy(command, "rm -f ");
+  strcat(command, pdbfile);
+  strcat(command, extension);
   system(command);
   return;
 }
@@ -160,16 +158,16 @@ void process_multiple_file(int argc, char *argv[])
     double resolution;
     FILE  *finp, *fstat;
 
-    fstat=fopen("base_pair_statistics.out", "w");
-    line=cmatrix(0,20,1,100);
+    fstat = fopen("base_pair_statistics.out", "w");
+    line      = cmatrix(0, 20, 1, 100);
     pair_stat = lmatrix(0, 20, 0, 40);
     for (i = 0; i < 20; i++){
         type_stat[i] =0;        
     }
-        /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
-    for (i = 0; i <20; i++) 
-        for (j = 0; j <40; j++)
-            pair_stat[i][j]=0;
+    /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
+    for (i = 0; i < 20; i++) 
+        for (j = 0; j < 40; j++)
+            pair_stat[i][j] = 0;
     
  /* ps>0 draw 2D RNA/DNA;
     vrml>0 draw 3D  RNA/DNA;
@@ -179,23 +177,23 @@ void process_multiple_file(int argc, char *argv[])
     cmdline(argc, argv, inpfile);
     ARGC  = argc;
 
-    if(CHAIN==0){        
-        if(argc == 3){
+    if (CHAIN == 0){        
+        if (argc == 3) {
             strcpy(inpfile, argv[2]);
             resolution = 0;  /* No resolution limit */
-        }else if(argc == 4 ){
+        } else if(argc == 4){
             strcpy(inpfile, argv[2]);
             resolution = atof(argv[3]);
-        }else
+        } else
             usage();
-    }else{
-        if(argc == 4){
+    } else {
+        if (argc == 4) {
             strcpy(inpfile, argv[3]);
             resolution = 0;  /* No resolution limit */
-        }else if(argc == 5 ){
+        } else if(argc == 5 ) {
             strcpy(inpfile, argv[3]);
             resolution = atof(argv[4]);
-        }else
+        } else
             usage();
     }
     
@@ -204,9 +202,9 @@ void process_multiple_file(int argc, char *argv[])
     n = 0;   
     while (fgets(str, sizeof str, finp) != NULL) {
         strlength= strlen(str);
-        for(i=0; i<strlength; i++){
-            if(!isspace(str[i])) 
-                str[i]=str[i];
+        for (i = 0; i < strlength; i ++){
+            if (!isspace(str[i])) 
+                str[i] = str[i];
             else
                 str[i]=' ';
         }

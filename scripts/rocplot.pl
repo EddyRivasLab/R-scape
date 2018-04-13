@@ -105,7 +105,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	    }
 	}
 	if ($found == 0) {
-	    if ($strfile[$f] =~ /\.pdb/) {
+	    if ($strfile[$f] =~ /\.pdb/ || $strfile[$f] =~ /\.cif/) {
 		PDBFUNCS::pdb2msa($gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
 	    }
 	    elsif ($strfile[$f] =~ /\.EC\.interaction/) {
@@ -132,11 +132,11 @@ for (my $f = 0; $f < $F; $f ++) { $maxlen = ($pdb2msa[$f]->{"PDB2MSA::pdblen"} >
 my $dorandom = ($opt_P)? 1:0;
 if ($dorandom) {
     $pdb2msa[$F]   = $pdb2msa[0];
-    $resname[$F]   = "results/random/$stoname.random";
-    $resfile[$F]   = "results/random/$stoname.random";
-    $rocfile[$F]   = "results/random/$stoname.random.maxD$maxD.minL$minL.type$which.roc";
-    $scat1file[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.type$which.scat1";
-    $scat2file[$F] = "results/random/$stoname.random.maxD$maxD.minL$minL.type$which.scat2";
+    $resname[$F]   = "$outdir/random/$stoname.random";
+    $resfile[$F]   = "$outdir/random/$stoname.random";
+    $rocfile[$F]   = "$outdir/random/$stoname.random.maxD$maxD.minL$minL.type$which.roc";
+    $scat1file[$F] = "$outdir/random/$stoname.random.maxD$maxD.minL$minL.type$which.scat1";
+    $scat2file[$F] = "$outdir/random/$stoname.random.maxD$maxD.minL$minL.type$which.scat2";
     $F ++;
 }
 
@@ -145,7 +145,7 @@ my $alenDCA = -1;
 my @mapDCA;
 for (my $f = 0; $f < $F; $f ++) {
     
-    my $pdbfile  = ($strfile[$f] =~ /\.pdb/)? 1 : 0;
+    my $pdbfile  = ($strfile[$f] =~ /\.pdb/ || $strfile[$f] =~ /\.cif/)? 1 : 0;
     my $ecfile   = ($strfile[$f] =~ /\.EC\.interaction/)? 1 : 0;
     my $cmapfile = ($strfile[$f] =~ /\.cmap/)? 1 : 0;
     
@@ -171,7 +171,12 @@ for (my $f = 0; $f < $F; $f ++) {
     
     print "\n$method: $resfile[$f]\n";
     print "annotation: $strfile[$f]\n";
-    if ($method =~ /^R-scape/ || $method =~ /^GTp/ || $method =~ /^PTFp/ || $method =~ /^neogremlin/) {
+    if ($method =~ /^R-scape/ || 
+	$method =~ /^GTp/     || 
+	$method =~ /^MIp/     || 
+	$method =~ /^MI/      || 
+	$method =~ /^PTFp/    || 
+	$method =~ /^neogremlin/) {
 	## both functions below should produce exactly the same results (only if the minL used running R-scape is the same than here)
 	
 	if ($pdbfile || $ecfile || $cmapfile) {
@@ -1584,7 +1589,7 @@ sub roc_oneplot {
 }
 
 sub writeline {
-    my ($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen) = @_;
+    my ($fp, $f, $f_c, $f_b, $f_w, $t_c, $t_b, $t_w, $pdblen, $alen, $avglen) = @_;
 
     my $sen_c, my $sen_b, my $sen_w, my $sen_o;
     my $ppv_c, my $ppv_b, my $ppv_w, my $ppv_o;
@@ -1601,34 +1606,23 @@ sub writeline {
     # tab separated fields
     # ---------------------
     #
-    # f         fc         fb         fw         tc         tb         tw         pdblen
-    # 1         2          3          4          5          6          7          8
-    #
-    # f/pdblen  fc/pdblen  fb/pdblen  fw/pdblen  tc/pdblen  tb/pdblen  tw/pdblen 
-    # 9         10         11         12         13         14         15  
+    # f    fc    fb    fw    tc    tb     tw    pdblen alen avglen
+    # 1    2     3     4     5      6      7    8      9    10
     #
     # sen_c  ppv_c  F_c
-    # 16     17     18
+    # 11     12     13
     #
     # sen_b  ppv_b  F_b
-    # 19     20     21
+    # 14     15     16
     #
     # sen_w  ppv_w  F_w
-    # 22     23     24
+    # 17     18     19
     #
     # sen_o  ppv_o  F_o
-    # 25     26     27
+    # 20     21     21
     #
-    if ($pdblen > 0) {
-	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-	    $f/$pdblen, $f_c/$pdblen, $f_b/$pdblen, $f_w/$pdblen, $t_c/$pdblen, $t_b/$pdblen, $t_w/$pdblen, 
-	    $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $sen_o, $ppv_o, $F_o;
-    }
-    else {
-	printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
-	    0, 0, 0, 0, 0, 0, 0, 
-	    $sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $F_w, $sen_o, $ppv_o, $F_o;
-    }
+    printf $fp "$f\t$f_c\t$f_b\t$f_w\t$t_c\t$t_b\t$t_w\t$pdblen\t$alen\t$avglen\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
+	$sen_c, $ppv_c, $F_c, $sen_b, $ppv_b, $F_b, $sen_w, $ppv_w, $F_w, $F_w, $sen_o, $ppv_o, $F_o;
 }
 
 
