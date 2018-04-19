@@ -30,6 +30,7 @@ my @stofile;
 my @msainfo;
 my @strfile;
 my @resname;
+my @outdir;
 my @rocfile;
 my @scat1file;
 my @scat2file;
@@ -58,6 +59,19 @@ my $rscapebin = shift;
 my $gnuplot   = shift;
 my $key       = shift; # tag to identify the benchmark
 
+for (my $f = 0; $f < $F; $f ++){
+    my $method = $resfile[$f];
+    if    ($method =~ /(GTp)/)      { $method = $1; }
+    elsif ($method =~ /(MIp)/)      { $method = $1; }
+    elsif ($method =~ /(MI)/)       { $method = $1; }
+    elsif ($method =~ /(gremlin)/)  { $method = $1; }
+    elsif ($method =~ /(PTFp)/)     { $method = $1; }
+    elsif ($method =~ /(plmc)/)     { $method = $1; }
+    elsif ($method =~ /(random)/)   { $method = $1; }
+    else { print "cannot find directory $method\n"; die; }
+    $outdir[$f]  = "$outdir/$method";
+}
+
 my $byali = 0;
 #print "BYALI $byali\n";
 
@@ -81,9 +95,9 @@ if ($opt_W) { $which = "$opt_W"; }
 # name of the output files
 # .roc
 for (my $f = 0; $f < $F; $f ++) {  
-    $rocfile[$f]   = "$resname[$f].maxD$maxD.minL$minL.type$which.roc"; 
-    $scat1file[$f] = "$resname[$f].maxD$maxD.minL$minL.type$which.scat1"; 
-    $scat2file[$f] = "$resname[$f].maxD$maxD.minL$minL.type$which.scat2";
+    $rocfile[$f]   = "$outdir[$f]/maxD$maxD.minL$minL.type$which.roc"; 
+    $scat1file[$f] = "$outdir[$f]/maxD$maxD.minL$minL.type$which.scat1"; 
+    $scat2file[$f] = "$outdir[$f]/maxD$maxD.minL$minL.type$which.scat2";
 }
 
 my $usechain = "";
@@ -98,9 +112,6 @@ if ($opt_v) { $verbose = 1; }
 my @pdb2msa;
 for (my $f = 0; $f < $F; $f ++) {
     
-    my $dir = $stofile[$f];
-    if ($dir =~ /^(\S+)\/[^\/]+\s*$/) { $dir = $1; } else { $dir = $ENV{PWD}; }
-    
     if ($strfile[$f]) { 
 	my $found = 0;
 	for (my $g = 0; $g < $f; $g ++) {
@@ -112,7 +123,7 @@ for (my $f = 0; $f < $F; $f ++) {
 	}
 	if ($found == 0) {
 	    if ($strfile[$f] =~ /\.pdb/ || $strfile[$f] =~ /\.cif/) {
-		PDBFUNCS::pdb2msa($dir, $gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
+		PDBFUNCS::pdb2msa($outdir[$f], $gnuplot, $rscapebin, $strfile[$f], $stofile[$f], \$pdb2msa[$f], $usechain, $maxD, $minL, $byali, $which, $dornaview, $seeplots);
 	    }
 	    elsif ($strfile[$f] =~ /\.EC\.interaction/) {
 		structure_from_ecfile($strfile[$f], \$pdb2msa[$f], $maxD, $minL);
@@ -164,8 +175,8 @@ for (my $f = 0; $f < $F; $f ++) {
     my $target_ncnt = 1e+10;
     #if ($pdbfile =~ /\S+/) { $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"}); }
     
-    my $mapfile_pred = "$resname[$f].maxD$maxD.minL$minL.type$which.pred.map"; 
-    my $mapfile_tp   = "$resname[$f].maxD$maxD.minL$minL.type$which.tp.map"; 
+    my $mapfile_pred = "$outdir[$f]/maxD$maxD.minL$minL.type$which.pred.map"; 
+    my $mapfile_tp   = "$outdir[$f]/maxD$maxD.minL$minL.type$which.tp.map"; 
     
     my $method = "";
     if    ($resfile[$f] =~ /results\/(\S+)_filtered\//) { $method = $1; }
@@ -702,7 +713,8 @@ sub mapDCA2MSA {
 
 
 sub parse_mfDCA {
-    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $msa_alen, $msa_avglen, $N, $k, $shift, $his_ref, $fmax, $which) = @_;
+    my ($rocfile, $scat1file, $scat2file, $mapfile_pred, $mapfile_tp, $file, $pdb2msa, $mapDCA_ref, $alenDCA, $target_ncnt, $msa_alen, $msa_avglen, 
+	$N, $k, $shift, $his_ref, $fmax, $which) = @_;
 
     my $sortfile = sort_mfDCA($file, $which);
     my @revmap   = @{$pdb2msa->revmap};
@@ -1892,10 +1904,10 @@ sub write_rocplot_line {
     # sen_o  ppv_o  F_o
     # 26     27     28
     #
-    printf                    $fp "%f\t%f\t%f\t", $f,         $f_c,         $f_b,         $f_w;
-    if ($pdblen > 0) { printf $fp "%f\t%f\t%f\t", $f/$pdblen, $f_c/$pdblen, $f_c/$pdblen, $f_w/$pdblen; } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
-    if ($alen   > 0) { printf $fp "%f\t%f\t%f\t", $f/$alen,   $f_c/$alen,   $f_c/$alen,   $f_w/$alen;   } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
-    if ($avglen > 0) { printf $fp "%f\t%f\t%f\t", $f/$avglen, $f_c/$avglen, $f_c/$avglen, $f_w/$avglen; } else  { printf $fp "%f\t%f\t%f\t", 0, 0, 0; }
+    printf                    $fp "%f\t%f\t%f\t%f\t", $f,         $f_c,         $f_b,         $f_w;
+    if ($pdblen > 0) { printf $fp "%f\t%f\t%f\t%f\t", $f/$pdblen, $f_c/$pdblen, $f_c/$pdblen, $f_w/$pdblen; } else  { printf $fp "%f\t%f\t%f\t%f\t", 0, 0, 0, 0; }
+    if ($alen   > 0) { printf $fp "%f\t%f\t%f\t%f\t", $f/$alen,   $f_c/$alen,   $f_c/$alen,   $f_w/$alen;   } else  { printf $fp "%f\t%f\t%f\t%f\t", 0, 0, 0, 0; }
+    if ($avglen > 0) { printf $fp "%f\t%f\t%f\t%f\t", $f/$avglen, $f_c/$avglen, $f_c/$avglen, $f_w/$avglen; } else  { printf $fp "%f\t%f\t%f\t%f\t", 0, 0, 0, 0; }
     printf $fp "%f\t%f\t%f\t", $sen_c, $ppv_c, $F_c;
     printf $fp "%f\t%f\t%f\t", $sen_b, $ppv_b, $F_b;
     printf $fp "%f\t%f\t%f\t", $sen_w, $ppv_w, $F_w;

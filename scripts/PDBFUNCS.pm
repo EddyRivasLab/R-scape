@@ -3,7 +3,7 @@ package PDBFUNCS;
 use strict;
 use warnings;
 use Class::Struct;
-
+ 
 use FindBin;
 use lib $FindBin::Bin;
 use FUNCS;
@@ -45,8 +45,8 @@ struct PDB2MSA => {
     mapfile   => '$', # name of file mapping contacts to alignment
     
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms) 
-    maxD      => '$', # maximun spacial distance (A) to define a contact
-    
+    maxD      => '$', # maximun spacial distance (A) to define a contact 
+
     minL      => '$', # minimum backbone distance to define a contact 
     byali     => '$', # if true minL is calculated in the alignment, otherwise in the pdbseq
     
@@ -64,9 +64,10 @@ sub pdb2msa {
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
-    if ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
-    if ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
-
+    if ($stofile =~ /\/([^\/]+)$/)     { $stoname = $1; }
+    if    ($stoname =~ /(PF[^\.]+)\./) { $stoname = $1; }
+    elsif ($stoname =~ /(RF[^\.]+)\./) { $stoname = $1; }
+ 
     my $pdbname = $pdbfile;
     if ($pdbname =~ /\/([^\/]+)\s*$/) { $pdbname = lc($1); }
 
@@ -82,13 +83,13 @@ sub pdb2msa {
 
     my @map;
     my @revmap;
+    my $small_output = 0;
     contacts_from_pdbfile ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", "", $seeplots);
+			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $small_output, $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
 
-    my $mapfile = "$stofile.$pdbname.maxD$maxD.type.$which.map";
     $$pdb2msa_ref->{"PDB2MSA::pdbname"}   = $pdbname;
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
     $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $maxlen;
@@ -105,395 +106,82 @@ sub pdb2msa {
     $$pdb2msa_ref->{"PDB2MSA::byali"}     = $byali;
     $$pdb2msa_ref->{"PDB2MSA::which"}     = $which;
     @{$$pdb2msa_ref->{"PDB2MSA::cnt"}}    = @cnt;
-    $$pdb2msa_ref->{"PDB2MSA::mapfile"}   = $mapfile;
-
-    open(MAP,  ">$mapfile")  || die;
-    contactlist_print2(\*MAP,    $pdb2msa_ref, 0);
-    contactlist_print2(\*STDOUT, $pdb2msa_ref, 1);
-    close(MAP);
- 
 }
 
+#######################################################################
 
-sub contacts_from_pdbfile {
-	
-    my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
-	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+sub aa_conversion {
+    my ($aa, $isrna) = @_;
 
-    my $ncnt_t = 0;
+    my $AA = uc($aa);
+    my $new;
 
-    if ($coorfile) { open(COORF,  ">$coorfile")  || die; }
-
-    my $stoname = $stofile;
-    my $stodir = "";
-    if ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
-    my $famname = $stofile;
-    if ($famname =~ /\/([^\/]+)\.[^\/]+$/) { $famname = $1; }
+    if ($isrna) {
+	if    ($AA =~ /^A$/)    { $new = "A"; return $new; }
+	elsif ($AA =~ /^I$/)    { $new = "A"; return $new; }
+	elsif ($AA =~ /^C$/)    { $new = "C"; return $new; }
+	elsif ($AA =~ /^G$/)    { $new = "G"; return $new; }
+	elsif ($AA =~ /^T$/)    { $new = "T"; return $new; }
+	elsif ($AA =~ /^U$/)    { $new = "U"; return $new; }
+	elsif ($AA =~ /^P$/)    { $new = "U"; return $new; }
+	# modified residues
+	elsif ($AA =~ /^1MA$/)  { $new = "A"; return $new; }
+	elsif ($AA =~ /^12A$/)  { $new = "A"; return $new; }
+	elsif ($AA =~ /^5MC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^CCC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^OMC$/)  { $new = "C"; return $new; }
+	elsif ($AA =~ /^M2G$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^OMG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^YYG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^GDP$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^GTP$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^2MG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^7MG$/)  { $new = "G"; return $new; }
+	elsif ($AA =~ /^H2U$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^UMP$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^PSU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^2MU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^70U$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^5MU$/)  { $new = "U"; return $new; }
+	elsif ($AA =~ /^AH2U$/) { $new = "U"; return $new; }
+	elsif ($AA =~ /^BH2U$/) { $new = "U"; return $new; }
+   }
     
-    my $hmmer       = "$rscapebin/../lib/hmmer";
-    my $hmmbuild    = "$hmmer/src/hmmbuild";
-    my $hmmersearch = "$hmmer/src/hmmsearch";
     
-    my $easel    = "$hmmer/easel";
-    my $sfetch   = "$easel/miniapps/esl-sfetch";
-    my $reformat = "$easel/miniapps/esl-reformat";
-    
-    my $isrna = 0;
-    if ($dornaview) { $isrna = 1; }
-    
-    my $nch = 0;
-    my @chname = ();
-    my @chsq = ();
-    my $len;
-    my $alen;
-    
-    my $resolution;
-    my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
-    print     "# ALI:        $stofile\n";
-    print     "# PDB:        $pdbname\n";
-    print     "# chains:     $nch\n";
-    print     "# resolution: $resolution\n";
-        
-   for (my $n = 0; $n < $nch; $n ++) {
+    if    ($AA =~ /^ALA$/)  { $new = "A"; }
+    elsif ($AA =~ /^CYS$/)  { $new = "C"; }
+    elsif ($AA =~ /^ASP$/)  { $new = "D"; }
+    elsif ($AA =~ /^GLU$/)  { $new = "E"; }
+    elsif ($AA =~ /^BGLU$/) { $new = "E"; }
+    elsif ($AA =~ /^PHE$/)  { $new = "F"; }
+    elsif ($AA =~ /^GLY$/)  { $new = "G"; }
+    elsif ($AA =~ /^HIS$/)  { $new = "H"; }
+    elsif ($AA =~ /^ILE$/)  { $new = "I"; }
+    elsif ($AA =~ /^LYS$/)  { $new = "K"; }
+    elsif ($AA =~ /^LEU$/)  { $new = "L"; }
+    elsif ($AA =~ /^MET$/)  { $new = "M"; }
+    elsif ($AA =~ /^BMET$/) { $new = "M"; }
+    elsif ($AA =~ /^MSE$/)  { $new = "M"; } #selenomethionine is incorporated as methionine
+    elsif ($AA =~ /^ASN$/)  { $new = "N"; }
+    elsif ($AA =~ /^PRO$/)  { $new = "P"; }
+    elsif ($AA =~ /^GLN$/)  { $new = "Q"; }
+    elsif ($AA =~ /^ARG$/)  { $new = "R"; }
+    elsif ($AA =~ /^SER$/)  { $new = "S"; }
+    elsif ($AA =~ /^SEP$/)  { $new = "S"; } # phosphoseronine
+    elsif ($AA =~ /^THR$/)  { $new = "T"; }
+    elsif ($AA =~ /^TPO$/)  { $new = "T"; } # phosphothereonine
+    elsif ($AA =~ /^VAL$/)  { $new = "V"; }
+    elsif ($AA =~ /^TRP$/)  { $new = "W"; }
+    elsif ($AA =~ /^TYR$/)  { $new = "Y"; }
+    elsif ($AA =~ /^DA$/)   { $new = "A"; }
+    elsif ($AA =~ /^DC$/)   { $new = "C"; }
+    elsif ($AA =~ /^DG$/)   { $new = "G"; }
+    elsif ($AA =~ /^DT$/)   { $new = "T"; }
+    elsif ($AA =~ /^\S$/)   { $new = $AA; } # if AA is already given in the 1 letter code
+    else                    { $new = "X"; }
+    #else { print "aa_conversion(): uh? |$AA| isRNA? $isrna\n"; die; }
 
-	my $dochain;
-	if ($usechain) {
-	    if ($usechain =~ /^$chname[$n]$/) { $dochain = 1; }
-	    else                              { $dochain = 0; }
-	}
-	else { $dochain = 1; }
- 	if ($dochain == 0) { next; }
-	
-	my $map0file;
-	my $map1file;
-	my $mapfile;
-	if (!$smallout) {
-	    $map0file = "$pdbfile.chain$chname[$n].maxD$maxD.type$which.map";
-	    $map1file = "$stodir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$famname.map";
-	    $mapfile  = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
-	}
-	my $corfile   = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
-	
-	print "\n chain $chname[$n]\n";
-	if ($coorfile) {
-	    print COORF "$corfile\n";
-	}
-
-	open(COR,  ">$corfile")  || die;
-	if (!$smallout) {
-	    open(MAP,  ">$mapfile")  || die;
-	    open(MAP0, ">$map0file") || die;
-	    open(MAP1, ">$map1file") || die;
-	}
-	
-	print COR  "# PDB: $pdbname\n";
-	print COR  "# chain $chname[$n]\n";
-	
-	$len = length($chsq[$n]);
-	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
-				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
-	close(COR);
-	print "\n DONE with contact map chain $chname[$n]\n";
-
-	if (!$smallout) {
-	    close(MAP);
-	    close(MAP0);
-	    close(MAP1);
-	}
-	if ($alen == 0) { next; }
-
-	if ($gnuplot) {
-	    my $xfield  = 1;
-	    my $yfield  = 3;
-	    my $xylabel = "PDB position";
-	    my $title   = "Contacts in pdb sequence";
-	    my @mapfile;
-	    $mapfile[0] = $map0file;
-	    plot_contact_map(1, \@mapfile, 1, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
-	    
-	    $xfield  = 1;
-	    $yfield  = 4;
-	    $xylabel = "PDB position";
-	    $title   = "Contacts in pdb sequence that map to the alignment";
-	    $mapfile[0] = $map1file;
-	    plot_contact_map(1, \@mapfile, -1, -1,   $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
-	    
-	    $xfield  = 2;
-	    $yfield  = 5;
-	    $xylabel = "Alignment position";
-	    $title   = "Contacts in the alignment";
-	    $mapfile[0] = $mapfile;
-	    plot_contact_map(1, \@mapfile,  1, $alen, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
-	}
-    }
-    
-    if ($coorfile) { close(COORF); }
-
-    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $byali, $which); }
-
-    if (0&&!$smallout) {
-	my $hisfile  = "$stofile.$pdbname.nch$nch.maxD$maxD.type.$which.his";
-	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots); 
-    }
-
-    $$ret_pdblen = $len;
-    $$ret_msalen = $alen;
-    $$ret_ncnt_t = $ncnt_t;
-    my $rnaoutfile  = "$pdbfile.out";
-    my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
-    
-    #system("/bin/rm $rnaoutfile\n");
-    #system("/bin/rm $rnaoutfile2\n");
-}
-
-sub parse_pdb {
-    my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna) = @_;
-
-    my $pdbname;
-    my $nch = 0;
-    my $resolution;
-
-    my $cur_chain;
-    my $prv_chain = "";
-    my $sq;
-    my @sqlen;
-
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
-	    $pdbname = lc($1);
-	}
-	elsif (/RESOLUTION.\s+(.+)$/) {
-	    $resolution = $1;
-	}
-	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+)$/) {
-	    $cur_chain   = $1;
-	    my $sqlen    = $2;
-	    $sq          = $3;
-	    $sq =~ s/\n//g;
-	    
-	    if ($prv_chain =~ /^$/) {
-		$chsq_ref->[$nch]   = $sq;
-		$chname_ref->[$nch] = $cur_chain;
-		$sqlen[$nch]        = $sqlen;
-	    }
-	    elsif ($cur_chain =~ /^$prv_chain$/) {
-		$chsq_ref->[$nch] .= $sq;
-	    }
-	    else { 
-		$nch ++; 
-		$chsq_ref->[$nch]   = $sq;
-		$chname_ref->[$nch] = $cur_chain;
-		$sqlen[$nch]        = $sqlen;
-	    }
-	    $prv_chain = $cur_chain;
-	}
-    }
-    close(FILE);
-    $nch ++;
-
-    for (my $n = 0; $n < $nch; $n ++) {
-	my $len = sq_conversion(\$chsq_ref->[$n], $isrna);
-	if ($len != $sqlen[$n]) { print "parse_pdb(): seq len is $len should be $sqlen[$n]\n"; die; }
-    }
-    
-    $$ret_resolution = $resolution;    
-    $$ret_nch        = $nch;
-    return $pdbname;
-}
-
-# map[0..pdblen-1] taking values in 0..msa_alen-1
-sub map_pdbsq {
-    my ($rscapebin, $currdir, $stofile, $pdbname, $famname, $chname, $pdbsq, $map_ref, $revmap_ref, $isrna) = @_;
-
-    my $len = length($pdbsq);
-    for (my $l = 0; $l < $len; $l ++) {
-	$map_ref->[$l] = -1;
-    }
-
-    my $fam_name = "";
-    my $fam_asq  = "";
-    my $i;
-    my $j;
-    open(STO, "$stofile") || die;
-    while (<STO>) {
-	if (/^\#\=GS\s+(\S+)\s+DR PDB\;\s+\S*$pdbname\S*\s+$chname\;\s+(\d+)\-(\d+)\;/) {
-	    $fam_name = $1;
-	    $i         = $2;
-	    $j         = $3;
-	    #print "# $fam_name $i $j\n";
-	}
-	elsif (/^\#\=GS\s+(\S+)\s+AC\s+\S*$pdbname\S*\s*$/) {
-	    $fam_name = $1;
-	    $i        = 1;
-	    $j        = -1;
-	    #print "# $fam_name\n";
-	}
-	elsif (/^$fam_name\s+(\S+)\s*$/) {
-	    $fam_asq .= uc $1;
-	}
-    }
-    close(STO);
-
-    my $from_pdb;
-    my $from_fam;
-    my $ali_pdb;
-    my $ali_fam;
-    my $alen = find_pdbsq_in_ali($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, $isrna,
-				 \$fam_name, \$from_pdb, \$ali_pdb, \$from_fam, \$ali_fam, \$fam_asq);
-    
-    if ($alen == 0 || $famname eq '') {
-	print "could not find $pdbname chain $chname in sto file\n";
-	return 0;
-    }
-
-    my $fam_pdb;
-    my @ali_asq;
-    my @fam_asq;
-    $ali_asq[0] = $ali_fam;
-    $fam_asq[0] = $fam_asq;
-    mapsq2msa($ali_pdb, 1, \@ali_asq, \@fam_asq, $from_pdb, $from_fam, $map_ref, $revmap_ref, \$fam_pdb, 0);
-	    
-    return $alen;
-}
-
-#  ali_asq1 u-uuuuuu
-#  ali_asq2 xx-xxxxx (len2 = 7)
-#
-#  msa_asq1 u--u--uuuu-u (msalen = 12)
-#
-#  map[0] = 1  
-#  map[1] = -1  
-#  map[2] = 7
-#  map[3] = 8  
-#  map[4] = 9  
-#  map[5] = 10  
-#  map[6] = 12  
-
-# map   [0..len2-1]   in [0..msalen-1]
-# revmap[0..msalen-1] in [0..len2-1]
-#
-sub mapsq2msa {
-    my ($ali_asq, $nsq, $ali_asq_ref, $msa_asq_ref, $from_sq, $from_msa, $map_ref, $revmap_ref, $ret_msa_asq, $verbose) = @_;
-    
-    my $msa_asq = "";
-    my $msalen = length($msa_asq_ref->[0]);
-
-    my $alen = length($ali_asq_ref->[0]);
-    if (length($ali_asq) != $alen) { print "map() ali_sq  not aligned\n"; die; }
-    
-    my $sq = $ali_asq;
-    $sq =~ s/\.//g;
-    $sq =~ s/\-//g;
-    $sq =~ s/\n//g;
-    my $len = length($sq);
-
-    if (1||$verbose) {
-	printf "\nSQ      len =$len\n$sq\n";
-	printf "ali_asq  alen=$alen\n$ali_asq\n";
-    }
-    
-    # x (0..len-1) is coord aseq of the first aligned position
-    my @asq = split(//,$ali_asq);
-    
-    for (my $s = 0; $s < $nsq; $s++) {
-
-	if (1||$verbose) {
-	    printf "\nali_asq    alen=$alen\n$ali_asq\n";
-	    printf "ali_asq[$s] alen=$alen\n$ali_asq_ref->[$s]\n";
-	    printf "msa_asq[$s] msalen=$msalen\n$msa_asq_ref->[$s]\n";
-	}
-	
-	my @ali_asq = split(//,$ali_asq_ref->[$s]);
-	my @msa_asq = split(//,$msa_asq_ref->[$s]);
-	my $x = $from_sq-1;
-
-	my $pos = 0; # [0..alen-1] position in "ali" 
-
-	# y (0..msalen-1) is the coord in the msa of the first aligned position
-	my $n = 0;
-	my $y = 0;
-	while ($msa_asq[$y] =~ /^[\.\-]$/) { 
-	if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
-	$y ++;
-	}
-	while ($n < $from_msa-1) {
-	    if ($msa_asq[$y] =~ /^[\.\-]$/) { 
-		if ($verbose) { printf "#apos $pos msapos $y | skip msa $y %s \n", $msa_asq[$y]; }
-		$y ++;
-	    }
-	    else {
-		$n ++; $y ++;
-	    }
-	}
-	if (1||$verbose) { 
-	    printf "^^1st in sq2 %d/%d | 1st in msa %d/%d | alen $alen\n", $x+1, $len, $y+1, $msalen;
-	}
-    
-	# create the map
-	while ($pos < $alen) {
-	    my $pos_asq2 = uc($asq[$pos]);
-	    my $pos_asq1 = uc($ali_asq[$pos]);
-	    
-	    if ($x > $len)    { print "sqlen  = $len    x = $x at pos $pos\n"; die; }
-	    if ($y > $msalen) { print "msalen = $msalen y = $y at pos $pos\n"; die; }
-	
-	    if ($pos_asq1 =~ /^[\.\-]$/  && $pos_asq2 =~ /^[\.\-]$/  ) { 
-		if ($verbose) { printf "#apos $pos msapos $y | double gap at pos %d\n", $pos; }
-	    }
-	    elsif ($pos_asq2 =~ /^[\.\-]$/)  { 
-		if ($verbose) { printf "#apos $pos msapos $y | asq2 gap | move msa %d $pos_asq1\n", $y; }
-		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
-		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
-		    $y ++; 
-		}
-		$y ++;	
-	    }
-	    elsif ($pos_asq1 =~ /^[\.\-]$/)  { 
-		if ($verbose) { printf "#apos $pos msapos $y | skip sq1 gap | move sq2 $x $pos_asq2 \n"; }
-		$x ++; 
-	    }
-	    elsif ($pos_asq1 =~ /^$pos_asq2$/)  { 
-		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
-		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
-		    $y ++; 
-		}
-		$map_ref->[$x] = $y;  
-		if ($verbose) { printf "#apos $pos msapos $y | match $x $pos_asq2 | %d $pos_asq1\n", $y; }
-		$x ++; $y ++; 
-	    }
-	    else {
-		while($msa_asq[$y] =~ /^[\.\-]$/) { 
-		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; } 
-		    $y ++; 
-		}
-		$map_ref->[$x] = $y;  
-		if ($verbose) { printf "#apos $pos msapos $y | mismach $x $pos_asq2 | %d $pos_asq1\n", $y; }
-		$x ++; $y ++;
-	    }
-	    
-	    $pos ++;
-	}
-
-	# final gaps in msa?
-	while ($y < $msalen && $msa_asq[$y] =~ /^[\.\-]$/) { 
-	    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
-	    $y ++; 
-	}
-
-	if ($pos != $alen || $y != $msalen) { print "bad mapsq2msa() for sequence $s. pos $pos should be $alen. msapos $y should be $msalen\n"; die; }
-    }
-    #for (my $l = 0; $l < $len; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }
-    
-    # the reverse map
-    for (my $p = 0; $p < $msalen; $p ++) { $revmap_ref->[$p] = -1; }
-    for (my $l = 0; $l < $len;    $l ++) { if ($map_ref->[$l] >= 0 ) { $revmap_ref->[$map_ref->[$l]] = $l; } }
-    #for (my $p = 0; $p < $mnsalen; $p ++) { printf "rev[%d] = %d\n", $p,  $revmap_ref->[$p]; }
-
-    $msa_asq = align_sq2msa($sq, $msalen, $revmap_ref);
- 
-    $$ret_msa_asq = $msa_asq;
-    
+    return $new;
 }
 
 sub align_sq2msa {
@@ -525,496 +213,104 @@ sub alipos_isgap {
     return 0;
 }
 
-sub find_pdbsq_in_ali {
-    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $isrna, $ret_famsqname, 
-	$ret_from_pdb, $ret_ali_pdb, $ret_from_fam, $ret_ali_fam, $ret_fam_asq) = @_;
+sub addcontact {
+    my ($ret_ncnt, $cnt_ref, $new_ref) = @_;
 
-    my $ali_pdb  = "";
-    my $ali_fam = "";
-    my $from_pdb;
-    my $from_fam;
-    my $fam_asq = "";
-    my $eval = 1.;
+    my $ncnt = $$ret_ncnt;
 
-    my $famsqname =  $$ret_famsqname;
-     if ($famsqname eq "") {    
-	print "could not find $pdbname chain $chain in sto file... trying by homology\n";
+    my $i        = $new_ref->{"CNT::i"};
+    my $j        = $new_ref->{"CNT::j"};
+    my $posi     = $new_ref->{"CNT::posi"};
+    my $posj     = $new_ref->{"CNT::posj"};
+    my $chri     = $new_ref->{"CNT::chri"};
+    my $chrj     = $new_ref->{"CNT::chrj"};
+    my $bptype   = $new_ref->{"CNT::bptype"};
+    my $distance = $new_ref->{"CNT::distance"};
+
+    my $c;
+    for ($c = 0; $c < $ncnt; $c ++) {
+	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) { last; }
     }
 
-    my $stoannote = "$stofile.annote";
-    my $pdbsqfile = "$currdir/$pdbname";
-
-    my $hmmer     = "$rscapebin/../lib/hmmer";
-    my $hmmbuild  = "$hmmer/src/hmmbuild";
-    my $hmmsearch = "$hmmer/src/hmmsearch";
-    my $hmmalign  = "$hmmer/src/hmmalign";
-    my $hmmemit   = "$hmmer/src/hmmemit";
-    
-    my $infernal    = "$rscapebin/../lib/infernal-1.1.2/";
-    my $cmbuild     = "$infernal/src/cmbuild";
-    my $cmcalibrate = "$infernal/src/cmcalibrate";
-    my $cmsearch    = "$infernal/src/cmsearch";
-    my $cmalign     = "$infernal/src/cmalign";
-    
-    my $easel    = "$hmmer/easel";
-    my $sfetch   = "$easel/miniapps/esl-sfetch";
-    my $reformat = "$easel/miniapps/esl-reformat";
-
-    open(F, ">$pdbsqfile") || die;
-    print F ">$pdbname\n$pdbsq\n";
-    close(F);
-     
-    my $hmm       = "$currdir/$pdbname.hmm";
-    my $hmmout    = "$currdir/$pdbname.hmmout";
-    my $hmmali    = "$currdir/$pdbname.hmmali";
-    my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
-
-    my $cm       = "$currdir/$pdbname.cm";
-    my $cmout    = "$currdir/$pdbname.cmout";
-
-    my $use_infernal = 1;
-    my $famsqfile = "";
-    # use hmmer to decide if the pdbsq in homolog to the chain seq
-    if ($isrna) {
-	#system("/bin/echo $hmmbuild             --rna $hmm  $stofile  \n");
-	system ("          $hmmbuild             --rna $hmm  $stofile   >  /dev/null\n");
+    if ($c == $ncnt) {
+	$cnt_ref->[$ncnt] = CNT->new();
+	$cnt_ref->[$ncnt]->{"CNT::i"}        = $i;
+	$cnt_ref->[$ncnt]->{"CNT::j"}        = $j;
+	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
+	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
+	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
+	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
+	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
+	$cnt_ref->[$ncnt]->{"CNT::distance"} = $distance;
+	$$ret_ncnt ++;
     }
-    else {
-	system("/bin/echo $hmmbuild             --amino -O $stoannote $hmm $stofile \n");
-	system ("          $hmmbuild             --amino -O $stoannote $hmm $stofile   >  /dev/null\n");
-    }
-    
-    system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
-    system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
-    system("/usr/bin/more $hmmout\n");
-    if (hmmout_has_hit($hmmout) == 0) { return 0; }
-    
-    # there is a hit, now use hmmalign or cmalign to place the pdbsq in the alignment
-    print "\n$pdbname chain $chain found by homology\n";
-    if ($isrna && $use_infernal) {
-	system ("          $cmbuild -F      -O $stoannote $cm  $stofile   >  /dev/null\n");
-	#system("/bin/echo $cmbuild -F      -O $stoannote $cm  $stofile      \n");
-    }
-    #system("more $stoannote\n");
-  
-    my $onsq;
-    my $oss;
-    my @oct;
-    my @osq;
-    my @osqname;
-    my $orfasq;
-    FUNCS::parse_stofile($stofile, \$onsq, \@osqname, \@osq, \$oss, \@oct, \$orfasq);
 
-    my $nsq;
-    my $ss;
-    my @ct;
-    my @sq;
-    my @sqname;
-    my $rfasq;
-    FUNCS::parse_stofile($stoannote, \$nsq, \@sqname, \@sq, \$ss, \@ct, \$rfasq);
-    my $rfsq = $rfasq;
-    $rfsq =~ s/\.//g;
-    $rfsq =~ s/\-//g;
-    
-    my $name = "$stofile";
-    if ($name =~ /(\S+).sto/) { $name = $1; }
-    if ($name =~ /(\S+).stk/) { $name = $1; }
-    $name =~ s/\//\_/g;
-    $famsqfile = "$currdir/$name";
-    open(F, ">$famsqfile") || die;
-    print F ">consensus\n$rfsq\n";
-    print F ">$pdbname\n$pdbsq\n";
-    close(F);    
-    system("more $famsqfile\n");
-
-    my @cmap;
-    my @crevmap;
-    my $verbose = 1;
-    mapsq2msa($rfasq, $nsq, \@sq, \@osq, 1, 1, \@cmap, \@crevmap, \$fam_asq, $verbose);
-    
-    if ($isrna && $use_infernal) {
-	system ("          $cmalign         $cm  $famsqfile >  $hmmali\n");
-	#system("/bin/echo $cmalign         $cm  $famsqfile \n");
-    }
-    else {
-	system ("          $hmmalign         $hmm  $famsqfile >  $hmmali\n");
-	#system("/bin/echo $hmmalign         $hmm  $famsqfile \n");
-    }
-    
-    system("$reformat afa $hmmali > $hmmaliafa\n");
-    #system("more $hmmaliafa\n");
-
-    $nsq = 0;
-    my @asq;
-    my @asqname;
-    FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
-
-    $ali_pdb = $asq[1];
-    $ali_fam = $asq[0];
-    $ali_pdb =~ s/\-/\./g;
-    $ali_fam =~ s/\-/\./g;
-    
-    $famsqname = "consensus";
-    my $famalen = length($fam_asq);
-    my $alen    = length($ali_fam);
-    if ($famsqname ne "") {
-	printf "\n^^>$pdbname len=%d\n$pdbsq\n", length($pdbsq);
-	print "^^>$famsqname famalen=$famalen\n$fam_asq\n";
-	print "\n^^$ali_pdb\n";
-	print "^^$ali_fam\n";
-    }
-    
-    $$ret_famsqname = $famsqname;
-    $$ret_ali_pdb   = $ali_pdb;
-    $$ret_ali_fam   = $ali_fam;
-    $$ret_from_pdb  = 1;
-    $$ret_from_fam  = 1;
-    $$ret_fam_asq   = $fam_asq;
-
-    system("/bin/rm $pdbsqfile\n");
-    system("/bin/rm $famsqfile\n");
-    system("/bin/rm $hmm\n");
-    if ($isrna && $use_infernal) {system("/bin/rm $cm\n"); }
-    system("/bin/rm $hmmout\n");
-    system("/bin/rm $hmmali\n");
-    system("/bin/rm $hmmaliafa\n");
-
-
-    return $alen;
 }
 
-
-sub hmmout_has_hit {
-    my ($hmmout, $ret_famsqname) = @_;
-
-    my $hashit = 0;
-    open(HF, "$hmmout") || die;
-    while(<HF>) {
-	if (/#/) {
-	}
-	elsif (/\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s* /) {
-	    $hashit = 1;
-	}
-	elsif (/\>\>\s+(\S+)\s*$/) {
-	    $$ret_famsqname = $1;
-	    last;
-	}
-
-    }
-    close(HF);
-    return $hashit;
-}
-
-sub parse_hmmout_for_besthit {
-    my ($hmmout, $pdbname, $ret_famsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_fam, $ret_ali_fam) = @_;
-
-    my $from_pdb   = -1;
-    my $to_pdb     = -1;
-    my $from_fam  = -1;
-    my $to_fam    = -1;
-    my $ali_pdb    = "";
-    my $ali_fam   = "";
-    my $famsqname = "";
-
-    my $best_dom_E = -1;
-    my $best_dom_sc = -1;
-    my $best_dom_bias = -1;
+ sub allcontacts_dump {
+    my ($file, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $byali, $which) = @_;
     
-    my $n = 0;
-    my $b = 0;
-    my $domain = -1;
-    my $thisdomain = 0;
-    open(HF, "$hmmout") || die;
-    while(<HF>) {
-	if (/#/) {
-	}
-	elsif ($b == 0 && /\S+\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+\d+\s+(\S+)\s* /) {
-	    $best_dom_E    = $1;
-	    $best_dom_sc   = $2;
-	    $best_dom_bias = $3;
-	    $b ++;
-	}
-	elsif (/\>\>\s+(\S+)\s*$/ && $n == 0) {
-	    $famsqname = $1;
-	    $ali_fam   = "";
-	    $ali_pdb    = "";
-	    $from_fam  = 123456789;
-	    $from_pdb   = 123456789;
-	    $n ++;
-	}
-	elsif (/\>\>\s+(\S+)/ && $n > 0) {
-	    if ($domain == -1) { print "could not find domain\n"; die; }
-	    last;
-	}
-	elsif (/^\s*(\d+)\s+\S*\s+$best_dom_sc\s+$best_dom_bias\s+/) {
-	    $domain = $1;
-	}
-	elsif ($n==1 && /^\s*\=\=\s+domain\s+(\d+)\s+/) {
-	    my $whichdomain = $1;
-	    if ($whichdomain == $domain) {
-		$thisdomain = 1;
-	    }
-	    else {
-		$thisdomain = 0;
-		last;
-	    }
-	}
-	elsif ($n==1 && $thisdomain==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
-	    my $i     = $1;
-	    $ali_pdb .= $2;
-	    $to_pdb   = $3;
-	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
-	}
-	elsif ($n==1 && $thisdomain==1 && /^\s*$famsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
-	    my $i       = $1;
-	    $ali_fam  .= $2;
-	    $to_fam    = $3;
-	    $from_fam  = ($i < $from_fam)? $i:$from_fam;
-	}
-    }
-    close(HF);
+    if ($file eq '') { return; }
 
-    $$ret_from_pdb   = $from_pdb;
-    $$ret_from_fam  = $from_fam;
-    $$ret_famsqname = ($from_fam<0)? "":$famsqname;
-    $$ret_ali_pdb    = $ali_pdb;
-    $$ret_ali_fam   = $ali_fam;
-}
-
-sub coordtrans_seq2asq{
-    my ($i, $sq, $asq, $ret_ai) = @_;
-
-    if ($i > length($sq)) { printf "sq2asq bad coordinate i=$i len=%d\n", length($sq); die; }
-
-    my @sq  = split(//, $sq);
-    my @asq = split(//, $asq);
-    
-    my $char;
-    my $ai = 0;
-    my $x  = 0;
-    while ($asq) {
-	$asq =~ s/^(\S+)//; $char = 1;
-	if    ($char =~ /\./ || $char =~ /\-/ || $char =~ /\_/) { $ai ++; }
-	elsif ($char =~ /^(\S+)$/)                              { $ai ++; $x ++; }
-	if ($x == $i) { last; }
-    }
-    if ($sq[$i] =~ /^$asq[$ai]$/) { } else { printf "sq2asq seqchar %s should be asqchar %s", $sq[$i], $asq[$ai]; die; }
-    
-    $$ret_ai = $ai;
-}
-
-sub coordtrans_aseq2sq{
-    my ($ai, $asq, $sq, $ret_i) = @_;
-
-    if ($ai > length($asq)) { printf "asq2sq bad coordinate ai=$ai alen=%d\n", length($asq); die; }
-    
-    my @sq  = split(//, $sq);
-    my @asq = split(//, $asq);
-
-    my $char;
-    my $i = 0;
-    my $z  = 0;
-    while ($asq) {
-	$asq =~ s/^(\S+)//; $char = 1;
-	if    ($char =~ /\./ || $char =~ /\-/ || $char =~ /\_/) { $z ++; }
-	elsif ($char =~ /^(\S+)$/)                              { $z ++; $i ++; }
-	if ($z == $ai) { last; }
-    }
-    if ($sq[$i] =~ /^$asq[$ai]$/) { } else { printf "asq2sq seqchar %s should be asqchar %s", $sq[$i], $asq[$ai]; die; }
-
-    $$ret_i = $i;
-}
-
-sub get_asq_from_sto {
-    my ($reformat, $stofile, $name, $from) = @_;
-    my $asq = "";
- 
-    if ($name eq "") { return $asq; }
-     
-    my $afafile = "$stofile";
-    if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
-    elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
-    elsif ($afafile =~ /^(\S+).stk$/) { $afafile = "$1.afa"; }
-    if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
-
-    my $found = 0;
-    open(AFA, "$afafile") || die;
-    while(<AFA>) {
-	if (/^\>$name/) {
-	    $found = 1;
-	}
-	elsif ($found == 1 && /^\>/) {
-	    last;
-	}       
-	elsif ($found == 1 && /^(\S+)$/) {
-	    $asq .= $1;
-	}
-     }
-    close(AFA);
-    
-    if ($found == 0) {
-	print "sequence $name not found in alignment $afafile\n";
-	die;
-    }
-
-    return substr($asq, $from);
-}
-
-sub get_first_asq_from_sto {
-    my ($reformat, $stofile, $from) = @_;
-    my $asq = "";
-
-    my $afafile = "$stofile";
-    if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
-    elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
-    if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
-
-    my $n = 0;
-    open(AFA, "$afafile") || die;
-    while(<AFA>) {
-	if (/^\>(\S+)/) {
-	    $n ++;
-	}
-	elsif ($n == 1 && /^\>/) {
-	    last;
-	}       
-	elsif ($n == 1 && /^(\S+)$/) {
-	    $asq .= $1;
-	}
-     }
-    close(AFA);
-    
-
-    return substr($asq, $from);
-}
-
-
-sub parse_pdb_contact_map {
-    my ($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, 
-	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
-
-    my $len  = length($chsq);
-    my @chsq = split(//,$chsq);
-
-    printf COR  "# maxD  $maxD\n";
-    printf COR  "# minL  $minL\n";
-    printf COR  "# type  $which\n";
-    
-    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
-    if ($alen == 0) { return $alen; }
-    for (my $x = 0; $x < $len; $x ++) {
-	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
-	#printf     "%d %d\n", $x+1, $map_ref->[$x]+1;
-    }
-
-    my $ncnt = 0; # the contact for this chain
-    my @cnt;
-    
-    my $nat1;
-    my $nat2;
-    my $coor1;
-    my $coor2;
-    my $char1;
-    my $char2;
-    my @type1;
-    my @type2;
-    my @x1;
-    my @x2;
-    my @y1;
-    my @y2;
-    my @z1;
-    my @z2;
-    my $l1;
-    my $l2;
-    my $distance;
-
-    my @res;
-    get_atoms_coord($rscapebin, $currdir, $pdbfile, $pdbname, \@chsq, $len, $chain, \@res, $isrna);
-    
-    for ($l1 = 0; $l1 < $len; $l1 ++) {
-	$nat1  = $res[$l1]->{"RES::nat"};
-	$coor1 = $res[$l1]->{"RES::coor"};
-	$char1 = $res[$l1]->{"RES::char"};
-	@type1 = @{$res[$l1]->{"RES::type"}};
-	@x1    = @{$res[$l1]->{"RES::x"}};
-	@y1    = @{$res[$l1]->{"RES::y"}};
-	@z1    = @{$res[$l1]->{"RES::z"}};
-
-	if ($char1 ne $chsq[$l1]) {
-	    printf "#chain$chain;position %d/%d mismatched character %s should be $chsq[$coor1]\n", 
-	    ($l1+1), $len, $char1; 
-	    die;
-	}
-       
-	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
-	    $nat2  = $res[$l2]->{"RES::nat"};
-	    $coor2 = $res[$l2]->{"RES::coor"};
-	    $char2 = $res[$l2]->{"RES::char"};
-	    @type2 = @{$res[$l2]->{"RES::type"}};
-	    @x2    = @{$res[$l2]->{"RES::x"}};
-	    @y2    = @{$res[$l2]->{"RES::y"}};
-	    @z2    = @{$res[$l2]->{"RES::z"}};
-
-	    my $i    = $l1 + 1;           # positions in pdb sequence
-	    my $j    = $l2 + 1;
-	    my $posi = $map_ref->[$l1]+1; # positions in alignment
-	    my $posj = $map_ref->[$l2]+1;
-
-	    my $L;
-	    if ($byali) {
-		$L = abs($posj - $posi) + 1; # distance in alignment positions
-	    }
-	    else {
-		$L = $j - $i  +1;            # distance in pdb sequence
-	    }
-	    
-	    if ($char2 ne $chsq[$l2]) {
-		printf "#chain$chain;position %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
-		$j, $len, $char2; 
-		die; 
-	    }
-
-	    $distance = distance($which, $char1, $nat1, \@type1, \@x1, \@y1, \@z1, $char2, $nat2, \@type2, \@x2, \@y2, \@z2);
-
-	    if ($distance > 0) {
-		if ($L >= $minL && $distance < $maxD) {
-		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
-                     
-		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
-			$cnt[$ncnt] = CNT->new();
-			$cnt[$ncnt]->{"CNT::i"}        = $i;
-			$cnt[$ncnt]->{"CNT::j"}        = $j;
-			$cnt[$ncnt]->{"CNT::posi"}     = $posi;
-			$cnt[$ncnt]->{"CNT::posj"}     = $posj;
-			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
-			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
-			$cnt[$ncnt]->{"CNT::bptype"}   = "CONTACT";
-			$cnt[$ncnt]->{"CNT::distance"} = $distance;
-			
-			$ncnt ++;
-		    }
-		}
-	    }
-	}
-    }
-
-    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
-    
-    ## If RNA, run rnaview to extract the bptypes
-    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
-   
-    # add all contacts from this chain to the list of total contacts if new
+    my $nbp = 0;
+    my $nwc = 0;
+    open(FILE,  ">$file")  || die;
+    print FILE  "# PDB   $pdbname\n"; 
+    print FILE  "# MSA   $famname\n"; 
+    print FILE  "# maxD  $maxD\n";
+    print FILE  "# minL  $minL\n";
+    print FILE  "# byali $byali\n";
+    print FILE  "# type  $which\n";
     for (my $c = 0; $c < $ncnt; $c ++) {
-	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
+	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWt$/) { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HH/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^SS/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WH/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WS/)   { $nbp ++; }
+	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HS/)   { $nbp ++; }
+	
+	printf FILE  "%d\t%s\t%d\t%s\t%s\t%.2f\n", 
+	$cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
+	$cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
+	$cnt_ref->[$c]->{"CNT::bptype"}, 
+	$cnt_ref->[$c]->{"CNT::distance"}; 
     }
-
-    if (!$smallout) {
-	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
-	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
-    }
-
-    return $alen;
+    print FILE  "\# contacts: $ncnt\n";
+    print FILE  "\# bpairs:   $nbp\n";
+    print FILE  "\# wc:       $nwc\n";
+    
+    close (FILE);   
 }
+
+sub allcontacts_histogram {
+    my ($hfile, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots) = @_;
+    
+    my @his;
+    my $N = 50;
+    my $k = 100;
+    my $shift = 0;
+    FUNCS::init_histo_array($N, $k, \@his);
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	my $distance = $cnt_ref->[$c]->{"CNT::distance"};
+	FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, \@his);
+    }
+
+    FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
+    
+    my $title = "PDB: $pdbname   MSA: $famname   maxD: $maxD   minL: $minL type: $which\n";
+    my $xlabel = "euclidian minimum distance (Angstroms)";
+    my $ylabel = "number of contacts";
+    my $key = "";
+    my $psfile = "$hfile.ps";
+    my $xleft = 0;
+    my $xright = $maxD;
+    my $ymax = -1;
+    my $xfield = 1;
+    my $yfield = 2;
+    if ($gnuplot) { FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot); }
+}
+
 
 sub contactlist_print {
     my ($fp, $ncnt, $cnt_ref, $addcomments) = @_;
@@ -1131,6 +427,379 @@ sub contactlistfile_parse {
     return $ncnt;
 }
 
+sub contacts_from_pdbfile {
+	
+    my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
+	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+
+    my $ncnt_t = 0;
+
+    if ($coorfile) { open(COORF,  ">$coorfile")  || die; }
+
+    my $stoname = $stofile;
+    my $stodir = "";
+    if ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
+    my $famname = $stofile;
+    if ($famname =~ /\/([^\/]+)\.[^\/]+$/) { $famname = $1; }
+    
+    my $hmmer       = "$rscapebin/../lib/hmmer";
+    my $hmmbuild    = "$hmmer/src/hmmbuild";
+    my $hmmersearch = "$hmmer/src/hmmsearch";
+    
+    my $easel    = "$hmmer/easel";
+    my $sfetch   = "$easel/miniapps/esl-sfetch";
+    my $reformat = "$easel/miniapps/esl-reformat";
+    
+    my $isrna = 0;
+    if ($dornaview) { $isrna = 1; }
+    
+    my $nch = 0;
+    my @chname = ();
+    my @chsq = ();
+    my $len;
+    my $alen;
+    
+    my $resolution;
+    my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
+    print     "# ALI:        $stofile\n";
+    print     "# PDB:        $pdbname\n";
+    print     "# chains:     $nch\n";
+    print     "# resolution: $resolution\n";
+
+   for (my $n = 0; $n < $nch; $n ++) {
+
+	my $dochain;
+	if ($usechain) {
+	    if ($usechain =~ /^$chname[$n]$/) { $dochain = 1; }
+	    else                              { $dochain = 0; }
+	}
+	else { $dochain = 1; }
+ 	if ($dochain == 0) { next; }
+	
+	my $map0file;
+	my $map1file;
+	my $mapfile;
+	if (!$smallout) {
+	    $map0file = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
+	    $map1file = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$famname.map";
+	    $mapfile  = "$currdir/$famname.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
+	}
+	my $corfile   = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
+	
+	print "\n chain $chname[$n]\n";
+	if ($coorfile) {
+	    print COORF "$corfile\n";
+	}
+
+	open(COR,  ">$corfile")  || die;
+	if (!$smallout) {
+	    open(MAP,  ">$mapfile")  || die;
+	    open(MAP0, ">$map0file") || die;
+	    open(MAP1, ">$map1file") || die;
+	}
+	
+	print COR  "# PDB: $pdbname\n";
+	print COR  "# chain $chname[$n]\n";
+	
+	$len = length($chsq[$n]);
+	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
+				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
+	close(COR);
+	print "\n DONE with contact map chain $chname[$n]\n";
+
+	if (!$smallout) {
+	    close(MAP);
+	    close(MAP0);
+	    close(MAP1);
+	}
+	if ($alen == 0) { next; }
+
+	if ($gnuplot) {
+	    my $xfield  = 1;
+	    my $yfield  = 3;
+	    my $xylabel = "PDB position";
+	    my $title   = "Contacts in pdb sequence";
+	    my @mapfile;
+	    $mapfile[0] = $map0file;
+	    plot_contact_map(1, \@mapfile, 1, $len,  $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    
+	    $xfield  = 1;
+	    $yfield  = 4;
+	    $xylabel = "PDB position";
+	    $title   = "Contacts in pdb sequence that map to the alignment";
+	    $mapfile[0] = $map1file;
+	    plot_contact_map(1, \@mapfile, -1, -1,   $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	    
+	    $xfield  = 2;
+	    $yfield  = 5;
+	    $xylabel = "Alignment position";
+	    $title   = "Contacts in the alignment";
+	    $mapfile[0] = $mapfile;
+	    plot_contact_map(1, \@mapfile,  -1, -1, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
+	}
+    }
+    
+    if ($coorfile) { close(COORF); }
+
+    if ($mapallfile) { allcontacts_dump($mapallfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $byali, $which); }
+
+    if (0&&!$smallout) {
+	my $hisfile  = "$currdir/$stoname.$pdbname.nch$nch.maxD$maxD.type.$which.his";
+	allcontacts_histogram($hisfile, $ncnt_t, $cnt_t_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots); 
+    }
+
+    $$ret_pdblen = $len;
+    $$ret_msalen = $alen;
+    $$ret_ncnt_t = $ncnt_t;
+    my $rnaoutfile  = "$pdbfile.out";
+    my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
+    
+    #system("/bin/rm $rnaoutfile\n");
+    #system("/bin/rm $rnaoutfile2\n");
+}
+
+sub coordtrans_seq2asq{
+    my ($i, $sq, $asq, $ret_ai) = @_;
+
+    if ($i > length($sq)) { printf "sq2asq bad coordinate i=$i len=%d\n", length($sq); die; }
+
+    my @sq  = split(//, $sq);
+    my @asq = split(//, $asq);
+    
+    my $char;
+    my $ai = 0;
+    my $x  = 0;
+    while ($asq) {
+	$asq =~ s/^(\S+)//; $char = 1;
+	if    ($char =~ /\./ || $char =~ /\-/ || $char =~ /\_/) { $ai ++; }
+	elsif ($char =~ /^(\S+)$/)                              { $ai ++; $x ++; }
+	if ($x == $i) { last; }
+    }
+    if ($sq[$i] =~ /^$asq[$ai]$/) { } else { printf "sq2asq seqchar %s should be asqchar %s", $sq[$i], $asq[$ai]; die; }
+    
+    $$ret_ai = $ai;
+}
+
+sub coordtrans_aseq2sq{
+    my ($ai, $asq, $sq, $ret_i) = @_;
+
+    if ($ai > length($asq)) { printf "asq2sq bad coordinate ai=$ai alen=%d\n", length($asq); die; }
+    
+    my @sq  = split(//, $sq);
+    my @asq = split(//, $asq);
+
+    my $char;
+    my $i = 0;
+    my $z  = 0;
+    while ($asq) {
+	$asq =~ s/^(\S+)//; $char = 1;
+	if    ($char =~ /\./ || $char =~ /\-/ || $char =~ /\_/) { $z ++; }
+	elsif ($char =~ /^(\S+)$/)                              { $z ++; $i ++; }
+	if ($z == $ai) { last; }
+    }
+    if ($sq[$i] =~ /^$asq[$ai]$/) { } else { printf "asq2sq seqchar %s should be asqchar %s", $sq[$i], $asq[$ai]; die; }
+
+    $$ret_i = $i;
+}
+
+sub distance {
+    my ($which, $char1, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $char2, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
+
+    my $distance = 1e+50;
+    if ($nat1 == 0 || $nat2 == 0) { return $distance; }
+    
+    if  ($which =~ /^CA$/ || $which =~ /^C$/ || $which eq "C1'")  {
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    if ($type1_ref->[$a1] =~ /^$which$/) {
+		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		    if ($type2_ref->[$a2] =~ /^$which$/) {
+			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		    }
+		}
+	    }
+	}
+    }
+    elsif  ($which =~ /^CB$/)  { # use CA if a GLY
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    if ($type1_ref->[$a1] =~ /^$which$/ || ($type1_ref->[$a1] =~ /^CA$/ &&  $char1 =~ /^G$/) ) {
+		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		    if ($type2_ref->[$a2] =~ /^$which$/ || ($type2_ref->[$a2] =~ /^CA$/ &&  $char2 =~ /^G$/) ) {
+			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		    }
+		}
+	    }
+	}
+    }
+    elsif ($which =~ /^MIN$/) { # minimum atom distance
+	$distance = 1e+50;
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		if ($dist < $distance) { $distance = $dist; }
+	    }
+	}
+    }
+    elsif ($which =~ /^AVG$/) { # average
+	$distance = 0;
+	my $n = 0;
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		if  ($dist > 0) {
+		    $distance += $dist;
+		    $n ++;
+		}
+	    }
+	}
+	$distance /= $n;
+    }
+    elsif ($which =~ /^NOH$/) {
+	$distance = 1e+50;
+	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
+	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
+		if ($type1_ref->[$a1] =~ /^[^H]/ && $type2_ref->[$a2] =~ /^[^H]/) {
+		    my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
+		    if ($dist < $distance) { $distance = $dist; }
+		}
+	    }
+	}
+    }
+    else { print "distance method not known $which\n"; die; }
+    
+    return $distance;
+}
+
+sub euclidean_distance {
+    my ($x1, $y1, $z1, $x2, $y2, $z2) = @_;
+   
+    my $distance;
+    
+    $distance  = ($x1-$x2) * ($x1-$x2);
+    $distance += ($y1-$y2) * ($y1-$y2);
+    $distance += ($z1-$z2) * ($z1-$z2);
+    $distance  = sqrt($distance);
+
+    return $distance;
+}
+
+
+sub find_pdbsq_in_ali {
+    my ($rscapebin, $currdir, $stofile, $chain, $pdbname, $pdbsq, $isrna, 
+	$ret_nsq, $asq_ref, $asqname_ref) = @_;
+
+    my $eval = 1.;
+
+    my $stoname = "$stofile";
+    if ($stoname =~ /(\S+).sto/) { $stoname = $1; }
+    if ($stoname =~ /(\S+).stk/) { $stoname = $1; }
+    $stoname =~ s/\//\_/g;
+
+    my $pdbsqfile = "$currdir/$pdbname.fa";
+
+    my $hmmer     = "$rscapebin/../lib/hmmer";
+    my $hmmbuild  = "$hmmer/src/hmmbuild";
+    my $hmmsearch = "$hmmer/src/hmmsearch";
+    my $hmmalign  = "$hmmer/src/hmmalign";
+    my $hmmemit   = "$hmmer/src/hmmemit";
+    
+    my $infernal    = "$rscapebin/../lib/infernal-1.1.2/";
+    my $cmbuild     = "$infernal/src/cmbuild";
+    my $cmcalibrate = "$infernal/src/cmcalibrate";
+    my $cmsearch    = "$infernal/src/cmsearch";
+    my $cmalign     = "$infernal/src/cmalign";
+    
+    my $easel    = "$hmmer/easel";
+    my $sfetch   = "$easel/miniapps/esl-sfetch";
+    my $reformat = "$easel/miniapps/esl-reformat";
+
+    open(F, ">$pdbsqfile") || die;
+    print F ">$pdbname\n$pdbsq\n";
+    close(F);
+     
+    my $hmm       = "$currdir/$pdbname.hmm";
+    my $hmmout    = "$currdir/$pdbname.hmmout";
+    my $hmmali    = "$currdir/$pdbname.hmmali";
+    my $hmmaliafa = "$currdir/$pdbname.hmmali.afa";
+
+    my $cm        = "$currdir/$pdbname.cm";
+    my $cmout     = "$currdir/$pdbname.cmout";
+
+    my $allsqfile = "";
+    # use hmmer to decide if the pdbsq in homolog to the chain seq
+    my $use_infernal = 1;
+    if ($isrna) {
+	#system("/bin/echo $hmmbuild             --rna $hmm  $stofile  \n");
+	system ("          $hmmbuild             --rna $hmm  $stofile   >  /dev/null\n");
+    }
+    else {
+	#system("/bin/echo $hmmbuild             --amino $hmm $stofile \n");
+	system ("          $hmmbuild             --amino $hmm $stofile   >  /dev/null\n");
+    }
+    
+    #system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
+    system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
+    #system("/bin/more $hmmout\n");
+    if (hmmout_has_hit($hmmout) == 0) { return 0; }
+    
+    # there is a hit, now use hmmalign or cmalign to place the pdbsq in the alignment
+    print "$pdbname chain $chain found by homology\n";
+    if ($isrna && $use_infernal) {
+	system ("          $cmbuild -F      $cm  $stofile   >  /dev/null\n");
+	#system("/bin/echo $cmbuild -F      $cm  $stofile      \n");
+    }
+    #system("more $stoannote\n");
+
+    my $nsq;
+    my $ss;
+    my @ct;
+    my @sq;
+    my @sqname;
+    my $rfasq;
+    FUNCS::parse_stofile($stofile, \$nsq, \@sqname, \@sq, \$ss, \@ct, \$rfasq);
+    
+    $allsqfile    = "$currdir/$stoname";
+    $sqname[$nsq] = $pdbname;
+    $sq[$nsq]     = $pdbsq;
+    $nsq ++;
+
+    my @allsq;
+    open(F, ">$allsqfile") || die;
+    for (my $n = 0; $n < $nsq; $n ++) {
+	$allsq[$n] = $sq[$n];
+	$allsq[$n] =~ s/\-//g;
+	$allsq[$n] =~ s/\.//g;
+	print F ">$sqname[$n]\n$allsq[$n]\n";
+    }
+    close(F);    
+    #system("more $allsqfile\n");
+
+   if ($isrna && $use_infernal) {
+	system ("          $cmalign         $cm  $allsqfile >  $hmmali\n");
+	#system("/bin/echo $cmalign         $cm  $allsqfile \n");
+    }
+    else {
+	system ("          $hmmalign         $hmm  $allsqfile >  $hmmali\n");
+	#system("/bin/echo $hmmalign         $hmm  $allsqfile \n");
+    }    
+    system("$reformat afa $hmmali > $hmmaliafa\n");
+    #system("more $hmmaliafa\n");
+
+    $nsq = 0;
+    FUNCS::parse_afafile($hmmaliafa, \$nsq, $asq_ref, $asqname_ref);
+
+    $$ret_nsq = $nsq;
+  
+    system("/bin/rm $pdbsqfile\n");
+    system("/bin/rm $allsqfile\n");
+    system("/bin/rm $hmm\n");
+    if ($isrna && $use_infernal) {system("/bin/rm $cm\n"); }
+    system("/bin/rm $hmmout\n");
+    system("/bin/rm $hmmali\n");
+    system("/bin/rm $hmmaliafa\n");
+
+    return length($asq_ref->[0]);
+}
+
 sub found_alicoords_in_contactlist {
     my ($posi, $posj, $minL, $byali, $ncnt, $cnt_ref, $ret_type, $ret_pdbi, $ret_pdbj, $ret_chri, $ret_chrj, $ret_distance) = @_;
 
@@ -1232,281 +901,68 @@ sub found_pdbcoords_in_contactlist {
     return $found;
 }
 
-sub addcontact {
-    my ($ret_ncnt, $cnt_ref, $new_ref) = @_;
+sub get_asq_from_sto {
+    my ($reformat, $stofile, $name, $from) = @_;
+    my $asq = "";
+ 
+    if ($name eq "") { return $asq; }
+     
+    my $afafile = "$stofile";
+    if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
+    elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
+    elsif ($afafile =~ /^(\S+).stk$/) { $afafile = "$1.afa"; }
+    if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
 
-    my $ncnt = $$ret_ncnt;
-
-    my $i        = $new_ref->{"CNT::i"};
-    my $j        = $new_ref->{"CNT::j"};
-    my $posi     = $new_ref->{"CNT::posi"};
-    my $posj     = $new_ref->{"CNT::posj"};
-    my $chri     = $new_ref->{"CNT::chri"};
-    my $chrj     = $new_ref->{"CNT::chrj"};
-    my $bptype   = $new_ref->{"CNT::bptype"};
-    my $distance = $new_ref->{"CNT::distance"};
-
-    my $c;
-    for ($c = 0; $c < $ncnt; $c ++) {
-	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && $posj == $cnt_ref->[$c]->{"CNT::posj"}) { last; }
-    }
-
-    if ($c == $ncnt) {
-	$cnt_ref->[$ncnt] = CNT->new();
-	$cnt_ref->[$ncnt]->{"CNT::i"}        = $i;
-	$cnt_ref->[$ncnt]->{"CNT::j"}        = $j;
-	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
-	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
-	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
-	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
-	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
-	$cnt_ref->[$ncnt]->{"CNT::distance"} = $distance;
-	$$ret_ncnt ++;
-    }
-
-}
-
- sub allcontacts_dump {
-    my ($file, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $byali, $which) = @_;
-    
-    if ($file eq '') { return; }
-
-    my $nbp = 0;
-    my $nwc = 0;
-    open(FILE,  ">$file")  || die;
-    print FILE  "# PDB   $pdbname\n"; 
-    print FILE  "# MSA   $famname\n"; 
-    print FILE  "# maxD  $maxD\n";
-    print FILE  "# minL  $minL\n";
-    print FILE  "# byali $byali\n";
-    print FILE  "# type  $which\n";
-    for (my $c = 0; $c < $ncnt; $c ++) {
-	if    ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWc$/) { $nwc ++; $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WWt$/) { $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HH/)   { $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^SS/)   { $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WH/)   { $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^WS/)   { $nbp ++; }
-	elsif ($cnt_ref->[$c]->{"CNT::bptype"} =~ /^HS/)   { $nbp ++; }
-	
-	printf FILE  "%d\t%s\t%d\t%s\t%s\t%.2f\n", 
-	$cnt_ref->[$c]->{"CNT::posi"}, $cnt_ref->[$c]->{"CNT::chri"}, 
-	$cnt_ref->[$c]->{"CNT::posj"}, $cnt_ref->[$c]->{"CNT::chrj"}, 
-	$cnt_ref->[$c]->{"CNT::bptype"}, 
-	$cnt_ref->[$c]->{"CNT::distance"}; 
-    }
-    print FILE  "\# contacts: $ncnt\n";
-    print FILE  "\# bpairs:   $nbp\n";
-    print FILE  "\# wc:       $nwc\n";
-    
-    close (FILE);   
-}
-
-sub allcontacts_histogram {
-    my ($hfile, $ncnt, $cnt_ref, $pdbname, $famname, $maxD, $minL, $which, $gnuplot, $seeplots) = @_;
-    
-    my @his;
-    my $N = 50;
-    my $k = 100;
-    my $shift = 0;
-    FUNCS::init_histo_array($N, $k, \@his);
-    for (my $c = 0; $c < $ncnt; $c ++) {
-	my $distance = $cnt_ref->[$c]->{"CNT::distance"};
-	FUNCS::fill_histo_array(1, $distance, $N, $k, $shift, \@his);
-    }
-
-    FUNCS::write_histogram($N, $k, $shift, \@his, 1, $hfile, 0);
-    
-    my $title = "PDB: $pdbname   MSA: $famname   maxD: $maxD   minL: $minL type: $which\n";
-    my $xlabel = "euclidian minimum distance (Angstroms)";
-    my $ylabel = "number of contacts";
-    my $key = "";
-    my $psfile = "$hfile.ps";
-    my $xleft = 0;
-    my $xright = $maxD;
-    my $ymax = -1;
-    my $xfield = 1;
-    my $yfield = 2;
-    if ($gnuplot) { FUNCS::gnuplot_histo($hfile, $xfield, $yfield, $psfile, $title, $xlabel, $ylabel, $key, 0, $seeplots, $xleft, $xright, $ymax, $gnuplot); }
-}
-
-sub run_rnaview {
-    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, $ret_ncnt, $cnt_ref) = @_;
-
-    my $ncnt = $$ret_ncnt;
-    my $rnaviewfile = "rnaviewf";
-    my $sq;
-    my @map = (); # map sq to the sequence in the alignment
-    my @revmap;
-
-    my $isrna = 1;
-    my $rnaview = "$rscapebin/rnaview";
-
-    system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
-    system("echo $rnaview -c $chain $pdbfile \n");
-    system("/usr/bin/more $rnaviewfile\n");
-
-    open(RF, "$rnaviewfile") || die;
-    while(<RF>) {
-	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
-	    $sq = $1;
-	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $sq, \@map, \@revmap, $isrna);
-	    if ($alen == 0) { return; } # cannot find this chain in the msa
-	}
-	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
-	    my $i      = $1;
-	    my $j      = $2;
-	    my $posi   = $map[$i-1]+1;
-	    my $posj   = $map[$j-1]+1;
-	    my $chri   = aa_conversion($3, 1);
-	    my $chrj   = aa_conversion($4, 1);
-	    my $bptype = $5;
-
-	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
-		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
-	    }
-	}
-    }
-    close(RF);   
-    
-    system("/bin/rm $rnaviewfile\n");
-    system("/bin/rm base_pair_statistics.out\n");
-    
-    $$ret_ncnt = $ncnt;
-}
-
-sub rnaview2list {
-    my ($posi, $chri, $posj, $chrj, $bptype, $ret_ncnt, $cnt_ref) = @_;
-
-    my $ncnt = $$ret_ncnt;
     my $found = 0;
-    for (my $c = 0; $c < $ncnt; $c ++) {
-	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && 
-	    $posj == $cnt_ref->[$c]->{"CNT::posj"} ) {
-	    if ($chri =~ /^$cnt_ref->[$c]->{"CNT::chri"}$/ &&
-		$chrj =~ /^$cnt_ref->[$c]->{"CNT::chrj"}$/ ) {
-		$found = 1;
-		$cnt_ref->[$c]->{"CNT::bptype"} = $bptype;
-	    }
-	    else { 
-		printf "i %d %s %s %d\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"}, $cnt_ref->[$c]->{"CNT::i"} ; 
-		printf "j %d %s %s %d\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"}, $cnt_ref->[$c]->{"CNT::j"} ; 
-		print "bad rnaview correspondence at $c/$ncnt type $bptype\n"; 
-		die; 
-	    }
+    open(AFA, "$afafile") || die;
+    while(<AFA>) {
+	if (/^\>$name/) {
+	    $found = 1;
 	}
-	if ($found == 1) { last; }
-    }
-
+	elsif ($found == 1 && /^\>/) {
+	    last;
+	}       
+	elsif ($found == 1 && /^(\S+)$/) {
+	    $asq .= $1;
+	}
+     }
+    close(AFA);
+    
     if ($found == 0) {
-	printf "new bpair: i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
-	
-	$cnt_ref->[$ncnt] = CNT->new();
-	$cnt_ref->[$ncnt]->{"CNT::i"}        = 0;
-	$cnt_ref->[$ncnt]->{"CNT::j"}        = 0;
-	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
-	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
-	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
-	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
-	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
-	$cnt_ref->[$ncnt]->{"CNT::distance"} = 0;
-	$ncnt ++;
+	print "sequence $name not found in alignment $afafile\n";
+	die;
     }
-    $$ret_ncnt = $ncnt;
+
+    return substr($asq, $from);
 }
 
+sub get_first_asq_from_sto {
+    my ($reformat, $stofile, $from) = @_;
+    my $asq = "";
 
-sub sq_conversion {
-    my ($ret_seq, $isrna) = @_;
+    my $afafile = "$stofile";
+    if    ($afafile =~ /^(\S+).txt$/) { $afafile = "$1.afa"; }
+    elsif ($afafile =~ /^(\S+).sto$/) { $afafile = "$1.afa"; }
+    if (-f $afafile) { } else { system("$reformat afa $stofile > $afafile\n"); }
 
-    my $seq = $$ret_seq;
-    my $new = "";
-    my $aa;
-
-    #print "seq\n$seq\n";
-    while ($seq) {
-	$seq =~ s/^(\S+)\s+//; $aa = $1;
-	$new .= aa_conversion($aa, $isrna); 
-    }
-    #printf "new $new\n";
-    $$ret_seq = $new;
-    return length($new);
-}
-
-sub aa_conversion {
-    my ($aa, $isrna) = @_;
-
-    my $AA = uc($aa);
-    my $new;
-
-    if ($isrna) {
-	if    ($AA =~ /^A$/)    { $new = "A"; return $new; }
-	elsif ($AA =~ /^I$/)    { $new = "A"; return $new; }
-	elsif ($AA =~ /^C$/)    { $new = "C"; return $new; }
-	elsif ($AA =~ /^G$/)    { $new = "G"; return $new; }
-	elsif ($AA =~ /^T$/)    { $new = "T"; return $new; }
-	elsif ($AA =~ /^U$/)    { $new = "U"; return $new; }
-	elsif ($AA =~ /^P$/)    { $new = "U"; return $new; }
-	# modified residues
-	elsif ($AA =~ /^1MA$/)  { $new = "A"; return $new; }
-	elsif ($AA =~ /^12A$/)  { $new = "A"; return $new; }
-	elsif ($AA =~ /^5MC$/)  { $new = "C"; return $new; }
-	elsif ($AA =~ /^CCC$/)  { $new = "C"; return $new; }
-	elsif ($AA =~ /^OMC$/)  { $new = "C"; return $new; }
-	elsif ($AA =~ /^M2G$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^OMG$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^YYG$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^GDP$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^GTP$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^2MG$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^7MG$/)  { $new = "G"; return $new; }
-	elsif ($AA =~ /^H2U$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^UMP$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^PSU$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^2MU$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^70U$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^5MU$/)  { $new = "U"; return $new; }
-	elsif ($AA =~ /^AH2U$/) { $new = "U"; return $new; }
-	elsif ($AA =~ /^BH2U$/) { $new = "U"; return $new; }
-   }
+    my $n = 0;
+    open(AFA, "$afafile") || die;
+    while(<AFA>) {
+	if (/^\>(\S+)/) {
+	    $n ++;
+	}
+	elsif ($n == 1 && /^\>/) {
+	    last;
+	}       
+	elsif ($n == 1 && /^(\S+)$/) {
+	    $asq .= $1;
+	}
+     }
+    close(AFA);
     
-    
-    if    ($AA =~ /^ALA$/)  { $new = "A"; }
-    elsif ($AA =~ /^CYS$/)  { $new = "C"; }
-    elsif ($AA =~ /^ASP$/)  { $new = "D"; }
-    elsif ($AA =~ /^GLU$/)  { $new = "E"; }
-    elsif ($AA =~ /^BGLU$/) { $new = "E"; }
-    elsif ($AA =~ /^PHE$/)  { $new = "F"; }
-    elsif ($AA =~ /^GLY$/)  { $new = "G"; }
-    elsif ($AA =~ /^HIS$/)  { $new = "H"; }
-    elsif ($AA =~ /^ILE$/)  { $new = "I"; }
-    elsif ($AA =~ /^LYS$/)  { $new = "K"; }
-    elsif ($AA =~ /^LEU$/)  { $new = "L"; }
-    elsif ($AA =~ /^MET$/)  { $new = "M"; }
-    elsif ($AA =~ /^BMET$/) { $new = "M"; }
-    elsif ($AA =~ /^MSE$/)  { $new = "M"; } #selenomethionine is incorporated as methionine
-    elsif ($AA =~ /^ASN$/)  { $new = "N"; }
-    elsif ($AA =~ /^PRO$/)  { $new = "P"; }
-    elsif ($AA =~ /^GLN$/)  { $new = "Q"; }
-    elsif ($AA =~ /^ARG$/)  { $new = "R"; }
-    elsif ($AA =~ /^SER$/)  { $new = "S"; }
-    elsif ($AA =~ /^SEP$/)  { $new = "S"; } # phosphoseronine
-    elsif ($AA =~ /^THR$/)  { $new = "T"; }
-    elsif ($AA =~ /^TPO$/)  { $new = "T"; } # phosphothereonine
-    elsif ($AA =~ /^VAL$/)  { $new = "V"; }
-    elsif ($AA =~ /^TRP$/)  { $new = "W"; }
-    elsif ($AA =~ /^TYR$/)  { $new = "Y"; }
-    elsif ($AA =~ /^DA$/)   { $new = "A"; }
-    elsif ($AA =~ /^DC$/)   { $new = "C"; }
-    elsif ($AA =~ /^DG$/)   { $new = "G"; }
-    elsif ($AA =~ /^DT$/)   { $new = "T"; }
-    elsif ($AA =~ /^\S$/)   { $new = $AA; } # if AA is already given in the 1 letter code
-    else                    { $new = "X"; }
-    #else { print "aa_conversion(): uh? |$AA| isRNA? $isrna\n"; die; }
 
-    return $new;
+    return substr($asq, $from);
 }
-
 
 # The numbering of the sequence in SEQRES does not have to agree with the numbers
 # given in the ATOM line as "resSeq"
@@ -1790,92 +1246,495 @@ sub get_atoms_coord {
     system("/bin/rm $hmmaliafa\n");
 }
 
-sub update_status {
-    my ($pos, $from, $to, $status_ref) = @_;
+sub hmmout_has_hit {
+    my ($hmmout, $ret_famsqname) = @_;
 
-    
+    my $hashit = 0;
+    open(HF, "$hmmout") || die;
+    while(<HF>) {
+	if (/#/) {
+	}
+	elsif (/\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s* /) {
+	    $hashit = 1;
+	}
+	elsif (/\>\>\s+(\S+)\s*$/) {
+	    $$ret_famsqname = $1;
+	    last;
+	}
+
+    }
+    close(HF);
+    return $hashit;
 }
 
 
-sub distance {
-    my ($which, $char1, $nat1, $type1_ref, $x1_ref, $y1_ref, $z1_ref, $char2, $nat2, $type2_ref, $x2_ref, $y2_ref, $z2_ref) = @_;
 
-    my $distance = 1e+50;
-    if ($nat1 == 0 || $nat2 == 0) { return $distance; }
+# map[0..pdblen-1] taking values in 0..msa_alen-1
+sub map_pdbsq {
+    my ($rscapebin, $currdir, $stofile, $pdbname, $famname, $chname, $pdbsq, $map_ref, $revmap_ref, $isrna) = @_;
+
+    my $len = length($pdbsq);
+    for (my $l = 0; $l < $len; $l ++) {
+	$map_ref->[$l] = -1;
+    }
+
+    my $nsq;
+    my @asq_msa;
+    my @asqname_msa;
+    my $ss;
+    my @ct;
+    my $msalen = FUNCS::parse_stofile($stofile, \$nsq, \@asqname_msa, \@asq_msa, $ss, @ct, );
     
-    if  ($which =~ /^CA$/ || $which =~ /^C$/ || $which eq "C1'")  {
-	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    if ($type1_ref->[$a1] =~ /^$which$/) {
-		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		    if ($type2_ref->[$a2] =~ /^$which$/) {
-			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
-		    }
-		}
-	    }
-	}
+    my $nsqt;
+    my @asq;
+    my @asq_name;
+    my $alen = find_pdbsq_in_ali($rscapebin, $currdir, $stofile, $chname, $pdbname, $pdbsq, $isrna,
+				 \$nsqt, \@asq, \@asq_name);
+    
+    if ($alen == 0) {
+	print "could not find $pdbname chain $chname in sto file\n";
+	return 0;
     }
-    elsif  ($which =~ /^CB$/)  { # use CA if a GLY
-	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    if ($type1_ref->[$a1] =~ /^$which$/ || ($type1_ref->[$a1] =~ /^CA$/ &&  $char1 =~ /^G$/) ) {
-		for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		    if ($type2_ref->[$a2] =~ /^$which$/ || ($type2_ref->[$a2] =~ /^CA$/ &&  $char2 =~ /^G$/) ) {
-			$distance = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
-		    }
-		}
-	    }
+
+    my $from_pdb = 1;
+    my $from_fam = 1;
+    my $pdb_asq  = $asq[$nsq]; # the pdbsq was the last sequence aligned
+    mapsq2msa($pdb_asq, $nsq, \@asq, \@asq_msa, $from_pdb, $from_fam, $map_ref, $revmap_ref, 0);
+	    
+    return $alen;
+}
+
+#  pdb_asq   is the pdb aligned to the other sequences
+#  @ali_asq includes all sequences (pdb too) aligned
+# 
+#  @msa_asq  is the msa where we want to add the pdbsq
+#
+#  map   [0..lenpdb-1]   in [0..msalen-1]
+#  revmap[0..msalen-1]   in [0..lenpdb-1]
+#
+#  pdb_asq xx-xxxxx (lenpdb = 7)
+#  ali_asq u-uuuuuu
+#
+#  msa_asq u--u--uuuu-u (msalen = 12)
+#
+#  map[0] = 1  
+#  map[1] = -1  
+#  map[2] = 7
+#  map[3] = 8  
+#  map[4] = 9  
+#  map[5] = 10  
+#  map[6] = 12  
+
+# map   [0..lenpdb-1]   in [0..msalen-1]
+# revmap[0..msalen-1]   in [0..lenpdb-1]
+#
+sub mapsq2msa {
+    my ($pdb_asq, $nsq, $ali_asq_ref, $msa_asq_ref, $from_sq, $from_msa, $map_ref, $revmap_ref, $verbose) = @_;
+    
+    my $pdb_alifrag = "";
+    my $msalen = length($msa_asq_ref->[0]);
+
+    my $alen = length($ali_asq_ref->[0]);
+    if (length($pdb_asq) != $alen) { print "map() ali_sq  not aligned\n"; die; }
+
+    $verbose = 0;
+    my $pdbsq = $pdb_asq;
+    $pdbsq =~ s/\.//g;
+    $pdbsq =~ s/\-//g;
+    $pdbsq =~ s/\n//g;
+    my $pdblen = length($pdbsq);
+
+    # x (0..len-1) is coord aseq of the pdb aligned position
+    my @pdb_asq = split(//,$pdb_asq);
+
+    for (my $x = 0; $x < $pdblen; $x ++) { $map_ref->[$x] = -1; }
+    for (my $s = 0; $s < $nsq; $s++) {
+
+	if ($verbose) {
+	    printf "\npdb_asq    alen=$alen\n$pdb_asq\n";
+	    printf "ali_asq[$s] alen=$alen\n$ali_asq_ref->[$s]\n";
+	    printf "msa_asq[$s] msalen=$msalen\n$msa_asq_ref->[$s]\n";
 	}
-    }
-    elsif ($which =~ /^MIN$/) { # minimum atom distance
-	$distance = 1e+50;
-	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
-		if ($dist < $distance) { $distance = $dist; }
-	    }
-	}
-    }
-    elsif ($which =~ /^AVG$/) { # average
-	$distance = 0;
+	
+	my @ali_asq = split(//,$ali_asq_ref->[$s]);
+	my @msa_asq = split(//,$msa_asq_ref->[$s]);
+	my $x = $from_sq-1;
+
+	my $pos = 0; # [0..alen-1] position in "ali" 
+
+	# y (0..msalen-1) is the coord in the msa of the first aligned position
 	my $n = 0;
-	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
-		if  ($dist > 0) {
-		    $distance += $dist;
-		    $n ++;
-		}
+	my $y = 0;
+	while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+	    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+	    $y ++;
+	}
+	while ($n < $from_msa-1) {
+	    if ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		if ($verbose) { printf "#apos $pos msapos $y | skip msa $y %s \n", $msa_asq[$y]; }
+		$y ++;
+	    }
+	    else {
+		$n ++; $y ++;
 	    }
 	}
-	$distance /= $n;
-    }
-    elsif ($which =~ /^NOH$/) {
-	$distance = 1e+50;
-	for (my $a1 = 0; $a1 < $nat1; $a1 ++) {
-	    for (my $a2 = 0; $a2 < $nat2; $a2 ++) {
-		if ($type1_ref->[$a1] =~ /^[^H]/ && $type2_ref->[$a2] =~ /^[^H]/) {
-		    my $dist = euclidean_distance($x1_ref->[$a1], $y1_ref->[$a1], $z1_ref->[$a1], $x2_ref->[$a2], $y2_ref->[$a2], $z2_ref->[$a2]);
-		    if ($dist < $distance) { $distance = $dist; }
-		}
+	if ($verbose) { 
+	    printf "^^1st in sq2 %d/%d | 1st in msa %d/%d | alen $alen\n", $x+1, $pdblen, $y+1, $msalen;
+	}
+	
+	# create the map
+	while ($pos < $alen) {
+	    my $pos_asq2    = $pdb_asq[$pos];
+	    my $pos_asq1    = $ali_asq[$pos];
+	    my $pos_asq2_uc = uc($pos_asq2);
+	    my $pos_asq1_uc = uc($pos_asq1);
+	    
+	    if ($x > $pdblen) { print "pdblen = $pdblen x = $x at pos $pos\n"; die; }
+	    if ($y > $msalen) { print "msalen = $msalen y = $y at pos $pos\n"; die; }
+	
+	    if ($pos_asq1 =~ /^[\.\-]$/  && $pos_asq2 =~ /^[\.\-]$/  ) { 
+		if ($verbose) { printf "#apos $pos msapos $y | double gap at pos %d\n", $pos; }
 	    }
+	    elsif ($pos_asq2 =~ /^[\.\-]$/)  { 
+		if ($verbose) { printf "#apos $pos msapos $y | asq2 gap | move msa %d $pos_asq1\n", $y; }
+		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+		    $y ++; 
+		}
+		$y ++;	
+	    }
+	    elsif ($pos_asq1 =~ /^[\.\-]$/)  { 
+		if ($verbose) { printf "#apos $pos msapos $y | skip sq1 gap | move sq2 $x $pos_asq2 \n"; }
+		$x ++; 
+	    }
+	    elsif ($pos_asq1 ne $pos_asq1_uc ||
+		   $pos_asq2 ne $pos_asq2_uc   )
+	    {
+		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+		    $y ++; 
+		}
+		if ($verbose) { printf "#apos $pos msapos $y | not consensus match $x $pos_asq2 | %d $pos_asq1\n", $y; }
+		$x ++; $y ++; 
+	    }
+	    elsif ($pos_asq1 =~ /^$pos_asq1_uc$/ && 
+		   $pos_asq2 =~ /^$pos_asq2_uc$/ && 
+		   $pos_asq1 =~ /^$pos_asq2$/   )  { 
+		while ($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+		    $y ++; 
+		}
+		if ($map_ref->[$x] < 0) { $map_ref->[$x] = $y; }
+		if ($verbose) { printf "#apos $pos msapos $y | match $x $pos_asq2 | %d $pos_asq1\n", $y; }
+		$x ++; $y ++; 
+	    }
+	    else {
+		while($msa_asq[$y] =~ /^[\.\-]$/) { 
+		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; } 
+		    $y ++; 
+		}
+		if ($map_ref->[$x] < 0) { $map_ref->[$x] = $y; }
+		if ($verbose) { printf "#apos $pos msapos $y | mismach $x $pos_asq2 | %d $pos_asq1\n", $y; }
+		$x ++; $y ++;
+	    }
+	    
+	    $pos ++;
+	}
+
+	# final gaps in msa?
+	while ($y < $msalen && $msa_asq[$y] =~ /^[\.\-]$/) { 
+	    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
+	    $y ++; 
+	}
+
+	if ($pos != $alen || $y != $msalen) { print "bad mapsq2msa() for sequence $s. pos $pos should be $alen. msapos $y should be $msalen\n"; die; }
+
+	if (0) {	    
+	    printf "\n>SQ      len =$pdblen\n$pdbsq\n";
+	    printf "s=$s\n";
+	    printf "$pdb_asq\n";
+	    printf "$ali_asq_ref->[$s]\n";
+	    
+	    revmap($msalen, $pdblen, $map_ref, $revmap_ref);
+	    $pdb_alifrag = align_sq2msa($pdbsq, $msalen, $revmap_ref);
+	    print "$msa_asq_ref->[$s]\n";
+	    
+	    #for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }
 	}
     }
-    else { print "distance method not known $which\n"; die; }
+    #for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }
     
-    return $distance;
+    # the reverse map
+    revmap($msalen, $pdblen, $map_ref, $revmap_ref);
+
+    if (1||$verbose) {
+	# the pdbsq as it aligns to the msa
+	$pdb_alifrag = align_sq2msa($pdbsq, $msalen, $revmap_ref);
+	print "$msa_asq_ref->[0]\n";
+    }
 }
 
-sub euclidean_distance {
-    my ($x1, $y1, $z1, $x2, $y2, $z2) = @_;
-   
+
+sub parse_hmmout_for_besthit {
+    my ($hmmout, $pdbname, $ret_famsqname, $ret_from_pdb, $ret_ali_pdb, $ret_from_fam, $ret_ali_fam) = @_;
+
+    my $from_pdb   = -1;
+    my $to_pdb     = -1;
+    my $from_fam  = -1;
+    my $to_fam    = -1;
+    my $ali_pdb    = "";
+    my $ali_fam   = "";
+    my $famsqname = "";
+
+    my $best_dom_E = -1;
+    my $best_dom_sc = -1;
+    my $best_dom_bias = -1;
+    
+    my $n = 0;
+    my $b = 0;
+    my $domain = -1;
+    my $thisdomain = 0;
+    open(HF, "$hmmout") || die;
+    while(<HF>) {
+	if (/#/) {
+	}
+	elsif ($b == 0 && /\S+\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+\d+\s+(\S+)\s* /) {
+	    $best_dom_E    = $1;
+	    $best_dom_sc   = $2;
+	    $best_dom_bias = $3;
+	    $b ++;
+	}
+	elsif (/\>\>\s+(\S+)\s*$/ && $n == 0) {
+	    $famsqname = $1;
+	    $ali_fam   = "";
+	    $ali_pdb    = "";
+	    $from_fam  = 123456789;
+	    $from_pdb   = 123456789;
+	    $n ++;
+	}
+	elsif (/\>\>\s+(\S+)/ && $n > 0) {
+	    if ($domain == -1) { print "could not find domain\n"; die; }
+	    last;
+	}
+	elsif (/^\s*(\d+)\s+\S*\s+$best_dom_sc\s+$best_dom_bias\s+/) {
+	    $domain = $1;
+	}
+	elsif ($n==1 && /^\s*\=\=\s+domain\s+(\d+)\s+/) {
+	    my $whichdomain = $1;
+	    if ($whichdomain == $domain) {
+		$thisdomain = 1;
+	    }
+	    else {
+		$thisdomain = 0;
+		last;
+	    }
+	}
+	elsif ($n==1 && $thisdomain==1 && /^\s*$pdbname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	    my $i     = $1;
+	    $ali_pdb .= $2;
+	    $to_pdb   = $3;
+	    $from_pdb = ($i < $from_pdb)? $i:$from_pdb;
+	}
+	elsif ($n==1 && $thisdomain==1 && /^\s*$famsqname\s+(\d+)\s+(\S+)\s+(\d+)\s*$/) {
+	    my $i       = $1;
+	    $ali_fam  .= $2;
+	    $to_fam    = $3;
+	    $from_fam  = ($i < $from_fam)? $i:$from_fam;
+	}
+    }
+    close(HF);
+
+    $$ret_from_pdb   = $from_pdb;
+    $$ret_from_fam  = $from_fam;
+    $$ret_famsqname = ($from_fam<0)? "":$famsqname;
+    $$ret_ali_pdb    = $ali_pdb;
+    $$ret_ali_fam   = $ali_fam;
+}
+
+sub parse_pdb {
+    my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna) = @_;
+
+    my $pdbname;
+    my $nch = 0;
+    my $resolution;
+
+    my $cur_chain;
+    my $prv_chain = "";
+    my $sq;
+    my @sqlen;
+
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
+	    $pdbname = lc($1);
+	}
+	elsif (/RESOLUTION.\s+(.+)$/) {
+	    $resolution = $1;
+	}
+	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+)$/) {
+	    $cur_chain   = $1;
+	    my $sqlen    = $2;
+	    $sq          = $3;
+	    $sq =~ s/\n//g;
+	    
+	    if ($prv_chain =~ /^$/) {
+		$chsq_ref->[$nch]   = $sq;
+		$chname_ref->[$nch] = $cur_chain;
+		$sqlen[$nch]        = $sqlen;
+	    }
+	    elsif ($cur_chain =~ /^$prv_chain$/) {
+		$chsq_ref->[$nch] .= $sq;
+	    }
+	    else { 
+		$nch ++; 
+		$chsq_ref->[$nch]   = $sq;
+		$chname_ref->[$nch] = $cur_chain;
+		$sqlen[$nch]        = $sqlen;
+	    }
+	    $prv_chain = $cur_chain;
+	}
+    }
+    close(FILE);
+    $nch ++;
+
+    for (my $n = 0; $n < $nch; $n ++) {
+	my $len = sq_conversion(\$chsq_ref->[$n], $isrna);
+	if ($len != $sqlen[$n]) { print "parse_pdb(): seq len is $len should be $sqlen[$n]\n"; die; }
+    }
+    
+    $$ret_resolution = $resolution;    
+    $$ret_nch        = $nch;
+    return $pdbname;
+}
+
+
+sub parse_pdb_contact_map {
+    my ($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, 
+	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
+
+    my $len  = length($chsq);
+    my @chsq = split(//,$chsq);
+
+    printf COR  "# maxD  $maxD\n";
+    printf COR  "# minL  $minL\n";
+    printf COR  "# type  $which\n";
+    
+    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
+    if ($alen == 0) { return $alen; }
+    for (my $x = 0; $x < $len; $x ++) {
+	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
+	#printf     "%d %d\n", $x+1, $map_ref->[$x]+1;
+    }
+
+    my $ncnt = 0; # the contact for this chain
+    my @cnt;
+    
+    my $nat1;
+    my $nat2;
+    my $coor1;
+    my $coor2;
+    my $char1;
+    my $char2;
+    my @type1;
+    my @type2;
+    my @x1;
+    my @x2;
+    my @y1;
+    my @y2;
+    my @z1;
+    my @z2;
+    my $l1;
+    my $l2;
     my $distance;
-    
-    $distance  = ($x1-$x2) * ($x1-$x2);
-    $distance += ($y1-$y2) * ($y1-$y2);
-    $distance += ($z1-$z2) * ($z1-$z2);
-    $distance  = sqrt($distance);
 
-    return $distance;
+    my @res;
+    get_atoms_coord($rscapebin, $currdir, $pdbfile, $pdbname, \@chsq, $len, $chain, \@res, $isrna);
+    
+    for ($l1 = 0; $l1 < $len; $l1 ++) {
+	$nat1  = $res[$l1]->{"RES::nat"};
+	$coor1 = $res[$l1]->{"RES::coor"};
+	$char1 = $res[$l1]->{"RES::char"};
+	@type1 = @{$res[$l1]->{"RES::type"}};
+	@x1    = @{$res[$l1]->{"RES::x"}};
+	@y1    = @{$res[$l1]->{"RES::y"}};
+	@z1    = @{$res[$l1]->{"RES::z"}};
+
+	if ($char1 ne $chsq[$l1]) {
+	    printf "#chain$chain;position %d/%d mismatched character %s should be $chsq[$coor1]\n", 
+	    ($l1+1), $len, $char1; 
+	    die;
+	}
+       
+	for ($l2 = $l1+1; $l2 < $len; $l2 ++) {
+	    $nat2  = $res[$l2]->{"RES::nat"};
+	    $coor2 = $res[$l2]->{"RES::coor"};
+	    $char2 = $res[$l2]->{"RES::char"};
+	    @type2 = @{$res[$l2]->{"RES::type"}};
+	    @x2    = @{$res[$l2]->{"RES::x"}};
+	    @y2    = @{$res[$l2]->{"RES::y"}};
+	    @z2    = @{$res[$l2]->{"RES::z"}};
+
+	    my $i    = $l1 + 1;           # positions in pdb sequence
+	    my $j    = $l2 + 1;
+	    my $posi = $map_ref->[$l1]+1; # positions in alignment
+	    my $posj = $map_ref->[$l2]+1;
+
+	    my $L;
+	    if ($byali) {
+		$L = abs($posj - $posi) + 1; # distance in alignment positions
+	    }
+	    else {
+		$L = $j - $i  +1;            # distance in pdb sequence
+	    }
+	    
+	    if ($char2 ne $chsq[$l2]) {
+		printf "#chain$chain;position %d/%d: mismatched character %s should be $chsq[$coor2]\n", 
+		$j, $len, $char2; 
+		die; 
+	    }
+
+	    $distance = distance($which, $char1, $nat1, \@type1, \@x1, \@y1, \@z1, $char2, $nat2, \@type2, \@x2, \@y2, \@z2);
+                     
+	    if ($distance > 0) {
+		if ($L >= $minL && $distance < $maxD) {
+		    if (!$smallout) { printf MAP0 "%d %s %d %s %.2f\n", $l1+1, $chsq[$l1], $l2+1, $chsq[$l2], $distance; }
+                     
+		    if ($map_ref->[$l1] >= 0 && $map_ref->[$l2] >= 0) {
+			$cnt[$ncnt] = CNT->new();
+			$cnt[$ncnt]->{"CNT::i"}        = $i;
+			$cnt[$ncnt]->{"CNT::j"}        = $j;
+			$cnt[$ncnt]->{"CNT::posi"}     = $posi;
+			$cnt[$ncnt]->{"CNT::posj"}     = $posj;
+			$cnt[$ncnt]->{"CNT::chri"}     = $chsq[$l1];
+			$cnt[$ncnt]->{"CNT::chrj"}     = $chsq[$l2];
+			$cnt[$ncnt]->{"CNT::bptype"}   = "CONTACT";
+			$cnt[$ncnt]->{"CNT::distance"} = $distance;
+			
+			$ncnt ++;
+		    }
+		}
+	    }
+	}
+    }
+
+    contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
+    
+    ## If RNA, run rnaview to extract the bptypes
+    if ($isrna) { run_rnaview($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
+   
+    # add all contacts from this chain to the list of total contacts if new
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	addcontact($ret_ncnt_t, $cnt_t_ref, $cnt[$c]);
+    }
+
+    if (!$smallout) {
+	contactlist_print(\*MAP,    $ncnt, \@cnt, 0);
+	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
+    }
+
+    return $alen;
 }
+
 
 sub plot_contact_map {
     my ($nf, $mapfile_ref, $minx, $maxx, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots) = @_;
@@ -1883,6 +1742,7 @@ sub plot_contact_map {
     my $key = $mapfile_ref->[0];
     if ($key =~ /([^\/]+).pred.map\S*\s*$/) { $key = $1; }
     if ($key =~ /([^\/]+).tp.map\S*\s*$/)   { $key = $1; }
+    if ($key =~ /\/([^\/]+)\s*$/)           { $key = $1; }
     
     my $psfile = "$mapfile_ref->[0].ps";
     
@@ -1924,6 +1784,7 @@ sub plot_contact_map {
 	print GP "set xrange [*:$high]\n";
 	print GP "set yrange [$high:*]\n";
     }
+    else { print GP "set yrange reverse\n"; }
     
     print GP "set title \"$title\\n\\n$key\"\n";
     #print GP "set title '$title'\n";
@@ -1941,5 +1802,125 @@ sub plot_contact_map {
 
     if ($seeplots) { system ("open $psfile&\n"); }
 }
+
+sub revmap {
+    my ($msalen, $len, $map_ref, $revmap_ref) = @_;
+    for (my $p = 0; $p < $msalen; $p ++) { $revmap_ref->[$p] = -1; }
+    for (my $l = 0; $l < $len;    $l ++) { if ($map_ref->[$l] >= 0 ) { $revmap_ref->[$map_ref->[$l]] = $l; } }
+    #for (my $p = 0; $p < $mnsalen; $p ++) { printf "rev[%d] = %d\n", $p,  $revmap_ref->[$p]; }
+}
+
+sub run_rnaview {
+    my ($rscapebin, $currdir, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, $ret_ncnt, $cnt_ref) = @_;
+
+    my $ncnt = $$ret_ncnt;
+    my $rnaviewfile = "rnaviewf";
+    my $sq;
+    my @map = (); # map sq to the sequence in the alignment
+    my @revmap;
+
+    my $isrna = 1;
+    my $rnaview = "$rscapebin/rnaview";
+
+    system("$rnaview -c $chain $pdbfile > $rnaviewfile\n");
+    system("echo $rnaview -c $chain $pdbfile \n");
+    system("/bin/more $rnaviewfile\n");
+
+    open(RF, "$rnaviewfile") || die;
+    while(<RF>) {
+	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
+	    $sq = $1;
+	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $sq, \@map, \@revmap, $isrna);
+	    if ($alen == 0) { return; } # cannot find this chain in the msa
+	}
+	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
+	    my $i      = $1;
+	    my $j      = $2;
+	    my $posi   = $map[$i-1]+1;
+	    my $posj   = $map[$j-1]+1;
+	    my $chri   = aa_conversion($3, 1);
+	    my $chrj   = aa_conversion($4, 1);
+	    my $bptype = $5;
+
+	    if ($posi > 0 && $posj > 0 && ($j-$i+1) >= $minL) {
+		rnaview2list($posi, $chri, $posj, $chrj, $bptype, \$ncnt, $cnt_ref);
+	    }
+	}
+    }
+    close(RF);   
+    
+    system("/bin/rm $rnaviewfile\n");
+    system("/bin/rm base_pair_statistics.out\n");
+    
+    $$ret_ncnt = $ncnt;
+}
+
+sub rnaview2list {
+    my ($posi, $chri, $posj, $chrj, $bptype, $ret_ncnt, $cnt_ref) = @_;
+
+    my $ncnt = $$ret_ncnt;
+    my $found = 0;
+    for (my $c = 0; $c < $ncnt; $c ++) {
+	if ($posi == $cnt_ref->[$c]->{"CNT::posi"} && 
+	    $posj == $cnt_ref->[$c]->{"CNT::posj"} ) {
+	    if ($chri =~ /^$cnt_ref->[$c]->{"CNT::chri"}$/ &&
+		$chrj =~ /^$cnt_ref->[$c]->{"CNT::chrj"}$/ ) {
+		$found = 1;
+		$cnt_ref->[$c]->{"CNT::bptype"} = $bptype;
+	    }
+	    else { 
+		printf "i %d %s %s %d\n", $posi, $chri, $cnt_ref->[$c]->{"CNT::chri"}, $cnt_ref->[$c]->{"CNT::i"} ; 
+		printf "j %d %s %s %d\n", $posj, $chrj, $cnt_ref->[$c]->{"CNT::chrj"}, $cnt_ref->[$c]->{"CNT::j"} ; 
+		print "bad rnaview correspondence at $c/$ncnt type $bptype\n"; 
+		die; 
+	    }
+	}
+	if ($found == 1) { last; }
+    }
+
+    if ($found == 0) {
+	printf "new bpair: i %d %s j %d %s\n", $posi, $chri, $posj, $chrj; 
+	
+	$cnt_ref->[$ncnt] = CNT->new();
+	$cnt_ref->[$ncnt]->{"CNT::i"}        = 0;
+	$cnt_ref->[$ncnt]->{"CNT::j"}        = 0;
+	$cnt_ref->[$ncnt]->{"CNT::posi"}     = $posi;
+	$cnt_ref->[$ncnt]->{"CNT::posj"}     = $posj;
+	$cnt_ref->[$ncnt]->{"CNT::chri"}     = $chri;
+	$cnt_ref->[$ncnt]->{"CNT::chrj"}     = $chrj;
+	$cnt_ref->[$ncnt]->{"CNT::bptype"}   = $bptype;
+	$cnt_ref->[$ncnt]->{"CNT::distance"} = 0;
+	$ncnt ++;
+    }
+    $$ret_ncnt = $ncnt;
+}
+
+
+sub sq_conversion {
+    my ($ret_seq, $isrna) = @_;
+
+    my $seq = $$ret_seq;
+    my $new = "";
+    my $aa;
+
+    #print "seq\n$seq\n";
+    while ($seq) {
+	$seq =~ s/^(\S+)\s+//; $aa = $1;
+	$new .= aa_conversion($aa, $isrna); 
+    }
+    #printf "new $new\n";
+    $$ret_seq = $new;
+    return length($new);
+}
+
+
+sub update_status {
+    my ($pos, $from, $to, $status_ref) = @_;
+
+    
+}
+
+
+
 
 1
