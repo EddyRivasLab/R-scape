@@ -37,12 +37,12 @@ struct PDB2MSA => {
     stoname   => '$', # alignment name
     pdblen    => '$', # length of pdb sequence
     msalen    => '$', # length of fam alignment
+    avlgen    => '$', # avg length of sequences in alignment
 
     map       => '@', # map[0..pdblen-1]  to [0..alen-1]
     revmap    => '@', # revmap[0..alen-1] to [0..pdblen-1]
     map0file  => '$', # name of file mapping contacts to pdb sequence
     map1file  => '$', # name of file mapping contacts to pdb sub-sequence  represented in the alignmetn
-    mapfile   => '$', # name of file mapping contacts to alignment
     
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms) 
     maxD      => '$', # maximun spacial distance (A) to define a contact 
@@ -60,7 +60,7 @@ struct PDB2MSA => {
 
 
 sub pdb2msa {
-    my ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
+    my ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, $pdb2msa_ref, $usechain, $maxD, $minL, $byali, $which, $isrna, $seeplots) = @_;
 
     $$pdb2msa_ref = PDB2MSA->new();
     my $stoname = $stofile;
@@ -84,7 +84,7 @@ sub pdb2msa {
     my @map;
     my @revmap;
     my $small_output = 0;
-    contacts_from_pdbfile ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
+    contacts_from_pdbfile ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
 			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $small_output, $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     
@@ -94,6 +94,7 @@ sub pdb2msa {
     $$pdb2msa_ref->{"PDB2MSA::stoname"}   = $stoname;
     $$pdb2msa_ref->{"PDB2MSA::pdblen"}    = $maxlen;
     $$pdb2msa_ref->{"PDB2MSA::msalen"}    = $msalen;
+    $$pdb2msa_ref->{"PDB2MSA::avglen"}    = -1;
     
     @{$$pdb2msa_ref->{"PDB2MSA::map"}}    = @map;
     @{$$pdb2msa_ref->{"PDB2MSA::revmap"}} = @revmap;
@@ -429,7 +430,8 @@ sub contactlistfile_parse {
 
 sub contacts_from_pdbfile {
 	
-    my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
+    my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, 
+	$ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
 	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
 
     my $ncnt_t = 0;
@@ -478,13 +480,11 @@ sub contacts_from_pdbfile {
 	
 	my $map0file;
 	my $map1file;
-	my $mapfile;
 	if (!$smallout) {
 	    $map0file = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
-	    $map1file = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.$famname.map";
-	    $mapfile  = "$currdir/$famname.$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
+	    $map1file = "$currdir/$pdbname.chain$chname[$n].$famname.maxD$maxD.type$which.map";
 	}
-	my $corfile   = "$stofile.$pdbname.chain$chname[$n].maxD$maxD.type$which.cor";
+	my $corfile   = "$currdir/$pdbname.chain$chname[$n].$famname.maxD$maxD.type$which.cor";
 	
 	print "\n chain $chname[$n]\n";
 	if ($coorfile) {
@@ -493,9 +493,9 @@ sub contacts_from_pdbfile {
 
 	open(COR,  ">$corfile")  || die;
 	if (!$smallout) {
-	    open(MAP,  ">$mapfile")  || die;
-	    open(MAP0, ">$map0file") || die;
-	    open(MAP1, ">$map1file") || die;
+	    open(MAP,  ">$mapfile_t")  || die;
+	    open(MAP0, ">$map0file")   || die;
+	    open(MAP1, ">$map1file")   || die;
 	}
 	
 	print COR  "# PDB: $pdbname\n";
@@ -534,7 +534,7 @@ sub contacts_from_pdbfile {
 	    $yfield  = 5;
 	    $xylabel = "Alignment position";
 	    $title   = "Contacts in the alignment";
-	    $mapfile[0] = $mapfile;
+	    $mapfile[0] = $mapfile_t;
 	    plot_contact_map(1, \@mapfile,  -1, -1, $xfield, $yfield, $title, $xylabel, $gnuplot, $seeplots);
 	}
     }
@@ -1784,7 +1784,6 @@ sub plot_contact_map {
 	print GP "set xrange [*:$high]\n";
 	print GP "set yrange [$high:*]\n";
     }
-    else { print GP "set yrange reverse\n"; }
     
     print GP "set title \"$title\\n\\n$key\"\n";
     #print GP "set title '$title'\n";
@@ -1807,7 +1806,7 @@ sub revmap {
     my ($msalen, $len, $map_ref, $revmap_ref) = @_;
     for (my $p = 0; $p < $msalen; $p ++) { $revmap_ref->[$p] = -1; }
     for (my $l = 0; $l < $len;    $l ++) { if ($map_ref->[$l] >= 0 ) { $revmap_ref->[$map_ref->[$l]] = $l; } }
-    #for (my $p = 0; $p < $mnsalen; $p ++) { printf "rev[%d] = %d\n", $p,  $revmap_ref->[$p]; }
+    #for (my $p = 0; $p < $msalen; $p ++) { printf "rev[%d] = %d\n", $p,  $revmap_ref->[$p]; }
 }
 
 sub run_rnaview {
