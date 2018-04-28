@@ -389,8 +389,8 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
     
     rb  = seidx[i][1];
     pos = ResSeq[rb];
-
-    ANum = AtomNum[rb];
+    
+   ANum = AtomNum[rb];
         fprintf(stdout, "^^^^^%d\n", i);
 
     
