@@ -236,7 +236,6 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   
   for (c = 0; c < nchain; c ++){
 
-    
     ib = chain_f[c];
     ie = chain_t[c];
     
@@ -246,7 +245,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     re   = seidx[ie][2];
     from = (int)ResSeq[rb];
     to   = (int)ResSeq[re];
-
+    
     ch[0] = ChainID[rb];
     ch[1] = '\0';
     if (user_chain && strcmp(user_chain, ch)) continue;
@@ -364,8 +363,6 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
 			    long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf)
 {
   int  *map = NULL;
-  char *name;
-  char *s = NULL;
   char  new[2];
   int   len = strlen(sq);
   int   l;
@@ -388,22 +385,18 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
   }
 
   pos_prv = ResSeq[seidx[ib][1]];
-  for (i = ib; i <= ie; i++){
+  for (i = ib; i <= ie; i++) {
     
     rb  = seidx[i][1];
     pos = ResSeq[rb];
 
     ANum = AtomNum[rb];
+        fprintf(stdout, "^^^^^%d\n", i);
 
-    esl_sprintf(&s, ResName[rb]);
-    esl_strtok(&s, " ", &name);
-
-    name[0] = er_aa_conversion(name);
-    name[1] = '\0';
-
+    
     if (pos - from > len) { // an insert
     }
-    else if (pos < from) { // and instert, also possible
+    else if (pos < from) { // and insert, also possible
     }
     else if (pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
@@ -419,7 +412,7 @@ static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, 
     l ++;
   }
 
-  fprintf(stdout, "# seq_%c", chainname);
+  fprintf(stdout, "^^# seq_%c", chainname);
   for (l = 0; l < len; l ++) 
     fprintf(stdout, " %d", map[l]);
   fprintf(stdout, "\n");
@@ -495,7 +488,7 @@ er_aa_conversion(char *s) {
   
   // check for residues named something  like A23 (as in 1u6b)
   if (strlen(s) ==3 && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9') s[1] = '\0';
- 
+  
   if      (!strcmp(s,  "ALA"))  new = 'A';
   else if (!strcmp(s,  "CYS"))  new = 'C';
   else if (!strcmp(s,  "ASP"))  new = 'D';
