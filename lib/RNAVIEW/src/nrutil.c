@@ -17,7 +17,7 @@ char *cvector(long nl, long nh)
 /* allocate a char vector with subscript range v[nl..nh] */
 {
     char *v;
-    long i;
+    long  i;
 
     v = (char *) malloc((size_t) ((nh - nl + 1 + NR_END) * sizeof(char)));
     if (!v)
@@ -33,7 +33,7 @@ double *dvector(long nl, long nh)
 /* allocate a double vector with subscript range v[nl..nh] */
 {
     double *v;
-    long i;
+    long    i;
 
     v = (double *)
         malloc((size_t) ((nh - nl + 1 + NR_END) * sizeof(double)));
@@ -367,7 +367,7 @@ double **convert_matrix(double *a, long nrl, long nrh, long ncl, long nch)
 void free_cvector(char *v, long nl, long nh)
 /* free a char vector allocated with cvector() */
 {
-    free((FREE_ARG) (v + nl - NR_END));
+    free(v);
 }
 
 void free_dvector(double *v, long nl, long nh)

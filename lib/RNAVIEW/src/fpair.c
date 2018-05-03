@@ -546,6 +546,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 
   er_ListDump(stdout, list);
   er_FreeList(list);
+    
   return eslOK;
   
  ERROR:
@@ -559,104 +560,56 @@ void  LW_Saenger_correspond(char bs1, char bs2, char *type, char *corresp)
 {
     char base[10], base_type[20];
 
-    sprintf(base, "%c%c %c%c", bs1, bs2, bs2, bs1);
-    sprintf(base_type, "%c%c%c  %c%c%c",
-            type[0], type[2], type[4], type[2], type[0], type[4]);
+    sprintf(base,      "%c%c %c%c", bs1, bs2, bs2, bs1);
+    sprintf(base_type, "%c%c%c  %c%c%c", type[0], type[2], type[4], type[2], type[0], type[4]);
 
     upperstr(base);
     upperstr(base_type);
-/*    printf("HERE %s : %s\n", base, base_type);*/
-
-/* 1, WWc */    
-    if      (strstr(base, "GA") && strstr(base_type, "WWC")){
-        strcpy(corresp, "VIII");
-    }else if(strstr(base, "CC") && strstr(base_type, "WWC")){
-        strcpy(corresp, "n/a");
-    }else if((strstr(base, "GU")||strstr(base,"GT"))&&strstr(base_type,"WWC")){
-        strcpy(corresp, "XXVIII");
-    }else if((strstr(base, "UC")||strstr(base,"TC"))&&strstr(base_type,"WWC")){
-        strcpy(corresp, "XVIII");
-    }else if((strstr(base, "UU")||strstr(base,"TT"))&&strstr(base_type,"WWC")){
-        strcpy(corresp, "XVI");
-    }else if((strstr(base, "AU")||strstr(base,"AT"))&&strstr(base_type,"--C")){
-        strcpy(corresp, "XX");
-    }else if(strstr(base, "GC")&&strstr(base_type,"++C")){
-        strcpy(corresp, "XIX");
-
-/* 2, WWt */    
-    }else if((strstr(base, "AU")||strstr(base,"AT"))&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XXI");
-    }else if(strstr(base, "AA")&&strstr(base_type,"WWT")){
-        strcpy(corresp, "I");
-    }else if(strstr(base, "GG")&&strstr(base_type,"WWT")){
-        strcpy(corresp, "III");
-    }else if(strstr(base, "GC")&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XXII");
-    }else if(strstr(base, "AC")&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XXVI");
-    }else if((strstr(base, "GU")||strstr(base,"GT"))&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XXVII");
-    }else if((strstr(base, "UC")||strstr(base,"TC"))&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XVII");
-    }else if(strstr(base, "CC")&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XIV,XV");
-    }else if((strstr(base, "UU")||strstr(base,"TT"))&&strstr(base_type,"WWT")){
-        strcpy(corresp, "XII,XIII");
-
-/* 3, WHc */    
-    }else if(strstr(base, "GG")&&strstr(base_type,"WHC")){
-        strcpy(corresp, "VI");
-    }else if((strstr(base, "UA")||strstr(base,"TA"))&&strstr(base_type,"WHC")){
-        strcpy(corresp, "XXIII");
-    }else if(strstr(base, "GA")&&strstr(base_type,"WHC")){
-        strcpy(corresp, "IX");
-
-/* 4, WHt */    
-    }else if(strstr(base, "AA")&&strstr(base_type,"WHT")){
-        strcpy(corresp, "V");
-    }else if(strstr(base, "GG")&&strstr(base_type,"WHT")){
-        strcpy(corresp, "VII");
-    }else if((strstr(base, "UA")||strstr(base,"TA"))&&strstr(base_type,"WHT")){
-        strcpy(corresp, "XXIV");
-    }else if(strstr(base, "CA")&&strstr(base_type,"WHT")){
-        strcpy(corresp, "XXV");
-
-/* 5, WSc */    
-    }else if(strstr(base, "AG")&&strstr(base_type,"WSC")){
-        strcpy(corresp, "n/a");
-    }else if((strstr(base, "AU")||strstr(base,"AT"))&&strstr(base_type,"WSC")){
-        strcpy(corresp, "n/a");
-        
-/* 6, WSt */    
-    }else if(strstr(base, "AG")&&strstr(base_type,"WST")){
-        strcpy(corresp, "X");
-    }else if(strstr(base, "CG")&&strstr(base_type,"WST")){
-        strcpy(corresp, "n/a");
-        
-/* 7, HHc */    
-    }else if(strstr(base_type,"HHC")){
-        strcpy(corresp, "n/a");
-
-/* 8, HHt */    
-    }else if(strstr(base, "AA")&&strstr(base_type,"HHT")){
-        strcpy(corresp, "II");
-        
-/* 10, HSt */    
-    }else if(strstr(base, "AG")&&strstr(base_type,"HST")){
-        strcpy(corresp, "XI");
-    }else if(strstr(base, "AA")&&strstr(base_type,"HST")){
-        strcpy(corresp, "n/a");
-    }else if((strstr(base, "CU")||strstr(base,"CT"))&&strstr(base_type,"HST")){
-        strcpy(corresp, "n/a");
-
-/* 12, SSt */    
-    }else if(strstr(base, "GG")&&strstr(base_type,"SST")){
-        strcpy(corresp, "IV");
-
-    }else
-        strcpy(corresp, "n/a");
     
-        
+    /* 1, WWc */    
+    if      ( strstr(base, "GA")                        && strstr(base_type, "WWC")) strcpy(corresp, "VIII");
+    else if ( strstr(base, "CC")                        && strstr(base_type, "WWC")) strcpy(corresp, "n/a");
+    else if ((strstr(base, "GU") || strstr(base, "GT")) && strstr(base_type, "WWC")) strcpy(corresp, "XXVIII");
+    else if ((strstr(base, "UC") || strstr(base, "TC")) && strstr(base_type, "WWC")) strcpy(corresp, "XVIII");
+    else if ((strstr(base, "UU") || strstr(base, "TT")) && strstr(base_type, "WWC")) strcpy(corresp, "XVI");
+    else if ((strstr(base, "AU") || strstr(base, "AT")) && strstr(base_type, "--C")) strcpy(corresp, "XX");
+    else if ( strstr(base, "GC")                        && strstr(base_type, "++C")) strcpy(corresp, "XIX");      
+    /* 2, WWt */   
+    else if ((strstr(base, "AU") || strstr(base, "AT")) && strstr(base_type, "WWT")) strcpy(corresp, "XXI");
+    else if ( strstr(base, "AA")                        && strstr(base_type, "WWT")) strcpy(corresp, "I");
+    else if ( strstr(base, "GG")                        && strstr(base_type, "WWT")) strcpy(corresp, "III");
+    else if ( strstr(base, "GC")                        && strstr(base_type, "WWT")) strcpy(corresp, "XXII");
+    else if ( strstr(base, "AC")                        && strstr(base_type, "WWT")) strcpy(corresp, "XXVI");
+    else if ((strstr(base, "GU") || strstr(base, "GT")) && strstr(base_type, "WWT")) strcpy(corresp, "XXVII");
+    else if ((strstr(base, "UC") || strstr(base, "TC")) && strstr(base_type, "WWT")) strcpy(corresp, "XVII");
+    else if ( strstr(base, "CC")                        && strstr(base_type, "WWT")) strcpy(corresp, "XIV,XV");
+    else if ((strstr(base, "UU") || strstr(base, "TT")) && strstr(base_type, "WWT")) strcpy(corresp, "XII,XIII");      
+    /* 3, WHc */    
+    else if ( strstr(base, "GG")                        && strstr(base_type, "WHC")) strcpy(corresp, "VI");
+    else if ((strstr(base, "UA") || strstr(base, "TA")) && strstr(base_type, "WHC")) strcpy(corresp, "XXIII");
+    else if ( strstr(base, "GA")                        && strstr(base_type, "WHC")) strcpy(corresp, "IX");
+    /* 4, WHt */    
+    else if ( strstr(base, "AA")                        && strstr(base_type, "WHT")) strcpy(corresp, "V");
+    else if ( strstr(base, "GG")                        && strstr(base_type, "WHT")) strcpy(corresp, "VII");
+    else if ((strstr(base, "UA") || strstr(base, "TA")) && strstr(base_type, "WHT")) strcpy(corresp, "XXIV");
+    else if ( strstr(base, "CA")                        && strstr(base_type, "WHT")) strcpy(corresp, "XXV");
+    /* 5, WSc */    
+    else if ( strstr(base, "AG")                        && strstr(base_type, "WSC")) strcpy(corresp, "n/a");
+    else if ((strstr(base, "AU") || strstr(base, "AT")) && strstr(base_type, "WSC")) strcpy(corresp, "n/a");  
+    /* 6, WSt */    
+    else if (strstr(base, "AG")                         && strstr(base_type, "WST")) strcpy(corresp, "X");
+    else if (strstr(base, "CG")                         && strstr(base_type, "WST")) strcpy(corresp, "n/a");
+    /* 7, HHc */    
+    else if (                                              strstr(base_type, "HHC")) strcpy(corresp, "n/a");
+    /* 8, HHt */    
+    else if ( strstr(base, "AA")                        && strstr(base_type, "HHT")) strcpy(corresp, "II");
+    /* 10, HSt */    
+    else if ( strstr(base, "AG")                        && strstr(base_type, "HST")) strcpy(corresp, "XI");
+    else if ( strstr(base, "AA")                        && strstr(base_type, "HST")) strcpy(corresp, "n/a");
+    else if ((strstr(base, "CU") || strstr(base, "CT")) && strstr(base_type, "HST")) strcpy(corresp, "n/a");
+    /* 12, SSt */    
+    else if ( strstr(base, "GG")                        && strstr(base_type, "SST")) strcpy(corresp, "IV");
+    else                                                                             strcpy(corresp, "n/a");
 }
 
     
@@ -1427,71 +1380,60 @@ void protein_rna_interact(double H_limit, long num_residue, long **seidx,
                           double **xyz, char **AtomName, long *prot_rna)
 /* get the protein and nucleic acid interactions */
 {
-    long i, ir, jr, j, k, n=0, m, interact, prot_atom=0;
-    char **pr_AtomName, tmp[80], str[512];
-    double **pr_xyz, vec[4], ftmp;    
-    FILE *finp;
+    FILE    *finp = NULL;
+    char   **pr_AtomName, tmp[80], str[512];
+    double **pr_xyz;
+    double   vec[4];
+    double   ftmp;
+    long     i, ir, jr, j, k;
+    long     n = 0;
+    long     m;
+    long     interact, prot_atom = 0;
 
-/* read in the PDB file */
+    /* read in the PDB file */
     pr_AtomName = cmatrix(1, prot_atom, 0, 4);
     pr_xyz = dmatrix(1, prot_atom, 1, 3);
-    if((finp = fopen("protein.pdb", "r"))==NULL){
+    if ((finp = fopen("protein.pdb", "r")) == NULL) {
         printf("Can not open the file: protein.pdb (routine: protein_rna_interact)\n");
     }
     prot_atom = number_of_atoms("protein.pdb");
 
-    while(fgets(str, sizeof str, finp) != NULL){
+    while(fgets(str, sizeof str, finp) != NULL) {
         strncpy(tmp, str + 12, 4);
         tmp[4] = '\0';
-        if (strchr(tmp, 'O') || strchr(tmp, 'N')){
+        if (strchr(tmp, 'O') || strchr(tmp, 'N')) {
             n++;
             strcpy(pr_AtomName[n], tmp);
             
             strncpy(tmp, str + 30, 25);           /* xyz */
             
             tmp[25] = '\0';
-            if (sscanf(tmp,"%8lf%8lf%8lf",
-                       &pr_xyz[n][1],&pr_xyz[n][2],&pr_xyz[n][3])!=3)
-                nrerror("error reading xyz-coordinate");
+            if (sscanf(tmp,"%8lf%8lf%8lf", &pr_xyz[n][1],&pr_xyz[n][2],&pr_xyz[n][3])!=3)
+	      nrerror("error reading xyz-coordinate");
         }
     }
     interact = n;
-        /*   
-    printf("INTERACTION %5ld \n", interact);    
-    for (i = 1; i <= interact; i++)
-        printf("%5ld %4s %8.3f %8.3f\n", i, pr_AtomName[i], pr_xyz[i][1],pr_xyz[i][2]);
-        */
     
     for (i = 1; i <= num_residue; i++) {
         prot_rna[i]=0;        
         ir = seidx[i][1];
         jr = seidx[i][2];
         for (j = ir; j <=jr ; j++)
-            if (AtomName[j][1]=='O' || AtomName[j][1]=='N'){
-            for (k = 1; k <= interact; k++){
+            if (AtomName[j][1]=='O' || AtomName[j][1]=='N') {
+            for (k = 1; k <= interact; k++) {
                 for (m = 1; m <= 3; m++) 
                     vec[m] = xyz[j][m] - pr_xyz[k][m];
                 ftmp= sqrt(vec[1]*vec[1] +vec[2]*vec[2]+vec[3]*vec[3]);
                 
-                if (/*veclen(vec)*/ftmp <=H_limit ) {  
+                if (ftmp <= H_limit) {  
                     prot_rna[i] = 1;
-                    
-/*
-  printf("%5ld %4s-%4s %5ld  %8.2f %8.2f \n",
-  i, AtomName[j], pr_AtomName[k], prot_rna[i],  veclen(vec), H_limit);
-*/            
-                    break;
+		    break;
                 }
             }
             
-            
-            if(prot_rna[i]==1)
-                break;
+	    if(prot_rna[i]==1) break;
         }
-        
-        
     }
-
 
     fclose(finp);
     free_dmatrix(pr_xyz, 1, prot_atom, 1, 3);

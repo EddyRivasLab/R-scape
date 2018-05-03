@@ -103,6 +103,14 @@ RSCAPE_ESLDIR="lib/hmmer/easel"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
 RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
 
+RVIEW_NAME="R-view"
+RVIEW_DATE="May 2018"
+RVIEW_COPYRIGHT="Copyright (C) 2018 Howard Hughes Medical Institute."
+RVIEW_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
+RVIEW_VERSION=$PACKAGE_VERSION
+RVIEW_URL="http://selab.org/"
+RVIEW_DIR="lib/R-view/src"
+
 
 RSCAPE_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to RSCAPE_HOME
@@ -131,6 +139,15 @@ else
   RNAVIEW_HOME=${prefix}/lib/RNAVIEW
 fi
 
+RVIEW_HOME="`pwd`"        #magic to get full path to current directory
+AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then 
+  RVIEW_HOME="`pwd`/lib/R-view"
+else
+  RVIEW_HOME=${prefix}/lib/R-view
+fi
+
 # Output variables  (AC_OUTPUT replaces @var@ in input files, such as Makefiles)
 AC_SUBST(E2MSA_DATE)
 AC_SUBST(E2MSA_COPYRIGHT)
@@ -157,6 +174,15 @@ AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
 
+AC_SUBST(RVIEW_NAME)
+AC_SUBST(RVIEW_DATE)
+AC_SUBST(RVIEW_COPYRIGHT)
+AC_SUBST(RVIEW_LICENSE)
+AC_SUBST(RVIEW_VERSION)
+AC_SUBST(RVIEW_URL)
+AC_SUBST(RVIEW_DIR)
+AC_SUBST(RVIEW_HOME)
+
 AC_SUBST(RNAVIEW_HOME)
 
 AC_SUBST(INFERNAL_RELCODE)
@@ -182,6 +208,15 @@ AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
+
+AC_DEFINE_UNQUOTED(RVIEW_NAME,      "$RVIEW_NAME")
+AC_DEFINE_UNQUOTED(RVIEW_DATE,      "$RVIEW_DATE")
+AC_DEFINE_UNQUOTED(RVIEW_COPYRIGHT, "$RVIEW_COPYRIGHT")
+AC_DEFINE_UNQUOTED(RVIEW_LICENSE,   "$RVIEW_LICENSE")
+AC_DEFINE_UNQUOTED(RVIEW_VERSION,   "$RVIEW_VERSION")
+AC_DEFINE_UNQUOTED(RVIEW_URL,       "$RVIEW_URL")
+AC_DEFINE_UNQUOTED(RVIEW_HOME,      "$RVIEW_HOME")
+AC_DEFINE_UNQUOTED(RVIEW_BIN,       "$RVIEW_BIN")
 
 AC_DEFINE_UNQUOTED(RNAVIEW_HOME,     "$RNAVIEW_HOME")
 
@@ -606,6 +641,7 @@ AC_CONFIG_HEADERS([
 src/e2_config.h
 src/rscape_config.h
 lib/RNAVIEW/src/rnaview_config.h
+lib/R-view/src/rview_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
@@ -624,6 +660,7 @@ lib/hmmer/libdivsufsort/Makefile
 lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
 lib/RNAVIEW/src/Makefile
+lib/R-view/src/Makefile
 ])
 
 #################################################################

@@ -69,7 +69,7 @@ extern void write_multiplets(char *pdbfile);
 extern long read_pdb_ref(char *pdbfile, char **sAtomName, double **sxyz);
 extern char identify_uncommon(long , char **AtomName, long ib, long ie);
 extern void get_reference_pdb(char *BDIR);
-extern long  ref_idx(char resnam);
+extern long ref_idx(char resnam);
 extern void type_k1_K2(long k1, long k2, long num_pair_tot, long **bs_pairs_tot,
 		       char **pair_type, char *str);
 extern void write_tmp_pdb(char *pdbfile,long nres, long **seidx, char **AtomName,
@@ -260,6 +260,8 @@ extern long close_file(FILE * fp);
 extern long upperstr(char *a);
 extern long number_of_atoms(char *pdbfile);
 extern long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
+		     long *AtomNum, long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST);
+extern long read_cif(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
 		     long *AtomNum, long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST);
 extern void pdb_record(long ib, long ie, long *inum, long idx, char **AtomName,
 		       char **ResName, char *ChainID, long *ResSeq, double **xyz,

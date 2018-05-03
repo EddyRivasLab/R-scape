@@ -1,0 +1,25 @@
+/* rview_config.h.in  [input to configure]
+ * 
+ * System-dependent configuration of R-view, by autoconf.
+ * 
+ * This file should be included in all R-view .c files before
+ * anything else, because it may set #define's that control
+ * behaviour of system includes and system libraries. An example
+ * is large file support.
+ * 
+ */
+#ifndef rviewCONFIG_INCLUDED
+#define rviewCONFIG_INCLUDED
+
+/* Version info.
+ */
+#undef RVIEW_VERSION    
+#undef RVIEW_DATE      
+#undef RVIEW_COPYRIGHT 
+#undef RVIEW_LICENSE   
+#undef RVIEW_HOME   
+#undef RVIEW_BIN   
+
+
+#endif /*rviewCONFIG_INCLUDED*/
+

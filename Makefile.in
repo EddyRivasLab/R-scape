@@ -23,6 +23,7 @@ INFERNALDIR    = @R2R_INFERNALDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
 RNAVIEWDIR     = @RSCAPE_RNAVIEWDIR@
+RVIEWDIR       = @RVIEW_DIR@
 
 
 # location of libdivsufsort for suffix array creation
@@ -38,6 +39,10 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 RSCAPE         = @RSCAPE_NAME@
 RSCAPE_VERSION = @RSCAPE_VERSION@
 RSCAPE_DATE    = @RSCAPE_DATE@
+
+RVIEW          = @RVIEW_NAME@
+RVIEW_VERSION  = @RVIEW_VERSION@
+RVIEW_DATE     = @RVIEW_DATE@
 
 E2MSA          = @E2MSA_NAME@
 E2MSA_VERSION  = @E2MSA_VERSION@
@@ -102,6 +107,7 @@ all:
 	${QUIET_SUBDIR0}documentation         ${QUIET_SUBDIR1} pdf
 	${QUIET_SUBDIR0}documentation/e2msa   ${QUIET_SUBDIR1} pdf
 	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} all
 
 # install: installs the binaries in ${bindir}/
 #          When man pages are done, will install man pages in MANDIR/man1/  (e.g. if MANSUFFIX is 1)
@@ -116,6 +122,7 @@ install:
 	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}${RNAVIEWDIR}       ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} install
 
 # uninstall: Reverses the steps of "make install".
 #
@@ -137,6 +144,7 @@ clean:
 	-rm ${DESTDIR}${bindir}/*
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	${QUIET_SUBDIR0}${RNAVIEWDIR}      ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${RVIEWDIR}        ${QUIET_SUBDIR1} clean
 
 # "make distclean" leaves a pristine source distribution.
 #
@@ -157,3 +165,4 @@ distclean:
 	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
 	-rm Makefile
 	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} distclean
