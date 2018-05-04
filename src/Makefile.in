@@ -51,13 +51,10 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 LIBTOOLS  = @LIBTOOLS@
 
-LBFGSLIB  = ../lib/liblbfgs-1.10/lib/.libs/liblbfgs.dylib
-LIBS      = -lhmmer -leasel @LIBS@ @LIBGSL@ @PTHREAD_LIBS@  -lm
+LIBS      = -lhmmer -leasel -lrview @LIBS@ @PTHREAD_LIBS@  -lm
 
-#IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src -I../lib/liblbfgs-1.10/include
-#LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src -L../lib/liblbfgs-1.10/lib/.libs
-IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../src 
-LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../src 
+IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../lib/R-view/src -I../src 
+LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../lib/R-view/src -L../src 
 
 
 # beautification magic stolen from git

@@ -1,32 +1,20 @@
-# Top level Makefile for Easel
-#
-# On most systems, to build Easel you should only need:
-#     % ./configure; make
-#
-# Optionally, you can run a test suite:
-#     % make check
-#
-# And optionally, you can install everything more permanently:
-#     % make install
-#
-# For more information, see the Installation chapter of the Easel Guide.
-#
-
 # VPATH and shell configuration
 #
-top_srcdir = @top_srcdir@
-srcdir     = @srcdir@
-VPATH      = @srcdir@
-SHELL      = /bin/sh
+top_srcdir     = @top_srcdir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+SHELL          = /bin/sh
 
 # Package information
 #
 PACKAGE         = @PACKAGE_NAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
 
 RVIEW          = @RVIEW_NAME@
 RVIEW_VERSION  = @RVIEW_VERSION@
 RVIEW_DATE     = @RVIEW_DATE@
+
 
 # Installation targets
 #
@@ -43,6 +31,28 @@ mandir      = @mandir@
 man1dir     = ${mandir}/man1
 man1ext     = .1
 
+# Compiler configuration
+#
+CC        = @CC@ 
+CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ 
+#CFLAGS    = -fopenmp @CFLAGS@ @PTHREAD_CFLAGS@ 
+LDFLAGS   = -static @LDFLAGS@
+SIMDFLAGS = @SIMD_CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+
+# Other tools
+#
+AR        = @AR@ 
+RANLIB    = @RANLIB@
+INSTALL   = @INSTALL@
+LIBTOOLS  = @LIBTOOLS@
+
+LIBS      = -lhmmer -leasel -lrview @LIBS@ @PTHREAD_LIBS@  -lm
+
+IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src 
+LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src 
+
+
 # beautification magic stolen from git
 #
 QUIET_SUBDIR0 = +${MAKE} -C #space separator after -c
@@ -57,65 +67,64 @@ ifndef V
 endif
 
 
-# Compiler configuration
-#
-CC       = @CC@
-CFLAGS   = -DNO_SSE -O3 -funroll-loops -g -Wall
-LIBS     = @LIBS@ 
-
-# Other tools
-#
-COMPRESS = gzip
-AR       = @AR@
-RANLIB   = @RANLIB@
-INSTALL  = @INSTALL@
-
-LIBS      = -lsrc -lhmmer -leasel -lm
-
-IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src -I.
-LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src -L.
-
-
 # Code manifests
 #
-PROGS    = R-view \
-
-
-HDRS =  \
+PROGS    = R-view\
 
 
 OBJS     = \
-	R-view.o \
+	rview_contacts.o\
+	rview_pdbfile.o\
 
-all: ${PROGS} 
+HDRS =  \
+	rview_contacts.h \
+	rview_pdbfile.h \
 
-${PROGS}: ${HDRS} ${OBJS} 
-	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ ${OBJS} ${LIBS} 
+SCRIPTS   = \
+
+all: librview.a ${PROGS} 
+
+
+${PROGS}: %: %.o ${OBJS} $
+	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
+
 
 .c.o:   
-	${QUIET_CC}${CC} ${MYINCDIR} ${IFLAGS} ${CFLAGS} ${IFLAGS} -o $@ -c $<
+	${QUIET_CC}${CC} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
-install: 
+librview.a:  ${OBJS}
+	${QUIET_AR}${AR} -r librview.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} librview.a
+
+install:
 	${QUIET}if [ ! -z "${PROGS}" ]; then \
-	   for file in ${PROGS}; do \
+	   for file in ${PROGS}  ; do \
 	      echo '    ' INSTALL $$file ;\
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\
 	fi
+	cp ${SCRIPTS} ${DESTDIR}${bindir}/ 
 
 clean:
-	-rm -f ${PROGS} ${OBJS} 
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 
 distclean:
-	-rm -f ${PROGS} ${OBJS} 
+	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 	-rm -rf autom4te.cache
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
-	-rm     Makefile
+	-rm Makefile
 
+
+
+################################################################
+# @LICENSE@
+################################################################

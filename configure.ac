@@ -107,7 +107,7 @@ RVIEW_NAME="R-view"
 RVIEW_DATE="May 2018"
 RVIEW_COPYRIGHT="Copyright (C) 2018 Howard Hughes Medical Institute."
 RVIEW_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
-RVIEW_VERSION=$PACKAGE_VERSION
+RVIEW_VERSION="0.1"
 RVIEW_URL="http://selab.org/"
 RVIEW_DIR="lib/R-view/src"
 
