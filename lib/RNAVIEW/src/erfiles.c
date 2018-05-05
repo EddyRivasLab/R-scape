@@ -360,7 +360,6 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   
   for (c = 0; c < nchain; c ++){
 
-    
     ib = chain_f[c];
     ie = chain_t[c];
     
@@ -370,7 +369,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     re   = seidx[ie][2];
     from = (int)ResSeq[rb];
     to   = (int)ResSeq[re];
-
+    
     ch[0] = ChainID[rb];
     ch[1] = '\0';
     if (user_chain && strcmp(user_chain, ch)) continue;
@@ -494,8 +493,11 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
 			    long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf)
 {
   int  *map = NULL;
+<<<<<<< HEAD
   char *resname;
   char *s = NULL;
+=======
+>>>>>>> 5c2e0d6fb1a73b9ee04f781e0a50f8ea1c2059c6
   char  new[2];
   int   seqreslen = strlen(seqres);
   int   l;
@@ -520,8 +522,9 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
   }
 
   pos_prv = ResSeq[seidx[ib][1]];
-  for (i = ib; i <= ie; i++){
+  for (i = ib; i <= ie; i++) {
     
+<<<<<<< HEAD
     rb   = seidx[i][1];
     pos  = ResSeq[rb];
     ANum = AtomNum[rb];
@@ -531,6 +534,18 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
     }
     else if (pos < from) { // and instert, also possible
       continue;
+=======
+    rb  = seidx[i][1];
+    pos = ResSeq[rb];
+    
+   ANum = AtomNum[rb];
+        fprintf(stdout, "^^^^^%d\n", i);
+
+    
+    if (pos - from > len) { // an insert
+    }
+    else if (pos < from) { // and insert, also possible
+>>>>>>> 5c2e0d6fb1a73b9ee04f781e0a50f8ea1c2059c6
     }
     else if (pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
@@ -552,8 +567,13 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
     l ++;
   }
 
+<<<<<<< HEAD
   fprintf(stdout, "# seq_%c", chainname);
   for (l = 0; l < seqreslen; l ++) 
+=======
+  fprintf(stdout, "^^# seq_%c", chainname);
+  for (l = 0; l < len; l ++) 
+>>>>>>> 5c2e0d6fb1a73b9ee04f781e0a50f8ea1c2059c6
     fprintf(stdout, " %d", map[l]);
   fprintf(stdout, "\n");
 
@@ -628,7 +648,7 @@ er_aa_conversion(char *s) {
   
   // check for residues named something  like A23 (as in 1u6b)
   if (strlen(s) ==3 && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9') s[1] = '\0';
- 
+  
   if      (!strcmp(s,  "ALA"))  new = 'A';
   else if (!strcmp(s,  "CYS"))  new = 'C';
   else if (!strcmp(s,  "ASP"))  new = 'D';

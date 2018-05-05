@@ -40,9 +40,9 @@ for (my $f = 0; $f < $F; $f ++){
     $msainfo[$f]  = shift;
     $strfile[$f]  = shift;
     $resname[$f]  = $resfile[$f];
+    if ($resname[$f] =~ /\/([^\/]+)$/) { $resname[$f] = $1; } 
     if ($resname[$f] =~ /^(\S+)\.sorted.out$/) {
-	$outname = $1;
-	
+	$outname = $1;	
 	$resname[$f] = "$outname.rscape";
 	if ($outname     =~ /\/([^\/]+)\s*$/) { $outname = $1; }
 	if ($resname[$f] =~ /\/(ID\S+)\//)    { $ID = $1; $outname .= ".$ID"; }
@@ -61,12 +61,12 @@ my $key       = shift; # tag to identify the benchmark
 
 for (my $f = 0; $f < $F; $f ++){
     my $method = $resfile[$f];
-    if    ($method =~ /(GTp)/)         { $method = $1; $method[$f] = "R-scape.$method"; }
-    elsif ($method =~ /(MIp)/)         { $method = $1; $method[$f] = "R-scape.$method"; }
-    elsif ($method =~ /(MI)/)          { $method = $1; $method[$f] = "R-scape.$method"; }
-    elsif ($method =~ /(neogremlin)/)  { $method = $1; $method[$f] = "R-scape.$method"; }
+    if    ($method =~ /(GTp)/)         { $method = $1; $method[$f] = $method; }
+    elsif ($method =~ /(MIp)/)         { $method = $1; $method[$f] = $method; }
+    elsif ($method =~ /(MI)/)          { $method = $1; $method[$f] = $method; }
+    elsif ($method =~ /(neogremlin)/)  { $method = $1; $method[$f] = $method; }
     elsif ($method =~ /(gremlin)/)     { $method = $1; $method[$f] = $method; }
-    elsif ($method =~ /(PTFp)/)        { $method = $1; $method[$f] = "R-scape.$method"; }
+    elsif ($method =~ /(PTFp)/)        { $method = $1; $method[$f] = $method; }
     elsif ($method =~ /(plmc)/)        { $method = $1; $method[$f] = $method; }
     elsif ($method =~ /(random)/)      { $method = $1; $method[$f] = $method; }
     else { print "cannot find directory $method\n"; die; }
@@ -171,8 +171,11 @@ my $dorandom = ($opt_P)? 1:0;
 if ($dorandom) {
     $pdb2msa[$F]     = $pdb2msa[0];
     $stoname[$F]     = $stoname[0];
+    $strfile[$F]     = $strfile[0];
+    $msainfo[$F]     = $msainfo[0];
     $outdir[$F]      = "$outdir/random";
     $resname[$F]     = "$stoname[$F].random";
+    $method[$F]      = "random";
     $resfile[$F]     = "$outdir[$F]/$resname[$F]";
     $rocfile[$F]     = "$outdir[$F]/$stoname[$F].random.maxD$maxD.minL$minL.type$which.roc";
  
@@ -206,16 +209,13 @@ for (my $f = 0; $f < $F; $f ++) {
     
     my $target_ncnt = floor($target_factor*$pdb2msa[$f]{"PDB2MSA::pdblen"});
     
-    my $method = "";
-    if    ($resfile[$f] =~ /results\/(\S+)_filtered\//) { $method = $1; }
-    elsif ($resfile[$f] =~ /results\/([^\/]+)\//)       { $method = $1; }
-    elsif ($resfile[$f] =~ /test\/([^\/]+)\//)          { $method = $1; }
+    my $method = $method[$f];
     
     my $N = 1000;
     my $k = 1;
     my $shift = 0;
     
-    print "\n$method: $resfile[$f]\n";
+    print "\n$method[$f]: $resfile[$f]\n";
     print "annotation: $strfile[$f]\n";
     if ($method =~ /^R-scape/ || 
 	$method =~ /^GTp/     || 
@@ -324,7 +324,8 @@ if ($opt_f) { $maxF = $opt_f; }
 $maxpp  = 0.6;
 $maxsen = 102;
 $maxF   = 102;
-rocplot($outdir, $key, $gnuplot, $stoname[0], $F, \@rocfile, \@resname, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $viewplots);
+my $rocplotfile = "$outdir/$key-$stoname[0].N$F.maxD$maxD.minL$minL.type$which.ps";   
+rocplot($rocplotfile, $gnuplot, $F, \@rocfile, \@resname, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $viewplots);
 
 
 
@@ -332,7 +333,7 @@ rocplot($outdir, $key, $gnuplot, $stoname[0], $F, \@rocfile, \@resname, $maxD, $
 ####################### routines
 
 sub create_scathisf {
-    my ($scathisf, $nct, $cnt_ref, $N, $k, $shift) = @_;
+    my ($scathisf, $nct, $cnt_ref, $N, $k, $shift, $method, $pdb2msa, $ncnt_ft, $target_ncnt) = @_;
     
     my @his;
     FUNCS::init_histo_array($N, $k, \@his);
@@ -347,15 +348,17 @@ sub create_scathisf {
     }
     FUNCS::write_histogram($N, $k, $shift, \@his, 1, $scathisf, 0);
 
-    #my $pdbname = ($pdbfile)? $pdb2msa[$f]->pdbname : "";
-    #my $stoname = ($pdbfile)? $pdb2msa[$f]->stoname : $resname[$f];
-    #my $maxD    = ($pdbfile)? $pdb2msa[$f]->maxD    : $maxD;
-    #my $which   = ($pdbfile)? $pdb2msa[$f]->which   : $which;
-    #my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1  Npredictions: $target_mcnt";
-    my $title  = "";
+    my $pdbname = $pdb2msa->pdbname;
+    my $stoname = $pdb2msa->stoname;
+    my $maxD    = $pdb2msa->maxD;
+    my $which   = $pdb2msa->which;
+    my $title   = "method: $method   PDB: $pdbname   MSA: $stoname   type $which maxD: $maxD   minL: 1 ";
+
+    my $frac_ncnt = int($ncnt_ft/$target_ncnt*1000)/10;
+ 
     my $xlabel  = "distance in PDB sequence";
     my $ylabel  = "number of contacts";
-    my $key     = "";
+    my $key     = ($ncnt_ft > 0)? "First $target_factor*L($target_ncnt) predictions -- $ncnt_ft($frac_ncnt%) correct" : "";
     my $psfile  = "$scathisf.ps";
     my $xleft   = 1;
     my $xright  = $maxdist;
@@ -469,9 +472,9 @@ sub create_rocfile_rscape {
     close($sp_f);
     close($sp_ft);
 
-    create_scathisf($scathisf_f,  $ncnt_rscape,                \@cnt_rscape,                   $N, $k, $shift);
-    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift);
-    create_scathisf($scathisf_ft, $ncnt_rscape_f,              \@cnt_rscape_f,                 $N, $k, $shift);
+    create_scathisf($scathisf_f,  $ncnt_rscape,                \@cnt_rscape,                   $N, $k, $shift, $method, $pdb2msa, $ncnt_rscape_f, $target_ncnt);
+    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift, $method, $pdb2msa, -1,             $target_ncnt);
+    create_scathisf($scathisf_ft, $ncnt_rscape_f,              \@cnt_rscape_f,                 $N, $k, $shift, $method, $pdb2msa, $ncnt_rscape_f, $target_ncnt);
 
     predictions_create($mapfile_f, $mapfile_t, $mapfile_ft, $pdb2msa, $file, $ncnt_rscape, \@cnt_rscape, $ncnt_rscape_f, \@cnt_rscape_f, $maxD, $minL, $which); 
     plot_scat($method, $scatfile_f, $scatfile_ft, $ncnt_rscape, $ncnt_rscape_f, $target_ncnt);
@@ -484,13 +487,6 @@ sub  create_rocfile_mfDCA {
     my ($rocfile, $scatfile_f, $scatfile_ft, $scathisf_f, $scathisf_t, $scathisf_ft, 
 	$mapfile_f, $mapfile_t, $mapfile_ft, $resfile, $method, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, 
 	$msa_alen, $msa_avglen, $N, $k, $shift) = @_;
-
-    my $method = "mfDCA";
-    my $which  = "DI";
-    if ($rocfile =~ /mfDCA\.MI/) {
-	$which = "MI";
-	$method .= "-$which";
-    }
 
     my $alenDCA = $$ret_alenDCA;
     my $alen;
@@ -510,8 +506,6 @@ sub  create_rocfile_plmDCA {
 	$mapfile_f, $mapfile_t, $mapfile_ft, $resfile, $method, $stofile, $pdb2msa, $ret_alenDCA, $mapDCA_ref, $target_ncnt, 
 	$msa_alen, $msa_avglen, $N, $k, $shift) = @_;
 
-    my $method = "plmDCA";
-  
     my $alenDCA = $$ret_alenDCA;
     if ($alenDCA < 0) {
 	mapDCA2MSA($stofile, $mapDCA_ref, \$alenDCA);
@@ -794,9 +788,9 @@ sub parse_mfDCA {
     close($sp1);
     close($sp2);
 
-    create_scathisf($scathisf_f,  $ncnt_mfDCA,                 \@cnt_mfDCA,                    $N, $k, $shift);
-    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift);
-    create_scathisf($scathisf_ft, $ncnt_mfDCA_f,               \@cnt_mfDCA_f,                  $N, $k, $shift);
+    create_scathisf($scathisf_f,  $ncnt_mfDCA,                 \@cnt_mfDCA,                    $N, $k, $shift, $method, $pdb2msa, $ncnt_mfDCA_f, $target_ncnt);
+    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift, $method, $pdb2msa, -1,            $target_ncnt);
+    create_scathisf($scathisf_ft, $ncnt_mfDCA_f,               \@cnt_mfDCA_f,                  $N, $k, $shift, $method, $pdb2msa, $ncnt_mfDCA_f, $target_ncnt);
 
     predictions_create($mapfile_f, $mapfile_t, $mapfile_ft, $pdb2msa, $file, $ncnt_mfDCA, \@cnt_mfDCA, $ncnt_mfDCA_f, \@cnt_mfDCA_f, $maxD, $minL, $which);
     plot_scat($method, $scatfile_f, $scatfile_ft, $ncnt_mfDCA, $ncnt_mfDCA_f, $target_ncnt); 
@@ -902,9 +896,9 @@ sub parse_plmDCA {
     close($sp1);
     close($sp2);
     
-    create_scathisf($scathisf_f,  $ncnt_plmDCA,                \@cnt_plmDCA,                   $N, $k, $shift);
-    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift);
-    create_scathisf($scathisf_ft, $ncnt_plmDCA_f,              \@cnt_plmDCA_f,                 $N, $k, $shift);
+    create_scathisf($scathisf_f,  $ncnt_plmDCA,                \@cnt_plmDCA,                   $N, $k, $shift, $method, $pdb2msa, $ncnt_plmDCA_f, $target_ncnt);
+    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift, $method, $pdb2msa, -1,             $target_ncnt);
+    create_scathisf($scathisf_ft, $ncnt_plmDCA_f,              \@cnt_plmDCA_f,                 $N, $k, $shift, $method, $pdb2msa, $ncnt_plmDCA_f, $target_ncnt);
 
     predictions_create($mapfile_f, $mapfile_t, $mapfile_ft, $pdb2msa, $file, $ncnt_plmDCA, \@cnt_plmDCA, $ncnt_plmDCA_f, \@cnt_plmDCA_f, $maxD, $minL, $which);
     plot_scat($method, , $scatfile_f, $scatfile_ft, $ncnt_plmDCA, $ncnt_plmDCA_f, $target_ncnt); 
@@ -1004,9 +998,9 @@ sub parse_gremlin {
     close($sp1);
     close($sp2);
 
-    create_scathisf($scathisf_f,  $ncnt_grem,                  \@cnt_grem,                     $N, $k, $shift);
-    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift);
-    create_scathisf($scathisf_ft, $ncnt_grem_f,                \@cnt_grem_f,                   $N, $k, $shift);
+    create_scathisf($scathisf_f,  $ncnt_grem,                  \@cnt_grem,                     $N, $k, $shift, $method, $pdb2msa, $ncnt_grem_f, $target_ncnt);
+    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift, $method, $pdb2msa, -1,           $target_ncnt);
+    create_scathisf($scathisf_ft, $ncnt_grem_f,                \@cnt_grem_f,                   $N, $k, $shift, $method, $pdb2msa, $ncnt_grem_f, $target_ncnt);
 
     predictions_create($mapfile_f, $mapfile_t, $mapfile_ft, $pdb2msa, $file, $ncnt_grem, \@cnt_grem, $ncnt_grem_f, \@cnt_grem_f, $maxD, $minL, $which);
     plot_scat($method, $scatfile_f, $scatfile_ft, $ncnt_grem, $ncnt_grem_f, $target_ncnt); 
@@ -1107,9 +1101,9 @@ sub parse_plmc {
     close($sp1);
     close($sp2);
 
-    create_scathisf($scathisf_f,  $ncnt_plmc,                  \@cnt_plmc,                     $N, $k, $shift);
-    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift);
-    create_scathisf($scathisf_ft, $ncnt_plmc_f,                \@cnt_plmc_f,                   $N, $k, $shift);
+    create_scathisf($scathisf_f,  $ncnt_plmc,                  \@cnt_plmc,                     $N, $k, $shift, $method, $pdb2msa, $ncnt_plmc_f, $target_ncnt);
+    create_scathisf($scathisf_t,  $pdb2msa->{"PDB2MSA::ncnt"}, \@{$pdb2msa->{"PDB2MSA::cnt"}}, $N, $k, $shift, $method, $pdb2msa, -1,           $target_ncnt);
+    create_scathisf($scathisf_ft, $ncnt_plmc_f,                \@cnt_plmc_f,                   $N, $k, $shift, $method, $pdb2msa, $ncnt_plmc_f, $target_ncnt);
 
     predictions_create($mapfile_f, $mapfile_t, $mapfile_ft, $pdb2msa, $file, $ncnt_plmc, \@cnt_plmc, $ncnt_plmc_f, \@cnt_plmc_f, $maxD, $minL, $which);
     plot_scat($method, $scatfile_f, $scatfile_ft, $ncnt_plmc, $ncnt_plmc_f, $target_ncnt);
@@ -1160,11 +1154,8 @@ sub predictions_plot {
 
 
 sub rocplot {
-    my ($outdir, $key, $gnuplot, $stoname, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
+    my ($psfile, $gnuplot, $F, $file_ref, $prename_ref, $maxD, $minL, $which, $xmax, $isrna, $maxpp, $maxsen, $maxppv, $maxF, $seeplots) = @_;
 
-
-   my $psfile = "$outdir/$key-$stoname.N$F.maxD$maxD.minL$minL.type$which.ps";
-    
     #if ($psfile =~ /\/([^\/]+)\s*$/) { $psfile = "$1"; }
     my $pdffile = $psfile;
     if ($pdffile =~ /^(\S+).ps$/) { $pdffile = "$1.pdf"; }
@@ -1172,7 +1163,9 @@ sub rocplot {
 
     my $xlabel;
     my $ylabel;
-    my $title  = "$stoname";
+    my $title  = $psfile;
+    if ($title =~ /([^\/]+)s*$/) { $title = $1; }
+    
     my $x;
     my $y;
     my $x_max, my $x_min;
@@ -1479,7 +1472,8 @@ sub plot_scat {
     print "          $psfile\n";
 
     my $frac_ncnt = int($ncnt_ft/$target_ncnt*1000)/10;
-    my $title   = "$method\nFirst $target_factor*L($target_ncnt) predictions -- $ncnt_ft($frac_ncnt%) correct";
+    my $title   = "$method";
+    my $key     = "First $target_factor*L($target_ncnt) predictions -- $ncnt_ft($frac_ncnt%) correct";
 
     my $xlabel = "backbone distance";
     my $ylabel = "score";
@@ -1493,8 +1487,8 @@ sub plot_scat {
     FUNCS::gnuplot_define_styles ($gp);
     
     my $cmd = "";
-    
-    print $gp "set title  '$title'\n";
+   
+    print $gp "set title \"$title\\n\\n$key\"\n";
     print $gp "set xlabel '$xlabel'\n";
     print $gp "set ylabel '$ylabel'\n";
     #print $gp "set xrange [$xmin:$xmax]\n";

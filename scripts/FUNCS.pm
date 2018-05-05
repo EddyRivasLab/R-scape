@@ -220,17 +220,17 @@ sub gnuplot_histo {
     print GP "set xrange [$xleft:$xright]\n";
     if ($ymax > 0) { print GP "set yrange [0:$ymax]\n"; }
 
-    #print GP "set title \"$title\\n\\n$key\"\n";
-    print GP "set title '$title'\n";
+    print GP "set title \"$title\\n\\n$key\"\n";
+    #print GP "set title '$title'\n";
 
     print GP "set ylabel '$ylabel'\n";
 
     my $cmd = "";
     if ($iscum) {
-	$cmd .= "'$hfile' using $xfield:$yfield  with lines title '$key' ls 1";
+	$cmd .= "'$hfile' using $xfield:$yfield  with lines title '' ls 1";
     }
     else {
-	$cmd .= "'$hfile' using $xfield:$yfield  with boxes title '$key' ls 1";
+	$cmd .= "'$hfile' using $xfield:$yfield  with boxes title '' ls 1";
     } 
 
     #print  "plot $cmd\n";

@@ -5,8 +5,7 @@ use warnings;
 use Class::Struct;
  
 use FindBin;
-use lib $FindBin::Bin;
-use FUNCS;
+use lib $FindBin::Bin; use FUNCS;
 
 our $VERSION = "1.00"; 
 
@@ -43,7 +42,6 @@ struct PDB2MSA => {
     revmap    => '@', # revmap[0..alen-1] to [0..pdblen-1]
     map0file  => '$', # name of file mapping contacts to pdb sequence
     map1file  => '$', # name of file mapping contacts to pdb sub-sequence  represented in the alignmetn
-    
     which     => '$', # method used to defince "distance", default MIN (minimum eucledian distance between any two atoms) 
     maxD      => '$', # maximun spacial distance (A) to define a contact 
 
@@ -84,7 +82,7 @@ sub pdb2msa {
     my @map;
     my @revmap;
     my $small_output = 0;
-    contacts_from_pdbfile ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
+    contacts_from_pdb ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
 			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $small_output, $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     
@@ -428,7 +426,7 @@ sub contactlistfile_parse {
     return $ncnt;
 }
 
-sub contacts_from_pdbfile {
+sub contacts_from_pdb {
 	
     my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, 
 	$ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
@@ -462,12 +460,13 @@ sub contacts_from_pdbfile {
     my $alen;
     
     my $resolution;
-    my $pdbname = parse_pdb($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
+    my $pdbname = pdb_seqres($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
+    if ($nch == 0) { print "\nFound no chains in pdbfile: $pdbfile\n"; die; }
     print     "# ALI:        $stofile\n";
     print     "# PDB:        $pdbname\n";
     print     "# chains:     $nch\n";
     print     "# resolution: $resolution\n";
-
+    
    for (my $n = 0; $n < $nch; $n ++) {
 
 	my $dochain;
@@ -502,8 +501,8 @@ sub contacts_from_pdbfile {
 	print COR  "# chain $chname[$n]\n";
 	
 	$len = length($chsq[$n]);
-	$alen = parse_pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
-				      $stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
+	$alen = pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
+				$stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
 	close(COR);
 	print "\n DONE with contact map chain $chname[$n]\n";
 
@@ -971,7 +970,7 @@ sub get_first_asq_from_sto {
 #
 # (1) Sometimes in ATOM a number is just not used
 #
-#       example 3hl2.pdb chain E: it goes from 16 to 18 missing 17, but 17 ISNOT a missing residue
+#       example 3hl2.pdb chain E: it goes from 16 to 18 missing 17, but 17 IS NOT a missing residue
 #
 #                    ATOM  14473  C5 B  U E  16      46.093 -21.393   9.929  0.50100.66           C  
 #                    ATOM  14474  C6 A  U E  16      40.956 -19.338  30.396  0.50 99.67           C  
@@ -1037,16 +1036,11 @@ sub get_first_asq_from_sto {
 #                                                                               * -> another documented "missing residue"
 #
 #
-sub get_atoms_coord {
+sub pdb_atoms {
     my ($rscapebin, $currdir, $pdbfile, $pdbname, $seqres_ref, $len, $chain, $res_ref, $isrna) = @_;
 
-    my $respos_first;
-    my $respos_prv;
-    my $icode_prv;
-    my $recording = 0;
-    
-    my $hmmer       = "$rscapebin/../lib/hmmer";
-    my $hmmbuild    = "$hmmer/src/hmmbuild";
+    my $hmmer     = "$rscapebin/../lib/hmmer";
+    my $hmmbuild  = "$hmmer/src/hmmbuild";
     my $hmmsearch = "$hmmer/src/hmmsearch";
     my $hmmalign  = "$hmmer/src/hmmalign";
     
@@ -1061,92 +1055,27 @@ sub get_atoms_coord {
 	$res_ref->[$l]->{"RES::coor"} = -1;
 	$res_ref->[$l]->{"RES::char"} = aa_conversion($seqres_ref->[$l], $isrna);
     }
-
-
-    # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
-    #
-    #
-    my $ll = 0;
-    my $nn = 0;
-    my @atmres;
-    $icode_prv  = " ";
-    open(FILE, "$pdbfile") || die;
-    while (<FILE>) {
-	my $line = $_;
-
-	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
-	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom     = $1; }
-	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial   = $1; }
-	    my $atomname = substr($line, 12, 4); if ($atomname =~ /^\s*(\S+)\s*$/) { $atomname = $1; }
-	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc   = $1; }
-	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname  = aa_conversion($1, $isrna); }
-	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid  = $1; }
-	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos   = $1; }
-	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode    = $1; }
-	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
-	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
-	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
-
-	    # Look for the target chain
-	    if ($chainid ne $chain) { next; }
-	    
-	    # Ignore HOH WAT MN atoms
-	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
-
-	    # An atom to record
-	    $recording = 1;
-	    if ($nn == 0) { 
-		$respos_prv = $respos; 
-		$atmres[$ll]->{"RES::nat"} = 0;
-	    }
-
-	    # a new residue 
-	    if ($respos_prv != $respos) { 
-		$ll ++; 		
-		$atmres[$ll]->{"RES::nat"} = 0;
-	    }
-	    elsif (($icode_prv =~ /^ $/  && $icode =~ /^\S$/)                         || 
-		   ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode)   )  {
-		$ll ++;
-		$atmres[$ll]->{"RES::nat"} = 0;
-	    }
-			    
-	    # An atom to record
-	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $ll;
-	    my $nat = $atmres[$ll]->{"RES::nat"};
-	    ${$atmres[$ll]->{"RES::type"}}[$nat] = $atomname;
-	    ${$atmres[$ll]->{"RES::x"}}[$nat]    = $x;
-	    ${$atmres[$ll]->{"RES::y"}}[$nat]    = $y;
-	    ${$atmres[$ll]->{"RES::z"}}[$nat]    = $z;
-	    $atmres[$ll]->{"RES::nat"}           ++;
-	    $atmres[$ll]->{"RES::coor"}          = $respos;
-	    $atmres[$ll]->{"RES::char"}          = $resname;
-	    
-	    $respos_prv = $respos;
-	    $icode_prv  = $icode;
-	    $nn ++;
-	}
-	# How to terminate chain
-	elsif ($recording && $line =~ /TER/) { last; }
-   }
-    close(FILE);
-
-    my $atmlen = $ll+1;
+    
+    my @atomres;
+    my $atomseq;
+    my $atomseq_len = 0;
+    if    ($pdbfile =~ /.pdb/) { $atomseq_len = pdb_get_coords($pdbfile, $chain, \$atomseq, \@atomres, $isrna); }
+    elsif ($pdbfile =~ /.cif/) { $atomseq_len = cif_get_coords($pdbfile, $chain, \$atomseq, \@atomres, $isrna); }
+    if ($atomseq_len == 0) { print "pdb_atoms() error\n"; die; }
+    
     my $seqres = "";
     for (my $l = 0; $l < $len; $l ++) {
 	$seqres .= $seqres_ref->[$l];
     }
-    my $atmseqres = "";
-    for (my $ll = 0; $ll < $atmlen; $ll ++) {
-	$atmseqres .= $atmres[$ll]->{"RES::char"};
-    }
-    print "seqres    len = $len\n$seqres\n";
-    print "atmseqres len = $atmlen\n$atmseqres\n";
+    print "seqres  len = $len\n$seqres\n";
+    print "atomseq len = $atomseq_len\n$atomseq\n";
 
-    my @map; # map[1..len] = 1..atmlen
-    for (my $l = 0; $l < $len; $l ++) { $map[$l+1] = 0; }
+    my @atommap; # atommap[1..len] = 1..atomlen
+    for (my $l = 0; $l < $len; $l ++) { $atommap[$l+1] = 0; }
     
-    # now map $atmres to seqres
+    # now map $atomseq to $seqres
+    # by brute force
+    # 
     my $hmm       = "$currdir/$pdbname.seqres.hmm";
     my $hmmout    = "$currdir/$pdbname.seqres.hmmout";
     my $hmmali    = "$currdir/$pdbname.seqres.hmmali";
@@ -1162,8 +1091,8 @@ sub get_atoms_coord {
     open (F, ">$bothsqfile") || die;
     print F ">$pdbname.seqres\n";
     print F "$seqres\n";
-    print F ">$pdbname.atmseqres\n";
-    print F "$atmseqres\n";
+    print F ">$pdbname.atomseqres\n";
+    print F "$atomseq\n";
     close(F);
 
     my $mxfile = "$rscapebin/../data/matrices/NOMUT.mat";
@@ -1180,8 +1109,8 @@ sub get_atoms_coord {
     my @asq;
     my @asqname;
     FUNCS::parse_afafile($hmmaliafa, \$nsq, \@asq, \@asqname);
-    print "seqres    $asq[0]\n";
-    print "atmseqres $asq[1]\n";
+    print "seqres     $asq[0]\n";
+    print "atomseqres $asq[1]\n";
 
     my $alen = length($asq[0]);
     my $l = 0;
@@ -1193,20 +1122,19 @@ sub get_atoms_coord {
 	if    ($s1 =~ /^[\.\-]$/ && $s2 =~ /^[\.\-]$/) {  }
 	elsif (                     $s2 =~ /^[\.\-]$/) { $l  ++ }
 	elsif ($s1 =~ /^[\.\-]$/)                      { $y ++ }
- 	elsif ($s1 eq $s2) { $map[$l+1] = $y+1; $l ++; $y ++; }
+ 	elsif ($s1 eq $s2) { $atommap[$l+1] = $y+1; $l ++; $y ++; }
 	else { print "mapping $s1 and $s2  ??\n"; die; }
     }
-    
     system("rm $seqresfile\n");
     system("rm $bothsqfile\n");
     
     #check
     for (my $l = 0; $l < $len; $l ++) {
-	my $ll = $map[$l+1] - 1;
+	my $ll = $atommap[$l+1] - 1;
 	if ($ll >= 0) {
-	    my $resname = $atmres[$ll]->{"RES::char"} ;
+	    my $resname = $atomres[$ll]->{"RES::char"} ;
 	    if ($seqres_ref->[$l] ne $resname) { 
-		printf "at pos seqres %d atmres %d seqres %s is different from atmres %s\n", $l+1, $ll+1, $seqres_ref->[$l], $resname;
+		printf "at pos seqres %d atomres %d seqres %s is different from atomres %s\n", $l+1, $ll+1, $seqres_ref->[$l], $resname;
 		die; 
 	    }
 	}
@@ -1214,20 +1142,20 @@ sub get_atoms_coord {
     
     # fill the final array 
     for (my $l = 0; $l < $len; $l ++) {
-	my $ll = $map[$l+1] - 1;
+	my $ll = $atommap[$l+1] - 1;
 
 	if ($ll < 0) { next; }
 	
-	$res_ref->[$l]->{"RES::coor"} = $atmres[$ll]->{"RES::coor"};
-	$res_ref->[$l]->{"RES::nat"}  = $atmres[$ll]->{"RES::nat"};
-	$res_ref->[$l]->{"RES::char"} = $atmres[$ll]->{"RES::char"};
+	$res_ref->[$l]->{"RES::coor"} = $atomres[$ll]->{"RES::coor"};
+	$res_ref->[$l]->{"RES::nat"}  = $atomres[$ll]->{"RES::nat"};
+	$res_ref->[$l]->{"RES::char"} = $atomres[$ll]->{"RES::char"};
 
 	my $nat = $res_ref->[$l]->{"RES::nat"};
 	for (my $n = 0; $n < $nat; $n ++) {
-	    ${$res_ref->[$l]->{"RES::type"}}[$n] = ${$atmres[$ll]->{"RES::type"}}[$n];
-	    ${$res_ref->[$l]->{"RES::x"}}[$n]    = ${$atmres[$ll]->{"RES::x"}}[$n];
-	    ${$res_ref->[$l]->{"RES::y"}}[$n]    = ${$atmres[$ll]->{"RES::y"}}[$n];
-	    ${$res_ref->[$l]->{"RES::z"}}[$n]    = ${$atmres[$ll]->{"RES::z"}}[$n];
+	    ${$res_ref->[$l]->{"RES::type"}}[$n] = ${$atomres[$ll]->{"RES::type"}}[$n];
+	    ${$res_ref->[$l]->{"RES::x"}}[$n]    = ${$atomres[$ll]->{"RES::x"}}[$n];
+	    ${$res_ref->[$l]->{"RES::y"}}[$n]    = ${$atomres[$ll]->{"RES::y"}}[$n];
+	    ${$res_ref->[$l]->{"RES::z"}}[$n]    = ${$atomres[$ll]->{"RES::z"}}[$n];
 	}
     }
     
@@ -1268,9 +1196,202 @@ sub hmmout_has_hit {
 }
 
 
+sub pdb_get_coords {
+    my ($pdbfile, $chain, $ret_atomseq, $atomres_ref, $isrna) = @_;
+
+    # ATOM  17182  C2'A  C E  75      91.905 -22.497  17.826  0.50 94.20           C  
+    #
+    #
+    my $ll = 0;
+    my $nn = 0;
+    my $respos_first;
+    my $respos_prv;
+    my $icode_prv = " ";
+    my $recording = 0;
+    
+    open(FILE, "$pdbfile") || die;
+    while (<FILE>) {
+	my $line = $_;
+
+	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
+	    my $atom     = substr($line, 0,  6); if ($atom     =~ /^\s*(\S+)\s*$/) { $atom     = $1; }
+	    my $serial   = substr($line, 6,  7); if ($serial   =~ /^\s*(\S+)\s*$/) { $serial   = $1; }
+	    my $atomname = substr($line, 12, 4); if ($atomname =~ /^\s*(\S+)\s*$/) { $atomname = $1; }
+	    my $altloc   = substr($line, 16, 1); if ($altloc   =~ /^\s*(\S*)\s*$/) { $altloc   = $1; }
+	    my $resname  = substr($line, 17, 3); if ($resname  =~ /^\s*(\S+)\s*$/) { $resname  = aa_conversion($1, $isrna); }
+	    my $chainid  = substr($line, 21, 1); if ($chainid  =~ /^\s*(\S*)\s*$/) { $chainid  = $1; }
+	    my $respos   = substr($line, 22, 4); if ($respos   =~ /^\s*(\S+)\s*$/) { $respos   = $1; }
+	    my $icode    = substr($line, 26, 1); if ($icode    =~ /^\s*(\S)\s*$/)  { $icode    = $1; }
+	    my $x        = substr($line, 30, 8); if ($x        =~ /^\s*(\S+)\s*$/) { $x        = $1; }
+	    my $y        = substr($line, 38, 8); if ($y        =~ /^\s*(\S+)\s*$/) { $y        = $1; }
+	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
+
+	    # Look for the target chain
+	    if ($chainid ne $chain) { next; }
+	    
+	    # Ignore HOH WAT MN atoms
+	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
+
+	    # An atom to record
+	    $recording = 1;
+	    if ($nn == 0) { 
+		$respos_prv = $respos; 
+		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+	    }
+
+	    # a new residue 
+	    if ($respos_prv != $respos) { 
+		$ll ++; 		
+		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+	    }
+	    elsif (($icode_prv =~ /^ $/  && $icode =~ /^\S$/)                         || 
+		   ($icode_prv =~ /^\S$/ && $icode =~ /^\S$/ && $icode_prv ne $icode)   )  {
+		$ll ++;
+		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+	    }
+			    
+	    # An atom to record
+	    #printf "     %d> |$atom|\t|$serial|\t|$atomname|\t|$altloc|\t|$resname|$icode|\t|$chainid|\t|$respos|\t|$icode|\t|$x|\t|$y|\t|$z|\n",  $ll;
+	    my $nat = $atomres_ref->[$ll]->{"RES::nat"};
+	    ${$atomres_ref->[$ll]->{"RES::type"}}[$nat] = $atomname;
+	    ${$atomres_ref->[$ll]->{"RES::x"}}[$nat]    = $x;
+	    ${$atomres_ref->[$ll]->{"RES::y"}}[$nat]    = $y;
+	    ${$atomres_ref->[$ll]->{"RES::z"}}[$nat]    = $z;
+	    $atomres_ref->[$ll]->{"RES::nat"}           ++;
+	    $atomres_ref->[$ll]->{"RES::coor"}          = $respos;
+	    $atomres_ref->[$ll]->{"RES::char"}          = $resname;
+	    
+	    $respos_prv = $respos;
+	    $icode_prv  = $icode;
+	    $nn ++;
+	}
+	# How to terminate chain
+	elsif ($recording && $line =~ /TER/) { last; }
+   }
+    close(FILE);
+    
+    if ($ll == 0) { print "pdb_get_coords() error.\n"; die; }
+    
+    my $atomseq_len = $ll+1;
+    my $atomseq = "";
+    for (my $n = 0; $n < $atomseq_len; $n ++) {
+	$atomseq .= $atomres_ref->[$n]->{"RES::char"};
+    }
+
+    $$ret_atomseq = $atomseq;
+    return $atomseq_len;
+}
+
+
+sub cif_get_coords {
+    my ($ciffile, $chain, $ret_atomseq, $atomres_ref, $isrna) = @_;
+
+    # ATOM  13786 C CA  . THR H  4 213 ? -15.552  -49.369 93.150  1.00 100.00 ? 209 THR L CA  1  (cif)
+    my $ll = 0;
+    my $nn = 0;
+    my $respos_first;
+    my $respos_prv;
+    my $icode_prv = " ";
+    my $recording = 0;
+    
+    open(FILE, "$ciffile") || die;
+    while (<FILE>) {
+	my $line = $_;
+
+	if ($line =~ /^ATOM/ || $line =~ /^HETATM/) {
+	    my @field = split('\s+', $line);
+	    
+	    # 21 entries per ATOM
+	    #
+	    # 0  _atom_site.group_PDB 
+	    # 1  _atom_site.id 
+	    # 2  _atom_site.type_symbol 
+	    # 3  _atom_site.label_atom_id 
+	    # 4  _atom_site.label_alt_id 
+	    # 5  _atom_site.label_comp_id 
+	    # 6  _atom_site.label_asym_id 
+	    # 7  _atom_site.label_entity_id 
+	    # 8  _atom_site.label_seq_id 
+	    # 9  _atom_site.pdbx_PDB_ins_code 
+	    # 10 _atom_site.Cartn_x 
+	    # 11 _atom_site.Cartn_y 
+	    # 12 _atom_site.Cartn_z 
+	    # 13 _atom_site.occupancy 
+	    # 14 _atom_site.B_iso_or_equiv 
+	    # 15 _atom_site.pdbx_formal_charge 
+	    # 16 _atom_site.auth_seq_id 
+	    # 17 _atom_site.auth_comp_id 
+	    # 18 _atom_site.auth_asym_id 
+	    # 19 _atom_site.auth_atom_id 
+	    # 20 _atom_site.pdbx_PDB_model_num 
+
+	    #print "$field[0]\n$field[3]\n$field[5]\n$field[6]\n$field[8]\n$field[10]\n$field[11]\n$field[12]\n";
+	    
+	    my $atom     = $field[0];
+	    my $atomname = $field[3];
+	    my $altloc   = $field[4];
+	    my $resname  = aa_conversion($field[5], $isrna); 
+	    my $chainid  = $field[6];
+	    my $respos   = $field[8];
+	    my $icode    = $field[9];
+	    my $x        = $field[10];
+	    my $y        = $field[11];
+	    my $z        = $field[12];
+
+	    # Look for the target chain
+	    if ($chainid ne $chain) { next; }
+	    
+	    # Ignore HOH WAT MN atoms
+	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
+
+	    # An atom to record
+	    $recording = 1;
+	    if ($nn == 0) { 
+		$respos_prv = $respos; 
+		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+	    }
+
+	    # a new residue
+	    # cif files are much more robut in that they do not use 5A, 5B, 5C, but 5 6 7... (compare 3hl2.pdb and 3hl2.cif)
+	    if ($respos_prv != $respos) { 
+		$ll ++; 		
+		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+	    }
+			    
+	    # An atom to record
+	    my $nat = $atomres_ref->[$ll]->{"RES::nat"};
+	    ${$atomres_ref->[$ll]->{"RES::type"}}[$nat] = $atomname;
+	    ${$atomres_ref->[$ll]->{"RES::x"}}[$nat]    = $x;
+	    ${$atomres_ref->[$ll]->{"RES::y"}}[$nat]    = $y;
+	    ${$atomres_ref->[$ll]->{"RES::z"}}[$nat]    = $z;
+	    $atomres_ref->[$ll]->{"RES::nat"}           ++;
+	    $atomres_ref->[$ll]->{"RES::coor"}          = $respos;
+	    $atomres_ref->[$ll]->{"RES::char"}          = $resname;
+	    
+	    $respos_prv = $respos;
+	    $icode_prv  = $icode;
+	    $nn ++;
+	}
+	# How to terminate chain
+	elsif ($recording && $line =~ /TER/) { last; }
+   }
+    close(FILE);
+    
+    if ($ll == 0) { print "cif_get_coords() error.\n"; die; }
+    
+    my $atomseq_len = $ll+1;
+    my $atomseq = "";
+    for (my $n = 0; $n < $atomseq_len; $n ++) {
+	$atomseq .= $atomres_ref->[$n]->{"RES::char"};
+    }
+
+    $$ret_atomseq = $atomseq;
+    return $atomseq_len;
+}
+
 
 # map[0..pdblen-1] taking values in 0..msa_alen-1
-sub map_pdbsq {
+sub pdbseq_map {
     my ($rscapebin, $currdir, $stofile, $pdbname, $famname, $chname, $pdbsq, $map_ref, $revmap_ref, $isrna) = @_;
 
     my $len = length($pdbsq);
@@ -1551,9 +1672,11 @@ sub parse_hmmout_for_besthit {
     $$ret_ali_fam   = $ali_fam;
 }
 
-sub parse_pdb {
+sub pdb_seqres {
     my ($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna) = @_;
 
+    if ($pdbfile =~ /.cif$/) { return cif_seqres($pdbfile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna); }
+    
     my $pdbname;
     my $nch = 0;
     my $resolution;
@@ -1599,7 +1722,7 @@ sub parse_pdb {
 
     for (my $n = 0; $n < $nch; $n ++) {
 	my $len = sq_conversion(\$chsq_ref->[$n], $isrna);
-	if ($len != $sqlen[$n]) { print "parse_pdb(): seq len is $len should be $sqlen[$n]\n"; die; }
+	if ($len != $sqlen[$n]) { print "pdb_seqres(): seq len is $len should be $sqlen[$n]\n"; die; }
     }
     
     $$ret_resolution = $resolution;    
@@ -1607,8 +1730,125 @@ sub parse_pdb {
     return $pdbname;
 }
 
+sub cif_seqres {
+    my ($ciffile, $ret_resolution, $ret_nch, $chname_ref, $chsq_ref, $isrna) = @_;
 
-sub parse_pdb_contact_map {
+    # correspondences between pdb and cif formats found at
+    #                     http://mmcif.wwpdb.org/docs/pdb_to_pdbx_correspondences.html
+    my $cifname = "";
+    my $nch = 0;
+    my $resolution = 0;
+
+    my $sq;
+    my $chain;
+    my $multi = 0;
+    my $readnow = 0;
+    my $chunk = "";
+    my @sqlen;
+    open(FILE, "$ciffile") || die;
+    while (<FILE>) {
+	if (/^_entry.id\s+(\S+)\s*$/) {
+	    $cifname = lc($1);
+	}
+	elsif (/^_refine.ls_d_res_high\s+(\S+)\s*$/) {
+	    $resolution = $1;
+	}
+    }
+    close(FILE);
+    
+    open(FILE, "$ciffile") || die;
+    while (<FILE>) {
+	if (/^_entity_poly.type\s*$/) {
+	    $multi = 1;
+	}
+	elsif (/^_entity_poly.type\s+\S+\s*$/) {
+	    $multi = 0;
+	}
+	elsif (/^_entity_poly.pdbx_seq_one_letter_code_can\s*$/) {
+	    $readnow = 1;
+	}
+	elsif ($multi == 0 && $readnow && /^\;(\S+)\s*$/) {
+	    $sq = $1;
+	}
+	elsif ($multi == 0 && $readnow && /^\;\s+/) {
+	}
+	elsif ($multi == 0 && $readnow && /^([^\#\_]+)\s*$/) {
+	    $sq .= $1;
+	    if ($sq =~ /^(\S+)\;\s+\n/) { $sq = $1; }
+	}
+	elsif (/^_entity_poly.pdbx_strand_id\s+(\S+)\s*$/) {
+	    $chain = $1;
+	    if ($sq =~ /^(\S+)\;/) { $sq = $1; }
+	    $sq =~ s/\n//g;
+
+	    while($chain =~ /\,/) {
+		$chain =~ s/^([^\,]+)\,//;
+		my $onechain = $1;
+		$chsq_ref->[$nch]   = $sq;
+		$chname_ref->[$nch] = $onechain;
+		$sqlen[$nch]        = length($sq);
+		$nch ++; 
+	    }
+	    $chsq_ref->[$nch]   = $sq;
+	    $chname_ref->[$nch] = $chain;
+	    $sqlen[$nch]        = length($sq);
+	    $nch ++; 
+	}
+	elsif ($readnow && /#/) {
+	    last;
+	}
+	elsif ($readnow && $multi && /^[^\_]/) {
+	    $chunk .= $_;
+	}
+    }
+    close(FILE);
+
+    if ($multi) {
+	my @chunk = split('\d+',$chunk);
+
+	for (my $c = 0; $c <= $#chunk; $c ++) {
+	    my $block = $chunk[$c];
+	    if ($block =~ /^\s*$/) { next; }
+
+	    $block =~ s/\n/ /g;
+	    my @block = split(';', $block);
+
+	    if ($#block != 4) { print "bad cif parsing\n"; die; }
+	    $sq    = $block[3];
+	    $chain = $block[4];
+	    
+	    $sq    =~ s/ //g;
+	    $chain =~ s/ //g;
+	    $chain =~ s/\?//g;
+	    
+	    while($chain =~ /\,/) {
+		$chain =~ s/^([^\,]+)\,//;
+		my $onechain = $1;
+		$chsq_ref->[$nch]   = $sq;
+		$chname_ref->[$nch] = $onechain;
+		$sqlen[$nch]        = length($sq);
+		$nch ++; 
+	    }
+	    $chsq_ref->[$nch]   = $sq;
+	    $chname_ref->[$nch] = $chain;
+	    $sqlen[$nch]        = length($sq);
+	    $nch ++; 
+	}
+    }
+
+    if (0) {
+	for (my $n = 0; $n < $nch; $n ++) {
+	    print "chain:$chname_ref->[$n] len $sqlen[$n]\n$chsq_ref->[$n]\n";
+	}
+    }
+    
+    $$ret_resolution = $resolution;    
+    $$ret_nch        = $nch;
+    return $cifname;
+}
+
+
+sub pdb_contact_map {
     my ($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, 
 	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
 
@@ -1619,7 +1859,7 @@ sub parse_pdb_contact_map {
     printf COR  "# minL  $minL\n";
     printf COR  "# type  $which\n";
     
-    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
+    my $alen = pdbseq_map($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
@@ -1648,7 +1888,7 @@ sub parse_pdb_contact_map {
     my $distance;
 
     my @res;
-    get_atoms_coord($rscapebin, $currdir, $pdbfile, $pdbname, \@chsq, $len, $chain, \@res, $isrna);
+    pdb_atoms($rscapebin, $currdir, $pdbfile, $pdbname, \@chsq, $len, $chain, \@res, $isrna);
     
     for ($l1 = 0; $l1 < $len; $l1 ++) {
 	$nat1  = $res[$l1]->{"RES::nat"};
@@ -1829,7 +2069,7 @@ sub run_rnaview {
     while(<RF>) {
 	if (/\#\s+seq_$chain\s+(\S+)\s*$/) { 
 	    $sq = $1;
-	    my $alen = map_pdbsq($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $sq, \@map, \@revmap, $isrna);
+	    my $alen = pdbseq_map($rscapebin, $currdir, $stofile, $pdbname, $famname, $chain, $sq, \@map, \@revmap, $isrna);
 	    if ($alen == 0) { return; } # cannot find this chain in the msa
 	}
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)/) {
@@ -1902,12 +2142,10 @@ sub sq_conversion {
     my $new = "";
     my $aa;
 
-    #print "seq\n$seq\n";
     while ($seq) {
 	$seq =~ s/^(\S+)\s+//; $aa = $1;
-	$new .= aa_conversion($aa, $isrna); 
+	$new .= aa_conversion($aa, $isrna);
     }
-    #printf "new $new\n";
     $$ret_seq = $new;
     return length($new);
 }
