@@ -4,13 +4,14 @@
 #ifndef RVIEW_CONTACTS_INCLUDED
 #define RVIEW_CONTACTS_INCLUDED
 
-
 #include <stdio.h>		/* FILE */
 
 #include "easel.h"
 #include "esl_random.h"
 
 #include "rview_pdbfile.h"
+
+#define ALLOC_NCT 5
 
 typedef enum {
   WWc       = 0,
@@ -76,7 +77,18 @@ typedef struct clist_s {
   int      pdblen;  // total length of the pdb fragment that is homologous to the alignment
 } CLIST;
 
-
-
+extern int    rview_CreateContacts(int nchain, struct chain_s *chain, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose);
+extern int    CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf);
+extern CLIST *CMAP_CreateCList(int alloc_ncnt);
+extern int    CMAP_Dump(FILE *fp, CLIST *clist);
+extern int    CMAP_DumpShort(FILE *fp, CLIST *clist);
+extern void   CMAP_FreeCList(CLIST *clist);
+extern BPTYPE CMAP_GetBPTYPE(int i, int j, CLIST *clist);
+extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
+extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
+extern int    CMAP_IsNewContact(int posi, int  posj, BPTYPE bptype, CLIST *clist);
+extern int    CMAP_IsWCLocal(int i, int j, CLIST *clist);
+extern int    CMAP_ReuseCList(CLIST *list);
+extern int    CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf);
 
 #endif /*RVIEW_CONTACTS_INCLUDED*/

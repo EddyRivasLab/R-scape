@@ -16,7 +16,11 @@
 
 #include "rview_config.h"
 
-#define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
+#include "rview_cmap.h"
+#include "rview_contacts.h"
+#include "rview_pdbfile.h"
+
+#define CONTACTOPTS "--MIN,--CB"              
 
 /* Exclusive options for evolutionary model choice */
 
@@ -30,10 +34,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char           **argv;
   ESL_STOPWATCH   *watch;
   char             errbuf[eslERRBUFSIZE];
-  ESL_RANDOMNESS  *r;	               /* random numbers */
+  ESL_RANDOMNESS  *r;	              // random numbers 
   
-  ESL_ALPHABET    *abc;                /* the alphabet */
+  ESL_ALPHABET    *abc;               // the alphabet 
 
+  double           maxD;              // max distance in pdb structure to call a contact
+  int              minL;              // min distance in pdb sequence allowed
+  DISTMETHOD       distmethod;
+
+  char            *pdbxfile;          // the input pdbx/mmcif file
   char            *outfile;
   FILE            *outfp;
   
@@ -45,7 +54,11 @@ static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
-  /* Options */
+  /* Control of pdb contacts */
+  { "--maxD",      eslARG_REAL,        "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
+  { "--minL",      eslARG_INT,           "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
+  { "--MIN",          eslARG_NONE,    "TRUE",    NULL,     NULL,CONTACTOPTS,  NULL,  NULL,               "Minimum distance btw any two atoms (except water)",                                         1 },
+  { "--CB",           eslARG_NONE,      FALSE,   NULL,     NULL,CONTACTOPTS,  NULL,  NULL,               "Distance btw beta Carbors (alphaC for Gly)",                                                 1 },
   /* Control of output */
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   /* other options */  
@@ -83,12 +96,16 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* R-view banner */
   rview_banner(stdout, cfg.argv[0], banner);
-  
+
+/* the input pdbxfile */
+  if ((cfg.pdbxfile  = esl_opt_GetArg(go, 1)) == NULL) { 
+    if (puts("Failed to get <pdbxfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
       esl_usage(stdout,  cfg.argv[0], usage);
-      if (puts("\noptions:")                                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+      if (puts("\noptions:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
       exit(0);
     }
@@ -96,9 +113,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.watch = esl_stopwatch_Create(); 
   
   /* other options */
+  cfg.maxD    = esl_opt_GetReal   (go, "--maxD");
+  cfg.minL    = esl_opt_GetInteger(go, "--minL");
   cfg.tol     = esl_opt_GetReal   (go, "--tol");
   cfg.verbose = esl_opt_GetBoolean(go, "-v");
   
+  if      (esl_opt_GetBoolean(go, "--MIN")) cfg.distmethod = MIN;
+  else if (esl_opt_GetBoolean(go, "--CB"))  cfg.distmethod = CB;
+
   /* output file */
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
@@ -125,17 +147,20 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
+  CLIST           *clist = NULL;
+  int              nct = 0;
   int              status = eslOK;
 
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);
 
-  /* read the PDB */
-
-  /* Extract basepairs and contacts */
+  /* read the PDB file and extract the contacts */
+  status = rview_ContactMap(cfg.pdbxfile, &nct, &clist, cfg.maxD, cfg.minL, cfg.errbuf, cfg.verbose);
 
   /* write output */
- 
+
+  /* clean up */
+  CMAP_FreeCList(clist);
 
   return 0;
 }

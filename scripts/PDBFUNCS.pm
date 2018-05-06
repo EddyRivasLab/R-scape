@@ -1100,7 +1100,7 @@ sub pdb_atoms {
     system ("          $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     #system("/bin/echo $hmmbuild   --amino --singlemx --mxfile $mxfile  $hmm  $seqresfile   >  /dev/null\n");
     
-    system("          $hmmalign         $hmm  $bothsqfile >  $hmmali\n");
+    system("           $hmmalign         $hmm  $bothsqfile >  $hmmali\n");
     #system("/bin/echo $hmmalign         $hmm  $bothsqfile \n");
     system("$reformat afa $hmmali > $hmmaliafa\n");
     #system("/bin/more $hmmaliafa\n");

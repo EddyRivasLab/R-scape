@@ -5,6 +5,7 @@ srcdir         = @srcdir@
 VPATH          = @srcdir@
 SHELL          = /bin/sh
 
+
 # Package information
 #
 PACKAGE         = @PACKAGE_NAME@
@@ -47,7 +48,7 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 LIBTOOLS  = @LIBTOOLS@
 
-LIBS      = -lhmmer -leasel -lrview @LIBS@ @PTHREAD_LIBS@  -lm
+LIBS      = -lhmmer -leasel @LIBS@ @PTHREAD_LIBS@  -lm
 
 IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src 
 LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src 
@@ -72,15 +73,10 @@ endif
 PROGS    = R-view\
 
 
-OBJS     = \
-	rview_contacts.o\
-	rview_pdbfile.o\
+OBJS     = rview_contacts.o\
+	   rview_cmap.o\
+	   rview_pdbfile.o\
 
-HDRS =  \
-	rview_contacts.h \
-	rview_pdbfile.h \
-
-SCRIPTS   = \
 
 all: librview.a ${PROGS} 
 
@@ -106,14 +102,14 @@ install:
 	cp ${SCRIPTS} ${DESTDIR}${bindir}/ 
 
 clean:
-	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f ${PROGS} ${OBJS} librview.a *.tab.c *.output *.o programs/*.o
 	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 
 distclean:
-	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f ${PROGS} ${OBJS} librview.a *.tab.c *.output *.o programs/*.o
 	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*

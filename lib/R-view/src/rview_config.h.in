@@ -1,8 +1,8 @@
-/* rview_config.h.in  [input to configure]
+/* rscape_config.h.in  [input to configure]
  * 
  * System-dependent configuration of Easel, by autoconf.
  * 
- * This file should be included in all rview .c files before
+ * This file should be included in all Easel .c files before
  * anything else, because it may set #define's that control
  * behaviour of system includes and system libraries. An example
  * is large file support.

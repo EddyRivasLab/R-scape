@@ -66,10 +66,10 @@ AR       = @AR@
 RANLIB   = @RANLIB@
 INSTALL  = @INSTALL@
 
-LIBS      = -lsrc -lhmmer -leasel -lm
+LIBS      = -lhmmer -leasel -lrview -lsrc -lm
 
-IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../src -I.
-LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../src -L.
+IFLAGS   = -I../../../lib/hmmer/src -I../../../lib/hmmer/easel -I../../../lib/R-view/src -I../../../src -I.
+LFLAGS   = -L../../../lib/hmmer/src -L../../../lib/hmmer/easel -L../../../lib/R-view/src -L../../../src -L.
 
 
 # Code manifests
