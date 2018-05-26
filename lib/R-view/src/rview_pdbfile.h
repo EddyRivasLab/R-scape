@@ -10,6 +10,16 @@
 #include "esl_sq.h"
 
 typedef enum {
+  SEQ_NONE     = 0,
+  SEQ_START    = 1,
+  SEQ_END      = 2,
+  SEQ_CONT     = 3,
+  SEQCAN_START = 4,
+  SEQCAN_END   = 5,
+  SEQCAN_CONT  = 6,
+} SEQSTATUS;
+
+typedef enum {
   ATYPE_ATOM   = 0,
   ATYPE_HETATM = 1,
   ATYPE_HOH    = 2,
@@ -48,16 +58,21 @@ typedef enum {
  *
  */
 typedef struct atom_s {
-  char     *chain;   // chain
-  ATOMTYPE  type;    // atom type ATOMT/HETATOMT
-  ESL_DSQ   reschr;  // the residue 
-  
-  int64_t   idx;     // atom idx in the atom description
+  ATOMTYPE  type;    // atom type ATOMT/HETATOMT            (group_PDB)
+  int64_t   idx;     // atom idx in the atom description    (id)
+  char     *atomid;  // the atom id                         (type_symbol)
+  char     *atomidx; // the atom id extended                (label_atom_id)
+  char     *reschr;  // the residue                         (label_comp_id)   
+  char     *chain;   // the chain                           (label_asym_id)
+  int64_t   seqid;   // the seq_id of the chain             (label_entity_id)
+  int64_t   resid;   // the id of the residue in the chain  (label_seq_id)
+  int64_t   residx;  // the index of the residue in the chain - not a label
+ 
 
   /* the cartesian coordenates of the atom */
-  double    x;       
-  double    y;
-  double    z;
+  double    x;       // Cartn_x 
+  double    y;       // Cartn_y 
+  double    z;       // Cartn_z 
 
 } ATOM;
 
@@ -69,8 +84,10 @@ typedef struct atom_s {
  */
 typedef struct residue_s {
   char     *chain;         // chain the residue belongs to
+  int64_t   seqid;         // the seq_id of the chain
 
-  ESL_DSQ   reschr;        // the digitized character of RES
+  int64_t   h;             // h > 0 if residue is heterogeneous
+  char    **reschr;        // the digitized character of RES reschr[0] if not heterogeneous
   int64_t   resnum;        // the number of RES in the atom description
  
   int64_t   from_atomidx;  // idx of the first ATOM associated to RES
@@ -83,7 +100,7 @@ typedef struct residue_s {
  *
  *          CHAIN includes:
  ]*
- *                ESL_DSQ  *seq: the chain sequence. It can be found at:   
+ *                char    *seq: the chain sequence. It can be found at:   
  *                                                      SEQRES in a .pdb file 
  *                                                      _entity_poly.pdbx_seq_one_letter_code_can in a .cif file
  *
@@ -106,25 +123,53 @@ typedef struct residue_s {
  *
  */
 struct chain_s {
+  char     *name;
+  char     *seqtype;
+  int64_t   seqid;     // a number: 1,2,3,...
+                       // different chains have the same identical sequence
+                       // cif identifies sequences first and gives them a seq_id
+                       // to which different chains can be associated
+  int       hetero;    // TRUE if the sequence has heterogeneous residues
+  
   int64_t   L;         // length of the seq
-  ESL_SQ   *seq;       // The seq are read in the pdbfile (SEQRES)
+  char     *seq;       // The seq are read in the pdbfile (SEQRES)
   
   int64_t   nr;        // number of residues in the atom descripton
   RES      *res;       // a RES structure for each residue
-  ESL_SQ   *resseq;    // The nr-long sequence with all residues
+  char     *resseq;    // The nr-long sequence with all residues
  
   int      *atom_map;  // atom_map[0..nr-1] with values in [0..L-1]
 };
 
-extern int  rview_ReadPDBxfile(char *pdbxfile, int *ret_nchain, struct chain_s **ret_chain, char *errbuf, int verbose);
-extern void rview_atom_Init(ATOM *atom);
-extern void rview_atom_Destroy(ATOM *atom);
-extern int  rview_res_AddAtom(RES *res);
-extern void rview_res_Init(RES *ret_res);
-extern void rview_res_Destroy(RES *res);
-extern int  rview_chain_AddRes(struct chain_s *chain);
-extern void rview_chain_Init(struct chain_s *ret_chain);
-extern void rview_chain_Destroy(struct chain_s *chain);
+typedef struct pdbx_s {
+  char           *pdbname;
+  double          res_high;
+  double          res_low;
+  
+  int             nsq;    // number of distinct sequences
+  int             nch;
+  struct chain_s *chain;
+} PDBX;
+
+
+extern int   rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose);
+extern void  rview_atom_Init(ATOM *atom);
+extern void  rview_atom_Destroy(esl_pos_t na, ATOM *atom);
+extern void  rview_atom_Write(FILE *fp, ATOM *atom);
+extern int   rview_chain_AddRes(struct chain_s *chain);
+extern struct chain_s *rview_chain_Create();
+extern void  rview_chain_Destroy(esl_pos_t nc, struct chain_s *chain);
+extern void  rview_chain_Write(FILE *fp, struct chain_s *chain, int verbose);
+extern int   rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose);
+extern int   rview_pdbx_AddChain(PDBX *pdbx, struct chain_s *chain, int idx, int verbose);
+extern int   rview_pdbx_Checksum(PDBX *pdbx, int verbose);
+extern PDBX *rview_pdbx_Create();
+extern void  rview_pdbx_Destroy(PDBX *pdbx);
+extern void  rview_pdbx_Write(FILE *fp, PDBX *pdbx, int verbose);
+extern int   rview_res_AddAtom(RES *res, ATOM *atom);
+extern void  rview_res_Init(RES *res);
+extern void  rview_res_Destroy(esl_pos_t nr, RES *res);
+extern void  rview_res_Write(FILE *fp, RES *res, int verbose);
 
 #endif /*RVIEW_PDBFILE_INCLUDED*/
  

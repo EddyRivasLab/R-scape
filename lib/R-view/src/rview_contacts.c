@@ -10,7 +10,7 @@
 #include "rview_pdbfile.h"
 
 int
-rview_CreateContacts(int nchain, struct chain_s *chain, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose)
+rview_CreateContacts(PDBX *pdbx, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose)
 {
   CLIST *clist = NULL;
   int    nct = 0;

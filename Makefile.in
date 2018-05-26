@@ -120,8 +120,8 @@ install:
 	${INSTALL} -d ${DESTDIR}${pdfdir}
 	${QUIET_SUBDIR0}${FASTTREEDIR}      ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} install
-	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} install
+	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}${RNAVIEWDIR}       ${QUIET_SUBDIR1} install
 
 # uninstall: Reverses the steps of "make install".
@@ -138,7 +138,7 @@ clean:
 	${QUIET_SUBDIR0}${HMMERDIR}         ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${ESLDIR}           ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${SADIR}            ${QUIET_SUBDIR1} clean
-	${QUIET_SUBDIR0}${RVIEWDIR}        ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}documentation       ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}documentation/e2msa ${QUIET_SUBDIR1} clean

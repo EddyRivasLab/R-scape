@@ -77,7 +77,7 @@ typedef struct clist_s {
   int      pdblen;  // total length of the pdb fragment that is homologous to the alignment
 } CLIST;
 
-extern int    rview_CreateContacts(int nchain, struct chain_s *chain, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose);
+extern int    rview_CreateContacts(PDBX *pdbx, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose);
 extern int    CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf);
 extern CLIST *CMAP_CreateCList(int alloc_ncnt);
 extern int    CMAP_Dump(FILE *fp, CLIST *clist);

@@ -104,7 +104,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
     {
-      esl_usage(stdout,  cfg.argv[0], usage);
+      esl_usage(stdout, cfg.argv[0], usage);
       if (puts("\noptions:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
       esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
       exit(0);
@@ -126,7 +126,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
     if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
   } 
-  
+
+  *ret_go = go;
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
@@ -142,10 +143,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 }
 
 
+
 int
 main(int argc, char **argv)
 { 
-  ESL_GETOPTS     *go;
+  ESL_GETOPTS     *go = NULL;
   struct cfg_s     cfg;
   CLIST           *clist = NULL;
   int              nct = 0;
@@ -161,9 +163,12 @@ main(int argc, char **argv)
 
   /* clean up */
   CMAP_FreeCList(clist);
-
-  return 0;
+  esl_stopwatch_Destroy(cfg.watch); 
+  if (go) esl_getopts_Destroy(go);
+  exit(status);
 }
+
+
 
 static int
 rview_banner(FILE *fp, char *progname, char *banner)

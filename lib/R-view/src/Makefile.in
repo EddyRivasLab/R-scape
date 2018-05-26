@@ -99,7 +99,6 @@ install:
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\
 	fi
-	cp ${SCRIPTS} ${DESTDIR}${bindir}/ 
 
 clean:
 	-rm -f ${PROGS} ${OBJS} librview.a *.tab.c *.output *.o programs/*.o
