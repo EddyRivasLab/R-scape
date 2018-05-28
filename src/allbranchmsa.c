@@ -28,6 +28,8 @@
 #include "allbranchmsa.h"
 #include "plot.h"
 
+#include "rview_contacts.h"
+
 static int     allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose);
 static int     allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose);
 static int     allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa,
@@ -266,7 +268,7 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
   int             ci, cj;
   int             status;
 
-  clist = CMAP_CreateCList(alloc_ncnt);
+  clist = CMAP_CreateCList(alloc_ncnt, NULL, NULL, NULL, -1, -1, DIST_NONE);
   if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
   ncnt = alloc_ncnt;
   h    = 0;

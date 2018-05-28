@@ -53,7 +53,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
   ESL_ALLOC(msa2pdb, sizeof(int) * L);
   esl_vec_ISet(msa2pdb, L, -1);
   
-  clist = CMAP_CreateCList(alloc_ncnt);
+  clist = CMAP_CreateCList(alloc_ncnt, NULL, NULL, NULL, cntmaxD, cntmind, DIST_MIN);
   if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
   clist->maxD = cntmaxD;
   clist->mind = cntmind;
@@ -93,12 +93,12 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
 
    if (cmapfile) {
      if ((cmapfp = fopen(cmapfile, "w")) == NULL) ESL_XFAIL(eslFAIL, "failed to open cmapfile", errbuf);
-     CMAP_Dump(cmapfp, clist);
+     CMAP_Dump(cmapfp, clist, FALSE);
      fclose(cmapfp);
    }
    
    if (1||verbose) {
-     CMAP_Dump(stdout, clist);
+     CMAP_Dump(stdout, clist, FALSE);
      if (abcisRNA) printf("%s\n", ss);
    }
 
@@ -155,7 +155,7 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
       clist->cnt[ncnt].pdbj   = -1;
       clist->cnt[ncnt].isbp   = TRUE;
       clist->cnt[ncnt].bptype = bptype;
-      clist->cnt[ncnt].D      = +eslINFINITY;
+      clist->cnt[ncnt].dist   = +eslINFINITY;
       clist->cnt[ncnt].sc     = -eslINFINITY;
       clist->nbps ++;
       clist->nwwc ++;
@@ -333,7 +333,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	clist->cnt[ncnt].j      = j;
 	clist->cnt[ncnt].pdbi   = msa2pdb[i-1]+1;
 	clist->cnt[ncnt].pdbj   = msa2pdb[j-1]+1;
-	clist->cnt[ncnt].D      = D;
+	clist->cnt[ncnt].dist   = D;
 	clist->cnt[ncnt].bptype = bptype;
 	clist->ncnt             = ncnt;
 	clist->cnt[ncnt].isbp   = (bptype < STACKED)? TRUE : FALSE;
@@ -352,7 +352,7 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	if (bptype == WWc)
 	  printf("ncnt %d posi %d %d %d posj %d %d %d |%f\n", ncnt+1,
 		 (int)clist->cnt[ncnt].i, (int)clist->cnt[ncnt].posi, (int)clist->cnt[ncnt].pdbi,
-		 (int)clist->cnt[ncnt].j, (int)clist->cnt[ncnt].posj, (int)clist->cnt[ncnt].pdbj, clist->cnt[ncnt].D);
+		 (int)clist->cnt[ncnt].j, (int)clist->cnt[ncnt].posj, (int)clist->cnt[ncnt].pdbj, clist->cnt[ncnt].dist);
 #endif
 	
 	ncnt ++;

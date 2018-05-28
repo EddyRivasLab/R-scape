@@ -1,33 +1,250 @@
 /* rview_contacts - functions to infer contacts and basepairs
  *
  */
-#include <stdio.h>		/* FILE */
-
+#include <stdio.h>
 #include "easel.h"
 #include "esl_fileparser.h"
 
 #include "rview_contacts.h"
 #include "rview_pdbfile.h"
 
+static double rview_residue_distance(RES *res1, RES *res2, DISTTYPE distype, char *errbuf, int verbose);
+static double euclidean_distance(ATOM *a1, ATOM *a2);
+static int    betacarbon(ATOM *a);
+
 int
-rview_CreateContacts(PDBX *pdbx, int *ret_nct, CLIST **ret_clist, char *errbuf, int verbose)
+rview_CreateContacts(FILE *fp, PDBX *pdbx, double maxD, int minL, DISTTYPE disttype, int interchain, int *ret_ncl, CLIST **ret_clist, char *errbuf, int verbose)
 {
-  CLIST *clist = NULL;
-  int    nct = 0;
-  int    status;
+  struct chain_s   *chain;
+  CLIST            *clist = NULL;
+  CLIST            *tmp   = NULL;
+  int              ncl = 0;   // total number of contat list 
+  int              cl;
+  int              c, c1, c2;
+  int              status;
+
+  // allocate a tmp clist
+  tmp = CMAP_CreateCList(ALLOC_NCT, pdbx->pdbname, NULL, NULL, maxD, minL, disttype);
+  if (tmp == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate tmp clist");
   
-  clist = CMAP_CreateCList(ALLOC_NCT);
-  if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
+  // start with the intra-chain contacts
+  for (c = 0; c < pdbx->nch; c ++) {
+    chain = &(pdbx->chain[c]);
+    status = rview_ContactsByDistance_IntraChain(chain, tmp, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in rview_ContactsByDistance_IntraChain()");
+    
+    status = rview_RNABasepairs(chain, tmp, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in rview_RNABasepairs()");
+    
+    if (tmp->ncnt > 0) { // tmp clist has contacts, add to clist array
+      if (1||verbose) { printf("\nnew list: %d\n", ncl+1); CMAP_Dump(stdout, tmp, TRUE); }
+      CMAP_AddClist(ncl++, clist, tmp, errbuf);
+    }
+    CMAP_ReuseCList(tmp);
+  }
+  
+  // do the inter-chain contacts if we are asked
+  if (interchain) {
+    for (c1 = 0; c1 < pdbx->nch; c1 ++) 
+      for (c2 = 0; c2 < pdbx->nch; c2 ++) {
 
-  *ret_nct   = nct;
-  *ret_clist = clist;
+	status = rview_ContactsByDistance_InterChain(&pdbx->chain[c1], &pdbx->chain[c2], tmp, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in rview_ContactsByDistance_InterChain()");
+	
+	if (tmp->ncnt > 0) { // tmp clist has contacts, add to clist array
+	  CMAP_AddClist(ncl++, clist, tmp, errbuf);
+	}
+	CMAP_ReuseCList(tmp);
+      }
+  }
 
+  // verbose
+  if (verbose) {
+    printf("N clists: %d\n", ncl);
+    for (cl = 0; cl < ncl; cl ++) CMAP_DumpShort(stdout, &clist[cl]);
+  }
+
+  // save clist to file
+    if (fp) {
+      for (cl = 0; cl < ncl; cl ++) CMAP_Dump(fp, &clist[cl], TRUE);
+  }
+
+  // save clist array or destroy
+  if (ret_ncl)   *ret_ncl   = ncl;
+  if (ret_clist) *ret_clist = clist;
+  else           CMAP_FreeCListArray(ncl, clist);
+  
+  CMAP_FreeCList(tmp);
   return eslOK;
   
  ERROR:
-  if (clist) CMAP_FreeCList(clist);
+  if (clist) CMAP_FreeCListArray(ncl, clist);
+  if (tmp)   CMAP_FreeCList(tmp);
   return status;
 }
+
+int
+rview_ContactsByDistance_IntraChain(struct chain_s *chain, CLIST *clist, char *errbuf, int verbose)
+{
+  RES    *res1, *res2;
+  double  distance = eslINFINITY;
+  int     r1, r2;
+  int     i1, i2;  // backbone positions
+  int     len;     // backbone distance
+
+  esl_sprintf(&clist->ch1name, chain->name);
+  esl_sprintf(&clist->ch1type, chain->seqtype);
+  esl_sprintf(&clist->ch1seq,  chain->seq);
+  clist->len1 = chain->L;
+  
+  for (r1 = 0; r1 < chain->nr; r1 ++)  {
+    res1 = &(chain->res[r1]);
+    i1   = res1->resnum;
+    
+    for (r2 = r1+1; r2 < chain->nr; r2 ++) {
+      res2 = &(chain->res[r2]);
+      i2   = res2->resnum;
+      
+      len = i2 - i1 + 1;
+      if (len > clist->mind) { // minimum distance in backbone
+	distance = rview_residue_distance(res1, res2, clist->disttype, errbuf, verbose);
+	
+	if (distance < clist->maxD) { // add contact to list
+	  CMAP_AddContact(res1, res2, distance, CONTACT, clist);
+	}
+      }
+    }
+  }
+    
+  return eslOK;
+}
+
+int
+rview_ContactsByDistance_InterChain(struct chain_s *chain1, struct chain_s *chain2, CLIST *clist, char *errbuf, int verbose)
+{
+  RES    *res1, *res2;
+  double  distance = eslINFINITY;
+  int     r1, r2;
+  
+  esl_sprintf(&clist->ch1name, chain1->name);
+  esl_sprintf(&clist->ch2name, chain2->name);
+  esl_sprintf(&clist->ch1type, chain1->seqtype);
+  esl_sprintf(&clist->ch2type, chain2->seqtype);
+  esl_sprintf(&clist->ch1seq,  chain1->seq);
+  esl_sprintf(&clist->ch2seq,  chain2->seq);
+  clist->len1 = chain1->L;
+  clist->len2 = chain2->L;
+
+  for (r1 = 0; r1 < chain1->nr; r1 ++)  {
+    res1 = &(chain1->res[r1]);
+    
+    for (r2 = 0; r2 < chain2->nr; r2 ++) {
+      res2 = &(chain2->res[r2]);
+      
+      distance = rview_residue_distance(res1, res2, clist->disttype, errbuf, verbose);
+      
+      if (distance < clist->maxD) // add contact to list
+	CMAP_AddContact(res1, res2, distance, CONTACT, clist);
+    }
+  }
+  
+  return eslOK;
+}
+
+
+int
+rview_RNABasepairs(struct chain_s *chain, CLIST *clist, char *errbuf, int verbose)
+{
+  return eslOK;
+}
+
+// add a clist (tmp) to the array of list (clist) 
+int
+CMAP_AddClist(int cl, CLIST *clist, CLIST *tmp, char *errbuf)
+{
+  CLIST *new;
+  int    ncl = cl + 1;
+  int    n;
+  int    status;
+
+  if (cl == 0) ESL_ALLOC  (clist, sizeof(CLIST) * ncl);
+  else         ESL_REALLOC(clist, sizeof(CLIST) * ncl);
+
+  new = &(clist[cl]);
+  new->alloc_ncnt = tmp->alloc_ncnt;
+  ESL_ALLOC(new->cnt,    sizeof(CNT)   * new->alloc_ncnt);
+  ESL_ALLOC(new->srtcnt, sizeof(CNT *) * new->alloc_ncnt);
+  new->srtcnt[0] = new->cnt;
+
+  new->pdbname  = NULL; if (tmp->pdbname) esl_sprintf(&new->pdbname, tmp->pdbname);
+  new->ch1name  = NULL; if (tmp->ch1name) esl_sprintf(&new->ch1name, tmp->ch1name);
+  new->ch2name  = NULL; if (tmp->ch2name) esl_sprintf(&new->ch2name, tmp->ch2name);
+  new->ch1type  = NULL; if (tmp->ch1type) esl_sprintf(&new->ch1type, tmp->ch1type);
+  new->ch2type  = NULL; if (tmp->ch2type) esl_sprintf(&new->ch2type, tmp->ch2type);
+  new->ch1seq   = NULL; if (tmp->ch1seq)  esl_sprintf(&new->ch1type, tmp->ch1seq);
+  new->ch2seq   = NULL; if (tmp->ch2seq)  esl_sprintf(&new->ch2type, tmp->ch2seq);
+  new->len1     = tmp->len1;
+  new->len2     = tmp->len2;
+  
+  new->maxD     = tmp->maxD;
+  new->mind     = tmp->mind;
+  new->disttype = tmp->disttype;
+   
+  new->ncnt = tmp->ncnt;
+  new->nbps = tmp->nbps;
+  new->nwwc = tmp->nwwc;
+  for (n = 0; n < tmp->ncnt; n ++)
+    CMAP_CopyContact(&new->cnt[n], &tmp->cnt[n]);
+
+  new->L      = tmp->L;
+  new->alen   = tmp->nbps;
+  new->pdblen = tmp->pdblen;
+  
+  return eslOK;
+
+ ERROR:
+  if (clist) CMAP_FreeCListArray(ncl, clist);
+  return status;
+}
+
+// add a contact to a clist
+int
+CMAP_AddContact(RES *res1, RES *res2, double distance, BPTYPE bptype, CLIST *clist)
+{
+  CNT *new;
+  int  n = clist->ncnt;
+  int  status;
+
+  if (n == clist->alloc_ncnt) {
+    clist->alloc_ncnt += ALLOC_NCT;
+    ESL_REALLOC(clist->cnt, sizeof(CNT)*(clist->alloc_ncnt));
+  }
+  new = &clist->cnt[n];
+
+  new->pdbi = res1->resnum; // this works because the chain checksum!
+  new->pdbj = res2->resnum;
+
+  new->posi = 0;  // we cannot provide this info here
+  new->posj = 0;
+  
+  new->i    = 0;
+  new->j    = 0;
+  
+  new->bptype = bptype;
+  new->isbp   = FALSE;
+  
+  new->dist = distance;
+
+  clist->ncnt ++;
+  return eslOK;
+
+  
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 
 int 
 CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
@@ -68,8 +285,82 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   return status;
 }
 
+// add a contact to a clist
 int
-CMAP_Dump(FILE *fp, CLIST *clist)
+CMAP_CopyContact(CNT *new, CNT *cnt)
+{
+  if (new == NULL || cnt == NULL) return eslOK;
+  
+  new->pdbi = cnt->pdbi;
+  new->pdbj = cnt->pdbj;
+  
+  new->posi = cnt->posi;
+  new->posj = cnt->posj;
+  
+  new->i    = cnt->i;
+  new->j    = cnt->j;
+  
+  new->bptype = cnt->bptype;
+  new->isbp   = cnt->isbp;
+  
+  new->dist = cnt->dist;
+  return eslOK;
+}
+
+CLIST *
+CMAP_CreateCList(int alloc_ncnt, char *pdbname, struct chain_s *chain1, struct chain_s *chain2, int64_t maxD, int64_t mind, DISTTYPE disttype)
+{
+  CLIST *clist = NULL;
+  int    status;
+  
+  ESL_ALLOC(clist,         sizeof(CLIST));
+  ESL_ALLOC(clist->cnt,    sizeof(CNT)   * alloc_ncnt);
+  ESL_ALLOC(clist->srtcnt, sizeof(CNT *) * alloc_ncnt);
+  clist->srtcnt[0] = clist->cnt;
+  clist->alloc_ncnt = alloc_ncnt;
+
+  clist->pdbname = NULL; if (pdbname) esl_sprintf(&clist->pdbname, pdbname);
+  clist->ch1name = NULL; 
+  clist->ch2name = NULL; 
+  clist->ch1type = NULL; 
+  clist->ch2type = NULL; 
+  clist->ch1seq  = NULL; 
+  clist->ch2seq  = NULL; 
+  clist->len1    = 0;
+  clist->len2    = 0;
+
+  if (chain1) {
+    clist->len1    = chain1->L;
+    if (chain1->name)    esl_sprintf(&clist->ch1name, chain1->name);
+    if (chain1->seqtype) esl_sprintf(&clist->ch1type, chain1->seqtype);
+    if (chain1->seq)     esl_sprintf(&clist->ch1seq,  chain1->seq);
+  }
+  if (chain2) {
+    clist->len2    = chain2->L;
+    if (chain2->name)    esl_sprintf(&clist->ch2name, chain2->name);
+    if (chain2->seqtype) esl_sprintf(&clist->ch2type, chain2->seqtype);
+    if (chain2->seq)     esl_sprintf(&clist->ch2seq,  chain2->seq);
+  }
+  
+  clist->maxD     = maxD;
+  clist->mind     = mind;
+  clist->disttype = disttype;
+  
+  clist->ncnt   = 0;
+  clist->nbps   = 0;
+  clist->nwwc   = 0;
+  clist->L      = -1;  // this information requires comparing to an alignment
+  clist->alen   = -1;
+  clist->pdblen = -1;
+
+  return clist;
+
+ ERROR:
+  return NULL;
+}
+
+int
+CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
 {
   int   h;
   int   nbp = 0;
@@ -77,13 +368,21 @@ CMAP_Dump(FILE *fp, CLIST *clist)
   char *bptype = NULL;
   int   status = eslOK;
 
-
+  if (pdbonly) fprintf(fp, "# ij in pdbsequence | basepair type\n");
+  else         fprintf(fp, "# ij in alignment | ij in pdbsequence | basepair type\n");
   for (h = 0; h < clist->ncnt; h ++) {
     if (clist->cnt[h].isbp) nbp ++;
     if (clist->cnt[h].bptype == WWc) { nwc ++; }
     CMAP_BPTYPEString(&bptype, clist->cnt[h].bptype, NULL);
-  
-    fprintf(fp, "# %d %d | bptype %s\n", (int)clist->cnt[h].posi, (int)clist->cnt[h].posj, bptype);
+
+    if (pdbonly) 
+      fprintf(fp, "%d %d | %s\n",
+	      (int)clist->cnt[h].pdbi, (int)clist->cnt[h].pdbj, bptype);
+    else
+      fprintf(fp, "%d %d | %d %d | %s\n",
+	      (int)clist->cnt[h].posi, (int)clist->cnt[h].posj,
+	      (int)clist->cnt[h].pdbi, (int)clist->cnt[h].pdbj, bptype);
+    
     free(bptype); bptype = NULL;
   }
   if (nbp != clist->nbps) status = eslFAIL;
@@ -98,49 +397,68 @@ CMAP_Dump(FILE *fp, CLIST *clist)
 int
 CMAP_DumpShort(FILE *fp, CLIST *clist)
 {
+  fprintf(fp, "# PDB:      %s\n", clist->pdbname);
+  if (clist->ch2name == NULL) {
+    fprintf(fp, "# chain:    %s (%s)\n", clist->ch1name, clist->ch1type);
+    fprintf(fp, "# seq:      (%lld)\n",  clist->len1);
+    //fprintf(fp, "# %s\n",                clist->ch1seq);
+  }
+  else {
+    fprintf(fp, "# chain1:   %s (%s)\n", clist->ch1name, clist->ch1type);
+    fprintf(fp, "# chain2:   %s (%s)\n", clist->ch2name, clist->ch2type);
+    fprintf(fp, "# seq1:     (%lld)\n",  clist->len1);
+    //fprintf(fp, "# %s\n",                clist->ch1seq);
+    fprintf(fp, "# seq2:     (%lld)\n",  clist->len2);
+    //fprintf(fp, "# %s\n",                clist->ch2seq);
+  }
   fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
-  if (clist->maxD   > 0) fprintf(fp, "# maxD      %.2f\n", clist->maxD);
-  if (clist->mind   > 0) fprintf(fp, "# mind      %.d\n",  clist->mind);
-  if (clist->L      > 0) fprintf(fp, "# L         %.d\n",  clist->L); 
-  if (clist->alen   > 0) fprintf(fp, "# alen      %.d\n",  clist->alen); 
-  if (clist->pdblen > 0) fprintf(fp, "# pdblen    %.d\n",  clist->pdblen); 
+  if (clist->maxD   > 0)           fprintf(fp, "# maxD      %.2f\n", clist->maxD);
+  if (clist->mind   > 0)           fprintf(fp, "# mind      %.d\n",  clist->mind);
+  if (clist->disttype == DIST_MIN) fprintf(fp, "# distance  MIN\n");
+  if (clist->disttype == DIST_CB)  fprintf(fp, "# distance  C-beta\n");
+  if (clist->L      > 0)           fprintf(fp, "# L         %.d\n",  clist->L); 
+  if (clist->alen   > 0)           fprintf(fp, "# alen      %.d\n",  clist->alen); 
+  if (clist->pdblen > 0)           fprintf(fp, "# pdblen    %.d\n",  clist->pdblen); 
   return eslOK;
 }
 
-CLIST *
-CMAP_CreateCList(int alloc_ncnt)
-{
-  CLIST *clist = NULL;
-  int    status;
-  
-  ESL_ALLOC(clist,         sizeof(CLIST));
-  ESL_ALLOC(clist->cnt,    sizeof(CNT)   * alloc_ncnt);
-  ESL_ALLOC(clist->srtcnt, sizeof(CNT *) * alloc_ncnt);
-  clist->srtcnt[0] = clist->cnt;
-
-  clist->alloc_ncnt = alloc_ncnt;
-  clist->ncnt   = 0;
-  clist->nbps   = 0;
-  clist->nwwc   = 0;
-  clist->maxD   = -1;
-  clist->mind   = -1;
-  clist->L      = -1;
-  clist->alen   = -1;
-  clist->pdblen = -1;
-
-  return clist;
-
- ERROR:
-  return NULL;
-}
 
 void
 CMAP_FreeCList(CLIST *list)
 {
   if (list == NULL) return;
 
-  if (list->srtcnt) free(list->srtcnt);
-  if (list->cnt)    free(list->cnt);
+  if (list->pdbname) free(list->pdbname);
+  if (list->ch1name) free(list->ch1name);
+  if (list->ch2name) free(list->ch2name);
+  if (list->ch1type) free(list->ch1type);
+  if (list->ch2type) free(list->ch2type);
+  if (list->ch1seq)  free(list->ch1seq);
+  if (list->ch2seq)  free(list->ch2seq);
+  if (list->srtcnt)  free(list->srtcnt);
+  if (list->cnt)     free(list->cnt);
+  free(list);
+}
+
+void
+CMAP_FreeCListArray(int ncl, CLIST *list)
+{
+  int cl;
+  
+  if (list == NULL) return;
+
+  for (cl = 0; cl < ncl; cl ++) {
+    if (list[cl].pdbname) free(list[cl].pdbname);
+    if (list[cl].ch1name) free(list[cl].ch1name);
+    if (list[cl].ch2name) free(list[cl].ch2name);
+    if (list[cl].ch1type) free(list[cl].ch1type);
+    if (list[cl].ch2type) free(list[cl].ch2type);
+    if (list[cl].ch1seq)  free(list[cl].ch1seq);
+    if (list[cl].ch2seq)  free(list[cl].ch2seq);
+    if (list[cl].srtcnt)  free(list[cl].srtcnt);
+    if (list[cl].cnt)     free(list[cl].cnt);
+  }
+  
   free(list);
 }
 
@@ -213,12 +531,20 @@ int
 CMAP_ReuseCList(CLIST *clist)
 {
   if (clist == NULL) return eslOK;
+
+  if (clist->ch1name) free(clist->ch1name); clist->ch1name = NULL;
+  if (clist->ch2name) free(clist->ch2name); clist->ch2name = NULL;
+  if (clist->ch1type) free(clist->ch1type); clist->ch1type = NULL;
+  if (clist->ch2type) free(clist->ch2type); clist->ch2type = NULL;
+  if (clist->ch1seq)  free(clist->ch1seq);  clist->ch1seq  = NULL;
+  if (clist->ch2seq)  free(clist->ch2seq);  clist->ch2seq  = NULL;
+
+  clist->len1   = 0;
+  clist->len2   = 0;
   
   clist->ncnt   = 0;
   clist->nbps   = 0;
   clist->nwwc   = 0;
-  clist->maxD   = -1;
-  clist->mind   = -1;
   clist->L      = -1;
   clist->alen   = -1;
   clist->pdblen = -1;
@@ -264,67 +590,73 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   return status;
 }
 
-
-static int
-read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf)
+static double
+rview_residue_distance(RES *res1, RES *res2, DISTTYPE disttype, char *errbuf, int verbose)
 {
-  ESL_FILEPARSER  *efp   = NULL;
-  char            *tok;
-  int              nchain = 0;
-  char           **mapfile = NULL;
-  int              posi;
-  int              pdbi;
-  int              pdb_min = L;
-  int              pdb_max = 0;
-  int              i;
-  int              c;
-  int              status;
+  double  distance = eslINFINITY;
+  int     a1;
+  int     a2;
+  int     status;
 
-  // Read the names of the .cor files to use
-  if (esl_fileparser_Open(pdbmapfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-  esl_fileparser_SetCommentChar(efp, '#');
-  ESL_ALLOC(mapfile, sizeof(char *));
-  while (esl_fileparser_NextLine(efp) == eslOK)
-    {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbmapfile);
-       esl_sprintf(&mapfile[nchain], tok);
- 
-      nchain ++;
-      ESL_REALLOC(mapfile, sizeof(char *)*(nchain+1));
-    }
-  esl_fileparser_Close(efp);
-  
-  // Add from all chains if unique
-  for (c = 0; c < nchain; c ++) {
-    if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-    esl_fileparser_SetCommentChar(efp, '#');
-    while (esl_fileparser_NextLine(efp) == eslOK)
-      {
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
-	pdbi = atoi(tok);
-	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
-	posi = atoi(tok);
+  switch (disttype) {
+  case DIST_MIN:
+    for (a1 = 0; a1 < res1->na; a1 ++) 
+      for (a2 = 0; a2 < res2->na; a2 ++) 
+	distance = ESL_MIN(distance, euclidean_distance(&(res1->atom[a1]), &(res2->atom[a2])));
+    break;
+  case DIST_CB:
+    for (a1 = 0; a1 < res1->na; a1 ++) 
+      if (betacarbon(&(res1->atom[a1]))) {
 	
-	if (posi > 0) {
-	  if (pdbi < pdb_min) pdb_min = pdbi;
-	  if (pdbi > pdb_max) pdb_max = pdbi;
-	  i = omsa2msa[posi-1]+1;
-	  if (i > 0) msa2pdb[i-1] = pdbi-1;
-	}
+	for (a2 = 0; a2 < res2->na; a2 ++)
+	  if (betacarbon(&(res2->atom[a2]))) {
+	    distance = euclidean_distance(&(res1->atom[a1]), &(res2->atom[a2]));
+	  }
       }
-      esl_fileparser_Close(efp);
-      free(mapfile[c]);
-      remove(mapfile[c]);
-  }
 
-  *ret_pdblen = pdb_max - pdb_min + 1;
+    break;
+ case DIST_NONE:
+   break;
+  default: ESL_XFAIL(eslFAIL, errbuf, "wrong DISTTYPE");  break;
+
+  }
   
-  free(mapfile);
-  return eslOK;
+  return distance;
 
  ERROR:
-  for (c = 0; c < nchain; c++) { if (mapfile[c]) free(mapfile[c]); }
-  if (mapfile) free(mapfile);
-  return status;
+  return distance;
 }
 
+static double
+euclidean_distance(ATOM *a1, ATOM *a2)
+{
+  double distance;
+  double xd;
+  double yd;
+  double zd;
+
+  xd = a1->x - a2->x;
+  yd = a1->y - a2->y;
+  zd = a1->z - a2->z;
+
+  distance = xd * xd + yd * yd + zd * zd;
+  
+  if (distance >=0) distance = sqrt(distance);
+  
+  return distance;
+}
+
+static int
+betacarbon(ATOM *a)
+{
+  char *name = a->atomidx; // the long name of the atom
+  char  cbeta[]  = "";
+  char  calpha[] = "";
+  int   isbeta = FALSE;
+
+  // use the beta-Carbon, unless it is a Glycine (GLY or G) where we use the alpha-Carbon
+  if      (esl_strcmp(a->reschr, "G") == eslOK && esl_strcmp(name, calpha) == eslOK) isbeta = TRUE;
+  else if (                                       esl_strcmp(name, cbeta)  == eslOK) isbeta = TRUE;
+  
+  return isbeta;
+}

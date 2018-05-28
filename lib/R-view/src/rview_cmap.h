@@ -12,12 +12,8 @@
 #include "rview_contacts.h"
 #include "rview_pdbfile.h"
 
-typedef enum{
-  MIN = 0,
-  CB  = 1,
-} DISTMETHOD;
 
-int rview_ContactMap(char *pdbxfile, int *ret_nct, CLIST **ret_clist, double maxD, int minL, char *errbuf, int verbose);
+int rview_ContactMap(FILE *fp, char *pdbxfile, double maxD, int minL, DISTTYPE disttype, int interchain, int *ret_ncl, CLIST **ret_clist, char *errbuf, int verbose);
 
 
 #endif /*RVIEW_CMAP_INCLUDED*/

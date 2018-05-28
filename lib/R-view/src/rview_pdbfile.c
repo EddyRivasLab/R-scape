@@ -28,17 +28,18 @@ static int       sasymlabel_create(int *ret_nsl, char ***ret_sasymlabel,  int ve
 static int       parse_atom             (PDBX *pdbx, char *p, esl_pos_t n, char *atomid,    int natf, int *useatmf,                        int verbose);
 static int       parse_atomfield        (            char *p, esl_pos_t n, int nal, char **atmlabel, int *ret_atmidx, int **ret_useatmf,   int verbose);
 static int       parse_pdbname          (            char *p, esl_pos_t n, char *entryid,   char **ret_pdbname,                            int verbose);
+static int       parse_pdbmethod        (            char *p, esl_pos_t n, char *method,    char **ret_pdbmethod,                          int verbose);
 static int       parse_reslow           (            char *p, esl_pos_t n, char *rlow,      double *ret_resolution,                        int verbose);
 static int       parse_reshigh          (            char *p, esl_pos_t n, char *rhigh,     double *ret_resolution,                        int verbose);
-static int       parse_seqid            (PDBX *pdbx, char *p, esl_pos_t n, char *seq_id,    int64_t *ret_seqid,     int *ret_multiseq,     int verbose);
-static int       parse_seqtype          (            char *p, esl_pos_t n, char *seq_type,  char **ret_seqtype,                            int verbose);
+static int       parse_sequence_id      (PDBX *pdbx, char *p, esl_pos_t n, char *seq_id,    int64_t *ret_seqid,     int *ret_multiseq,     int verbose);
+static int       parse_sequence_type    (            char *p, esl_pos_t n, char *seq_type,  char **ret_seqtype,                            int verbose);
 static int       parse_sequence_short   (            char *p, esl_pos_t n, char *seq_can,   char **ret_seq,                                int verbose);
 static int       parse_sequence_long    (            char *p, esl_pos_t n,                  char **ret_seq,         esl_pos_t *ret_seqlen, int verbose);
 static int       parse_sequence_end     (            char *p, esl_pos_t n, char *scomma,    int *ret_readnow,       struct chain_s *chain, int verbose);
 static int       parse_sequence_hetero  (PDBX *pdbx, char *p, esl_pos_t n, int verbose);
 static int       parse_multiseq         (            char *p, esl_pos_t n,                  char **ret_chunk,       esl_pos_t *ret_len,    int verbose);
 static int       parse_add_allseqs      (PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int verbose);
-static int       parse_sasymfield       (            char *p, esl_pos_t n, int nsl, char **sasymlabel, int *ret_nsaf, int **ret_usesasymf, int verbose);
+static int       parse_sasymfield       (PDBX *pdbx, char *p, esl_pos_t n, int nsl, char **sasymlabel, int *ret_nsaf, int **ret_usesasymf, int *ret_sasym_issort, int verbose);
 static int       parse_sasym            (PDBX *pdbx, char *p, esl_pos_t n,                  int nsaf, int *usesasymf,                      int verbose);
 static int       chunk_is_newsequence   (PDBX *pdbx, char *line, struct chain_s *chain, int *ret_isshortchain, int verbose);
 static void      chunk_is_sequence_short(char *line, char **ret_seq, char **ret_chainname, int verbose);
@@ -56,13 +57,16 @@ static void      writep(char *p, esl_pos_t n);
 int
 rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
 {
-  ESL_BUFFER      *bf      = NULL;
-  PDBX            *pdbx    = NULL;
-  struct chain_s  *chain   = NULL;
-  char            *chunk   = NULL;
+  ESL_BUFFER      *bf         = NULL;
+  PDBX            *pdbx       = NULL;
+  struct chain_s  *chain      = NULL;
+  char            *chunk      = NULL;
+  char           **sasymlabel = NULL;
+  char           **atmlabel   = NULL;
   char            *p;
   char             first[]         = "data_";
   char             entryid[]       = "_entry.id";
+  char             method[]        = "_exptl.method";
   char             seq_id[]        = "_entity_poly.entity_id";
   char             seq_type[]      = "_entity_poly.type";
   char             seq_can[]       = "_entity_poly.pdbx_seq_one_letter_code_can";
@@ -82,23 +86,22 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
   char             hatomid[]       = "HETATM";
   esl_pos_t        n;
   esl_pos_t        len = 0;
-  int              multiseq;
+  int             *useatmf       = NULL;
+  int             *usesasymf     = NULL;
+  int              checkhetero   = FALSE;
+  int              issasym       = FALSE;
+  int              sasym_isshort = FALSE;
+  int              natf = 0;
+  int              nsaf = 0;
+  int              multiseq; 
   int              readnow;
-  int              checkhetero = FALSE;
   int              nsl;
   int              nal;
   int              s;
   int              l;
-  char           **sasymlabel = NULL;
-  char           **atmlabel   = NULL;
-  int             *useatmf    = NULL;
-  int             *usesasymf  = NULL;
-  int              natf = 0;
-  int              nsaf = 0;
-  int              issasym  = FALSE;
-  int              verbose2 = TRUE;
+  int              verbose2 = FALSE;
   int              status;
-  
+
   pdbx  = rview_pdbx_Create();  if (pdbx  == NULL) esl_fatal("could not create PDBX  structure");
   chain = rview_chain_Create(); if (chain == NULL) esl_fatal("could not create chain structure");
 
@@ -135,6 +138,13 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       //
       if (esl_memstrpfx(p, n, entryid)) parse_pdbname(p, n, entryid, &pdbx->pdbname, verbose2);
       
+      // THE METHOD
+      // 
+      // _exptl.method            'X-RAY DIFFRACTION' 
+      // 
+      //
+      if (esl_memstrpfx(p, n, method)) parse_pdbmethod(p, n, method, &pdbx->method, verbose2);
+      
       // THE RESOLUTION
       //
       // _refine_hist.d_res_high                       2.6426 
@@ -146,7 +156,7 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       // Determine if there are multiple chains by looking at field
       // _entity_poly.entity_id
       //
-      // if there is anumber after,  
+      // if there is a number after,  
       //
       // _entity_poly.entity_id                      1
       //
@@ -156,7 +166,7 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       // _entity_poly.entity_id                      
       //
       //
-      if (esl_memstrpfx(p, n, seq_id)) parse_seqid(pdbx, p, n, seq_id, &chain->seqid, &multiseq, verbose2);
+      if (esl_memstrpfx(p, n, seq_id)) parse_sequence_id(pdbx, p, n, seq_id, &chain->seqid, &multiseq, verbose2);
 
       // THE SEQUENCES
       // For the sequence, there are 8 fields, and
@@ -262,9 +272,13 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       // 53 'polypeptide(L)'   no no MRWKWIKKRIRRLKRQRKKERGLI MRWKWIKKRIRRLKRQRKKERGLI Ah    ? 
       //
       //
+      // WATCH OUT: fields can have more than one word, fields are delimited by 'field with more than one word'. Example
+      //
+      // 1 'polydeoxyribonucleotide/polyribonucleotide hybrid' no no '(DA)GCGCCUGGACUUAAAGCCAUUGCACU' AGCGCCUGGACUUAAAGCCAUUGCACU A ? 
+      //
       if (multiseq == FALSE) { // only one sequence
 	// determine the type of sequence 
-	if (esl_memstrpfx(p, n, seq_type)) parse_seqtype(p, n, seq_type, &chain->seqtype, verbose2);
+	if (esl_memstrpfx(p, n, seq_type)) parse_sequence_type(p, n, seq_type, &chain->seqtype, verbose2);
 	// determine when to read the canonical sequence 
 	if (esl_memstrpfx(p, n, seq_can))  readnow = parse_sequence_short(p, n, seq_can, &chain->seq, verbose2);
 	// read the canonical sequence 
@@ -288,9 +302,9 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       // That is positions with more than one residue residues.
       // This alternative residues have different atom coordinates
       // For heterogeneous residues, I consider all atoms
-      if      ( esl_memstrpfx(p, n, seq_hetero))              checkhetero = TRUE;
+      if      ( esl_memstrpfx(p, n, seq_hetero))              checkhetero = FALSE;
       else if ( esl_memstrpfx(p, n, endloop)  && checkhetero) checkhetero = FALSE;
-      else if (checkhetero) parse_sequence_hetero(pdbx, p, n, TRUE);
+      else if (checkhetero) parse_sequence_hetero(pdbx, p, n, FALSE);
 		      
       // Figure out how many chains per sequence and their names.
       //
@@ -315,7 +329,15 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       //
       // which tells us there is one chain (A) for sequence 1 and two chains (B,C) for sequence 2.
       //
-      if ( esl_memstrpfx(p, n, sasym))              { parse_sasymfield(      p, n, nsl, sasymlabel, &nsaf, &usesasymf, FALSE); issasym = TRUE; }
+      // Notice there is a "short" version of this format. Example,
+      //
+      // _struct_asym.id                            A 
+      // _struct_asym.pdbx_blank_PDB_chainid_flag   N 
+      // _struct_asym.pdbx_modified                 N 
+      // _struct_asym.entity_id                     1 
+      // _struct_asym.details                       ? 
+      //
+      if ( esl_memstrpfx(p, n, sasym))              { parse_sasymfield(pdbx, p, n, nsl, sasymlabel, &nsaf, &usesasymf, &sasym_isshort, FALSE); issasym = (sasym_isshort)? FALSE : TRUE; }
       if ( esl_memstrpfx(p, n, endloop) && issasym) issasym = FALSE; // have to place in between the two other options
       if (!esl_memstrpfx(p, n, sasym)   && issasym) { parse_sasym     (pdbx, p, n,                  nsaf,  usesasymf,  verbose2);              }
       
@@ -373,10 +395,13 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
   //
   // If the pdb file does not checksum, we will make a smith-waterman alignment
   // a create a map of the sequence to the resseq.
-  if (rview_pdbx_Checksum(pdbx, verbose) != eslOK) esl_fail("pdbx did not checksum");
+  if (rview_pdbx_Checksum(pdbx, verbose) != eslOK) esl_fatal("pdbx did not checksum");
   
   // create the map between chain->seq and the sequence described by the atoms
+  // No mapping seems to be necesary for .cif files, which is a great advantage.
   //
+  // All cif files I have tested (~500) do pass the checksum, so there is no need for
+  // making a map of the sequence coors to those used in the atom descriptions
   
   *ret_pdbx = pdbx;
 
@@ -525,9 +550,11 @@ rview_chain_Write(FILE *fp, struct chain_s *chain, int verbose)
     fprintf(fp, "res_sequence: (%lld)\n%s\n", chain->nr, chain->resseq);
   else
     fprintf(fp, "nres: (%lld)\n", chain->nr);
-  
-  for (r = 0; r < chain->nr; r ++)
-    rview_res_Write(fp, &chain->res[r], verbose);
+
+  if (verbose) {
+    for (r = 0; r < chain->nr; r ++)
+      rview_res_Write(fp, &chain->res[r], verbose);
+  }
 }
 
 int
@@ -547,7 +574,10 @@ rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose)
     chain = &(pdbx->chain[c]);
     if (esl_strcmp(atom->chain, chain->name) == eslOK) break;
   }
-  if (c == pdbx->nch) esl_fatal("could not find chain %s in pdbx %s\n", atom->chain, pdbx->pdbname);
+  if (c == pdbx->nch) {
+    for (c = 0; c < pdbx->nch; c ++) printf("chain[%d] %s\n", c, pdbx->chain[c].name);
+    esl_fatal("could not find chain %s in pdbx %s. nch = %lld\n", atom->chain, pdbx->pdbname, pdbx->nch);
+  }
 
   // find the residue or create a new one
   for (r = 0; r < chain->nr; r ++)  
@@ -619,7 +649,8 @@ rview_pdbx_AddChain(PDBX *pdbx, struct chain_s *chain, int idx, int verbose)
 // the resnum assigned in the atoms, corresponds to
 // the residue's position in the sequence.
 //
-// on success, it returns eslOK, otherwise eslFAIL;
+// On success, it returns eslOK.
+// If it fails, it dies right here.
 // 
 int
 rview_pdbx_Checksum(PDBX *pdbx, int verbose)
@@ -631,7 +662,7 @@ rview_pdbx_Checksum(PDBX *pdbx, int verbose)
   int             c;
   int             r;
   int             h;
-  int             checksum = eslFAIL;
+  int             checksum;
   
   for (c = 0; c < pdbx->nch; c ++) {
     chain = &(pdbx->chain[c]);
@@ -639,20 +670,23 @@ rview_pdbx_Checksum(PDBX *pdbx, int verbose)
     
     for (r = 0; r < chain->nr; r ++) {
       res = &(chain->res[r]);
-      
+
+      // the residue in seq at the resnum position
       seqchr[0] = seq[res->resnum-1];
       seqchr[1] = '\0';
-      for (h = 0; h < res->h; h ++) 
+
+      // if the chain is heterogeneous, give all alternative residues an opportunity
+      for (h = 0; h < res->h; h ++) {
 	checksum = esl_strcmp(res->reschr[h], seqchr);
-      if (checksum != eslOK) {
-	if (verbose)
-	  printf("chain %s (seqid %lld) does not checksum at residue %lld (seqres %s)\n",
-		 chain->name, chain->seqid, res->resnum, seqchr); 
+	if (checksum == eslOK) break;
       }
+      
+      if (checksum != eslOK) 
+	esl_fatal("pdbx %s did not checksum at chain %s (seqid %lld) at position (%lld) seqres=%s|reschr=%s\n",
+		  pdbx->pdbname, chain->name, chain->seqid, res->resnum, seqchr, res->reschr[0]);
     }
-    
   }
-  
+
   return checksum;
 }
 
@@ -665,6 +699,7 @@ rview_pdbx_Create()
   ESL_ALLOC(pdbx, sizeof(PDBX));
   
   pdbx->pdbname  = NULL;
+  pdbx->method   = NULL;
   pdbx->nsq      = 0;
   pdbx->nch      = 0;
   pdbx->chain    = NULL;
@@ -682,6 +717,7 @@ rview_pdbx_Destroy(PDBX *pdbx)
 {
   if (pdbx) {
     if (pdbx->pdbname) free(pdbx->pdbname);
+    if (pdbx->method)  free(pdbx->method);
     if (pdbx->chain)   rview_chain_Destroy(pdbx->nch, pdbx->chain);
     free(pdbx);
   }
@@ -691,7 +727,8 @@ void
 rview_pdbx_Write(FILE *fp, PDBX *pdbx, int verbose)
 {
   int c;
-  fprintf(fp, "\nPDB:      %s\n", pdbx->pdbname);
+  fprintf(fp, "\nPDB:        %s\n", pdbx->pdbname);
+  fprintf(fp, "method:     %s\n", pdbx->method);
   fprintf(fp, "resolution: %f %f\n", pdbx->res_low, pdbx->res_high); 
   fprintf(fp, "nsequences: %d\n", pdbx->nsq);
   fprintf(fp, "nchains:    %d\n", pdbx->nch);
@@ -723,7 +760,7 @@ rview_res_AddAtom(RES *res, ATOM *atom)
       ESL_REALLOC(res->reschr, sizeof(char *) * (res->h+1));
       esl_sprintf(&res->reschr[res->h], atom->reschr);
       res->h ++;
-      printf("hetero residue %lld in chain %s seq %lld\n", res->resnum, atom->chain, atom->seqid);
+      //printf("hetero residue %lld in chain %s seq %lld\n", res->resnum, atom->chain, atom->seqid);
     }
 
   }
@@ -733,6 +770,10 @@ rview_res_AddAtom(RES *res, ATOM *atom)
   new->idx    = atom->idx;
   new->seqid  = atom->seqid;
   new->resid  = atom->resid;
+  new->x      = atom->x;
+  new->y      = atom->y;
+  new->z      = atom->z;
+    
   esl_sprintf(&new->atomid,  atom->atomid);
   esl_sprintf(&new->atomidx, atom->atomidx);
   esl_sprintf(&new->chain,   atom->chain);
@@ -1031,6 +1072,11 @@ parse_atom(PDBX *pdbx, char *p, esl_pos_t n, char *atomid, int naf, int *useatmf
   return status;
 }
 
+// THE PDBNAME
+// # 
+// _entry.id   4RUM 
+// #
+//
 static int
 parse_pdbname(char *p, esl_pos_t n, char *entryid, char **ret_pdbname, int verbose)
 {
@@ -1057,6 +1103,44 @@ parse_pdbname(char *p, esl_pos_t n, char *entryid, char **ret_pdbname, int verbo
 
   ERROR:
   if (pdbname) free(pdbname);
+  return status;
+}
+
+// THE METHOD
+// 
+// _exptl.method            'X-RAY DIFFRACTION' 
+// 
+//
+static int
+parse_pdbmethod(char *p, esl_pos_t n, char *methodfield, char **ret_method, int verbose)
+{
+  char       *method = NULL;
+  esl_pos_t   slen;
+  esl_pos_t   len = 0;
+  esl_pos_t   i;
+  int         status;
+
+  if (! esl_memstrpfx(p, n, methodfield)) esl_fail("not a method %s\n", methodfield);
+
+  slen = (esl_pos_t)strlen(methodfield);
+  ESL_ALLOC(method, sizeof(char)*(n-slen+1));
+
+  i = slen;
+  while (isspace(p[i])) i ++;
+  while (i < n) {
+    if (p[i] != '\'') method[len++] = p[i];
+    i ++;
+  }
+  method[len] = '\0';
+  
+  if (verbose) printf("method %s\n", method);
+  
+  *ret_method = method;
+  
+  return eslOK;
+
+  ERROR:
+  if (method) free(method);
   return status;
 }
 
@@ -1129,8 +1213,111 @@ int parse_reshigh(char *p, esl_pos_t n, char *rhigh, double *ret_res_high, int v
 
 }
 
+// fields are:
+//
+// _entity_poly.type 
+// _entity_poly.nstd_linkage 
+// _entity_poly.nstd_monomer 
+// _entity_poly.pdbx_seq_one_letter_code 
+// _entity_poly.pdbx_seq_one_letter_code_can 
+// _entity_poly.pdbx_strand_id 
+// _entity_poly.pdbx_target_identifier 
+//
+// If SINGLE SEQUENCE, the value of the field seems to follow the field
+// for each sequence as,
+//
+// _entity_poly.entity_id                      1 
+// _entity_poly.type                           polyribonucleotide 
+// _entity_poly.nstd_linkage                   no 
+// _entity_poly.nstd_monomer                   yes 
+// _entity_poly.pdbx_seq_one_letter_code       
+// ;(GTP)GGAACUGAGCAGGCAAUGACCAGAGCGGUCAUGCAGCCGGGCUGCGAAAGCGGCAACAGAUGAUUACACGCACAU
+// CUGUGGGACAGUUCCCAC
+// ;
+// _entity_poly.pdbx_seq_one_letter_code_can   
+// ;GGGAACUGAGCAGGCAAUGACCAGAGCGGUCAUGCAGCCGGGCUGCGAAAGCGGCAACAGAUGAUUACACGCACAUCUGU
+// GGGACAGUUCCCAC
+// ;
+// _entity_poly.pdbx_strand_id                 A 
+// _entity_poly.pdbx_target_identifier         ? 
+// #
+//
+// but watch out for small sequences which come as
+//
+// _entity_poly.entity_id                      1 
+// _entity_poly.type                           polyribonucleotide 
+// _entity_poly.nstd_linkage                   no 
+// _entity_poly.nstd_monomer                   no 
+// _entity_poly.pdbx_seq_one_letter_code       GGGCGAUGAGGCCCGCCCAAACUGCCCUGAAAAGGGCUGAUGGCCUCUACUG 
+// _entity_poly.pdbx_seq_one_letter_code_can   GGGCGAUGAGGCCCGCCCAAACUGCCCUGAAAAGGGCUGAUGGCCUCUACUG 
+// _entity_poly.pdbx_strand_id                 A 
+// _entity_poly.pdbx_target_identifier         ? 
+// # 
+//
+//
+// If MULTISEQ, the format seems to be to put the field descriptions first, and then all the 8 fields
+// for each sequence as:
+//
+// _entity_poly.type 
+// _entity_poly.nstd_linkage 
+// _entity_poly.nstd_monomer 
+// _entity_poly.pdbx_seq_one_letter_code 
+// _entity_poly.pdbx_seq_one_letter_code_can 
+// _entity_poly.pdbx_strand_id 
+// _entity_poly.pdbx_target_identifier 
+// 1  'polypeptide(L)'   no no MKTDFNQKIEQLKEFIEECRRVWLVLKKPTKDEYLAVAKVTALGISLLGIIGYIIHVPATYIKGILK 
+// 1MKTDFNQKIEQLKEFIEECRRVWLVLKKPTKDEYLAVAKVTALGISLLGIIGYIIHVPATYIKGILK A7    ? 
+// 12  'polypeptide(L)'   no no MSKREETGLATSAGLIRYMDETFSKIRVKPEHVIGVTVAFVIIEAILTYGRF 
+// 1MSKREETGLATSAGLIRYMDETFSKIRVKPEHVIGVTVAFVIIEAILTYGRF A8    ? 
+// 13  'polypeptide(L)'   no no MARNKPLAKKLRLAKALKQNRRVPVWVIVKTNRRVLTHPKRRYWRRTKLKE 
+// 1MARNKPLAKKLRLAKALKQNRRVPVWVIVKTNRRVLTHPKRRYWRRTKLKE Af    ? 
+// 14  'polypeptide(L)'   no no 
+// 1;MNTLKMQRRIAAEILKCGENRIWIDPERIDDVASAITREDIKRLIKEGVIKKKPIKGQSRYRAKIRHEQKKKGRHRGPGS
+// 1RKGKKTARMGKKELWIKTIRALRKELRKLKAQKKIDRKTYRMLYIRAKGGQFKNKHQLYLFLEEHGLLKK
+// 1;
+// 1;MNTLKMQRRIAAEILKCGENRIWIDPERIDDVASAITREDIKRLIKEGVIKKKPIKGQSRYRAKIRHEQKKKGRHRGPGS
+// 1RKGKKTARMGKKELWIKTIRALRKELRKLKAQKKIDRKTYRMLYIRAKGGQFKNKHQLYLFLEEHGLLKK
+// 1;
+// 1AQ    ? 
+//
+// sequence format:
+// _entity_poly.pdbx_seq_one_letter_code 
+// _entity_poly.pdbx_seq_one_letter_code_can
+//
+// 4 different formats are used depending on whether the sequence is small and fits in one line or not
+//
+// (1) sort sequence:
+//
+// 1  'polypeptide(L)'   no no MKTDFNQKIEQLKEFIEECRRVWLVLKKPTKDEYLAVAKVTALGISLLGIIGYIIHVPATYIKGILK 
+// MKTDFNQKIEQLKEFIEECRRVWLVLKKPTKDEYLAVAKVTALGISLLGIIGYIIHVPATYIKGILK A7    ? 
+//
+// (2) long sequence
+//
+// 14  'polypeptide(L)'   no no 
+// ;MNTLKMQRRIAAEILKCGENRIWIDPERIDDVASAITREDIKRLIKEGVIKKKPIKGQSRYRAKIRHEQKKKGRHRGPGS
+// 1RKGKKTARMGKKELWIKTIRALRKELRKLKAQKKIDRKTYRMLYIRAKGGQFKNKHQLYLFLEEHGLLKK
+// ;
+// ;MNTLKMQRRIAAEILKCGENRIWIDPERIDDVASAITREDIKRLIKEGVIKKKPIKGQSRYRAKIRHEQKKKGRHRGPGS
+// 1RKGKKTARMGKKELWIKTIRALRKELRKLKAQKKIDRKTYRMLYIRAKGGQFKNKHQLYLFLEEHGLLKK
+// ;
+// 1AQ    ?
+//
+// (3) super short sequence
+//
+// 37 'polypeptide(L)'   no no MGQKWKLYEIKDGKVIRKNKFCPRCGPGVFMADHGDRWACGKCGYTEWKK MGQKWKLYEIKDGKVIRKNKFCPRCGPGVFMADHGDRWACGKCGYTEWKK
+// BY    ?
+//
+// (4) super-super short sequence
+//
+// 53 'polypeptide(L)'   no no MRWKWIKKRIRRLKRQRKKERGLI MRWKWIKKRIRRLKRQRKKERGLI Ah    ? 
+//
+//
+// WATCH OUT: fields can have more than one word, fields are delimited by 'field with more than one word'. Example
+//
+// 1 'polydeoxyribonucleotide/polyribonucleotide hybrid' no no '(DA)GCGCCUGGACUUAAAGCCAUUGCACU' AGCGCCUGGACUUAAAGCCAUUGCACU A ? 
+//
 static
-int parse_seqtype(char *p, esl_pos_t n, char *type, char **ret_seqtype, int verbose)
+int parse_sequence_type(char *p, esl_pos_t n, char *type, char **ret_seqtype, int verbose)
 {
   char       *seqtype = NULL;
   esl_pos_t   slen;
@@ -1138,15 +1325,27 @@ int parse_seqtype(char *p, esl_pos_t n, char *type, char **ret_seqtype, int verb
   esl_pos_t   i;
   int         status;
   
-  if (! esl_memstrpfx(p, n, type)) esl_fail("not an seqtype %s\n", type);
+  if (! esl_memstrpfx(p, n, type)) esl_fail("not an sequence_type %s\n", type);
   
   slen = (esl_pos_t)strlen(type);
   ESL_ALLOC(seqtype, sizeof(char)*(n-slen+1));
-  
-  for (i = slen; i < n; i++) 
-    if (! isspace(p[i])) seqtype[len++] = p[i]; 
+
+  // seqtype is wrapped in '', could have blanks
+  i = slen;
+  while (isspace(p[i])) i ++;
+  if (p[i++] == '\'') {
+    while (i < n) {
+      if (p[i] == '\'') break;
+      seqtype[len++] = p[i++];
+    }
+  }
+  // seqtype in a bare (no '') word
+  else { 
+    for (i = slen; i < n; i++)
+      if (! isspace(p[i])) seqtype[len++] = p[i]; 
+  }
   seqtype[len] = '\0';
-  
+      
   if (verbose) printf("seqtype %s\n", seqtype);
   
   *ret_seqtype = seqtype;
@@ -1158,8 +1357,21 @@ int parse_seqtype(char *p, esl_pos_t n, char *type, char **ret_seqtype, int verb
   return status;
 }
 
+// Determine if there are multiple chains by looking at field
+// _entity_poly.entity_id
+//
+// if there is a number after,  
+//
+// _entity_poly.entity_id                      1
+//
+//  there is only one sequence. Otherwise there will be an empty field as the sequences are
+//  reporterd all afterwarads together
+//
+// _entity_poly.entity_id                      
+//
+//
 static
-int parse_seqid(PDBX *pdbx, char *p, esl_pos_t n, char *entity, int64_t *ret_seqid, int *ret_multiseq, int verbose) {
+int parse_sequence_id(PDBX *pdbx, char *p, esl_pos_t n, char *entity, int64_t *ret_seqid, int *ret_multiseq, int verbose) {
   char       *seqid = NULL;
   int         multiseq = TRUE;
   esl_pos_t   slen;
@@ -1374,7 +1586,7 @@ parse_add_allseqs(PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int 
   esl_pos_t       i;
   int             isshort;
   int             readnow  = FALSE;
-  int             verbose2 = TRUE;
+  int             verbose2 = FALSE;
   int             status;
 
   chunk[len] = '\0'; // termine chunk as a proper string
@@ -1494,6 +1706,10 @@ parse_add_allseqs(PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int 
   return eslOK; 
 }
 
+// WATCH OUT: fields can have more than one word, fields are delimited by 'field with more than one word'. Example
+//
+// 1 'polydeoxyribonucleotide/polyribonucleotide hybrid' no no '(DA)GCGCCUGGACUUAAAGCCAUUGCACU' AGCGCCUGGACUUAAAGCCAUUGCACU A ? 
+//
 static int
 chunk_is_newsequence(PDBX *pdbx, char *line, struct chain_s *chain, int *ret_isshort, int verbose)
 {
@@ -1503,14 +1719,14 @@ chunk_is_newsequence(PDBX *pdbx, char *line, struct chain_s *chain, int *ret_iss
   int        seqid;
   int        newseq = FALSE;
   int        isshort  = FALSE;
-  int        nt = 0;
+  int        nf = 0;
   int        status;
    
   // watch out!
   // a new sequence starts with an integer,
   // the chainname can also be an interger, and it appears at the begining of line
-  // a newsequence line starts with an integer and it has at least 4 tokens
-  // a chainname line has only two tokens
+  // a newsequence line starts with an integer and it has at least 4 fields
+  // a chainname line has only two fields
   //
   esl_sprintf(&tmp, line);
   if ((status = esl_strtok(&tmp, " \t", &tok)) == eslOK) {
@@ -1519,14 +1735,38 @@ chunk_is_newsequence(PDBX *pdbx, char *line, struct chain_s *chain, int *ret_iss
   }
 
   if (newseq) {
-    nt ++;
+    nf ++;
 
-    // second token is the type of sequence (dna, rna, peptide...)
+    // second field is the type of sequence (dna, rna, peptide...)
+    // watch out that the sequence type may consist of more than one token with '' around them
+    // 'toke1 token2 token3'
     if ( (status = esl_strtok(&tmp, " \t", &tok)) == eslOK) {
-      esl_sprintf(&seqtype, tok); nt ++;
+      
+      if (tok[0] == '\'') { // there may be more than one token to describe the seqtype
+	esl_sprintf(&seqtype, tok+1);
+	
+	if (seqtype[strlen(seqtype)-1] == '\'') { // only one token, remove the ' at the end
+	  seqtype[strlen(seqtype)-1] = '\0';
+	}
+	// else find the rest of the field, that will end with '\''
+	else while ( (status = esl_strtok(&tmp, " \t", &tok)) == eslOK) {
+	    if (tok[strlen(tok)-1] == '\'') {
+	      esl_strcat(&seqtype, -1, "-", -1); // to replace blank
+	      esl_strcat(&seqtype, -1, tok, strlen(tok)-1);
+	      break;
+	    }
+	    else {
+	      esl_strcat(&seqtype, -1, "-", -1); // to replace blank
+	      esl_strcat(&seqtype, -1, tok, -1);
+	    }
+	}
+      }
+      else esl_sprintf(&seqtype, tok);
+
+      nf ++; 
     }
 
-    // if there is a third token, this is definitively a new sequence
+    // if there is a third field, this is definitively a new sequence
     if ( (status = esl_strtok(&tmp, " \t", &tok)) == eslOK) {
       if (chain->seq)  free(chain->seq);  chain->seq  = NULL;
       if (chain->name) free(chain->name); chain->name = NULL;
@@ -1534,36 +1774,36 @@ chunk_is_newsequence(PDBX *pdbx, char *line, struct chain_s *chain, int *ret_iss
       pdbx->nsq ++;
       chain->seqid = seqid;
       esl_sprintf(&chain->seqtype, seqtype);
-      if (verbose) printf("new sequence ");
+      if (verbose) printf("new sequence seqtype %s\n", seqtype);
   
-      nt ++;
+      nf ++;
     }
     else return FALSE;
   
-    // if there is a fifth token, that means the sequence fits in one tmp
+    // if there is a fifth field, that means the sequence fits in one tmp
     while ( (status = esl_strtok(&tmp, " \t", &tok)) == eslOK) {
-      nt ++;
+      nf ++;
 
-      // nt=3,4 not of interest here.
-      // nt=5   seq (we are not interested on it)
+      // nf=3,4 not of interest here.
+      // nf=5   seq (we are not interested on it)
 
-      if (nt == 5) {
+      if (nf == 5) {
 	isshort = TRUE;
 	if (verbose) printf("short? %d\n", isshort);
       }
       
-      if (nt == 6) { // the seqcan fitted here too
+      if (nf == 6) { // the seqcan fitted here too
 	esl_strdup(tok, -1, &chain->seq);
 	if (verbose) printf("seq %s\n", chain->seq);
       }
-      if (nt == 7) { // the chain fitted here too
+      if (nf == 7) { // the chain fitted here too
 	// but we are not adding the chainname from here
 	// we are passing it back so we know the canonical sequence is all in,
 	// but the chain name will not be stored.
 	esl_strdup(tok, -1, &chain->name);
      }
     }
-    if (nt < 5 && verbose) printf("short? %d\n", isshort);
+    if (nf < 5 && verbose) printf("short? %d\n", isshort);
   }
 
   *ret_isshort = (newseq)? isshort : *ret_isshort;
@@ -1719,15 +1959,30 @@ chunk_is_chainname(char *line, char **ret_name)
 // A N N 1 ? 
 // B N N 2 ? 
 // C N N 2 ? 
-// D N N 2 ? 
+// D N N 2 ?
+//
+// Watch out, the format can also be like this
+//
+// _struct_asym.id                            A 
+// _struct_asym.pdbx_blank_PDB_chainid_flag   N 
+// _struct_asym.pdbx_modified                 N 
+// _struct_asym.entity_id                     1 
+// _struct_asym.details                       ? 
+//
 //
 static int
-parse_sasymfield(char *p, esl_pos_t n, int nsl, char **sasymlabel, int *ret_nsaf, int **ret_usesasymf, int verbose)
+parse_sasymfield(PDBX *pdbx, char *p, esl_pos_t n, int nsl, char **sasymlabel, int *ret_nsaf, int **ret_usesasymf, int *ret_sasym_isshort, int verbose)
 {
-  int  nsaf      = *ret_nsaf;
-  int *usesasymf = *ret_usesasymf;
-  int  s;
-  int  status;
+  char      *field         = NULL;
+  int        nsaf          = *ret_nsaf;
+  int       *usesasymf     = *ret_usesasymf;
+  int        sasym_isshort = FALSE;
+  esl_pos_t  salloc = 0;
+  esl_pos_t  slen;
+  int        s;
+  int        i;
+  int        x = 0;
+  int        status;
 
   if (nsaf == 0) ESL_ALLOC  (usesasymf, sizeof(int));
   else           ESL_REALLOC(usesasymf, sizeof(int) * (nsaf+1));
@@ -1737,14 +1992,41 @@ parse_sasymfield(char *p, esl_pos_t n, int nsl, char **sasymlabel, int *ret_nsaf
     if  (esl_memstrpfx(p, n, sasymlabel[s])) {
       usesasymf[nsaf] = s;
       if (verbose) printf ("%s is struct_saym field %d\n", sasymlabel[s], nsaf);
+      
+      slen = (esl_pos_t)strlen(sasymlabel[s]);
+      for (i = slen; i < n; i++) 
+	if (! isspace(p[i])) salloc ++;
+      
+      // short version
+      if (salloc > 0) {
+	if (verbose) printf ("_struct_saym is short version (salloc = %lld)\n", salloc);
+ 
+	ESL_ALLOC(field, sizeof(char) * (salloc+1));
+	for (i = slen; i < n; i++) 
+	  if (! isspace(p[i])) field[x++] = p[i];
+	field[x] = '\0';
+
+	sasym_isshort = TRUE;
+	
+	// we need to assign the chain variables right here (hard coded)
+	// chain variables (name and seqid)
+	//
+	if (pdbx->nch != 1) esl_fatal("a short struct_asym format only compatible with having one chain, you have %lld chains\n", pdbx->nch);
+	if (s == 0) esl_sprintf(&(pdbx->chain[0].name), field);
+	if (s == 1) pdbx->chain[0].seqid = atoi(field);  
+      }
+	
     }
-  }
-  
-  *ret_nsaf      = ++nsaf;
-  *ret_usesasymf = usesasymf;
+  }    
+ 
+  *ret_nsaf          = ++nsaf;
+  *ret_usesasymf     = usesasymf;
+  *ret_sasym_isshort = sasym_isshort;
+  if (field) free(field);
   return eslOK;
 
  ERROR:
+  if (field)     free(field);
   if (usesasymf) free(usesasymf);
   return status;
 }
@@ -1835,6 +2117,12 @@ res_oneletter(char **ret_x, char *res)
   char *x = NULL;
 
   if      (strlen(res) == 1)                  esl_sprintf(&x, res);
+  else if (strlen(res) == 2) {   // deoxy(DNA) nucleotides in an rna 
+    if      (esl_strcmp(res, "DA") == eslOK) esl_sprintf(&x, "A");
+    else if (esl_strcmp(res, "DC") == eslOK) esl_sprintf(&x, "C");
+    else if (esl_strcmp(res, "DG") == eslOK) esl_sprintf(&x, "G");
+    else if (esl_strcmp(res, "DT") == eslOK) esl_sprintf(&x, "T");
+  }
   else if (strlen(res) == 3) {    
     if      (esl_strcmp(res, "ALA") == eslOK) esl_sprintf(&x, "A");
     else if (esl_strcmp(res, "ARG") == eslOK) esl_sprintf(&x, "R");

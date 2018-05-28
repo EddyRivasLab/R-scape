@@ -1,3 +1,4 @@
+
 /* R-view -- basepairs(RNA) and contacts(RNA/peptides) from a pdb file.
  */
 #include <stdio.h>
@@ -40,8 +41,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   double           maxD;              // max distance in pdb structure to call a contact
   int              minL;              // min distance in pdb sequence allowed
-  DISTMETHOD       distmethod;
-
+  DISTTYPE         disttype;
+  int              interchain;        // TRUE to calculate inter-chain contacts
+  
   char            *pdbxfile;          // the input pdbx/mmcif file
   char            *outfile;
   FILE            *outfp;
@@ -55,10 +57,11 @@ static ESL_OPTIONS options[] = {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   /* Control of pdb contacts */
-  { "--maxD",      eslARG_REAL,        "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
-  { "--minL",      eslARG_INT,           "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
-  { "--MIN",          eslARG_NONE,    "TRUE",    NULL,     NULL,CONTACTOPTS,  NULL,  NULL,               "Minimum distance btw any two atoms (except water)",                                         1 },
-  { "--CB",           eslARG_NONE,      FALSE,   NULL,     NULL,CONTACTOPTS,  NULL,  NULL,               "Distance btw beta Carbors (alphaC for Gly)",                                                 1 },
+  { "--maxD",         eslARG_REAL,      "8.0",   NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
+  { "--minL",          eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
+  { "--MIN",          eslARG_NONE,     "TRUE",   NULL,      NULL,CONTACTOPTS, NULL,  NULL,               "Minimum distance btw any two atoms (except water)",                                         1 },
+  { "--CB",           eslARG_NONE,      FALSE,   NULL,      NULL,CONTACTOPTS, NULL,  NULL,               "Distance btw beta Carbors (alphaC for Gly)",                                                 1 },
+  { "--inter",        eslARG_NONE,      FALSE,   NULL,      NULL,    NULL,    NULL,  NULL,               "TRUE to calculate inter-chain contacts",                                                     1 },
   /* Control of output */
   { "-o",             eslARG_OUTFILE,   FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   /* other options */  
@@ -113,18 +116,20 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.watch = esl_stopwatch_Create(); 
   
   /* other options */
-  cfg.maxD    = esl_opt_GetReal   (go, "--maxD");
-  cfg.minL    = esl_opt_GetInteger(go, "--minL");
-  cfg.tol     = esl_opt_GetReal   (go, "--tol");
-  cfg.verbose = esl_opt_GetBoolean(go, "-v");
+  cfg.maxD       = esl_opt_GetReal   (go, "--maxD");
+  cfg.minL       = esl_opt_GetInteger(go, "--minL");
+  cfg.interchain = esl_opt_GetBoolean(go, "--inter");
+  cfg.tol        = esl_opt_GetReal   (go, "--tol");
+  cfg.verbose    = esl_opt_GetBoolean(go, "-v");
   
-  if      (esl_opt_GetBoolean(go, "--MIN")) cfg.distmethod = MIN;
-  else if (esl_opt_GetBoolean(go, "--CB"))  cfg.distmethod = CB;
+  if      (esl_opt_GetBoolean(go, "--MIN")) cfg.disttype = DIST_MIN;
+  else if (esl_opt_GetBoolean(go, "--CB"))  cfg.disttype = DIST_CB;
 
   /* output file */
+  cfg.outfp = NULL;
   if ( esl_opt_IsOn(go, "-o") ) {
     esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
-    if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
+    if ((cfg.outfp = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
   } 
 
   *ret_go = go;
@@ -149,20 +154,16 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS     *go = NULL;
   struct cfg_s     cfg;
-  CLIST           *clist = NULL;
-  int              nct = 0;
+  int              c;
   int              status = eslOK;
 
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);
 
   /* read the PDB file and extract the contacts */
-  status = rview_ContactMap(cfg.pdbxfile, &nct, &clist, cfg.maxD, cfg.minL, cfg.errbuf, cfg.verbose);
-
-  /* write output */
+  status = rview_ContactMap(cfg.outfp, cfg.pdbxfile, cfg.maxD, cfg.minL, cfg.disttype, cfg.interchain, NULL, NULL, cfg.errbuf, cfg.verbose);
 
   /* clean up */
-  CMAP_FreeCList(clist);
   esl_stopwatch_Destroy(cfg.watch); 
   if (go) esl_getopts_Destroy(go);
   exit(status);

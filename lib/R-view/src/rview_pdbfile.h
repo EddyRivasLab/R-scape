@@ -143,6 +143,7 @@ struct chain_s {
 
 typedef struct pdbx_s {
   char           *pdbname;
+  char           *method;
   double          res_high;
   double          res_low;
   

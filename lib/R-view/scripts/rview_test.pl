@@ -29,3 +29,15 @@ FUNCS::sorted_files ($DIR, \@pdb, $suffix);
 my @pdbname = map { /$DIR\/(.*)\.$suffix/ } @pdb;
 my $nf = $#pdb+1;
 print "NF  = $nf\n";
+
+my $homedir = "/Users/erivas";
+my $rnaview = "$homedir/src/src/mysource/bin/R-view";
+
+
+for (my $f = 0; $f < $nf; $f++) {
+    my $cmd = "$rnaview $pdb[$f]";
+    printf("\n$f>$pdb[$f]\n");
+    system("echo $cmd\n");
+    system("$cmd\n");
+}
+
