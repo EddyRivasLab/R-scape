@@ -75,6 +75,7 @@ PROGS    = R-view\
 
 OBJS     = rview_contacts.o\
 	   rview_cmap.o\
+	   rview_matrix.o\
 	   rview_pdbfile.o\
 
 

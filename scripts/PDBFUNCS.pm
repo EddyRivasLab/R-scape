@@ -82,8 +82,8 @@ sub pdb2msa {
     my @map;
     my @revmap;
     my $small_output = 0;
-    contacts_from_pdb ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
-			   \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $small_output, $seeplots);
+    contacts_from_pdb ($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, , \$msalen, \$pdblen, \@map, \@revmap, 
+		       \$ncnt, \@cnt, $usechain, $maxD, $minL, $byali, $which, $isrna, "", "", $small_output, $seeplots);
     contactlist_bpinfo($ncnt, \@cnt, \$nbp, \$nwc);
     
     contactlist_maxlen($ncnt, \@cnt, \$maxlen);
@@ -468,24 +468,33 @@ sub contacts_from_pdb {
     print     "# resolution: $resolution\n";
     
    for (my $n = 0; $n < $nch; $n ++) {
-
+       
 	my $dochain;
 	if ($usechain) {
 	    if ($usechain =~ /^$chname[$n]$/) { $dochain = 1; }
 	    else                              { $dochain = 0; }
 	}
 	else { $dochain = 1; }
- 	if ($dochain == 0) { next; }
+	
+	if ($dochain == 0) { next; }
 	
 	my $map0file;
 	my $map1file;
 	if (!$smallout) {
-	    $map0file = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
-	    $map1file = "$currdir/$pdbname.chain$chname[$n].$famname.maxD$maxD.type$which.map";
+	    if (!$mapfile_t) { $mapfile_t  = "$currdir/$famname.$pdbname.chain$chname[$n].maxD$maxD.type$which.map"; }
+	    $map0file  = "$currdir/$pdbname.chain$chname[$n].maxD$maxD.type$which.map";
+	    $map1file  = "$currdir/$pdbname.chain$chname[$n].$famname.maxD$maxD.type$which.map";
 	}
 	my $corfile   = "$currdir/$pdbname.chain$chname[$n].$famname.maxD$maxD.type$which.cor";
 	
 	print "\n chain $chname[$n]\n";
+	print "map:$mapfile_t\n";
+	print "map0:$map0file\n";
+	print "map1:$map1file\n";
+	
+	print "mapallfile:$mapallfile\n";
+	print "corfile:$corfile\n";
+	
 	if ($coorfile) {
 	    print COORF "$corfile\n";
 	}
@@ -1125,9 +1134,9 @@ sub pdb_atoms {
  	elsif ($s1 eq $s2) { $atommap[$l+1] = $y+1; $l ++; $y ++; }
 	else { print "mapping $s1 and $s2  ??\n"; die; }
     }
-    system("rm $seqresfile\n");
-    system("rm $bothsqfile\n");
-    
+    system("/bin/rm $seqresfile\n");
+    system("/bin/rm $bothsqfile\n");
+
     #check
     for (my $l = 0; $l < $len; $l ++) {
 	my $ll = $atommap[$l+1] - 1;

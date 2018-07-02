@@ -12,6 +12,8 @@ use FUNCS;
 
 use vars qw ($opt_C  $opt_D $opt_L $opt_M $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
 use Getopt::Std;
+use Cwd qw(cwd);
+ 
 getopts ('C:D:L:M:PRSvW:');
 
 # Print a helpful message if the user provides no input file.
@@ -26,6 +28,7 @@ my $stofile   = shift;
 my $rscapebin = shift;
 my $gnuplot   = shift;
 
+my $dir = cwd;
 my $coorfile = "";   if ($opt_C) { $coorfile   = "$opt_C"; }
 my $mapallfile = ""; if ($opt_M) { $mapallfile = "$opt_M"; }
 
@@ -52,6 +55,7 @@ my $byali = 0; # minL relative to pdb sequence
 my $usechain = "";  # define if want to use a specific chain
 my @map;
 my @revmap;
-PDBFUNCS::contacts_from_pdbfile ($gnuplot, $rscapebin, $pdbfile, $stofile, \$msalen, \$pdblen, \@map, \@revmap, 
-				 \$ncnt_t, \@cnt_t, $usechain, $maxD, $minL, $byali, $which, $dornaview, 
-				 $coorfile, $mapallfile, $smallout, $seeplots);
+my $mapfile_t = "";
+PDBFUNCS::contacts_from_pdb($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
+			    \$ncnt_t, \@cnt_t, $usechain, $maxD, $minL, $byali, $which, $dornaview, 
+			    $coorfile, $mapallfile, $smallout, $seeplots);

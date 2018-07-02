@@ -42,25 +42,25 @@ void get_chain_idx(long num_residue, long **seidx, char *ChainID,
   *nchain = n;
 }
 
+
 void
 get_reference_pdb(char *BDIR)
 {
   char   **sAtomName;
   char    *spdb = NULL;
-  double **sx;
   char     ref[] = "AGCUTIP";
   long     i,j,k,snum;
+  double **sx;
   
   sAtomName = cmatrix(1, 20, 0, 4);
   sx = dmatrix(1, 20, 1, 3);
 
-  for(i = 0; i < 7; i++) { /* read the reference pdb files */
+  for(i=0; i<7; i++){ /* read the reference pdb files */
     esl_sprintf(&spdb, "%sAtomic_%c.pdb", BDIR, ref[i]);
     snum = read_pdb_ref(spdb, sAtomName, sx);
-    
     std[i].sNatom = snum;
-    for(j = 1; j <= snum; j++) {
-      for(k = 1; k <= 3; k++)
+    for(j=1; j<=snum; j++){
+      for(k=1; k<=3; k++)
 	std[i].sxyz[j][k] = sx[j][k];            
       strcpy(std[i].sAtomNam[j], sAtomName[j]);
     }
@@ -75,15 +75,22 @@ long  ref_idx(char resnam)
 {
   long ii = -1;
   
-  if      (resnam == 'A' || resnam == 'a') ii = 0;
-  else if (resnam == 'G' || resnam == 'g') ii = 1;
-  else if (resnam == 'C' || resnam == 'c') ii = 2;
-  else if (resnam == 'U' || resnam == 'u') ii = 3;
-  else if (resnam == 'T' || resnam == 't') ii = 4;
-  else if (resnam == 'I')                  ii = 5;
-  else if (resnam == 'P')                  ii = 6;
-  else printf("Warning!! Bseq[j] is not assigned. \n");
-  
+  if     (resnam=='A' || resnam=='a')
+    ii = 0;
+  else if(resnam=='G' || resnam=='g')
+    ii = 1;
+  else if(resnam=='C' || resnam=='c')
+    ii = 2;
+  else if(resnam=='U' || resnam=='u')
+    ii = 3;
+  else if(resnam=='T' || resnam=='t')
+    ii = 4;
+  else if(resnam=='I')
+    ii = 5;
+  else if(resnam=='P')
+    ii = 6;
+  else
+    printf("Warning!! Bseq[j] is not assigned. \n");
   return ii;
 }
 
@@ -93,8 +100,8 @@ void dswap(double *pa, double *pb)
   double temp;
   
   temp = *pa;
-  *pa  = *pb;
-  *pb  = temp;
+  *pa = *pb;
+  *pb = temp;
 }
 
 void lswap(long *pa, long *pb)
@@ -102,8 +109,8 @@ void lswap(long *pa, long *pb)
   long temp;
   
   temp = *pa;
-  *pa  = *pb;
-  *pb  = temp;
+  *pa = *pb;
+  *pb = temp;
 }
 
 double dmax(double a, double b)
@@ -180,7 +187,7 @@ long number_of_atoms(char *pdbfile)
   long n = 0, nlen;
   FILE *fp;
   
-  if ((fp = fopen(pdbfile, "r")) == NULL){
+  if((fp = fopen(pdbfile, "r"))==NULL){
     printf("Can not open the file %s (routine: number_of_atoms)\n",pdbfile);
     return 0;
   }
@@ -212,129 +219,8 @@ long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
   char atomname[5], atomnum[7], resname[4], chainid, resseq[5];
   FILE *fp;
   
-  if ((fp = fopen(pdbfile, "r"))==NULL) {        
+  if((fp = fopen(pdbfile, "r"))==NULL) {        
     printf("Can not open the file %s (routine: read_pdb)\n",pdbfile);
-    return 0;
-  }
-  
-  n=1;
-  while (fgets(str, sizeof str, fp) != NULL) {
-    nlen = upperstr(str);
-    if (!strncmp(str+17, "HOH", 3) || !strncmp(str+17, "WAT", 3))
-      continue; /*get ride of WATER */
-    
-    if (str[13] == 'H')
-      continue;  /*get ride of H atoms */
-    
-    if ((nlen >= 54 && !strncmp(str, "ATOM", 4))
-	|| (!strncmp(str, "HETATM", 6) && HETA>0) ){
-      
-      strncpy(atomname, str + 12, 4);
-      atomname[4] = '\0';
-      
-      strncpy(resname, str + 17, 3);        /* residue name */
-      resname[3] = '\0';
-      /* delete ending spaces as in "C  " */
-      for (i = 1; i <= 2; i++)
-	if (resname[2] == ' ') {
-	  resname[2] = resname[1];
-	  resname[1] = resname[0];
-	  resname[0] = ' ';
-	}
-      if (resname[2] == ' ') {
-	printf( "%s\n", str);
-	nrerror("==> residue name field empty <==");
-      }
-      
-      chainid=str[21];
-      
-      strncpy(resseq, str + 22, 4);    /* residue sequence */
-      resseq[4] = '\0';
-      
-      sprintf(str_id, "%s%s%c%s",atomname, resname, chainid, resseq); 
-      
-      if(!strcmp(str_id, str_id0) && n>1) continue; /* rid of alternate */
-      
-      strcpy(AtomName[n], atomname);
-      strcpy(ResName[n], resname);
-      ChainID[n] = chainid;
-      
-      if (sscanf(resseq, "%4ld", &ResSeq[n]) != 1) {
-	printf( "residue #? ==> %.54s\n", str);
-	ResSeq[n] = 9999;
-      }
-      
-      strncpy(atomnum, str + 6, 6);    /* atom number */
-      atomnum[6] = '\0';
-      if (sscanf(atomnum, "%6ld", &AtomNum[n]) != 1) {
-	printf( "atom #? ==> %.54s\n", str);
-	exit(1);
-      }
-      
-      strncpy(temp, str + 30, 25);           /* xyz */
-      temp[25] = '\0';
-      if (sscanf(temp,"%8lf%8lf%8lf",
-		 &xyz[n][1],&xyz[n][2],&xyz[n][3])!=3)
-	nrerror("error reading xyz-coordinate");
-      
-      Miscs[n][0] = str[0];        /* H for HETATM, A for ATOM */
-      Miscs[n][1] = str[16];        /* alternative location indicator */
-      Miscs[n][2] = str[26];        /* code of insertion residues */
-      strncpy(Miscs[n] + 3, str + 54, NMISC - 3);
-      if ((pchar = strrchr(Miscs[n], '\n')) != NULL)
-	Miscs[n][pchar - Miscs[n]] = '\0';
-      else
-	Miscs[n][NMISC] = '\0';                /* just to make sure */
-      
-      
-      if (AtomName[n][3] == '*')        /* * to ' */
-	AtomName[n][3] = '\'';
-      if (!strcmp(AtomName[n], " O1'")){        /* O1' to O4' */
-	strcpy(AtomName[n], " O4'");
-      }else if (!strcmp(AtomName[n], " OL ")) {       /* OL to O1P */
-	strcpy(AtomName[n], " O1P");
-      }else if (!strcmp(AtomName[n], " OR ")) {       /* OR to O2P */
-	strcpy(AtomName[n], " O2P");
-      }else if  (!strcmp(AtomName[n], " C5A")){        /* C5A to C5M */
-	strcpy(AtomName[n], " C5M");
-      }else if (!strcmp(AtomName[n], " O5T")){        /* terminal O5' */
-	strcpy(AtomName[n], " O5'");
-      }else if (!strcmp(AtomName[n], " O3T")){        /* terminal O3' */
-	strcpy(AtomName[n], " O3'");
-      }
-      /*            
-		    printf("%s%5ld %4s%c%3s %c%4ld%c   %8.3lf%8.3lf%8.3lf\n", 
-		    "ATOM  ", n, AtomName[n], Miscs[n][1],
-		    ResName[n], ChainID[n], ResSeq[n], Miscs[n][2], xyz[n][1],
-		    xyz[n][2], xyz[n][3]);
-      */           
-      
-      n++;
-      
-      sprintf(str_id0, "%s%s%c%s",atomname, resname, chainid, resseq); 
-      
-    }
-  }
-  
-  fclose(fp);
-  return n-1;
-}
-
-long read_cif(char *ciffile, char **AtomName, char **ResName, char *ChainID,
-              long *AtomNum, long *ResSeq, double **xyz, char **Miscs, char *ALT_LIST)
-/* read the atoms of a cif file
- * Miscs[][NMISC]: H/A, altLoc, iCode, occ./tempFac./segID/element/charge
- *           col#   0     1       2       3-28 [combined together]
- * ATOM   44   C  "C1'" . G   A 1 2  ? 5.458   47.657 107.604 1.00 35.15  ? 7   G   A "C1'" 1 
- */
-{
-  FILE *fp;
-  char str[BUF512], temp[BUF512], *pchar, str_id[20], str_id0[20];
-  long i, n, nlen;
-  char atomname[5], atomnum[7], resname[4], chainid, resseq[5];
-  
-  if((fp = fopen(ciffile, "r"))==NULL) {        
-    printf("Can not open the file %s (routine: read_cif)\n",ciffile);
     return 0;
   }
   
@@ -659,7 +545,7 @@ long **residue_idx(long num, long *ResSeq, char **Miscs, char *ChainID,
   seidx[1][1] = 1;
 
   *num_residue = n;
-   
+  
   free_cmatrix(bidx, 1, num, 0, 12);
   free_lvector(temp, 1, num);
   
@@ -1855,13 +1741,17 @@ void base_frame(long num_residue, char *bseq, long **seidx, long *RY,
 {
     static char *RingAtom[9] =
     {" C4 ", " N3 ", " C2 ", " N1 ", " C6 ", " C5 ", " N7 ", " C8 ",
-     " N9 "};    
+     " N9 "
+    };
+    
     char **sAtomName, resnam;
     char idmsg[BUF512];
     long i,ii, ib, ie, j, k, RingAtom_num;
     long exp_katom, nmatch, std_katom,num;
+
     double rms_fit, orgi[4];
     double **eRing_xyz,  **sRing_xyz, **fitted_xyz, **R;
+
 
     sAtomName = cmatrix(1, 20, 0, 4);
     
@@ -1871,7 +1761,8 @@ void base_frame(long num_residue, char *bseq, long **seidx, long *RY,
     R = dmatrix(1, 3, 1, 3);
 
     get_reference_pdb(BDIR);
-        
+    
+    
     for (i = 1; i <= num_residue; i++) {
         if (RY[i] < 0)
             continue;                /* non-bases */
@@ -2120,11 +2011,12 @@ void base_info(long num_residue, char *bseq, long **seidx, long *RY,
     strcat(BDIR, PAR_FILE);
     fpar = fopen(BDIR, "r");
 
-    if ((fpar = fopen(BDIR, "r")) == NULL) {
-        printf("cannot open file %s (routine:base_info)\n", BDIR);
+    if((fpar=fopen(BDIR, "r"))==NULL){
+        printf("I can not open file %s (routine:base_info)\n",BDIR);
         exit(0);
     }
     
+        /* printf( " ...... reading file: %s ...... \n", PAR_FILE);*/
     for (i = 1; i <= 6; i++)
         if ((fgets(str, sizeof str, fpar) == NULL) ||
             (sscanf(str, "%lf", &BPRS[i]) != 1))
@@ -2141,16 +2033,23 @@ void base_info(long num_residue, char *bseq, long **seidx, long *RY,
             j = find_1st_atom(" N9 ", AtomName, ib, ie,"");
         else if (RY[i] == 0){
             if(bseq[i] == 'P' || bseq[i] == 'p')
-	      /* suppose C5 is in the position of N1 for PSU  */
+/* suppose C5 is in the position of N1 for PSU  */
                 j = find_1st_atom(" C5 ", AtomName, ib, ie, "");
             else
                 j = find_1st_atom(" N1 ", AtomName, ib, ie, "");
         }
         if (RY[i] >= 0) {
-	  for (k = 1; k <= 3; k++)       
-	    Nxyz[i][k] = xyz[j][k];
-	  o3_p_xyz(ib, ie, " O3'", AtomName, xyz, o3_p[i], 4);
-	  o3_p_xyz(ib, ie, " P  ", AtomName, xyz, o3_p[i], 8);
+              
+         /* 
+            j =
+                (RY[i] == 1) ?
+                find_1st_atom(" N9 ", AtomName, ib, ie,
+                              "") :find_1st_atom(" N1 ", AtomName, ib, ie, "");
+         */   
+            for (k = 1; k <= 3; k++)       
+                Nxyz[i][k] = xyz[j][k];
+            o3_p_xyz(ib, ie, " O3'", AtomName, xyz, o3_p[i], 4);
+            o3_p_xyz(ib, ie, " P  ", AtomName, xyz, o3_p[i], 8);
         }
     }
 }

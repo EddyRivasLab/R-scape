@@ -2,6 +2,7 @@
  *
  */
 #include <stdio.h>
+#include <string.h>
 #include "easel.h"
 #include "esl_fileparser.h"
 
@@ -151,11 +152,38 @@ rview_ContactsByDistance_InterChain(struct chain_s *chain1, struct chain_s *chai
   return eslOK;
 }
 
-
 int
 rview_RNABasepairs(struct chain_s *chain, CLIST *clist, char *errbuf, int verbose)
 {
-  return eslOK;
+  RES    *std = NULL;
+  RES    *res1, *res2;
+  int     r1, r2;
+  int     i1, i2;  // backbone positions
+
+ if (!strstr(chain->seqtype, "ribo")) return eslOK; // nothing to do here for this chain
+ printf("find RNA bpairs for chain %s (%s)\n", chain->name, chain->seqtype);
+
+ // the standard nucleotides
+ rview_res_StandardNT(&std, errbuf, verbose);
+
+ // Add the geometric information for all residues
+ rview_chain_GEOMparam(chain, std, errbuf, TRUE);
+
+ for (r1 = 0; r1 < chain->nr; r1 ++)  {
+    res1 = &(chain->res[r1]);
+    i1   = res1->resnum;
+    
+    for (r2 = r1+1; r2 < chain->nr; r2 ++) {
+      res2 = &(chain->res[r2]);
+      i2   = res2->resnum;
+
+      
+      
+    }
+  }
+  
+ if (std) free(std);
+ return eslOK;
 }
 
 // add a clist (tmp) to the array of list (clist) 
@@ -174,7 +202,9 @@ CMAP_AddClist(int cl, CLIST *clist, CLIST *tmp, char *errbuf)
   new->alloc_ncnt = tmp->alloc_ncnt;
   ESL_ALLOC(new->cnt,    sizeof(CNT)   * new->alloc_ncnt);
   ESL_ALLOC(new->srtcnt, sizeof(CNT *) * new->alloc_ncnt);
-  new->srtcnt[0] = new->cnt;
+  new->ncnt = tmp->ncnt;
+  for (n = 0; n < new->ncnt; n ++)
+    CMAP_CopyContact(&new->cnt[n], &tmp->cnt[n]);
 
   new->pdbname  = NULL; if (tmp->pdbname) esl_sprintf(&new->pdbname, tmp->pdbname);
   new->ch1name  = NULL; if (tmp->ch1name) esl_sprintf(&new->ch1name, tmp->ch1name);
@@ -193,8 +223,6 @@ CMAP_AddClist(int cl, CLIST *clist, CLIST *tmp, char *errbuf)
   new->ncnt = tmp->ncnt;
   new->nbps = tmp->nbps;
   new->nwwc = tmp->nwwc;
-  for (n = 0; n < tmp->ncnt; n ++)
-    CMAP_CopyContact(&new->cnt[n], &tmp->cnt[n]);
 
   new->L      = tmp->L;
   new->alen   = tmp->nbps;
@@ -368,6 +396,8 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
   char *bptype = NULL;
   int   status = eslOK;
 
+  if (clist->pdbname == NULL) return eslOK;
+    
   if (pdbonly) fprintf(fp, "# ij in pdbsequence | basepair type\n");
   else         fprintf(fp, "# ij in alignment | ij in pdbsequence | basepair type\n");
   for (h = 0; h < clist->ncnt; h ++) {
@@ -397,10 +427,12 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
 int
 CMAP_DumpShort(FILE *fp, CLIST *clist)
 {
+  if (clist->pdbname == NULL) return eslOK;
+  
   fprintf(fp, "# PDB:      %s\n", clist->pdbname);
   if (clist->ch2name == NULL) {
-    fprintf(fp, "# chain:    %s (%s)\n", clist->ch1name, clist->ch1type);
-    fprintf(fp, "# seq:      (%lld)\n",  clist->len1);
+    if (clist->ch1name) fprintf(fp, "# chain:    %s (%s)\n", clist->ch1name, clist->ch1type);
+    if (clist->len1) fprintf(fp, "# seq:      (%lld)\n",  clist->len1);
     //fprintf(fp, "# %s\n",                clist->ch1seq);
   }
   else {
@@ -634,7 +666,7 @@ euclidean_distance(ATOM *a1, ATOM *a2)
   double xd;
   double yd;
   double zd;
-
+ 
   xd = a1->x - a2->x;
   yd = a1->y - a2->y;
   zd = a1->z - a2->z;

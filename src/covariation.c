@@ -331,7 +331,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
  
       /* add to the histogram of base pairs (hb) and not bps (ht) */
       if (data->mode == GIVSS || data->mode == CYKSS) {
-	
+
 	switch(data->samplesize) {
 	case SAMPLE_CONTACTS:
 	  select = CMAP_IsContactLocal(i+1,j+1,data->clist);
@@ -353,6 +353,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	  esl_histogram_Add(ranklist->ht, add);
       }
     }
+
   
   /* Histogram and Fit */
   if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS) ) {
@@ -396,8 +397,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   status = cov_ROC(data, covtype, ranklist);
   if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad ROCfile.");
-  
-  if (data->mode == GIVSS || data->mode == CYKSS) {
+
+  if ((data->mode == GIVSS && data->nbpairs > 0) || data->mode == CYKSS) {
     status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype);
     if (status != eslOK) goto ERROR;
   } 

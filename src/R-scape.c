@@ -878,8 +878,7 @@ main(int argc, char **argv)
     else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
     else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
     else if (esl_opt_GetBoolean(go, "--sampleall"))      { cfg.samplesize = SAMPLE_ALL; }
-    if (cfg.samplesize != SAMPLE_ALL && msa->ss_cons == NULL && cfg.pdbfile == NULL) cfg.samplesize = SAMPLE_ALL;
-
+ 
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
@@ -1227,11 +1226,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   // (1) use --cyk if no structure is given unless --naive
   // (2) unless it is too long.
   if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
-  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if no given one
-    if (cfg->statsmethod == NAIVE) cfg->docyk = FALSE;
+  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if there is not one.
+    if (cfg->statsmethod == NAIVE) cfg->docyk = TRUE;
     else {
-    printf("No structure given or pdbfile to read one, we continue with --cyk option\n");
-    cfg->docyk = TRUE;
+      printf("No structure given or pdbfile to read one from, we continue with --cyk option\n");
+      cfg->docyk = TRUE;
     }
   }
   if (cfg->docyk && msa->alen > cfg->cykLmax) { // unless alignment is too long
@@ -1244,7 +1243,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
     }
   }
-
+  
   if (cfg->outdir) {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
@@ -1347,11 +1346,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   
   /* main function */
   cfg->mode = GIVSS;
-  analyze = TRUE;
+  analyze   = TRUE;
 
   status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
+  
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
@@ -1610,7 +1609,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (status != eslOK) goto ERROR; 
   if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
 
-  if (cfg->mode == GIVSS) {
+  if (cfg->mode == GIVSS && cfg->nbpairs >= 0) {
     if (cfg->verbose) {
       printf("score total distribution\n");
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
@@ -1622,7 +1621,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR; 
   }
- 
+  
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS) {
 

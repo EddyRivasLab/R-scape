@@ -40,11 +40,11 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
 	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb, double cntmaxD, int cntmind, int onlypdb,
 	   char *errbuf, int verbose)
 {
-  CLIST   *clist = NULL;
-  FILE    *cmapfp = NULL;
-  int     *ct = NULL;
+  CLIST   *clist   = NULL;
+  FILE    *cmapfp  = NULL;
+  int     *ct      = NULL;
   int     *msa2pdb = NULL;
-  char    *ss = NULL;
+  char    *ss      = NULL;
   int      L = msa->alen;
   int      ct_nbpairs;
   int      alloc_ncnt = 5;
@@ -98,6 +98,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
    }
    
    if (1||verbose) {
+     printf("^^ clist %d pdbname %s\n", clist->ncnt, clist->pdbname);
      CMAP_Dump(stdout, clist, FALSE);
      if (abcisRNA) printf("%s\n", ss);
    }
@@ -182,6 +183,8 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   int      L = msa->alen;
   int      status;
   
+  esl_sprintf(&clist->pdbname, pdbfile);
+
   if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
   fclose(tmpfp);
   if ((status = esl_tmpfile_named(tmpcfile,   &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbcfile");
@@ -211,7 +214,7 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   status = read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ct, clist, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading contacts", errbuf);
   remove(tmpcfile);
-  
+
   if (cmd)  free(cmd);
   if (args) free(args);
   return eslOK;

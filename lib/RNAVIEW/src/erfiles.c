@@ -43,7 +43,7 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
   int              num = 0;
   char             ch[2];
   char            *tok;
-  int              len = -1;
+  int              len;
   int              L = -1;
   int              n = 1;
   int              i;
@@ -74,14 +74,12 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
 	}
 	n ++;
       }
-	    
     }
   esl_fileparser_Close(efp);
 
   // identify missing residues in the atom description
-  L = len;
-  if (L <= 0) ESL_XFAIL(eslFAIL, errbuf, "wrong sequence length %d from file %s", L, pdbfile);
-  
+  L = to - from + 1;
+  if (L <= 0) return eslFAIL;
   ESL_ALLOC(ismissing, sizeof(int) * L);
   for (i = 0; i < L; i ++) ismissing[i] = FALSE;
 
@@ -120,129 +118,6 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
 	if (strcmp(tok, chainname) != 0) continue;
 
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbfile);
-      misspos = atoi(tok);
-      
-      if (misspos < from) {
-	D = from - misspos + 1;
-	ESL_REALLOC(ismissing, sizeof(int)*(L+D));
-	for (x = L; x >= 0; x --) ismissing[x+D] = ismissing[x];
-	for (x = 1; x <  D; x ++) ismissing[x] = FALSE;
-	ismissing[0] = TRUE;
-	from = misspos;
-      }
-      else if (misspos > to) {
-	D = misspos - to + 1;
-	ESL_REALLOC(ismissing, sizeof(int)*(L+D));
-	for (x = 0; x < D-1; x ++) ismissing[x+L] = FALSE;
-	ismissing[L+D-1] = TRUE;
-	to = misspos;
-      }
-      else {
-	ismissing[misspos-from] = TRUE;
-      }
-    }
-  esl_fileparser_Close(efp);
-
-  *ret_from = from;
-  *ret_to   = to;
-  *ret_sq   = sq;
-  *ret_ismissing = ismissing;
-  
-  return eslOK;
-
- ERROR:
-  if (sq) free(sq);
-  return status;
-}
-
-int er_CIF_GetSeq(char *ciffile, char *chainname, int *ret_from, int *ret_to, char **ret_sq, int **ret_ismissing, char *errbuf)
-{
-  ESL_FILEPARSER  *efp = NULL;
-  char            *sq = NULL;
-  int             *ismissing = NULL;
-  int              to = *ret_to;
-  int              from = *ret_from;
-  int              tmp;
-  int              num = 0;
-  char             ch[2];
-  char            *tok;
-  int              len = -1;
-  int              L = -1;
-  int              n = 1;
-  int              i;
-  int              misspos;
-  int              D;
-  int              x;
-  int              status;
-
-  ch[1] = '\0';
-  if (esl_fileparser_Open(ciffile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-  esl_fileparser_SetCommentChar(efp, '#');
-  while (esl_fileparser_NextLine(efp) == eslOK)
-    {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      if (strcmp(tok, "SEQRES") != 0) continue;
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      if (strcmp(tok, chainname) != 0) continue;
-      
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      len = atoi(tok);
-  
-      while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
-	    
-	if (n <= len) {
-	  ch[0] = er_aa_conversion(tok);
-	  esl_strcat(&sq, -1, ch, -1);
-	}
-	n ++;
-      }
-	    
-    }
-  esl_fileparser_Close(efp);
-
-  // identify missing residues in the atom description
-  L = len;
-  if (L <= 0) ESL_XFAIL(eslFAIL, errbuf, "wrong sequence length %d from file %s", L, ciffile);
-  
-  ESL_ALLOC(ismissing, sizeof(int) * L);
-  for (i = 0; i < L; i ++) ismissing[i] = FALSE;
-
-  if (esl_fileparser_Open(ciffile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-  esl_fileparser_SetCommentChar(efp, '#');
-  while (esl_fileparser_NextLine(efp) == eslOK)
-    {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      if (strcmp(tok, "REMARK") != 0) continue;      
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) 
-	tmp = atoi(tok);
-      
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) 
-	if (strcmp(tok, "MISSING") != 0) continue;
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
-	if (strcmp(tok, "RESIDUES") == 0) num = tmp;
-	else break;
-      }
-    }
-  esl_fileparser_Close(efp);
-  
-  if (esl_fileparser_Open(ciffile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-  esl_fileparser_SetCommentChar(efp, '#');
-  while (esl_fileparser_NextLine(efp) == eslOK)
-    {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
-      if (strcmp(tok, "REMARK") != 0) continue;
-      
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
-	tmp = atoi(tok);
-	if (tmp != num) continue;
-      }
-
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) continue;
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) 
-	if (strcmp(tok, chainname) != 0) continue;
-
-      if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", ciffile);
       misspos = atoi(tok);
       
       if (misspos < from) {
@@ -280,8 +155,7 @@ int er_CIF_GetSeq(char *ciffile, char *chainname, int *ret_from, int *ret_to, ch
 
 int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_residue, long **seidx, char **ResName,
 		      long *AtomNum, long *Atom2SEQ, long *ResSeq, char **AtomName, char **Miscs, double **xyz,
-		      long *ret_nchain, char **ret_chain_name, long **ret_chain_f, long **ret_chain_t,
-		      char *extension, char *errbuf)
+		      long *ret_nchain, char **ret_chain_name, long **ret_chain_f, long **ret_chain_t, char *errbuf)
 {
   long  *chain_f = NULL;
   long  *chain_t = NULL;
@@ -295,7 +169,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   long   ib, ie, ip;
   long   rb, re;
   char   ch[2];
-  char  *seqres = NULL;
+  char  *sq = NULL;
   int   *ismissing = NULL;
   char  *s = NULL;
   char  *tok;
@@ -360,6 +234,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   
   for (c = 0; c < nchain; c ++){
 
+    
     ib = chain_f[c];
     ie = chain_t[c];
     
@@ -369,32 +244,29 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     re   = seidx[ie][2];
     from = (int)ResSeq[rb];
     to   = (int)ResSeq[re];
-    
+
     ch[0] = ChainID[rb];
     ch[1] = '\0';
     if (user_chain && strcmp(user_chain, ch)) continue;
     if (!chain_isnucl[c]) continue;
 
-    if (strcmp(extension, ".pdb") == 0) 
-      status = er_PDB_GetSeq(pdbfile, ch, &from, &to, &seqres, &ismissing, errbuf);    
-    else 
-      status = er_CIF_GetSeq(pdbfile, ch, &from, &to, &seqres, &ismissing, errbuf);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s\ner_PrintChainSeqs(): could not get chain sequence", errbuf);
+    status = er_PDB_GetSeq(pdbfile, ch, &from, &to, &sq, &ismissing, errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get chain sequence", errbuf);
 
-    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%lu\n", ChainID[rb], from, from+strlen(seqres)-1);
+    fprintf(stdout, "# RNA/DNA chain_ID\t%c\t%d\t%lu\n", ChainID[rb], from, from+strlen(sq)-1);
     fprintf(stdout, "# seq_%c ", ChainID[rb]);
-    fprintf(stdout, "%s\n", seqres);
+    fprintf(stdout, "%s\n", sq);
     
     // this is terrible re-using chain_f chain_t for later
     chain_f[c]    = from;
     chain_t[c]    = to;
     chain_name[c] = ChainID[rb];
 
-    status = er_SEQRES2ResSeq(seqres, from, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s\ner_PrintChainSeqs(): could not get the coords correspondence", errbuf);
+    status = er_SEQRES2ResSeq(sq, from, ismissing, ChainID[rb], ib, ie, seidx, ResName, AtomNum, Atom2SEQ, ResSeq, Miscs, errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get the coords correspondence", errbuf);
 
     free(ismissing); ismissing = NULL;
-    free(seqres); seqres = NULL;
+    free(sq); sq = NULL;
   }
 
   *ret_nchain = nchain;
@@ -402,7 +274,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   if (ret_chain_f)    *ret_chain_f    = chain_f;    else free(chain_f);
   if (ret_chain_t)    *ret_chain_t    = chain_t;    else free(chain_t);
   free(chain_isnucl);
-  if (seqres) free(seqres);
+  if (sq) free(sq);
   return eslOK;
   
  ERROR:
@@ -411,16 +283,13 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   if (chain_t)      free(chain_t);
   if (chain_isnucl) free(chain_isnucl);
   if (ismissing)    free(ismissing);
-  if (seqres)           free(seqres);
+  if (sq)           free(sq);
   return status;
 }
 
 // The numbering of the sequence in SEQRES does not have to agree with the numbers
-// given in the ATOM line as "ResSeq"
+// given in the ATOM line as "resSeq"
 //
-// Atom2SEQ maps the two
-//
-// 
 // Two reasons for that non-correspondence
 //
 // (1) Sometimes in ATOM a number is just not used
@@ -489,14 +358,15 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 //
 //                                                                               * -> another documented "missing residue"
 //
-static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
+static int er_SEQRES2ResSeq(char *sq, int from, int *ismissing, char chainname, long ib, long ie, long **seidx, char **ResName,
 			    long *AtomNum, long *Atom2SEQ, long *ResSeq, char **Miscs, char *errbuf)
 {
   int  *map = NULL;
-  char *resname;
+  char *name;
   char *s = NULL;
   char  new[2];
-  int   seqreslen = strlen(seqres);
+  char  icode;
+  int   len = strlen(sq);
   int   l;
   long  i;
   long  rb;
@@ -506,10 +376,8 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
   long  ANum;
   int   status;
 
-  printf("SEQRES\n%s\n", seqres);
-  
-  ESL_ALLOC(map, sizeof(int)*seqreslen);
-  for (l = 0; l < seqreslen; l ++) map[l] = 0;
+  ESL_ALLOC(map, sizeof(int)*len);
+  for (l = 0; l < len; l ++) map[l] = 0;
   new[1] = '\0';
 
   l = 0;
@@ -519,38 +387,38 @@ static int er_SEQRES2ResSeq(char *seqres, int from, int *ismissing, char chainna
   }
 
   pos_prv = ResSeq[seidx[ib][1]];
-  for (i = ib; i <= ie; i++) {
-    
-    rb   = seidx[i][1];
-    pos  = ResSeq[rb];
+  for (i = ib; i <= ie; i++){
+    rb  = seidx[i][1];
+    pos = ResSeq[rb];
+
     ANum = AtomNum[rb];
 
-    if (pos - from > seqreslen) { // an insert
-    }
-    else if (pos < from) { // and instert, also possible
-    }
-    else if (pos != pos_prv+1) {
+    if (pos - from > len) continue;
+    if (pos < from) continue;
+    
+    esl_sprintf(&s, ResName[rb]);
+    esl_strtok(&s, " ", &name);
+
+    name[0] = er_aa_conversion(name);
+    name[1] = '\0';
+    icode = Miscs[rb][2];
+
+    if (pos != pos_prv+1) {
       for (p = pos_prv+1; p < pos; p ++) {
-	l ++; 
+	if (ismissing[p-from]) { l ++; }
       }
     }
-
-    esl_sprintf(&s, ResName[rb]);
-    esl_strtok(&s, " ", &resname);
-    resname[0] = er_aa_conversion(resname);
-    resname[1] = '\0';
-
-    if (l >= seqreslen) ESL_XFAIL(eslFAIL, errbuf, "this should not happen: l %d >= seqreslen %d\n", l, seqreslen);
-    strncpy(new, seqres+l, 1);
-
+    if (l >= len) { printf("this should not happen: l %d >= len %d\n", l, len); return eslFAIL; }
+    strncpy(new, sq+l, 1);
+    
     map[l]  = pos;
     pos_prv = pos;
     Atom2SEQ[ANum] = l+1;
     l ++;
   }
 
-  fprintf(stdout, "^^# seq_%c", chainname);
-  for (l = 0; l < seqreslen; l ++) 
+  fprintf(stdout, "# seq_%c", chainname);
+  for (l = 0; l < len; l ++) 
     fprintf(stdout, " %d", map[l]);
   fprintf(stdout, "\n");
 
@@ -624,8 +492,8 @@ er_aa_conversion(char *s) {
   char new;
   
   // check for residues named something  like A23 (as in 1u6b)
-  if (strlen(s) ==3 && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9') s[1] = '\0';
-  
+  if (strlen(s) > 1 && s[1] >= '0' && s[1] <= '9') s[1] = '\0';
+ 
   if      (!strcmp(s,  "ALA"))  new = 'A';
   else if (!strcmp(s,  "CYS"))  new = 'C';
   else if (!strcmp(s,  "ASP"))  new = 'D';

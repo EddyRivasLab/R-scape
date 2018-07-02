@@ -95,6 +95,15 @@ typedef struct clist_s {
   int      alloc_ncnt;
 } CLIST;
 
+ 
+// parameters from RNAView/BASEPAIRS/misc_rna.par
+#define UPPER_HBOND  3.4    // 3.4 0.0 ON A1 upper H-bond length limits/atoms, alternative location
+#define MAX_ORI      26.0   // max distance between origins (10.0)
+#define MAX_VERT     2.5    // max vertical distance between origins (2.0)
+#define MAX_ANGLE    65.0   // max angle  [0-90] (60.0)
+#define MIN_RN9YN1   5.4    // min distance between RN9/YN1 atoms (6.0)
+#define MAX_HELIX    8.0    // max distance criterion for helix break [0-12] (8.0)
+
 extern int    rview_CreateContacts(FILE *fp, PDBX *pdbx, double maxD, int minL, DISTTYPE disttype, int dointer, int *ret_ncl, CLIST **ret_clist, char *errbuf, int verbose);
 extern int    rview_ContactsByDistance_IntraChain(struct chain_s *chain, CLIST *clist, char *errbuf, int verbose);
 extern int    rview_ContactsByDistance_InterChain(struct chain_s *chain1, struct chain_s *chain2, CLIST *clist, char *errbuf, int verbose);

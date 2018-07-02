@@ -19,7 +19,7 @@ endif
 
 CC=g++
 LINK=g++
-CFLAGS_OPT=-O2 -DNDEBUG 
+CFLAGS_OPT=-O2 -DNDEBUG
 CFLAGS_WARN=
 CFLAGS=$(CFLAGS_WARN) -c -I. -I$(CFSQP_PATH) -I$(INFERNAL_PATH)/squid -g $(CFLAGS_OPT) $(CFSQP_CFLAGS) -DDISTRIBUTION $(FONT_CFLAGS)
 LFLAGS=$(CFSQP_LIB) $(INFERNAL_PATH)/squid/libsquid.a
@@ -37,7 +37,6 @@ ifndef V
 	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
 		        ${MAKE} -C $$subdir
 endif
-
 
 CPPFILES=\
 	ParseOneStockholm.cpp\

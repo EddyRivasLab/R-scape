@@ -14,8 +14,8 @@
 #include "rna.h"
 #include "erfiles.h"
 
-long PS = 0, VRML = 0, ANAL = 0, CHAIN = 0, ALL = 0; /* global variables */
-long ARGC = 0, XML = 0, HETA = 1;                    /* include all Heta atoms */
+long PS=0, VRML=0, ANAL=0, CHAIN=0, ALL=0; /*globle variables */
+long ARGC=0, XML=0, HETA=1; /* include all Heta atoms */
 char **ARGV; 
 
 static void process_single_file(int argc, char *argv[]);
@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
   clock_t start, finish;
   long    i;
   
-  ARGV=cmatrix(0, 6, 0, 40);/* 6 argument and 40 length each */
+  ARGV=cmatrix(0, 6, 0, 40);/*6 argument and 40 length each */
   
-  ARGC = argc;
-  for(i = 0; i < argc; i++){
+  ARGC=argc;
+  for(i=0; i<argc; i++){
     strcpy(ARGV[i], argv[i]);
   }
   
@@ -43,10 +43,14 @@ int main(int argc, char *argv[])
     process_multiple_file(argc, argv); 
   }
   else{
+    //if(XML==0) printf("Processing a single PDB file\n");
+    //else       printf("Processing a single RNAML file\n");
     process_single_file(argc, argv);
   }
   
   finish = clock();
+  //printf( "\nTime used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
+  //fprintf(stderr, "\nJOB finished! Time used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
   free_cmatrix(ARGV, 0, 6, 0,40);
  
   return 0;    
@@ -55,47 +59,66 @@ int main(int argc, char *argv[])
 void process_single_file(int argc, char *argv[])
 /* processing a single PDB (or CIF or RNAML) file */
 {
-  FILE  *fstat;
-  char   inpfile[BUF512], pdbfile[BUF512], outfile[BUF512];
-  long   i, j, key, base_all;
-  long   type_stat[20];  /* maxmum 20 different pairs */
-  long **pair_stat;      /* maxmum 20 different pairs */
+  char inpfile[BUF512],pdbfile[BUF512], outfile[BUF512];
+  long i, j,  key, base_all;
+  long type_stat[20]; /* maxmum 20 different pairs */
+  long **pair_stat; /* maxmum 20 different pairs */
   static long A[4],U[4],G[4],C[4],T[4],P[4],I[4];
+  FILE  *fstat;
   
-  fstat = fopen("base_pair_statistics.out", "w");
+  fstat=fopen("base_pair_statistics.out", "w");
   
   pair_stat = lmatrix(0, 20, 0, 40);
-  for (i = 0; i < 20; i++) type_stat[i] = 0;        
-  
+  for (i = 0; i < 20; i++){
+    type_stat[i] =0;        
+  }
   /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
-  for (i = 0; i < 20; i++) 
-    for (j = 0; j < 40; j++)
-      pair_stat[i][j] = 0;
+  for (i = 0; i <20; i++) 
+    for (j = 0; j <40; j++)
+      pair_stat[i][j]=0;
   
-  /*  ps   > 0 draw 2D RNA/DNA;
-   *  vrml > 0 draw 3D  RNA/DNA;
-   *  anal > 0 calculate morphorlogy
-   */ 
+  /* ps>0 draw 2D RNA/DNA;
+     vrml>0 draw 3D  RNA/DNA;
+     anal>0 calculate morphorlogy
+  */ 
   
   cmdline(argc, argv, inpfile);
-  ARGC = argc;
+  ARGC  = argc;
   
-  if (CHAIN == 0 ){
-    if      (argc == 2) strcpy(pdbfile, argv[1]);
-    else if (argc == 3) strcpy(pdbfile, argv[2]);
-    else                usage();
-  }
-  else {
-    if      (argc == 3) strcpy(pdbfile, argv[2]);
-    else if (argc == 4) strcpy(pdbfile, argv[3]);
-    else                usage();
+  if(CHAIN==0){
+    
+    if(argc == 2){
+      strcpy(pdbfile, argv[1]);
+    }
+    else if(argc == 3){
+      strcpy(pdbfile, argv[2]);
+    }else
+      usage();
+  }else{
+    
+    if(argc == 3){
+      strcpy(pdbfile, argv[2]);
+    }
+    else if(argc == 4){
+      strcpy(pdbfile, argv[3]);
+    }else
+      usage();
   }
   
+  
+  /*	strcpy(pdbfile,"P4-P6-A.pdb");	*/
+  
+  /*    check_cif(pdbfile, &yes);    
+	finp = fopen(pdbfile,"r");
+  */
   check_nmr_xray(pdbfile, &key, outfile); /* key=0 nmr; key=1 xray */
-  if (key == 0) strcpy(pdbfile, outfile);
+  if(key==0){
+    strcpy(pdbfile, outfile);
+  }
   
   rna(pdbfile, type_stat, pair_stat, &base_all);
-  if (XML == 0) base_edge_stat(pdbfile, A, U, G, C, T, P, I);
+  if(XML==0)
+    base_edge_stat(pdbfile, A, U, G, C, T, P, I);
   
   fprintf(fstat,"\nNumber of the total bases = %ld\n", base_all);
   print_statistic(fstat, type_stat, pair_stat);
@@ -107,18 +130,18 @@ void process_single_file(int argc, char *argv[])
   delete_file("", "best_pair.out");
   delete_file(pdbfile, "_patt_tmp.out");
   /*    delete_file(pdbfile, ".xml");*/
-  delete_file(pdbfile, "_sort.out"); /* do not delete for web */
-  delete_file(pdbfile, "_patt.out"); /* do not delete for web */
-  delete_file(pdbfile, "_tmp.pdb");  /* do not delete for web */  
+  delete_file(pdbfile, "_sort.out");/* do not delete for web*/
+  delete_file(pdbfile, "_patt.out");/* do not delete for web*/
+  delete_file(pdbfile, "_tmp.pdb");/* do not delete for web*/  
 }
 
 void delete_file(char *pdbfile, char *extension)
 {
   char command[512];
   
-  strcpy(command, "rm -f ");
-  strcat(command, pdbfile);
-  strcat(command, extension);
+  strcpy(command,"rm -f ");
+  strcat(command,pdbfile);
+  strcat(command,extension);
   system(command);
   return;
 }
@@ -137,46 +160,43 @@ void process_multiple_file(int argc, char *argv[])
     double resolution;
     FILE  *finp, *fstat;
 
-    fstat     = fopen("base_pair_statistics.out", "w");
-    line      = cmatrix(0, 20, 1, 100);
+    fstat=fopen("base_pair_statistics.out", "w");
+    line=cmatrix(0,20,1,100);
     pair_stat = lmatrix(0, 20, 0, 40);
     for (i = 0; i < 20; i++){
         type_stat[i] =0;        
     }
-    /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
-    for (i = 0; i < 20; i++) 
-        for (j = 0; j < 40; j++)
-            pair_stat[i][j] = 0;
+        /* i for A-A ... pairs (16);  j for Leontis-Westhof base-pairs */
+    for (i = 0; i <20; i++) 
+        for (j = 0; j <40; j++)
+            pair_stat[i][j]=0;
     
-    /*  ps   > 0 draw 2D RNA/DNA;
-     *  vrml > 0 draw 3D  RNA/DNA;
-     *  anal > 0 calculate morphorlogy
-     */ 
+ /* ps>0 draw 2D RNA/DNA;
+    vrml>0 draw 3D  RNA/DNA;
+    anal>0 calculate morphorlogy
+ */ 
 		
     cmdline(argc, argv, inpfile);
     ARGC  = argc;
 
-    if (CHAIN == 0) {        
-        if (argc == 3) {
+    if(CHAIN==0){        
+        if(argc == 3){
             strcpy(inpfile, argv[2]);
             resolution = 0;  /* No resolution limit */
-        }
-	else if (argc == 4){
+        }else if(argc == 4 ){
             strcpy(inpfile, argv[2]);
             resolution = atof(argv[3]);
-        }
-	else usage();
-    }
-    else {
-        if (argc == 4) {
+        }else
+            usage();
+    }else{
+        if(argc == 4){
             strcpy(inpfile, argv[3]);
             resolution = 0;  /* No resolution limit */
-        }
-	else if(argc == 5) {
+        }else if(argc == 5 ){
             strcpy(inpfile, argv[3]);
             resolution = atof(argv[4]);
-        }
-	else usage();
+        }else
+            usage();
     }
     
     
@@ -184,29 +204,32 @@ void process_multiple_file(int argc, char *argv[])
     n = 0;   
     while (fgets(str, sizeof str, finp) != NULL) {
         strlength= strlen(str);
-        for (i = 0; i < strlength; i ++){
-            if (!isspace(str[i])) 
-                str[i] = str[i];
+        for(i=0; i<strlength; i++){
+            if(!isspace(str[i])) 
+                str[i]=str[i];
             else
                 str[i]=' ';
         }
         str[strlength]='\0';
         
         token_str(str, " ", &nstr, line);        
-        for (j = 0; j < nstr; j++){
-            yes = 0;            
+        for(j = 0; j<nstr; j++){
+            yes=0;            
             strcpy(pdbfile, line[j]);
         
-            if (resolution > 0.001) /* input 0 for NMR */
+            if(resolution >0.001) /* input 0 for NMR */
                 rna_select(pdbfile, resolution, &yes);  /*set resolution limit */
             else
                 yes = 1;
-            if (yes == 1) {
+            if(yes==1) {
                 check_nmr_xray(pdbfile, &key, outfile); /*key=0 nmr;key=1 xray*/
-                if (key == 0) strcpy(pdbfile, outfile);
+                if(key==0){
+                    strcpy(pdbfile, outfile);
+                }
                 n++;
-                rna(pdbfile, type_stat, pair_stat, &base_all);
-                if (XML == 0) base_edge_stat(pdbfile, A, U, G, C, T, P, I);
+                rna (pdbfile, type_stat, pair_stat, &base_all);
+                if(XML==0)
+                    base_edge_stat(pdbfile, A, U, G, C, T, P, I);
             }
         }            
         
@@ -535,7 +558,7 @@ void cmdline(int argc, char *argv[], char *inpfile)
 }
 
     
-void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
+void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 /* do all sorts of calculations */
 {
   char outfile[BUF512];
@@ -548,23 +571,23 @@ void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   long nchain_tot;
   long **chain_idx, nchain;
   double HB_UPPER[2], **xyz;
-  static long   base_all;
+  static long base_all;
   char  *chain_name = NULL;
   long  *chain_f = NULL;
   long  *chain_t = NULL;
-  char  *extension;
   FILE *fout;
-  long  lext;
-  char  errbuf[eslERRBUFSIZE];
+  char errbuf[eslERRBUFSIZE];
 
-  if(PS == 1 && XML == 1) {
+  
+  if(PS==1 && XML==1){
     xml2ps(pdbfile, 0, XML); /* read information from RNAML */
     return;
   }
   
   sprintf(outfile, "%s.out", pdbfile);
   
-  fout = fopen(outfile, "w");
+  fout=fopen(outfile, "w");
+  /*    prot_out = fopen("protein.pdb", "w");*/
   
   /* read in H-bond length upper limit etc from <misc_rna.par> */    
   hb_crt_alt(HB_UPPER, HB_ATOM, ALT_LIST);
@@ -582,11 +605,7 @@ void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   
   fprintf(stdout, "# PDB_file %s\n",  pdbfile);
   fprintf(fout,"PDB data file name: %s\n",  pdbfile);
-  esl_file_Extension(pdbfile, 0, &extension, &lext);
-  if (esl_strcmp(extension, ".pdb") == 0) 
-    num = read_pdb(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
-  else
-    num = read_cif(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
+  num = read_pdb(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
   
   /* get the numbering information of each residue.
      seidx[i][j]; i = 1-num_residue  j=1,2
@@ -600,7 +619,7 @@ void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   
   if (er_PrintChainSeqs(pdbfile, user_chain, ChainID, num_residue, seidx, ResName,
 			AtomNum, Atom2SEQ, ResSeq, AtomName, Miscs, xyz,
-			&nchain_tot, &chain_name, &chain_f, &chain_t, extension, errbuf) != eslOK) {
+			&nchain_tot, &chain_name, &chain_f, &chain_t, errbuf) != eslOK) {
     printf("%s\n", errbuf);
     exit(1);
   }
@@ -648,9 +667,25 @@ void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	}
       }
     }
+    /* uncomment this if used 
+       else{
+       pdb_record(ib,ie, &nprot_atom, 0, AtomName, ResName, ChainID, ResSeq,
+       xyz, Miscs, prot_out); 
+       }
+    */        
   }
   /*    fclose(prot_out);*/
   
+  
+  /* get the new  numbering information of each residue */
+  
+  /* get base sequence, RY identification */
+  /* identifying a residue as follows:  RY[j]
+   *  R-base  Y-base  amino-acid, others [default] 
+   *   +1        0        -1        -2 [default]
+   
+   bseq[j] --> the sigle letter name for each residue. j = 1 - num_residue.
+  */
   
   bseq = cvector(1, num_residue);
   nres=0;    
@@ -697,17 +732,19 @@ void rna (char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   get_seq(fout,nres, seidx, AtomName, ResName, ChainID, ResSeq, Miscs,
 	  xyz, bseq, RY, &num_modify,modify_idx);  /* get the new RY */
   
+ 
   work_horse(pdbfile, fout, nres, bs_atoms, bseq, seidx, RY, AtomName,
 	     ResName, ChainID, nchain, chain_idx, AtomNum, Atom2SEQ, ResSeq,
 	     Miscs, xyz, nchain_tot, chain_name, chain_f, chain_t,
 	     num_modify, modify_idx, type_stat, pair_stat);
 
-  base_all += nres; /* accumulate all the bases */
-  if (bs_all) *bs_all  = (long)base_all;
- 
-  if (!(PS > 0 || VRML > 0 || XML > 0 || ALL > 0) )
+  base_all=base_all+nres; /* accumulate all the bases */
+  *bs_all=base_all;
+  
+  if(!(PS>0 || VRML>0 || XML>0 || ALL>0) )
     write_tmp_pdb(pdbfile,nres,seidx,AtomName,ResName,ChainID,ResSeq,xyz);
-
+  
+  
   free_cmatrix(AtomName, 1, num, 0, 4);
   free_cmatrix(ResName, 1, num, 0, 3);
   free_cvector(ChainID, 1, num);
@@ -772,7 +809,8 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
 	    &num_pair_tot, pair_type, bs_pairs_tot, &num_single_base,
 	    single_base, &num_multi, multi_idx, multi_pair, sugar_syn);
 
-  fprintf(fout, "  The total base pairs = %4ld (from %4ld bases)\n", num_pair_tot, num_residue);
+  fprintf(fout, "  The total base pairs =%4ld (from %4ld bases)\n",
+	  num_pair_tot,num_residue);
   
   if (!num_pair_tot) {        
     printf( "No base-pairs found for (%s) "
@@ -792,16 +830,152 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
   
   ntot = 2*num_pair_tot;
   
+ 
+#if 0 // commenting out all xml stuff
+  long **bp_order, **end_list;
+  long i, j, num_loop, **loop;
+  long num_bp, num_bp_best=0, **pair_num_best,*sugar_syn;
+  long xml_nh, *xml_helix_len, **xml_helix, xml_ns, *xml_bases;
+  long num_helix = 1, nout = 16, nout_p1 = 17;
+  long *bp_idx, *helix_marker, *matched_idx;
+  long pair_istat[17], pair_jstat[17];
+  long **base_pairs, **helix_idx;
+  double **bp_xyz, **base_xy;
+  
+  if(0&&ARGC <=2){
+    motif(pdbfile);  /*  write the RNA motif pattern */   
+    print_sorted_pair(ntot, pdbfile);/* sort pairs according to W-H-S*/
+    
+    /* find best base-pairs */    
+    matched_idx = lvector(1, num_residue);
+    base_pairs = lmatrix(1, num_residue, 1, nout_p1);
+    
+    /* base_pairs[][17]: i, j, bpid, d, dv, angle, dNN, dsum, bp-org, normal1,normal2
+     *             col#  1  2    3   4  5     6     7     8    9-11    12-14   15-17
+     * i.e., add one more column for i from pair_stat [best_pair]
+     */
+    for (i = 1; i <= num_residue; i++) {
+      best_pair(i, num_residue, RY, seidx, xyz, Nxyz, matched_idx, orien,
+		org, AtomName, bseq, BPRS, pair_istat);
+      if (pair_istat[1]) {        /* with paired base */
+	best_pair(pair_istat[1], num_residue, RY, seidx, xyz, Nxyz,
+		  matched_idx, orien, org, AtomName, bseq, BPRS,
+		  pair_jstat);
+	if (i == pair_jstat[1]) { /* best match between i && pair_istat[1] */
+	  matched_idx[i] = 1;
+	  matched_idx[pair_istat[1]] = 1;
+	  base_pairs[++num_bp][1] = i;
+	  for (j = 1; j <= nout; j++)
+	    base_pairs[num_bp][j + 1] = pair_istat[j];
+	}
+      }
+    }
+    
+    bp_idx = lvector(1, num_bp);
+    helix_marker = lvector(1, num_bp);
+    helix_idx = lmatrix(1, num_bp, 1, 7);
+    
+    re_ordering(num_bp, base_pairs, bp_idx, helix_marker, helix_idx, BPRS,
+                &num_helix, o3_p, bseq, seidx, ResName, ChainID, ResSeq,
+                Miscs);
+    
+    bp_order = lmatrix(1, num_bp, 1, 3);
+    end_list = lmatrix(1, num_bp, 1, 3);
+    bp_xyz = dmatrix(1, num_bp, 1, 9); /*   bp origin + base I/II normals: 9 - 17 */
+    
+    for (i = 1; i <= num_bp; i++)
+      for (j = 1; j <= 9; j++)
+	bp_xyz[i][j] = base_pairs[i][j + 8] / MFACTOR;
+    
+    pair_num_best = lmatrix(1, 3, 1, num_bp);
+    
+    write_best_pairs(num_helix, helix_idx, bp_idx, helix_marker,
+                     base_pairs, seidx, ResName, ChainID, ResSeq,
+                     Miscs, bseq, BPRS, &num_bp_best, pair_num_best);    
+    
+    
+    if(PS>0){
+      if(num_pair_tot<2){
+	printf("Too few base pairs to form a helix(NO 2D structure plotted)!\n");
+	return;
+      }
+      if(num_helix==0){
+	printf("No anti-parallel helix (NO 2D structure plotted)!\n");
+	return;
+      }
+      
+      base_xy = dmatrix(0, num_residue, 1, 2);   
+      loop = lmatrix(1, num_helix*2, 1, 2);
+      xml_helix= lmatrix(0, num_residue, 1, 2); 
+      xml_helix_len= lvector(0, num_residue); 
+      xml_bases= lvector(0, num_residue);
+      
+      process_2d_fig(num_residue, bseq, seidx, RY, AtomName, ResName,ChainID,
+		     ResSeq, Miscs, xyz, num_pair_tot, pair_type, bs_pairs_tot,
+		     num_helix, helix_idx, bp_idx, base_pairs, base_xy,
+		     &num_loop, loop, &xml_nh, xml_helix_len, xml_helix,
+		     &xml_ns, xml_bases);
+      
+      if(xml_nh==0){
+	printf("No anti-parallel helix (NO 2D structure plotted, No XML file output)!\n");
+	return;
+      }
+      
+      write_xml(pdbfile, num_residue, bseq, seidx, AtomName, ResName,
+		ChainID, ResSeq, Miscs, xyz, xml_nh, xml_helix,
+		xml_helix_len, xml_ns, xml_bases, num_pair_tot,
+		bs_pairs_tot,pair_type, base_xy, num_modify,
+		modify_idx,num_loop, loop, num_multi,multi_idx,
+		multi_pair,sugar_syn);
+      
+      free_dmatrix(base_xy , 0, num_residue, 1, 2);         
+      free_lmatrix(loop , 1, num_helix*2, 1, 2);
+      free_lmatrix(xml_helix, 0, num_residue, 1, 2); 
+      free_lvector(xml_helix_len, 0, num_residue); 
+      free_lvector(xml_bases, 0, num_residue); 
+      
+      printf("Ploting 2D structure...\n");        
+      xml2ps(pdbfile, num_residue, XML); /* read information from RNAML */
+      
+    }
+    
+    if(ANAL >0){
+      bp_analyze(pdbfile, num, AtomName, ResName, ChainID, ResSeq, xyz, 
+		 num_residue,Miscs, seidx, num_bp_best, pair_num_best);
+    }
+    
+    if(VRML>0){
+      process_3d_fig(pdbfile,num_residue, bseq, seidx, AtomName, ResName,
+		     ChainID,xyz, num_pair_tot, pair_type, bs_pairs_tot);
+    }
+  }
+  
   free_lmatrix(multi_pair, 1, num_residue, 1, 20);  
   free_lvector(multi_idx , 1, num_residue);       
   free_cmatrix(pair_type , 1, num_residue*2, 0, 3);          
   free_lmatrix(bs_pairs_tot , 1, 2*num_residue, 1, 2);     
   free_lvector(single_base , 1, num_residue);         
+  free_lvector(sugar_syn , 1, num_residue); 
+  free_dmatrix(bp_xyz, 1, num_bp, 1, 9);
+  free_lmatrix(pair_num_best, 1, 3, 1, num_bp);
+  
+  free_lmatrix(bp_order, 1, num_bp, 1, 3);
+  free_lmatrix(end_list, 1, num_bp, 1, 3);
+  
+  free_lvector(bp_idx, 1, num_bp);
+  free_lvector(helix_marker, 1, num_bp);
+  free_lmatrix(helix_idx, 1, num_bp, 1, 7);
+  
+  free_lvector(matched_idx, 1, num_residue);
+  free_lmatrix(base_pairs, 1, num_residue, 1, nout_p1);
+  
   
   free_dmatrix(orien, 1, num_residue, 1, 9);
   free_dmatrix(org, 1, num_residue, 1, 3);
   free_dmatrix(Nxyz, 1, num_residue, 1, 3);
   free_dmatrix(o3_p, 1, num_residue, 1, 8);
+#endif
+
 }
 
 

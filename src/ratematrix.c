@@ -67,7 +67,7 @@ ratematrix_CalculateFromConditionals(const ESL_DMATRIX *P, const double *p, ESL_
   status = ratematrix_ValidatePLog(P, tol, errbuf); /* Make sure that we can take the log of P */
   if (status != eslOK) { printf("failed to validate PLog\n%s\n", errbuf); goto ERROR; }
     
-  dmx_Log(P, Q, tol);                      /* take the log */
+  xdmx_Log(P, Q, tol);                      /* take the log */
   for (i = 0; i < Q->n; i++)               /* regularize in case some entries are not good */
     ratematrix_QOGRegularization(Q->mx[i], Q->m, i, tol, errbuf);
   status = ratematrix_ValidateQ(Q, tol, errbuf);    /* Make sure Q is a rate matrix */
@@ -267,7 +267,7 @@ ratematrix_ConditionalsFromRateYang93(double rt, double b, double c, const ESL_D
     A = esl_dmatrix_Create(Q->n, Q->n);     
     esl_dmatrix_SetIdentity(A);              // A = I
     esl_dmx_AddScale(A, -time*b, Q);         // A = I - time * b * Q 
-    dmx_Log(A, P, tol);                      // P = log(A) = log(I-tbR) 
+    xdmx_Log(A, P, tol);                      // P = log(A) = log(I-tbR) 
     esl_dmatrix_Copy(P, A);	             // A = log(I-tbR)
     esl_dmx_Exp(A, -c, P);                   // P = exp(-c*A) = exp[ -c * log(I-tbR) ]
     esl_dmatrix_Destroy(A); 
@@ -496,7 +496,7 @@ ratematrix_ValidatePLog(const ESL_DMATRIX *P, double tol, char *errbuf)
   if (P->type != eslGENERAL) ESL_EXCEPTION(eslEINVAL, "P must be type eslGENERAL to be validated");
   if (P->n    != P->m)       ESL_EXCEPTION(eslEINVAL, "a conditional matrix P must be square");
 
-  if (dmx_Diagonalize(P, &Er, &Ei, tol) != eslOK)  ESL_FAIL(eslFAIL, errbuf, "cannot diagonalize P");
+  if (xdmx_Diagonalize(P, &Er, &Ei, tol) != eslOK)  ESL_FAIL(eslFAIL, errbuf, "cannot diagonalize P");
 		  
   /* All the eigenvalues of P should have norm smaller than one. */
   for (i = 0; i < P->n; i++) {
@@ -916,7 +916,7 @@ ratematrix_vec_specialDump(double *p, int d)
   return eslOK;
 }
 
-/* Function:  dmx_Log()
+/* Function:  xdmx_Log()
  * Synopsis:  Calculates matrix logarithm $\mathbf{Q} = \log{\mathbf{P}}$.
  * Incept:    ER, Wed Feb 29 11:59:15 EST 2012 [Janelia]
  *
@@ -949,7 +949,7 @@ ratematrix_vec_specialDump(double *p, int d)
  * Xref:      J1/19.
  */
 int
-dmx_Log(const ESL_DMATRIX *P, ESL_DMATRIX *Q, double tol)
+xdmx_Log(const ESL_DMATRIX *P, ESL_DMATRIX *Q, double tol)
 {
 /*::cexcerpt::function_comment_example::end::*/
   ESL_DMATRIX *Pz   = NULL;	/* P rescaled matrix*/
@@ -994,7 +994,7 @@ dmx_Log(const ESL_DMATRIX *P, ESL_DMATRIX *Q, double tol)
       esl_dmx_Multiply(Ppow, Pi, C);        /* C = (Pz-I)^{k+1} */
       esl_dmatrix_Copy(C, Ppow);            /* Ppow = C = (Pz-I)^{k+1} */
     }
-  if (k == 500) { status = eslFAIL; printf("dmx_Log(): no convergence after %d its tol %f\n", k, tol);  exit(1); goto ERROR; }
+  if (k == 500) { status = eslFAIL; printf("xdmx_Log(): no convergence after %d its tol %f\n", k, tol);  exit(1); goto ERROR; }
 
   esl_dmatrix_Destroy(Pz);
   esl_dmatrix_Destroy(Pi);
@@ -1012,7 +1012,7 @@ dmx_Log(const ESL_DMATRIX *P, ESL_DMATRIX *Q, double tol)
   return status;
 }
 
-/* Function:  dmx_Gamma()
+/* Function:  xdmx_Gamma()
  * Synopsis:  Calculates the matrix: $\mathbf{P} = \sum_k \frac{(c-1+k)!}{(c-1)! k!} (Q)^k$.
  *
  * Incept:    ER, Wed Apr  3 13:17:23 EDT 2013 [Janelia]
@@ -1033,7 +1033,7 @@ dmx_Log(const ESL_DMATRIX *P, ESL_DMATRIX *Q, double tol)
  * Throws:    <eslEMEM> on allocation error.
  */
 int
-dmx_Gamma(ESL_DMATRIX *P, const ESL_DMATRIX *Q, double c, double tol)
+xdmx_Gamma(ESL_DMATRIX *P, const ESL_DMATRIX *Q, double c, double tol)
 {
   ESL_DMATRIX *Qpow = NULL;	/* keeps running product Q^k */
   ESL_DMATRIX *C    = NULL;	/* tmp storage for matrix multiply result */
@@ -1066,7 +1066,7 @@ dmx_Gamma(ESL_DMATRIX *P, const ESL_DMATRIX *Q, double c, double tol)
       esl_dmx_Multiply(Qpow, Q, C);            /* C = Q^{k+1} */
       esl_dmatrix_Copy(C, Qpow);               /* Qpow = C = (Q)^{k+1} */
      }
-  if (k == 200) { status = eslFAIL; printf("dmx_Gamma(): no convergence after %d its tol %f\n", k, tol);  exit(1); goto ERROR; }
+  if (k == 200) { status = eslFAIL; printf("xdmx_Gamma(): no convergence after %d its tol %f\n", k, tol);  exit(1); goto ERROR; }
 
   esl_dmatrix_Destroy(Qpow);
   esl_dmatrix_Destroy(C);
@@ -1080,7 +1080,7 @@ dmx_Gamma(ESL_DMATRIX *P, const ESL_DMATRIX *Q, double c, double tol)
   return status;
 }
 
-/* Function: dmx_Diagonalize()
+/* Function: xdmx_Diagonalize()
  * Date:     Fri Mar  2 12:32:18 EST 2012 [janelia]
  * 
  * update of function 
@@ -1098,7 +1098,7 @@ dmx_Gamma(ESL_DMATRIX *P, const ESL_DMATRIX *Q, double c, double tol)
  *            <ret_Er> and <ret_Ei>  are allocated here, and must be free'd by the caller.
  */
 int
-dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double tol)
+xdmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double tol)
 {
   ESL_DMATRIX *H  = NULL;
   double      *Er = NULL;
@@ -1107,8 +1107,8 @@ dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double t
  
   if (A->n != A->m) ESL_EXCEPTION(eslEINVAL, "matrix isn't square");
 
-  H = dmx_Hessenberg(A); if (H == NULL)                { status = eslFAIL; goto ERROR; } 
-  if (dmx_Hessenberg2Eigen(H, &Er, &Ei, tol) != eslOK) { status = eslFAIL; goto ERROR; }
+  H = xdmx_Hessenberg(A); if (H == NULL)                { status = eslFAIL; goto ERROR; } 
+  if (xdmx_Hessenberg2Eigen(H, &Er, &Ei, tol) != eslOK) { status = eslFAIL; goto ERROR; }
 
   if (ret_Er != NULL) *ret_Er = Er; else free(Er);
   if (ret_Ei != NULL) *ret_Ei = Ei; else free(Ei);
@@ -1125,7 +1125,7 @@ dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double t
   return status;
 }
 
-/* Function: dmx_Hessenberg()
+/* Function: xdmx_Hessenberg()
  * Date:     Fri Mar  2 12:40:31 EST 2012 [janelia]
  * 
  * update of function 
@@ -1171,7 +1171,7 @@ dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, double t
  *
  */
 ESL_DMATRIX *
-dmx_Hessenberg(const ESL_DMATRIX *A)
+xdmx_Hessenberg(const ESL_DMATRIX *A)
 {
   ESL_DMATRIX *H = NULL;
   double  val;
@@ -1228,7 +1228,7 @@ dmx_Hessenberg(const ESL_DMATRIX *A)
   return H;
 }
 
-/* Function: dmx_Hessenberg2Eigen()
+/* Function: xdmx_Hessenberg2Eigen()
  * Date:     Fri Mar  2 12:40:31 EST 2012 [janelia]
  * 
  * update of function 
@@ -1266,7 +1266,7 @@ dmx_Hessenberg(const ESL_DMATRIX *A)
  *
  */
 int
-dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double tol)
+xdmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double tol)
 {
   double      *Er = NULL;
   double      *Ei = NULL;
@@ -1362,7 +1362,7 @@ dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double to
 	  esl_dmatrix_SetIdentity(I);
 
 	  esl_dmx_AddScale(A, -Ann, I);          /* A = A - Id * Ann                       */
-	  dmx_QRdecomposition (A, &Q, &R, tol);  /* QR decomposition of A                  */
+	  xdmx_QRdecomposition (A, &Q, &R, tol);  /* QR decomposition of A                  */
 	  esl_dmx_Multiply(R, Q, A);             /* calculate new A = R*Q                  */
 	  esl_dmx_AddScale(A, +Ann, I);          /* add the shift back: A = R*Q + Id * Ann */
 
@@ -1452,7 +1452,7 @@ dmx_Hessenberg2Eigen(ESL_DMATRIX *H, double **ret_Er, double **ret_Ei, double to
  *
  */
 int
-dmx_QRdecomposition (ESL_DMATRIX *X, ESL_DMATRIX **ret_Q, ESL_DMATRIX **ret_R, double tol)
+xdmx_QRdecomposition (ESL_DMATRIX *X, ESL_DMATRIX **ret_Q, ESL_DMATRIX **ret_R, double tol)
 {
   ESL_DMATRIX *Xdup = esl_dmatrix_Clone(X);
   ESL_DMATRIX *Q    = NULL;

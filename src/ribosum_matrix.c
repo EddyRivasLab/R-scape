@@ -555,7 +555,7 @@ rate_from_conditionals(ESL_DMATRIX *C, ESL_DMATRIX *Q, double tol, int verbose, 
   status = ratematrix_ValidatePLog(C, tol, errbuf); /* Make sure that we can take the log of P */
   if (status != eslOK) { printf("failed to validate PLog\n%s\n", errbuf); goto ERROR; }
     
-  dmx_Log(C, Q, tol);                      /* take the log */
+  xdmx_Log(C, Q, tol);                     /* take the log */
   for (i = 0; i < Q->n; i++) {             /* regularize in case some entries are not good */
     status = ratematrix_QOGRegularization(Q->mx[i], Q->m, i, tol, errbuf);
     if (status != eslOK) { printf("failed to validate rate Q(%d)(%d)\n%s\n", Q->m, Q->n, errbuf); }    

@@ -18,10 +18,13 @@
 	
 #include "easel.h"
 #include "esl_buffer.h"
+#include "esl_dmatrix.h"
 #include "esl_mem.h"
 #include "esl_sq.h"
+#include "esl_vectorops.h"
 
 #include "rview_pdbfile.h"
+#include "rview_matrix.h"
 
 static int       atmlabel_create  (int *ret_nal, char ***ret_atmlabel,    int verbose);
 static int       sasymlabel_create(int *ret_nsl, char ***ret_sasymlabel,  int verbose);
@@ -49,6 +52,8 @@ static int       chunk_is_sequence_end  (char *line,                 SEQSTATUS *
 static int       chunk_is_chainname(char *line, char **ret_name);
 static int       res_oneletter(char **ret_x, char *aa);
 static void      writep(char *p, esl_pos_t n);
+
+
 
 
 /* rview_ReadPDBxfile()
@@ -277,7 +282,8 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
       // 1 'polydeoxyribonucleotide/polyribonucleotide hybrid' no no '(DA)GCGCCUGGACUUAAAGCCAUUGCACU' AGCGCCUGGACUUAAAGCCAUUGCACU A ? 
       //
       if (multiseq == FALSE) { // only one sequence
-	// determine the type of sequence 
+	// determine the type of sequence
+	
 	if (esl_memstrpfx(p, n, seq_type)) parse_sequence_type(p, n, seq_type, &chain->seqtype, verbose2);
 	// determine when to read the canonical sequence 
 	if (esl_memstrpfx(p, n, seq_can))  readnow = parse_sequence_short(p, n, seq_can, &chain->seq, verbose2);
@@ -287,7 +293,7 @@ rview_ReadPDBxfile(char *pdbxfile, PDBX **ret_pdbx, char *errbuf, int verbose)
 	if (esl_memstrpfx(p, n, seq_chainname)) {
 	  // the sequence finished. Add as a chain to the pdbx structure.
 	  // If different chains use the same structure, we will add more chains later.
-	  rview_pdbx_AddChain(pdbx, chain, -1, verbose);
+	  rview_pdbx_ChainAdd(pdbx, chain, -1, verbose);
 	  rview_chain_Destroy(1, chain); chain = NULL;
 	}
 
@@ -441,6 +447,7 @@ rview_atom_Init(ATOM *atom)
   atom->seqid    = -1;
   atom->resid    = -1;
   atom->residx   = -1;
+  atom->isring   = FALSE;
 }
 
 void
@@ -465,9 +472,11 @@ void
 rview_atom_Write(FILE *fp, ATOM *atom)
 {
   if (atom == NULL) return;
-  fprintf(fp, "%lld %s %lld %s %s %lld %s %s %f %f %f\n",
-	  atom->seqid, atom->chain, atom->resid, atom->reschr, (atom->type == ATYPE_ATOM)? "ATOM":"HETATM", atom->idx,
+  fprintf(fp, "%lld %s %lld %s %s %lld %s %s %f %f %f ",
+	  atom->seqid, atom->chain, atom->resid, atom->reschr, (atom->type == ATYPE_ATOM)? "ATOM":"NONE", atom->idx,
 	  atom->atomid, atom->atomidx, atom->x, atom->y, atom->z);
+  if (atom->isring) fprintf(fp, "is ring atom");
+  fprintf(fp, "\n");
 }
 
 struct chain_s *
@@ -495,20 +504,6 @@ rview_chain_Create()
   return NULL;
 }
 
-int
-rview_chain_AddRes(struct chain_s *chain)
-{
-  int status;
-  if (chain->nr == 0) ESL_ALLOC  (chain->res, sizeof(RES));
-  else                ESL_REALLOC(chain->res, sizeof(RES) * (chain->nr+1));
-  rview_res_Init(&chain->res[chain->nr]);
-
-  chain->nr ++;
-  return eslOK;
-
- ERROR:
-  return eslFAIL;
-}
 
 void
 rview_chain_Destroy(esl_pos_t nc, struct chain_s *chain)
@@ -533,6 +528,33 @@ rview_chain_Destroy(esl_pos_t nc, struct chain_s *chain)
   }
 }
 
+int
+rview_chain_GEOMparam(struct chain_s *chain, const RES *std, char *errbuf, int verbose)
+{
+  int r;
+  
+  for (r = 0; r < chain->nr; r ++)
+    rview_res_GEOMparam(&chain->res[r], std, errbuf, verbose);
+ 
+    return eslOK;
+}
+
+int
+rview_chain_ResAdd(struct chain_s *chain)
+{
+  int status;
+  
+  if (chain->nr == 0) ESL_ALLOC  (chain->res, sizeof(RES));
+  else                ESL_REALLOC(chain->res, sizeof(RES) * (chain->nr+1));
+  rview_res_Init(&chain->res[chain->nr]);
+
+  chain->nr ++;
+  return eslOK;
+
+ ERROR:
+  return eslFAIL;
+}
+
 void
 rview_chain_Write(FILE *fp, struct chain_s *chain, int verbose)
 {
@@ -551,14 +573,14 @@ rview_chain_Write(FILE *fp, struct chain_s *chain, int verbose)
   else
     fprintf(fp, "nres: (%lld)\n", chain->nr);
 
-  if (verbose) {
+  if (1||verbose) {
     for (r = 0; r < chain->nr; r ++)
-      rview_res_Write(fp, &chain->res[r], verbose);
+      rview_res_Write(fp, &chain->res[r], FALSE);
   }
 }
 
 int
-rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose)
+rview_pdbx_AtomAdd(PDBX *pdbx, ATOM *atom, int verbose)
 {
   struct chain_s *chain;
   RES            *res;
@@ -584,7 +606,7 @@ rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose)
     if (atom->resid == chain->res[r].resnum) break;
 
   if (chain->nr == 0 || r == chain->nr) {
-    rview_chain_AddRes(chain);
+    rview_chain_ResAdd(chain);
     res = &(chain->res[r]);
     res->na           = 0;
     res->h            = 1;
@@ -595,10 +617,11 @@ rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose)
     esl_sprintf(&res->reschr[0], atom->reschr);
     esl_strcat(&chain->resseq, -1, atom->reschr, -1); // add the residue to chain->resseq
     esl_sprintf(&res->chain,  atom->chain);
+    if (chain->seqtype) rview_res_SetRESTYPE(res, chain->seqtype);  
   }
 
   // now add the atom to this residue
-  rview_res_AddAtom(&(chain->res[r]), atom);
+  rview_res_AtomAdd(&(chain->res[r]), atom);
   if (chain->res[r].h > 1) chain->hetero = TRUE;
 
   return eslOK;
@@ -608,7 +631,7 @@ rview_pdbx_AddAtom(PDBX *pdbx, ATOM *atom, int verbose)
 }
 
 int
-rview_pdbx_AddChain(PDBX *pdbx, struct chain_s *chain, int idx, int verbose)
+rview_pdbx_ChainAdd(PDBX *pdbx, struct chain_s *chain, int idx, int verbose)
 {
   struct chain_s  *new;
   int              c;
@@ -737,7 +760,7 @@ rview_pdbx_Write(FILE *fp, PDBX *pdbx, int verbose)
 }
 
 int
-rview_res_AddAtom(RES *res, ATOM *atom)
+rview_res_AtomAdd(RES *res, ATOM *atom)
 {
   ATOM *new;
   int   h;
@@ -762,7 +785,6 @@ rview_res_AddAtom(RES *res, ATOM *atom)
       res->h ++;
       //printf("hetero residue %lld in chain %s seq %lld\n", res->resnum, atom->chain, atom->seqid);
     }
-
   }
   
   new = &(res->atom[res->na]);
@@ -773,6 +795,7 @@ rview_res_AddAtom(RES *res, ATOM *atom)
   new->x      = atom->x;
   new->y      = atom->y;
   new->z      = atom->z;
+  new->isring = atom->isring;
     
   esl_sprintf(&new->atomid,  atom->atomid);
   esl_sprintf(&new->atomidx, atom->atomidx);
@@ -786,19 +809,147 @@ rview_res_AddAtom(RES *res, ATOM *atom)
   return eslFAIL;
 }
 
-void
-rview_res_Init(RES *res)
-{
-  res->h      = 1;
-  res->reschr = NULL;
-  res->chain  = NULL;
 
-  res->from_atomidx = -1;
-  res->resnum       = -1;
+#define NRING   9  // # ring atoms total
+#define R_NRING 9  // # ring atoms in a purinen(R)
+#define Y_NRING 6  // # ring atoms in a pyrimidine (Y)
+static const char *RING[] = {"C4", "N3", "C2", "N1", "C6", "C5", "N7", "C8", "N9"};
+
+// anotate the atoms as belonging or not to the ring atoms
+int
+rview_res_AtomRing(RES *res, int verbose)
+{
+  int nring = 0;
+  int a;
+  int x;
+
+  for (a = 0; a < res->na; a ++) {
+    res->atom[a].isring = FALSE;
+
+	  for (x = 0; x < NRING; x ++) {
+      if (esl_strcmp(res->atom[a].atomidx, RING[x]) == eslOK)
+	{
+	  res->atom[a].isring = TRUE;
+	  nring ++;
+	  break;
+	}
+    }
+  }
+  if (verbose) printf("res %s (%lld) has %d ring atoms\n", res->reschr[0], res->resnum, nring);
+  if (nring > R_NRING && res->restype == RBASE) esl_fatal("A purine     should have %d atoms not %d\n", R_NRING, nring);
+  if (nring > Y_NRING && res->restype == YBASE) esl_fatal("A pyrimidine should have %d atoms not %d\n", Y_NRING, nring);
+
+  res->geom->nring = nring;
   
-  res->na   = 0;
-  res->atom = NULL;
+  return eslOK;
 }
+
+int
+rview_res_AtomAverages(RES *res)
+{
+  double  xa_avg = 0;
+  double  ya_avg = 0;
+  double  za_avg = 0;
+  double  xr_avg = 0;
+  double  yr_avg = 0;
+  double  zr_avg = 0;
+  int     nring = res->geom->nring;
+  int     a;
+  int     x;
+
+  if (res->geom  == NULL) return eslOK;
+  if (res->na    == 0)    return eslOK;
+  if (nring      == 0)    rview_res_AtomRing(res, FALSE); // ring atoms had not been annotated yet
+  
+  for (a = 0; a < res->na; a ++) {
+    xa_avg += res->atom[a].x;
+    ya_avg += res->atom[a].y;
+    za_avg += res->atom[a].z;
+
+    if (res->atom[a].isring)  {
+      xr_avg += res->atom[a].x;
+      yr_avg += res->atom[a].y;
+      zr_avg += res->atom[a].z;
+    } 
+  }
+  
+  xa_avg /= res->na;
+  ya_avg /= res->na;
+  za_avg /= res->na;
+
+  if (nring > 0) {
+    xr_avg /= nring;
+    yr_avg /= nring;
+    zr_avg /= nring;
+  }
+  
+  res->geom->Ca[0] = xa_avg;
+  res->geom->Ca[1] = ya_avg;
+  res->geom->Ca[2] = za_avg;
+  
+  res->geom->Cr[0] = xr_avg;
+  res->geom->Cr[1] = yr_avg;
+  res->geom->Cr[2] = zr_avg;
+  
+  return eslOK;
+}
+
+
+int
+rview_res_AtomFind(RES *res, char *atomidx)
+{
+  int a;
+
+  for (a = 0; a < res->na; a ++) {
+    if (esl_strcmp(atomidx, res->atom[a].atomidx) == eslOK) return a;
+  }
+  
+  return -1;
+}
+
+// map the atoms in res to those of the standard residue nt
+// map[0..nar-1]  takes values 1..nas if atom present in standard residue, zero otherwise
+int
+rview_res_AtomMap(RES *res, const RES *std, char *errbuf, int verbose)
+{
+  int  *map;
+  ATOM *atomr;
+  ATOM *atoms;
+  int   nar = res->na;
+  int   nas = std->na;
+  int   ar;
+  int   as;
+  int   n; // count how many matches per atom, we expect only one
+  int   status;
+
+  ESL_ALLOC(res->geom->mapstd, sizeof(int) * nar);
+  map = res->geom->mapstd;
+
+  for (ar = 0; ar < nar; ar ++) {
+    atomr = &res->atom[ar];
+    
+    map[ar] = 0; // initialize
+    n       = 0;
+    
+    for (as = 0; as < nas; as ++) {
+      atoms = &std->atom[as];
+      if (esl_strcmp(atomr->atomidx, atoms->atomidx) == eslOK) { map[ar] = as+1; n ++; }
+    }
+    if (n > 1) esl_fatal("atom %s at residue %s has more than one match to standard", atomr->atomidx, res->reschr[0]);
+  }
+    
+  if (verbose) {
+    for (ar = 0; ar < nar; ar ++)
+      if (map[ar] > 0) printf("res_atom[%d] %s matches std_atom[%d] %s\n", ar, res->atom[ar].atomidx, map[ar]-1, std->atom[map[ar]-1].atomidx);
+  }
+  
+  return  eslOK;
+
+ ERROR:
+  if (map) free(map);
+  return status;
+}
+
 
 void
 rview_res_Destroy(esl_pos_t nr, RES *res)
@@ -814,10 +965,363 @@ rview_res_Destroy(esl_pos_t nr, RES *res)
       if (each->reschr) free(each->reschr);
       if (each->chain)  free(each->chain);
       if (each->atom)   rview_atom_Destroy(each->na, each->atom);
+      if (each->geom)   {
+	if (each->geom->mapstd) free(each->geom->mapstd);
+	free(each->geom);
+      }
     }
     free(res);
   }
 }
+
+void
+rview_res_Init(RES *res)
+{
+  res->h      = 1;
+  res->reschr = NULL;
+  res->chain  = NULL;
+  res->geom   = NULL;
+
+  res->from_atomidx = -1;
+  res->resnum       = -1;
+  res->restype      = OTHER;
+  
+  res->na   = 0;
+  res->atom = NULL;
+}
+
+int
+rview_res_GEOMparam(RES *res, const RES *std, char *errbuf, int verbose)
+{
+  int n;
+  int status;
+
+  ESL_ALLOC(res->geom, sizeof (GEOBASE));
+  res->geom->mapstd = NULL;
+  
+  // init
+  res->geom->Ca[0] = 0.0;
+  res->geom->Ca[1] = 0.0;
+  res->geom->Ca[2] = 0.0;
+  res->geom->Cr[0] = 0.0;
+  res->geom->Cr[1] = 0.0;
+  res->geom->Cr[2] = 0.0;
+  res->geom->R[0][0] = res->geom->R[0][1] = res->geom->R[0][2] = 0.0;
+  res->geom->R[1][0] = res->geom->R[1][1] = res->geom->R[1][2] = 0.0;
+  res->geom->R[2][0] = res->geom->R[2][1] = res->geom->R[2][2] = 0.0;
+
+  // Annotate the ring atoms
+  rview_res_AtomRing(res, FALSE);
+
+  for (n = 0; n < NSTD; n ++) {
+    if (esl_strcmp(std[n].reschr[0], res->reschr[0]) == eslOK) break;
+  }
+  if (n == NSTD) esl_fatal("did not find a standard residue for %s\n", res->reschr[0]);
+  res->geom->stdidx = n;
+
+  // Map the atoms of res to those of the standard residue
+  rview_res_AtomMap(res, &std[res->geom->stdidx], errbuf, FALSE);
+      
+  // calculate the average of all atom's positions
+  rview_res_AtomAverages(res);
+  
+  // least square fit of the residue to the corresponding standard atom
+  rview_res_LeastSquare_Horn_Quaternions(res, std, errbuf, verbose);
+
+  return eslOK;
+  
+ ERROR:
+  if (res->geom) free(res->geom);
+  return status;
+}
+
+int
+rview_res_LeastSquare_Horn_Quaternions(RES *res, const RES *std, char *errbuf, int verbose)
+{
+  const RES   *which;
+  ESL_DMATRIX *E     = NULL;                // E[na][3]  coordenates of the ring atoms in the experimental residue
+  ESL_DMATRIX *S     = NULL;                // S[na][3]  coordenates of the ring atoms in the std residue
+  ESL_DMATRIX *ST    = NULL;                // ST[3][na] S transpose
+  ESL_DMATRIX *STE   = NULL;                // STE[3][3] S^T * E
+  ESL_DMATRIX *C     = NULL;                // C[3][3]   covariation matrix
+  ESL_DMATRIX *M     = NULL;                // M[4][4]   quaternion matrix (diagonal_
+  ESL_DMATRIX *U     = NULL;                // U[4][4]   Eigen vectors of M
+  double      *Savg  = NULL;                // Savg[3]   average coordinates of ring atoms in the std residue
+  double      *Eavg  = NULL;                // Eavg[3]   average coordintaes of ring atoms in the exp residue
+  double      *Er    = NULL;                // Er[4]     eigenvalues, real part
+  double      *Ei    = NULL;                // Ei[4]     eigenvalues, imaginary part
+  double       Emax  = -eslINFINITY;        // The maximum eigen value
+  double       tol   = 1e-4;
+  int         *map   = res->geom->mapstd;   // the map of the res atoms to those in std
+  int          na    = res->na;
+  int          nr    = res->geom->nring;
+  int          imax;                      // location of the largest eigenvalue
+  int          n;                         // index for standard residues
+  int          a;                         // atoms index
+  int          i, j;                      // coords index
+  int          r;                         // index for ring atoms only
+  int          status;
+
+  if (std == NULL) return eslOK;
+  if (nr  < 3)     { printf("nt has too few ring atoms for fitting to a standard"); return eslOK; }
+  
+  // the standard residues
+  which = &std[res->geom->stdidx];
+
+  // the covariance matrix C
+  // only for ring atoms present in the experimental resiude (nr)
+  S   = esl_dmatrix_Create(nr, 3); // coordenates for the standard residue
+  E   = esl_dmatrix_Create(nr, 3); // coordenates for the experimental residue
+  STE = esl_dmatrix_Create(3, 3);
+  C   = esl_dmatrix_Create(3, 3);
+  ESL_ALLOC(Savg, sizeof(double) * 3);
+  ESL_ALLOC(Eavg, sizeof(double) * 3);
+
+  // initialize
+  esl_dmatrix_Set(S,   0.0);
+  esl_dmatrix_Set(E,   0.0);
+  esl_dmatrix_Set(STE, 0.0);
+  esl_dmatrix_Set(C,   0.0);
+  esl_vec_DSet(Savg, 3, 0.0);
+  esl_vec_DSet(Eavg, 3, 0.0);
+  
+  // the residue coordenates for the ring atoms in the residue
+  r = 0;
+  for (a = 0; a < na; a ++) {
+    if (res->atom[a].isring == FALSE) continue;
+ 
+    E->mx[r][0] = res->atom[a].x; 
+    E->mx[r][1] = res->atom[a].y;
+    E->mx[r][2] = res->atom[a].z;
+ 
+    if (map[a] > 0) {
+      S->mx[r][0] = which->atom[map[a]-1].x;  
+      S->mx[r][1] = which->atom[map[a]-1].y;
+      S->mx[r][2] = which->atom[map[a]-1].z;
+    }
+    r ++;
+  }
+  if (r != nr) esl_fatal("bad counting of ring atoms");
+
+  // residue averages over ring atoms only
+  Savg[0] = which->geom->Cr[0];  // the standard residue averages
+  Savg[1] = which->geom->Cr[1];
+  Savg[2] = which->geom->Cr[2];
+  Eavg[0] = res->geom->Cr[0];  // the experimental residue averages
+  Eavg[1] = res->geom->Cr[1];
+  Eavg[2] = res->geom->Cr[2];
+ 
+  ST = dmx_Transpose(S);         // S^T
+  esl_dmx_Multiply(ST, E, STE);  // STE = S^T * E
+
+  // the covariance
+  //
+  // C = (S^T * E - S^T * I(na,3) * I^T * E * 1/na ) / (na -1)
+  //
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++) 
+      C->mx[i][j] = STE->mx[i][j] - Savg[i] * Eavg[j] / (double)nr;
+  esl_dmx_Scale(C, 1./(double)(nr-1));
+  esl_vec_DDump(stdout, Savg, 3, NULL);
+  esl_vec_DDump(stdout, Eavg, 3, NULL);
+  esl_dmatrix_Dump(stdout, C, NULL, NULL);
+  
+  // the 4x4 symmetric matrix 
+  M = esl_dmatrix_Create(4,4);
+  M->mx[0][0] =  C->mx[0][0] + C->mx[1][1] + C->mx[2][2];
+  M->mx[1][1] =  C->mx[0][0] - C->mx[1][1] - C->mx[2][2];
+  M->mx[2][2] = -C->mx[0][0] + C->mx[1][1] - C->mx[2][2];
+  M->mx[3][3] = -C->mx[0][0] - C->mx[1][1] + C->mx[2][2];
+  M->mx[0][1] =  C->mx[1][2] - C->mx[2][1];
+  M->mx[0][2] =  C->mx[2][0] - C->mx[0][2];
+  M->mx[0][3] =  C->mx[0][1] - C->mx[1][0];
+  M->mx[1][2] =  C->mx[0][1] + C->mx[1][0];
+  M->mx[1][3] =  C->mx[2][0] + C->mx[0][2];
+  M->mx[2][3] =  C->mx[1][2] + C->mx[2][1];
+  M->mx[1][0] =  M->mx[0][1];
+  M->mx[2][0] =  M->mx[0][2];
+  M->mx[3][0] =  M->mx[0][3];
+  M->mx[2][1] =  M->mx[1][2];
+  M->mx[3][1] =  M->mx[1][3];
+  M->mx[3][2] =  M->mx[2][3];
+
+  // get M's eigenvalues and eigenvectors
+  dmx_Diagonalize(M, &Er, &Ei, &U, tol, TRUE);
+
+  // check for complex eigenvalues
+  for (i = 0; i < 4; i++)
+    if (fabs(Ei[i]) > tol) esl_fatal("there are complex eigenvalues");
+ 
+  // find largets eigenvalue
+  for (i = 0; i < 4; i++)
+    if (Er[i] > Emax) { Emax = Er[i]; imax = i; }
+  
+  /* reuse M to store the Eigen vectors */
+  for (i = 0; i < 4; i++)
+    for (j = 0; j < 4; j++)
+      M->mx[i][j] = U->mx[i][imax] * U->mx[j][imax];
+  
+  /* the rotation matrix */
+  res->geom->R[0][0] = M->mx[0][0] + M->mx[1][1] - M->mx[2][2] - M->mx[3][3];
+  res->geom->R[0][1] = 2 * (M->mx[1][2] - M->mx[0][3]);
+  res->geom->R[0][2] = 2 * (M->mx[1][3] + M->mx[0][2]);
+  res->geom->R[1][0] = 2 * (M->mx[2][1] + M->mx[0][3]);
+  res->geom->R[1][1] = M->mx[0][0] - M->mx[1][1] + M->mx[2][2] - M->mx[3][3];
+  res->geom->R[1][2] = 2 * (M->mx[2][3] - M->mx[0][1]);
+  res->geom->R[2][0] = 2 * (M->mx[3][1] - M->mx[0][2]);
+  res->geom->R[2][1] = 2 * (M->mx[3][2] + M->mx[0][1]);
+  res->geom->R[2][2] = M->mx[0][0] - M->mx[1][1] - M->mx[2][2] + M->mx[3][3];
+  
+  /* the translation vector */
+  for (i = 0; i < 3; i++) {
+    res->geom->t[i] = res->geom->Cr[i];
+    
+    for (j = 0; j < 3; j++)
+      res->geom->t[i] -= which->geom->Cr[i] * res->geom->R[i][j];
+  }
+
+  if (verbose) {
+    printf("\ntranslation\n");
+    for (i = 0; i < 3; i++) printf("%.3f ", res->geom->t[i]);
+      printf("\n");
+      
+    printf("\nrotation\n");
+    for (i = 0; i < 3; i++) {
+      for (j = 0; j < 3; j++)     
+	printf("%.3f ", res->geom->R[i][j]);
+      printf("\n");
+    }
+  }
+
+  free(Savg);
+  free(Eavg);
+  if (Er)  free(Er);
+  if (Ei)  free(Ei);
+  if (E)   esl_dmatrix_Destroy(E);
+  if (S)   esl_dmatrix_Destroy(S);
+  if (ST)  esl_dmatrix_Destroy(ST);
+  if (STE) esl_dmatrix_Destroy(STE);
+  if (C)   esl_dmatrix_Destroy(C);
+  if (M)   esl_dmatrix_Destroy(M);
+  if (U)   esl_dmatrix_Destroy(U);
+  return eslOK;
+
+ ERROR:
+  if (Savg) free(Savg);
+  if (Eavg) free(Eavg);
+  if (Er)   free(Er);
+  if (Ei)   free(Ei);
+  if (E)    esl_dmatrix_Destroy(E);
+  if (S)    esl_dmatrix_Destroy(S);
+  if (ST)   esl_dmatrix_Destroy(ST);
+  if (STE)  esl_dmatrix_Destroy(STE);
+  if (C)    esl_dmatrix_Destroy(C);
+  if (M)    esl_dmatrix_Destroy(M);
+  if (U)    esl_dmatrix_Destroy(U);
+  return status;  
+}
+
+void
+rview_res_SetRESTYPE(RES *res, char *seqtype)
+{
+  if (strstr(seqtype, "ribo")) {
+    if      (esl_strcmp(res->reschr[0], "A") == eslOK) res->restype = RBASE;
+    else if (esl_strcmp(res->reschr[0], "G") == eslOK) res->restype = RBASE;
+    else if (esl_strcmp(res->reschr[0], "C") == eslOK) res->restype = YBASE;
+    else if (esl_strcmp(res->reschr[0], "T") == eslOK) res->restype = YBASE;
+    else if (esl_strcmp(res->reschr[0], "U") == eslOK) res->restype = YBASE;
+    else if (esl_strcmp(res->reschr[0], "N") == eslOK) res->restype = BASE;
+    else                                               esl_fatal("cannot find residue %s in position %d, chain %s (seqid %d)\n",
+								 res->reschr[0], res->resnum, res->chain, res->seqid);
+  }
+  else   if (strstr(seqtype, "peptide"))               res->restype = AMINO;
+  else                                                 res->restype = OTHER;  
+}
+
+// Collection of geometric paramameters for a nucleotide residue
+// necesary to identify basepairs.
+//
+// A nucleotide is compared to a standard, which is planar.
+// We calculate a rotation matrix R and a translation vector (t)
+// such that the observed nucleotide after it rotates, and translates fits the reference one.
+//
+// R and t are calculated by the least square fit method described in 3Dna.org
+// The coordenates of the standard residues also come from 3Dna.org
+// http://x3dna.org/highlights/least-squares-fitting-procedures-with-illustrated-examples
+//
+// r_avg is a 3-d vector with the averages of the positions of all atoms in the analysed residue
+// s_avg is a 3-d vector with the averages of the positions of all atoms in the standard residued
+//
+// then the least square fit gives us the relationship
+//
+// r_avg = t + s_avg * R^T
+//
+//
+
+
+
+
+
+//  The standard base reference frame
+//
+// "A Standard Reference Frame for the Description of Nucleic Acid Base-pair Geometry"
+// Tsukuba Workshop on Nucleic Acid Structure and Interactions held on January 12-14, 1999.
+// Table 1
+//
+int
+rview_res_StandardNT(RES **ret_res, char *errbuf, int verbose)
+{
+  RES     *res = NULL;
+  RES     *each;
+  atomSTD  aSTD;
+  ATOM    *atom;
+  int      r;
+  int      a;
+  int      status;
+  
+  ESL_ALLOC(res, sizeof(RES) * NSTD);
+  
+  for (r = 0; r < NSTD; r ++) {
+    each = &res[r];
+    rview_res_Init(each);
+    
+    ESL_ALLOC(each->reschr, sizeof(char *));
+    esl_sprintf(&each->reschr[0], ntSTD[r].sname);
+
+    for (a = 0; a < NATOM; a ++) {
+      aSTD = ntSTD[r].satom[a];
+      if (esl_strcmp(aSTD.name, "") == eslOK) continue;
+ 
+      if (each->na == 0) ESL_ALLOC  (each->atom, sizeof(ATOM));
+      else               ESL_REALLOC(each->atom, sizeof(ATOM) * (each->na+1));
+      atom = &each->atom[each->na];
+      rview_atom_Init(atom);
+      atom->type = ATYPE_STANDARD;
+      
+      esl_sprintf(&atom->reschr,  ntSTD[r].sname);
+      esl_sprintf(&atom->atomidx, aSTD.name);
+      
+      atom->x = aSTD.coord[0];
+      atom->y = aSTD.coord[1];
+      atom->z = aSTD.coord[2];
+
+      each->na ++;
+    }
+
+    // calculave geometric parameters for all atom's positions
+    rview_res_GEOMparam(each, each, errbuf, verbose);
+    if (verbose) rview_res_Write(stdout, each, TRUE);	  
+
+  }
+
+  *ret_res = res;
+  return eslOK;
+
+ ERROR:
+  if (res) free(res);
+  return status;
+}
+
 
 void
 rview_res_Write(FILE *fp, RES *res, int verbose)
@@ -825,8 +1329,13 @@ rview_res_Write(FILE *fp, RES *res, int verbose)
   int a;
 
   if (res == NULL) return;
-  
+
+  if      (res->restype == RBASE) fprintf(fp, "R ");
+  else if (res->restype == YBASE) fprintf(fp, "Y ");
+  else if (res->restype == AMINO) fprintf(fp, "AA ");
+  else                            fprintf(fp, "  ");
   fprintf(fp, "%s %lld %s natoms %lld idx %lld\n", res->reschr[0], res->resnum, res->chain, res->na, res->from_atomidx);
+  
   if (verbose) {
     for (a = 0; a < res->na; a ++)
       rview_atom_Write(fp, &res->atom[a]);
@@ -1025,6 +1534,7 @@ parse_atom(PDBX *pdbx, char *p, esl_pos_t n, char *atomid, int naf, int *useatmf
   for (i = 0; i < n; i++) {
     if (! isspace(p[i])) {
       isblank = FALSE;
+      if (idx == 3 && p[i] == '\"') continue; // some atomid comes as "C1'", remove the ""
       field[idx][len++] = p[i];
     }
     else {
@@ -1058,7 +1568,7 @@ parse_atom(PDBX *pdbx, char *p, esl_pos_t n, char *atomid, int naf, int *useatmf
   
   if (verbose) rview_atom_Write(stdout, atom);
   
-  rview_pdbx_AddAtom(pdbx, atom, verbose);
+  rview_pdbx_AtomAdd(pdbx, atom, verbose);
 
   rview_atom_Destroy(1, atom);
   free(field[0]);
@@ -1512,7 +2022,7 @@ parse_sequence_hetero(PDBX *pdbx, char *p, esl_pos_t n, int verbose)
   if (nf != 4) esl_fatal("sequence_hetero should have 4 fields not %d\n", nf);
 
   seqid  = atoi(field[0]);
-  resnum = atoi(field[1]);
+  resnum = atoi(field[0]);
   reschr = field[2];
   if (esl_strcmp(field[3], "y") == eslOK) {
     if (verbose) printf("hetero sequence %lld residue %lld chr %s\n", seqid, resnum, reschr);    
@@ -1607,7 +2117,7 @@ parse_add_allseqs(PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int 
 	//
 	if (chain->name) {
 	  free(chain->name); chain->name = NULL;
-	  rview_pdbx_AddChain(pdbx, chain, -1, verbose);
+	  rview_pdbx_ChainAdd(pdbx, chain, -1, verbose);
 	}
 	continue;
       }
@@ -1648,7 +2158,7 @@ parse_add_allseqs(PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int 
       //
       if (isshort) {
 	chunk_is_sequence_short(tok, &chain->seq, NULL, verbose2);
-	rview_pdbx_AddChain(pdbx, chain, -1, verbose);
+	rview_pdbx_ChainAdd(pdbx, chain, -1, verbose);
       }
       else { 
 	// the long consensus sequence
@@ -1693,7 +2203,7 @@ parse_add_allseqs(PDBX *pdbx, int *ret_readnow, char *chunk, esl_pos_t len, int 
 	  // now we are ready to add the chain to pdbx.
 	  // If several chains use the same sequence, we will add more chains with the same sequence later
 	  isshort = FALSE;
-	  rview_pdbx_AddChain(pdbx, chain, -1, verbose);
+	  rview_pdbx_ChainAdd(pdbx, chain, -1, verbose);
 	}	
       }
     }
@@ -2093,7 +2603,7 @@ parse_sasym(PDBX *pdbx, char *p, esl_pos_t n, int nsf, int *usesasymfield, int v
     else {
       esl_sprintf(&chain->seq,     pdbx->chain[which].seq);
       esl_sprintf(&chain->seqtype, pdbx->chain[which].seqtype);
-      rview_pdbx_AddChain(pdbx, chain, which+1, verbose);
+      rview_pdbx_ChainAdd(pdbx, chain, which+1, verbose);
      }
   }
 
