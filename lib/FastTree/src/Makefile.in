@@ -93,6 +93,11 @@ install:
 	   done ;\
 	fi
 
+uninstall:
+	for file in ${PROGS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+
 clean:
 	-rm -f ${PROGS} ${OBJS} 
 	-rm -f *.gcno *.gcda *.gcov

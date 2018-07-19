@@ -1367,6 +1367,80 @@ Tree_MyCluster(ESL_DMATRIX *D, ESL_TREE **ret_T)
   return status;
 }
 
+int
+Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, char *errbuf, int verbose)
+{
+  ESL_MSA    *allmsa  = NULL;
+  int        *nsubs   = NULL;
+  int        *ndouble = NULL;
+  ESL_DSQ    *ax;
+  ESL_DSQ    *axl;
+  ESL_DSQ    *axr;
+  int         sc;
+  int         v;
+  int         idx;
+  int         i, j;
+  int         status;
+  
+  if (T == NULL) ESL_XFAIL(eslFAIL, errbuf, "substitutions(): no Tree given");
+  
+  status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  ESL_ALLOC(nsubs,   sizeof(int) * msa->alen);
+  ESL_ALLOC(ndouble, sizeof(int) * msa->alen * msa->alen);
+  esl_vec_ISet(nsubs,   msa->alen,           0);
+  esl_vec_ISet(ndouble, msa->alen*msa->alen, 0);
+  
+  for (i = 0; i < msa->alen; i ++) {
+    for (v = 0; v < T->N-1; v++)
+      {
+	ax  = allmsa->ax[T->N+v];
+	axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
+	axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
+	
+	if (axr[i] != ax[i]) { // a single substitution
+	  nsubs[i] ++;
+	}
+	if (axr[i] != ax[i]) { // a single substitution
+	  nsubs[i] ++;
+	}
+      }
+  }
+  
+  for (i = 0; i < msa->alen-1; i ++) {
+    for (j = i+1; j < msa->alen; j ++) {
+      idx = i * msa->alen + j;
+      
+      for (v = 0; v < T->N-1; v++)
+	{
+	  ax  = allmsa->ax[T->N+v];
+	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
+	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
+
+	  if (axr[i] != ax[i] && axr[j] != ax[j]) { // a double substitution
+	    ndouble[idx] ++;
+	  }
+	  if (axl[i] != ax[i] && axl[j] != ax[j]) { // a double substitution
+	    ndouble[idx] ++;
+	  }
+	}
+    }
+  }
+
+  *ret_nsubs   = nsubs;
+  if (ret_ndouble) *ret_ndouble = ndouble;
+  
+  esl_msa_Destroy(allmsa);
+  return eslOK;
+  
+ ERROR:
+  if (nsubs)   free(nsubs);
+  if (ndouble) free(ndouble);
+  if (allmsa) esl_msa_Destroy(allmsa);
+  return status;
+}
+
 double
 esl_tree_er_AverageBL(ESL_TREE *T)
 {
@@ -1506,6 +1580,7 @@ esl_tree_er_RescaleAverageBL(double target_abl, ESL_TREE *T, double tol, char *e
  ERROR:
   return status;
 }
+
 
 /*---- internal functions ---*/
 

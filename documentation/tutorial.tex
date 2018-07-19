@@ -8,25 +8,39 @@ suffice to get you started.
 
 \subsection {Modes of \rscape}
 
+For an input alignment, \rscape\ reports all pairs that have
+covariation scores with E-values smaller than a target E-value.\\
+
+\noindent
+The E-values are calculated in one of two ways:
+
 \begin{tabular}{ll}
-\multicolumn{2}{l}{\textbf{MSA input \textit{with} annotated consensus secondary structure:}} \\ 
+\multicolumn{2}{l}{\textbf{A one-set statistical test:} \textit{default}} \\ 
  & \\ 
-\textbf{}   & Reports all pairs that have covariation scores with E-values smaller than a target E-value\\
-\textbf{}   & \hspace{5mm} (where E-values are calculated relative to the \emph{given structure}).\\
-\textbf{}   & Draws the given consensus structure annotated with the significantly covarying base pairs.\\
+\textbf{}   & E-values are calculated assuming that all pairs are possible.\\
+\textbf{}   & This is the default behaviour of \rscape.\\
  & \\ 
-\multicolumn{2}{l}{\textbf{MSA input \textit{without} an annotated secondary structure:}}  \\
+\multicolumn{2}{l}{\textbf{A two-set statistical test: } \prog{option -s}} \\ 
  & \\ 
-\textbf{}   & Reports all pairs that have covariation scores with E-values smaller than a target E-value.\\
-\textbf{}   & \hspace{5mm} (where E-values are calculated assuming \emph{no structure}).\\
-\textbf{}   & Builds the best consensus structure that includes all significantly covarying pairs,\\
+\textbf{}   & If the alignment has associated a \emph{given structure}, \textbf{\prog{option -s}} performs two independent statistical tests: \\
+\textbf{}   & one for the pairs included in the structure, a different one for all the remaining possible pairs.\\
+\textbf{}   & It also draws the given consensus structure annotated with the significantly covarying base pairs.\\
+ & \\ 
+\end{tabular}
+
+\subsection {Option --cyk}
+
+After performing one of the two statistical tests, this option:\\
+
+\begin{tabular}{ll}
+\textbf{}   & Builds the best consensus structure that includes the largest possible number of significantly covarying pairs,\\
 \textbf{}   & \hspace{5mm}\emph{the maximum-covariation optimal consensus structure}.\\
-\textbf{}   & Reports all pairs that have covariation scores with E-values smaller than a target E-value.\\
-\textbf{}   & \hspace{5mm}  (with E-values calculated relative the \emph{maximum-covariation structure})\\
 \textbf{}   & Draws the \emph{maximum-covariation optimal consensus structure} annotated with the significantly \\
 \textbf{}   & \hspace{5mm}covarying base pairs.\\
+\textbf{}   & It also returns the alignment in Stockholm format annotated with the max-cov optimal consensus structure.\\
  & \\ 
-\end{tabular} 
+\end{tabular}
+
 
 I'll show examples of running each mode, using examples in the
 \ccode{tutorial/} subdirectory of the distribution.
@@ -58,36 +72,76 @@ To run \rscape\ with default parameters on alignment file
 \user{bin/R-scape tutorial/updated\_Arisong.sto}\\
 
 \noindent
-The output is a list of the significantly covarying positions
+The output is a list of the significantly covarying positions under the one-set test
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 0.6.1 (Jul 2017)
+# R-scape 0.8.1 (Jul 2018)
 # Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# One-set statistical test (all pairs are tested as equivalent) 
+#
 # MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
+#
 # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.64,121.98]     [0 | 11 20 11 | 55.00 100.00 70.97] 
-#       left_pos       right_pos        score   E-value
-#------------------------------------------------------------
-*	      98	     106	121.98	3.71083e-07
-*	     122	     137	95.92	1.81573e-05
-*	      96	     108	89.19	4.97828e-05
-*	     120	     139	77.12	0.000300864
-*	     119	     140	59.65	0.00394406
-*	     121	     138	59.15	0.00437784
-*	     124	     134	58.40	0.00485901
-*	     123	     135	58.24	0.00485901
-*	      94	     110	56.89	0.00598452
-*	      99	     105	55.36	0.00776149
-*	      97	     107	52.27	0.0117527
+# GTp    0.05         [-9.82,121.80]     [0 | 4 20 4 | 20.00 100.00 33.33] 
+#
+#       left_pos       right_pos        score           E-value
+#------------------------------------------------------------------
+*	      98	     106	121.80433	4.31981e-05
+*	     122	     137	91.75573	0.00337167
+*	      96	     108	89.46430	0.00470161
+*	     120	     139	75.03790	0.0381599
 \end{sreoutput}
 A star ``*'' in the first column indicates that the pair is part of
 the annotated structure in the \prog{updated\_Arisong.sto} file. A
 blank indicates a pair that is not compatible with the structure. A
 ``$\sim$`` indicates an interaction not in the annotated structure but
 compatible with it (none in this example).
+
+The \prog{tutorial/updated\_Arisong.sto} has a proposed secondary
+structure.  Instead of testing all pairs as equivalent, we may want to
+test the significance of the given structure as a one set of pairs,
+and independently that of the rest of all possible pairs.  In order to
+do a two-set test use:\\
+
+\user{bin/R-scape -s tutorial/updated\_Arisong.sto}\\
+
+\noindent
+The output is a list of the significantly covarying positions under the two-set test.
+
+\begin{sreoutput}
+# R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
+# R-scape 0.8.1 (Jul 2018)
+# Copyright (C) 2016 Howard Hughes Medical Institute.
+# Freely distributed under the GNU General Public License (GPLv3).
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
+#
+# Structure obtained from the msa
+# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
+#
+# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.82,121.80]     [0 | 12 20 12 | 60.00 100.00 75.00] 
+#
+#       left_pos       right_pos        score           E-value
+#------------------------------------------------------------------
+*	      98	     106	121.80433	4.15366e-07
+*	     122	     137	91.75573	3.24199e-05
+*	      96	     108	89.46430	4.52078e-05
+*	     120	     139	75.03790	0.000366922
+*	     119	     140	58.25176	0.00410697
+*	     121	     138	57.96915	0.00421236
+*	      94	     110	56.91065	0.00490376
+*	     124	     134	55.84207	0.00570817
+*	     123	     135	55.50367	0.0060045
+*	      99	     105	53.86423	0.00773238
+*	      97	     107	44.72409	0.0279485
+*	     115	     144	41.87792	0.0427906
+\end{sreoutput}
+The scores of the pairs are identical to those in the one-set
+test. The E-values have changed relative to those of the one-set test.
 
 \subsection{Default parameters}
 

@@ -95,6 +95,11 @@ clean:
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	(cd squid;                   make clean)
 
+uninstall:
+	for file in ${PROGS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+
 # "make distclean" leaves a pristine source distribution.
 #
 distclean:

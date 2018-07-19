@@ -406,10 +406,10 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
     CMAP_BPTYPEString(&bptype, clist->cnt[h].bptype, NULL);
 
     if (pdbonly) 
-      fprintf(fp, "%d %d | %s\n",
+      fprintf(fp, "# %d %d | %s\n",
 	      (int)clist->cnt[h].pdbi, (int)clist->cnt[h].pdbj, bptype);
     else
-      fprintf(fp, "%d %d | %d %d | %s\n",
+      fprintf(fp, "# %d %d | %d %d | %s\n",
 	      (int)clist->cnt[h].posi, (int)clist->cnt[h].posj,
 	      (int)clist->cnt[h].pdbi, (int)clist->cnt[h].pdbj, bptype);
     
@@ -427,7 +427,10 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
 int
 CMAP_DumpShort(FILE *fp, CLIST *clist)
 {
-  if (clist->pdbname == NULL) return eslOK;
+  if (clist->pdbname == NULL) {
+    fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
+    return eslOK;
+  }
   
   fprintf(fp, "# PDB:      %s\n", clist->pdbname);
   if (clist->ch2name == NULL) {

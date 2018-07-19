@@ -65,12 +65,14 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
   
   // Look at the structural annotation
-  if (onlypdb == FALSE) {    
+  if (onlypdb == FALSE) {
     status = ContacMap_FromCT(clist, L, ct, cntmind, msa2omsa, msa2pdb);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from stockholm file", errbuf);
    }
   if (pdbfile != NULL) {
-    if (onlypdb) esl_vec_ISet(ct, L+1, 0); // if onlypdb ignore the ss in the alignmet
+    if (onlypdb) {
+      esl_vec_ISet(ct, L+1, 0); // if onlypdb ignore the ss in the alignment
+    }
     status = ContactMap_FromPDB(pdbfile, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
   }
@@ -93,12 +95,11 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
 
    if (cmapfile) {
      if ((cmapfp = fopen(cmapfile, "w")) == NULL) ESL_XFAIL(eslFAIL, "failed to open cmapfile", errbuf);
-     CMAP_Dump(cmapfp, clist, FALSE);
+     CMAP_Dump(cmapfp, clist, TRUE);
      fclose(cmapfp);
    }
    
-   if (1||verbose) {
-     printf("^^ clist %d pdbname %s\n", clist->ncnt, clist->pdbname);
+   if (pdbfile||verbose) {
      CMAP_Dump(stdout, clist, FALSE);
      if (abcisRNA) printf("%s\n", ss);
    }
@@ -129,7 +130,7 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
   int    status;
 
   clist->mind = cntmind;
-  
+
   for (i = 0; i < L; i ++) {
 
     if (msa2pdb) msa2pdb[i] = i;
@@ -203,7 +204,7 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
-  if (1||verbose) printf("%s\n", args);
+  if (verbose) printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
 

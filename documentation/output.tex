@@ -20,7 +20,7 @@ following output files:
 
 \subsection{Tabular output per input file}
 
-The distribution includes in the directory tuturials/ examples of
+The distribution includes in the directory tutorials/ examples of
 output files. If you run \rscape, the outputs will go into your
 current working directory (not necessarily tutorials/).
 
@@ -29,14 +29,17 @@ The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
 
 \begin{sreoutput}
 # MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
-# GammaFIT: pmass 0.050024 mu 19.840474 lambda 0.152973 tau 1.281689
+# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
+#
+# Structure obtained from the msa
 # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05           [-9.64,121.98]    [0 | 11 20 11 | 55.00 100.00 70.97] 
-#       left_pos       right_pos        score   E-value
-#------------------------------------------------------------
-*               94             110      56.89   0.00598452
-*               96             108      89.19   4.97828e-05
-*               97             107      52.27   0.0117527
+# GTp    0.05           [-9.82,121.80]    [0 | 12 20 12 | 60.00 100.00 75.00] 
+#
+#       left_pos       right_pos        score           E-value
+#------------------------------------------------------------------
+*               94             110      56.91065        0.00490376
+*               96             108      89.46430        4.52078e-05
+*               97             107      44.72409        0.0279485
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:
@@ -93,8 +96,8 @@ The output file is a tabular list of significant pairs sorted by sequence positi
 
 \user{more tutorial/updated\_Arisong.sum}
  \begin{sreoutput}
- #target_E-val   MSA                     nseq    alen    avgid    method  TP      True    Found   SEN     PPV
- 0.05            updated_Arisong_1       95      65      66.35    GTp     11      20      11      55.00 100.00 
+#target_E-val   MSA     nseq    alen    avgid   method  TP      True    Found   SEN     PPV
+0.05            updated_Arisong_1       95      65      66.35    GTp 12 20 12 60.00 100.00 
 \end{sreoutput}
  This file produces a one line output per alignment in the file.
  \begin{sreitems}{\prog{Second column}}
@@ -118,9 +121,8 @@ A Stockholm alignment file can include several different multiple
 sequence alignments (MSAs).  \rscape\ produces the following output
 files, one for each individual alignment in the input Stockholm file:
 
-\subsubsection{Alignment with consensus secondary structure}
-If the given alignment  has a consensus secondary structure
-(\prog{\#=GF SS\_cons} markup), the following files are produced
+\subsubsection{Default}
+By default, the following files are produced
 
 \begin{sreitems}{\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}}
 \item[\emprog{rnafile\_msaname.R2R.sto}] Stockholm file annotated by a
@@ -154,28 +156,6 @@ AC <ACC>} and name \prog{\#=GF ID <ID>} in the Stockholm-format markups (or
 one of two if the other in not defined).  If none of those fields are
 defined, \emprog{msaname} is a number describing the order in the
 file of the given alignment.
-
-\subsubsection{Alignment without consensus secondary structure}
-Alternatively, if the alignment does not have a consensus secondary
-structure (or if it does and the option \prog{\rscape\ --cyk} is
-used) \rscape\, produces the following files describing the
-maximal-covariation optimal secondary structure:
-
-\begin{sreitems}{\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}}
-\item[\emprog{rnafile\_msaname.cyk.R2R.sto}]
-%
-\item[\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}]
-%
-\item[\emprog{rnafile\_msaname.cyk.surv}]
-%
-\item[\emprog{rnafile\_msaname.cyk.surv.\{ps.svg\}}]
-%
-\item[\emprog{rnafile\_msaname.cyk.dplot.\{ps,svg\}}]
-%
-\end{sreitems}
-These files are formatted identically to those for describing the given
-consensus structure.
-
 
 \subsubsection{Details about outputs per alignment}
  Two files are produced per alignment in the input file: \\
@@ -228,6 +208,28 @@ consensus structure.
  \item[\prog{Third function:}] the aggregation of all null alignments, all possible pairs.
  \item[\prog{Fourth function:}] the expected null survival function according to the tail Gamma fit.
  \end{sreitems}
+
+\subsubsection{Using option \prog{\rscape\ --cyk}}
+If the option \prog{--cyk} is used, \rscape\, produces the
+following additional files describing the maximal-covariation optimal
+secondary structure:
+
+\begin{sreitems}{\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}}
+\item[\emprog{rnafile\_msaname.cyk.R2R.sto}]
+%
+\item[\emprog{rnafile\_msaname.cyk.R2R.sto}]
+%
+\item[\emprog{rnafile\_msaname.cyk.R2R.sto.\{pdf,svg\}}]
+%
+\item[\emprog{rnafile\_msaname.cyk.surv}]
+%
+\item[\emprog{rnafile\_msaname.cyk.surv.\{ps.svg\}}]
+%
+\item[\emprog{rnafile\_msaname.cyk.dplot.\{ps,svg\}}]
+%
+\end{sreitems}
+These files are formatted identically to those describing the given
+consensus structure.
 
 
 \clearpage

@@ -150,14 +150,14 @@ dmx_Hessenberg(const ESL_DMATRIX *A, ESL_DMATRIX **ret_H, ESL_DMATRIX **ret_P)
     
     if (k1 != perm[k1]) {
       for (i = 0; i < A->n; i++) {
-	/* exchange values of the two rows (k+1 and new_row) 
+	/* exchange values of the two rows (k1 and new_row) 
 	 */
 	exchange          = H->mx[k1][i];
 	H->mx[k1][i]      = H->mx[new_row][i];
 	H->mx[new_row][i] = exchange;
       }
       for (i = 0; i < A->n; i++) {
-	/* also exchange values for the columns (k+1 and new_row)
+	/* also exchange values for the columns (k1 and new_row)
 	 */
 	exchange          = H->mx[i][k1];
 	H->mx[i][k1]      = H->mx[i][new_row];

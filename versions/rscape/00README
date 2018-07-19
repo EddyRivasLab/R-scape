@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape/rscape_v0.7 ; do \
+for v in rscape/rscape_v0.8 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -52,13 +52,14 @@ done
 
 
 
+
 last minute steps to make an R-scape tarball:
 (0) update INSTALL file with correct version
 (1) copy the userguide
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v0.7 ; do \
+for v in rscape_v0.8 ; do \
 for x in 1 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\

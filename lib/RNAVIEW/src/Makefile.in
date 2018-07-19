@@ -124,6 +124,11 @@ clean:
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 
+uninstall:
+	for file in ${PROGS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+
 distclean:
 	-rm -f ${PROGS} ${OBJS} 
 	-rm -f *.gcno *.gcda *.gcov

@@ -73,7 +73,8 @@ endif
 
 # Code manifests
 #
-SUBDIRS = ../src
+SUBDIRS    = ../src
+SCRIPTSDIR = ../scripts
 
 PROGS    = scorematrix2rate\
 	   e1sim\
@@ -143,46 +144,12 @@ OBJS     = e1_bg.o\
            ssifile.o\
 	   ribosum_matrix.o\
 	   cov_simulate.o\
-           #p7_evopipeline.o\
-           #branchinference.o\
-           #Dickersonrates.o\
-           #evohmmer.o\
-	   #evotracealign.o\
-           #etophits_output_tabular.o\
-           #phmmer.o\
-	   e2_evolve.o\
-           e2_generic_decoding.o\
-           e2_generic_fwdback.o\
-           e2_generic_optacc.o\
-           e2_generic_viterbi.o\
-           e2_generic_vtrace.o\
-           e2_gmx.o\
-           e2_msa.o\
-	   e2_pipeline.o\
-           e2_profile.o\
-           e2hmmer_profile.o\
-           e2_profilesq.o\
-           e2_trace.o\
-           e2_train.o\
-	   e2_tree.o\
-           e2f_generic_decoding.o\
-           e2f_generic_fwdback.o\
-           e2f_generic_optacc.o\
-           e2fhmmer_generic_decoding.o\
-           e2fhmmer_generic_fwdback.o\
-           e2fhmmer_generic_optacc.o\
-           e2tracealign.o\
-	   tkf_model.o\
-	   tkf_rate.o\
-	   tkf_simulate.o\
 
 
 SCRIPTS   = \
-	../scripts/FUNCS.pm \
-	../scripts/PDBFUNCS.pm \
-	../scripts/pdb_parse.pl \
-	../scripts/rocplot.pl \
-	../scripts/rocplot_together.pl \
+	FUNCS.pm \
+	PDBFUNCS.pm \
+	pdb_parse.pl \
 
 all: libsrc.a ${PROGS} 
 
@@ -205,7 +172,17 @@ install:
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\
 	fi
-	cp ${SCRIPTS} ${DESTDIR}${bindir}/ 
+	for file in ${SCRIPTS}; do \
+	   cp ${SCRIPTSDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
+	done
+
+uninstall:
+	for file in ${PROGS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${SCRIPTS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
 
 clean:
 	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o

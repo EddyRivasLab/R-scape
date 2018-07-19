@@ -515,7 +515,7 @@ msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_start
    */
   from = tstart-1;
   to   = tend-1;
-  if (from >= to) ESL_XFAIL(eslFAIL, errbuf, "Truncation error from %d >= to %d\n", from+1, to+1);
+  if (from >= to) ESL_XFAIL(eslFAIL, errbuf, "Truncation error from %d > to %d\n", from+1, to+1);
 
   /* create the truncation mask */
   ESL_ALLOC(useme, sizeof(int) * msa->alen);

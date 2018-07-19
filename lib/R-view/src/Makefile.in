@@ -82,7 +82,7 @@ OBJS     = rview_contacts.o\
 all: librview.a ${PROGS} 
 
 
-${PROGS}: %: %.o ${OBJS} $
+${PROGS}: %: %.o ${OBJS} 
 	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
 
 
@@ -100,6 +100,11 @@ install:
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\
 	fi
+
+uninstall:
+	for file in ${PROGS}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
 
 clean:
 	-rm -f ${PROGS} ${OBJS} librview.a *.tab.c *.output *.o programs/*.o

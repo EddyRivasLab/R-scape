@@ -321,7 +321,7 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
   int              verbose = data->verbose;
   int              i, j;
   int              status = eslOK;
- 
+
   switch (covclass) {
   case C16:
     status = corr_CalculateGT_C16 (mi, verbose, errbuf);
@@ -334,24 +334,23 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
       status = corr_CalculateGT_C2(mi, data->allowpair, verbose, errbuf);
     }
     else {
-      status = corr_CalculateGT_C16(mi, verbose, errbuf);
+     status = corr_CalculateGT_C16(mi, verbose, errbuf);
     }
     break;
   }
   
   if (verbose) {
-    printf("GTrange[%f,%f] clase %d\n", mi->minCOV, mi->maxCOV, covclass);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
 	if (data->msamap[i]==15&&data->msamap[j]==70) printf("GT[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
-  
+
   if (analyze) {
     status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
     if (status != eslOK) goto ERROR;
   }
-  
+ 
   return status;
   
  ERROR:
@@ -406,6 +405,7 @@ corr_CalculateGT_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
   double exp_wc, exp_nwc;
   int    i, j;
   int    x, y;
+  
 #if GAPASCHAR
   int    K = mi->abc->K+1;
 #else
@@ -878,7 +878,7 @@ corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
       }
       qij /= msa->nseq;
       
-      cij /= (msa->nseq > 1)? (double)msa->nseq * ((double)msa->nseq-1.0): 1.0;
+      cij /= (msa->nseq > 1)? (double)msa->nseq * ((double)msa->nseq-1.0) : 1.0;
       cij *= 2.0;
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = cij - psi * qij;
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
@@ -890,7 +890,7 @@ corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
     printf("RAF[%f,%f]\n", mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
   
@@ -1054,7 +1054,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
   int              L = mi->alen;
   int              i, j;
   int              status = eslOK;
-  
+
   corr_COVTYPEString(&type, mi->type, errbuf);
 
   switch(actype) {
@@ -1121,9 +1121,10 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
       } 
   }
 
-  if (analyze) 
+  if (analyze) {
     status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-  if (status != eslOK) goto ERROR;
+    if (status != eslOK) goto ERROR;
+  }
   
   free(type);
   free(covtype);

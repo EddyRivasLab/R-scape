@@ -131,6 +131,9 @@ install:
 	   done ;\
 	fi
 
+uninstall:
+	   rm -f ${DESTDIR}${bindir}/$(EXE) 
+
 clean:
 	rm -f *.o $(EXE)
 

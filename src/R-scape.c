@@ -29,6 +29,7 @@
 #include "covariation.h"
 #include "covgrammars.h"
 #include "pottsbuild.h"
+#include "plot.h"
 #include "ribosum_matrix.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
@@ -47,8 +48,9 @@
 "              
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
-#define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc,--sampleall"                                          
-#define NULLOPTS     "--null"                                          
+#define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc"
+
+#define NULLOPTS     "--null"
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
 
@@ -120,14 +122,12 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *R2Rcykfp;
   int              minloop;
   enum grammar_e   grammar;
-  
+
   char            *covhisfile;
-  char            *cykcovhisfile;
   char            *covqqfile;
-  char            *cykcovqqfile;
   char            *dplotfile;
   char            *cykdplotfile;
-  
+
   char            *allbranchfile;
 
   int              nshuffle;
@@ -155,6 +155,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              consensus;           /* if TRUE, analyze only consensus positions in the alignment */
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
+  int              cshuffle;            /* shuffle the columns of the alignment before analysis */
+  int              vshuffle;            /* shuffle the residues in a column */
+  
   MSA_STAT        *omstat;              /* statistics of the original alignment */
   MSA_STAT        *mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
@@ -211,6 +214,11 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              nofigures;
 
+  ESL_HISTOGRAM   *hsubs_bp;   // histogram of # of substitutions in basepairs
+  ESL_HISTOGRAM   *hsubs_cv;   // histogram of # of substitutions in significantly covarying basepairs
+  char            *subsfile;
+  FILE            *subsfp;
+  
   float            tol;
   int              verbose;
 };
@@ -218,8 +226,15 @@ struct cfg_s { /* Shared configuration in masters & workers */
 static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
-  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
+  /* options for statistical analysis */
+  { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
+  { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                  1 },
+  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",               1 },
+  { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
+  { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                   1 },
   { "--cyk",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--pdbfile",          "obtain the structure with maximum covariation",                                             1 },
+  /* other options */
+  { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
@@ -229,8 +244,6 @@ static ESL_OPTIONS options[] = {
   { "--roc",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc file",                                                                           1 },
   { "--expo",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to do an exponential fit (default is gamma)",                                          0 },
   { "--singlelink",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to use single linkage clustering (default is esl_msaweight_IDFilter)",                 0 },
-  /* E-values to assess significance */
-  { "-E",            eslARG_REAL,      "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
  /* options for input msa (if seqs are given as a reference msa) */
   { "-F",             eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "filter out seqs <x*seq_cons residues",                                                      1 },
   { "-I",             eslARG_REAL,     "1.0",    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "require seqs to have < <x> id",                                                             1 },
@@ -244,6 +257,8 @@ static ESL_OPTIONS options[] = {
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              1 },
+  { "--vshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the residues in a column",                                                          1 },
+  { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
   { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--cyk",              "read pdb file from file <f>",                                                               1 },
@@ -253,10 +268,6 @@ static ESL_OPTIONS options[] = {
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled alignments",                                                             1 },   
-  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all contacts (default for amino acids)",               1 },
-  { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all 12-type basepairs (default for RNA/DNA)",          1 },
-  { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is WWc basepairs only",                                   1 },
-  { "--sampleall",    eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, NULL,  NULL,               "sample size to calculate E-values is all pairs (default if no contacts given)",             1 },
   { "--YS",           eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,                "Test the YSeffect:  shuffle alignment rows",                                               0 },
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
@@ -341,20 +352,22 @@ static ESL_OPTIONS options[] = {
 static char usage[]  = "[-options] <msafile>";
 static char banner[] = "RNA Structural Covariation Above Phylogenetic Expectation";
 
-static int rscape_banner(FILE *fp, char *progname, char *banner);
-static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
-static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
-static int msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
-static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist,
-		      int analyze);
-static int run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
-static int calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
-static int null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
-static int write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
+static int  rscape_banner(FILE *fp, char *progname, char *banner);
+static int  MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
+static int  get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int  msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
+static int  create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nsubs_bp, 
+		      RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
+static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
+static int  calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
+static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
+static int  write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
+static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, int **ret_nsubs, int **ret_nsubs_bp, int verbose);
+static void write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -460,6 +473,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     
   /* other options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
+  cfg.vshuffle    = esl_opt_IsOn(go, "--vshuffle")?                                    TRUE : FALSE;
+  cfg.cshuffle    = esl_opt_IsOn(go, "--cshuffle")?                                    TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
@@ -690,7 +705,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
-  /* if docyk write original alignment with cykstructure */
+  /* if docyk write original alignment with cyk structure */
   cfg.omsacykfile = NULL;
   cfg.omsacykfp   = NULL;
   if (cfg.docyk) {
@@ -719,25 +734,22 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
    if (esl_opt_IsOn(go, "--allbranch")) {
     esl_sprintf(&cfg.allbranchfile, "%s", esl_opt_GetString(go, "--allbranch"));
   } 
- 
 
-  /* msa-specific files */
+   /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rcykfile = NULL;
   cfg.R2Rcykfp   = NULL;
 
   /* covhis file */
   cfg.covhisfile    = NULL;
-  cfg.cykcovhisfile = NULL;
   
   /* covqq file */
   cfg.covqqfile    = NULL;
-  cfg.cykcovqqfile = NULL;
   
   /* dotplot file */
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
-  
+ 
   cfg.treefile  = NULL;
   cfg.treefp    = NULL;
   cfg.T         = NULL;
@@ -751,8 +763,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.cmapfile = NULL;
   
   cfg.ct = NULL;
-  cfg.onbpairs = 0;
-  cfg.nbpairs  = 0;
+  cfg.onbpairs    = 0;
+  cfg.nbpairs     = 0;
   cfg.nbpairs_cyk = 0;
 
   cfg.ft   = NULL;
@@ -773,6 +785,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (cfg.ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg.errbuf, cfg.ribofile);
     if (cfg.verbose) Ribosum_matrix_Write(stdout, cfg.ribosum);
   }
+
+  /* histograms for number of substitutions in basepairs and significantly covarying basepairs */
+  cfg.hsubs_bp = esl_histogram_Create(0.0, 10000, 2);
+  cfg.hsubs_cv = esl_histogram_Create(0.0, 10000, 2);
+  cfg.subsfile = NULL;
+  cfg.subsfp   = NULL;
+  esl_sprintf(&cfg.subsfile, "%s.subs", cfg.outheader); 
+  if ((cfg.subsfp = fopen(cfg.subsfile, "w")) == NULL) esl_fatal("Failed to open substitutions file %s", cfg.subsfile);
 
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -841,9 +861,10 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   char            *omsaname = NULL;
-  ESL_MSAFILE    *afp = NULL;
-  ESL_MSA         *msa = NULL;            /* the input alignment    */
-  ESL_MSA         *wmsa = NULL;           /* the window alignment   */
+  char            *subspdf  = NULL;
+  ESL_MSAFILE     *afp   = NULL;
+  ESL_MSA         *msa   = NULL;           /* the input alignment    */
+  ESL_MSA         *wmsa  = NULL;           /* the window alignment   */
   int             *useme = NULL;
   int              first, last;
   int              i;
@@ -872,13 +893,44 @@ main(int argc, char **argv)
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     cfg.abcisRNA = FALSE;
     if (msa->abc->type == eslDNA || msa->abc->type == eslRNA) cfg.abcisRNA = TRUE;
-   
-    cfg.samplesize = (cfg.abcisRNA)? SAMPLE_BP : SAMPLE_CONTACTS;
-    if      (esl_opt_GetBoolean(go, "--samplecontacts")) { cfg.samplesize = SAMPLE_CONTACTS; }
-    else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
-    else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
-    else if (esl_opt_GetBoolean(go, "--sampleall"))      { cfg.samplesize = SAMPLE_ALL; }
- 
+
+    // by default, there is one-set statistical test, all pairs are considered equal
+    cfg.samplesize = SAMPLE_ALL;
+    
+    // option -s introduces a two-set statistical test. One tests is for basepairs, the other is for not basepairs
+    if (esl_opt_GetBoolean(go, "-s")) {
+      
+      // if msa does not include a ss_cons structure (or a pdffile is not provided, we cannot apply this option
+      if (cfg.abcisRNA) {
+	if (!msa->ss_cons && cfg.pdbfile == NULL)
+	  esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
+      }
+      else if (cfg.pdbfile == NULL)
+	esl_fatal("Peptide alignment does not include a contact map.\nCannot use two-set test option -s.");
+      
+      cfg.samplesize = (cfg.abcisRNA)? SAMPLE_BP : SAMPLE_CONTACTS;
+
+      // we can further specify what is the collection of basepairs
+      if      (esl_opt_GetBoolean(go, "--samplecontacts")) { cfg.samplesize = SAMPLE_CONTACTS; }
+      else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
+      else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
+    }
+    if (cfg.samplesize == SAMPLE_ALL) printf("# One-set statistical test (all pairs are tested as equivalent) \n#\n");
+    else                              printf("# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
+
+    if (cfg.samplesize != SAMPLE_ALL) {
+      if (msa->ss_cons && cfg.pdbfile) {
+	if (cfg.onlypdb) printf("# Structure obtained from the pdbfile\n");
+	else printf("# Structure obtained from the msa and the pdbfile\n");
+      }
+      else if (msa->ss_cons)
+ 	printf("# Structure obtained from the msa\n");
+      else if (cfg.pdbfile)
+	printf("# Structure obtained from the pdbfile\n");
+      else 
+	esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
+    }
+    
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
@@ -936,16 +988,27 @@ main(int argc, char **argv)
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
-    if (omsaname) free(omsaname); omsaname = NULL;
-    if (useme) free(useme); useme = NULL;
-    if (msa) esl_msa_Destroy(msa); msa = NULL;
-    if (cfg.msaname) free(cfg.msaname); cfg.msaname = NULL;
-    if (cfg.msamap) free(cfg.msamap); cfg.msamap = NULL;
-    if (cfg.msarevmap) free(cfg.msarevmap); cfg.msarevmap = NULL;
-    if (cfg.omstat) free(cfg.omstat); cfg.omstat = NULL;
-    if (cfg.mstat) free(cfg.mstat); cfg.mstat = NULL;
+    if (omsaname) free(omsaname); 
+    if (useme) free(useme); 
+    if (msa) esl_msa_Destroy(msa); 
+    if (cfg.msaname) free(cfg.msaname); 
+    if (cfg.msamap) free(cfg.msamap); 
+    if (cfg.msarevmap) free(cfg.msarevmap); 
+    if (cfg.omstat) free(cfg.omstat); 
+    if (cfg.mstat) free(cfg.mstat); 
   }
 
+  // the substitution histograms
+  if (cfg.verbose) write_substitution_histograms(stdout, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+  write_substitution_histograms(cfg.subsfp, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+  fclose(cfg.subsfp);
+  esl_sprintf(&subspdf, "%s.pdf", cfg.subsfile);
+  if (cfg.hsubs_bp->n > 0) {
+    status = plot_gplot_XYfile(cfg.gnuplot, subspdf, cfg.subsfile, "number of substitutions in basepairs", "fraction of covarying basepairs", cfg.errbuf);
+    if (status != eslOK) printf("%s\n", cfg.errbuf);
+  }
+  free(subspdf);
+  
   /* cleanup */
   fclose(cfg.outfp);
   fclose(cfg.outsrtfp);
@@ -964,8 +1027,7 @@ main(int argc, char **argv)
   esl_msafile_Close(afp);
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
   if (cfg.ocykct) free(cfg.ocykct);
-  if (cfg.msaname) free(cfg.msaname);
-   if (cfg.ribofile) free(cfg.ribofile);
+  if (cfg.ribofile) free(cfg.ribofile);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
   if (cfg.outsrtfile) free(cfg.outsrtfile);
@@ -984,13 +1046,11 @@ main(int argc, char **argv)
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
-  if (useme) free(useme);
-  if (cfg.msamap) free(cfg.msamap); 
-  if (cfg.msarevmap) free(cfg.msarevmap); 
-  if (cfg.omstat) free(cfg.omstat);
-  if (cfg.mstat) free(cfg.mstat); 
   if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
-
+  if (cfg.hsubs_bp) esl_histogram_Destroy(cfg.hsubs_bp);
+  if (cfg.hsubs_cv) esl_histogram_Destroy(cfg.hsubs_cv);
+  fclose(cfg.subsfp);
+  if (cfg.subsfile) free(cfg.subsfile);
   return 0;
 }
 
@@ -1052,6 +1112,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
+  int      status;
 
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
@@ -1077,13 +1138,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-  
+
   msa = *omsa;
   if (msa->alen != alen) {
     printf("filtering altered the length of the alignemnt!\n");
     esl_fatal(msg);
   }
-  
+    
   if (msa == NULL) {
     if (submsaname) free(submsaname);
     if (type) free(type); type = NULL;
@@ -1099,7 +1160,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  
+
   /* define [tstart,tend]  */
   if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
   else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
@@ -1118,7 +1179,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
 
-  msa = *omsa;
+  msa = *omsa;   
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
@@ -1137,7 +1198,23 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   else                         msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
   
-  /* given msa aveid and avematch */
+  /* these are development tools
+   * we do it this late so the annotated structure if any is preserved */
+  // Shuffle the residues in a column
+  if (cfg->vshuffle) {
+    status = msamanip_ShuffleWithinColumn(cfg->r, msa, omsa, cfg->errbuf, cfg->verbose);
+    msa = *omsa;
+  }
+  // Shuffle the columns of the alignment 
+  if (cfg->cshuffle) {
+    ESL_ALLOC(useme, sizeof(int) * msa->alen);
+    esl_vec_ISet(useme, msa->alen, 1);
+    status = msamanip_ShuffleColumns(cfg->r, msa, omsa, useme, cfg->errbuf, cfg->verbose);
+    free(useme); useme = NULL;
+    msa = *omsa;
+  }
+
+ /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   
   if ((esl_opt_IsOn(go, "--minid") && cfg->mstat->avgid < 100.*esl_opt_GetReal(go, "--minid")) ||
@@ -1166,6 +1243,13 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (submsaname) free(submsaname);
   if (useme) free(useme);
   return eslOK;
+
+ ERROR:
+  if (tok) free(tok);
+  if (type) free(type);
+  if (submsaname) free(submsaname);
+  if (useme) free(useme);
+  return status;
 }
 
 static int
@@ -1189,18 +1273,58 @@ msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 }
 
 static int
+substitutions(struct cfg_s *cfg, ESL_MSA *msa, int **ret_nsubs, int **ret_nsubs_bp, int verbose)
+{
+  int *nsubs    = NULL;
+  int *nsubs_bp = NULL;
+  int  i, j;
+  int  status;
+
+  status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, &nsubs_bp, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+
+  if (cfg->verbose) {
+    for (i = 0; i < msa->alen; i ++) 
+      printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
+  }
+  
+  for (i = 0; i < msa->alen-1; i ++) 
+    for (j = i+1; j < msa->alen; j ++) {
+      
+      if (cfg->ct[i+1] == j+1) {
+	nsubs_bp[IDX(i,j,msa->alen)] = nsubs[i] + nsubs[j];
+ 	esl_histogram_Add(cfg->hsubs_bp, (double)nsubs_bp[IDX(i,j,msa->alen)]);
+	if (1||cfg->verbose) printf("%d-%d subs %d\n", cfg->msamap[i]+1, cfg->msamap[j]+1, nsubs_bp[IDX(i,j,msa->alen)]);
+      }
+    }
+
+  if (verbose) esl_histogram_Write(stdout, cfg->hsubs_bp);
+
+  if (ret_nsubs)    *ret_nsubs    = nsubs;
+  if (ret_nsubs_bp) *ret_nsubs_bp = nsubs_bp;
+  return eslOK;
+
+ ERROR:
+  if (nsubs)    free(nsubs);
+  if (nsubs_bp) free(nsubs_bp);
+  return status;
+}
+
+static int
 rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 {
-  RANKLIST *ranklist_null = NULL;
-  RANKLIST *ranklist_aux  = NULL;
+  RANKLIST *ranklist_null      = NULL;
+  RANKLIST *ranklist_aux       = NULL;
   RANKLIST *ranklist_allbranch = NULL;
-  ESL_MSA  *msa = *ret_msa;
-  ESL_MSA  *YSmsa = NULL;
-  char     *outname = NULL;
+  ESL_MSA  *msa      = *ret_msa;
+  ESL_MSA  *YSmsa    = NULL;
+  char     *outname  = NULL;
+  int      *nsubs    = NULL;
+  int      *nsubs_bp = NULL;
   int       nshuffle;
   int       analyze;
   int       status;
-  
+
   if (msa == NULL) return eslOK;
 
   /* weight the sequences */
@@ -1208,6 +1332,21 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
+  if (cfg->docyk == TRUE && cfg->abcisRNA == FALSE)
+    esl_fatal("Peptide alignment, cannot calculate a RNA structure");
+  
+  if (cfg->docyk && msa->alen > cfg->cykLmax) { //length restriction
+    printf("Alignment is too long to calculate a structure\n");
+    cfg->docyk = FALSE;
+  }
+  
+  // write the original msa annotated with the cyk structure
+  if (cfg->docyk) {
+    if (cfg->omsacykfile == NULL) {
+      esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
+      if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
+    }
+  }
   
   if (msa->nseq <= 1) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -1222,43 +1361,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
-  // Special cases under which to produce or not a --cyk structure
-  // (1) use --cyk if no structure is given unless --naive
-  // (2) unless it is too long.
-  if (cfg->abcisRNA == FALSE) cfg->docyk = FALSE;
-  else if (cfg->nbpairs == 0 && cfg->window <= 0 && cfg->pdbfile == NULL && msa->alen <=  cfg->cykLmax) { // calculate the cyk-cov structure if there is not one.
-    if (cfg->statsmethod == NAIVE) cfg->docyk = TRUE;
-    else {
-      printf("No structure given or pdbfile to read one from, we continue with --cyk option\n");
-      cfg->docyk = TRUE;
-    }
-  }
-  if (cfg->docyk && msa->alen > cfg->cykLmax) { // unless alignment is too long
-    printf("Alignment is too long to calculate a structure\n");
-    cfg->docyk = FALSE;
-  }
-  if (cfg->docyk) {
-    if (cfg->omsacykfile == NULL) {
-      esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
-      if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
-    }
-  }
-  
-  if (cfg->outdir) {
+    if (cfg->outdir) {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s/%s.cyk.surv", cfg->outdir, cfg->msaname);
 
     /* contact map file */
-    esl_sprintf(&cfg->cmapfile,      "%s/%s.cmap",     cfg->outdir, outname);
+    if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s/%s.cmap",     cfg->outdir, outname);
   }
   else {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s.surv",     outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykcovhisfile, "%s.cyk.surv", outname);
     
     /* contact map file */
-    esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
+     if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
   }
   
   /* R2R annotated sto file */
@@ -1268,7 +1383,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     
    /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykcovqqfile, "%s/%s.cyk.qq", cfg->outdir, cfg->msaname);
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, outname);
@@ -1280,7 +1394,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
         
     /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s.qq",     outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykcovqqfile, "%s.cyk.qq", cfg->msaname);
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
@@ -1291,7 +1404,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = ContactMap(cfg->cmapfile, cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
-
 
   /* produce a tree
    */
@@ -1307,7 +1419,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
 
-  
   // Print some alignment information
   MSA_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
 
@@ -1333,11 +1444,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (msa->nseq*msa->alen < 1e3) { nshuffle = 200; }
     }
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
-    
+
     cfg->mode = RANSS;
     status = null_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null_rscape", cfg->errbuf);
-  }
+  }  
   
   if (cfg->allbranchfile) {
     status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
@@ -1347,8 +1458,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* main function */
   cfg->mode = GIVSS;
   analyze   = TRUE;
-
-  status = run_rscape(go, cfg, msa, ranklist_null, ranklist_aux, NULL, analyze);
+  status = substitutions(cfg, msa, &nsubs, &nsubs_bp, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  
+  status = run_rscape(go, cfg, msa, nsubs, nsubs_bp, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
   free(outname);
@@ -1360,11 +1473,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); ranklist_allbranch = NULL;
-  
+
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
-  if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile);
@@ -1372,6 +1483,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->cmapfile) free(cfg->cmapfile);
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
+  if (nsubs)    free(nsubs);
+  if (nsubs_bp) free(nsubs_bp);
 
   return eslOK;
 
@@ -1381,21 +1494,21 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->msa2pdb) free(cfg->msa2pdb); 
   if (cfg->msafrq) free(cfg->msafrq); 
   if (cfg->T) esl_tree_Destroy(cfg->T); 
-  if (cfg->msaname) free(cfg->msaname);
+  if (cfg->msaname) free(cfg->msaname); cfg->msaname = NULL;
   if (outname) free(outname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); 
   if (ranklist_aux) cov_FreeRankList(ranklist_aux);
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); 
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->cykcovhisfile) free(cfg->cykcovhisfile);
-  if (cfg->cykcovqqfile)  free(cfg->cykcovqqfile);
   if (cfg->dplotfile) free(cfg->dplotfile);
   if (cfg->cykdplotfile) free(cfg->cykdplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile); 
   if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
+  if (nsubs)    free(nsubs);
+  if (nsubs_bp) free(nsubs_bp);
   return status;
 }
 
@@ -1494,9 +1607,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 
   if (cfg->statsmethod == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
-  if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
+ if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
-  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, cfg->bmin, mi->maxCOV);
+  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV);
   
   if (cfg->pt == NULL) potts_Destroy(ptlocal);
   
@@ -1508,16 +1621,15 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 }
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nsubs_bp, RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
-  char            *title = NULL;
-  struct mutual_s *mi = cfg->mi;
+  char            *title    = NULL;
+  struct mutual_s *mi       = cfg->mi;
   struct data_s    data;
-  PT              *ptlocal = NULL;
-  int             *cykct = NULL;
+  PT              *ptlocal  = NULL;
+  int             *cykct    = NULL;
   RANKLIST        *ranklist = NULL;
-  RANKLIST        *cykranklist = NULL;
-  HITLIST         *hitlist = NULL;
+  HITLIST         *hitlist  = NULL;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -1542,6 +1654,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   if (cfg->mode != RANSS) {
     MSA_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
     MSA_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    if (cfg->samplesize == SAMPLE_ALL) fprintf(cfg->outfp,    "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
+    else                               fprintf(cfg->outfp,    "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
+    if (cfg->samplesize == SAMPLE_ALL) fprintf(cfg->outsrtfp, "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
+    else                               fprintf(cfg->outsrtfp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
+
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
   }
@@ -1558,7 +1675,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
       fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n",
 	      msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);
   }
-  
+
   /* main function */
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
   data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
@@ -1587,6 +1704,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
+  data.nsubs         = nsubs_bp;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1607,9 +1725,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
-  if (cfg->mode == GIVSS && (cfg->verbose)) cov_DumpRankList(stdout, ranklist);
+  if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
-  if (cfg->mode == GIVSS && cfg->nbpairs >= 0) {
+  if (cfg->mode == GIVSS && ranklist) {
     if (cfg->verbose) {
       printf("score total distribution\n");
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
@@ -1619,47 +1737,37 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST *ranklist_
 	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
-    if (status != eslOK) goto ERROR; 
+    if (status != eslOK) goto ERROR;
+
+    status = cov_Add2SubsHistogram(cfg->hsubs_cv, nsubs, hitlist, cfg->verbose);
   }
   
   /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->docyk && cfg->mode != RANSS) {
+  if (cfg->docyk && cfg->mode != RANSS && ranklist) {
 
-    data.mode = CYKSS;
-    status = cov_CYKCOVCT(&data, msa, &cykct, &cykranklist, cfg->minloop, cfg->grammar, cfg->thresh->sc);
+    data.mode = CYKSS;    
+    status = cov_CYKCOVCT(&data, msa, &cykct, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh->sc);
     if (status != eslOK) goto ERROR;
 
     status = write_omsacyk(cfg, msa->alen, cykct);
     if (status != eslOK) goto ERROR;
-    
-    if (cfg->verbose) {
-      printf("score cyk truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f\n", cykranklist->ha->imin, cykranklist->ha->imax, cykranklist->ha->xmax, cykranklist->ha->xmin);
-      //esl_histogram_Plot(stdout, ranklist->ha);
-    }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->cykcovhisfile, cfg->cykcovqqfile, cfg->samplesize, cykranklist, title);
-    if (status != eslOK) goto ERROR; 
   }
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  if (cykranklist) cov_FreeRankList(cykranklist);
   if (cykct) free(cykct);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
-   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
+  if (cfg->pt == NULL) potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
-  if (cykct)       free(cykct);
-  if (ranklist)    cov_FreeRankList(ranklist);
-  if (cykranklist) cov_FreeRankList(cykranklist);
-  if (hitlist)     cov_FreeHitList(hitlist);
-  if (title)       free(title);
-  if (ptlocal)     potts_Destroy(ptlocal);
+  if (cykct)    free(cykct);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (hitlist)  cov_FreeHitList(hitlist);
+  if (title)    free(title);
+  if (ptlocal)  potts_Destroy(ptlocal);
   return status;
 }
-
-
 
 
 /* use a tree to generate residues independently for each alignment column */
@@ -1689,8 +1797,10 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   esl_vec_ISet(usecol, msa->alen+1, TRUE);
 
   for (s = 0; s < nshuffle; s ++) {
+ 
     status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
     if (status != eslOK) goto ERROR;
+
     if (cfg->verbose) {
       esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
       printf("fitch sc %d\n", sc);
@@ -1698,7 +1808,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
-
+    
     /* Weigth the sequences.
      * Null sequences don't need to be weigted as they have the same phylogeny
      * and basecomp than the original alignment. We just copy the weights
@@ -1719,7 +1829,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
  
-   status = run_rscape(go, cfg, shmsa, NULL, NULL, &ranklist, TRUE);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, &ranklist, TRUE);
    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
    
@@ -1869,4 +1979,27 @@ write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
  ERROR:
   if (ct) free(ct);
   return status;
+}
+
+static void
+write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose)
+{
+  int            i;
+  double         x;
+  double         fsubs;
+
+  if (verbose) {
+    esl_histogram_Plot(stdout, hsubs_bp);
+    esl_histogram_Plot(stdout, hsubs_cv);
+  }
+
+  for (i = hsubs_bp->imin; i <= hsubs_bp->imax; i++)
+    {
+      x = esl_histogram_Bin2LBound(hsubs_bp,i);
+      
+      if (hsubs_bp->obs[i] > 0) {
+	fsubs = (double) hsubs_cv->obs[i] / (double) hsubs_bp->obs[i];
+	fprintf(fp, "%f %f\n", x, fsubs);
+      } 
+    }
 }

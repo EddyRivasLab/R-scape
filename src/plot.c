@@ -173,6 +173,107 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
   return status;
  }
 
+int
+plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *ylabel, char *errbuf)
+{
+  char           *psfile = NULL;
+  ESL_FILEPARSER *efp    = NULL;
+  FILE           *pipe   = NULL;
+  char           *st     = NULL;
+  char           *key    = NULL;
+  char           *tok1, *tok2;
+  double          xval, yval;
+  double          max_xtot = 0.0;
+  double          max_ytot = 0.0;
+  int             count;
+  int             style = 3;
+  int             f;           /* index for files */
+  int             nline = 0;
+  int             status;
+  
+  psfile = plot_file_psfilename(pdffile);
+  printf("FILE %s\n", file);
+
+  pipe = popen(gnuplot, "w");
+
+  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set output '%s'\n", psfile);
+
+  fprintf(pipe, "set style line 1   lt 1 lc rgb 'gray'      pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 2   lt 1 lc rgb 'brown'     pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 3   lt 1 lc rgb 'cyan'      pt 5 lw 2 ps 1.2\n");
+  fprintf(pipe, "set style line 4   lt 1 lc rgb 'red'       pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 5   lt 1 lc rgb 'orange'    pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 6   lt 1 lc rgb 'turquoise' pt 5 lw 2 ps 0.5\n");
+  fprintf(pipe, "set style line 7   lt 1 lc rgb 'black'     pt 5 lw 2 ps 0.5\n");
+
+  fprintf(pipe, "set xlabel '%s'\n", xlabel);
+  fprintf(pipe, "set ylabel '%s'\n", ylabel);
+
+  fprintf(pipe, "unset key\n");
+  fprintf(pipe, "set style fill transparent solid 0.5 noborder\n");
+
+  /* (1) first pass to get 'xmax' and 'ymax' */
+  if (esl_fileparser_Open(file, NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", file);
+  esl_fileparser_SetCommentChar(efp, '#');
+
+  while (esl_fileparser_NextLine(efp) == eslOK)
+    {
+      nline ++;
+      if (esl_fileparser_GetTokenOnLine(efp, &tok1, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);
+      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);	
+      
+      xval = atof(tok1); if (xval > max_xtot) max_xtot = xval;
+      yval = atof(tok2); if (yval > max_ytot) max_ytot = yval;
+    }
+  esl_fileparser_Close(efp); efp = NULL;
+  if (nline == 0) ESL_XFAIL(eslFAIL, errbuf, "empty file: %s", file);
+
+  fprintf(pipe, "set xrange [%f:%f]\n", 0.0, max_xtot+max_xtot/50); 
+  fprintf(pipe, "set yrange [%f:%f]\n", 0.0, max_ytot+0.05);
+  
+  /* plot the data */
+  esl_FileTail(file, TRUE, &st);   
+  esl_FileTail(st,         TRUE, &key);
+  
+  if (esl_fileparser_Open(file, NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", file);
+   esl_fileparser_SetCommentChar(efp, '#');
+ 
+  while (esl_fileparser_NextLine(efp) == eslOK)
+    {
+      if (esl_fileparser_GetTokenOnLine(efp, &tok1,  NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);
+      
+      fprintf(pipe, "set title '%s'\n", key);
+      fprintf(pipe, "plot '-' u 1:2 with points ls %d\n", style);
+      if (strcmp(tok1, "#") == 0)  continue;
+      
+      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);	
+      
+      xval = atof(tok1);
+      yval = atof(tok2);
+      fprintf(pipe,  "%f %f\n", xval, yval);		
+    }
+  if (st) free(st);   st  = NULL;
+  if (key) free(key); key = NULL;
+  esl_fileparser_Close(efp); efp = NULL;
+
+  pclose(pipe);
+  
+  //plot_file_ps2pdf(psfile, errbuf);
+  
+  if (key) free(key);
+  if (st)  free(st);
+  if (efp) esl_fileparser_Close(efp);
+  return eslOK;
+
+ ERROR:
+  if (key) free(key);
+  if (st)  free(st);
+  if (efp) esl_fileparser_Close(efp);
+  return status;
+ }
+
+
 
 int
 plot_write_RatesWithLinearRegression(char *ratefile, double *evalues, double *x_mya, double *y_rate, double *y_e2rate, 

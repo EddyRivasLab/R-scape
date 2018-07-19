@@ -763,7 +763,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, tstart, tend);
   
   /* Now apply [tstart,tend] restriction if given */
-  if (msamanip_Truncate(msa, cfg->tstart, cfg->tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
+  if (msamanip_Truncate(msa, tstart, tend, &startpos, &endpos, cfg->errbuf) != eslOK) {
     printf("%s\nTruncate failed\n", cfg->errbuf); esl_fatal(msg); }
 
   /* remove columns with gaps.
@@ -888,6 +888,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     ESL_ALLOC(appwc,     sizeof(HELIXTYPE  *) * s->ncol);
     ESL_ALLOC(appwc[0],  sizeof(HELIXTYPE )   * s->ncol*(s->ncol+1)/2);
     for (j = 1; j < s->ncol; j ++) appwc[j] = appwc[0] + j*(j+1)/2;
+     for (j = 0; j < s->ncol; j ++) appwc[j][0] = NONE;
   }
   s->maxgap  = ceil(s->N * cfg->gapthresh);
   s->minvar  = ceil(s->N * cfg->app_varthresh);
@@ -904,13 +905,14 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (s->maxgu < s->N) printf("MAX # GU   %5d  (%2.4f %%)\n", s->maxgu, 100*cfg->app_guthresh);
   else                 printf("MAX # GU       all\n");
   if (2*s->minvar > s->minvart) ESL_XFAIL(eslFAIL, cfg->errbuf, "minvart %d has to be at least %d", s->minvart, 2*s->minvar);
-  
-  for (j = 0; j < s->ncol; j ++) { appwc[j][0] = NONE; }
-  
+
   for (i = 1; i < s->ncol; i ++) {
+     for (n = 0; n < s->N; n ++) coli[n] = msa->ax[n][i];
     
-    for (n = 0; n < s->N; n ++) coli[n] = msa->ax[n][i];
     status = col_freq(s->N, coli, K, frqi);
+    printf("pos %d \n", i);
+    esl_vec_IDump(stdout, frqi, K, NULL);
+    
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "col_frqi() failed");
     
     s->ncol_GA  += is_GA (K, frqi); 
@@ -970,7 +972,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	  paircov[s->napp_cov].ptype = pair_type(msa->abc, frqi, frqj, s->maxnots);
 	  
 	  if (paircov[s->napp_cov].is_bp) {
-	    if (1||cfg->verbose) printf("\npair* %d: %d-%d %s\n",
+	    if (1||cfg->verbose) printf("pair* %d: %d-%d %s\n",
 				     s->napp_cov, paircov[s->napp_cov].iabs, paircov[s->napp_cov].jabs, (paircov[s->napp_cov].ptype==TV)? "TV":"TS"); 
 	    s->napp_cov_bp ++;
 	  }

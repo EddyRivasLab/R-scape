@@ -21,6 +21,8 @@
 static int dp_recursion(struct mutual_s *mi, GMX *cyk, int minloop, double covthresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
 			char *errbuf, int verbose);
 
+// Include as many of the significantly covarying pairs in one structure.
+// We do this by running a nussinov-type algorithm
 int
 CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, int **ret_ct, SCVAL *ret_sc, int minloop, double covthresh, char *errbuf, int verbose) 
 {

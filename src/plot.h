@@ -19,6 +19,7 @@ enum plottype_e {
 
 extern int   plot_write_Histogram(char *histfile, ESL_HISTOGRAM *h);
 extern int   plot_gplot_Histogram(char *gnuplot, char *plotf, int Nf, char **hisfile, char *xlabel, char *errbuf);
+extern int   plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *ylabel, char *errbuf);
 extern int   plot_write_RatesWithLinearRegression(char *ratefile, double *evalues, double *x_mya, double *y_rate, double *y_e2rate, float tlinear, int N, double *maxtime);
 extern int   plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, double evalcutoff, char *xlabel, char *ylabel, char *errbuf);
 extern int   plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, double evalcutoff, char *xlabel, char *ylabel, char *errbuf);

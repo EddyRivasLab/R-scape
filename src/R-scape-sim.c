@@ -525,8 +525,7 @@ create_subsmodel(ESL_GETOPTS *go, struct cfg_s *cfg)
     /* if RNA/DNA, calculate ribosum mtx */
     cfg->ribosum = Ribosum_matrix_Read(cfg->ribofile, cfg->abc, FALSE, cfg->errbuf);
     if (cfg->ribosum == NULL) esl_fatal("%s\nfailed to create ribosum matrices from file %s\n", cfg->errbuf, cfg->ribofile);
-    esl_dmx_Scale(cfg->ribosum->bprsQ, 4.0/3.0);
-    if (cfg->verbose) Ribosum_matrix_Write(stdout, cfg->ribosum);
+   if (cfg->verbose) Ribosum_matrix_Write(stdout, cfg->ribosum);
     
     /* The 4x4 rate derived from the ribosums */
     cfg->R1 = cfg->ribosum->xrnaQ;

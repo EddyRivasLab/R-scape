@@ -45,7 +45,8 @@ static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h,
 					   int linespoints, int style1, int style2);
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
-static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
+static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
+				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
@@ -112,12 +113,12 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = corr_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
     status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
-     if (status != eslOK) goto ERROR; 
-     break;
+    if (status != eslOK) goto ERROR; 
+    break;
   case GT: 
-     status = corr_CalculateGT          (covclass, data, analyze, &ranklist, &hitlist);
-     if (status != eslOK) goto ERROR;
-     break;
+    status = corr_CalculateGT          (covclass, data, analyze, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR;
+    break;
   case MIa: 
     status = corr_CalculateMI          (covclass, data, FALSE,  NULL,      NULL);
     if (status != eslOK) goto ERROR;
@@ -236,7 +237,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
 
-  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
+  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0 && hitlist) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
       status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
@@ -277,7 +278,7 @@ cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
 int
 cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
 {
-  struct mutual_s *mi = data->mi;
+  struct mutual_s *mi  = data->mi;
   ESL_DMATRIX     *mtx = mi->COV;
   char            *threshtype = NULL;
   char            *covtype = NULL;
@@ -294,26 +295,26 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   int              b;
   int              status;
 
+  // really bad alignment, covariation spread is smaller than tol, stop here.
+  if (data->w < tol) {
+    if (data->mode == GIVSS) {
+      fprintf(stdout,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+      fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
+      fprintf(stdout, "#---------------------------------------------------------------------------------------------\n");
+      fprintf(stdout, "covariation scores are almost constant, no further analysis.\n");
+      return eslOK;
+    }
+  }
+  
   corr_COVTYPEString(&covtype, mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
-  // really bad alignment, covariation spread is smaller than tol, stop here.
-  if (data->w == 0) {
-    if (data->mode == GIVSS || data->mode == CYKSS) {
-      fprintf(stdout,    "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-      fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n", 
-	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
-      fprintf(stdout, "#       left_pos       right_pos        score   E-value\n");
-      fprintf(stdout, "#------------------------------------------------------------\n");
-    }
-    
-    return eslOK;
-  }
-
-  bmax = mi->maxCOV+5*data->w;
+  /* histogram parameters */
+  bmax = mi->maxCOV + 5*data->w;
   while (fabs(bmax-data->bmin) < tol) bmax += data->w;
   ranklist = cov_CreateRankList(bmax, data->bmin, data->w);
-
+ 
   // Create the histograms
   for (i = 0; i < mi->alen-1; i ++) 
     for (j = i+1; j < mi->alen; j ++) {
@@ -354,9 +355,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       }
     }
 
-  
   /* Histogram and Fit */
-  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS) ) {
+  if (data->ranklist_null && data->mode == GIVSS ) {
     if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
       ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
       for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
@@ -385,8 +385,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
   }
   
-  // assign the covthresh to be used with cyk
-  if (data->mode == GIVSS || data->mode == CYKSS) {
+  // assign the covthresh to be used 
+  if (data->mode == GIVSS) {
     data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
     for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
       cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
@@ -398,7 +398,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   status = cov_ROC(data, covtype, ranklist);
   if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad ROCfile.");
 
-  if ((data->mode == GIVSS && data->nbpairs > 0) || data->mode == CYKSS) {
+  if (data->mode == GIVSS) {
     status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype);
     if (status != eslOK) goto ERROR;
   } 
@@ -551,6 +551,25 @@ cov_CreateRankList(double bmax, double bmin, double w)
   return NULL;
 }
 
+int 
+cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, int *nsubs, HITLIST *hitlist, int verbose)
+{
+  int h;
+  int ih, jh;
+  int nsubs_hit;
+
+  for (h = 0; h < hitlist->nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+
+    nsubs_hit = nsubs[ih] + nsubs[jh];
+    if (hitlist->hit[h].bptype == WWc) esl_histogram_Add(hsubs, (double)nsubs_hit);
+   }
+  if (verbose) esl_histogram_Write(stdout, hsubs);
+  
+  return eslOK;
+}
+
 int
 cov_GrowRankList(RANKLIST **oranklist, double bmax, double bmin)
 {
@@ -614,6 +633,8 @@ cov_DumpRankList(FILE *fp, RANKLIST *ranklist)
   double eval;
   int    b;
 
+  if (ranklist == NULL) return eslOK;
+  
   printf("imin %d imax %d covmin %f covmax %f\n", ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmin, ranklist->ha->xmax);
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
     cov = esl_histogram_Bin2LBound(ranklist->ha,b);
@@ -726,6 +747,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].j             = j;
 	hitlist->hit[h].sc            = cov;
 	hitlist->hit[h].Eval          = eval;
+	hitlist->hit[h].nsubs         = data->nsubs[IDX(i,j,mi->alen)];
+	hitlist->hit[h].power         = 0;
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
@@ -768,6 +791,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     }
     if (select) tf ++;
   }
+  
   fp = f - tf;
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
@@ -778,27 +802,20 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
   }
   if (data->outfp) {
-    if (data->mode == CYKSS) {
-      fprintf(data->outfp, "# cyk-cov structure\n");
-    }
-    CMAP_DumpShort(data->outfp, data->clist);
-    fprintf(data->outfp,    "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n", 
+   CMAP_DumpShort(data->outfp, data->clist);
+    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
     cov_WriteHitList(data->outfp, nhit, hitlist, data->msamap, data->firstpos);
   }
   
   if (data->outsrtfp) {
-    if (data->mode == CYKSS) {
-      fprintf(stdout,         "# cyk-cov structure\n");
-      fprintf(data->outsrtfp, "# cyk-cov structure\n");
-    }
     CMAP_DumpShort(data->outsrtfp, data->clist);
-    fprintf(stdout,         "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outsrtfp, "# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n", 
+    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n", 
+    fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
     cov_WriteRankedHitList(stdout,         nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
     cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
@@ -812,7 +829,129 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   return status;
 }
 
+
 int 
+cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist, char *covtype, char *threshtype)
+{
+  HITLIST  *cykhitlist = NULL;
+  double    sen, ppv, F;
+  double    cov;
+  double    eval;
+  BPTYPE    bptype;
+  int       nhit = hitlist->nhit;
+  int       select;
+  int       is_compatible;
+  int       tf = 0;
+  int       f  = 0;
+  int       t, fp;
+  int       h = 0;
+  int       i, j;
+  int       status;
+
+  if (nhit > 0) {
+    ESL_ALLOC(cykhitlist, sizeof(HITLIST));
+    cykhitlist->hit    = hitlist->hit;
+    cykhitlist->srthit = hitlist->srthit;
+    
+    cykhitlist->nhit = nhit;
+    ESL_ALLOC(cykhitlist->hit,    sizeof(HIT)   * nhit);
+    ESL_ALLOC(cykhitlist->srthit, sizeof(HIT *) * nhit);
+    cykhitlist->srthit[0] = cykhitlist->hit;
+    
+    // the cyk hitlist is identical expect for the basepair annotation
+    for (h = 0; h < nhit; h ++) {
+      cykhitlist->hit[h].i             = hitlist->hit[h].i;
+      cykhitlist->hit[h].j             = hitlist->hit[h].j;
+      cykhitlist->hit[h].sc            = hitlist->hit[h].sc;
+      cykhitlist->hit[h].Eval          = hitlist->hit[h].Eval;
+      cykhitlist->hit[h].nsubs         = hitlist->hit[h].nsubs;
+      cykhitlist->hit[h].power         = hitlist->hit[h].power;
+      cykhitlist->hit[h].bptype        = CMAP_GetBPTYPE(cykhitlist->hit[h].i+1, cykhitlist->hit[h].j+1, data->clist);
+      cykhitlist->hit[h].is_compatible = FALSE;
+      if (data->abcisRNA && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
+	cykhitlist->hit[h].is_compatible  = TRUE;
+      }
+    }
+  }
+  
+  switch(data->samplesize) {
+  case SAMPLE_CONTACTS:
+    t = data->clist->ncnt;
+    break;
+  case SAMPLE_BP:
+    t = data->clist->nbps;
+    break;
+  case SAMPLE_WC:
+    t = data->clist->nwwc;
+    break;
+  case SAMPLE_ALL: // use all contacts here
+    t = data->clist->ncnt;
+    break;	
+  }
+  
+  for (h = 0; h < nhit; h ++) {
+    f ++;
+    
+    switch(data->samplesize) {
+    case SAMPLE_CONTACTS:
+      select = (cykhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      break;
+    case SAMPLE_BP:
+      select = (cykhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+      break;
+    case SAMPLE_WC:
+     select = (cykhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
+      break;
+    case SAMPLE_ALL: // use all contacts here
+      select = (cykhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+     break;	
+    }
+    if (select) tf ++;
+  }
+  fp = f - tf;
+  sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
+  ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
+  F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
+  
+  if (data->mode != RANSS && data->sumfp) {
+    fprintf(data->sumfp, " %s %d %d %d %.2f %.2f ", 
+	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
+  }
+  if (data->outfp) {
+    fprintf(data->outfp, "\n# The predicted cyk-cov structure\n");
+    CMAP_DumpShort(data->outfp, data->clist);
+    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+    cov_WriteCYKHitList(data->outfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos);
+  }
+  
+  if (data->outsrtfp) {
+    fprintf(stdout,         "\n# The predicted cyk-cov structure\n");
+    fprintf(data->outsrtfp, "\n# The predicted cyk-cov structure\n");
+    
+    CMAP_DumpShort(stdout,         data->clist);
+    CMAP_DumpShort(data->outsrtfp, data->clist);
+    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+    fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+    cov_WriteCYKRankedHitList(stdout,         nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
+    cov_WriteCYKRankedHitList(data->outsrtfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
+  }
+  
+  if (ret_cykhitlist) *ret_cykhitlist = cykhitlist; else cov_FreeHitList(cykhitlist);
+  return eslOK;
+  
+ ERROR:
+  if (cykhitlist) cov_FreeHitList(cykhitlist);
+  return status;
+}
+
+
+int
 cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos)
 {
   int h;
@@ -820,35 +959,128 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 
   if (fp == NULL) return eslOK;
 
-  fprintf(fp, "#       left_pos       right_pos        score   E-value\n");
-  fprintf(fp, "#------------------------------------------------------------\n");
+  fprintf(stdout, "#------------------------------------------------------------------------------------------------\n");
+  if (nhit == 0) fprintf(fp, "no significant pairs\n");
+
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
     
     if (hitlist->hit[h].bptype == WWc)      { 
-      fprintf(fp, "*\t%10d\t%10d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, "*\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
     else if (hitlist->hit[h].bptype < STACKED) { 
-      fprintf(fp, "**\t%10d\t%10d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, "**\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
    else if (hitlist->hit[h].bptype < BPNONE) { 
-      fprintf(fp, "c\t%10d\t%10d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, "c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
     else if (hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "~\t%10d\t%10d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, "~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
     else { 
-      fprintf(fp, " \t%10d\t%10d\t%.5f\t%g\n",
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval); 
+      fprintf(fp, " \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n",
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+    }  
+  }
+
+  return eslOK;
+}
+
+int 
+cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos)
+{
+  int h;
+  int ih, jh;
+
+  if (fp == NULL) return eslOK;
+
+  fprintf(fp, "# in_cyk  in_given   left_pos       right_pos      score           E-value      substitutions    power\n");
+  fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
+   if (nhit == 0) fprintf(fp, "no significant pairs\n");
+
+  for (h = 0; h < nhit; h ++) {
+    ih = hitlist->hit[h].i;
+    jh = hitlist->hit[h].j;
+    
+    if (hitlist->hit[h].bptype == WWc)      {
+      if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      }
+    
+    else if (hitlist->hit[h].bptype < STACKED) {
+      if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+    }
+    
+    else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) {
+      if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+    }
+    
+   else if (hitlist->hit[h].bptype < BPNONE) {
+           if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+   }
+    
+    else if (hitlist->hit[h].is_compatible) {
+            if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t ~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t ~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t ~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+    }
+    
+    else {
+            if (cykhitlist->hit[h].bptype == WWc) 
+	fprintf(fp, "  *\t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->hit[h].is_compatible)
+	fprintf(fp, "  ~\t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
     }  
   }
 
@@ -904,35 +1136,132 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
   for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
   if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
-  fprintf(fp, "#       left_pos       right_pos        score   E-value\n");
-  fprintf(fp, "#------------------------------------------------------------\n");
+  fprintf(stdout, "#       left_pos       right_pos        score          E-value      substitutions    power\n");
+  fprintf(stdout, "1#---------------------------------------------------------------------------------------------\n");
+  if (nhit == 0) fprintf(fp, "no significant pairs\n");
+
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->srthit[h]->i;
     jh = hitlist->srthit[h]->j;
     
     if (hitlist->srthit[h]->bptype == WWc) { 
-      fprintf(fp, "*\t%8d\t%8d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, "*\t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }
     else if (hitlist->srthit[h]->bptype < STACKED) { 
-      fprintf(fp, "**\t%8d\t%8d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, "**\t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "c~\t%8d\t%8d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, "c~\t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE) { 
-      fprintf(fp, "c\t%8d\t%8d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, "c\t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }
     else if (hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "~\t%8d\t%8d\t%.5f\t%g\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, "~\t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }
     else { 
-      fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\n",
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval); 
+      fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\t%lld\t%g\n",
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+    }  
+  }
+
+  return eslOK;
+}
+
+int 
+cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
+{
+  int h;
+  int ih, jh;
+
+  if (fp == NULL) return eslOK;
+
+  for (h = 0; h < nhit; h++) cykhitlist->srthit[h] = cykhitlist->hit + h;
+  if (nhit > 1) qsort(cykhitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
+
+  fprintf(fp, "# in_cyk in_given   left_pos       right_pos      score           E-value           substitutions        power\n");
+  fprintf(fp, "#----------------------------------------------------------------------------------------------------------------\n");
+  if (nhit == 0) fprintf(fp, "no significant pairs\n");
+
+  for (h = 0; h < nhit; h ++) {
+    ih = hitlist->srthit[h]->i;
+    jh = hitlist->srthit[h]->j;
+    
+    if (hitlist->srthit[h]->bptype == WWc) {
+      if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "  *\t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "  ~\t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t *\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+   }
+    
+    else if (hitlist->srthit[h]->bptype < STACKED) { 
+      if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "  *\t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "  ~\t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t **\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+  }
+    
+    else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) {
+           if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "  *\t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "  ~\t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+   }
+    
+    else if (hitlist->srthit[h]->bptype < BPNONE) {
+           if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "  *\t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "  ~\t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   \t c\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+    }
+    
+    else if (hitlist->srthit[h]->is_compatible) {
+           if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "  *\t ~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "  ~\t ~\t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, "   ~\t %10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+   }
+    
+    else {
+           if (cykhitlist->srthit[h]->bptype == WWc) 
+	fprintf(fp, "*\t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else if (cykhitlist->srthit[h]->is_compatible)
+	fprintf(fp, "~\t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+      else 
+	fprintf(fp, " \t  \t%10d\t%10d\t%.5f\t%g\t%lld\t%g\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
     }  
   }
 
@@ -1065,19 +1394,23 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
 
   return eslOK;
 }
-
 int
-cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_ranklist, int minloop, enum grammar_e G, double covthresh)
+cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, double covthresh)
 {
-  RANKLIST      *ranklist = NULL;
-  HITLIST       *hitlist = NULL;
-  int           *cykct = NULL;
-  char          *ss = NULL;	
+  HITLIST       *cykhitlist = NULL;
+  int           *cykct      = NULL;
+  char          *ss         = NULL;
+  char          *covtype    = NULL;
+  char          *threshtype = NULL;
   SCVAL          sc;
   int            i;
   int            status;
             
-  /* calculate the cykcov ct vector */
+  /* calculate the cykcov ct vector.
+   *
+   * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
+   * These pairs become constrains for the second part of the folding in cov_ExpandCT()
+   */
   status = CYKCOV(data->r, data->mi, &cykct, &sc, minloop, covthresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
@@ -1098,11 +1431,14 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
 
   // create a new contact list from the cykct
   data->ct = cykct;
+  CMAP_ReuseCList(data->clist);
   status = ContacMap_FromCT(data->clist, msa->alen, cykct, data->clist->mind, data->msamap, NULL);
   if (status != eslOK) goto ERROR;
   
   /* redo the hitlist since the ct has now changed */
-  status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
+  corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
+  cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
+  status = cov_CreateCYKHitList(data, ranklist, hitlist, &cykhitlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
 
   for (i = 1; i <= msa->alen; i ++) {
@@ -1111,29 +1447,33 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, RANKLIST **ret_
 
   if (data->nbpairs_cyk > 0) {
     /* R2R */
-    status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
     
     /* DotPlots (pdf,svg) */
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE,  data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist, TRUE,  data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, FALSE, data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist, FALSE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
 
-  *ret_cykct    = cykct;
-  *ret_ranklist = ranklist;
+  *ret_cykct = cykct;
 
-  cov_FreeHitList(hitlist);
+  cov_FreeHitList(cykhitlist);
+  free(covtype);
+  free(threshtype);
   free(ss);
   return eslOK;
   
  ERROR:
-  if (hitlist) cov_FreeHitList(hitlist);
-  if (cykct)   free(cykct);
-  if (ss)      free(ss);
+  if (cykhitlist) cov_FreeHitList(cykhitlist);
+  if (covtype)    free(covtype);
+  if (threshtype) free(threshtype);
+  if (cykct)      free(cykct);
+  if (ss)         free(ss);
   return status;
 }
+
 
 int
 cov_histogram_PlotSurvival(FILE *fp, ESL_HISTOGRAM *h, double *survfit)
@@ -1185,13 +1525,13 @@ cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmas
 
   ESL_ALLOC(survfit, sizeof(double) * 2*h->nb);
   esl_vec_DSet(survfit, 2*h->nb, 0.);
-  
+
   for (b = h->cmin; b < 2*h->nb; b++)
     {
       ai = esl_histogram_Bin2LBound(h, b);
       bi = esl_histogram_Bin2UBound(h, b);
       survfit[b] = pmass * (*surv)(bi, params);
-   }
+    }
 
   *ret_survfit = survfit;
   return eslOK;
@@ -1295,7 +1635,7 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *r
   if (!isinf(ep[1])) {
     cov_histogram_SetSurvFitTail(h, ret_survfit, newmass, &esl_gam_generic_surv, ep);
   }
-
+ 
   *ret_mu     = ep[0];
   *ret_lambda = ep[1];
   *ret_k      = ep[2];
@@ -1665,7 +2005,6 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   if (gnuplot   == NULL) return eslOK;
   if (dplotfile == NULL) return eslOK;
-  if (hitlist   == NULL) return eslOK;
   
   esl_FileTail(dplotfile, FALSE, &filename);
 
@@ -1721,8 +2060,10 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   if (ileft > iright)     ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
   if (iright > msa->alen) ESL_XFAIL(eslFAIL, errbuf, "error in cov_DotPlot()");
 
-  ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i+1) : ileft;
-  iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j+1) : iright;
+  if (hitlist) {
+    ileft  = (hitlist->nhit > 0)? ESL_MIN(ileft,  hitlist->hit[0].i+1) : ileft;
+    iright = (hitlist->nhit > 0)? ESL_MAX(iright, hitlist->hit[hitlist->nhit-1].j+1) : iright;
+  }
 
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+firstpos, msamap[iright-1]+firstpos);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+firstpos, msamap[iright-1]+firstpos);
@@ -1755,28 +2096,30 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   }
   
   // the covarying basepairs
-  isempty = TRUE;
-  for (h = 0; h < hitlist->nhit; h ++) {
-
-    	switch(samplesize) {
-	case SAMPLE_CONTACTS:
-	  select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
-	  break;
-	case SAMPLE_BP:
-	  select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
-	  break;
-	case SAMPLE_WC:
-	  select = (hitlist->hit[h].bptype == WWc)?    TRUE : FALSE;
-	  break;	  
-	case SAMPLE_ALL:
-	  select = FALSE;
-	  break;	  
-	}
-
-    if (select) { isempty = FALSE; break; }
+  if (hitlist) {
+    isempty = TRUE;
+    for (h = 0; h < hitlist->nhit; h ++) {
+      
+      switch(samplesize) {
+      case SAMPLE_CONTACTS:
+	select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+	break;
+      case SAMPLE_BP:
+	select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+	break;
+      case SAMPLE_WC:
+	select = (hitlist->hit[h].bptype == WWc)?    TRUE : FALSE;
+	break;	  
+      case SAMPLE_ALL:
+	select = FALSE;
+	break;	  
+      }
+      
+      if (select) { isempty = FALSE; break; }
+    }
   }
 
-  if (!isempty) {
+  if (!isempty && hitlist) {
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");  
     fprintf(pipe, "plot '-' u 1:2:3 with points ls 8 \n");
@@ -1808,45 +2151,49 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   }
 
   // covarying pairs compatible with the given structure
-  isempty = TRUE;
-  for (h = 0; h < hitlist->nhit; h ++) {
-    if (hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
-  }
-  
-  if (!isempty) {
-    fprintf(pipe, "set size 1,1\n");
-    fprintf(pipe, "set origin 0,0\n");  
-    fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
+  if (hitlist) {
+    isempty = TRUE;
     for (h = 0; h < hitlist->nhit; h ++) {
-      ih = hitlist->hit[h].i;
-      jh = hitlist->hit[h].j;
-      if (hitlist->hit[h].is_compatible) {
-	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
-      }
-    } 
-    fprintf(pipe, "e\n");
+      if (hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
+    }
+    
+    if (!isempty) {
+      fprintf(pipe, "set size 1,1\n");
+      fprintf(pipe, "set origin 0,0\n");  
+      fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
+      for (h = 0; h < hitlist->nhit; h ++) {
+	ih = hitlist->hit[h].i;
+	jh = hitlist->hit[h].j;
+	if (hitlist->hit[h].is_compatible) {
+	  fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+	}
+      } 
+      fprintf(pipe, "e\n");
+    }
   }
   
   // covarying pairs incompatible with the given structure
-  isempty = TRUE;
-  for (h = 0; h < hitlist->nhit; h ++) {
-    if (!hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
-  }
-
-  if (!isempty) {
-    fprintf(pipe, "set size 1,1\n");
-    fprintf(pipe, "set origin 0,0\n");  
-    fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
+  if (hitlist) {
+    isempty = TRUE;
     for (h = 0; h < hitlist->nhit; h ++) {
-      ih = hitlist->hit[h].i;
-      jh = hitlist->hit[h].j;
-      if (!hitlist->hit[h].is_compatible) {
-	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
-      }
-    } 
-    fprintf(pipe, "e\n");
+      if (!hitlist->hit[h].is_compatible) { isempty = FALSE; break; }
+    }
+    
+    if (!isempty) {
+      fprintf(pipe, "set size 1,1\n");
+      fprintf(pipe, "set origin 0,0\n");  
+      fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
+      for (h = 0; h < hitlist->nhit; h ++) {
+	ih = hitlist->hit[h].i;
+	jh = hitlist->hit[h].j;
+	if (!hitlist->hit[h].is_compatible) {
+	  fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+	}
+      } 
+      fprintf(pipe, "e\n");
+    }
   }
   
   pclose(pipe);
@@ -1885,10 +2232,9 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   int           idx;
   int           do_r2rcovmarkup = FALSE;
   int           status;
- 
-  if (r2rfile == NULL) return eslOK;
-  if (hitlist == NULL) return eslOK;
 
+   if (r2rfile == NULL) return eslOK;
+   
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
    */
   ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
@@ -1923,31 +2269,33 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
 
   /* modify the cov_cons_ss line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment");
-  for (i = 1; i <= msa->alen; i ++) {
-    found = FALSE;
-    for (h = 0; h < hitlist->nhit; h ++) {
-      ih = hitlist->hit[h].i+1;
-      jh = hitlist->hit[h].j+1;
-      
-      if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc) { 
-	esl_sprintf(&tok, "2"); 
-	found = TRUE; 
+  if (hitlist) {
+    for (i = 1; i <= msa->alen; i ++) {
+      found = FALSE;
+      for (h = 0; h < hitlist->nhit; h ++) {
+	ih = hitlist->hit[h].i+1;
+	jh = hitlist->hit[h].j+1;
+	
+	if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc) { 
+	  esl_sprintf(&tok, "2"); 
+	  found = TRUE; 
+	}
+	
+	if (found) break;
       }
+      if (!found) esl_sprintf(&tok, ".");
       
-      if (found) break;
+      if (i == 1) esl_sprintf(&covstr, "%s", tok);
+      else        esl_sprintf(&covstr, "%s%s", prv_covstr, tok);
+      
+      free(prv_covstr); prv_covstr = NULL;
+      esl_sprintf(&prv_covstr, "%s", covstr);
+      free(tok); tok = NULL;
+      free(covstr); covstr = NULL;
     }
-    if (!found) esl_sprintf(&tok, ".");
-    
-    if (i == 1) esl_sprintf(&covstr, "%s", tok);
-    else        esl_sprintf(&covstr, "%s%s", prv_covstr, tok);
-
-    free(prv_covstr); prv_covstr = NULL;
-    esl_sprintf(&prv_covstr, "%s", covstr);
-    free(tok); tok = NULL;
-    free(covstr); covstr = NULL;
   }
-  
-  /* add line #=GF R2R keep allpairs 
+
+   /* add line #=GF R2R keep allpairs 
    * so that it does not truncate ss.
    * cannot use the standard esl_msa_addGF:
    *             esl_msa_AddGF(msa, "R2R", -1, " keep allpairs", -1);
@@ -1989,7 +2337,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   }
   
   /* replace the r2r 'cov_SS_cons' GC line with our own */
-  if (!do_r2rcovmarkup) {
+  if (!do_r2rcovmarkup && hitlist) {
     for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
       if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
     if (tagidx == r2rmsa->ngc) {
@@ -2078,6 +2426,7 @@ cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf)
   
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
   esl_sprintf(&args, "%s %s %s >/dev/null", cmd, r2rfile, r2rpdf);
+ 
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R2pdf\n");
 
@@ -2144,11 +2493,8 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
       esl_sprintf(&(msa->gf[tagidx]), "");
   }
 
-#if 0 // naive method
-  status = cov_ExpandCT_Naive(msa, ret_ct, minloop, verbose, errbuf);
-#else // covariance-constraint CYK using a probabilistic grammar
+ // covariance-constraint CYK using a probabilistic grammar
   status = cov_ExpandCT_CCCYK(r, msa, ret_ct, G, minloop, verbose, errbuf);
-#endif
   if (status != eslOK) goto ERROR;
 
   /* replace the 'SS_cons' GC line with the new ss */
@@ -2166,35 +2512,6 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
  ERROR:
   if (ss) free(ss);
   return status;
-}
-
-int
-cov_ExpandCT_Naive(ESL_MSA *msa, int *ct, int minloop, int verbose, char *errbuf)
-{
-  char  tag[10] = "cons";
-  char *cons;
-  int   tagidx;
-  int   L = msa->alen;
-  int   i, j, d;
-  
-  /* get the line #=GC cons */
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
-  if (tagidx == msa->ngc) return eslOK; // no cons line to expand the CT
-  cons =  msa->gc[tagidx];
-
-  for (j = 0; j < L; j++)
-    for (d = 0; d <= j; d++)
-      {
-	i = j-d+1;
-
-	if ( d >= minloop && is_stacked_pair(i+1, j+1, L, ct) && is_cannonical_pair(cons[i], cons[j]) )
-	  { // add this pair
-	    ct[i+1] = j+1;
-	    ct[j+1] = i+1;
-	  }	
-      }
-  return eslOK;
 }
 
 int

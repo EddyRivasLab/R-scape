@@ -140,11 +140,14 @@ typedef struct hit_s {
   int64_t i;
   int64_t j;
   
-  double sc;
-  double Eval;
+  double  sc;
+  double  Eval;
 
-  BPTYPE bptype;
-  int    is_compatible; // is compatible with all WWc annotated pairs
+  int64_t nsubs;
+  double  power;
+
+  BPTYPE  bptype;
+  int     is_compatible; // is compatible with all WWc annotated pairs
   
 } HIT;
 
@@ -194,6 +197,8 @@ struct data_s {
   int                  onbpairs;
   int                  nbpairs;
   int                  nbpairs_cyk;
+  int                 *nsubs;
+  
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
   int                 *ct;

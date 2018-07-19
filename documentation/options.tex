@@ -89,6 +89,15 @@ covariation statistic.
 
 \subsection{Search options}
 
+
+\subsubsection{\prog{-s}} The ``two-set test'' option.
+This option requires that a structure is provided with the alignment.
+If option \prog{-s} is used, \rscape\ performs two independent test,
+one for the given structure, another for all other possible pairs.
+The default is a ``one-set test'' in which all possible pairs in the
+alignment are tested equivalently.
+
+
 \subsubsection{\prog{--cyk}} An optimal secondary structure is computed that includes all significant base pairs. The files for this
 maximum-covariation optimal structure all include the suffix
 \prog{.cyk.}
@@ -107,6 +116,10 @@ associated to them. No null alignments are created.
 The window size is $n>0$.
 
 \subsubsection{\prog{--slide <n>}} In scanning mode, this options sets the number of positions to move from window to window, $n >0$.
+
+\subsubsection{\prog{--vshuffle}} Vertical shuffle, a developers tool. Before performing any analysis, it shuffles all residues in each alignment column independently.
+
+\subsubsection{\prog{--cshuffle}} Column shuffle, a developers tool. Before performing any analysis, it shuffles all columns in the alignment.
 
 
 
@@ -132,44 +145,55 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Options for importing a structure}
 
-R-scape does not require to input a structure (either a RNA structure
-or a protein contact map).\footnote{ For RNA alignments alone, if no
-structure is provided, R-scape computes the best secondary structure
-that includes the maximum number of significantly covarying
-basepairs.}
+\rscape\ does not require to input a structure (either a RNA structure
+or a protein contact map). By default \rscape\ analyzes all possible pairs in the alignment.
 \vspace{1mm}
 
 \noindent
 There are two ways to provide a contact map (or structure):
 
 \begin{itemize}
+
 \item By providing the alignment in Stockholm format with a ``ss\_cons'' field including the consensus
 structure for the alignment. (For RNA alignments only.)
-\item By analyzing a 3D structure provided in a PDB file. (For either RNA or peptide alignments.)
+
+\item By analyzing a 3D structure provided in a PDB file. (For either RNA or peptide alignments.)\\
 \end{itemize}
 
 \noindent
-These two options are incompatible with each other. If both a consensus structure is provided, and a PDB
-file, the consensus structure will be ignored, and a structure will be calculated from the PDB file
-using the program \prog{rnaview}~\citep{YangWesthof03}.
-
-\noindent
-If the sequence in the PDB file is found not to be a homolog of those
-in the input alignment (using the program nhmmer), no contact map is
-produced.
+These two methods can be combined together. For a nucleotide
+alignment, if both a consensus structure is present in the alignment,
+and a PDB file is provided (using option \prog{--pdbfile}), the
+consensus structure will be extended by the information provided by
+the pdbfile.  To ignore the consensus structure use
+option \prog{--onlypdb}.\\
 
 
 \noindent
-The contacts are extracted using two methods:
+From the PDB file we obtain three types of structural pairs:
+
+\begin{itemize}
+\item \textbf{Contacts:} defined as those two residues at a close spatial distance (specified by the user with option \prog{--cntmaxD}).
+\item \textbf{Basepair:} RNA basepairs. \\
+RNA basepairs are calculated using the program \prog{rnaview}~\citep{YangWesthof03}.
+
+These RNA basepairs can be further classified in two types:
+\begin{itemize}
+\item \textbf{Watson-Crick basepairs:} the canonical RNA basepairs. mostly A:U, G:C, or G:U pairs. (H-bond interactions between two W-C faces in cis).
+\item \textbf{Other basepairs:} the non-canonical RNA basepairs (all other types of H-bond interactions, 12 different types).
+\end{itemize}
+\end{itemize}
+
+Contacts and RNA basepairs are extracted as follows:
 \begin{itemize}
 
-\item The distance between any two residues is calculated (as the  minimal Euclidean distance between any two atoms, except
-for H atoms). Any two pairs at a distance not larger than a maximum
-value (\texttt{contmaxD}) are called a ``contact''.
+\item The spatial distance between any two residues is calculated as the  minimal Euclidean distance between any two atoms (excluding
+ H atoms). Any two pairs at a distance not larger than a maximum value
+(\texttt{contmaxD}) are called a ``contact''.
 
-\item In addition if a nucleic acid alignment, R-scape runs the program \texttt{rnaview}~\citep{YangWesthof03}\\
-(http://ndbserver.rutgers.edu/ndbmodule/services/download/rnaview.html)
-in order to identify RNA base pairs within the contacts.
+\item RNA basepairs are obtained using the program \texttt{rnaview}~\citep{YangWesthof03}\\
+(http://ndbserver.rutgers.edu/ndbmodule/services/download/rnaview.html).\\
+The RNA basepair annotation takes precedent over the annotation as ``contact''.
 \end{itemize}
 
 \vspace{2mm}
@@ -179,6 +203,8 @@ The options that control the input of a structure or contact map are:
 \subsubsection{\prog{--pdbfile <s>}} Reads a pdbfile associated to the alignment, and extracts the contacts
 from it.
 
+A ``.cmap'' file is produced reporting the structure obtained from the PDB file.
+
 Option \prog{--pdbfile} is incompatible with \prog{--cyk}.
 
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
@@ -186,14 +212,16 @@ Option \prog{--pdbfile} is incompatible with \prog{--cyk}.
 \subsubsection{\prog{--cntmind <n>}} Minimum distance (in residue positions) in the backbone between two residues required to define a ``contact'' is $\langle n\rangle$.
 \vspace{5mm}
 
+\subsubsection{\prog{--onlypdb}} Reads the structure from the pdbfile and ignores the alignment consensus structure (if provided).\\\\
+
 \noindent
 Example of reading a structure from a PDB file for the FMN riboswitch:
 
-\user{bin/R-scape --cntmaxD 4 --cntmind 3 --pdbfile tutorial/3f2q.pdb  tutorial/RF00050.sto}\\
+\user{bin/R-scape --cntmaxD 4 --cntmind 3 --pdbfile tutorial/3f2q.pdb -s --onlypdb tutorial/RF00050.sto}\\
 
 \noindent
 This command line extracts contacts from the pdb file that are at a
-Eucledian distance $\leq 4 \AA$ in the PDB structure, and such that
+Euclidean distance $\leq 4 \AA$ in the PDB structure, and such that
 they are at least 3 residues apart in the backbone.
 
 
@@ -202,53 +230,66 @@ The output is
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 0.6.1 (July 2017)
+# R-scape 0.8.1 (Jul 2018)
 # Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# 6 215 | bptype WWc
-# 6 216 | bptype CONTACT
-# 7 214 | bptype WWc
-# 7 215 | bptype CONTACT
-# 8 213 | bptype WWc
-# 8 214 | bptype CONTACT
-# 9 212 | bptype WWc
-# 9 213 | bptype WWc
+# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
 #
-.
-.
-.
-# 193 201 | bptype WWc
-# 193 202 | bptype CONTACT
-# 195 198 | bptype WHt
-# 198 201 | bptype CONTACT
-# contacts  153 (46 bpairs 32 wc bpairs)
+# Structure obtained from the pdbfile
+# ij in alignment | ij in pdbsequence | basepair type
+# 3 218 | 1 112 | WWc
+# 4 216 | 2 110 | CONTACT
+# 4 217 | 2 111 | WWc
+# 4 218 | 2 112 | CONTACT
+# 5 216 | 3 110 | WWc
+# 5 217 | 3 111 | CONTACT
+# 6 215 | 4 109 | WWc
+# 6 216 | 4 110 | CONTACT
+# .
+# .
+# .
+# 192 202 | 87 96 | WWc
+# 192 203 | 87 97 | CONTACT
+# 193 198 | 88 92 | CONTACT
+# 193 201 | 88 95 | WWc
+# 193 202 | 88 96 | CONTACT
+# 195 197 | 89 91 | CONTACT
+# 195 198 | 89 92 | WHt
+# 198 200 | 92 94 | CONTACT
+# 198 201 | 92 95 | CONTACT
+# 205 207 | 99 101 | CONTACT
+# PDB:      versions/rscape/rscape_v0.8/tutorial/3f2q.pdb
+# contacts  169 (49 bpairs 35 wc bpairs)
 # maxD      4.00
 # mind      3
+# distance  MIN
 # L         139
 # alen      221
-# MSA RF00050_FMN.3f2q nseq 144 (144) alen 139 (221) avgid 69.18 (68.15) nbpairs 46 (0)
+# pdblen    112
+# ::[[[[[[[[,,,,,,<<<_______>>>,((((<<<<_________________AA>>>>,,<<<----------<____>>>>,,,<<<<<_______>>>>>aa))AAAA----))aaaa,,,,,,]]]]]]]]::
+# MSA RF00050_FMN.3f2q nseq 144 (144) alen 139 (221) avgid 69.18 (68.15) nbpairs 49 (0)
+#
 # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.58,216.11]     [3 | 14 46 17 | 30.43 82.35 44.44] 
-#       left_pos       right_pos        score   E-value
-#------------------------------------------------------------
-*	     171	     183	216.11	4.41458e-11
-*	     170	     184	211.69	8.02215e-11
-*	     192	     202	168.72	1.91884e-08
-*	       8	     213	149.72	2.19077e-07
-*	     172	     182	138.67	8.92814e-07
-*	     169	     185	137.23	1.10807e-06
-**	      16	      30	133.45	1.70655e-06
-*	      84	     186	125.61	4.75589e-06
-*	      17	      29	112.05	2.66491e-05
-*	       7	     214	111.13	2.96758e-05
-*	       6	     215	96.44	0.000194387
-*	      36	      87	96.33	0.000194387
-~	       5	     216	131.03	0.000489499
-*	      94	     163	78.82	0.00183574
- 	       7	     213	107.69	0.0094673
- 	       7	       8	98.52	0.0308494
-*	      37	      86	53.10	0.0438743
+# GTp    0.05         [-9.78,216.11]     [1 | 14 49 15 | 28.57 93.33 43.75] 
+#
+#       left_pos       right_pos        score           E-value
+#------------------------------------------------------------------
+*	     171	     183	216.11095	1.6421e-10
+*	     170	     184	211.69081	2.76699e-10
+*	     192	     202	168.72417	4.95548e-08
+*	       8	     213	149.71776	4.89982e-07
+*	     172	     182	138.66664	1.84675e-06
+*	     169	     185	137.23189	2.21548e-06
+**	      16	      30	133.44999	3.53772e-06
+*	       5	     216	131.02575	4.70876e-06
+*	      84	     186	125.60806	9.0169e-06
+*	      17	      29	112.04610	4.62895e-05
+*	       7	     214	111.12654	5.13519e-05
+*	       6	     215	96.43781	0.00029929
+*	      36	      87	96.32752	0.00029929
+*	      94	     163	78.81578	0.0024303
+ 	       7	     213	107.68588	0.0147937
 \end{sreoutput}
 
 \noindent
@@ -258,30 +299,29 @@ program \prog{rnaview}~\citep{YangWesthof03}.
 
 \subsection{Options for type of pairs tested}
 
-\subsubsection{\prog{--sampleall}}
-The statistical test includes all possible pairs in the alignment.
-This is the default option (both for nucleic acid or amino acid
-alignments) when no list of contacts is identified. 
+When performing the two-class statistical test (option \prog{-s})
+using a pdbfile to read the structure, there are different options as
+to which types of basepairs are used to define the sample size for the
+basepairs test.
+
+The options are:
 
 \subsubsection{\prog{--samplecontacts}}
-The statistical test includes all the contacts identified in a PDB
+The basepair statistical test includes all the contacts identified in a PDB
 or/and as a RNA secondary structure included with a input alignment in
 Stockholm format.  This is the default option for amino acid
-alignments if a PDB file is provided.  If no contacts are found, it
-reverts to option \prog{--sampleall}.
+alignments if a PDB file is provided.  
 
 \subsubsection{\prog{--samplebp}} For RNA alignments with only.
-The statistical test includes basepairs of all 12 possible types.
+The basepair statistical test includes basepairs of all 12 possible types.
 This is the default option for RNA/DNA alignments if a PDB file is
-provided.  If no consensus structure is found, it reverts to
-option \prog{--sampleall}.
+provided.  
 
 \subsubsection{\prog{--samplewc}} For RNA alignments only.
-The statistical test includes only the canonical
+The basepair statistical test includes only the canonical
 (Watson-Crick/Watson-Crick type) basepairs (A:U, G:C, G:U).  This is
 the default option for RNA/DNA alignments if a consensus secondary
-structure is provided. If no canonical basepairs are found, it reverts
-to option \prog{--sampleall}.
+structure is provided. 
 
 \subsection{Output options}
 
