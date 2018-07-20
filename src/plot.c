@@ -192,7 +192,6 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *
   int             status;
   
   psfile = plot_file_psfilename(pdffile);
-  printf("FILE %s\n", file);
 
   pipe = popen(gnuplot, "w");
 

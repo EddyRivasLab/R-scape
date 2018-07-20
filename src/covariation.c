@@ -684,6 +684,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   int       nhit;
   int       h = 0;
   int       i, j;
+  int       bp;
+  int64_t   nsubs;
   int       status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
@@ -742,13 +744,23 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	  ESL_REALLOC(hitlist->hit,    sizeof(HIT)   * nhit);
 	  ESL_REALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
 	}
+
+	nsubs = 0;
+	if (data->bpair && data->nbp > 0) {
+	  for (bp = 0; bp < data->nbp; bp ++) {
+	    if (data->msamap[i]+data->firstpos == data->bpair[bp].i && data->msamap[j]+data->firstpos == data->bpair[bp].j) break;
+	  }
+	  if (bp == data->nbp) esl_fatal("no bp found for %d %d.\n", i, j);
+	  nsubs = data->bpair[bp].nsubs;
+	}
+	
 	/* assign */
 	hitlist->hit[h].i             = i;
 	hitlist->hit[h].j             = j;
 	hitlist->hit[h].sc            = cov;
 	hitlist->hit[h].Eval          = eval;
-	hitlist->hit[h].nsubs         = data->nsubs[IDX(i,j,mi->alen)];
-	hitlist->hit[h].power         = 0;
+	hitlist->hit[h].nsubs         = nsubs;
+	hitlist->hit[h].power         = 0.;
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
@@ -1136,8 +1148,8 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
   for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
   if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
-  fprintf(stdout, "#       left_pos       right_pos        score          E-value      substitutions    power\n");
-  fprintf(stdout, "1#---------------------------------------------------------------------------------------------\n");
+  fprintf(fp, "#       left_pos       right_pos        score          E-value      substitutions    power\n");
+  fprintf(fp, "#---------------------------------------------------------------------------------------------\n");
   if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
   for (h = 0; h < nhit; h ++) {

@@ -198,6 +198,8 @@ struct data_s {
   int                  nbpairs;
   int                  nbpairs_cyk;
   int                 *nsubs;
+  int                  nbp;
+  BPAIR               *bpair;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
