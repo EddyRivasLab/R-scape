@@ -27,7 +27,7 @@ extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIS
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
 extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
 extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
-extern int              cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, int *nsubs, HITLIST *hitlist, int verbose);
+extern int              cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, HITLIST *hitlist, int verbose);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);

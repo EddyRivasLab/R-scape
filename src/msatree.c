@@ -45,21 +45,19 @@ static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
 int
 Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose)
 {
-  char      tmptreefile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  FILE     *treefp = NULL;
-  ESL_TREE *T = NULL;
+  char     *treefile = NULL;
+  FILE     *treefp   = NULL;
+  ESL_TREE *T        = NULL;
   int       status;
 
   if (msa->nseq == 1) { *ret_T = NULL; return eslOK; }
 
-  if ((status = esl_tmpfile_named(tmptreefile, &treefp))               != eslOK) ESL_XFAIL(status, errbuf, "failed to create treefile");
+  if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to crete external tree");
+  if ((treefp = fopen(treefile, "r"))                                == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for reading", treefile);
+  if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))             != eslOK) goto ERROR;
+  if ((status = esl_tree_Validate(T, NULL))                          != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
   fclose(treefp);
-
-  if ((status = Tree_CreateExtFile(msa, tmptreefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to crete external tree");
-  if ((treefp = fopen(tmptreefile, "r"))                               == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for writing", tmptreefile);
-  if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))               != eslOK) goto ERROR;
-  if ((status = esl_tree_Validate(T, NULL))                            != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
-
+  
   /* make sure the seq has the same index in msa and T */
   if ((status = Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)) != eslOK) goto ERROR;
       
@@ -68,24 +66,25 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
      
   *ret_T = T;
 
-  fclose(treefp);
-  remove(tmptreefile);
- 
+  remove(treefile);
+  free(treefile);
   return eslOK;
 
  ERROR:
-  remove(tmptreefile);
+  remove(treefile);
+  if (treefile) free(treefile);
   if (T != NULL) esl_tree_Destroy(T);
   return status;
 }
 
 int
-Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verbose)
+Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int verbose)
 {
-  char  tmpmsafile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char *cmd  = NULL;
-  char *args = NULL;
-  FILE *msafp = NULL;
+  char  tmpmsafile[32] = "esltmpXXXXXX"; /* tmpfile template */
+  char *treefile = NULL;
+  char *cmd      = NULL;
+  char *args     = NULL;
+  FILE *msafp    = NULL;
   int   status;
   
   if ((status = esl_tmpfile_named(tmpmsafile,  &msafp))                   != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
@@ -97,10 +96,11 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   else
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
+  esl_sprintf(&treefile, "%s.tree", msa->name);
   if (msa->abc->type == eslAMINO)
-    esl_sprintf(&args, "%s -quiet %s > %s", cmd, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s -quiet %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);
   else if (msa->abc->type == eslDNA || msa->abc->type == eslRNA)
-    esl_sprintf(&args, "%s -quiet -nt %s > %s", cmd, tmpmsafile, tmptreefile);
+    esl_sprintf(&args, "%s -quiet -nt %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
   if (verbose) printf("%s\n", args);  
@@ -108,20 +108,23 @@ Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verb
   if (status == -1) ESL_XFAIL(eslFAIL, errbuf, "failed to run FastTree");
   
   if (verbose) {
-    esl_sprintf(&args, "/usr/bin/more %s\n", tmptreefile);
+    esl_sprintf(&args, "/usr/bin/more %s\n", treefile);
     system(args);
   }
     
   remove(tmpmsafile);
+
+  *ret_treefile = treefile;
   
-  if (cmd  != NULL) free(cmd);
-  if (args != NULL) free(args);
+  if (cmd)  free(cmd);
+  if (args) free(args);
   return eslOK;
   
  ERROR:
   remove(tmpmsafile);
-  if (cmd  != NULL) free(cmd);
-  if (args != NULL) free(args);
+  if (treefile) free(treefile);
+  if (cmd)      free(cmd);
+  if (args)     free(args);
   return status;  
 }
 
@@ -1382,7 +1385,7 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
   int         i, j;
   int         status;
   
-  if (T == NULL) ESL_XFAIL(eslFAIL, errbuf, "substitutions(): no Tree given");
+  if (T == NULL) return eslOK;
   
   status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -1399,13 +1402,13 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
 	axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
 	
-	if (axr[i] != ax[i]) { // a single substitution
+	if (axl[i+1] != ax[i+1]) { // a single substitution
 	  nsubs[i] ++;
 	}
-	if (axr[i] != ax[i]) { // a single substitution
+	if (axr[i+1] != ax[i+1]) { // a single substitution
 	  nsubs[i] ++;
 	}
-      }
+     }
   }
   
   for (i = 0; i < msa->alen-1; i ++) {
@@ -1418,17 +1421,17 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
 	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
 
-	  if (axr[i] != ax[i] && axr[j] != ax[j]) { // a double substitution
+	  if (axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { // a double substitution
 	    ndouble[idx] ++;
 	  }
-	  if (axl[i] != ax[i] && axl[j] != ax[j]) { // a double substitution
+	  if (axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { // a double substitution
 	    ndouble[idx] ++;
 	  }
 	}
     }
   }
 
-  *ret_nsubs   = nsubs;
+  *ret_nsubs = nsubs;
   if (ret_ndouble) *ret_ndouble = ndouble;
   
   esl_msa_Destroy(allmsa);

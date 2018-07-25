@@ -59,8 +59,6 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
   COVCLASS       covclass = data->mi->class;
-  int            L  = data->pt->L;
-  int            i, j;
   int            shiftnonneg = FALSE;
   int            status;
 
@@ -295,21 +293,24 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   int              b;
   int              status;
 
+  corr_COVTYPEString(&covtype, mi->type, data->errbuf);
+  cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
+
   // really bad alignment, covariation spread is smaller than tol, stop here.
   if (data->w < tol) {
     if (data->mode == GIVSS) {
       fprintf(stdout,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
       fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
-      fprintf(stdout, "#---------------------------------------------------------------------------------------------\n");
+      fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "covariation scores are almost constant, no further analysis.\n");
-      return eslOK;
     }
+    
+    free(threshtype); 
+    free(covtype);
+    return eslOK; 
   }
   
-  corr_COVTYPEString(&covtype, mi->type, data->errbuf);
-  cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
-
   /* histogram parameters */
   bmax = mi->maxCOV + 5*data->w;
   while (fabs(bmax-data->bmin) < tol) bmax += data->w;
@@ -536,6 +537,7 @@ cov_CreateRankList(double bmax, double bmin, double w)
   ranklist->ha = NULL;
   ranklist->ht = NULL;
   ranklist->hb = NULL;
+  
   ranklist->ha = esl_histogram_CreateFull(bmin, bmax, w);
   ranklist->ht = esl_histogram_CreateFull(bmin, bmax, w);
   ranklist->hb = esl_histogram_CreateFull(bmin, bmax, w);
@@ -552,20 +554,14 @@ cov_CreateRankList(double bmax, double bmin, double w)
 }
 
 int 
-cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, int *nsubs, HITLIST *hitlist, int verbose)
+cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, HITLIST *hitlist, int verbose)
 {
   int h;
-  int ih, jh;
-  int nsubs_hit;
 
-  for (h = 0; h < hitlist->nhit; h ++) {
-    ih = hitlist->hit[h].i;
-    jh = hitlist->hit[h].j;
-
-    nsubs_hit = nsubs[ih] + nsubs[jh];
-    if (hitlist->hit[h].bptype == WWc) esl_histogram_Add(hsubs, (double)nsubs_hit);
-   }
-  if (verbose) esl_histogram_Write(stdout, hsubs);
+  for (h = 0; h < hitlist->nhit; h ++) 
+    if (hitlist->hit[h].bptype == WWc) esl_histogram_Add(hsubs, (double)hitlist->hit[h].nsubs+1);
+   
+  if (1||verbose) esl_histogram_Write(stdout, hsubs);
   
   return eslOK;
 }
@@ -683,9 +679,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   int       t, fp;
   int       nhit;
   int       h = 0;
-  int       i, j;
-  int       bp;
-  int64_t   nsubs;
+  int64_t   n = 0;
+  int64_t   i, j;
   int       status;
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
@@ -697,7 +692,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   ESL_ALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
   hitlist->srthit[0] = hitlist->hit;
 
-   for (i = 0; i < mi->alen-1; i++) 
+  for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
       
       // if found in the pdb structure, make sure
@@ -745,26 +740,19 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	  ESL_REALLOC(hitlist->srthit, sizeof(HIT *) * nhit);
 	}
 
-	nsubs = 0;
-	if (data->bpair && data->nbp > 0) {
-	  for (bp = 0; bp < data->nbp; bp ++) {
-	    if (data->msamap[i]+data->firstpos == data->bpair[bp].i && data->msamap[j]+data->firstpos == data->bpair[bp].j) break;
-	  }
-	  if (bp == data->nbp) esl_fatal("no bp found for %d %d.\n", i, j);
-	  nsubs = data->bpair[bp].nsubs;
-	}
-	
 	/* assign */
 	hitlist->hit[h].i             = i;
 	hitlist->hit[h].j             = j;
 	hitlist->hit[h].sc            = cov;
 	hitlist->hit[h].Eval          = eval;
-	hitlist->hit[h].nsubs         = nsubs;
+	hitlist->hit[h].nsubs         = (data->pair)? data->pair[n].nsubs : 0;
 	hitlist->hit[h].power         = 0.;
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
       }
+
+      n ++;
     }
   nhit = h;
   hitlist->nhit = nhit;
@@ -814,7 +802,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
   }
   if (data->outfp) {
-   CMAP_DumpShort(data->outfp, data->clist);
+    CMAP_DumpShort(data->outfp, data->clist);
     fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
@@ -847,17 +835,12 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
 {
   HITLIST  *cykhitlist = NULL;
   double    sen, ppv, F;
-  double    cov;
-  double    eval;
-  BPTYPE    bptype;
   int       nhit = hitlist->nhit;
   int       select;
-  int       is_compatible;
   int       tf = 0;
   int       f  = 0;
   int       t, fp;
   int       h = 0;
-  int       i, j;
   int       status;
 
   if (nhit > 0) {
@@ -878,9 +861,9 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
       cykhitlist->hit[h].Eval          = hitlist->hit[h].Eval;
       cykhitlist->hit[h].nsubs         = hitlist->hit[h].nsubs;
       cykhitlist->hit[h].power         = hitlist->hit[h].power;
-      cykhitlist->hit[h].bptype        = CMAP_GetBPTYPE(cykhitlist->hit[h].i+1, cykhitlist->hit[h].j+1, data->clist);
+      cykhitlist->hit[h].bptype        = CMAP_GetBPTYPE(hitlist->hit[h].i+1, hitlist->hit[h].j+1, data->clist);
       cykhitlist->hit[h].is_compatible = FALSE;
-      if (data->abcisRNA && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
+      if (data->abcisRNA && data->ct[hitlist->hit[h].i+1] == 0 && data->ct[hitlist->hit[h].j+1] == 0) {
 	cykhitlist->hit[h].is_compatible  = TRUE;
       }
     }
@@ -971,8 +954,10 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 
   if (fp == NULL) return eslOK;
 
-  fprintf(stdout, "#------------------------------------------------------------------------------------------------\n");
-  if (nhit == 0) fprintf(fp, "no significant pairs\n");
+  if (nhit == 0) {
+    fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
+    fprintf(fp, "no significant pairs\n");
+  }
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
@@ -1149,7 +1134,7 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
   if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
   fprintf(fp, "#       left_pos       right_pos        score          E-value      substitutions    power\n");
-  fprintf(fp, "#---------------------------------------------------------------------------------------------\n");
+  fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
   if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
   for (h = 0; h < nhit; h ++) {
@@ -2262,7 +2247,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   
   /* run R2R */
   if ((status = esl_tmpfile_named(tmpoutfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create output file");
-
+  fclose(fp);
+  
   if (RSCAPE_BIN)         // look for the installed executable
     esl_sprintf(&cmd, "%s/r2r", RSCAPE_BIN);  
   else
@@ -2271,8 +2257,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, tmpinfile, tmpoutfile);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R\n");
-  fclose(fp);
- 
+  
   /* convert output to r2rmsa */
   if (esl_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_PFAM;

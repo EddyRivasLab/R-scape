@@ -45,7 +45,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
   int     *ct      = NULL;
   int     *msa2pdb = NULL;
   char    *ss      = NULL;
-  int      L = msa->alen;
+  int      L       = msa->alen;
   int      ct_nbpairs;
   int      alloc_ncnt = 5;
   int      status;
@@ -144,7 +144,7 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
     ii     = i+1;
     jj     = ct[ii];
     posi   = msa2omsa[i]+1;
-    posj   = msa2omsa[jj-1]+1;
+    posj   = (jj>0)? msa2omsa[jj-1]+1 : 0;
     bptype = WWc;
     if (jj > ii && jj - ii >= cntmind && CMAP_IsNewContact(posi, posj, bptype, clist) )  {
       

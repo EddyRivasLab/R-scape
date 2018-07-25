@@ -185,9 +185,7 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *
   double          xval, yval;
   double          max_xtot = 0.0;
   double          max_ytot = 0.0;
-  int             count;
   int             style = 3;
-  int             f;           /* index for files */
   int             nline = 0;
   int             status;
   

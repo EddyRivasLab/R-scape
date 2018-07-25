@@ -138,10 +138,11 @@ static double cubic_interpolation(double xa, double fa, double ga, double xb, do
  *
  * Reference: 
  */
-static int Armijo(double *ori, double fori, double *gori, double *dori, int n,
-		  double firststep, double c1,
-		  double (*bothfunc)(double *, int, void *, double *), void *prm,
-		  double *x, double *g, double *ret_f, double *ret_dg, double *ret_step, int maxiter, double tol)
+static int
+Armijo(double *ori, double fori, double *gori, double *dori, int n,
+       double firststep, double c1,
+       double (*bothfunc)(double *, int, void *, double *), void *prm,
+       double *x, double *g, double *ret_f, double *ret_dg, double *ret_step, int maxiter, double tol)
 {
   double dgori = esl_vec_DDot(dori, gori, n);  // initial d'*g
   double f;
@@ -150,7 +151,6 @@ static int Armijo(double *ori, double fori, double *gori, double *dori, int n,
   double min_step = 1e-8;
   double max_step = 0.6;
   int    nit = 0;
-  int    status;
   
   // Check inputs 
   if (firststep <= 0.) ESL_EXCEPTION(eslENORESULT, "Step size is negative");
@@ -238,7 +238,6 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
   double cvg;
   int    nit = 0;
   int    found = FALSE;
-  int    status;
 
   // Check inputs 
   if (firststep <= 0.) ESL_EXCEPTION(eslENORESULT, "Step size is negative");
@@ -440,8 +439,6 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   int    i;
   double *gx, *cg, *w1, *w2;
   double cvg;
-  double fa,fb,fc;
-  double ax,bx,cx;
   double c1, c2;
   double fx;
   double gtd;

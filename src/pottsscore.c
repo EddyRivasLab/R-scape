@@ -181,7 +181,7 @@ potts_NLogp_APLM(int i, PT *pt, ESL_MSA *msa, double *ret_nlogp, PT *gr, char *e
   int      resi, resj;
   int      s;
   int      j;
-  int      a, b, ab;
+  int      a, b;
   int      status;
 
   dofunc  = (ret_nlogp)? TRUE : FALSE;
@@ -308,7 +308,6 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
   double  logzi = -eslINFINITY;
   int     Kg    = pt->Kg;
   int     a;
-  int     status;
 
   for (a = 0; a < Kg; a++) {
     Ha = potts_Hi(i, a, pt, sq, gremlin);
@@ -317,9 +316,6 @@ potts_Logzi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
     logzi = e2_DLogsum(logzi, Ha);
   }
   return logzi;
-
- ERROR:
-  return status;
 }
 double
 potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
@@ -328,7 +324,6 @@ potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
   double  Zi = 0.;
   int     Kg = pt->Kg;
   int     a;
-  int     status;
 
   for (a = 0; a < Kg; a++) {
     Ha = potts_Hi(i, a, pt, sq, gremlin);
@@ -336,10 +331,8 @@ potts_Zi(int i, PT *pt, ESL_DSQ *sq, double *Hi, int gremlin)
      
     Zi += exp(Ha);
   }
+  
   return Zi;
-
- ERROR:
-  return status;
 }
 
 
@@ -386,16 +379,13 @@ potts_CalculateCOVFrobenius(struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   PT              *pt = data->pt;
-  char            *errbuf = data->errbuf;
   double           cov;
   double           eij;
-  double           mean;
   int              L  = pt->L;
   int              K  = pt->abc->K;
   int              Kg = pt->Kg;
   int              i, j;
   int              a, b;
-  int              idx;
   int              status = eslOK;
 
   // Use the Frobenius norm with zero-sum gauge
@@ -434,9 +424,6 @@ potts_CalculateCOVFrobenius(struct data_s *data)
     }
   }
 
-  return status;
-
- ERROR:
   return status;
 }
 
@@ -480,11 +467,9 @@ potts_CalculateCOVAverage(struct data_s *data)
 static double
 potts_H(PT *pt, ESL_DSQ *sq)
 {
-  double        H  = 0.;
-  int           L  = pt->L;
-  int           Kg = pt->Kg;
-  int           resi, resj;
-  int           i, j;
+  double H = 0.;
+  int    L = pt->L;
+  int    i;
   
   for (i = 0; i < L; i ++) 
     H += potts_Hi(i, sq[i+1], pt, sq, pt->gremlin);

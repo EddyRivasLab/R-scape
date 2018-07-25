@@ -342,16 +342,19 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
 //          the atom resSeq numbering (1-76)
 //     is as follows
 //
-// SEQRES_E G C C C G G A U G A U C  C  U  C  A  G  U  G  G  U  C  U  G  G  G  G  U  G  C  A  G  G
-// resSeq_E 1 2 3 4 5 5 5 6 7 8 9 10 11 12 13 14 15 16 18 19 20 20 21 22 23 24 25 26 27 28 29 30 31
-//                  * * *                             *      *  *
+//          1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+// SEQRES_E G C C C G G A U G A  U  C  C  U  C  A  G  U  G  G  U  C  U  G  G  G  G  U  G  C  A  G  G
+// resSeq_E 1 2 3 4 5 5 5 6 7 8  9  10 11 12 13 14 15 16 18 19 20 20 21 22 23 24 25 26 27 28 29 30 31
+//                  * * *                               *      *  *
 //
-// SEQRES_E C U U C A A A  C  C  U  G  U  A  G  C  U  G  U  C  U  A  G  C  G  A  C  A  G  A  G  U  G  G
-// resSeq_E 0 0 0 0 0 0 0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
-//                                               *  *  *  *  *  *  *  *  *  *  *  *
+//          34 35 36 37 38 39 49 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66
+// SEQRES_E C  U  U  C  A  A  A  C  C  U  G  U  A  G  C  U  G  U  C  U  A  G  C  G  A  C  A  G  A  G  U  G  G
+// resSeq_E 0  0  0  0  0  0  0  39 40 41 42 43 44 45 46 46 46 46 46 46 46 46 46 46 46 46 47 48 49 50 51 52 53
+//                                                     *  *  *  *  *  *  *  *  *  *  *  *
 //
 //          * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
 //
+//          67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90
 // SEQRES_E U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
 // resSeq_E 54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
 //                                              *  *

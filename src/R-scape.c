@@ -340,7 +340,7 @@ static ESL_OPTIONS options[] = {
   { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* expert */  
-  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "=s",  NULL,               "substitutions power to file <f>",                                                           1 },
+  { "--power",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "substitutions power to file <f>",                                                           1 },
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
@@ -358,7 +358,7 @@ static char banner[] = "RNA Structural Covariation Above Phylogenetic Expectatio
 static int  calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int  create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int  get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
-static int  msa_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
+static int  msa_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs, int samplesize, int statsmethod);
 static int  msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
@@ -366,10 +366,10 @@ static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA 
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
-static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp, BPAIR *bpair,
+static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *spair,
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
-static int  structure_information(struct cfg_s *cfg, int nbp, BPAIR *bpair, ESL_MSA *msa);
-static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, int **ret_nsubs, int *ret_nbp, BPAIR **ret_bpair, int verbose);
+static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
+static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose);
 static int  write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
 static void write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose);
 
@@ -791,17 +791,21 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
 
   /* histograms for number of substitutions in basepairs and significantly covarying basepairs */
-  cfg.power    = FALSE;
+  cfg.power    = esl_opt_IsOn(go, "--power")? TRUE : FALSE;;
   cfg.hsubs_bp = NULL;
   cfg.hsubs_cv = NULL;
   cfg.subsfile = NULL;
   cfg.subsfp   = NULL;
-  if (cfg.power) {
+  if (cfg.power) { // create the power file
     cfg.hsubs_bp = esl_histogram_Create(0.0, 10000, 2);
     cfg.hsubs_cv = esl_histogram_Create(0.0, 10000, 2);
-    esl_sprintf(&cfg.subsfile, "%s.subs", cfg.outheader); 
+    esl_sprintf(&cfg.subsfile, "%s.power", cfg.outheader); 
     if ((cfg.subsfp = fopen(cfg.subsfile, "w")) == NULL) esl_fatal("Failed to open substitutions file %s", cfg.subsfile);
   }
+  //else { // read the power file
+  //  esl_sprintf(&cfg.subsfile, "../lib/%s.power", cfg.outheader); 
+  //  if ((cfg.subsfp = fopen(cfg.subsfile, "r")) == NULL) esl_fatal("Failed to open substitutions file %s", cfg.subsfile);
+  //}
   
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -887,9 +891,7 @@ main(int argc, char **argv)
       else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
       else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
     }
-    if (cfg.samplesize == SAMPLE_ALL) printf("# One-set statistical test (all pairs are tested as equivalent) \n#\n");
-    else                              printf("# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
-
+ 
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
@@ -919,7 +921,7 @@ main(int argc, char **argv)
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
 	if (wmsa == NULL) continue;
 	if (wmsa->alen <= 0) {
-	  msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
+	  msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs, cfg.samplesize, cfg.statsmethod);
 	  continue;
 	}
 
@@ -937,7 +939,7 @@ main(int argc, char **argv)
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;
       if (msa->alen == 0) {
-	msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs);
+	msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs, cfg.samplesize, cfg.statsmethod);
 	continue;
       }
 
@@ -1064,8 +1066,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
-  data.nbp           = 0;
-  data.bpair         = NULL;
+  data.spair         = NULL;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1129,7 +1130,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  char    *msg = "get_msaname failed";
+  char *msg = "get_msaname failed";
   char *type = NULL;
   char *tp;
   char *tok1;
@@ -1141,22 +1142,31 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* the msaname */
   for (t = 0; t < msa->ngf; t++) {
     if (!esl_strcmp(msa->gf_tag[t], "TP")) {
-      tp = msa->gf[t];	
       while (*tp != '\0') {
-	if (type) free(type); type = NULL;
-	if (tok) free(tok); tok = NULL;
+ 	if (type) free(type); type = NULL;
+	if (tok)  free(tok);  tok  = NULL;
 	if (esl_strtok(&tp,   ";", &tok1) != eslOK) esl_fatal(msg);
-	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);
-	esl_sprintf(&tok, "_%s", tok2);
-	esl_strcat(&type, -1, tok, -1);
+	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);       
+	if (tok2 != NULL) {	  
+	  esl_sprintf(&tok, "_%s", tok2);
+	  esl_strcat(&type, -1, tok, -1);
+	}
+	
       }
     }
   }
-  if      (msa->acc && msa->name) esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name, type);
+
+  if      (msa->acc && msa->name) esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name, type);	  
   else if (msa->name)             esl_sprintf(&cfg->msaname, "%s",              msa->name, type);
   else if (msa->acc)              esl_sprintf(&cfg->msaname, "%s",    msa->acc);
   else if (cfg->onemsa)           esl_sprintf(&cfg->msaname, "%s",    cfg->filename);
   else                            esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
+
+  // remove possible parenthesis in the name
+  if (esl_strtok(&cfg->msaname, "(", &tok1) != eslOK) esl_fatal(msg);
+  if (esl_strtok(&tok1,         ")", &tok2) != eslOK) esl_fatal(msg);       
+  esl_sprintf(&cfg->msaname, "%s_%s", tok1, tok2);
+
   if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
     free(cfg->msaname); cfg->msaname = NULL;
@@ -1170,8 +1180,9 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 }
 
 static int
-msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs)
+msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs, int samplesize, int statsmethod)
 {
+  fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
   if (omstat) 
     fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
 	    msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
@@ -1179,6 +1190,11 @@ msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpa
   else
     fprintf(fp, "# wMSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
 	    msaname, mstat->nseq, mstat->alen, mstat->avgid, nbpairs);
+
+  if (statsmethod != NAIVE) {
+    if (samplesize == SAMPLE_ALL) fprintf(fp, "# One-set statistical test (all pairs are tested as equivalent) \n");
+    else                          fprintf(fp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n");
+  }
 
   return eslOK;
 }
@@ -1467,7 +1483,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
 
-    status = run_rscape(go, cfg, shmsa, NULL, 0, NULL, NULL, NULL, &ranklist, TRUE);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     
@@ -1514,11 +1530,10 @@ rscape_banner(FILE *fp, char *progname, char *banner)
 
   if ((status = esl_FileTail(progname, FALSE, &appname)) != eslOK) return status;
 
-  if (fprintf(fp, "# %s :: %s\n", appname, banner)                                               < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(fp, "# R-scape %s (%s)\n", RSCAPE_VERSION, RSCAPE_DATE)                            < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(fp, "# %s\n", RSCAPE_COPYRIGHT)                                                    < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(fp, "# %s\n", RSCAPE_LICENSE)                                                      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(fp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# %s :: %s\n", appname, banner)                    < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# R-scape %s (%s)\n", RSCAPE_VERSION, RSCAPE_DATE) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# %s\n", RSCAPE_COPYRIGHT)                         < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# %s\n", RSCAPE_LICENSE)                           < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
 
   if (appname) free(appname);
   return eslOK;
@@ -1537,11 +1552,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   RANKLIST *ranklist_allbranch = NULL;
   ESL_MSA  *msa      = *ret_msa;
   ESL_MSA  *YSmsa    = NULL;
-  BPAIR    *bpair    = NULL;
+  SPAIR    *spair    = NULL;
   char     *outname  = NULL;
   int      *nsubs    = NULL;
-  int       has_ss = FALSE;
-  int       nbp = 0;
+  int       has_ss   = FALSE;
   int       nshuffle;
   int       analyze;
   int       status;
@@ -1570,8 +1584,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   }
   
   if (msa->nseq <= 1) {
-    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
+    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
     return eslOK; 
   }
   
@@ -1641,7 +1655,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 #endif
 
   // Print some alignment information
-  msa_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
+  msa_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
   
   /* create the MI structure */
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
@@ -1682,12 +1696,12 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
 
-  status = substitutions(cfg, msa, &nsubs, &nbp, (has_ss)?&bpair:NULL, cfg->verbose);
-  // condition on has_ss ? 
-  structure_information(cfg, nbp, bpair,  msa);
+  status = substitutions(cfg, msa, cfg->clist, &nsubs, &spair, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  // condition on has_ss ? 
+  structure_information(cfg, spair, msa);
   
-  status = run_rscape(go, cfg, msa, nsubs, nbp, bpair, ranklist_null, ranklist_aux, NULL, analyze);
+  status = run_rscape(go, cfg, msa, nsubs, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
   free(outname);
@@ -1710,7 +1724,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
-  if (bpair) free(bpair);
+  if (spair) free(spair);
 
   return eslOK;
 
@@ -1734,14 +1748,14 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
-  if (bpair) free(bpair);
+  if (spair) free(spair);
   return status;
 }
 
 
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp, BPAIR *bpair,
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *spair,
 	   RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
   char            *title    = NULL;
@@ -1769,12 +1783,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp
   
   /* print to stdout */
   if (cfg->mode != RANSS) {
-    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
-    if (cfg->samplesize == SAMPLE_ALL) fprintf(cfg->outfp,    "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
-    else                               fprintf(cfg->outfp,    "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
-    if (cfg->samplesize == SAMPLE_ALL) fprintf(cfg->outsrtfp, "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
-    else                               fprintf(cfg->outsrtfp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
+    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
+    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
 
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
@@ -1792,7 +1802,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp
       fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n",
 	      msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);
   }
-
+ 
   /* main function */
   data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
   data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
@@ -1821,8 +1831,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
-  data.nbp           = nbp;
-  data.bpair         = bpair;
+  data.spair         = spair;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1857,9 +1866,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int nbp
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR;
 
-    if (cfg->power) status = cov_Add2SubsHistogram(cfg->hsubs_cv, nsubs, hitlist, cfg->verbose);
+    if (cfg->power) status = cov_Add2SubsHistogram(cfg->hsubs_cv, hitlist, cfg->verbose);
   }
-  
+
   /* find the cykcov structure, and do the cov analysis on it */
   if (cfg->docyk && cfg->mode != RANSS && ranklist) {
 
@@ -1920,12 +1929,15 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
 }
 
 static int
-structure_information(struct cfg_s *cfg, int nbp, BPAIR *bpair, ESL_MSA *msa)
+structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
 {
   double power_avg = 0.;
-  int    bp;
+  int    dim = msa->alen * (msa->alen - 1) / 2;
+  int    nbp = 0;
+  int    n;
   
-  if (cfg->samplesize != SAMPLE_ALL)  return eslOK;
+  if (cfg->samplesize != SAMPLE_ALL) return eslOK;
+  if (spair == NULL) return eslOK;
   
   if (msa->ss_cons && cfg->pdbfile) {
     if (cfg->onlypdb) printf("# Structure obtained from the pdbfile\n");
@@ -1939,25 +1951,33 @@ structure_information(struct cfg_s *cfg, int nbp, BPAIR *bpair, ESL_MSA *msa)
     esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
   
   printf("# left_pos      right_pos    substitutions      power\n");
-  printf("#--------------------------------------------------------\n");
-  for (bp = 0; bp < nbp; bp ++)
-    printf("# %lld\t\t%lld\t\t%lld\t\t%f\n", bpair[bp].i, bpair[bp].j, bpair[bp].nsubs, bpair[bp].power);
+  printf("#---------------------------------------------------------------------------\n");
+  for (n = 0; n < dim; n ++)
+    if (spair[n].bptype == WWc) {
+      nbp ++;
+      printf("# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+    }
+  
   printf("#\n# BPAIRS %d\n", nbp);
   printf("# expected significanly covarying basepairs %f\n", power_avg);
   printf("# \n");
-
+  
   return eslOK;
 }
 
 static int
-substitutions(struct cfg_s *cfg, ESL_MSA *msa, int **ret_nsubs, int *ret_nbp, BPAIR **ret_bpair, int verbose)
+substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
 {
-  int    *nsubs = NULL;
-  BPAIR *bpair  = NULL;
-  int    nbp    = 0;
-  int    i, j;
-  int    status;
+  int     *nsubs = NULL;
+  SPAIR   *spair = NULL;
+  int64_t  dim   = msa->alen * (msa->alen-1) / 2;
+  int64_t  n     = 0;
+  int      i, j;
+  int      c;
+  int      status;
 
+  if (cfg->T == NULL) return eslOK;
+  
   status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
@@ -1966,35 +1986,44 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, int **ret_nsubs, int *ret_nbp, BP
       printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
   }
 
-  if (ret_bpair) {
-    ESL_ALLOC(bpair, sizeof(BPAIR));
+  if (ret_spair) {
+    ESL_ALLOC(spair, sizeof(SPAIR) * dim);
     for (i = 0; i < msa->alen-1; i ++) 
       for (j = i+1; j < msa->alen; j ++) {
-	
-	if (cfg->ct[i+1] == j+1) {
-	  if (nbp > 0) ESL_REALLOC(bpair, sizeof(BPAIR) * (nbp+1));
-	  
-	  bpair[nbp].i     = cfg->msamap[i]+1;
-	  bpair[nbp].j     = cfg->msamap[j]+1;
-	  bpair[nbp].nsubs = nsubs[i] + nsubs[j];
-	  bpair[nbp].power = 0.;
 
-	  if (cfg->power) esl_histogram_Add(cfg->hsubs_bp, (double)bpair[nbp].nsubs);
-	  nbp ++;
+	spair[n].i      = cfg->msamap[i]+1;
+	spair[n].j      = cfg->msamap[j]+1;
+	spair[n].nsubs  = nsubs[i] + nsubs[j];
+	spair[n].power  = 0.;
+	spair[n].bptype = BPNONE;	
+
+	if (clist) {
+	  for (c = 0; c < clist->ncnt; c++) {
+	    if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
+	      spair[n].bptype = clist->cnt[c].bptype;
+	      break;
+	    }
+	  }
 	}
-    }
+	
+	if (spair[n].bptype == WWc) {
+	  if (cfg->power) esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
+	  if (1||verbose) printf("WWc: %lld-%lld nsubs %lld\n", spair[n].i, spair[n].j, spair[n].nsubs);
+	}
+	
+	n ++;
+      }
     
-    if (verbose) esl_histogram_Write(stdout, cfg->hsubs_bp);
+    if ((1||verbose) && cfg->power) esl_histogram_Write(stdout, cfg->hsubs_bp);
   }
   
   if (ret_nsubs) *ret_nsubs = nsubs;
-  if (ret_nbp)   *ret_nbp   = nbp;
-  if (ret_bpair) *ret_bpair = bpair;
+  if (ret_spair) *ret_spair = spair;
   return eslOK;
 
  ERROR:
   if (nsubs)     free(nsubs);
-  if (ret_bpair) free(bpair);
+  if (ret_spair) free(spair);
   return status;
 }
 
@@ -2047,6 +2076,8 @@ write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *
       
       if (hsubs_bp->obs[i] > 0) {
 	fsubs = (double) hsubs_cv->obs[i] / (double) hsubs_bp->obs[i];
+	if (fsubs > 1.) esl_fatal("error writing power function");
+	printf("%f %f %lld %lld\n", x, fsubs, hsubs_bp->obs[i], hsubs_cv->obs[i]);
 	fprintf(fp, "%f %f\n", x, fsubs);
       } 
     }

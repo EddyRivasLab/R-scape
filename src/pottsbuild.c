@@ -220,7 +220,6 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
   double   sum;
   int      i, j;
   int      a, b;
-  int      status;
 
   for (i = 0; i < pt->L; i++) {
     
@@ -299,9 +298,6 @@ potts_GaugeZeroSum(PT *pt, char *errbuf, int verbose)
 #endif
   
   return eslOK;
-
- ERROR:
-  return status;
 }
 
 int
@@ -311,7 +307,6 @@ potts_InitZero(PT *pt, char *errbuf, int verbose)
   int Kg = pt->Kg;
   int i, j;
   int a, b;
-  int status;
   
   for (i = 0; i < L; i++) {
     esl_vec_DSet(pt->h[i], pt->Kg, 0.0);
@@ -323,9 +318,6 @@ potts_InitZero(PT *pt, char *errbuf, int verbose)
   }
 
   return eslOK;
-
- ERROR:
-  return status;
 }
 
 int
@@ -383,7 +375,6 @@ potts_InitGremlin(ESL_RANDOMNESS *r, ESL_MSA *msa, PT *pt, double tol, char *err
   int      resi;
   int      a;
   int      status;
-  double   sum;
 
   // calculate frequecies per position pi
   ESL_ALLOC(p,    sizeof(double *)*L);
@@ -607,6 +598,7 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
   
   switch(pt->mintype) {
   case MINNONE:
+    status = eslOK;
       break;
   case CGD_WOLFE:
     status = min_ConjugateGradientDescent(p, u, np,
@@ -903,7 +895,6 @@ optimize_plm_pack_paramvector(double *p, int np, struct optimize_data *data)
 {
   int   L   = data->msa->alen;
   int   Kg  = data->pt->Kg;
-  int   Kg2 = data->pt->Kg2;
   int   x   = 0;
   int   i, j;
   int   a, b;
@@ -925,7 +916,6 @@ optimize_plm_pack_gradient(double *dx, int np, struct optimize_data *data)
 {
   int   L   = data->msa->alen;
   int   Kg  = data->pt->Kg;
-  int   Kg2 = data->pt->Kg2;
   int   x   = 0;
   int   i, j;
   int   a, b;
@@ -985,13 +975,11 @@ optimize_aplm_pack_gradient(double *dx, int np, struct optimize_data *data)
 static int
 optimize_plm_unpack_paramvector(double *p, int np, struct optimize_data *data)
 {
-  double eij, eji;
   int    L  = data->msa->alen;
   int    Kg = data->pt->Kg;
   int    x  = 0;
   int    i, j;
   int    a, b;
-  int    status;
   
   for (a = 0; a < Kg; a++)
     for (i = 0; i < L; i++) 
@@ -1004,9 +992,6 @@ optimize_plm_unpack_paramvector(double *p, int np, struct optimize_data *data)
        	  data->pt->e[i][j][IDX(a,b,Kg)] = data->pt->e[j][i][IDX(b,a,Kg)] = p[x++];
   
   return eslOK;
-  
- ERROR:
-  return status;
 }
 
 static int
@@ -1019,7 +1004,6 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
   int    i   = data->pos;
   int    j;
   int    a, a2;
-  int    status;
   
   for (a = 0; a < Kg; a++)       data->pt->h[i][a]     = p[x++];
   for (j = 0;   j < i; j++) 
@@ -1028,9 +1012,6 @@ optimize_aplm_unpack_paramvector(double *p, int np, struct optimize_data *data)
     for (a2 = 0; a2 < Kg2; a2++) data->pt->e[i][j][a2] = p[x++];
 
   return eslOK;
-
- ERROR:
-  return status;
 }
 
 static void

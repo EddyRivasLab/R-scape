@@ -14,7 +14,7 @@
 
 #include "rview_contacts.h"
 
-typedef struct bpair_s {
+typedef struct spair_s {
   int64_t i;
   int64_t j;
   
@@ -23,15 +23,15 @@ typedef struct bpair_s {
 
   BPTYPE  bptype;
   
-} BPAIR;
+} SPAIR;
 
 
-extern int    ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
-			 int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
-			 double contD, int cntmind, int onlypdb, char *errbuf, int verbose);
-extern int    ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb);
-extern int    ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
-				 double cntmaxD, int cntmind, char *errbuf, int verbose);
+extern int ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
+		      int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
+		      double contD, int cntmind, int onlypdb, char *errbuf, int verbose);
+extern int ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb);
+extern int ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
+			      double cntmaxD, int cntmind, char *errbuf, int verbose);
 #endif /*CONTACTMAP_INCLUDED*/
 
 /************************************************************

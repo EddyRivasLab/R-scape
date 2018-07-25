@@ -13,7 +13,7 @@
 #include "esl_tree.h"
 
 extern int       Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose);
-extern int       Tree_CreateExtFile(const ESL_MSA *msa, char *tmptreefile, char *errbuf, int verbose);
+extern int       Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int verbose);
 extern int       Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, char *errbuf, int verbose);
 extern int       Tree_GetNodeTime(int node, ESL_TREE *T, double *ret_meantime, double *ret_mintime, double *ret_maxtime, char *errbuf, int verbose);
 extern int       Tree_InterLeafMaxDistRooted(ESL_TREE *T, double *ret_time, char *errbuf, int verbose);

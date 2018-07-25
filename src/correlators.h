@@ -28,9 +28,6 @@ typedef enum {
   SAMPLE_ALL      = 3, // Use all pair combinations as sample sice
 } SAMPLESIZE;
 
-
-
-
 typedef enum {
   C16      = 0,
   C2       = 1,
@@ -198,8 +195,7 @@ struct data_s {
   int                  nbpairs;
   int                  nbpairs_cyk;
   int                 *nsubs;
-  int                  nbp;
-  BPAIR               *bpair;
+  SPAIR               *spair;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;

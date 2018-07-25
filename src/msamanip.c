@@ -1213,7 +1213,7 @@ msamanip_ShuffleWithinRow(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa,
 	for (i = 0; i < msa->alen; i++) if (useme[i] == TRUE) { colidx[c] = i; c++; }
 	ESL_ALLOC(perm,  sizeof(int) * alen);
 	
-	for (c = 0; c < alen; i ++) perm[c] = c;
+	for (c = 0; c < alen; c ++) perm[c] = c;
  	if ((status = esl_vec_IShuffle(r, perm, alen)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize perm");
 
 	c = 0;
@@ -1369,7 +1369,6 @@ esl_msaweight_Gremlin(ESL_MSA *msa, double reweight_thresh, int isplmDCA, char *
   int          nsq = msa->nseq;
   int          L   = msa->alen;
   int          K   = msa->abc->K;
-  int          Kg  = K+1;
   int          s1, s2;
   int          res1i, res2i;
   int          i;
