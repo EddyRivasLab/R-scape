@@ -30,6 +30,7 @@
 #include "covgrammars.h"
 #include "pottsbuild.h"
 #include "plot.h"
+#include "power.h"
 #include "ribosum_matrix.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
@@ -44,8 +45,7 @@
 --OMES,--OMESa,--OMESp,\
 --RAF,--RAFa,--RAFp,\
 --RAFS,--RAFSa,--RAFSp,\
---CCF,--CCFp,--CCFa,\
-"              
+--CCF,--CCFp,--CCFa"
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"              
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc"
@@ -214,11 +214,16 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              nofigures;
 
-  int              power;      // TRUE to train the create the power plot
-  ESL_HISTOGRAM   *hsubs_bp;   // histogram of # of substitutions in basepairs
-  ESL_HISTOGRAM   *hsubs_cv;   // histogram of # of substitutions in significantly covarying basepairs
+  int              power_train;    // TRUE to train the create the power plot
+  ESL_HISTOGRAM   *hsubs_pr;       // histogram of # of substitutions in paired residues
+  ESL_HISTOGRAM   *hsubs_ur;       // histogram of # of substitutions in unpaired residues
+  ESL_HISTOGRAM   *hsubs_bp;       // histogram of # of substitutions in basepairs
+  ESL_HISTOGRAM   *hsubs_cv;       // histogram of # of substitutions in significantly covarying basepairs
+  char            *powerfile;
   char            *subsfile;
+  FILE            *powerfp;
   FILE            *subsfp;
+  POWER           *power;
   
   float            tol;
   int              verbose;
@@ -340,7 +345,8 @@ static ESL_OPTIONS options[] = {
   { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* expert */  
-  { "--power",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "substitutions power to file <f>",                                                           1 },
+  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",
+       1 },
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
@@ -369,9 +375,8 @@ static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANK
 static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *spair,
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
-static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose);
+static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose);
 static int  write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
-static void write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -615,7 +620,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     
     if (!cfg.abcisRNA) cfg.gapthresh = 1.0;        // don't touch alignment for proteins
     cfg.idthresh  = 1.0;
-
     cfg.tol       = 1e-6;
   }
   // plmDCA defaults (not implemented
@@ -791,21 +795,35 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
 
   /* histograms for number of substitutions in basepairs and significantly covarying basepairs */
-  cfg.power    = esl_opt_IsOn(go, "--power")? TRUE : FALSE;;
-  cfg.hsubs_bp = NULL;
-  cfg.hsubs_cv = NULL;
-  cfg.subsfile = NULL;
-  cfg.subsfp   = NULL;
-  if (cfg.power) { // create the power file
-    cfg.hsubs_bp = esl_histogram_Create(0.0, 10000, 2);
-    cfg.hsubs_cv = esl_histogram_Create(0.0, 10000, 2);
-    esl_sprintf(&cfg.subsfile, "%s.power", cfg.outheader); 
-    if ((cfg.subsfp = fopen(cfg.subsfile, "w")) == NULL) esl_fatal("Failed to open substitutions file %s", cfg.subsfile);
+  cfg.power_train = FALSE;
+  cfg.powerfile   = NULL;
+  cfg.subsfile    = NULL;
+  cfg.powerfp     = NULL;
+  cfg.subsfp      = NULL;
+  cfg.hsubs_pr    = NULL;
+  cfg.hsubs_ur    = NULL;
+  cfg.hsubs_bp    = NULL;
+  cfg.hsubs_cv    = NULL;
+  cfg.power       = NULL;
+
+  if (esl_opt_IsOn(go, "--power")) { // create the power file
+    cfg.power_train = TRUE;
+    
+    esl_sprintf(&cfg.powerfile, "%s.power", esl_opt_GetString(go, "--power"));
+    esl_sprintf(&cfg.subsfile,  "%s.subs",  esl_opt_GetString(go, "--power"));
+    if ((cfg.powerfp = fopen(cfg.powerfile, "w")) == NULL) esl_fatal("Failed to open power file %s", cfg.powerfile);
+    if ((cfg.subsfp  = fopen(cfg.subsfile,  "w")) == NULL) esl_fatal("Failed to open subs  file %s", cfg.subsfile);
+
+    // histograms for substitutions in basepairs and significantly covarying basepairs
+    cfg.hsubs_pr = esl_histogram_Create(0.0, 10000, 1);
+    cfg.hsubs_ur = esl_histogram_Create(0.0, 10000, 1);
+    cfg.hsubs_bp = esl_histogram_Create(0.0, 10000, 1);
+    cfg.hsubs_cv = esl_histogram_Create(0.0, 10000, 1);
+   }
+  else { // read the power file
+    esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.csv", RSCAPE_BIN);
+    power_Read(cfg.powerfile, &cfg.power, cfg.errbuf, cfg.verbose);
   }
-  //else { // read the power file
-  //  esl_sprintf(&cfg.subsfile, "../lib/%s.power", cfg.outheader); 
-  //  if ((cfg.subsfp = fopen(cfg.subsfile, "r")) == NULL) esl_fatal("Failed to open substitutions file %s", cfg.subsfile);
-  //}
   
   *ret_go  = go;
   *ret_cfg = cfg;
@@ -837,7 +855,9 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   char            *omsaname = NULL;
-  char            *subspdf  = NULL;
+  char            *powerpdf = NULL;
+  char            *subspdf = NULL;
+  char            *subshisfile[2];
   ESL_MSAFILE     *afp   = NULL;
   ESL_MSA         *msa   = NULL;           /* the input alignment    */
   ESL_MSA         *wmsa  = NULL;           /* the window alignment   */
@@ -858,7 +878,7 @@ main(int argc, char **argv)
 
   /* read the MSA */
   while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
-    if (hstatus != eslOK) { printf("%s\n", afp->errmsg) ; esl_msafile_ReadFailure(afp, hstatus); }
+    if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
@@ -878,7 +898,7 @@ main(int argc, char **argv)
       
       // if msa does not include a ss_cons structure (or a pdffile is not provided, we cannot apply this option
       if (cfg.abcisRNA) {
-	if (!msa->ss_cons && cfg.pdbfile == NULL)
+	if (!cfg.omsa->ss_cons && cfg.pdbfile == NULL)
 	  esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
       }
       else if (cfg.pdbfile == NULL)
@@ -960,17 +980,30 @@ main(int argc, char **argv)
   }
 
   // the substitution histograms
-  if (cfg.power) {
-    if (cfg.verbose) write_substitution_histograms(stdout, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
-    write_substitution_histograms(cfg.subsfp, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+  if (cfg.power_train) {
+    if (cfg.verbose) power_WriteFromHistograms(stdout, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+    power_WriteFromHistograms(cfg.powerfp, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+    fclose(cfg.powerfp);
+
+    esl_histogram_Plot(cfg.subsfp, cfg.hsubs_pr);
+    esl_histogram_Plot(cfg.subsfp, cfg.hsubs_ur);
     fclose(cfg.subsfp);
+
+    esl_sprintf(&subshisfile[0], "%s.pair_resf",  cfg.subsfile);
+    esl_sprintf(&subshisfile[1], "%s.unpair_res", cfg.subsfile);
+    plot_write_Histogram(subshisfile[0], cfg.hsubs_pr);
+    plot_write_Histogram(subshisfile[1], cfg.hsubs_ur);
+
     esl_sprintf(&subspdf, "%s.pdf", cfg.subsfile);
+    plot_gplot_Histogram(cfg.gnuplot, subspdf, 2, subshisfile, "number of substitutions", FALSE, cfg.errbuf, cfg.verbose);
+    free(subspdf);
+    
+    esl_sprintf(&powerpdf, "%s.pdf", cfg.powerfile);
     if (cfg.hsubs_bp->n > 0) {
-      status = plot_gplot_XYfile(cfg.gnuplot, subspdf, cfg.subsfile, "number of substitutions in basepairs", "fraction of covarying basepairs", cfg.errbuf);
+      status = plot_gplot_XYfile(cfg.gnuplot, powerpdf, cfg.powerfile, 1, 2, "number of substitutions in basepairs", "fraction of covarying basepairs", cfg.errbuf);
       if (status != eslOK) printf("%s\n", cfg.errbuf);
     }
-    fclose(cfg.subsfp);
-    free(subspdf);
+    free(powerpdf);
   }
   
   /* cleanup */
@@ -1011,9 +1044,13 @@ main(int argc, char **argv)
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
   if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
+  if (cfg.hsubs_pr) esl_histogram_Destroy(cfg.hsubs_pr);
+  if (cfg.hsubs_ur) esl_histogram_Destroy(cfg.hsubs_ur);
   if (cfg.hsubs_bp) esl_histogram_Destroy(cfg.hsubs_bp);
   if (cfg.hsubs_cv) esl_histogram_Destroy(cfg.hsubs_cv);
+  if (cfg.powerfile) free(cfg.powerfile);
   if (cfg.subsfile) free(cfg.subsfile);
+  if (cfg.power) power_Destroy(cfg.power);
   return 0;
 }
 
@@ -1062,7 +1099,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
-  data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
@@ -1132,41 +1169,49 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   char *msg = "get_msaname failed";
   char *type = NULL;
-  char *tp;
-  char *tok1;
-  char *tok2;
-  char *tok = NULL;
+  char *tok1 = NULL;
+  char *tok2 = NULL;
+  char *tok  = NULL;
   char *submsaname = NULL;
+  char *tp;
+  int   n;
+  int   i;
   int   t;
   
   /* the msaname */
-  for (t = 0; t < msa->ngf; t++) {
+  for (t = 0; t < msa->ngf; t++) 
     if (!esl_strcmp(msa->gf_tag[t], "TP")) {
+      tp = msa->gf[t];
+
+      //join all atributes together
       while (*tp != '\0') {
- 	if (type) free(type); type = NULL;
 	if (tok)  free(tok);  tok  = NULL;
 	if (esl_strtok(&tp,   ";", &tok1) != eslOK) esl_fatal(msg);
-	if (esl_strtok(&tok1, " ", &tok2) != eslOK) esl_fatal(msg);       
-	if (tok2 != NULL) {	  
-	  esl_sprintf(&tok, "_%s", tok2);
-	  esl_strcat(&type, -1, tok, -1);
-	}
-	
-      }
-    }
-  }
+	if (tok1 != NULL) {
+	  esl_strtok(&tok1, " ", &tok2);  
+	  if (tok2 != NULL) {
 
+	    esl_sprintf(&tok, "_%s", tok2);
+	    esl_strcat(&type, -1, tok, -1);
+	  }
+	}
+      }
+      
+    }
+  
   if      (msa->acc && msa->name) esl_sprintf(&cfg->msaname, "%s_%s", msa->acc, msa->name, type);	  
   else if (msa->name)             esl_sprintf(&cfg->msaname, "%s",              msa->name, type);
   else if (msa->acc)              esl_sprintf(&cfg->msaname, "%s",    msa->acc);
   else if (cfg->onemsa)           esl_sprintf(&cfg->msaname, "%s",    cfg->filename);
   else                            esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
-
+  
   // remove possible parenthesis in the name
-  if (esl_strtok(&cfg->msaname, "(", &tok1) != eslOK) esl_fatal(msg);
-  if (esl_strtok(&tok1,         ")", &tok2) != eslOK) esl_fatal(msg);       
-  esl_sprintf(&cfg->msaname, "%s_%s", tok1, tok2);
-
+  n = strlen(cfg->msaname);
+  for (i = 0; i < n; i ++)
+    if (cfg->msaname[i] == '(') cfg->msaname[i] = '_';
+  for (i = 0; i < n; i ++)
+    if (cfg->msaname[i] == ')') cfg->msaname[i] = '_';
+  
   if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
     free(cfg->msaname); cfg->msaname = NULL;
@@ -1696,7 +1741,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
 
-  status = substitutions(cfg, msa, cfg->clist, &nsubs, &spair, cfg->verbose);
+  status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs, &spair, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   // condition on has_ss ? 
   structure_information(cfg, spair, msa);
@@ -1827,7 +1872,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
   data.covmethod     = cfg->covmethod;
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
-  data.hasss         = (msa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
@@ -1866,7 +1911,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR;
 
-    if (cfg->power) status = cov_Add2SubsHistogram(cfg->hsubs_cv, hitlist, cfg->verbose);
+    if (cfg->power_train) status = cov_Add2SubsHistogram(cfg->hsubs_cv, hitlist, cfg->verbose);
   }
 
   /* find the cykcov structure, and do the cov analysis on it */
@@ -1931,48 +1976,57 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
 static int
 structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
 {
-  double power_avg = 0.;
+  double expect = 0.;
+  double avgsub = 0;
   int    dim = msa->alen * (msa->alen - 1) / 2;
   int    nbp = 0;
   int    n;
   
-  if (cfg->samplesize != SAMPLE_ALL) return eslOK;
+  //if (cfg->samplesize != SAMPLE_ALL) return eslOK;
   if (spair == NULL) return eslOK;
-  
-  if (msa->ss_cons && cfg->pdbfile) {
+
+  if (cfg->omsa->ss_cons && cfg->pdbfile) {
     if (cfg->onlypdb) printf("# Structure obtained from the pdbfile\n");
     else printf("# Structure obtained from the msa and the pdbfile\n");
   }
-  else if (msa->ss_cons)
+  else if (cfg->omsa->ss_cons)
     printf("# Structure obtained from the msa\n");
   else if (cfg->pdbfile)
       printf("# Structure obtained from the pdbfile\n");
-  else 
-    esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
+  else
+    return eslOK;
   
   printf("# left_pos      right_pos    substitutions      power\n");
   printf("#---------------------------------------------------------------------------\n");
   for (n = 0; n < dim; n ++)
     if (spair[n].bptype == WWc) {
       nbp ++;
+      expect += spair[n].power;
+      avgsub +=spair[n].nsubs;
       printf("# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
-  
+  avgsub /= (nbp > 0)? nbp : 1;
   printf("#\n# BPAIRS %d\n", nbp);
-  printf("# expected significanly covarying basepairs %f\n", power_avg);
+  printf("# avg substitutions per BP %.1f\n", avgsub);
+  printf("# BPAIRS expected covary %.1f\n", expect);
   printf("# \n");
+  
   
   return eslOK;
 }
 
 static int
-substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
+substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
 {
   int     *nsubs = NULL;
   SPAIR   *spair = NULL;
+  double   prob;
   int64_t  dim   = msa->alen * (msa->alen-1) / 2;
-  int64_t  n     = 0;
+  int64_t  subs;
+  int64_t  n = 0;
+  int64_t  s;
   int      i, j;
+  int      ipos;
   int      c;
   int      status;
 
@@ -1980,23 +2034,45 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SP
   
   status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
+  
   if (cfg->verbose) {
     for (i = 0; i < msa->alen; i ++) 
       printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
   }
 
+  // histograms of nsubs for paired/unpaired residues
+  if (cfg->power_train && clist) {
+    for (i = 0; i < msa->alen-1; i ++) {      
+      ipos = cfg->msamap[i]+1;
+      for (c = 0; c < clist->ncnt; c++) {
+	if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) 
+	  esl_histogram_Add(cfg->hsubs_pr, (double)(nsubs[i]+1));
+	else 
+	  esl_histogram_Add(cfg->hsubs_ur, (double)(nsubs[i]+1));       
+      }      
+    }
+  }
+  
   if (ret_spair) {
     ESL_ALLOC(spair, sizeof(SPAIR) * dim);
     for (i = 0; i < msa->alen-1; i ++) 
       for (j = i+1; j < msa->alen; j ++) {
 
+	subs            = nsubs[i] + nsubs[j];
 	spair[n].i      = cfg->msamap[i]+1;
 	spair[n].j      = cfg->msamap[j]+1;
-	spair[n].nsubs  = nsubs[i] + nsubs[j];
+	spair[n].nsubs  = subs;
 	spair[n].power  = 0.;
 	spair[n].bptype = BPNONE;	
 
+	if (power) {
+	  for (s = 0; s < power->ns; s ++) {
+	    if (subs > power->subs[s]) prob = power->prob[s];
+	    else break;
+	  }
+	  spair[n].power = prob;
+	}
+	
 	if (clist) {
 	  for (c = 0; c < clist->ncnt; c++) {
 	    if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
@@ -2007,14 +2083,18 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, CLIST *clist, int **ret_nsubs, SP
 	}
 	
 	if (spair[n].bptype == WWc) {
-	  if (cfg->power) esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
-	  if (1||verbose) printf("WWc: %lld-%lld nsubs %lld\n", spair[n].i, spair[n].j, spair[n].nsubs);
+	  if (cfg->power_train) esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
+	  if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
 	}
 	
 	n ++;
       }
     
-    if ((1||verbose) && cfg->power) esl_histogram_Write(stdout, cfg->hsubs_bp);
+    if ((1||verbose) && cfg->power_train) {
+      esl_histogram_Write(stdout, cfg->hsubs_pr);
+      esl_histogram_Write(stdout, cfg->hsubs_ur);
+      esl_histogram_Write(stdout, cfg->hsubs_bp);
+    }
   }
   
   if (ret_nsubs) *ret_nsubs = nsubs;
@@ -2058,27 +2138,3 @@ write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
   return status;
 }
 
-static void
-write_substitution_histograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose)
-{
-  int            i;
-  double         x;
-  double         fsubs;
-
-  if (verbose) {
-    esl_histogram_Plot(stdout, hsubs_bp);
-    esl_histogram_Plot(stdout, hsubs_cv);
-  }
-
-  for (i = hsubs_bp->imin; i <= hsubs_bp->imax; i++)
-    {
-      x = esl_histogram_Bin2LBound(hsubs_bp,i);
-      
-      if (hsubs_bp->obs[i] > 0) {
-	fsubs = (double) hsubs_cv->obs[i] / (double) hsubs_bp->obs[i];
-	if (fsubs > 1.) esl_fatal("error writing power function");
-	printf("%f %f %lld %lld\n", x, fsubs, hsubs_bp->obs[i], hsubs_cv->obs[i]);
-	fprintf(fp, "%f %f\n", x, fsubs);
-      } 
-    }
-}

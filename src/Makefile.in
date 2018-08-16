@@ -135,6 +135,7 @@ OBJS     = e1_bg.o\
            ncbiblast.o\
            orthologs.o\
            plot.o\
+	   power.o\
            pottsbuild.o\
            pottsscore.o\
 	   pottsim.o\

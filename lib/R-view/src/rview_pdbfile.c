@@ -750,7 +750,7 @@ void
 rview_pdbx_Write(FILE *fp, PDBX *pdbx, int verbose)
 {
   int c;
-  fprintf(fp, "\nPDB:        %s\n", pdbx->pdbname);
+  fprintf(fp, "\nPDB:      %s\n", pdbx->pdbname);
   fprintf(fp, "method:     %s\n", pdbx->method);
   fprintf(fp, "resolution: %f %f\n", pdbx->res_low, pdbx->res_high); 
   fprintf(fp, "nsequences: %d\n", pdbx->nsq);

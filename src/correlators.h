@@ -100,6 +100,16 @@ typedef enum {
   RANSS = 2,
 } MODE;
 
+typedef struct spair_s {
+  int64_t i;
+  int64_t j;
+  
+  int64_t nsubs;
+  double  power;
+
+  BPTYPE  bptype;
+  
+} SPAIR;
 
 struct mutual_s {
   int64_t         alen;

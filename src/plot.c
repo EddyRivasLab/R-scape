@@ -46,8 +46,7 @@ plot_write_Histogram(char *hisfile, ESL_HISTOGRAM *h)
   
   if ((hisfp = fopen(hisfile, "a+")) == NULL) { printf("failed to open %s\n", hisfile); status = eslFAIL; goto ERROR;  }
   fprintf(hisfp, "#\t%f\t%f\n", (double)h->n, (double)h->w);
-  esl_histogram_Plot(hisfp, h);
-  fclose(hisfp);
+  esl_histogram_Plot(hisfp, h);  fclose(hisfp);
   
   return eslOK;
 
@@ -56,7 +55,7 @@ plot_write_Histogram(char *hisfile, ESL_HISTOGRAM *h)
 }
 
 int
-plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char *xlabel, char *errbuf)
+plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char *xlabel, int samerange, char *errbuf, int verbose)
 {
   char           *psfile = NULL;
   ESL_FILEPARSER *efp = NULL;
@@ -75,7 +74,7 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
   int             status;
   
   psfile = plot_file_psfilename(pdffile);
-  printf("PSFILE %s\n", psfile);
+  if (verbose) printf("PSFILE %s\n", psfile);
 
   pipe = popen(gnuplot, "w");
 
@@ -113,9 +112,11 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
      }
    esl_fileparser_Close(efp); efp = NULL;
   }
-  
-  fprintf(pipe, "set xrange [%f:%f]\n", 0.0, max_xtot+max_xtot/50); 
-  fprintf(pipe, "set yrange [%d:%d]\n", 0,   max_ytot);
+
+  if (samerange) {
+    fprintf(pipe, "set yrange [%d:%d]\n", 0,   max_ytot);
+  }
+  fprintf(pipe, "set xrange [%f:%f]\n", 0.0, max_xtot+max_xtot/50);
   
   /* plot the histogram */
   for (f = 0; f < Nf; f ++) {
@@ -159,7 +160,7 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
  
   pclose(pipe);
 
-  plot_file_ps2pdf(psfile, errbuf);
+  //plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
   if (st)  free(st);
@@ -174,7 +175,7 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
  }
 
 int
-plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *ylabel, char *errbuf)
+plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfield, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
   ESL_FILEPARSER *efp    = NULL;
@@ -241,7 +242,7 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, char *xlabel, char *
       if (esl_fileparser_GetTokenOnLine(efp, &tok1,  NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);
       
       fprintf(pipe, "set title '%s'\n", key);
-      fprintf(pipe, "plot '-' u 1:2 with points ls %d\n", style);
+      fprintf(pipe, "plot '-' u %d:%d with points ls %d\n", xfield, yfield, style);
       if (strcmp(tok1, "#") == 0)  continue;
       
       if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);	
@@ -1621,7 +1622,7 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
   
 /* need to go back to the un-binned data file to do this properly */
 int 
-plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, float bintime, float tlinear, char *xlabel, char *ylabel, char *errbuf)
+plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, float bintime, float tlinear, char *xlabel, char *ylabel, char *errbuf, int verbose)
 {
   char           *psfile = NULL;
   ESL_FILEPARSER *efp = NULL;
@@ -1815,7 +1816,7 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
     esl_sprintf(&jhisfile, "%s.joint.histo", ratefile[f]);
     esl_sprintf(&jhisps, "%s.ps", jhisfile);
     plot_write_Histogram(jhisfile, h);
-    plot_gplot_Histogram(gnuplot, jhisps, 1, &jhisfile, "MYA", errbuf);
+    plot_gplot_Histogram(gnuplot, jhisps, 1, &jhisfile, "MYA", TRUE, errbuf, verbose);
      
     style += 2;
     if (style > 7) style = 1;  

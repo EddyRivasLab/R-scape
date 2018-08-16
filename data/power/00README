@@ -1,0 +1,70 @@
+ER, Sat Jul 28 13:11:50 CEST 2018
+
+detection power file for R-scape
+R-scape.power.csv
+
+to create a power file
+
+cd data/power
+~/src/src/mysource/bin/R-scape -s --power Rfam.13.0.ss.power.1    ~/projects/R-scape/data/rfam/rfam13.0/Rfam.seed > Rfam.13.0.seed.ss.out
+~/src/src/mysource/bin/R-scape    --power Rfam.13.0.noss,power.1  ~/projects/R-scape/data/rfam/rfam13.0/Rfam.seed > Rfam.13.0.seed.noss.out
+
+
+~/src/src/mysource/scripts/rank_by_F.pl  Rfam.13.0.seed.ss.out >  Rfam.13.0.seed.ss.rank
+
+
+
+Rfam.13.0.power.1 // using a histogram bin = 1 (substituions)
+Rfam.13.0.power.5 // using a histogram bin = 5 (subsitutions)
+
+
+FI
+---
+python script:                ~/src/src/myource/R-scape_power.ipynb
+fits:                         data/power/Rfam.13.0.power.1
+to a polynomial to create:    data/power/R-scape.power.csv
+
+
+
+investigating outlayers in data/power/Rfam.13.0.power.1
+--------------------------------------------------------
+
+basepair with many substitutions but low R-scape significance
+
+
+---------------------------------------------------------------------------------
+Rfam14.0
+    87 families with crystal structure: Rfam14.0.3D.families
+					Rfam14.0.3D.families.acc
+					Rfam.14.0.seed.3D.sto
+---------------------------------------------------------------------------------
+~/projects/R-scape/data/rfam/rfam14.0/Rfam14.0.3D.families
+
+~/src/src/mysource/lib/hmmer/easel/miniapps/esl-afetch -f ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed Rfam14.0.3D.families.acc > Rfam.14.0.seed.3D.sto
+
+cd ~/src/src/mysource/data/power
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed       ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.rscape
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D    Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.rscape
+
+~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.rscape    >  Rfam.14.0.seed.rank
+~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.3D.rscape >  Rfam.14.0.seed.3D.rank
+
+FIT
+---
+python script:                ~/src/src/myource/R-scape_power.ipynb
+fits:                         data/power/Rfam.14.0.seed.power
+fits:                         data/power/Rfam.14.0.seed.3D.power
+to a polynomial to create:    data/power/R-scape.power.csv
+
+ln -s data/power/Rfam.14.0.seed.power data/power/R-scape.power.csv
+
+
+
+87 families with crystal structure
+-----------------------------------
+Rfam14.0.3D.families
+
+
+~/src/src/mysource/scripts/power_plot.pl -F Rfam14.0.3D.families Rfam.14.0.seed.ss.rank
+
+

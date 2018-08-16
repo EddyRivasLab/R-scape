@@ -14,17 +14,6 @@
 
 #include "rview_contacts.h"
 
-typedef struct spair_s {
-  int64_t i;
-  int64_t j;
-  
-  int64_t nsubs;
-  double  power;
-
-  BPTYPE  bptype;
-  
-} SPAIR;
-
 
 extern int ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
 		      int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb,
