@@ -49,22 +49,31 @@ cd ~/src/src/mysource/data/power
 ~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.rscape    >  Rfam.14.0.seed.rank
 ~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.3D.rscape >  Rfam.14.0.seed.3D.rank
 
+
+----------------------------------------------------------------------------
 FIT
----
+R-scape.power.csv used by R-scape 
+----------------------------------------------------------------------------
 python script:                ~/src/src/myource/R-scape_power.ipynb
 fits:                         data/power/Rfam.14.0.seed.power
-fits:                         data/power/Rfam.14.0.seed.3D.power
-to a polynomial to create:    data/power/R-scape.power.csv
+                              data/power/Rfam.14.0.seed.3D.power
+to a polynomial to create:    data/power/Rfam.14.0.seed.power.csv
+                              data/power/Rfam.14.0.seed.3D.power.csv
 
-ln -s data/power/Rfam.14.0.seed.power data/power/R-scape.power.csv
-
-
-
-87 families with crystal structure
------------------------------------
-Rfam14.0.3D.families
+cd ~/src/src/mysource/data/power
+ln -s Rfam.14.0.seed.3D.power.csv R-scape.power.csv
 
 
-~/src/src/mysource/scripts/power_plot.pl -F Rfam14.0.3D.families Rfam.14.0.seed.ss.rank
 
+
+----------------------------------------------------------------------------
+further analysis
+----------------------------------------------------------------------------
+
+~/src/src/mysource/scripts/power_plot.pl Rfam.14.0.seed.rank
+~/src/src/mysource/scripts/power_plot.pl Rfam.14.0.seed.3D.rank
+
+
+further_analysis.pl Rfam.14.0.seed.rscape
+further_analysis.pl Rfam.14.0.seed.3D.rscape
 

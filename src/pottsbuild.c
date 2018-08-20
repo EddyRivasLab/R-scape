@@ -560,14 +560,15 @@ int
 potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
   struct optimize_data   data;
-  PT                   *gr   = NULL;           /* the gradient */
-  double                *p   = NULL;	       /* parameter vector                        */
-  double                *u   = NULL;           /* max initial step size vector            */
-  double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
+  ESL_MIN_DAT          *stats = esl_min_dat_Create(NULL);
+  PT                   *gr    = NULL;           /* the gradient */
+  double                *p    = NULL;	        /* parameter vector                        */
+  double                *u    = NULL;           /* max initial step size vector            */
+  double                *wrk  = NULL;           /* 4 tmp vectors of length nbranches       */
   double                 logp;
-  int                    L   = msa->alen;
-  int                    Kg  = pt->Kg;
-  int                    Kg2 = pt->Kg2;
+  int                    L    = msa->alen;
+  int                    Kg   = pt->Kg;
+  int                    Kg2  = pt->Kg2;
   int                    np;
   int                    status;
 
@@ -601,16 +602,14 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
     status = eslOK;
       break;
   case CGD_WOLFE:
-    status = min_ConjugateGradientDescent(p, u, np,
+    status = min_ConjugateGradientDescent(NULL, p, np,
                                           &optimize_potts_func_plm, &optimize_potts_bothfunc_plm,
-                                          (void *) (&data),					   
-                                          tol, stol, wrk, &logp, MAXITER);
+                                          (void *) (&data), &logp, stats);
     break;
   case CGD_BRENT:
-    status = esl_min_ConjugateGradientDescent(p, u, np,
+    status = esl_min_ConjugateGradientDescent(NULL, p, np,
 					      &optimize_potts_func_plm, &optimize_potts_dfunc_plm,
-					      (void *) (&data), 
-					      tol, wrk, &logp);
+					      (void *) (&data), &logp, stats);
     break;
   case LBFGS:
     ESL_XFAIL(eslFAIL, errbuf, "LBFGS not implemented yet");
@@ -626,19 +625,23 @@ potts_Optimize_PLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, in
   if (verbose) printf("END POTTS PLM OPTIMIZATION\n");
   
   if (verbose) potts_Write(stdout, pt);
-  
+
+  if (stats) esl_min_dat_Dump(stdout, stats);
+
   /* clean up */
-  if (gr  != NULL) potts_Destroy(gr);
-  if (u   != NULL) free(u);
-  if (p   != NULL) free(p);
-  if (wrk != NULL) free(wrk);
+  if (stats) esl_min_dat_Destroy(stats);
+  if (gr) potts_Destroy(gr);
+  if (u) free(u);
+  if (p) free(p);
+  if (wrk) free(wrk);
   return eslOK;
   
  ERROR:
-  if (gr  != NULL) potts_Destroy(gr);
-  if (p   != NULL) free(p);
-  if (u   != NULL) free(u);
-  if (wrk != NULL) free(wrk);
+  if (stats) esl_min_dat_Destroy(stats);
+  if (gr) potts_Destroy(gr);
+  if (p) free(p);
+  if (u) free(u);
+  if (wrk) free(wrk);
   return status;
 }
 
@@ -647,14 +650,15 @@ int
 potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, int verbose)
 {
   struct optimize_data  data;
-  PT                   *gr   = NULL;           /* the gradient */
-  double                *p   = NULL;	       /* parameter vector                        */
-  double                *u   = NULL;           /* max initial step size vector            */
-  double                *wrk = NULL;           /* 4 tmp vectors of length nbranches       */
+  ESL_MIN_DAT          *stats = esl_min_dat_Create(NULL);
+  PT                   *gr    = NULL;           /* the gradient */
+  double                *p    = NULL;	       /* parameter vector                        */
+  double                *u    = NULL;           /* max initial step size vector            */
+  double                *wrk  = NULL;           /* 4 tmp vectors of length nbranches       */
   double                 logp;
-  int                    L   = msa->alen;
-  int                    Kg  = pt->Kg;
-  int                    Kg2 = pt->Kg2;
+  int                    L    = msa->alen;
+  int                    Kg   = pt->Kg;
+  int                    Kg2  = pt->Kg2;
   int                    np;
   int                    i;
   int                    status;
@@ -690,16 +694,14 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
     case MINNONE:
       break;
     case CGD_WOLFE:
-      status = min_ConjugateGradientDescent(p, u, np,
+      status = min_ConjugateGradientDescent(NULL, p, np,
 					    &optimize_potts_func_aplm, &optimize_potts_bothfunc_aplm,
-					    (void *) (&data),					   
-					    tol, stol, wrk, &logp, MAXITER);
+					    (void *) (&data), &logp, stats);
       break;
     case CGD_BRENT:
-      status = esl_min_ConjugateGradientDescent(p, u, np,
+      status = esl_min_ConjugateGradientDescent(NULL, p, np,
 						&optimize_potts_func_aplm, &optimize_potts_dfunc_aplm,
-						(void *) (&data), 
-						tol, wrk, &logp);
+						(void *) (&data), &logp, stats);
       break;
     case LBFGS:
       ESL_XFAIL(eslFAIL, errbuf, "LBFGS APLM not implemented yet");
@@ -721,18 +723,22 @@ potts_Optimize_APLM(PT *pt, ESL_MSA *msa, float tol, float stol, char *errbuf, i
   
   if (verbose) potts_Write(stdout, pt);
   
+  if (stats) esl_min_dat_Dump(stdout, stats);
+
   /* clean up */
-  if (gr  != NULL) potts_Destroy(gr);
-  if (u   != NULL) free(u);
-  if (p   != NULL) free(p);
-  if (wrk != NULL) free(wrk);
+  if (stats) esl_min_dat_Destroy(stats);
+  if (gr) potts_Destroy(gr);
+  if (u) free(u);
+  if (p) free(p);
+  if (wrk) free(wrk);
   return eslOK;
 
  ERROR:
-  if (gr  != NULL) potts_Destroy(gr);
-  if (p   != NULL) free(p);
-  if (u   != NULL) free(u);
-  if (wrk != NULL) free(wrk);
+  if (stats) esl_min_dat_Destroy(stats);
+  if (gr) potts_Destroy(gr);
+  if (p) free(p);
+  if (u) free(u);
+  if (wrk) free(wrk);
   return status;
 }
 

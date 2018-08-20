@@ -386,14 +386,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
   }
   
-  // assign the covthresh to be used 
+  // assign the covthresh corresponding to the evalue threshold
   if (data->mode == GIVSS) {
-    data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, ranklist->ha->imax);
-    for (b = ranklist->ha->imax-1; b >= ranklist->ha->imin; b --) {
-      cov  = esl_histogram_Bin2LBound(ranklist->ha, b);
-      eval = (data->ranklist_null)? cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
-      if (eval > ESL_MIN(0.0,mi->maxCOV) && eval <= data->thresh->val) data->thresh->sc = esl_histogram_Bin2LBound(ranklist->ha, b-1);
-   }
+    data->thresh->sc =
+      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc > 0)?ranklist->hb->Nc:ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -408,7 +404,6 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
-  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS)) { free(data->ranklist_null->survfit);  data->ranklist_null->survfit = NULL; }
   
   return eslOK;
   
@@ -417,7 +412,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (hitlist)    cov_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
-  if (data->ranklist_null&& (data->mode == GIVSS || data->mode == CYKSS)) free(data->ranklist_null->survfit);
+  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS)) free(data->ranklist_null->survfit);
   return status;
 }
 
@@ -2250,6 +2245,27 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   /* replace the 'SS_cons' GC line with the new ss */
   strcpy(msa->ss_cons, ssstr);
     
+  /* remove any 'SS_cons_<n>' markup. Only consider 'SS_cons'.
+   *
+   * Reason: Rfam 14.0 has started adding SS_cons2 in some families.
+   * easel Stockholm parsers don't consider those as part of the ss annotation
+   * so when we remove columns in the input alignment do to gaps, no function takes care
+   * of removing unbalanced parenthesis in the SS_cons2 column.
+   * R2R on the other hand does look at the SS_cons2 annotation, sees an unbalanced 
+   * parentehsis and craps.
+   */
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
+    if (strncmp("SS_cons2", msa->gc_tag[tagidx], 8) == 0)
+      {
+	for (tagidx2 = tagidx+1; tagidx2 < msa->ngc; tagidx2++) {
+	  msa->gc_tag[tagidx2-1] = msa->gc_tag[tagidx2]; 
+	  msa->gc[tagidx2-1]     = msa->gc[tagidx2]; 
+	}
+	tagidx --;
+	msa->ngc --;
+      }
+  }
+
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
   if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
@@ -2273,7 +2289,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   afp->format = eslMSAFILE_PFAM;
   if (esl_msafile_Read(afp, &r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
   esl_msafile_Close(afp);
-
+  
   /* modify the cov_cons_ss line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment");
   if (hitlist) {
@@ -2615,20 +2631,19 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
 {
   double eval = +eslINFINITY;
   int    icov;
-  int    min_nobs = 10;
   int    c = 0;
   int    i;
 
   esl_histogram_Score2Bin(h, cov, &icov);
 
   /* use the fit if possible */
-  if      (survfit &&  icov >= 2*h->nb-1)                 eval = survfit[2*h->nb-1] * (double)Nc;
-  else if (survfit && h->No >= min_nobs && cov >= h->phi) eval = survfit[icov+1]    * (double)Nc;
+  if      (survfit && icov >= 2*h->nb-1)  eval = survfit[2*h->nb-1] * (double)Nc;
+  else if (survfit &&  cov >= h->phi)     eval = survfit[icov+1]    * (double)Nc;
   else { /* otherwise, the sampled distribution  */
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 
     if (icov <= h->imax) {      
-      if (icov < h->imin)    icov = h->imin;
+      if (icov <  h->imin)   icov = h->imin;
       if (icov >= h->imax-1) eval = (double)Nc / (double)h->Nc;
       else {
 	for (i = h->imax; i >= icov; i--) c += h->obs[i];
@@ -2652,7 +2667,7 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
   int    c = 0;
   int    i;
   int    b = h->cmin-1; 
-
+  
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {
     for (b = 2*h->nb-1; b >= h->cmin; b--) {
@@ -2661,12 +2676,14 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
     }
     cov = esl_histogram_Bin2LBound(h, b+1);
   }
-  if (b == h->cmin-1) { /* otherwise, use the sampled distribution  */
+
+  /* otherwise, use the sampled distribution */
+  if (b == h->cmin-1) {
     for (i = h->imax; i >= h->imin; i--) {
       c += h->obs[i];
       if ((double)c * (double)Nc / (double)h->Nc > eval) break;
     }    
-    cov = esl_histogram_Bin2LBound(h, i+1); 
+    cov = esl_histogram_Bin2LBound(h, i+1);
   }
   
   return cov;

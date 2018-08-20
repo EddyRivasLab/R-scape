@@ -94,7 +94,7 @@ power_Read(char *powerfile, POWER **ret_power, char *errbuf, int verbose)
   esl_buffer_Close(bf);
 
   // we got it. Print if asked
-  if (1||verbose) power_Write(stdout, power, verbose);
+  if (verbose) power_Write(stdout, power, verbose);
 
   *ret_power = power;
   return eslOK;

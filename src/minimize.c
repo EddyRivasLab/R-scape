@@ -15,12 +15,13 @@
 
 #include "easel.h"
 #include "esl_dmatrix.h"
+#include "esl_minimizer.h"
 #include "esl_vectorops.h"
 
 #include "minimize.h"
 
-static void   numeric_derivative(double *x, double *u, int n, double (*func)(double *, int, void*),
-				 void *prm, double relstep, double *gx);
+static void   numeric_derivative(ESL_MIN_CFG *cfg, double *x, int n, double (*func)(double *, int, void*),
+				 void *prm, double *dx, ESL_MIN_DAT *dat);
 static double cubic_interpolation(double xa, double fa, double ga, double xb, double fb, double gb, double xmin, double xmax);
 static int    Armijo(double *ori, double fori, double *gori, double *dori, int n, double firststep, double c1,
 		     double (*bothfunc)(double *, int, void *, double *), void *prm,
@@ -28,87 +29,6 @@ static int    Armijo(double *ori, double fori, double *gori, double *dori, int n
 static int    Wolfe(double *ori, double fori, double *gori, double *dori, int n, double firststep, double c1, double c2,
 		    double (*bothfunc)(double *, int, void *, double *), void *prm,
 		    double *x, double *ret_step, double *ret_f, double *g, int maxiter, double tol);
-
-/* Return the gradient at a point, determined numerically.
- */
-static void
-numeric_derivative(double *x, double *u, int n, 
-		   double (*func)(double *, int, void*),
-		   void *prm, double relstep,
-		   double *gx)
-{
-  int    i;
-  double delta;
-  double f1, f2;
-  double tmp;
-
-  for (i = 0; i < n; i++)
-    {
-      delta = fabs(u[i] * relstep);
-
-      tmp = x[i]; 
-      x[i] = tmp + delta;
-      f1  = (*func)(x, n, prm);
-      x[i] = tmp - delta;
-      f2  = (*func)(x, n, prm);
-      x[i] = tmp;
-
-      gx[i] = (-0.5 * (f1-f2)) / delta;
-
-      ESL_DASSERT1((! isnan(gx[i])));
-    }
-}
-
-/* cubic_interpolation():
- *
- * ER, Thu Oct 26 10:04:14 EDT 2017 [Cambridge]
- *
- * Purpose: Given two points with there fun values and derivatives,
- *          calculate the middle point by cubic interpolation.
- *
- *
- *
- * Args:    xa -  point
- *          fa -  function at xa
- *          ga -  gradient at xa
- *          xb -  point xb > xa (or swap)
- *          fb -  function at xb
- *          gb -  gradient at xb
- *        xmin -  [xim,xmax] interval
- *        xmax -  [xim,xmax] interval
- *
- * Returns:   xm - middle point 
- *
- */
-static double cubic_interpolation(double xa, double fa, double ga, double xb, double fb, double gb, double xmin, double xmax)
-{
-  double da, db;
-  double xc;
-  double xm;       // the mid point
-  double swapper;
-  
-  // we assume xb > xa
-  if (xa == xb) ESL_EXCEPTION(eslENORESULT, "cubic interpolation(): xa has to be different from xb");
-  if (xa >  xb)
-    {
-      swapper = xa; xa = xb; xb = swapper;
-      swapper = fa; fa = fb; fb = swapper;
-      swapper = ga; ga = gb; gb = swapper;
-    }
-
-  da = ga + gb - 3.*(fa-fb)/(xa-xb);
-  db = da*da - ga*gb;
-  
-  if (db >= 0.) {
-    db = sqrt(db);
-    xc = xb - (xb-xa) * (gb + db - da) / (gb - ga + 2.*db);
-    xm = ESL_MIN(ESL_MAX(xc,xmin),xmax);
-  }
-  else
-    xm = 0.5 * (xmin + xmax);
-  
-  return xm;
-}
 
 
 /* Armijo():
@@ -427,17 +347,22 @@ static int Wolfe(double *ori, double fori, double *gori, double *dori, int n,
  * Xref:      STL9/101.
  */
 int
-min_ConjugateGradientDescent(double *x, double *u, int n, 
+min_ConjugateGradientDescent(ESL_MIN_CFG *cfg, double *x, int n, 
 			     double (*func)(double *, int, void *),
 			     double (*bothfunc)(double *, int, void *, double *),
-			     void *prm, double tol, double stol, double *wrk, double *ret_fx, int maxiter)
+			     void *prm, double *opt_fx, ESL_MIN_DAT *dat)
 {
+  int     max_iterations = cfg ? cfg->max_iterations : eslMIN_MAXITER;
+  double  cg_rtol        = cfg ? cfg->cg_rtol        : eslMIN_CG_RTOL;
+  double  cg_atol        = cfg ? cfg->cg_atol        : eslMIN_CG_ATOL;
+  double *u              = cfg ? cfg->u              : NULL;               // u[i] = 1.0 if not custom
+  double *wrk            = NULL;
   double oldfx;
   double coeff;
   double num, den;
   int    nit;
-  int    i;
-  double *gx, *cg, *w1, *w2;
+  int    i, i1;
+  double *dx, *cg, *w1, *w2;
   double cvg;
   double c1, c2;
   double fx;
@@ -445,53 +370,73 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
   double firststep;
   double t;        // step after Worfe algorithm
   double sum;
+  int    status;
 
-  gx = wrk;
+  ESL_ALLOC(wrk, sizeof(double) * 4 * n);  // tmp workspace for 4 n-vectors
+  dx = wrk;
   cg = wrk + n;
   w1 = wrk + 2*n;
   w2 = wrk + 3*n;
 
-  /* init the objective function */
   if (bothfunc == NULL) 
-    oldfx = (*func)(x, n, prm);	
+    oldfx = (*func)(x, n, prm);	/* init the objective function */
   else
-    oldfx = (*bothfunc)(x, n, prm, gx);	
+    oldfx = (*bothfunc)(x, n, prm, dx);	
+  
+  if (dat) {  dat->fx[0] = oldfx; dat->nfunc[0] = 1; dat->niter = 0; }
+  
+  if (bothfunc == NULL)
+    numeric_derivative(cfg, x, n, func, prm, dx, dat); /* else resort to brute force */
+  esl_vec_DCopy(dx, n, cg);	/* and make that the first conjugate direction, cg  */
   
   /* Bail out if the function is +/-inf or nan: this can happen if the caller
    * has screwed something up, or has chosen a bad start point.
    */
-  if (! isfinite(oldfx)) ESL_EXCEPTION(eslERANGE, "minimum not finite");
+  if (! isfinite(oldfx)) ESL_XEXCEPTION(eslERANGE, "minimum not finite");
 
-  if (bothfunc == NULL) 
-    numeric_derivative(x, u, n, func, prm, 1e-4, gx); /* resort to brute force */
-
-  // First x, fx, gx, cg
-  esl_vec_DCopy(gx, n, cg);  /* and make that the first conjugate direction, cg = -gx  */
-  esl_vec_DScale(cg, n, -1.0);
-
-  /* (failsafe) convergence test: a zero direction can happen, 
+  /* (failsafe) convergence test: a completely zero direction can happen, 
    * and it either means we're stuck or we're finished (most likely stuck)
    */
-  for (i = 0; i < n; i++) 
-    if (cg[i] != 0.) break;
-  if  (i == n) {
-    if (ret_fx != NULL) *ret_fx = oldfx;
+  for (i1 = 0; i1 < n; i1++) 
+    if (cg[i1] != 0.) break;
+  if  (i1 == n) {
+    if (opt_fx) *opt_fx = oldfx;
+    free(wrk);
     return eslOK;
   }
-  
-  for (nit = 0; nit < maxiter; nit++)
+ 
+  for (i = 1; i <= max_iterations; i++)
     {
-      
+      if (dat) {
+	dat->niter    = i;  // this is how bracket() and brent() know what CG iteration they're on
+	dat->nfunc[i] = 0;
+      }
+
+#if (eslDEBUGLEVEL >= 2)   // When debugging, it's useful to compare caller's deriv to numeric_deriv
+      int j;
+      printf("\nCG iteration %d\n", i+1);
+      printf(" current point:       ");
+      for (j = 0; j < n; j++) printf("%10.4g ", x[j]);
+      printf("\n gradient:            ");
+      for (j = 0; j < n; j++) printf("%10.4g ", dx[j]);
+      numeric_derivative(cfg, x, n, func, prm, w1, dat);
+      printf("\n numeric gradient:    ");
+      for (j = 0; j < n; j++) printf("%10.4g ", w1[j]);
+      printf("\n conjugate direction: ");
+      for (j = 0; j < n; j++) printf("%10.4g ", cg[j]);
+      printf("\n");
+#endif
+
       // Initial step size
       if (nit == 0) {
 	sum = 0.;
 	for (i = 0; i < n; i ++)
-	  sum += fabs(gx[i]);
+	  sum += fabs(dx[i]);
 	firststep = ESL_MIN(1.0, ((sum > 0.)? 1./sum:1.0) );
       }
       else {
-	gtd = esl_vec_DDot(gx, cg, n);
-	if (gtd > -tol) break;  // Check this is a good direction
+	gtd = esl_vec_DDot(dx, cg, n);
+	if (gtd > -cg_rtol) break;  // Check this is a good direction
 
 	firststep = ESL_MIN(1.0, 2.*(fx-oldfx)/gtd);
 	oldfx = fx;
@@ -504,78 +449,149 @@ min_ConjugateGradientDescent(double *x, double *u, int n,
       //
       c1 = 1e-4;  // parameter values in minFunc.m by Mark Schmidt
       c2 = 0.2;   
-      Wolfe(x, oldfx, gx, cg, n, firststep, c1, c2, bothfunc, prm, w2, &t, &fx, w1, maxiter, stol);
+      Wolfe(x, oldfx, dx, cg, n, firststep, c1, c2, bothfunc, prm, w2, &t, &fx, w1, max_iterations, cg_rtol);
       esl_vec_DCopy(w2, n, x); //new parameters
-      
-      /* Main convergence test. 1e-10 factor is fudging the case where our
-       * minimum is at exactly f()=0.
-       */
-      cvg = 2.0 * fabs((oldfx-fx)) / (1e-10 + fabs(oldfx) + fabs(fx));
-      //fprintf(stdout, "(%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n\n", nit+1, oldfx, fx, cvg);
-      if (cvg <= tol) break;
-      
-      if (nit == maxiter-1) continue;
 
-      /* Calculate the Hestenes-Stiefel coefficient */
+      /* Bail out if the function is now +/-inf: this can happen if the caller
+       * has screwed something up.
+       */
+      if (! isfinite(fx)) ESL_XEXCEPTION(eslERANGE, "minimum not finite");
+
+     /* Calculate the Hestenes-Stiefel coefficient */
       for (num = 0., i = 0; i < n; i++)
-	num += (w1[i] - gx[i]) * w1[i];
+	num += (w1[i] - dx[i]) * w1[i];
       for (den = 0., i = 0; i < n; i++)
-	den += (w1[i] - gx[i]) * cg[i];
+	den += (w1[i] - dx[i]) * cg[i];
       coeff = (den != 0)? num/den:0. ;
      
-      /* Calculate the next conjugate gradient direction in w2 = -gx + coeff*cg */
+        /* Calculate the next conjugate gradient direction in w2 */
       esl_vec_DCopy(w1, n, w2);
-      esl_vec_DScale(w2, n, -1.0);
       esl_vec_DAddScaled(w2, cg, coeff, n);
-      
+
       /* Finishing set up for next iteration: */
-      esl_vec_DCopy(w1, n, gx);
+      esl_vec_DCopy(w1, n, dx);
       esl_vec_DCopy(w2, n, cg);
 
       /* Now: x is the current point; 
        *      fx is the function value at that point;
-       *      gx is the current gradient at x;
+       *      dx is the current gradient at x;
        *      cg is the current conjugate gradient direction. 
        */
 
-#if eslDEBUGLEVEL >= 2
-      printf("\nesl_min_ConjugateGradientDescent():\n");
-      printf("new point:     ");
-      for (i = 0; i < n; i++)
-	printf("%g ", x[i]);
-      
-      printf("\nnew gradient:    ");
-      for (i = 0; i < n; i++)
-	printf("%g ", gx[i]);
-      
-      numeric_derivative(x, u, n, func, prm, 1e-4, w1);
-      printf("\n(numeric grad):  ");
-      for (i = 0; i < n; i++)
-	printf("%g ", w1[i]);
-      
-      printf("\nnew direction: ");
-      for (i = 0; i < n; i++)
-	printf("%g ", cg[i]);
-      
-      printf("\nOld f() = %g    New f() = %g    Convergence = %g\n\n", oldfx, fx, cvg);
-#endif
-      
+      if (dat)
+	dat->fx[i] = fx;
+
+      /* Main convergence test. */
+      if (esl_DCompareNew(fx, oldfx, cg_rtol, cg_atol) == eslOK) break;
+
       /* Second (failsafe) convergence test: a zero direction can happen, 
        * and it either means we're stuck or we're finished (most likely stuck)
        */
-      for (i = 0; i < n; i++) 
-	if (cg[i] != 0.) break;
-      if  (i == n) break;
+      for (i1 = 0; i1 < n; i1++) 
+	if (cg[i1] != 0.) break;
+      if  (i1 == n) break;
 
+      oldfx = fx;
     }
 
-  //fprintf(stdout, "\nEND min_ConjugateGradientDescent() (%d): Old f() = %.9f    New f() = %.9f    Convergence = %.9f\n", nit+1, oldfx, fx, cvg);
-  if (ret_fx != NULL) *ret_fx = fx;
+
+  free(wrk);
+  if (opt_fx) *opt_fx = fx;
+  return (i > max_iterations ? eslENOHALT: eslOK);
   
-  //if (nit == maxiter) printf("min_ConjugateGradientDescent() reached the max number of iterations %d\n", nit);
-  
-  return eslOK;
+ ERROR:
+  free(wrk);
+  if (opt_fx) *opt_fx = eslINFINITY;
+  return status;
 }
 
 
 
+/*****************************************************************
+ * Internal functions: numeric deriv,
+ *****************************************************************/
+
+
+/* Return the negative gradient at a point, determined numerically.
+ */
+static void
+numeric_derivative(ESL_MIN_CFG *cfg, double *x, int n, 
+		   double (*func)(double *, int, void*),
+		   void *prm, double *dx, ESL_MIN_DAT *dat)
+{
+  double  relstep = cfg ? cfg->deriv_step : eslMIN_DERIV_STEP;
+  double *u       = cfg ? cfg->u          : NULL;
+  int    i;
+  double delta;
+  double f1, f2;
+  double tmp;
+
+  for (i = 0; i < n; i++)
+    {
+      if (u) delta = fabs(u[i] * relstep);
+      else   delta = fabs(relstep);
+
+      tmp = x[i]; 
+      x[i] = tmp + delta;
+      f1  = (*func)(x, n, prm);
+      x[i] = tmp - delta;
+      f2  = (*func)(x, n, prm);
+      x[i] = tmp;
+
+      dx[i] = (-0.5 * (f1-f2)) / delta;
+
+      if (dat) dat->nfunc += 2;
+      ESL_DASSERT1((! isnan(dx[i])));
+    }
+}
+
+/* cubic_interpolation():
+ *
+ * ER, Thu Oct 26 10:04:14 EDT 2017 [Cambridge]
+ *
+ * Purpose: Given two points with there fun values and derivatives,
+ *          calculate the middle point by cubic interpolation.
+ *
+ *
+ *
+ * Args:    xa -  point
+ *          fa -  function at xa
+ *          ga -  gradient at xa
+ *          xb -  point xb > xa (or swap)
+ *          fb -  function at xb
+ *          gb -  gradient at xb
+ *        xmin -  [xim,xmax] interval
+ *        xmax -  [xim,xmax] interval
+ *
+ * Returns:   xm - middle point 
+ *
+ */
+static double cubic_interpolation(double xa, double fa, double ga, double xb, double fb, double gb, double xmin, double xmax)
+{
+  double da, db;
+  double xc;
+  double xm;       // the mid point
+  double swapper;
+  
+  // we assume xb > xa
+  if (xa == xb) ESL_EXCEPTION(eslENORESULT, "cubic interpolation(): xa has to be different from xb");
+  if (xa >  xb)
+    {
+      swapper = xa; xa = xb; xb = swapper;
+      swapper = fa; fa = fb; fb = swapper;
+      swapper = ga; ga = gb; gb = swapper;
+    }
+
+  da = ga + gb - 3.*(fa-fb)/(xa-xb);
+  db = da*da - ga*gb;
+  
+  if (db >= 0.) {
+    db = sqrt(db);
+    xc = xb - (xb-xa) * (gb + db - da) / (gb - ga + 2.*db);
+    xm = ESL_MIN(ESL_MAX(xc,xmin),xmax);
+  }
+  else
+    xm = 0.5 * (xmin + xmax);
+  
+  return xm;
+}

@@ -8,9 +8,8 @@
 #include <stdio.h>		/* FILE */
 
 #include "easel.h"
-#include "esl_dmatrix.h"
+#include "esl_minimizer.h"
 
-#define MAXITER 50
 
 enum NMtransf_e {
   REFLECT   = 0,
@@ -21,10 +20,10 @@ enum NMtransf_e {
   TNONE     = 5
 };
 
-extern int min_ConjugateGradientDescent(double *x, double *u, int n, 
+extern int min_ConjugateGradientDescent(ESL_MIN_CFG *cfg, double *x, int n, 
 					double (*func)(double *, int, void *),
 					double (*bothfunc)(double *, int, void *, double *),
-					void *prm, double tol, double stol, double *wrk, double *ret_fx, int maxiter);
+					void *prm, double *opt_fx, ESL_MIN_DAT *dat);
 
 
 #endif /*MINIMIZE_INCLUDED*/

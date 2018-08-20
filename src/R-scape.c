@@ -259,7 +259,7 @@ static ESL_OPTIONS options[] = {
   { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
-  { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
+  { "--gapthresh",    eslARG_REAL,     "0.005",  NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              1 },
@@ -1982,7 +1982,7 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
   int    nbp = 0;
   int    n;
   
-  //if (cfg->samplesize != SAMPLE_ALL) return eslOK;
+  if (cfg->samplesize == SAMPLE_ALL) return eslOK;
   if (spair == NULL) return eslOK;
 
   if (cfg->omsa->ss_cons && cfg->pdbfile) {
