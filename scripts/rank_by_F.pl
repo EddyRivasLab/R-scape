@@ -6,6 +6,10 @@
 use strict;
 use Class::Struct;
 
+use constant GNUPLOT => '/usr/local/bin/gnuplot';
+use lib '/Users/erivas/src/src/mysource/scripts';
+use FUNCS;
+
 use vars qw ($opt_v $opt_F);  # required if strict used
 use Getopt::Std;
 getopts ('vF:');
@@ -17,7 +21,10 @@ if (!@ARGV) {
  	print "-v    :  be verbose\n";
  	exit;
 }
-my $file = shift;
+my $file    = shift;
+my $outfile = "$file";
+if ($outfile =~ /^(\S+).rscape/) { $outfile = "$1.rank"; }
+else                             { $outfile .= ".rank";  }
 
 my $file3d;
 if ($opt_F) { $file3d = "$opt_F"; }
@@ -41,30 +48,45 @@ my %fam_id;
 my %fam_alen;
 my %fam_nseq;
 my %fam_avgsub;
+
 my %fam_tp;
 my %fam_true;
 my %fam_found;
+my %fam_bpexp;
+my %fam_power;
 my %fam_S;
 my %fam_P;
 my %fam_F;
+
+my %fam_tp_cyk;
+my %fam_true_cyk;
+my %fam_found_cyk;
+my %fam_bpexp_cyk;
+my %fam_power_cyk;
+my %fam_S_cyk;
+my %fam_P_cyk;
+my %fam_F_cyk;
 my $nf = 0;
 my $fam;
 my $usefam;
 my $acc;
-open (FILE, "$file") || die;
+my $iscyk;
+
+open (OUT, ">$outfile") || die;
+open (FILE, "$file")    || die;
+
 while(<FILE>) {
     # MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)
     if (/^# MSA\s+(\S+)\s+nseq\s+(\S+)\s+\(.+alen\s+(\S+)\s+\(.+avgid\s+(\S+)\s+/) {
 	$fam      = $1;
-  	my $nseq  = $2;
+	my $nseq  = $2;
 	my $alen  = $3;
 	my $avgid = $4;
-	#print "^^ nseq $nseq alen $alen id $avgid\n";
-
 	$acc = $fam;
 	if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
 	
 	$usefam = 0;
+	$iscyk  = 0;
 	if ($n3d == 0 || ($n3d > 0 && is_3dfam($acc, $n3d, \@fam3d)) ) { $usefam = 1; }	    
 
  
@@ -88,15 +110,27 @@ while(<FILE>) {
 	
 	if ($usefam) {	    
 	    #printf "%d FAM $fam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
-	    
-	    $fam_tp{$fam}    = $tp;
-	    $fam_true{$fam}  = $true;
-	    $fam_found{$fam} = $found;
-	    
-	    $fam_S{$fam}     = $sen;
-	    $fam_P{$fam}     = $ppv;
-	    $fam_F{$fam}     = $F;
-	    $nf ++;
+	    if ($iscyk) {
+		$fam_tp_cyk{$fam}    = $tp;
+		$fam_true_cyk{$fam}  = $true;
+		$fam_found_cyk{$fam} = $found;
+		
+		$fam_S_cyk{$fam}     = $sen;
+		$fam_P_cyk{$fam}     = $ppv;
+		$fam_F_cyk{$fam}     = $F;
+		$fam_power_cyk{$fam} = ($true > 0)? int(10000*$fam_bpexp{$fam}/$true)/100 : 0.0;
+	    }
+	    else {
+		$fam_tp{$fam}    = $tp;
+		$fam_true{$fam}  = $true;
+		$fam_found{$fam} = $found;
+		
+		$fam_S{$fam}     = $sen;
+		$fam_P{$fam}     = $ppv;
+		$fam_F{$fam}     = $F;
+		$fam_power{$fam} = ($true > 0)? int(10000*$fam_bpexp{$fam}/$true)/100 : 0.0;
+		$nf ++;
+	    }
 	}
     }
     # BPAIRS 20
@@ -108,19 +142,48 @@ while(<FILE>) {
 	    $fam_avgsub{$fam} = $avgsub;
 	}
     }
+    elsif (/^#\s+BPAIRS expected covary\s+(\S+)/) {
+	if ($usefam) {
+	    my $bpexp = $1;
+	    $fam_bpexp{$fam} = $bpexp;
+	}
+    }
+    elsif (/^# The predicted cyk-cov structure/) {
+	$iscyk = 1;
+    }
     
 }
 close (FILE);
 
-my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
-my @P_order = sort { $fam_P{$b} <=> $fam_P{$a} } keys(%fam_P);
-my @F_order = sort { $fam_F{$b} <=> $fam_F{$a} } keys(%fam_F);
+create_rankF($outfile);
 
-print "\n# nfam = $nf\n";
-print "# family\t\t\t\t\tF\tSEN\tPPV\tTRUE\tFOUND\tTP\tavgsub\tavgid\talen\tnseq\n";
 for (my $f = 0; $f < $nf; $f ++) {
-    my $fam = $F_order[$f];
-    printf "%-40s\t$fam_F{$fam}\t$fam_S{$fam}\t$fam_P{$fam}\t$fam_true{$fam}\t$fam_found{$fam}\t$fam_tp{$fam}\t$fam_avgsub{$fam}\t$fam_id{$fam}\t$fam_alen{$fam}\t$fam_nseq{$fam}\n", $fam;   
+    my $fam = $fam[$f];
+    my $sen = $fam_S{$fam};
+    my $power = $fam_power{$fam};
+    if ($sen == 0 && $power > 10) {
+	print "$fam $sen $power\n";
+    }
+}
+
+
+
+sub create_rankF {
+    my ($outfile) = @_;
+    
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
+    my @P_order = sort { $fam_P{$b} <=> $fam_P{$a} } keys(%fam_P);
+    my @F_order = sort { $fam_F{$b} <=> $fam_F{$a} } keys(%fam_F);
+    
+    print "\n# nfam = $nf\n";
+    print "# family\t\t\t\t\tF\tSEN\tPPV\tPOWER\tTRUE\tFOUND\tTP\tEXP\tavgsub\tavgid\talen\tnseq\n";
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam = $F_order[$f];
+	printf OUT "%-40s\t$fam_F{$fam}\t$fam_S{$fam}\t$fam_P{$fam}\t$fam_power{$fam}\t$fam_true{$fam}\t$fam_found{$fam}\t$fam_tp{$fam}\t$fam_bpexp{$fam}\t$fam_avgsub{$fam}\t$fam_id{$fam}\t$fam_alen{$fam}\t$fam_nseq{$fam}\n", $fam;   
+    }
+    close(OUT);
+    
+    plot($outfile, 5, 3);
 }
 
 
@@ -151,3 +214,50 @@ sub is_3dfam {
 
     return 0;
 }
+
+sub plot {
+    my ($file, $xfield, $yfield) = @_;
+
+    my $pdf = "$file.ps";
+    my $xlabel = "";
+    
+    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    print GP "set terminal postscript color 14\n";
+    FUNCS::gnuplot_define_styles (*GP);
+ 
+    print GP "set output '$pdf'\n";
+    print GP "set key right top\n";
+    print GP "set nokey\n";
+    print GP "set size square\n";
+    print GP "set xlabel '$xlabel'\n";
+    print GP "set xrange [-0.2:10]\n";
+    print GP "set yrange [-0.2:10]\n";
+
+    my $cmd;
+    $cmd .= "'$file' using $xfield:$yfield  title '' with points ls 5"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    print GP "set xrange [-1:80]\n";
+    print GP "set yrange [-0.2:10]\n";
+    print GP "set size nosquare\n";
+
+    $cmd = "";
+    $cmd .= "'$file' using $xfield:$yfield  title '' with points ls 5"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    print GP "set xrange [-1:100]\n";
+    print GP "set yrange [-1:100]\n";
+    print GP "set size square\n";
+
+    $cmd = "";
+    $cmd .= "'$file' using $xfield:$yfield  title '' with points ls 5"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    
+    system("open $pdf\n");
+
+}
+

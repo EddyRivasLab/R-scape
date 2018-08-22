@@ -2002,7 +2002,7 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
     if (spair[n].bptype == WWc) {
       nbp ++;
       expect += spair[n].power;
-      avgsub +=spair[n].nsubs;
+      avgsub += spair[n].nsubs;
       printf("# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
@@ -2066,6 +2066,7 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
 	spair[n].bptype = BPNONE;	
 
 	if (power) {
+	  prob = 0.;
 	  for (s = 0; s < power->ns; s ++) {
 	    if (subs > power->subs[s]) prob = power->prob[s];
 	    else break;

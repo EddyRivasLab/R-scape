@@ -746,7 +746,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
       }
-      else if (data->spair && bptype == WWc && data->spair[n].power > 0.5) {
+      else if (data->spair && bptype == WWc) {
 	if (data->spair[n].power > 0.5) {
 	  printf("# OUTLIER i %d j %d eval %f nsubs %lld  power %f\n",
 		 data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, eval, data->spair[n].nsubs, data->spair[n].power);
@@ -2245,27 +2245,6 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   /* replace the 'SS_cons' GC line with the new ss */
   strcpy(msa->ss_cons, ssstr);
     
-  /* remove any 'SS_cons_<n>' markup. Only consider 'SS_cons'.
-   *
-   * Reason: Rfam 14.0 has started adding SS_cons2 in some families.
-   * easel Stockholm parsers don't consider those as part of the ss annotation
-   * so when we remove columns in the input alignment do to gaps, no function takes care
-   * of removing unbalanced parenthesis in the SS_cons2 column.
-   * R2R on the other hand does look at the SS_cons2 annotation, sees an unbalanced 
-   * parentehsis and craps.
-   */
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
-    if (strncmp("SS_cons2", msa->gc_tag[tagidx], 8) == 0)
-      {
-	for (tagidx2 = tagidx+1; tagidx2 < msa->ngc; tagidx2++) {
-	  msa->gc_tag[tagidx2-1] = msa->gc_tag[tagidx2]; 
-	  msa->gc[tagidx2-1]     = msa->gc[tagidx2]; 
-	}
-	tagidx --;
-	msa->ngc --;
-      }
-  }
-
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
   if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
@@ -2289,7 +2268,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   afp->format = eslMSAFILE_PFAM;
   if (esl_msafile_Read(afp, &r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
   esl_msafile_Close(afp);
-  
+
   /* modify the cov_cons_ss line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment");
   if (hitlist) {

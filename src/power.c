@@ -42,6 +42,7 @@ power_Read(char *powerfile, POWER **ret_power, char *errbuf, int verbose)
   esl_pos_t        len;
   esl_pos_t        n;
   esl_pos_t        i;
+  int              reached = FALSE;
   int              idx;
   int              status;
   
@@ -79,13 +80,15 @@ power_Read(char *powerfile, POWER **ret_power, char *errbuf, int verbose)
 	  if      (idx == 0) subs[len++] = p[i];
 	  else if (idx == 1) prob[len++] = p[i];
 	}
-	else { len = 0; idx ++; }
+	else { subs[len] = '\0'; len = 0; idx ++; }
       }
+      prob[len] = '\0';
       
       power->subs[power->ns] = atof(subs);
       power->prob[power->ns] = atof(prob);
-      if (power->prob[power->ns] < 0.) power->prob[power->ns] = 0.;
-      if (power->prob[power->ns] > 1.) power->prob[power->ns] = 1.;
+      if (power->prob[power->ns] < 0.)   power->prob[power->ns] = 0.;
+      if (power->prob[power->ns] > 1.) { power->prob[power->ns] = 1.; reached = TRUE; }
+      if (reached)                       power->prob[power->ns] = 1.;
       
       power->ns ++;
     }
