@@ -1915,10 +1915,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
   }
 
   /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->docyk && cfg->mode != RANSS && ranklist) {
+  if (cfg->docyk && cfg->mode != RANSS) {
 
     data.mode = CYKSS;    
-    status = cov_CYKCOVCT(&data, msa, &cykct, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh->sc);
+    status = cov_CYKCOVCT(&data, msa, &cykct, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
     status = write_omsacyk(cfg, msa->alen, cykct);

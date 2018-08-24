@@ -173,7 +173,7 @@ while(<FILE>) {
 }
 close (FILE);
 
-create_rankF($outfile);
+create_rank_plot($outfile);
 
 my $m = 0;
 for (my $f = 0; $f < $nf; $f ++) {
@@ -182,7 +182,7 @@ for (my $f = 0; $f < $nf; $f ++) {
     my $power = $fam_power{$fam};
     if ($sen < 2 && $power > 10) {
 	$m ++;
-	print "outlier $m $fam $sen $power\n";
+	print "outlier $m $fam sen $sen power $power\n";
     }
 }
 $m = 0;
@@ -192,7 +192,7 @@ for (my $f = 0; $f < $nf; $f ++) {
     my $power = $fam_power{$fam};
     if ($power < 2) {
 	$m ++;
-	print "no power $m $fam $sen $power\n";
+	print "no power $m $fam sen $sen power $power\n";
     }
 }
 
@@ -204,7 +204,7 @@ if ($iscyk) {
 	my $sen_cyk = $fam_S_cyk{$fam};
 	if ($sen_cyk > $sen) {
 	    $n ++;
-	    print "better ss $n $fam $sen $sen_cyk\n";
+	    print "better ss $n $fam sen $sen sen_cyk $sen_cyk\n";
 	}
     }
     
@@ -217,7 +217,7 @@ if ($iscyk) {
 	my $sen_cyk       = $fam_S_cyk{$fam};
 	if ($sen_cyk > $sen  && $tp_cyk > $tp+2) {
 	    $n ++;
-	    print "better ss2 $n $fam $sen $sen_cyk | $tp $tp_cyk\n";
+	    print "better ss2 $n $fam sen $sen sen_cyk $sen_cyk | tp $tp tp_cyk $tp_cyk\n";
 	}
     }
     $n = 0;
@@ -231,7 +231,7 @@ if ($iscyk) {
 	my $F_cyk         = $fam_F_cyk{$fam};
 	if ($tp_cyk < $tp ) {
 	    $n ++;
-	    print "worse ss $n $fam $sen $sen_cyk | $tp $tp_cyk\n";
+	    print "worse ss $n $fam sen $sen sen_cyk $sen_cyk | tp $tp tp_cyk $tp_cyk\n";
 	}
     }
 }
@@ -262,7 +262,7 @@ sub create_rankF_extra {
     else        { plot($outfile, 6, 4, -1, -1); }
 }
 
-sub create_rankF {
+sub create_rank_plot {
     my ($outfile) = @_;
     
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
@@ -274,7 +274,7 @@ sub create_rankF {
     printf OUT "# family\t\t\t\t\t\tF\tSEN\tPPV\tPOWER\tTRUE\tFOUND\tTP\tEXP\tavgsub\tavgid\talen\tnseq\n";
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $S_order[$f];
-	if ($fam_true{$fam} > 0 ) {
+	if ($fam_true{$fam} >= 0 ) {
 	    $n ++;
 	    printf OUT "%d\t%-40s\t$fam_F{$fam}\t$fam_S{$fam}\t$fam_P{$fam}\t$fam_power{$fam}\t$fam_true{$fam}\t$fam_found{$fam}\t$fam_tp{$fam}\t$fam_bpexp{$fam}\t$fam_avgsub{$fam}\t$fam_id{$fam}\t$fam_alen{$fam}\t$fam_nseq{$fam}\n", $n, $fam;
 	}
@@ -372,7 +372,8 @@ sub plot_rank {
 
     my $pdf = "$file.rank.ps";
     my $xlabel = "RNA familiy";
-    my $ylabel = "F measure (%)";
+    my $ylabel;
+    my $cmd;
     
     open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
     print GP "set terminal postscript color 14\n";
@@ -382,12 +383,6 @@ sub plot_rank {
     print GP "set key right top\n";
     print GP "set nokey\n";
     print GP "set xlabel '$xlabel'\n";
-    print GP "set ylabel '$ylabel'\n";
-
-    my $cmd;
-    $cmd .= "'$file' using 1:3   title '' with boxes ls 1"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
 
     $ylabel = "Sensitivity (%)";
     print GP "set ylabel '$ylabel'\n";
@@ -396,6 +391,11 @@ sub plot_rank {
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
+    $ylabel = "F measure (%)";
+    print GP "set ylabel '$ylabel'\n";
+    $cmd .= "'$file' using 1:3   title '' with boxes ls 1"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
 
     
     system("open $pdf\n");

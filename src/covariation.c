@@ -299,13 +299,13 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   // really bad alignment, covariation spread is smaller than tol, stop here.
   if (data->w < tol) {
     if (data->mode == GIVSS) {
-      fprintf(stdout,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+      fprintf(stdout,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
       fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "covariation scores are almost constant, no further analysis.\n");
     }
-    
+
     free(threshtype); 
     free(covtype);
     return eslOK; 
@@ -388,8 +388,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   
   // assign the covthresh corresponding to the evalue threshold
   if (data->mode == GIVSS) {
-    data->thresh->sc =
-      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc > 0)?ranklist->hb->Nc:ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+    data->thresh->sc_bp =
+      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->hb->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+    data->thresh->sc_nbp =
+      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->ht->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -808,7 +810,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   }
   if (data->outfp) {
     CMAP_DumpShort(data->outfp, data->clist);
-    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
     cov_WriteHitList(data->outfp, nhit, hitlist, data->msamap, data->firstpos);
@@ -816,8 +818,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   if (data->outsrtfp) {
     CMAP_DumpShort(data->outsrtfp, data->clist);
-    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
@@ -840,7 +842,7 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
 {
   HITLIST  *cykhitlist = NULL;
   double    sen, ppv, F;
-  int       nhit = hitlist->nhit;
+  int       nhit = (hitlist)? hitlist->nhit : 0;
   int       select;
   int       tf = 0;
   int       f  = 0;
@@ -920,9 +922,9 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
   if (data->outfp) {
     fprintf(data->outfp, "\n# The predicted cyk-cov structure\n");
     CMAP_DumpShort(data->outfp, data->clist);
-    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
-	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     cov_WriteCYKHitList(data->outfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos);
   }
   
@@ -932,12 +934,12 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
     
     CMAP_DumpShort(stdout,         data->clist);
     CMAP_DumpShort(data->outsrtfp, data->clist);
-    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
-	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
-	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
+	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     cov_WriteCYKRankedHitList(stdout,         nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
     cov_WriteCYKRankedHitList(data->outsrtfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
   }
@@ -1003,7 +1005,8 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
   int h;
   int ih, jh;
 
-  if (fp == NULL) return eslOK;
+  if (!fp)         return eslOK;
+  if (!cykhitlist) return eslOK;
 
   fprintf(fp, "# in_cyk  in_given   left_pos       right_pos      score           E-value      substitutions    power\n");
   fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
@@ -1181,7 +1184,8 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
   int h;
   int ih, jh;
 
-  if (fp == NULL) return eslOK;
+  if (!fp)         return eslOK;
+  if (!cykhitlist) return eslOK;
 
   for (h = 0; h < nhit; h++) cykhitlist->srthit[h] = cykhitlist->hit + h;
   if (nhit > 1) qsort(cykhitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
@@ -1397,7 +1401,7 @@ cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen)
   return eslOK;
 }
 int
-cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, double covthresh)
+cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
 {
   HITLIST       *cykhitlist = NULL;
   int           *cykct      = NULL;
@@ -1413,7 +1417,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
    * These pairs become constrains for the second part of the folding in cov_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, &cykct, &sc, minloop, covthresh, data->errbuf, data->verbose);
+  status = CYKCOV(data->r, data->mi, data->clist, &cykct, &sc, minloop, thresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
   /* impose the ct on the msa GC line 'cons_ss' */
@@ -1423,7 +1427,7 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
   strcpy(msa->ss_cons, ss);
   if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
   if (data->verbose) {
-    printf("cykcov score = %f minloop %d covthresh %f\n", sc, minloop, covthresh);
+    printf("cykcov score = %f minloop %d covthresh %f %f\n", sc, minloop, thresh->sc_bp, thresh->sc_nbp);
     printf("ss:%s\n", ss);
   }
 

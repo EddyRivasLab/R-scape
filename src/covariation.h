@@ -43,7 +43,7 @@ extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);
 extern int              cov_FisherExactTest(double *ret_pval, int cBP, int cNBP, int BP, int alen);
-extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, double covthresh);
+extern int              cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh);
 extern int              cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass,
 					 double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf);
 extern int              cov_NullFitExponential(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass,

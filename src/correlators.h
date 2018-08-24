@@ -171,8 +171,10 @@ typedef enum {
 
 typedef struct thresh_s {
   THRESHTYPE type;
-  double     val;  // the actual thershold value
-  double     sc;   // cov for the given alignment at threshold
+  double     val;      // the actual thershold value 
+
+  double     sc_bp;   // cov score at threshold (for basepairs)
+  double     sc_nbp;  // cov score at thershold (for no basepairs)
 } THRESH;
 
 
