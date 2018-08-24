@@ -348,7 +348,7 @@ static ESL_OPTIONS options[] = {
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",
        1 },
   /* other options */  
-  { "--cykLmax",       eslARG_INT,    "2000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
+  { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
@@ -1759,16 +1759,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); ranklist_allbranch = NULL;
 
-  if (cfg->covhisfile) free(cfg->covhisfile); 
-  if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->dplotfile) free(cfg->dplotfile);
-  if (cfg->cykdplotfile) free(cfg->cykdplotfile);
-  if (cfg->R2Rfile) free(cfg->R2Rfile);
-  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile);
-  if (cfg->cmapfile) free(cfg->cmapfile);
-  if (cfg->mi) corr_Destroy(cfg->mi);
-  if (cfg->pt) potts_Destroy(cfg->pt);
-  if (nsubs) free(nsubs);
+  if (cfg->covhisfile) free(cfg->covhisfile); cfg->covhisfile = NULL;
+  if (cfg->covqqfile)  free(cfg->covqqfile); cfg->covqqfile = NULL;
+  if (cfg->dplotfile) free(cfg->dplotfile); cfg->dplotfile = NULL;
+  if (cfg->cykdplotfile) free(cfg->cykdplotfile); cfg->cykdplotfile = NULL;
+  if (cfg->R2Rfile) free(cfg->R2Rfile); cfg->R2Rfile = NULL;
+  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); cfg->R2Rcykfile = NULL;
+  if (cfg->cmapfile) free(cfg->cmapfile); cfg->cmapfile = NULL;
+  if (cfg->mi) corr_Destroy(cfg->mi); cfg->mi = NULL;
+  if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
+  if (nsubs) free(nsubs); 
   if (spair) free(spair);
 
   return eslOK;

@@ -1638,8 +1638,8 @@ static int
 mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
 		  double tol, int verbose, char *errbuf)
 {
-  int    *coli = NULL;
-  int    *colj = NULL;
+  int    *coli   = NULL;
+  int    *colj   = NULL;
   int    *shcoli = NULL;
   int    *shcolj = NULL;
 #if GAPASCHAR
@@ -1656,8 +1656,8 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   esl_vec_DSet(mi->pp[i][j], K2, 1e-5); //some prior to avoid zeros
   mi->nseff[i][j] = 0.;
 
-  ESL_ALLOC(coli, sizeof(int)*msa->nseq);
-  ESL_ALLOC(colj, sizeof(int)*msa->nseq);
+  ESL_ALLOC(coli, sizeof(int) * msa->nseq);
+  ESL_ALLOC(colj, sizeof(int) * msa->nseq);
   for (s = 0; s < msa->nseq; s ++) {
     coli[s] = msa->ax[s][i+1];
     colj[s] = msa->ax[s][j+1];

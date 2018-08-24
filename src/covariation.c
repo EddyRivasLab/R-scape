@@ -2235,7 +2235,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   int           do_r2rcovmarkup = FALSE;
   int           status;
 
-   if (r2rfile == NULL) return eslOK;
+  if (r2rfile == NULL) return eslOK;
    
   /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
    */
@@ -2269,8 +2269,10 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   if (esl_msafile_Read(afp, &r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
   esl_msafile_Close(afp);
 
-  /* modify the cov_cons_ss line according to our hitlist */
+  /* make a cov_cons_ss (prv_covstr) line according to our hitlist */
   if (msa->alen != r2rmsa->alen) ESL_XFAIL(eslFAIL, errbuf, "r2r has modified the alignment");
+  for (i = 1; i <= msa->alen; i ++) esl_strcat(&prv_covstr, -1, ".", 1);
+  
   if (hitlist) {
     for (i = 1; i <= msa->alen; i ++) {
       found = FALSE;
@@ -2296,8 +2298,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
       free(covstr); covstr = NULL;
     }
   }
-
-   /* add line #=GF R2R keep allpairs 
+  
+  /* add line #=GF R2R keep allpairs 
    * so that it does not truncate ss.
    * cannot use the standard esl_msa_addGF:
    *             esl_msa_AddGF(msa, "R2R", -1, " keep allpairs", -1);
@@ -2339,7 +2341,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   }
   
   /* replace the r2r 'cov_SS_cons' GC line with our own */
-  if (!do_r2rcovmarkup && hitlist) {
+  if (!do_r2rcovmarkup) {
     for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
       if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
     if (tagidx == r2rmsa->ngc) {
