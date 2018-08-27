@@ -22,6 +22,89 @@
 
 #include "power.h"
 
+int 
+power_SPAIR_Create(SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST *clist, int *nsubs, char *errbuf, int verbose)
+{
+  SPAIR   *spair = NULL;
+  double   prob;
+  int64_t  dim   = alen * (alen-1) / 2;
+  int64_t  subs;
+  int64_t  n = 0;
+  int64_t  s;
+  int      i, j;
+  int      ipos;
+  int      c;
+  int      status;
+  
+  if (ret_spair == NULL) return eslOK;
+  
+  ESL_ALLOC(spair, sizeof(SPAIR) * dim);
+  for (i = 0; i < alen-1; i ++) 
+    for (j = i+1; j < alen; j ++) {
+      
+      subs            = nsubs[i] + nsubs[j];
+      spair[n].i      = msamap[i]+1;
+      spair[n].j      = msamap[j]+1;
+      spair[n].nsubs  = subs;
+      spair[n].power  = 0.;
+      spair[n].bptype = BPNONE;
+      
+      if (power) {
+	prob = 0.;
+	for (s = 0; s < power->ns; s ++) {
+	  if (subs > power->subs[s]) prob = power->prob[s];
+	  else break;
+	}
+	spair[n].power = prob;
+      }
+       
+      if (clist) {
+	for (c = 0; c < clist->ncnt; c++) {
+	  if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
+	    spair[n].bptype = clist->cnt[c].bptype;
+	    break;
+	  }
+	}
+      }
+      
+      if (spair[n].bptype == WWc) 
+	if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+      
+      n ++;
+    }
+  
+  *ret_spair = spair;
+  return eslOK;
+  
+ ERROR:
+  if (spair) free(spair);
+  return status;
+}
+ 
+void
+power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair)
+{
+  double     expect = 0.;
+  double     avgsub = 0;
+  int64_t    nbp = 0;
+  int64_t    n;
+
+  fprintf(fp, "# left_pos      right_pos    substitutions      power\n");
+  fprintf(fp, "#---------------------------------------------------------------------------\n");
+  for (n = 0; n < dim; n ++)
+    if (spair[n].bptype == WWc) {
+      nbp ++;
+      expect += spair[n].power;
+      avgsub += spair[n].nsubs;
+      fprintf(fp, "# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+    }
+  avgsub /= (nbp > 0)? nbp : 1;
+  fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
+  fprintf(fp, "# avg substitutions per BP %.1f\n", avgsub);
+  fprintf(fp, "# BPAIRS expected covary %.1f\n", expect);
+  fprintf(fp, "# \n");
+}
+
 void
 power_Destroy(POWER *power)
 {

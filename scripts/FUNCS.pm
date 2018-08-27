@@ -122,9 +122,19 @@ sub calculateF {
     if ($th+$fh > 0.0) { $F = 2.0 * $tph / ($th + $fh) }
     else               { $F = 0.0 }
 
-    $$ret_sen = 100.*$sen;
-    $$ret_ppv = 100.*$ppv;
-    $$ret_F   = 100.*$F;
+    $$ret_sen = int(10000*$sen)/100;
+    $$ret_ppv = int(10000*$ppv)/100;
+    $$ret_F   = int(10000*$F)/100;
+}
+sub calculateSEN {
+    my ($tph, $th, $ret_sen) = @_;
+    
+    my $sen;
+
+    if ($tph > $th) { print "trues found $tph > trues $th!!\n"; die; }
+    $sen = ($th > 0)? $tph/$th : 0.0;
+
+    $$ret_sen = int(10000*$sen)/100;
 }
 
 sub dump_histogram {
@@ -374,13 +384,13 @@ sub gnuplot_ave_histo_with_dots {
 sub gnuplot_define_styles {
     my ($gp) = @_;
     print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 31 ps 0.6 lw 1\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.6 lw 1\n";
     print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
     print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
     print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 31 ps 0.6 lw 3\n";
+    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 1 ps 0.6 lw 3\n";
     print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
    
     print $gp "set style line 88   lt 1 lc rgb 'cyan'   pt 7 pi -1  ps 1.0 lw 2\nset pointintervalbox 1\n";

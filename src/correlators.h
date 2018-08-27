@@ -100,17 +100,6 @@ typedef enum {
   RANSS = 2,
 } MODE;
 
-typedef struct spair_s {
-  int64_t i;
-  int64_t j;
-  
-  int64_t nsubs;
-  double  power;
-
-  BPTYPE  bptype;
-  
-} SPAIR;
-
 struct mutual_s {
   int64_t         alen;
   int64_t         nseq;
@@ -177,6 +166,22 @@ typedef struct thresh_s {
   double     sc_nbp;  // cov score at thershold (for no basepairs)
 } THRESH;
 
+typedef struct spair_s {
+  int64_t i;
+  int64_t j;
+  
+  int64_t nsubs;
+  double  power;
+
+  BPTYPE  bptype;
+  
+} SPAIR;
+
+typedef struct power_s {
+  int64_t  ns;
+  double  *subs;
+  double  *prob;
+} POWER;
 
 struct data_s {
   FILE                *outfp;
@@ -208,6 +213,7 @@ struct data_s {
   int                  nbpairs_cyk;
   int                 *nsubs;
   SPAIR               *spair;
+  POWER               *power;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;

@@ -1104,6 +1104,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.spair         = NULL;
+  data.power         = NULL;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1743,7 +1744,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs, &spair, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  // condition on has_ss ? 
+  // conditioned on has_ss ? 
   structure_information(cfg, spair, msa);
   
   status = run_rscape(go, cfg, msa, nsubs, spair, ranklist_null, ranklist_aux, NULL, analyze);
@@ -1877,6 +1878,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.spair         = spair;
+  data.nsubs         = nsubs;
+  data.power         = cfg->power;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
@@ -1976,11 +1979,7 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
 static int
 structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
 {
-  double expect = 0.;
-  double avgsub = 0;
-  int    dim = msa->alen * (msa->alen - 1) / 2;
-  int    nbp = 0;
-  int    n;
+  int64_t dim = msa->alen * (msa->alen - 1) / 2;
   
   if (cfg->samplesize == SAMPLE_ALL) return eslOK;
   if (spair == NULL) return eslOK;
@@ -1995,22 +1994,8 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
       printf("# Structure obtained from the pdbfile\n");
   else
     return eslOK;
-  
-  printf("# left_pos      right_pos    substitutions      power\n");
-  printf("#---------------------------------------------------------------------------\n");
-  for (n = 0; n < dim; n ++)
-    if (spair[n].bptype == WWc) {
-      nbp ++;
-      expect += spair[n].power;
-      avgsub += spair[n].nsubs;
-      printf("# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
-    }
-  avgsub /= (nbp > 0)? nbp : 1;
-  printf("#\n# BPAIRS %d\n", nbp);
-  printf("# avg substitutions per BP %.1f\n", avgsub);
-  printf("# BPAIRS expected covary %.1f\n", expect);
-  printf("# \n");
-  
+
+  power_SPAIR_Write(stdout, dim, spair);  
   
   return eslOK;
 }
@@ -2019,13 +2004,11 @@ static int
 substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
 {
   int     *nsubs = NULL;
-  SPAIR   *spair = NULL;
-  double   prob;
+  SPAIR   *spair;
   int64_t  dim   = msa->alen * (msa->alen-1) / 2;
-  int64_t  subs;
-  int64_t  n = 0;
   int64_t  s;
-  int      i, j;
+  int64_t  n;
+  int      i;
   int      ipos;
   int      c;
   int      status;
@@ -2052,59 +2035,30 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
       }      
     }
   }
-  
-  if (ret_spair) {
-    ESL_ALLOC(spair, sizeof(SPAIR) * dim);
-    for (i = 0; i < msa->alen-1; i ++) 
-      for (j = i+1; j < msa->alen; j ++) {
 
-	subs            = nsubs[i] + nsubs[j];
-	spair[n].i      = cfg->msamap[i]+1;
-	spair[n].j      = cfg->msamap[j]+1;
-	spair[n].nsubs  = subs;
-	spair[n].power  = 0.;
-	spair[n].bptype = BPNONE;	
+  status = power_SPAIR_Create(ret_spair, msa->alen, cfg->msamap, power, clist, nsubs, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
-	if (power) {
-	  prob = 0.;
-	  for (s = 0; s < power->ns; s ++) {
-	    if (subs > power->subs[s]) prob = power->prob[s];
-	    else break;
-	  }
-	  spair[n].power = prob;
-	}
-	
-	if (clist) {
-	  for (c = 0; c < clist->ncnt; c++) {
-	    if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
-	      spair[n].bptype = clist->cnt[c].bptype;
-	      break;
-	    }
-	  }
-	}
-	
-	if (spair[n].bptype == WWc) {
-	  if (cfg->power_train) esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
-	  if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
-	}
-	
-	n ++;
-      }
+  if (ret_spair && cfg->power_train) {
+    spair = *ret_spair;
     
-    if ((1||verbose) && cfg->power_train) {
-      esl_histogram_Write(stdout, cfg->hsubs_pr);
-      esl_histogram_Write(stdout, cfg->hsubs_ur);
-      esl_histogram_Write(stdout, cfg->hsubs_bp);
-    }
+    for (n = 0; n < dim; n ++)
+      if (spair[n].bptype == WWc) 
+	esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
+  }
+		       
+  if ((1||verbose) && cfg->power_train) {
+    esl_histogram_Write(stdout, cfg->hsubs_pr);
+    esl_histogram_Write(stdout, cfg->hsubs_ur);
+    esl_histogram_Write(stdout, cfg->hsubs_bp);
   }
   
   if (ret_nsubs) *ret_nsubs = nsubs;
-  if (ret_spair) *ret_spair = spair;
   return eslOK;
 
  ERROR:
   if (nsubs)     free(nsubs);
-  if (ret_spair) free(spair);
+  if (ret_spair) free(*ret_spair);
   return status;
 }
 

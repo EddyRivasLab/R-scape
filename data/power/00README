@@ -46,8 +46,6 @@ cd ~/src/src/mysource/data/power
 ~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed       ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.rscape
 ~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D    Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.rscape
 
-~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.rscape    >  Rfam.14.0.seed.rank
-~/src/src/mysource/scripts/rank_by_F.pl Rfam.14.0.seed.3D.rscape >  Rfam.14.0.seed.3D.rank
 
 
 ----------------------------------------------------------------------------
@@ -64,16 +62,4 @@ cd ~/src/src/mysource/data/power
 ln -s Rfam.14.0.seed.3D.power.csv R-scape.power.csv
 
 
-
-
-----------------------------------------------------------------------------
-further analysis
-----------------------------------------------------------------------------
-
-~/src/src/mysource/scripts/power_plot.pl Rfam.14.0.seed.rank
-~/src/src/mysource/scripts/power_plot.pl Rfam.14.0.seed.3D.rank
-
-
-further_analysis.pl Rfam.14.0.seed.rscape
-further_analysis.pl Rfam.14.0.seed.3D.rscape
 

@@ -1399,9 +1399,9 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
     for (v = 0; v < T->N-1; v++)
       {
 	ax  = allmsa->ax[T->N+v];
-	axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
-	axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
-	
+	axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
+	axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
+
 	if (axl[i+1] != ax[i+1]) { // a single substitution
 	  nsubs[i] ++;
 	}
@@ -1418,8 +1418,8 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
       for (v = 0; v < T->N-1; v++)
 	{
 	  ax  = allmsa->ax[T->N+v];
-	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v]];
-	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]];
+	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
+	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
 
 	  if (axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { // a double substitution
 	    ndouble[idx] ++;
