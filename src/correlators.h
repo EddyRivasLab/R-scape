@@ -141,7 +141,7 @@ typedef struct hit_s {
 
   int64_t nsubs;
   double  power;
-
+  
   BPTYPE  bptype;
   int     is_compatible; // is compatible with all WWc annotated pairs
   
@@ -152,7 +152,7 @@ typedef struct hitlist_s{
   HIT  **srthit;
   HIT    *hit;
 
-}  HITLIST;
+} HITLIST;
 
 typedef enum {
   Eval    = 0, // Eval;          max expected number of CovNBPs allowed
@@ -172,15 +172,21 @@ typedef struct spair_s {
   
   int64_t nsubs;
   double  power;
-
+  
   BPTYPE  bptype;
   
 } SPAIR;
 
+typedef enum {
+  SUBS = 0,
+  DOUB = 1,
+} POWERTYPE;
+
 typedef struct power_s {
-  int64_t  ns;
-  double  *subs;
-  double  *prob;
+  int64_t    ns;
+  POWERTYPE  type;
+  double    *subs;
+  double    *prob;
 } POWER;
 
 struct data_s {
@@ -212,6 +218,7 @@ struct data_s {
   int                  nbpairs;
   int                  nbpairs_cyk;
   int                 *nsubs;
+  int                 *ndouble;
   SPAIR               *spair;
   POWER               *power;
   

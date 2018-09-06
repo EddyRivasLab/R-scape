@@ -38,6 +38,7 @@ my $outfile_goodpower    = "$outname.goodpower";
 my $outfile_betterss     = "$outname.betterss";
 my $outfile_muchbettss   = "$outname.muchbetterss";
 my $outfile_worsess      = "$outname.worsess";
+my $outfile_equalss      = "$outname.equalss";
 
 my $file3d;
 my $n3d = 0;
@@ -183,7 +184,7 @@ while(<FILE>) {
     elsif (/^# The predicted cyk-cov structure/) {
 	$iscyk = 1;
     }
-    # add compatible pairs
+    # add compatible pairs in the cyk structure
     #~	               320	     321	194.17596	0.0153764	127	0.87
     #~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
     elsif (/^~\s+.+\d+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+)$/) {
@@ -191,14 +192,7 @@ while(<FILE>) {
 	if ($iscyk) {
 	    $fam_tp_cyk{$fam}    ++; 
 	    $fam_true_cyk{$fam}  ++; 
-	    $fam_found_cyk{$fam} ++; 
 	    $fam_tpexp_cyk{$fam} += $pp; 
-	}
-	else {
-	    $fam_tp{$fam}    ++; 
-	    $fam_true{$fam}  ++; 
-	    $fam_found{$fam} ++; 
-	    $fam_tpexp{$fam} += $pp; 
 	}
    }
 }
@@ -288,6 +282,7 @@ outfile_greyzone   ($outfile_greyzone);
 outfile_betterss   ($outfile_betterss);
 outfile_muchbettss ($outfile_muchbettss);
 outfile_worsess    ($outfile_worsess);
+outfile_equalss    ($outfile_equalss);
 
 
 my $plotallfamfile = "$outname.plot.allfam";
@@ -318,13 +313,12 @@ sub plot_allfam {
     print GP "set xlabel '$xlabel'\n";
     print GP "set xrange [1:$nf]\n";
 
-   $ylabel = "fraction of basepairs that covary (%)";
+    $ylabel = "fraction of basepairs that covary (%)";
     print GP "set ylabel '$ylabel'\n";
     $cmd  = "";
     $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
     $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
-    $cmd .= "'$outfile_greyzone'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    $cmd .= "'$outfile_allfam'      using $idx:$iS         with points title '' ls 1116 "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iS            with points title '' ls 1116 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
    
@@ -333,12 +327,30 @@ sub plot_allfam {
     $cmd  = "";
     $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
     $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
-    $cmd .= "'$outfile_greyzone'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    $cmd .= "'$outfile_allfam'      using $idx:$iP         with points title '' ls 1116 "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iP            with points title '' ls 1118 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
-     system("open $pdf\n");
+   print GP "set xrange [1:1500]\n";
+    $ylabel = "fraction of basepairs that covary (%)";
+    print GP "set ylabel '$ylabel'\n";
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
+    $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iS            with points title '' ls 1116 "; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+   
+    $ylabel = "fraction of covarying pairs in the structure (%)";
+    print GP "set ylabel '$ylabel'\n";
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
+    $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iP            with points title '' ls 1116 "; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    system("open $pdf\n");
     
 }
 sub plot_ss {
@@ -363,10 +375,10 @@ sub plot_ss {
     print GP "set ylabel '$ylabel'\n";
     $cmd  = "";
     $cmd .= "'$outfile_allfam'     using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    $cmd .= "'$outfile_worsess'    using $idx:$iP         with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_betterss'   using $idx:$iP         with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_worsess'    using $idx:$iP_c       with points title '' ls 1117, "; 
-    $cmd .= "'$outfile_betterss'   using $idx:$iP_c       with points title '' ls 1115 "; 
+    #$cmd .= "'$outfile_worsess'    using $idx:$iP            with points title '' ls 1116, "; 
+    #$cmd .= "'$outfile_betterss'   using $idx:$iP            with points title '' ls 1116, "; 
+    $cmd .= "'$outfile_worsess'    using $idx:$iP_c          with points title '' ls 1113, "; 
+    $cmd .= "'$outfile_betterss'   using $idx:$iP_c          with points title '' ls 1115 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
@@ -374,10 +386,10 @@ sub plot_ss {
     print GP "set ylabel '$ylabel'\n";
     $cmd  = "";
     $cmd .= "'$outfile_allfam'     using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    $cmd .= "'$outfile_worsess'     using $idx:$iS         with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_betterss'     using $idx:$iS         with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_worsess'    using $idx:$iS_c       with points title '' ls 1117, "; 
-    $cmd .= "'$outfile_betterss'   using $idx:$iS_c       with points title '' ls 1115 "; 
+    #$cmd .= "'$outfile_worsess'    using $idx:$iS            with points title '' ls 1116, "; 
+    #$cmd .= "'$outfile_betterss'   using $idx:$iS            with points title '' ls 1116, "; 
+    $cmd .= "'$outfile_worsess'    using $idx:$iS_c          with points title '' ls 1113, "; 
+    $cmd .= "'$outfile_betterss'   using $idx:$iS_c          with points title '' ls 1115 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
    
@@ -411,6 +423,13 @@ sub plot_allvsall {
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
+    print GP "set xrange [-0.5:20]\n";
+    print GP "set yrange [-0.5:20]\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
     
     system("open $pdf\n");
 }
@@ -419,6 +438,7 @@ sub outfile_rank {
     my ($outfile_rank, $outfile_allfam) = @_;
     
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+    #my @S_order = sort { $fam_Spower{$b} <=> $fam_Spower{$a}  } keys(%fam_S);
     
     open (OUT1, ">$outfile_rank")   || die;
     open (OUT2, ">$outfile_allfam") || die;
@@ -523,7 +543,7 @@ sub outfile_greyzone{
 	my $fam   = $fam[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam};
-	if ($sen < 2 && $power > 0 && $power < 10) {
+	if ($sen == 0 && $power > 0 && $power < 4) {
 	    $m ++;
 	    print     "greyzone $m $fam sen $sen power $power\n";
 	    print OUT "$fam_all{$fam}\n";
@@ -638,6 +658,31 @@ sub outfile_worsess{
 	if ($ppv_cyk < $ppv) {
 	    $m ++;
 	    print "worse ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print OUT "$fam_all{$fam}\n";
+	}
+    }
+    close(OUT);
+}
+ 
+sub outfile_equalss{
+    my ($outfile_equalss) = @_;
+
+    if (!$iscyk) { return; }
+    
+    open (OUT, ">$outfile_equalss") || die;    
+    my $m = 0;    
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam     = $fam[$f];
+	my $sen     = $fam_S{$fam};
+	my $sen_cyk = $fam_S_cyk{$fam};
+	my $ppv     = $fam_P{$fam};
+	my $ppv_cyk = $fam_P_cyk{$fam};
+	my $tp      = $fam_tp{$fam};
+	my $tp_cyk  = $fam_tp_cyk{$fam};
+	my $power = $fam_Spower{$fam};
+	if ($ppv_cyk == $ppv) {
+	    $m ++;
+	    print "equal ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }

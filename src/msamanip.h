@@ -18,6 +18,7 @@ typedef struct msa_stat_s {
   int     nseq;
   int64_t alen;
   double  avgid;
+  double  avgsubs;
   double  avgmatch;
 
   int     totinum;

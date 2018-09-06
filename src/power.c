@@ -20,14 +20,47 @@
 #include "esl_buffer.h"
 #include "esl_mem.h"
 
+#include "plot.h"
 #include "power.h"
 
+POWERHIS *
+power_Histogram_Create(int bmin, int bmax, double w)
+{
+  POWERHIS *powerhis = NULL;
+  int       status;
+
+  ESL_ALLOC(powerhis, sizeof(POWERHIS));
+  
+  powerhis->hsubs_pr = esl_histogram_Create(bmin, bmax, w);
+  powerhis->hsubs_ur = esl_histogram_Create(bmin, bmax, w);
+  powerhis->hsubs_bp = esl_histogram_Create(bmin, bmax, w);
+  powerhis->hsubs_cv = esl_histogram_Create(bmin, bmax, w);
+  
+  return powerhis;
+
+ ERROR:
+  return NULL;
+}
+
+void
+power_Histogram_Destroy(POWERHIS *powerhis)
+{
+  if (!powerhis) return;
+  
+  if (powerhis->hsubs_pr) free(powerhis->hsubs_pr);
+  if (powerhis->hsubs_ur) free(powerhis->hsubs_ur);
+  if (powerhis->hsubs_bp) free(powerhis->hsubs_bp);
+  if (powerhis->hsubs_cv) free(powerhis->hsubs_cv);
+  
+  free(powerhis);
+}
+
 int 
-power_SPAIR_Create(SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST *clist, int *nsubs, char *errbuf, int verbose)
+power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST *clist, int *nsubs, int *ndouble, char *errbuf, int verbose)
 {
   SPAIR   *spair = NULL;
   double   prob;
-  int64_t  dim   = alen * (alen-1) / 2;
+  int64_t  dim = alen * (alen - 1.) / 2;
   int64_t  subs;
   int64_t  n = 0;
   int64_t  s;
@@ -37,12 +70,14 @@ power_SPAIR_Create(SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST
   int      status;
   
   if (ret_spair == NULL) return eslOK;
+
+  if (!nsubs && !ndouble) esl_fatal("need some kind of substituions!");
   
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 
     for (j = i+1; j < alen; j ++) {
       
-      subs            = nsubs[i] + nsubs[j];
+      subs            = (nsubs)? nsubs[i] + nsubs[j] : ndouble[i*alen+j];                    
       spair[n].i      = msamap[i]+1;
       spair[n].j      = msamap[j]+1;
       spair[n].nsubs  = subs;
@@ -72,7 +107,8 @@ power_SPAIR_Create(SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST
       
       n ++;
     }
-  
+
+  if (ret_np) *ret_np = n;
   *ret_spair = spair;
   return eslOK;
   
@@ -84,9 +120,9 @@ power_SPAIR_Create(SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST
 void
 power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair)
 {
-  double     expect = 0.;
-  double     avgsub = 0;
-  int64_t    nbp = 0;
+  double     expect    = 0.;
+  double     avgsub    = 0;
+  int64_t    nbp       = 0;
   int64_t    n;
 
   fprintf(fp, "# left_pos      right_pos    substitutions      power\n");
@@ -94,14 +130,15 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair)
   for (n = 0; n < dim; n ++)
     if (spair[n].bptype == WWc) {
       nbp ++;
-      expect += spair[n].power;
-      avgsub += spair[n].nsubs;
+      expect    += spair[n].power;
+      avgsub    += spair[n].nsubs;
       fprintf(fp, "# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
+  
   fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
   fprintf(fp, "# avg substitutions per BP %.1f\n", avgsub);
-  fprintf(fp, "# BPAIRS expected covary %.1f\n", expect);
+  fprintf(fp, "# BPAIRS expected covary %.1f\n",   expect);
   fprintf(fp, "# \n");
 }
 
@@ -114,7 +151,7 @@ power_Destroy(POWER *power)
 }
 
 int
-power_Read(char *powerfile, POWER **ret_power, char *errbuf, int verbose)
+power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int verbose)
 {
   ESL_BUFFER      *bf    = NULL;
   char            *subs  = NULL;
@@ -136,6 +173,7 @@ power_Read(char *powerfile, POWER **ret_power, char *errbuf, int verbose)
 
   ESL_ALLOC(power, sizeof(POWER));
   power->ns   = 0;
+  power->type = (doublesubs)? DOUB : SUBS;
   power->subs = NULL;
   power->prob = NULL;
   
@@ -200,21 +238,64 @@ power_Write(FILE *fp, POWER *power, int verbose)
 }
 
 void
-power_WriteFromHistograms(FILE *fp, ESL_HISTOGRAM *hsubs_bp, ESL_HISTOGRAM *hsubs_cv, int verbose)
+power_WriteFromHistograms(FILE *fp, POWERHIS *powerhis, int verbose)
 {
-  int            i;
-  double         x;
+  int            b, bcv;
+  int64_t        bp, cv;
+  double         x, y;
   double         fsubs;
 
-  for (i = hsubs_bp->imin; i <= hsubs_bp->imax; i++)
+  for (b = powerhis->hsubs_bp->imin; b <= powerhis->hsubs_bp->imax; b++)
     {
-      x = esl_histogram_Bin2LBound(hsubs_bp,i);
+      bp = powerhis->hsubs_bp->obs[b];
+      x  = esl_histogram_Bin2LBound(powerhis->hsubs_bp, b);
+
+      if (esl_histogram_Bin2LBound(powerhis->hsubs_cv, powerhis->hsubs_cv->imin) > x) cv = 0;
+      else {     
+	esl_histogram_Score2Bin(powerhis->hsubs_cv, x, &bcv); bcv ++;
+	
+	y = esl_histogram_Bin2LBound(powerhis->hsubs_cv, bcv);      
+	if (x != y) esl_fatal("power_WriteFromHistogram() error, b %d x %f bcv %d y %f", b, x, bcv, y);
+	
+	cv = powerhis->hsubs_cv->obs[bcv];
+	if (bp < cv) esl_fatal("power_WriteFromHistogram() error, x = %f bp %lld cv %lld", x, bp, cv);
+      }
+      fsubs = (bp > 0)? (double)cv/(double)bp : 0.;
       
-      if (hsubs_bp->obs[i] > 0) {
-	fsubs = (double) hsubs_cv->obs[i] / (double) hsubs_bp->obs[i];	
-	if (fsubs > 1.) esl_fatal("error writing power function");
-	if (verbose) printf("%f\t%f\t%lld\t%lld\n", x, fsubs, hsubs_bp->obs[i], hsubs_cv->obs[i]);
-	fprintf(fp, "%f\t%f\t%lld\t%lld\n", x, fsubs, hsubs_bp->obs[i], hsubs_cv->obs[i]);
-      } 
+      if (verbose) printf( "%f\t%f\t%lld\t%lld\n", x, fsubs, bp, cv);
+      fprintf(fp,          "%f\t%f\t%lld\t%lld\n", x, fsubs, bp, cv);
     }
+}
+
+void
+power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERHIS *powerhis, char *powerfile, int powerdouble, char *errbuf, int verbose)
+{
+  char *powersubspdf   = NULL;
+  char *subspdf        = NULL;
+  char *subshisfile[2];
+  int   status;
+  
+  esl_histogram_Plot(powerhisfp, powerhis->hsubs_pr);
+  esl_histogram_Plot(powerhisfp, powerhis->hsubs_ur);
+  fclose(powerhisfp);
+  
+  esl_sprintf(&subshisfile[0], "%s.pair",   powerhisfile);
+  esl_sprintf(&subshisfile[1], "%s.unpair", powerhisfile);
+  plot_write_Histogram(subshisfile[0], powerhis->hsubs_pr);
+  plot_write_Histogram(subshisfile[1], powerhis->hsubs_ur);
+    
+  esl_sprintf(&subspdf, "%s.pdf", powerhisfile);
+  if (powerdouble) plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of double substitutions", FALSE, errbuf, verbose);
+  else             plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of substitutions",        FALSE, errbuf, verbose);
+  free(subspdf);
+  
+  esl_sprintf(&powersubspdf,  "%s.pdf", powerfile);
+  if (powerhis->hsubs_bp->n > 0) {
+    if (powerdouble) 
+      status = plot_gplot_XYfile(gnuplot, powersubspdf,   powerfile, 1, 2, "number of double substitutions in basepairs", "fraction of covarying basepairs", errbuf);
+    else
+      status = plot_gplot_XYfile(gnuplot, powersubspdf,   powerfile, 1, 2, "number of substitutions in basepairs",        "fraction of covarying basepairs", errbuf);
+    if (status != eslOK) printf("%s\n", errbuf);
+  }
+  free(powersubspdf);
 }

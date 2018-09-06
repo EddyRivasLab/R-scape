@@ -43,8 +43,11 @@ Rfam14.0
 ~/src/src/mysource/lib/hmmer/easel/miniapps/esl-afetch -f ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed Rfam14.0.3D.families.acc > Rfam.14.0.seed.3D.sto
 
 cd ~/src/src/mysource/data/power
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed       ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.rscape
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D    Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.rscape
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D                --nofigures Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.subs.rscape
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed                   --nofigures ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.subs.rscape
+
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D --doublesubs   --nofigures Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.double.rscape
+~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed    --doublesubs   --nofigures ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.double.rscape
 
 
 
@@ -53,13 +56,25 @@ FIT
 R-scape.power.csv used by R-scape 
 ----------------------------------------------------------------------------
 python script:                ~/src/src/myource/R-scape_power.ipynb
-fits:                         data/power/Rfam.14.0.seed.power
-                              data/power/Rfam.14.0.seed.3D.power
-to a polynomial to create:    data/power/Rfam.14.0.seed.power.csv
-                              data/power/Rfam.14.0.seed.3D.power.csv
 
+fits:                         data/power/Rfam.14.0.seed.power.subs
+			      data/power/Rfam.14.0.seed.power.double
+                              data/power/Rfam.14.0.seed.3D.power.subs
+                              data/power/Rfam.14.0.seed.3D.power.double
+			      
+to a polynomial to create:    data/power/Rfam.14.0.seed.power.subs.csv
+                              data/power/Rfam.14.0.seed.power.double.csv
+                              data/power/Rfam.14.0.seed.3D.power.subs.csv
+			      data/power/Rfam.14.0.seed.3D.power.double.csv
+
+# set the power file for R-scape default
+#
 cd ~/src/src/mysource/data/power
-ln -s Rfam.14.0.seed.3D.power.csv R-scape.power.csv
+rm R-scape.power.double.csv
+ln -s Rfam.14.0.seed.3D.power.double.csv R-scape.power.double.csv
+
+rm R-scape.power.subs.csv
+ln -s Rfam.14.0.seed.3D.power.subs.csv   R-scape.power.subs.csv
 
 
 

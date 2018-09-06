@@ -46,7 +46,7 @@
 --RAF,--RAFa,--RAFp,\
 --RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa"
-#define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"              
+#define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc"
 
@@ -215,15 +215,13 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nofigures;
 
   int              power_train;    // TRUE to train the create the power plot
-  ESL_HISTOGRAM   *hsubs_pr;       // histogram of # of substitutions in paired residues
-  ESL_HISTOGRAM   *hsubs_ur;       // histogram of # of substitutions in unpaired residues
-  ESL_HISTOGRAM   *hsubs_bp;       // histogram of # of substitutions in basepairs
-  ESL_HISTOGRAM   *hsubs_cv;       // histogram of # of substitutions in significantly covarying basepairs
+  POWERHIS        *powerhis;       // histograms for substitutions in paired/unpaired/covarying residues
   char            *powerfile;
-  char            *subsfile;
+  char            *powerhisfile;
   FILE            *powerfp;
-  FILE            *subsfp;
+  FILE            *powerhisfp;
   POWER           *power;
+  int              powerdouble;
   
   float            tol;
   int              verbose;
@@ -344,8 +342,10 @@ static ESL_OPTIONS options[] = {
   { "--outnull",   eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>",                                                         1 },
   { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
-  /* expert */  
+  /* subsitution power analysis */  
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",
+       1 },
+  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",
        1 },
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
@@ -372,10 +372,11 @@ static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA 
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
-static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *spair,
+static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
-static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose);
+static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
+static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
 static int  write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
 
 /* process_commandline()
@@ -795,34 +796,38 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
 
   /* histograms for number of substitutions in basepairs and significantly covarying basepairs */
-  cfg.power_train = FALSE;
-  cfg.powerfile   = NULL;
-  cfg.subsfile    = NULL;
-  cfg.powerfp     = NULL;
-  cfg.subsfp      = NULL;
-  cfg.hsubs_pr    = NULL;
-  cfg.hsubs_ur    = NULL;
-  cfg.hsubs_bp    = NULL;
-  cfg.hsubs_cv    = NULL;
-  cfg.power       = NULL;
+  cfg.power_train  = FALSE;
+  cfg.powerfile    = NULL;
+  cfg.powerhisfile = NULL;
+  cfg.powerfp      = NULL;
+  cfg.powerhisfp   = NULL;
+  cfg.power        = NULL;
+  cfg.powerhis     = NULL;
+  cfg.powerdouble  = esl_opt_IsOn(go, "--doublesubs");
 
-  if (esl_opt_IsOn(go, "--power")) { // create the power file
+  if (esl_opt_IsOn(go, "--power")) { // create the power file 
     cfg.power_train = TRUE;
-    
-    esl_sprintf(&cfg.powerfile, "%s.power", esl_opt_GetString(go, "--power"));
-    esl_sprintf(&cfg.subsfile,  "%s.subs",  esl_opt_GetString(go, "--power"));
-    if ((cfg.powerfp = fopen(cfg.powerfile, "w")) == NULL) esl_fatal("Failed to open power file %s", cfg.powerfile);
-    if ((cfg.subsfp  = fopen(cfg.subsfile,  "w")) == NULL) esl_fatal("Failed to open subs  file %s", cfg.subsfile);
 
+    if (cfg.powerdouble) { // create the power file using double substitutions
+      esl_sprintf(&cfg.powerfile,    "%s.power.double",    esl_opt_GetString(go, "--power"));
+      esl_sprintf(&cfg.powerhisfile, "%s.powerhis.double", esl_opt_GetString(go, "--power"));
+      if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.double   file %s", cfg.powerfile);
+      if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.double file %s", cfg.powerhisfile);
+    }
+    else { // create the power file using single substitutions
+      esl_sprintf(&cfg.powerfile,    "%s.power.subs",    esl_opt_GetString(go, "--power"));
+      esl_sprintf(&cfg.powerhisfile, "%s.powerhis.subs", esl_opt_GetString(go, "--power"));
+      if ((cfg.powerfp    = fopen(cfg.powerfile,     "w")) == NULL) esl_fatal("Failed to open power.subs    file %s", cfg.powerfile);
+      if ((cfg.powerhisfp = fopen(cfg.powerhisfile,  "w")) == NULL) esl_fatal("Failed to open powerhis.subs file %s", cfg.powerhisfile);
+    }
+    
     // histograms for substitutions in basepairs and significantly covarying basepairs
-    cfg.hsubs_pr = esl_histogram_Create(0.0, 10000, 1);
-    cfg.hsubs_ur = esl_histogram_Create(0.0, 10000, 1);
-    cfg.hsubs_bp = esl_histogram_Create(0.0, 10000, 1);
-    cfg.hsubs_cv = esl_histogram_Create(0.0, 10000, 1);
+    cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
    }
   else { // read the power file
-    esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.csv", RSCAPE_BIN);
-    power_Read(cfg.powerfile, &cfg.power, cfg.errbuf, cfg.verbose);
+    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.double.csv", RSCAPE_BIN);
+    else                 esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.subs.csv",   RSCAPE_BIN);
+    power_Read(cfg.powerfile, cfg.powerdouble, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   
   *ret_go  = go;
@@ -855,9 +860,6 @@ main(int argc, char **argv)
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
   char            *omsaname = NULL;
-  char            *powerpdf = NULL;
-  char            *subspdf = NULL;
-  char            *subshisfile[2];
   ESL_MSAFILE     *afp   = NULL;
   ESL_MSA         *msa   = NULL;           /* the input alignment    */
   ESL_MSA         *wmsa  = NULL;           /* the window alignment   */
@@ -981,29 +983,12 @@ main(int argc, char **argv)
 
   // the substitution histograms
   if (cfg.power_train) {
-    if (cfg.verbose) power_WriteFromHistograms(stdout, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
-    power_WriteFromHistograms(cfg.powerfp, cfg.hsubs_bp, cfg.hsubs_cv, cfg.verbose);
+    if (cfg.verbose)
+      power_WriteFromHistograms(stdout,      cfg.powerhis, cfg.verbose);
+    power_WriteFromHistograms  (cfg.powerfp, cfg.powerhis, cfg.verbose);
     fclose(cfg.powerfp);
-
-    esl_histogram_Plot(cfg.subsfp, cfg.hsubs_pr);
-    esl_histogram_Plot(cfg.subsfp, cfg.hsubs_ur);
-    fclose(cfg.subsfp);
-
-    esl_sprintf(&subshisfile[0], "%s.pair_resf",  cfg.subsfile);
-    esl_sprintf(&subshisfile[1], "%s.unpair_res", cfg.subsfile);
-    plot_write_Histogram(subshisfile[0], cfg.hsubs_pr);
-    plot_write_Histogram(subshisfile[1], cfg.hsubs_ur);
-
-    esl_sprintf(&subspdf, "%s.pdf", cfg.subsfile);
-    plot_gplot_Histogram(cfg.gnuplot, subspdf, 2, subshisfile, "number of substitutions", FALSE, cfg.errbuf, cfg.verbose);
-    free(subspdf);
     
-    esl_sprintf(&powerpdf, "%s.pdf", cfg.powerfile);
-    if (cfg.hsubs_bp->n > 0) {
-      status = plot_gplot_XYfile(cfg.gnuplot, powerpdf, cfg.powerfile, 1, 2, "number of substitutions in basepairs", "fraction of covarying basepairs", cfg.errbuf);
-      if (status != eslOK) printf("%s\n", cfg.errbuf);
-    }
-    free(powerpdf);
+    power_PlotHistograms(cfg.gnuplot, cfg.powerhisfile, cfg.powerhisfp, cfg.powerhis, cfg.powerfile, cfg.powerdouble, cfg.errbuf, cfg.verbose); 
   }
   
   /* cleanup */
@@ -1044,12 +1029,9 @@ main(int argc, char **argv)
   if (cfg.fnbp) free(cfg.fnbp);
   if (cfg.thresh) free(cfg.thresh);
   if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
-  if (cfg.hsubs_pr) esl_histogram_Destroy(cfg.hsubs_pr);
-  if (cfg.hsubs_ur) esl_histogram_Destroy(cfg.hsubs_ur);
-  if (cfg.hsubs_bp) esl_histogram_Destroy(cfg.hsubs_bp);
-  if (cfg.hsubs_cv) esl_histogram_Destroy(cfg.hsubs_cv);
+  if (cfg.powerhis) power_Histogram_Destroy(cfg.powerhis);
   if (cfg.powerfile) free(cfg.powerfile);
-  if (cfg.subsfile) free(cfg.subsfile);
+  if (cfg.powerhisfile) free(cfg.powerhisfile);
   if (cfg.power) power_Destroy(cfg.power);
   return 0;
 }
@@ -1529,7 +1511,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
       if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
     }
 
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, &ranklist, TRUE);
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
     if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     
@@ -1601,6 +1583,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   SPAIR    *spair    = NULL;
   char     *outname  = NULL;
   int      *nsubs    = NULL;
+  int      *ndouble  = NULL;
   int       has_ss   = FALSE;
   int       nshuffle;
   int       analyze;
@@ -1742,12 +1725,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
 
-  status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs, &spair, cfg->verbose);
+  if (cfg->powerdouble) 
+    status = doublesubs   (cfg, msa, cfg->power, cfg->clist, &ndouble, &spair, cfg->verbose);
+  else
+    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);
+   
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   // conditioned on has_ss ? 
   structure_information(cfg, spair, msa);
   
-  status = run_rscape(go, cfg, msa, nsubs, spair, ranklist_null, ranklist_aux, NULL, analyze);
+  status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
   free(outname);
@@ -1769,7 +1756,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->cmapfile) free(cfg->cmapfile); cfg->cmapfile = NULL;
   if (cfg->mi) corr_Destroy(cfg->mi); cfg->mi = NULL;
   if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
-  if (nsubs) free(nsubs); 
+  if (nsubs) free(nsubs);
+  if (ndouble) free(ndouble);
   if (spair) free(spair);
 
   return eslOK;
@@ -1794,6 +1782,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
+  if (ndouble) free(ndouble);
   if (spair) free(spair);
   return status;
 }
@@ -1801,7 +1790,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *spair,
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
 	   RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
   char            *title    = NULL;
@@ -1879,6 +1868,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
   data.spair         = spair;
   data.nsubs         = nsubs;
+  data.ndouble       = ndouble;
   data.power         = cfg->power;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
@@ -1914,7 +1904,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, SPAIR *
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR;
 
-    if (cfg->power_train) status = cov_Add2SubsHistogram(cfg->hsubs_cv, hitlist, cfg->verbose);
+    if (cfg->power_train) 
+      status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
 
   /* find the cykcov structure, and do the cov analysis on it */
@@ -2005,12 +1996,14 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
 {
   int     *nsubs = NULL;
   SPAIR   *spair;
-  int64_t  dim   = msa->alen * (msa->alen-1) / 2;
+  double   avgsubs = 0.;
   int64_t  s;
   int64_t  n;
   int      i;
   int      ipos;
   int      c;
+  int      np;
+  int      p;
   int      status;
 
   if (cfg->T == NULL) return eslOK;
@@ -2018,46 +2011,123 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
-  if (cfg->verbose) {
+  for (i = 0; i < msa->alen; i ++) avgsubs += nsubs[i];
+  avgsubs /= msa->alen;
+ 
+ if (cfg->verbose) {
+    printf("avgsubs %f\n", avgsubs);
     for (i = 0; i < msa->alen; i ++) 
-      printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
-  }
-
-  // histograms of nsubs for paired/unpaired residues
+      if (nsubs[i] > 0) printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
+ }
+  
+ // histograms of nsubs for paired/unpaired residues
   if (cfg->power_train && clist) {
-    for (i = 0; i < msa->alen-1; i ++) {      
+    
+    for (i = 0; i < msa->alen; i ++) {      
       ipos = cfg->msamap[i]+1;
       for (c = 0; c < clist->ncnt; c++) {
 	if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) 
-	  esl_histogram_Add(cfg->hsubs_pr, (double)(nsubs[i]+1));
+	  esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(nsubs[i]+1));
 	else 
-	  esl_histogram_Add(cfg->hsubs_ur, (double)(nsubs[i]+1));       
+	  esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(nsubs[i]+1));       
       }      
-    }
-  }
-
-  status = power_SPAIR_Create(ret_spair, msa->alen, cfg->msamap, power, clist, nsubs, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
-  if (ret_spair && cfg->power_train) {
-    spair = *ret_spair;
-    
-    for (n = 0; n < dim; n ++)
-      if (spair[n].bptype == WWc) 
-	esl_histogram_Add(cfg->hsubs_bp, (double)spair[n].nsubs+1);
-  }
-		       
-  if ((1||verbose) && cfg->power_train) {
-    esl_histogram_Write(stdout, cfg->hsubs_pr);
-    esl_histogram_Write(stdout, cfg->hsubs_ur);
-    esl_histogram_Write(stdout, cfg->hsubs_bp);
+    }    
   }
   
-  if (ret_nsubs) *ret_nsubs = nsubs;
+  status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, power, clist, nsubs, NULL, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+
+  spair = *ret_spair;
+  for (p = 0; p < np; p ++) {
+    if (spair[p].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+  }
+  
+  if ((verbose) && cfg->power_train) {
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_pr);
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_ur);
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_bp);
+  }
+  
+  if (ret_nsubs) *ret_nsubs = nsubs; else free(nsubs);
   return eslOK;
 
  ERROR:
   if (nsubs)     free(nsubs);
+  if (ret_spair) free(*ret_spair);
+  return status;
+}
+
+static int
+doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose)
+{
+  int     *ndouble = NULL;
+  SPAIR   *spair;
+  double   avgdouble = 0.;
+  int64_t  dim       = msa->alen * (msa->alen-1) / 2;
+  int64_t  idx;
+  int64_t  s;
+  int64_t  n;
+  int      i, j;
+  int      ipos, jpos;
+  int      c;
+  int      status;
+
+  if (cfg->T == NULL) return eslOK;
+  
+  status = Tree_Substitutions(cfg->r, msa, cfg->T, NULL, &ndouble, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  
+  for (i = 0; i < msa->alen-1; i ++) 
+    for (j = i+1; j < msa->alen; j ++) 
+      avgdouble += ndouble[i*msa->alen+j];
+  avgdouble /= dim;
+ 
+  if (cfg->verbose) {
+    printf("avgdouble %f\n", avgdouble);
+    for (i = 0; i < msa->alen-1; i ++) 
+      for (j = i+1; j < msa->alen; j ++) 
+	if (ndouble[i*msa->alen+j] > 0) printf("%d %d ndouble %d\n", cfg->msamap[i]+1, cfg->msamap[j]+1, ndouble[i*msa->alen+j]);
+  }
+
+  // histograms of nsubs for paired/unpaired residues
+  if (cfg->power_train && clist) {
+    
+    for (i = 0; i < msa->alen-1; i ++) {      
+      ipos = cfg->msamap[i]+1;
+      
+      for (j = i+1; j < msa->alen; j ++) {
+	jpos = cfg->msamap[j]+1;
+	
+	idx = i * msa->alen +j;	
+	for (c = 0; c < clist->ncnt; c++) {
+	  if (ipos == clist->cnt[c].posi && jpos == clist->cnt[c].posj) {
+	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
+	    printf("^^ndouble %d type %d\n", ndouble[idx], clist->cnt[c].bptype);
+	    if (clist->cnt[c].bptype == WWc)
+	      esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(ndouble[idx]+1));
+	  }
+	  else 
+	    esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(ndouble[idx]+1));       
+	}      
+      }
+    }
+    
+  }
+  
+  status = power_SPAIR_Create(NULL, ret_spair, msa->alen, cfg->msamap, power, clist, NULL, ndouble, cfg->errbuf, cfg->verbose);
+  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+
+ if ((verbose) && cfg->power_train) {
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_pr);
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_ur);
+    esl_histogram_Write(stdout, cfg->powerhis->hsubs_bp);
+  }
+  
+  if (ret_ndouble) *ret_ndouble = ndouble; else free(ndouble);
+  return eslOK;
+
+ ERROR:
+  if (ndouble)   free(ndouble);
   if (ret_spair) free(*ret_spair);
   return status;
 }

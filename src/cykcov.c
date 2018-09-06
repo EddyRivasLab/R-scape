@@ -30,6 +30,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, SCVAL
   GMX   *cyk = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
   int   *ct  = NULL;
   int    i;
+  int    n = 0;
   int    status;
 
   if (ESL_MIN(thresh->sc_bp, thresh->sc_nbp) > mi->maxCOV) {
@@ -48,8 +49,8 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, SCVAL
   
   if (verbose) {
     printf("CYKscore = %f at covthres %f %f\n", *ret_sc, thresh->sc_bp, thresh->sc_nbp);
-    for (i = 1; i < mi->alen; i ++)
-      if (ct[i] > i) printf("%d %d\n", i, ct[i]);   
+    for (i = 1; i < mi->alen; i ++) 
+      if (ct[i] > i) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
   }
 
   *ret_ct = ct;

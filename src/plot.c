@@ -218,8 +218,8 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfie
   while (esl_fileparser_NextLine(efp) == eslOK)
     {
       nline ++;
-      if (esl_fileparser_GetTokenOnLine(efp, &tok1, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);
-      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);	
+      if (esl_fileparser_GetTokenOnLine(efp, &tok1, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);
+      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);	
       
       xval = atof(tok1); if (xval > max_xtot) max_xtot = xval;
       yval = atof(tok2); if (yval > max_ytot) max_ytot = yval;
@@ -239,13 +239,13 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfie
  
   while (esl_fileparser_NextLine(efp) == eslOK)
     {
-      if (esl_fileparser_GetTokenOnLine(efp, &tok1,  NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);
+      if (esl_fileparser_GetTokenOnLine(efp, &tok1,  NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);
       
       fprintf(pipe, "set title '%s'\n", key);
       fprintf(pipe, "plot '-' u %d:%d with points ls %d\n", xfield, yfield, style);
       if (strcmp(tok1, "#") == 0)  continue;
       
-      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse from file %s", file);	
+      if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);	
       
       xval = atof(tok1);
       yval = atof(tok2);

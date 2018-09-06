@@ -557,9 +557,11 @@ cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, HITLIST *hitlist, int verbose)
   int h;
 
   for (h = 0; h < hitlist->nhit; h ++) 
-    if (hitlist->hit[h].bptype == WWc) esl_histogram_Add(hsubs, (double)hitlist->hit[h].nsubs+1);
+    if (hitlist->hit[h].bptype == WWc) 
+      esl_histogram_Add(hsubs, (double)(hitlist->hit[h].nsubs+1));
    
-  if (verbose) esl_histogram_Write(stdout, hsubs);
+  if (verbose) 
+    esl_histogram_Write(stdout, hsubs);
   
   return eslOK;
 }
@@ -744,18 +746,18 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].sc            = cov;
 	hitlist->hit[h].Eval          = eval;
 	hitlist->hit[h].nsubs         = (data->spair)? data->spair[n].nsubs : 0;
-	hitlist->hit[h].power         = (data->spair)? data->spair[n].power : 0;
+	hitlist->hit[h].power         = (data->spair)? data->spair[n].power : 0.;
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
       }
       else if (data->spair && bptype == WWc) {
 	if (data->spair[n].power > 0.5) {
-	  printf("# OUTLIER i %d j %d eval %f nsubs %lld  power %f\n",
+	  printf("# OUTLIER i %d j %d eval %f nsubs %lld power %f\n",
 		 data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, eval, data->spair[n].nsubs, data->spair[n].power);
 	}
 	else {
-	  printf("# NO POWER i %d j %d eval %f nsubs %lld  power %f\n",
+	  printf("# NO POWER i %d j %d eval %f nsubs %lld power %f\n",
 		 data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, eval, data->spair[n].nsubs, data->spair[n].power);
 	}
       }
@@ -844,7 +846,7 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
   HITLIST  *cykhitlist = NULL;
   SPAIR    *spair      = NULL;
   double    sen, ppv, F;
-  int64_t   dim = data->mi->alen * (data->mi->alen - 1) / 2;
+  int       dim;
   int       nhit = (hitlist)? hitlist->nhit : 0;
   int       select;
   int       tf = 0;
@@ -923,7 +925,7 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
 	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
   }
   
-  status = power_SPAIR_Create(&spair, data->mi->alen, data->msamap, data->power, data->clist, data->nsubs, data->errbuf, data->verbose);
+  status = power_SPAIR_Create(&dim, &spair, data->mi->alen, data->msamap, data->power, data->clist, data->nsubs, data->ndouble, data->errbuf, data->verbose);
   if (status != eslOK) ESL_XFAIL(status, data->errbuf, "%s\n", data->errbuf);
   
   if (data->outfp) {
@@ -991,7 +993,7 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\t%lld\t%.2f\n", 
+      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\t%lld%.2f\n", 
 	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
     }
    else if (hitlist->hit[h].bptype < BPNONE) { 

@@ -1390,48 +1390,54 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
   status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
-  ESL_ALLOC(nsubs,   sizeof(int) * msa->alen);
-  ESL_ALLOC(ndouble, sizeof(int) * msa->alen * msa->alen);
-  esl_vec_ISet(nsubs,   msa->alen,           0);
-  esl_vec_ISet(ndouble, msa->alen*msa->alen, 0);
-  
-  for (i = 0; i < msa->alen; i ++) {
-    for (v = 0; v < T->N-1; v++)
-      {
-	ax  = allmsa->ax[T->N+v];
-	axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
-	axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
-
-	if (axl[i+1] != ax[i+1]) { // a single substitution
-	  nsubs[i] ++;
-	}
-	if (axr[i+1] != ax[i+1]) { // a single substitution
-	  nsubs[i] ++;
-	}
-     }
-  }
-  
-  for (i = 0; i < msa->alen-1; i ++) {
-    for (j = i+1; j < msa->alen; j ++) {
-      idx = i * msa->alen + j;
-      
+  // single position substitutions
+  if (ret_nsubs) {
+    ESL_ALLOC(nsubs, sizeof(int) * msa->alen);
+    esl_vec_ISet(nsubs, msa->alen, 0);  
+    for (i = 0; i < msa->alen; i ++) {
       for (v = 0; v < T->N-1; v++)
 	{
 	  ax  = allmsa->ax[T->N+v];
 	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
 	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
-
-	  if (axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { // a double substitution
-	    ndouble[idx] ++;
+	  
+	  if (axl[i+1] != ax[i+1]) { // a single substitution
+	    nsubs[i] ++;
 	  }
-	  if (axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { // a double substitution
-	    ndouble[idx] ++;
+	  if (axr[i+1] != ax[i+1]) { // a single substitution
+	    nsubs[i] ++;
 	  }
 	}
     }
   }
 
-  *ret_nsubs = nsubs;
+  // double substitutiosn
+  if (ret_ndouble) {
+    ESL_ALLOC(ndouble, sizeof(int) * msa->alen * msa->alen);
+    esl_vec_ISet(ndouble, msa->alen*msa->alen, 0);
+    
+    for (i = 0; i < msa->alen-1; i ++) {
+      for (j = i+1; j < msa->alen; j ++) {
+	idx = i * msa->alen + j;
+	
+	for (v = 0; v < T->N-1; v++)
+	  {
+	    ax  = allmsa->ax[T->N+v];
+	    axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
+	    axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
+	    
+	    if (axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { // a double substitution
+	      ndouble[idx] ++;
+	    }
+	    if (axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { // a double substitution
+	      ndouble[idx] ++;
+	    }
+	  }
+      }
+    }
+  }
+  
+  if (ret_nsubs)   *ret_nsubs   = nsubs;
   if (ret_ndouble) *ret_ndouble = ndouble;
   
   esl_msa_Destroy(allmsa);
