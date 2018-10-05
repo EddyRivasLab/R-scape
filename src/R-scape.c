@@ -898,7 +898,7 @@ main(int argc, char **argv)
     // option -s introduces a two-set statistical test. One tests is for basepairs, the other is for not basepairs
     if (esl_opt_GetBoolean(go, "-s")) {
       
-      // if msa does not include a ss_cons structure (or a pdffile is not provided, we cannot apply this option
+      // if msa does not include a ss_cons structure (or a pdffile is not provided), we cannot apply this option
       if (cfg.abcisRNA) {
 	if (!cfg.omsa->ss_cons && cfg.pdbfile == NULL)
 	  esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
@@ -1220,8 +1220,8 @@ msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpa
 	    msaname, mstat->nseq, mstat->alen, mstat->avgid, nbpairs);
 
   if (statsmethod != NAIVE) {
-    if (samplesize == SAMPLE_ALL) fprintf(fp, "# One-set statistical test (all pairs are tested as equivalent) \n");
-    else                          fprintf(fp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n");
+    if (samplesize == SAMPLE_ALL) fprintf(fp, "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
+    else                          fprintf(fp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
   }
 
   return eslOK;
@@ -1986,7 +1986,7 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
   else
     return eslOK;
 
-  power_SPAIR_Write(stdout, dim, spair);  
+  power_SPAIR_Write(stdout,        dim, spair);  
   
   return eslOK;
 }
@@ -2037,9 +2037,11 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, power, clist, nsubs, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
-  spair = *ret_spair;
-  for (p = 0; p < np; p ++) {
-    if (spair[p].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+  if (cfg->power_train) {
+    spair = *ret_spair;
+    for (p = 0; p < np; p ++) {
+      if (spair[p].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+    }
   }
   
   if ((verbose) && cfg->power_train) {

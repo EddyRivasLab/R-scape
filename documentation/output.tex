@@ -35,11 +35,11 @@ The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
 # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
 # GTp    0.05           [-9.82,121.80]    [0 | 12 20 12 | 60.00 100.00 75.00] 
 #
-#       left_pos       right_pos        score           E-value
-#------------------------------------------------------------------
-*               94             110      56.91065        0.00490376
-*               96             108      89.46430        4.52078e-05
-*               97             107      44.72409        0.0279485
+#       left_pos       right_pos        score          E-value       substitutions      power
+#-------------------------------------------------------------------------------------------------------
+*               94             110      56.91065        0.00330664      34              0.35
+*               96             108      89.46430        1.42871e-06     25              0.26
+*               97             107      44.72409        0.0293269       58              0.55
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:

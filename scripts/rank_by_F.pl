@@ -53,150 +53,37 @@ if ($opt_F) {
     }
 }
 
-# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.85,91.47]     [0 | 5 6 5 | 83.33 100.00 90.91] 
+my @allfam;
+my %allfam_idx;
+my %allfam_id;
+my %allfam_alen;
+my %allfam_nseq;
 
-my @fam;
-my %fam_idx;
-my %fam_id;
-my %fam_alen;
-my %fam_nseq;
+my %allfam_tp;
+my %allfam_true;
+my %allfam_found;
+my %allfam_tpexp;
+my %allfam_avgsub;
 
-my %fam_tp;
-my %fam_true;
-my %fam_found;
-my %fam_tpexp;
-my %fam_avgsub;
+my %allfam_S;
+my %allfam_P;
+my %allfam_F;
+my %allfam_Spower;
 
-my %fam_S;
-my %fam_P;
-my %fam_F;
-my %fam_Spower;
+my %allfam_tp_cyk;
+my %allfam_true_cyk;
+my %allfam_found_cyk;
+my %allfam_tpexp_cyk;
+my %allfam_avgsub_cyk;
 
-my %fam_tp_cyk;
-my %fam_true_cyk;
-my %fam_found_cyk;
-my %fam_tpexp_cyk;
-my %fam_avgsub_cyk;
+my %allfam_S_cyk;
+my %allfam_P_cyk;
+my %allfam_F_cyk;
+my %allfam_Spower_cyk;
+my %allfam_all;
 
-my %fam_S_cyk;
-my %fam_P_cyk;
-my %fam_F_cyk;
-my %fam_Spower_cyk;
-
-my %fam_all;
-
-my $nf = 0;
-my $fam;
-my $usefam;
-my $acc;
-my $iscyk;
-
-open (FILE, "$file")    || die;
-while(<FILE>) {
-    # MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)
-    if (/^# MSA\s+(\S+)\s+nseq\s+(\S+)\s+\(.+alen\s+(\S+)\s+\(.+avgid\s+(\S+)\s+/) {
-	$fam      = $1;
-	my $nseq  = $2;
-	my $alen  = $3;
-	my $avgid = $4;
-	$acc = $fam;
-	if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
-	
-	$usefam = 0;
-	$iscyk  = 0;
-	if ($n3d == 0 || ($n3d > 0 && is_3dfam($acc, $n3d, \@fam3d)) ) { $usefam = 1; }	    
-
- 
-	if ($usefam) {
-	    $fam[$nf]       = $fam;
-	    $fam_idx{$fam}  = $nf+1;
-	    $fam_nseq{$fam} = $nseq;
-	    $fam_alen{$fam} = $alen;
-	    $fam_id{$fam}   = $avgid;
-	    
-	    $fam_tp{$fam}         = 0.0;
-	    $fam_true{$fam}       = 0.0;
-	    $fam_found{$fam}      = 0.0;
-	    $fam_tpexp{$fam}      = 0.0;
-	    
-	    $fam_S{$fam}          = 0.0;
-	    $fam_P{$fam}          = 0.0;
-	    $fam_F{$fam}          = 0.0;
-	    
-	    $fam_Spower{$fam}     = 0.0;
-	    
-	    $fam_tp_cyk{$fam}     = 0.0;
-	    $fam_true_cyk{$fam}   = 0.0;
-	    $fam_found_cyk{$fam}  = 0.0;
-	    $fam_tpexp_cyk{$fam}  = 0.0;
-	    
-	    $fam_S_cyk{$fam}      = 0.0;
-	    $fam_P_cyk{$fam}      = 0.0;
-	    $fam_F_cyk{$fam}      = 0.0;
-	    
-	    $fam_Spower_cyk{$fam} = 0.0;
-	}
-    }
-    # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-    # GTp    0.05         [-9.35,1389.53]     [8 | 22 34 30 | 64.71 73.33 68.75] 
-    elsif (/^#\s+\S+\s+\S+\s+\[\S+\]\s+\[\d+\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\S+)\s+(\S+)\s+(\S+)\]/) {
-	my $tp      = $1;
-	my $true    = $2;
-	my $found   = $3;
-	
-	my $sen     = $4;
-	my $ppv     = $5;
-	my $F       = $6;
-	
-	if ($usefam) {	    
-	    #printf "%d FAM $fam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
-	    if ($iscyk) {
-		$fam_tp_cyk{$fam}    = $tp;
-		$fam_true_cyk{$fam}  = $true;
-		$fam_found_cyk{$fam} = $found;
-	    }
-	    else {
-		$fam_tp{$fam}    = $tp;
-		$fam_true{$fam}  = $true;
-		$fam_found{$fam} = $found;
-		$nf ++;
-	    }
-	}
-    }
-    # BPAIRS 20
-    # avg substitutions per BP 15.8
-    # BPAIRS expected covary 7.1
-    elsif (/^#\s+avg substitutions per BP\s+(\S+)/) {
-	my $avgsub = $1;
-	if ($usefam) {
-	    if ($iscyk) { $fam_avgsub_cyk{$fam} = $avgsub; }
-	    else        { $fam_avgsub{$fam}     = $avgsub; }
-	}
-    }
-    elsif (/^#\s+BPAIRS expected covary\s+(\S+)/) {
-	my $tpexp = $1;
-	if ($usefam) { 
-	    if ($iscyk) { $fam_tpexp_cyk{$fam} = $tpexp; }
-	    else        { $fam_tpexp{$fam}     = $tpexp; }
-	}
-    }
-    elsif (/^# The predicted cyk-cov structure/) {
-	$iscyk = 1;
-    }
-    # add compatible pairs in the cyk structure
-    #~	               320	     321	194.17596	0.0153764	127	0.87
-    #~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
-    elsif (/^~\s+.+\d+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+)$/) {
-	my $pp = $1;
-	if ($iscyk) {
-	    $fam_tp_cyk{$fam}    ++; 
-	    $fam_true_cyk{$fam}  ++; 
-	    $fam_tpexp_cyk{$fam} += $pp; 
-	}
-   }
-}
-close (FILE);
+my %usefam3d;
+filter_families_by3d($file, \%usefam3d);
 
 # fields:
 #
@@ -247,29 +134,40 @@ my $iavgid      = 21;
 my $ialen       = 22;
 my $inseq       = 23;
 
-for (my $f = 0; $f < $nf; $f ++) {
-    my $fam = $fam[$f];
+my $nfall = parse_rscapeout($file, \%usefam3d);
+print "NALLFAM $nfall\n";
 
-    # recalculate in case we added "compatible" covarying pairs ~
-    FUNCS::calculateF  ($fam_tp{$fam},     $fam_true{$fam},     $fam_found{$fam},     \$fam_S{$fam},     \$fam_P{$fam},     \$fam_F{$fam});
-    FUNCS::calculateF  ($fam_tp_cyk{$fam}, $fam_true_cyk{$fam}, $fam_found_cyk{$fam}, \$fam_S_cyk{$fam}, \$fam_P_cyk{$fam}, \$fam_F_cyk{$fam});
-    
-    FUNCS::calculateSEN($fam_tpexp{$fam},     $fam_true{$fam},     \$fam_Spower{$fam});
-    FUNCS::calculateSEN($fam_tpexp_cyk{$fam}, $fam_true_cyk{$fam}, \$fam_Spower_cyk{$fam});
-    
-    my $name = $fam; while (length($name) < 40) { $name .= " "; }
-    $fam_all{$fam}  = "$name";
-    
-    $fam_all{$fam} .= "\t$fam_S{$fam}\t$fam_P{$fam}\t$fam_F{$fam}";
-    $fam_all{$fam} .= "\t$fam_Spower{$fam}";    
-    $fam_all{$fam} .= "\t$fam_true{$fam}\t$fam_found{$fam}\t$fam_tp{$fam}\t$fam_tpexp{$fam}\t$fam_avgsub{$fam}";
-    
-    $fam_all{$fam} .= "\t$fam_S_cyk{$fam}\t$fam_P_cyk{$fam}\t$fam_F_cyk{$fam}";
-    $fam_all{$fam} .= "\t$fam_Spower_cyk{$fam}";    
-    $fam_all{$fam} .= "\t$fam_true_cyk{$fam}\t$fam_found_cyk{$fam}\t$fam_tp_cyk{$fam}\t$fam_tpexp_cyk{$fam}\t$fam_avgsub_cyk{$fam}";
-    
-    $fam_all{$fam} .= "\t$fam_id{$fam}\t$fam_alen{$fam}\t$fam_nseq{$fam}";
-}
+my @fam;
+my %fam_idx;
+my %fam_id;
+my %fam_alen;
+my %fam_nseq;
+
+my %fam_tp;
+my %fam_true;
+my %fam_found;
+my %fam_tpexp;
+my %fam_avgsub;
+
+my %fam_S;
+my %fam_P;
+my %fam_F;
+my %fam_Spower;
+
+my %fam_tp_cyk;
+my %fam_true_cyk;
+my %fam_found_cyk;
+my %fam_tpexp_cyk;
+my %fam_avgsub_cyk;
+
+my %fam_S_cyk;
+my %fam_P_cyk;
+my %fam_F_cyk;
+my %fam_Spower_cyk;
+my %fam_all;
+
+my $nf = filter_fam();
+print "NFAM $nf\n";
 
 outfile_rank       ($outfile_rank, $outfile_allfam);
 outfile_nopower    ($outfile_nopower);
@@ -291,8 +189,202 @@ plot_allfam($plotallfamfile);
 my $plotallvsallfile = "$outname.plot.allvsall";
 plot_allvsall($plotallvsallfile);
 
+my $plotallvsid = "$outname.plot.allvsid";
+plot_allvsid($plotallvsid);
+
 my $plotssfile = "$outname.plot.ss";
 plot_ss($plotssfile); 
+
+
+sub parse_rscapeout {
+    my  ($file, $usefam3d_ref) = @_;
+
+    my $usefam;
+    my $iscyk;
+    my $fam;
+    
+    my $nf  = 0;
+    open (FILE, "$file")    || die;
+    while(<FILE>) {
+	# MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)
+	if (/^# MSA\s+(\S+)\s+nseq\s+(\S+)\s+\(.+alen\s+(\S+)\s+\(.+avgid\s+(\S+)\s+/) {
+	    $fam      = $1;
+	    my $nseq  = $2;
+	    my $alen  = $3;
+	    my $avgid = $4;
+	    my $acc = $fam;
+	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
+	    
+	    $usefam = $usefam3d_ref->{$fam};
+	    
+	    $iscyk  = 0;
+	    
+	    if ($usefam) {
+		$allfam[$nf]       = $fam;
+		$allfam_idx{$fam}  = $nf+1;
+		$allfam_nseq{$fam} = $nseq;
+		$allfam_alen{$fam} = $alen;
+		$allfam_id{$fam}   = $avgid;
+		
+		$allfam_tp{$fam}         = 0.0;
+		$allfam_true{$fam}       = 0.0;
+		$allfam_found{$fam}      = 0.0;
+		$allfam_tpexp{$fam}      = 0.0;
+		
+		$allfam_S{$fam}          = 0.0;
+		$allfam_P{$fam}          = 0.0;
+		$allfam_F{$fam}          = 0.0;
+		
+		$allfam_Spower{$fam}     = 0.0;
+		
+		$allfam_tp_cyk{$fam}     = 0.0;
+		$allfam_true_cyk{$fam}   = 0.0;
+		$allfam_found_cyk{$fam}  = 0.0;
+		$allfam_tpexp_cyk{$fam}  = 0.0;
+		
+		$allfam_S_cyk{$fam}      = 0.0;
+		$allfam_P_cyk{$fam}      = 0.0;
+		$allfam_F_cyk{$fam}      = 0.0;
+		
+		$allfam_Spower_cyk{$fam} = 0.0;
+	    }
+	}
+	# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+	# GTp    0.05         [-9.35,1389.53]     [8 | 22 34 30 | 64.71 73.33 68.75] 
+	elsif (/^#\s+\S+\s+\S+\s+\[\S+\]\s+\[\d+\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\S+)\s+(\S+)\s+(\S+)\]/) {
+	    my $tp      = $1;
+	    my $true    = $2;
+	    my $found   = $3;
+	    
+	    my $sen     = $4;
+	    my $ppv     = $5;
+	    my $F       = $6;
+	    
+	    if ($usefam) {	    
+		#printf "%d FAM $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
+		if ($iscyk) {
+		    $allfam_tp_cyk{$fam}    = $tp;
+		    $allfam_true_cyk{$fam}  = $true;
+		    $allfam_found_cyk{$fam} = $found;
+		}
+		else {
+		    $allfam_tp{$fam}    = $tp;
+		    $allfam_true{$fam}  = $true;
+		    $allfam_found{$fam} = $found;
+		    $nf ++;
+		}
+	    }
+	}
+	# BPAIRS 20
+	# avg substitutions per BP 15.8
+	# BPAIRS expected covary 7.1
+	elsif (/^#\s+avg substitutions per BP\s+(\S+)/) {
+	    my $avgsub = $1;
+	    if ($usefam) {
+		if ($iscyk) { $allfam_avgsub_cyk{$fam} = $avgsub; }
+		else        { $allfam_avgsub{$fam}     = $avgsub; }
+	    }
+	}
+	elsif (/^#\s+BPAIRS expected covary\s+(\S+)/) {
+	    my $tpexp = $1;
+	    if ($usefam) { 
+		if ($iscyk) { $allfam_tpexp_cyk{$fam} = $tpexp; }
+		else        { $allfam_tpexp{$fam}     = $tpexp; }
+	    }
+	}
+	elsif (/^# The predicted cyk-cov structure/) {
+	    $iscyk = 1;
+	}
+	# add compatible pairs in the cyk structure
+	#~	               320	     321	194.17596	0.0153764	127	0.87
+	#~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
+	elsif (/^~\s+.+\d+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+)$/) {
+	    my $pp = $1;
+	    if ($iscyk) {
+		$allfam_tp_cyk{$fam}    ++; 
+		$allfam_true_cyk{$fam}  ++; 
+		$allfam_tpexp_cyk{$fam} += $pp; 
+	    }
+	}
+    }
+    close (FILE);
+    print "NFAMILIES $nf\n";
+       
+    #
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam = $allfam[$f];
+	
+	# recalculate in case we added "compatible" covarying pairs ~
+	FUNCS::calculateF  ($allfam_tp{$fam},     $allfam_true{$fam},     $allfam_found{$fam},     \$allfam_S{$fam},     \$allfam_P{$fam},     \$allfam_F{$fam});
+	FUNCS::calculateF  ($allfam_tp_cyk{$fam}, $allfam_true_cyk{$fam}, $allfam_found_cyk{$fam}, \$allfam_S_cyk{$fam}, \$allfam_P_cyk{$fam}, \$allfam_F_cyk{$fam});
+	
+	FUNCS::calculateSEN($allfam_tpexp{$fam},     $allfam_true{$fam},     \$allfam_Spower{$fam});
+	FUNCS::calculateSEN($allfam_tpexp_cyk{$fam}, $allfam_true_cyk{$fam}, \$allfam_Spower_cyk{$fam});
+	
+	my $name = $fam; while (length($name) < 40) { $name .= " "; }
+	$allfam_all{$fam}  = "$name";
+	
+	$allfam_all{$fam} .= "\t$allfam_S{$fam}\t$allfam_P{$fam}\t$allfam_F{$fam}";
+	$allfam_all{$fam} .= "\t$allfam_Spower{$fam}";    
+	$allfam_all{$fam} .= "\t$allfam_true{$fam}\t$allfam_found{$fam}\t$allfam_tp{$fam}\t$allfam_tpexp{$fam}\t$allfam_avgsub{$fam}";
+	
+	$allfam_all{$fam} .= "\t$allfam_S_cyk{$fam}\t$allfam_P_cyk{$fam}\t$allfam_F_cyk{$fam}";
+	$allfam_all{$fam} .= "\t$allfam_Spower_cyk{$fam}";    
+	$allfam_all{$fam} .= "\t$allfam_true_cyk{$fam}\t$allfam_found_cyk{$fam}\t$allfam_tp_cyk{$fam}\t$allfam_tpexp_cyk{$fam}\t$allfam_avgsub_cyk{$fam}";
+	
+	$allfam_all{$fam} .= "\t$allfam_id{$fam}\t$allfam_alen{$fam}\t$allfam_nseq{$fam}";
+    }
+
+    return $nf;
+}
+
+sub filter_fam {
+
+    my $nf = 0;
+
+    for (my $f = 0; $f < $nfall; $f ++) {
+
+	my $fam = $allfam[$f];
+
+	if ($allfam_Spower{$fam}  > 5) {
+	    $fam[$nf] = $fam;
+	    
+	    $fam_idx{$fam}  = $nf + 1;
+	    $fam_id{$fam}   = $allfam_id{$fam};
+	    $fam_alen{$fam} = $allfam_alen{$fam};
+	    $fam_nseq{$fam} = $allfam_nseq{$fam};
+	    
+	    $fam_tp{$fam}     = $allfam_tp{$fam};
+	    $fam_true{$fam}   = $allfam_true{$fam};
+	    $fam_found{$fam}  = $allfam_found{$fam};
+	    $fam_tpexp{$fam}  = $allfam_tpexp{$fam};
+	    $fam_avgsub{$fam} = $allfam_avgsub{$fam};
+	    
+	    $fam_S{$fam}      = $allfam_S{$fam};
+	    $fam_P{$fam}      = $allfam_P{$fam};
+	    $fam_F{$fam}      = $allfam_F{$fam};
+	    $fam_Spower{$fam} = $allfam_Spower{$fam};
+	    
+	    $fam_tp_cyk{$fam}     = $allfam_tp_cyk{$fam};
+	    $fam_true_cyk{$fam}   = $allfam_true_cyk{$fam};
+	    $fam_found_cyk{$fam}  = $allfam_found_cyk{$fam};
+	    $fam_tpexp_cyk{$fam}  = $allfam_tpexp_cyk{$fam};
+	    $fam_avgsub_cyk{$fam} = $allfam_avgsub_cyk{$fam};
+	    
+	    $fam_S_cyk{$fam}      = $allfam_S_cyk{$fam};
+	    $fam_P_cyk{$fam}      = $allfam_P_cyk{$fam};
+	    $fam_F_cyk{$fam}      = $allfam_F_cyk{$fam};
+	    $fam_Spower_cyk{$fam} = $allfam_Spower_cyk{$fam};
+	    
+	    $fam_all{$fam} = $allfam_all{$fam};
+	    
+	    $nf ++;
+	}
+	
+    }
+    print "$nf FILTERED FAM\n";
+    return $nf;
+}
 
 
 sub plot_allfam {
@@ -433,12 +525,57 @@ sub plot_allvsall {
     
     system("open $pdf\n");
 }
+sub plot_allvsid {
+    my ($file) = @_;
+
+    my $pdf    = "$file.ps";
+    my $xlabel;
+    my $ylabel = "Significantly Covaring (% basepairs)";
+    my $cmd;
+    
+    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    print GP "set terminal postscript color 14\n";
+    FUNCS::gnuplot_define_styles (*GP);
+ 
+    print GP "set output '$pdf'\n";
+    print GP "set key right top\n";
+    print GP "set nokey\n";
+    print GP "set ylabel '$ylabel'\n";
+    
+    #print GP "set xrange [-0.5:100]\n";
+    $xlabel = "Alignment average percentage id";
+    print GP "set size square\n";
+    print GP "set xlabel '$xlabel'\n";
+    print GP "set xrange [-0.5:100]\n";
+    print GP "set yrange [-0.5:100]\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $iavgid:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+
+    $xlabel = "Alignment lenght";
+    print GP "set xlabel '$xlabel'\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $ialen:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    $xlabel = "Alignment number of sequences";
+    print GP "set xlabel '$xlabel'\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $inseq:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    system("open $pdf\n");
+}
 
 sub outfile_rank {
     my ($outfile_rank, $outfile_allfam) = @_;
     
+    #my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
-    #my @S_order = sort { $fam_Spower{$b} <=> $fam_Spower{$a}  } keys(%fam_S);
+    #my @S_order = sort { $fam_Spower{$b} <=> $fam_Spower{$a}  or $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
     
     open (OUT1, ">$outfile_rank")   || die;
     open (OUT2, ">$outfile_allfam") || die;
@@ -476,7 +613,7 @@ sub outfile_nopower{
 	my $power = $fam_Spower{$fam};
 	if ($power == 0) {
 	    $m ++;
-	    printf     "nopower $m $fam power $power\n";
+	    #printf     "nopower $m $fam power $power\n";
 	    printf OUT "$fam_all{$fam}\n";
 	}
     }
@@ -510,7 +647,7 @@ sub outfile_nocov{
 	my $sen = $fam_S{$fam};
 	if ($sen == 0) {
 	    $m ++;
-	    print     "nocov $m $fam sen $sen\n";
+	    #print     "nocov $m $fam sen $sen\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -545,7 +682,7 @@ sub outfile_greyzone{
 	my $power = $fam_Spower{$fam};
 	if ($sen == 0 && $power > 0 && $power < 4) {
 	    $m ++;
-	    print     "greyzone $m $fam sen $sen power $power\n";
+	    #print     "greyzone $m $fam sen $sen power $power\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -591,8 +728,6 @@ sub outfile_outlierc{
 
 sub outfile_betterss{
     my ($outfile_betterss) = @_;
-
-    if (!$iscyk) { return; }
     
     open (OUT, ">$outfile_betterss") || die;    
     my $m = 0;    
@@ -616,8 +751,6 @@ sub outfile_betterss{
  
 sub outfile_muchbettss{
     my ($outfile_muchbettss) = @_;
-
-    if (!$iscyk) { return; }
     
     open (OUT, ">$outfile_muchbettss") || die;    
     my $m = 0;    
@@ -641,8 +774,6 @@ sub outfile_muchbettss{
 
 sub outfile_worsess{
     my ($outfile_worsess) = @_;
-
-    if (!$iscyk) { return; }
     
     open (OUT, ">$outfile_worsess") || die;    
     my $m = 0;    
@@ -666,8 +797,6 @@ sub outfile_worsess{
  
 sub outfile_equalss{
     my ($outfile_equalss) = @_;
-
-    if (!$iscyk) { return; }
     
     open (OUT, ">$outfile_equalss") || die;    
     my $m = 0;    
@@ -682,7 +811,7 @@ sub outfile_equalss{
 	my $power = $fam_Spower{$fam};
 	if ($ppv_cyk == $ppv) {
 	    $m ++;
-	    print "equal ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    #print "equal ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -718,3 +847,34 @@ sub is_3dfam {
 
     return 0;
 }
+
+sub filter_families_by3d {
+    my ($file, $usefam_ref) = @_;
+    my $nf = 0;
+
+    open (FILE, "$file") || die;
+    while(<FILE>) {
+	# MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)
+	if (/^# MSA\s+(\S+)\s+nseq\s+(\S+)\s+\(.+alen\s+(\S+)\s+\(.+avgid\s+(\S+)\s+/) {
+	    my $fam   = $1;
+	    my $nseq  = $2;
+	    my $alen  = $3;
+	    my $avgid = $4;
+	    my $acc = $fam;
+	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
+	   
+	    
+	    if ($n3d > 0) {
+		$usefam_ref->[$nf] = 0;
+		if (is_3dfam($acc, $n3d, \@fam3d) ) { $usefam_ref->{$fam} = 1; $nf ++; }
+	    }
+	    else { $usefam_ref->{$fam} = 1; $nf ++; }
+	
+	}
+    }
+    close(FILE);
+     print "After 3D filtering $nf families\n";
+   
+    return $nf;
+}
+

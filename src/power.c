@@ -126,20 +126,19 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair)
   int64_t    n;
 
   fprintf(fp, "# left_pos      right_pos    substitutions      power\n");
-  fprintf(fp, "#---------------------------------------------------------------------------\n");
+  fprintf(fp, "#--------------------------------------------------------\n");
   for (n = 0; n < dim; n ++)
     if (spair[n].bptype == WWc) {
       nbp ++;
       expect    += spair[n].power;
       avgsub    += spair[n].nsubs;
-      fprintf(fp, "# %lld\t\t%lld\t\t%lld\t\t%f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+      fprintf(fp, "# %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
   
   fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
-  fprintf(fp, "# avg substitutions per BP %.1f\n", avgsub);
-  fprintf(fp, "# BPAIRS expected covary %.1f\n",   expect);
-  fprintf(fp, "# \n");
+  fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
+  fprintf(fp, "# BPAIRS expected to covary %.1f\n", expect);
 }
 
 void

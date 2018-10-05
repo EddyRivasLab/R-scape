@@ -87,12 +87,12 @@ The output is a list of the significantly covarying positions under the one-set 
 # Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
 # GTp    0.05         [-9.82,121.80]     [0 | 4 20 4 | 20.00 100.00 33.33] 
 #
-#       left_pos       right_pos        score           E-value
-#------------------------------------------------------------------
-*	      98	     106	121.80433	4.31981e-05
-*	     122	     137	91.75573	0.00337167
-*	      96	     108	89.46430	0.00470161
-*	     120	     139	75.03790	0.0381599
+#       left_pos       right_pos        score          E-value       substitutions      power
+#-------------------------------------------------------------------------------------------------------
+*	      98	     106	121.80433	3.95915e-08	44		0.44
+*	     122	     137	91.75573	8.34366e-05	59		0.55
+*	      96	     108	89.46430	0.000148586	25		0.26
+*	     120	     139	75.03790	0.00537656	85		0.70
 \end{sreoutput}
 A star ``*'' in the first column indicates that the pair is part of
 the annotated structure in the \prog{updated\_Arisong.sto} file. A
@@ -120,25 +120,52 @@ The output is a list of the significantly covarying positions under the two-set 
 # Two-set statistical test (one test for annotated basepairs, another for all other pairs)
 #
 # Structure obtained from the msa
-# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
+# left_pos      right_pos    substitutions      power
+#--------------------------------------------------------
+# 94		110		34		0.35
+# 95		109		29		0.30
+# 96		108		25		0.26
+# 97		107		58		0.55
+# 98		106		44		0.44
+# 99		105		15		0.14
+# 100		104		20		0.20
+# 111		148		0		0.00
+# 112		147		18		0.18
+# 113		146		1		0.00
+# 114		145		9		0.07
+# 115		144		48		0.47
+# 116		143		110		0.80
+# 119		140		88		0.72
+# 120		139		85		0.70
+# 121		138		97		0.76
+# 122		137		59		0.55
+# 123		135		73		0.64
+# 124		134		27		0.28
+# 125		133		31		0.32
 #
-# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+# BPAIRS 20
+# avg substitutions per BP  43.5
+# BPAIRS expected to covary 7.7
+# BPAIRS observed to covary 12
+#
+#
+# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
 # GTp    0.05         [-9.82,121.80]     [0 | 12 20 12 | 60.00 100.00 75.00] 
 #
-#       left_pos       right_pos        score           E-value
-#------------------------------------------------------------------
-*	      98	     106	121.80433	4.15366e-07
-*	     122	     137	91.75573	3.24199e-05
-*	      96	     108	89.46430	4.52078e-05
-*	     120	     139	75.03790	0.000366922
-*	     119	     140	58.25176	0.00410697
-*	     121	     138	57.96915	0.00421236
-*	      94	     110	56.91065	0.00490376
-*	     124	     134	55.84207	0.00570817
-*	     123	     135	55.50367	0.0060045
-*	      99	     105	53.86423	0.00773238
-*	      97	     107	44.72409	0.0279485
-*	     115	     144	41.87792	0.0427906
+#       left_pos       right_pos        score          E-value       substitutions      power
+#-------------------------------------------------------------------------------------------------------
+*	      98	     106	121.80433	3.80688e-10	44		0.44
+*	     122	     137	91.75573	8.02275e-07	59		0.55
+*	      96	     108	89.46430	1.42871e-06	25		0.26
+*	     120	     139	75.03790	5.16977e-05	85		0.70
+*	     119	     140	58.25176	0.00255411	88		0.72
+*	     121	     138	57.96915	0.00265136	97		0.76
+*	      94	     110	56.91065	0.00330664	34		0.35
+*	     124	     134	55.84207	0.00409643	27		0.28
+*	     123	     135	55.50367	0.00439184	73		0.64
+*	      99	     105	53.86423	0.00611505	15		0.14
+*	      97	     107	44.72409	0.0293269	58		0.55
+*	     115	     144	41.87792	0.0490385	48		0.47
 \end{sreoutput}
 The scores of the pairs are identical to those in the one-set
 test. The E-values have changed relative to those of the one-set test.
