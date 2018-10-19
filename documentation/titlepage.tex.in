@@ -12,7 +12,8 @@
 
 \begin{center}
 \url{http://eddylab.org/R-scape/}\\
-Version @RSCAPE_VERSION@; @RSCAPE_DATE@ \\ 
+Version v@RSCAPE_VERSION@;   % ./configure replaces RSCAPE_VERSION
+@RSCAPE_DATE@      %    ... and RSCAPE_DATE
 
 \vspace*{\fill}
 

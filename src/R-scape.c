@@ -2104,7 +2104,6 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 	for (c = 0; c < clist->ncnt; c++) {
 	  if (ipos == clist->cnt[c].posi && jpos == clist->cnt[c].posj) {
 	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
-	    printf("^^ndouble %d type %d\n", ndouble[idx], clist->cnt[c].bptype);
 	    if (clist->cnt[c].bptype == WWc)
 	      esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(ndouble[idx]+1));
 	  }

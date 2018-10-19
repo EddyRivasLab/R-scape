@@ -50,7 +50,7 @@ cp ~/src/src/mysource/scripts/pdb_parse.pl ~/src/src/mysource/versions/$v/script
 cp ~/src/src/mysource/scripts/rocplot.pl ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/scripts/rocplot_together.pl ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs.csv ~/src/src/mysource/versions/$v/data/power/. ;\
-cp ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.double.csv ~/src/src/mysource/versions/$v/data/power/. ;\
+cp ~/src/src/mysource/data/poer/Rfam.14.0.seed.3D.power.double.csv ~/src/src/mysource/versions/$v/data/power/. ;\
 cp ~/src/src/mysource/data/power/Rfam.14.0.seed.power.subs.csv ~/src/src/mysource/versions/$v/data/power/. ;\
 cp ~/src/src/mysource/data/power/Rfam.14.0.seed.power.double.csv ~/src/src/mysource/versions/$v/data/power/. ;\
 ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.subs.csv ~/src/src/mysource/versions/$v/data/power/R-scape.power.subs.csv
@@ -67,7 +67,7 @@ last minute steps to make an R-scape tarball:
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
 for v in rscape_v1.0 ; do \
-for x in 0 ; do \
+for x in 1 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\
 make clean ;\

@@ -148,7 +148,7 @@ static ESL_OPTIONS options[] = {
   { "-L",              eslARG_INT,       "50",   NULL,      "n>=0",  NULL,"--ptgauss",NULL,              "length of the alignment",                                                                   1 }, 
   /* parameters to control the phylogenetic component of t he simulation */
   { "-N",              eslARG_INT,       "40",   NULL,      "n>=0",  NULL,    NULL,  NULL,               "number of sequences in the simulated msa, N=0 for use all",                                 0 }, 
-  { "--abl",           eslARG_REAL,     "0.1",   NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
+  { "--abl",           eslARG_REAL,     NULL,    NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
   { "--atbl",          eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noindels",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
   { "--eqbranch",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make all branch lengths equal size",                                                        0 }, 
@@ -650,7 +650,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)    != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
 
-  if (cfg->N > 0 && cfg->N < msa->nseq && cfg->treetype == GIVEN) {
+  if (cfg->N > 0 && cfg->treetype == GIVEN) {
     if (msamanip_SelectSubset(cfg->r, cfg->N, omsa, NULL, cfg->errbuf, cfg->verbose)                       != eslOK) {
       printf("%s\n", cfg->errbuf); esl_fatal(msg); }
   }
@@ -739,7 +739,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   
   if (msa == NULL) return eslOK;
   if (cfg->treetype == GIVEN) cfg->N = msa->nseq;
-  if (cfg->N <= 1) return eslOK;
+  if (cfg->N  <= 1) return eslOK;
 
   // create the tree with target abl
   create_tree(go, cfg, msa);
@@ -817,6 +817,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
   char   *msg = "bad tree";
   double  atbl;
+  double  abl;
   int     status;
   
   /* the TREE */
@@ -852,6 +853,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->T) {
 
     Tree_GetNodeTime(0, cfg->T, &atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+    abl = esl_tree_er_AverageBL(cfg->T);
 
     if (cfg->eqbranch) { if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg); }
 
@@ -859,16 +861,15 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
       if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     else if (cfg->target_atbl > 0) {
-      printf("Tree re-scaled from %f to atbl=%f\n", atbl, cfg->target_atbl);
       if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
     }
     
     cfg->abl = esl_tree_er_AverageBL(cfg->T);
     Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
     if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
   }
-  else if (1||cfg->verbose) printf("# average leave-to-root length: %f\n", cfg->atbl);
+  
+    if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
   
   return eslOK;
 }

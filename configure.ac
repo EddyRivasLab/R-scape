@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 1.0.0, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 1.0.2, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -652,6 +652,8 @@ Makefile
 src/Makefile
 documentation/Makefile
 documentation/e2msa/Makefile
+documentation/titlepage.tex
+documentation/copyright.tex
 lib/R2R/NotByZasha/infernal-0.7/Makefile
 lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
 lib/R2R/src/Makefile

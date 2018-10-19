@@ -741,7 +741,7 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   if (nseq == 0) {  
     esl_msa_Destroy(msa); *omsa = NULL; return eslOK; 
   }
-  if (nseq >= msa->nseq) return eslOK; 
+  if (nseq > msa->nseq) ESL_XFAIL(eslFAIL, errbuf, "cannot sample %d sequences. Alignment has %d sequences.", nseq, msa->nseq);
   
 
   /* the newfile file with submsa */

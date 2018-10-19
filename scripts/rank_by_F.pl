@@ -5,7 +5,8 @@
 
 use strict;
 use Class::Struct;
-
+use POSIX;
+    
 use constant GNUPLOT => '/usr/local/bin/gnuplot';
 use lib '/Users/erivas/src/src/mysource/scripts';
 use FUNCS;
@@ -81,6 +82,8 @@ my %allfam_P_cyk;
 my %allfam_F_cyk;
 my %allfam_Spower_cyk;
 my %allfam_all;
+my %allfam_table;
+my %allfam_tabless;
 
 my %usefam3d;
 filter_families_by3d($file, \%usefam3d);
@@ -165,6 +168,8 @@ my %fam_P_cyk;
 my %fam_F_cyk;
 my %fam_Spower_cyk;
 my %fam_all;
+my %fam_table;
+ my %fam_tabless;
 
 my $nf = filter_fam();
 print "NFAM $nf\n";
@@ -215,12 +220,13 @@ sub parse_rscapeout {
 	    my $acc = $fam;
 	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
 	    
-	    $usefam = $usefam3d_ref->{$fam};
+	    $usefam = 1;
+	    
 	    
 	    $iscyk  = 0;
 	    
 	    if ($usefam) {
-		$allfam[$nf]       = $fam;
+		$allfam[$nf]       = $fam; 
 		$allfam_idx{$fam}  = $nf+1;
 		$allfam_nseq{$fam} = $nseq;
 		$allfam_alen{$fam} = $alen;
@@ -285,7 +291,7 @@ sub parse_rscapeout {
 		else        { $allfam_avgsub{$fam}     = $avgsub; }
 	    }
 	}
-	elsif (/^#\s+BPAIRS expected covary\s+(\S+)/) {
+	elsif (/^#\s+BPAIRS expected to covary\s+(\S+)/) {
 	    my $tpexp = $1;
 	    if ($usefam) { 
 		if ($iscyk) { $allfam_tpexp_cyk{$fam} = $tpexp; }
@@ -320,10 +326,24 @@ sub parse_rscapeout {
 	
 	FUNCS::calculateSEN($allfam_tpexp{$fam},     $allfam_true{$fam},     \$allfam_Spower{$fam});
 	FUNCS::calculateSEN($allfam_tpexp_cyk{$fam}, $allfam_true_cyk{$fam}, \$allfam_Spower_cyk{$fam});
+
+	$allfam_Spower{$fam} = sprintf("%.1f", $allfam_Spower{$fam});
+	$allfam_S{$fam}      = sprintf("%.1f", $allfam_S{$fam});
+	$allfam_P{$fam}      = sprintf("%.1f", $allfam_P{$fam});
+	$allfam_F{$fam}      = sprintf("%.1f", $allfam_F{$fam});
+	$allfam_S_cyk{$fam}  = sprintf("%.1f", $allfam_S_cyk{$fam});
+	$allfam_P_cyk{$fam}  = sprintf("%.1f", $allfam_P_cyk{$fam});
+	$allfam_F_cyk{$fam}  = sprintf("%.1f", $allfam_F_cyk{$fam});
+	$allfam_id{$fam}     = sprintf("%.1f", $allfam_id{$fam});
+	    
+	my $name = $fam;
+	if ($usefam3d_ref->{$fam}) { $name .= "**"; }
+	$name =~ s/\_/ /g;
 	
-	my $name = $fam; while (length($name) < 40) { $name .= " "; }
-	$allfam_all{$fam}  = "$name";
+	my $longname = $fam; $longname =~ s/\_/-/g;
+	while (length($longname) < 40) { $longname .= " "; }
 	
+	$allfam_all{$fam}  = "$longname";	
 	$allfam_all{$fam} .= "\t$allfam_S{$fam}\t$allfam_P{$fam}\t$allfam_F{$fam}";
 	$allfam_all{$fam} .= "\t$allfam_Spower{$fam}";    
 	$allfam_all{$fam} .= "\t$allfam_true{$fam}\t$allfam_found{$fam}\t$allfam_tp{$fam}\t$allfam_tpexp{$fam}\t$allfam_avgsub{$fam}";
@@ -333,6 +353,22 @@ sub parse_rscapeout {
 	$allfam_all{$fam} .= "\t$allfam_true_cyk{$fam}\t$allfam_found_cyk{$fam}\t$allfam_tp_cyk{$fam}\t$allfam_tpexp_cyk{$fam}\t$allfam_avgsub_cyk{$fam}";
 	
 	$allfam_all{$fam} .= "\t$allfam_id{$fam}\t$allfam_alen{$fam}\t$allfam_nseq{$fam}";
+
+	$allfam_table{$fam}  = "$name & ";
+	$allfam_table{$fam} .= "$allfam_S{$fam} ($allfam_tp{$fam}/$allfam_true{$fam}) & ";    
+	$allfam_table{$fam} .= "$allfam_Spower{$fam} & ";    
+	$allfam_table{$fam} .= "$allfam_P{$fam} ($allfam_tp{$fam}/$allfam_found{$fam}) & ";    
+	$allfam_table{$fam} .= "$allfam_avgsub{$fam} & ";    
+	$allfam_table{$fam} .= "$allfam_id{$fam} & ";    
+	$allfam_table{$fam} .= "$allfam_nseq{$fam}\n\\\\"; 
+   
+	$allfam_tabless{$fam}  = "$name & ";
+	$allfam_tabless{$fam} .= "$allfam_tp_cyk{$fam}    & $allfam_tp{$fam}    & ";    
+	$allfam_tabless{$fam} .= "$allfam_true_cyk{$fam}  & $allfam_true{$fam}  & ";    
+	$allfam_tabless{$fam} .= "$allfam_S_cyk{$fam}     & $allfam_S{$fam}    & ";    
+	$allfam_tabless{$fam} .= "$allfam_found{$fam} & ";    
+	$allfam_tabless{$fam} .= "$allfam_P_cyk{$fam}     & $allfam_P{$fam}     ";    
+	$allfam_tabless{$fam} .= "\n\\\\";    
     }
 
     return $nf;
@@ -346,7 +382,9 @@ sub filter_fam {
 
 	my $fam = $allfam[$f];
 
-	if ($allfam_Spower{$fam}  > 5) {
+	if ($allfam_true{$fam}  > 10) {
+	#if ($allfam_Spower{$fam}  > 10 || $allfam_S{$fam}  > 0) {
+	#if ($allfam_Spower{$fam}  >= 0) { # no filtering
 	    $fam[$nf] = $fam;
 	    
 	    $fam_idx{$fam}  = $nf + 1;
@@ -376,7 +414,9 @@ sub filter_fam {
 	    $fam_F_cyk{$fam}      = $allfam_F_cyk{$fam};
 	    $fam_Spower_cyk{$fam} = $allfam_Spower_cyk{$fam};
 	    
-	    $fam_all{$fam} = $allfam_all{$fam};
+	    $fam_all{$fam}     = $allfam_all{$fam};
+	    $fam_table{$fam}   = $allfam_table{$fam};
+	    $fam_tabless{$fam} = $allfam_tabless{$fam};
 	    
 	    $nf ++;
 	}
@@ -410,7 +450,8 @@ sub plot_allfam {
     $cmd  = "";
     $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
     $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
-    $cmd .= "'$outfile_allfam'      using $idx:$iS            with points title '' ls 1116 "; 
+    #$cmd .= "'$outfile_allfam'      using $idx:$iP            with points title '' ls 1118,  "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iS            with points title '' ls 1114 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
    
@@ -423,7 +464,7 @@ sub plot_allfam {
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
-   print GP "set xrange [1:1500]\n";
+    print GP "set xrange [1:1500]\n";
     $ylabel = "fraction of basepairs that covary (%)";
     print GP "set ylabel '$ylabel'\n";
     $cmd  = "";
@@ -511,7 +552,8 @@ sub plot_allvsall {
     print GP "set xrange [-0.5:100]\n";
     print GP "set yrange [-0.5:100]\n";
     $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
+    $cmd     .= "'$outfile_allfam' using $iSpower:$iS:$ifam  title '' with labels ls 1112, "; 
+    $cmd     .= "'$outfile_allfam' using $iSpower:$iS        title '' with points ls 1112"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
@@ -575,8 +617,7 @@ sub outfile_rank {
     
     #my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
-    #my @S_order = sort { $fam_Spower{$b} <=> $fam_Spower{$a}  or $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
-    
+   
     open (OUT1, ">$outfile_rank")   || die;
     open (OUT2, ">$outfile_allfam") || die;
 	
@@ -597,6 +638,9 @@ sub outfile_rank {
 	printf OUT1 "$fam_all{$fam}\n";
 	$fam_all{$fam} = $n." ".$fam_all{$fam};
 	printf OUT2 "$fam_all{$fam}\n";
+	$fam_table{$fam} = "$n & $fam_table{$fam}";
+	printf  "$fam_table{$fam}\n";
+	$fam_tabless{$fam} = "$n & $fam_tabless{$fam}";
     }
     
     close(OUT1);  
@@ -692,16 +736,18 @@ sub outfile_greyzone{
 sub outfile_outlierp{
     my ($outfile_outlierp) = @_;
 
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+ 
     open (OUT, ">$outfile_outlierp") || die;
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam   = $fam[$f];
+	my $fam = $S_order[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam};
 	if ($sen < 2 && $power > 10) {
 	    $m ++;
 	    print     "outlierp $m $fam sen $sen power $power\n";
-	    print OUT "$fam_all{$fam}\n";
+	    print OUT "$fam_table{$fam}\n";
 	}
     }
     close(OUT);
@@ -729,10 +775,12 @@ sub outfile_outlierc{
 sub outfile_betterss{
     my ($outfile_betterss) = @_;
     
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
     open (OUT, ">$outfile_betterss") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $fam[$f];
+	my $fam     = $S_order[$f];
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
@@ -743,7 +791,7 @@ sub outfile_betterss{
 	if ($ppv_cyk > $ppv) {
 	    $m ++;
 	    print     "better ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
-	    print OUT "$fam_all{$fam}\n";
+	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
     close(OUT);
@@ -751,22 +799,25 @@ sub outfile_betterss{
  
 sub outfile_muchbettss{
     my ($outfile_muchbettss) = @_;
-    
+
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
     open (OUT, ">$outfile_muchbettss") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $fam[$f];
+	#my $fam     = $fam[$f];
+	my $fam     = $S_order[$f];
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
 	my $ppv_cyk = $fam_P_cyk{$fam};
 	my $tp      = $fam_tp{$fam};
 	my $tp_cyk  = $fam_tp_cyk{$fam};
-	my $power = $fam_Spower{$fam};
+	my $power   = $fam_Spower{$fam};
 	if ($tp_cyk > $tp+2) {
 	    $m ++;
 	    print     "much better ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
-	    print OUT "$fam_all{$fam}\n";
+	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
     close(OUT);
@@ -775,21 +826,24 @@ sub outfile_muchbettss{
 sub outfile_worsess{
     my ($outfile_worsess) = @_;
     
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
     open (OUT, ">$outfile_worsess") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $fam[$f];
+	#my $fam     = $fam[$f];
+	my $fam     = $S_order[$f];
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
 	my $ppv_cyk = $fam_P_cyk{$fam};
 	my $tp      = $fam_tp{$fam};
 	my $tp_cyk  = $fam_tp_cyk{$fam};
-	my $power = $fam_Spower{$fam};
+	my $power   = $fam_Spower{$fam};
 	if ($ppv_cyk < $ppv) {
 	    $m ++;
 	    print "worse ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
-	    print OUT "$fam_all{$fam}\n";
+	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
     close(OUT);
@@ -865,10 +919,11 @@ sub filter_families_by3d {
 	   
 	    
 	    if ($n3d > 0) {
-		$usefam_ref->[$nf] = 0;
-		if (is_3dfam($acc, $n3d, \@fam3d) ) { $usefam_ref->{$fam} = 1; $nf ++; }
+		$usefam_ref->{$fam} = 0;
+		if (is_3dfam($acc, $n3d, \@fam3d) ) { $usefam_ref->{$fam} = 1; }
 	    }
-	    else { $usefam_ref->{$fam} = 1; $nf ++; }
+	    else { $usefam_ref->{$fam} = 1; }
+	    $nf ++;
 	
 	}
     }
