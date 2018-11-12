@@ -51,7 +51,7 @@ RANLIB    = @RANLIB@
 INSTALL   = @INSTALL@
 LIBTOOLS  = @LIBTOOLS@
 
-LIBS      = -lhmmer -leasel -lrview @LIBS@ @PTHREAD_LIBS@  -lm
+LIBS      = -lhmmer -lrview -leasel @LIBS@ @PTHREAD_LIBS@  -lm
 
 IFLAGS   = -I../lib/hmmer/src -I../lib/hmmer/easel -I../lib/R-view/src -I../src 
 LFLAGS   = -L../lib/hmmer/src -L../lib/hmmer/easel -L../lib/R-view/src -L../src 

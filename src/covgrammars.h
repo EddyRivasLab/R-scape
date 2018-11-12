@@ -90,7 +90,7 @@ typedef struct {
 typedef struct {
   SCVAL  t1[2];  // S -> LS     | L
   SCVAL  t2[2];  // L -> a F a' | a
-  SCVAL  t3[2];  // F -> a F a' | Ls
+  SCVAL  t3[2];  // F -> a F a' | LS
 
   SCVAL e_sing[NB];
   SCVAL e_pair[NP];

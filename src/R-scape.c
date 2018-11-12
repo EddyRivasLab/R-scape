@@ -99,6 +99,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              tend;
   char            *outmsafile;
   FILE            *outmsafp;
+  char            *outtreefile;
+  FILE            *outtreefp;
   char            *outnullfile;
   FILE            *outnullfp; 
   char            *outdir;
@@ -339,6 +341,7 @@ static ESL_OPTIONS options[] = {
   /* Control of output */
   { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
   { "--outmsa",    eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>",                                                         1 },
+  { "--outtree",   eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write phylogenetic tree used to file <f>",                                                  1 },
   { "--outnull",   eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>",                                                         1 },
   { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
@@ -350,7 +353,7 @@ static ESL_OPTIONS options[] = {
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
   { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cococyk calculation",                                                      0 },   
+  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cyk calculation options are [BGR,G6S,G6]",                                 0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -369,6 +372,7 @@ static int  msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int  original_msa_doctor_names(ESL_MSA **omsa);
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
@@ -730,6 +734,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
   } 
   
+  /* file with the phylogenetic tree used */
+  cfg.outtreefile = NULL;
+  cfg.outtreefp   = NULL;
+  if (esl_opt_IsOn(go, "--outtree")) {
+    esl_sprintf(&cfg.outtreefile, "%s", esl_opt_GetString(go, "--outtree"));
+    if ((cfg.outtreefp = fopen(cfg.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtree file %s", cfg.outtreefile);
+  } 
+  
   /* file with the null alignments */
   cfg.outnullfile = NULL;
   cfg.outnullfp   = NULL;
@@ -825,8 +837,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
    }
   else { // read the power file
-    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.double.csv", RSCAPE_BIN);
-    else                 esl_sprintf(&cfg.powerfile, "%s/../data/power/R-scape.power.subs.csv",   RSCAPE_BIN);
+    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
+    else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
     power_Read(cfg.powerfile, cfg.powerdouble, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   
@@ -913,7 +925,7 @@ main(int argc, char **argv)
       else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
       else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
     }
- 
+
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
@@ -998,6 +1010,7 @@ main(int argc, char **argv)
   fclose(cfg.sumfp);
   if (cfg.omsacykfp) fclose(cfg.omsacykfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
+  if (cfg.outtreefp) fclose(cfg.outtreefp);
   if (cfg.outpottsfp) fclose(cfg.outpottsfp);
   if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
@@ -1022,6 +1035,7 @@ main(int argc, char **argv)
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.omsacykfile) free(cfg.omsacykfile);
   if (cfg.outmsafile) free(cfg.outmsafile);
+  if (cfg.outtreefile) free(cfg.outtreefile);
   if (cfg.outpottsfile) free(cfg.outpottsfile);
   if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.ft) free(cfg.ft);
@@ -1141,6 +1155,9 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
+    
+    /* outtree file if requested */
+    if (cfg->outtreefp) esl_tree_WriteNewick(cfg->outtreefp, cfg->T);
   }
   if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   
@@ -1194,6 +1211,9 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (cfg->msaname[i] == '(') cfg->msaname[i] = '_';
   for (i = 0; i < n; i ++)
     if (cfg->msaname[i] == ')') cfg->msaname[i] = '_';
+  // remove possible / in name
+  for (i = 0; i < n; i ++)
+    if (cfg->msaname[i] == '/') cfg->msaname[i] = '_';
   
   if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
@@ -1276,7 +1296,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
-  
+
+  /* doctor the msa names. 
+   * FastTree truncates seq names at semicolons.
+   * replace semicolons with |
+   */
+  status = original_msa_doctor_names(omsa);
+  if (status != eslOK) return eslFAIL;
+
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
    */
@@ -1379,7 +1406,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* add the name */
   esl_msa_SetName(msa, cfg->msaname, -1);
-  
+ 
   /* print some info */
   if (cfg->verbose) {
     fprintf(stdout, "Used alignment\n");
@@ -1400,6 +1427,33 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (submsaname) free(submsaname);
   if (useme) free(useme);
   return status;
+}
+
+static int
+original_msa_doctor_names(ESL_MSA **omsa)
+{
+  ESL_MSA *msa = *omsa;
+  char    *sqname;
+  char    *p;
+  int      s;
+
+  // the msaneme (ID) has to be free of '/' symbols
+  if (msa->name) {
+    for (p = msa->name; (p = strchr(p, '/')); ++p) 
+     *p = '_';
+  }
+  
+  // several characters in names interfere with FastTree
+  // : /
+  for (s = 0; s < msa->nseq; s++) {
+    sqname = msa->sqname[s];
+    for (p = sqname; (p = strchr(p, ':')); ++p) 
+      *p = '|';
+    for (p = sqname; (p = strchr(p, '/')); ++p) 
+      *p = '_';
+  }
+  
+  return eslOK;
 }
 
 static int

@@ -45,6 +45,8 @@ my $file3d;
 my $n3d = 0;
 my @fam3d;
 my @name3d;
+
+my $nofilter = 1;
 if ($opt_F) { 
     $file3d = "$opt_F"; 
     parse_3dfile($file3d, \$n3d, \@fam3d, \@name3d);
@@ -52,6 +54,7 @@ if ($opt_F) {
     for (my $f = 0; $f < $n3d; $f ++) {
 	printf "%d |$fam3d[$f]| |$name3d[$f]|\n", $f+1;
     }
+    $nofilter = 0;
 }
 
 my @allfam;
@@ -169,9 +172,9 @@ my %fam_F_cyk;
 my %fam_Spower_cyk;
 my %fam_all;
 my %fam_table;
- my %fam_tabless;
+my %fam_tabless;
 
-my $nf = filter_fam();
+my $nf = filter_fam($nofilter);
 print "NFAM $nf\n";
 
 outfile_rank       ($outfile_rank, $outfile_allfam);
@@ -267,13 +270,14 @@ sub parse_rscapeout {
 	    my $F       = $6;
 	    
 	    if ($usefam) {	    
-		#printf "%d FAM $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
 		if ($iscyk) {
+		    printf "%d FAM CYK $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
 		    $allfam_tp_cyk{$fam}    = $tp;
 		    $allfam_true_cyk{$fam}  = $true;
 		    $allfam_found_cyk{$fam} = $found;
 		}
 		else {
+		    printf "%d FAM $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
 		    $allfam_tp{$fam}    = $tp;
 		    $allfam_true{$fam}  = $true;
 		    $allfam_found{$fam} = $found;
@@ -283,7 +287,7 @@ sub parse_rscapeout {
 	}
 	# BPAIRS 20
 	# avg substitutions per BP 15.8
-	# BPAIRS expected covary 7.1
+	# BPAIRS expected to covary 7.1
 	elsif (/^#\s+avg substitutions per BP\s+(\S+)/) {
 	    my $avgsub = $1;
 	    if ($usefam) {
@@ -314,9 +318,17 @@ sub parse_rscapeout {
 	}
     }
     close (FILE);
-    print "NFAMILIES $nf\n";
+    print "NFAMILIES parsed $nf\n";
        
     #
+    for (my $f = 0; $f < $nf-1; $f ++) {
+	my $fam = $allfam[$f];
+	for (my $ff = $f+1; $ff < $nf; $ff ++) {
+	    my $ffam = $allfam[$ff];
+	    if ($ffam =~ /^$fam$/) { printf("^^AH $f $fam $ff $ffam\n"); die; }
+	}
+    }
+    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $allfam[$f];
 	
@@ -337,7 +349,7 @@ sub parse_rscapeout {
 	$allfam_id{$fam}     = sprintf("%.1f", $allfam_id{$fam});
 	    
 	my $name = $fam;
-	if ($usefam3d_ref->{$fam}) { $name .= "**"; }
+	if ($n3d > 0 && $usefam3d_ref->{$fam}) { $name .= "**"; }
 	$name =~ s/\_/ /g;
 	
 	my $longname = $fam; $longname =~ s/\_/-/g;
@@ -375,16 +387,15 @@ sub parse_rscapeout {
 }
 
 sub filter_fam {
-
+    my ($nofilter) = @_;
+    
     my $nf = 0;
 
     for (my $f = 0; $f < $nfall; $f ++) {
 
 	my $fam = $allfam[$f];
 
-	if ($allfam_true{$fam}  > 10) {
-	#if ($allfam_Spower{$fam}  > 10 || $allfam_S{$fam}  > 0) {
-	#if ($allfam_Spower{$fam}  >= 0) { # no filtering
+	if ($nofilter || (!$nofilter && $allfam_true{$fam}  > 10) ) {
 	    $fam[$nf] = $fam;
 	    
 	    $fam_idx{$fam}  = $nf + 1;
@@ -584,17 +595,6 @@ sub plot_allvsid {
     print GP "set nokey\n";
     print GP "set ylabel '$ylabel'\n";
     
-    #print GP "set xrange [-0.5:100]\n";
-    $xlabel = "Alignment average percentage id";
-    print GP "set size square\n";
-    print GP "set xlabel '$xlabel'\n";
-    print GP "set xrange [-0.5:100]\n";
-    print GP "set yrange [-0.5:100]\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iavgid:$iS      title '' with points ls 1112"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-
     $xlabel = "Alignment lenght";
     print GP "set xlabel '$xlabel'\n";
     $cmd = "";
@@ -608,6 +608,17 @@ sub plot_allvsid {
     $cmd     .= "'$outfile_allfam' using $inseq:$iS      title '' with points ls 1112"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
+
+    $xlabel = "Alignment average percentage id";
+    print GP "set size square\n";
+    print GP "set xlabel '$xlabel'\n";
+    print GP "set xrange [-0.5:100]\n";
+    print GP "set yrange [-0.5:100]\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $iavgid:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+
     
     system("open $pdf\n");
 }
@@ -741,7 +752,7 @@ sub outfile_outlierp{
     open (OUT, ">$outfile_outlierp") || die;
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam = $S_order[$f];
+	my $fam = $allfam[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam};
 	if ($sen < 2 && $power > 10) {
@@ -781,6 +792,7 @@ sub outfile_betterss{
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam     = $S_order[$f];
+	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
@@ -790,7 +802,8 @@ sub outfile_betterss{
 	my $power = $fam_Spower{$fam};
 	if ($ppv_cyk > $ppv) {
 	    $m ++;
-	    print     "better ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print     "better_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    #print     "better_ss $fam_tabless{$fam}\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -805,8 +818,8 @@ sub outfile_muchbettss{
     open (OUT, ">$outfile_muchbettss") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	#my $fam     = $fam[$f];
 	my $fam     = $S_order[$f];
+	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
@@ -816,7 +829,7 @@ sub outfile_muchbettss{
 	my $power   = $fam_Spower{$fam};
 	if ($tp_cyk > $tp+2) {
 	    $m ++;
-	    print     "much better ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print     "much_better_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -831,8 +844,8 @@ sub outfile_worsess{
     open (OUT, ">$outfile_worsess") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	#my $fam     = $fam[$f];
 	my $fam     = $S_order[$f];
+	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
@@ -842,7 +855,7 @@ sub outfile_worsess{
 	my $power   = $fam_Spower{$fam};
 	if ($ppv_cyk < $ppv) {
 	    $m ++;
-	    print "worse ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print "worse_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -856,6 +869,7 @@ sub outfile_equalss{
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam     = $fam[$f];
+	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
 	my $sen_cyk = $fam_S_cyk{$fam};
 	my $ppv     = $fam_P{$fam};
@@ -865,7 +879,7 @@ sub outfile_equalss{
 	my $power = $fam_Spower{$fam};
 	if ($ppv_cyk == $ppv) {
 	    $m ++;
-	    #print "equal ss $m $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print "equal_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -928,7 +942,8 @@ sub filter_families_by3d {
 	}
     }
     close(FILE);
-     print "After 3D filtering $nf families\n";
+    
+    if ($n3d > 0) { print "After 3D filtering $nf families\n"; }
    
     return $nf;
 }

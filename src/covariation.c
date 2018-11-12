@@ -949,6 +949,7 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
+
     cov_WriteCYKRankedHitList(stdout,         nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
     cov_WriteCYKRankedHitList(data->outsrtfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
   }
@@ -1216,73 +1217,73 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
     if (hitlist->srthit[h]->bptype == WWc) {
       if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
    }
     
     else if (hitlist->srthit[h]->bptype < STACKED) { 
       if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
   }
     
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) {
            if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
    }
     
     else if (hitlist->srthit[h]->bptype < BPNONE) {
            if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
     }
     
     else if (hitlist->srthit[h]->is_compatible) {
            if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, "~\t %10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
    }
     
     else {
            if (cykhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
     }  
   }
 
@@ -1432,18 +1433,15 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
    * These pairs become constrains for the second part of the folding in cov_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, data->clist, &cykct, &sc, minloop, thresh, data->errbuf, data->verbose);
+  status = CYKCOV(data->r, data->mi, data->clist, &cykct, &ss, &sc, minloop, thresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
-  /* impose the ct on the msa GC line 'cons_ss' */
-  ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
-  esl_ct2wuss(cykct, msa->alen, ss);
   /* replace the 'SS_cons' GC line with the new ss */
   strcpy(msa->ss_cons, ss);
   if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
   if (data->verbose) {
     printf("cykcov score = %f minloop %d covthresh %f %f\n", sc, minloop, thresh->sc_bp, thresh->sc_nbp);
-    printf("ss:%s\n", ss);
+    printf("%s\n", ss);
   }
 
   /* expand the CT with compatible/stacked A:U C:G G:U pairs */
@@ -2516,7 +2514,7 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
       esl_sprintf(&(msa->gf[tagidx]), "");
   }
 
- // covariance-constraint CYK using a probabilistic grammar
+  // covariance-constraint CYK using a probabilistic grammar
   status = cov_ExpandCT_CCCYK(r, msa, ret_ct, G, minloop, verbose, errbuf);
   if (status != eslOK) goto ERROR;
 
@@ -2546,9 +2544,10 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   int     *ct = *ret_ct;
   int     *cct = NULL;
   SCVAL    sc;
-  float    idthresh = 0.30;
+  float    idthresh = 0.0;
+  int      i;
   int      status;
- 
+
   /* create an RF sequence */
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
@@ -2564,6 +2563,7 @@ cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
   status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
+
   if (verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);

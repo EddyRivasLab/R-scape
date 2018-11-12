@@ -162,10 +162,10 @@ distclean:
 	${QUIET_SUBDIR0}src                   ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}documentation         ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}documentation/e2msa   ${QUIET_SUBDIR1} distclean
-	-rm config.log config.status
-	-rm -rf autom4te.cache
-	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
-	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
-	-rm Makefile
+	${QUIET}-rm config.log config.status
+	${QUIET}-rm -rf autom4te.cache
+	${QUIET}-rm -f *.o *~ Makefile.bak core TAGS gmon.out
+	${QUIET}-rm Makefile
+	${QUIET}-rm bin/*
 	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} distclean

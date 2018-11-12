@@ -19,24 +19,36 @@
 #include "cykcov.h"
 
 static int accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh);
+static int covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh);
 static int dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
 			char *errbuf, int verbose);
 
 // Include as many of the significantly covarying pairs in one structure.
 // We do this by running a nussinov-type algorithm
+//
+// We return a ct vector.
+// We are going to distinguish three situations:
+//
+//  ct[i] =  j   i-j are a covaring pair that can be put in the structure with the max number of covs
+//  ct[i] = -1   i is covarying but cannot be added to the structure with max number of covs
+//  ct[i] =  0;  i is not covarying
 int
-CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, char **ret_ss, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
 {
   GMX   *cyk = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
   int   *ct  = NULL;
+  char  *ss  = NULL;
   int    i;
-  int    n = 0;
+  int    n;
   int    status;
 
   if (ESL_MIN(thresh->sc_bp, thresh->sc_nbp) > mi->maxCOV) {
     ESL_ALLOC(ct, sizeof(int) * (mi->alen+1));
     esl_vec_ISet(ct, mi->alen+1, 0);
+    ESL_ALLOC(ss, sizeof(char) * (mi->alen+1));
+    esl_ct2wuss(ct, mi->alen, ss);      
     *ret_ct = ct;
+    *ret_ss = ss;
     return eslOK;
   }
   
@@ -46,19 +58,35 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, SCVAL
   if ((status = CYKCOV_Fill(mi, clist, cyk, ret_sc, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
   /* Report a traceback */
   if ((status = CYKCOV_Traceback(r, mi, clist, cyk, &ct, minloop, thresh, errbuf, verbose))  != eslOK) goto ERROR;
-  
-  if (verbose) {
+
+  /* the ss string */
+  ESL_ALLOC(ss, sizeof(char) * (mi->alen+1));
+  esl_ct2wuss(ct, mi->alen, ss);
+
+  // now look for residues that covary but not in the structure and assign then ct = -1
+  // we don't want them to basepair with anything else either
+  covariations_not_in_structure(ct, mi, clist, thresh);
+      
+  if (1||verbose) {
     printf("CYKscore = %f at covthres %f %f\n", *ret_sc, thresh->sc_bp, thresh->sc_nbp);
-    for (i = 1; i < mi->alen; i ++) 
+    n = 0;
+    for (i = 1; i <= mi->alen; i ++) 
       if (ct[i] > i) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
-  }
+    if (n%2 != 0) { printf("the number of nested covarying pair should be an even number, but it is %d\n", n); goto ERROR; }
+    n = 0;
+    for (i = 1; i <= mi->alen; i ++) 
+      if (ct[i] < 0) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
+    if (n%2 != 0) { printf("the number of non-nested covarying pair should be an even number, but it is %d\n", n); goto ERROR; }
+   }
 
   *ret_ct = ct;
+  *ret_ss = ss;
   GMX_Destroy(cyk);
   return eslOK;
   
  ERROR:
   if (ct)  free(ct);
+  if (ss)  free(ss);
   if (cyk) GMX_Destroy(cyk);
   return status;
 }
@@ -277,7 +305,6 @@ accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
   int    isbp = FALSE;
   int    c;
 
-
   for (c = 0; c < clist->ncnt; c++) 
     if (i == clist->cnt[c].i && j == clist->cnt[c].j) isbp = clist->cnt[c].isbp;
 
@@ -285,4 +312,33 @@ accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
   if (!isbp && cov >= thresh->sc_nbp) return TRUE;
   
   return FALSE;
+}
+
+// annotate as ct=-1 for covariations not in the structure
+static int
+covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
+{
+  double cov;
+  int    L = mi->alen;
+  int    i, j;
+  int    isbp;
+  int    c;
+
+  for (i = 1; i < L; i ++) {
+
+    if (ct[i] > 0) continue; // it is in the ss
+
+    isbp = FALSE;
+    for (c = 0; c < clist->ncnt; c++) 
+      if (i == clist->cnt[c].i) isbp = clist->cnt[c].isbp;
+
+    for (j = i+1; j <= L; j ++) {
+      cov = mi->COV->mx[i-1][j-1];
+
+      if ( isbp && cov >= thresh->sc_bp)  { ct[i] = -1; ct[j] = -1; }
+      if (!isbp && cov >= thresh->sc_nbp) { ct[i] = -1; ct[j] = -1; }
+    }
+  }
+  
+  return eslOK;
 }
