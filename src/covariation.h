@@ -61,6 +61,6 @@ extern int              cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct
 extern int              cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf);
 extern int              cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf);
 extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
-extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
+extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
 extern int              cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb);
 #endif

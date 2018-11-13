@@ -1421,7 +1421,6 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
 {
   HITLIST       *cykhitlist = NULL;
   int           *cykct      = NULL;
-  char          *ss         = NULL;
   char          *covtype    = NULL;
   char          *threshtype = NULL;
   SCVAL          sc;
@@ -1433,18 +1432,13 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
    * These pairs become constrains for the second part of the folding in cov_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, data->clist, &cykct, &ss, &sc, minloop, thresh, data->errbuf, data->verbose);
+  status = CYKCOV(data->r, data->mi, data->clist, &cykct, NULL, &sc, minloop, thresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
-
-  /* replace the 'SS_cons' GC line with the new ss */
-  strcpy(msa->ss_cons, ss);
-  if (!msa->ax) esl_msa_Digitize(data->mi->abc, msa, data->errbuf);
   if (data->verbose) {
     printf("cykcov score = %f minloop %d covthresh %f %f\n", sc, minloop, thresh->sc_bp, thresh->sc_nbp);
-    printf("%s\n", ss);
   }
 
-  /* expand the CT with compatible/stacked A:U C:G G:U pairs */
+  /* Use the CT from covariation to do a contrain folding */
   status = cov_ExpandCT(data->R2Rcykfile, data->R2Rall, data->r, msa, &cykct, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
@@ -1481,7 +1475,6 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
   cov_FreeHitList(cykhitlist);
   free(covtype);
   free(threshtype);
-  free(ss);
   return eslOK;
   
  ERROR:
@@ -1489,7 +1482,6 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
   if (covtype)    free(covtype);
   if (threshtype) free(threshtype);
   if (cykct)      free(cykct);
-  if (ss)         free(ss);
   return status;
 }
 
@@ -2522,6 +2514,7 @@ cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **r
   ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_ct2simplewuss(*ret_ct, L, ss);
   strcpy(msa->ss_cons, ss);
+  if (verbose) printf("cyk structure\n%s\n", ss);
    
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, msa, eslMSAFILE_PFAM);

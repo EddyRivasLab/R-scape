@@ -48,7 +48,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, char 
     ESL_ALLOC(ss, sizeof(char) * (mi->alen+1));
     esl_ct2wuss(ct, mi->alen, ss);      
     *ret_ct = ct;
-    *ret_ss = ss;
+    if (ret_ss) *ret_ss = ss;
     return eslOK;
   }
   
@@ -67,7 +67,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, char 
   // we don't want them to basepair with anything else either
   covariations_not_in_structure(ct, mi, clist, thresh);
       
-  if (1||verbose) {
+  if (verbose) {
     printf("CYKscore = %f at covthres %f %f\n", *ret_sc, thresh->sc_bp, thresh->sc_nbp);
     n = 0;
     for (i = 1; i <= mi->alen; i ++) 
@@ -76,11 +76,10 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, char 
     n = 0;
     for (i = 1; i <= mi->alen; i ++) 
       if (ct[i] < 0) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
-    if (n%2 != 0) { printf("the number of non-nested covarying pair should be an even number, but it is %d\n", n); goto ERROR; }
-   }
+  }
 
   *ret_ct = ct;
-  *ret_ss = ss;
+  if (ret_ss) *ret_ss = ss; else free(ss);
   GMX_Destroy(cyk);
   return eslOK;
   
@@ -327,16 +326,17 @@ covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH
   for (i = 1; i < L; i ++) {
 
     if (ct[i] > 0) continue; // it is in the ss
-
-    isbp = FALSE;
-    for (c = 0; c < clist->ncnt; c++) 
-      if (i == clist->cnt[c].i) isbp = clist->cnt[c].isbp;
-
+ 
     for (j = i+1; j <= L; j ++) {
+      if (ct[j] > 0) continue; // it is in the ss
+      
+      isbp = FALSE;
+      for (c = 0; c < clist->ncnt; c++) 
+	if (i == clist->cnt[c].i && j == clist->cnt[c].j) isbp = clist->cnt[c].isbp;
       cov = mi->COV->mx[i-1][j-1];
-
-      if ( isbp && cov >= thresh->sc_bp)  { ct[i] = -1; ct[j] = -1; }
-      if (!isbp && cov >= thresh->sc_nbp) { ct[i] = -1; ct[j] = -1; }
+      
+      if ( isbp && cov > thresh->sc_bp)  { ct[i] = -1; ct[j] = -1; }
+      if (!isbp && cov > thresh->sc_nbp) { ct[i] = -1; ct[j] = -1; }
     }
   }
   
