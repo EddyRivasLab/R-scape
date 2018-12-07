@@ -1234,12 +1234,12 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, int *ct, BGR_MX *cyk, int w, int j, in
    
   i = j - d + 1;
 
-  if (d < 3 && w == BGR_P)  { *ret_sc = -eslINFINITY; return eslOK; }  // P  has at least 3 residues
-  if (d < 5 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 5 residues
-  if (d < 5 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 5 residues
-  if (d < 5 && w == BGR_F5) { *ret_sc = -eslINFINITY; return eslOK; }  // F5 has at least 5 residues
-  if (d < 5 && w == BGR_R)  { *ret_sc = -eslINFINITY; return eslOK; }  // R  has at least 5 residues
-  if (d < 5 && w == BGR_M1) { *ret_sc = -eslINFINITY; return eslOK; }  // M1 has at least 5 residues
+  if (d < 1 && w == BGR_P)  { *ret_sc = -eslINFINITY; return eslOK; }  // P  has at least 1 residues
+  if (d < 3 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 3 residues
+  if (d < 3 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 3 residues
+  if (d < 3 && w == BGR_F5) { *ret_sc = -eslINFINITY; return eslOK; }  // F5 has at least 3 residues
+  if (d < 3 && w == BGR_R)  { *ret_sc = -eslINFINITY; return eslOK; }  // R  has at least 3 residues
+  if (d < 3 && w == BGR_M1) { *ret_sc = -eslINFINITY; return eslOK; }  // M1 has at least 3 residues
   
   switch(w) {
   case BGR_S:

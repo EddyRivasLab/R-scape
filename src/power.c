@@ -220,10 +220,15 @@ power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int
   if (verbose) power_Write(stdout, power, verbose);
 
   *ret_power = power;
+
+  if (subs) free(subs);
+  if (prob) free(prob);
   return eslOK;
 
  ERROR:
   if (power) power_Destroy(power);
+  if (subs) free(subs);
+  if (prob) free(prob);
   return status;
 }
 

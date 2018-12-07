@@ -123,6 +123,7 @@ extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsNewContact(int posi, int  posj, BPTYPE bptype, CLIST *clist);
 extern int    CMAP_IsWCLocal(int i, int j, CLIST *clist);
 extern int    CMAP_ReuseCList(CLIST *list);
+extern int    CMAP_RemoveFromCLIST(int c, CLIST *clist);
 extern int    CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf);
 
 #endif /*RVIEW_CONTACTS_INCLUDED*/

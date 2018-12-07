@@ -586,6 +586,44 @@ CMAP_ReuseCList(CLIST *clist)
   return eslOK;
 }
 
+int
+CMAP_RemoveFromCLIST(int c, CLIST *clist)
+{
+  BPTYPE bptype;
+  int    isbp;
+  int    h;
+
+  bptype = clist->cnt[c].bptype;
+  isbp   = clist->cnt[c].isbp;
+  
+  for (h = c+1; h < clist->ncnt; h ++) {
+    clist->cnt[h-1].pdbi = clist->cnt[h].pdbi;
+    clist->cnt[h-1].pdbj = clist->cnt[h].pdbj;
+    clist->cnt[h-1].posi = clist->cnt[h].posi;
+    clist->cnt[h-1].posj = clist->cnt[h].posj;
+    clist->cnt[h-1].i    = clist->cnt[h].i;
+    clist->cnt[h-1].j    = clist->cnt[h].j;
+    
+    clist->cnt[h-1].bptype = clist->cnt[h].bptype;
+    clist->cnt[h-1].isbp   = clist->cnt[h].isbp;
+
+    clist->cnt[h-1].dist = clist->cnt[h].dist;
+    clist->cnt[h-1].sc = clist->cnt[h].sc;
+  }
+  clist->cnt[h].pdbi = -1;
+  clist->cnt[h].pdbj = -1;
+  clist->cnt[h].posi = -1;
+  clist->cnt[h].posj = -1;
+  clist->cnt[h].i    = -1;
+  clist->cnt[h].j    = -1;
+  
+  if (bptype == WWc) clist->nwwc --;
+  if (isbp)          clist->nbps --;
+  clist->ncnt --;
+  
+  return eslOK;
+}
+
 int 
 CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
 {

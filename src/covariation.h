@@ -54,13 +54,14 @@ extern int              cov_WriteHistogram(struct data_s *data, char *gnuplot, c
 extern int              cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg, int ignorebps);
 extern int              cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covqqfile, RANKLIST *ranklist, char *title, int dosvg);
 extern int              cov_PlotNullCov(char *gnuplot, char *nullcovfile, double maxBP, double maxcovBP, double maxcovRBPf, int dosvg);
-extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, SAMPLESIZE samplesize, HITLIST *hitlist, 
-				    int dosvg, int verbose, char *errbuf);
+extern int              cov_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int nct, int **ctlist, struct mutual_s *mi, int *msamap, int firstpos,
+				    SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, int verbose, char *errbuf);
 extern int              cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist);
-extern int              cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf);
+extern int              cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf);
 extern int              cov_R2Rpdf(char *r2rfile, int verbose, char *errbuf);
 extern int              cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf);
-extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf);
+extern int              cov_ExpandCT(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist,
+				     int minloop, enum grammar_e G, int verbose, char *errbuf);
 extern int              cov_ExpandCT_CCCYK( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
 extern int              cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb);
 #endif

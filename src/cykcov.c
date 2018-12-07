@@ -18,10 +18,11 @@
 #include "covgrammars.h"
 #include "cykcov.h"
 
-static int accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh);
-static int covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh);
-static int dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
-			char *errbuf, int verbose);
+static int  accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, int *ct_input, THRESH *thresh);
+static int  covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh, int *ret_ncv_in, int verbose);
+static int  dp_recursion(struct mutual_s *mi, CLIST *clist, int *ct_input, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
+			   char *errbuf, int verbose);
+static int  remove_ct_from_ctinput(int *ct_input, int L, const int *ct);
 
 // Include as many of the significantly covarying pairs in one structure.
 // We do this by running a nussinov-type algorithm
@@ -32,66 +33,127 @@ static int dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop
 //  ct[i] =  j   i-j are a covaring pair that can be put in the structure with the max number of covs
 //  ct[i] = -1   i is covarying but cannot be added to the structure with max number of covs
 //  ct[i] =  0;  i is not covarying
+//
+// If there are covaring pairs that cannot be added to one single nested st, then we
+// remove the already accounted for pairs, and build more structures untill all
+// convarying pairs are accounted for. This allows to follow up pseudoknots.
+//
 int
-CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int **ret_ct, char **ret_ss, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist,
+       int ncvpairs, int minloop, THRESH *thresh, char *errbuf, int verbose) 
 {
-  GMX   *cyk = NULL;           /* CYK DP matrix: M x (L x L triangular)     */
-  int   *ct  = NULL;
-  char  *ss  = NULL;
-  int    i;
-  int    n;
-  int    status;
+  int n;
+  int status;
 
   if (ESL_MIN(thresh->sc_bp, thresh->sc_nbp) > mi->maxCOV) {
-    ESL_ALLOC(ct, sizeof(int) * (mi->alen+1));
-    esl_vec_ISet(ct, mi->alen+1, 0);
-    ESL_ALLOC(ss, sizeof(char) * (mi->alen+1));
-    esl_ct2wuss(ct, mi->alen, ss);      
-    *ret_ct = ct;
-    if (ret_ss) *ret_ss = ss;
+    ESL_ALLOC(*ret_ctlist, sizeof(int *));
+    ESL_ALLOC(*ret_ctlist[0], sizeof(int) * (mi->alen+1));
+    esl_vec_ISet(*ret_ctlist[0], mi->alen+1, 0);
+    *ret_nct = 1;
     return eslOK;
   }
   
-  cyk = GMX_Create(mi->alen);
-
-  /* Fill the cyk matrix */
-  if ((status = CYKCOV_Fill(mi, clist, cyk, ret_sc, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
-  /* Report a traceback */
-  if ((status = CYKCOV_Traceback(r, mi, clist, cyk, &ct, minloop, thresh, errbuf, verbose))  != eslOK) goto ERROR;
-
-  /* the ss string */
-  ESL_ALLOC(ss, sizeof(char) * (mi->alen+1));
-  esl_ct2wuss(ct, mi->alen, ss);
-
-  // now look for residues that covary but not in the structure and assign then ct = -1
-  // we don't want them to basepair with anything else either
-  covariations_not_in_structure(ct, mi, clist, thresh);
-      
-  if (verbose) {
-    printf("CYKscore = %f at covthres %f %f\n", *ret_sc, thresh->sc_bp, thresh->sc_nbp);
-    n = 0;
-    for (i = 1; i <= mi->alen; i ++) 
-      if (ct[i] > i) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
-    if (n%2 != 0) { printf("the number of nested covarying pair should be an even number, but it is %d\n", n); goto ERROR; }
-    n = 0;
-    for (i = 1; i <= mi->alen; i ++) 
-      if (ct[i] < 0) { n ++; printf("%d> %d %d\n", n, i, ct[i]); }
-  }
-
-  *ret_ct = ct;
-  if (ret_ss) *ret_ss = ss; else free(ss);
-  GMX_Destroy(cyk);
+  // run cyk/traceback to get the maximal number of cov pairs that form a nested structure
+  if ((status = CYKCOV_Structures(r, mi, clist, ret_nct, ret_ctlist, ncvpairs, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
+  
   return eslOK;
   
  ERROR:
-  if (ct)  free(ct);
-  if (ss)  free(ss);
+  for (n = 0; n < *ret_nct; n ++) if (*ret_ctlist[n]) free(*ret_ctlist[n]);
+  if (*ret_ctlist) free(*ret_ctlist);
+  return status;
+}
+
+int
+CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, int ncvpairs, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+{
+  int    **ctlist   = NULL;
+  int     *ct_input = NULL; // ct_input=0 allowed ct_input=-1 disallowed
+  int     *ct;
+  SCVAL    sc;
+  int      L = mi->alen;
+  int      ncv_in;               // number of cov pair part of a given nested structure
+  int      ncv_left = ncvpairs;  // number of cov left to account for
+  int      nct = 0;
+  int      i;
+  int      n;
+  int      s; 
+  int      status;
+
+  // all allowed at first
+  ESL_ALLOC(ct_input, sizeof(int) * (L+1));
+  esl_vec_ISet(ct_input, L+1, 0);
+  
+  while(ncv_left > 0) {
+    if (nct == 0) ESL_ALLOC  (ctlist, sizeof(int *) * (nct+1));
+    else          ESL_REALLOC(ctlist, sizeof(int *) * (nct+1));
+    ctlist[nct] = NULL;
+
+    if ((status = CYKCOV_Both(rng, mi, clist, ct_input, &sc, &ctlist[nct], minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;
+    if (sc == 0) break; // the covariations left don't form a structure
+    
+    ct = ctlist[nct];
+    
+    // now look for residues that covary but not in the structure and assign then ct = -1
+    // we don't want them to basepair with anything else either
+    if (covariations_not_in_structure(ct, mi, clist, thresh, &ncv_in, verbose) != eslOK) goto ERROR;
+    ncv_left -= ncv_in;
+    
+    // this function modifies ct_input to exclude the pairs in ct by assigning them ct_input = -1
+    if (remove_ct_from_ctinput(ct_input, mi->alen, ct) != eslOK) goto ERROR;
+
+    if (1||verbose) 
+      printf("structure %d [%d cv pairs] CYKscore = %f at covthres %f %f\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp);
+       
+    nct ++;
+  }
+
+  // go back go all structures.
+  // those residues that are marked as -1 in the final ct_input, and are not
+  // paired in that particular structure, mark as -1.
+  // The next folding step in ExpandCT will keep those -1 residues unpaired
+  for (s = 0; s < nct; s ++) {
+    ct = ctlist[s];
+    for (i = 1; i <= L; i ++) if (ct[i] == 0 && ct_input[i] == -1) ct[i] = -1;
+  }
+  
+  *ret_nct    = nct;
+  *ret_ctlist = ctlist;
+
+  free(ct_input);
+  return eslOK;
+
+ ERROR:
+  if (ct_input) free(ct_input);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
+  return status;
+}
+
+int
+CYKCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ct_input, SCVAL *ret_sc, int **ret_ct, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+{
+  GMX    *cyk = NULL;  // CYK DP matrix: M x (L x L triangular)   
+  int     status;
+
+  cyk = GMX_Create(mi->alen);
+  
+  /* Fill the cyk matrix */
+  if ((status = CYKCOV_Fill(mi, clist, ct_input, cyk, ret_sc, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;
+  
+  /* Report a traceback */
+  if ((status = CYKCOV_Traceback(rng, mi, clist, ct_input, cyk, ret_ct, minloop, thresh, errbuf, verbose))  != eslOK) goto ERROR;
+
+  GMX_Destroy(cyk);
+  return eslOK;
+
+ ERROR:
   if (cyk) GMX_Destroy(cyk);
   return status;
 }
 
 int
-CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, GMX *cyk, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, int *ct_input, GMX *cyk, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
 {
   SCVAL  sc;
   int    L = mi->alen;
@@ -102,7 +164,7 @@ CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, GMX *cyk, SCVAL *ret_sc, int minl
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
-	status = dp_recursion(mi, clist, cyk, minloop, thresh, j, d, &(cyk->dp[j][d]), NULL, errbuf, verbose);
+	status = dp_recursion(mi, clist, ct_input, cyk, minloop, thresh, j, d, &(cyk->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
 	if (verbose) printf("\nCYK %f j=%d d=%d L=%d\n", cyk->dp[j][d], j, d, L); 
      } 
@@ -119,7 +181,7 @@ CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, GMX *cyk, SCVAL *ret_sc, int minl
 
 
 int
-CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, GMX *cyk, int **ret_ct, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ct_input, GMX *cyk, int **ret_ct, int minloop, THRESH *thresh, char *errbuf, int verbose) 
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
@@ -169,7 +231,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, GMX *cy
       esl_stack_IPop(ns, &i);
       d = j-i+1;
       
-      status = dp_recursion(mi, clist, cyk, minloop, thresh, j, d, &bestsc, alts, errbuf, verbose);
+      status = dp_recursion(mi, clist, ct_input, cyk, minloop, thresh, j, d, &bestsc, alts, errbuf, verbose);
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
       
       /* Some assertions.
@@ -235,7 +297,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, GMX *cy
 
 
 static int
-dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_bestsc,  ESL_STACK *alts, char *errbuf, int verbose)
+dp_recursion(struct mutual_s *mi, CLIST *clist, int *ct_input, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_bestsc,  ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;
   SCVAL sc;
@@ -261,7 +323,7 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop, THRESH *t
   r = 1;
   for (d1 = minloop; d1 <= d; d1++) {
     k = i + d1 - 1;
-    sc = (accept_pair(i, k, mi, clist, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
+    sc = (accept_pair(i, k, mi, clist, ct_input, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -298,12 +360,15 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, GMX *cyk, int minloop, THRESH *t
 }
 
 static int
-accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
+accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, int *ct_input, THRESH *thresh)
 {
   double cov  = mi->COV->mx[i-1][j-1];
   int    isbp = FALSE;
   int    c;
 
+  // is it allowed by ct_input?
+  if (ct_input[i] < 0 || ct_input[j] < 0) return FALSE;
+  
   for (c = 0; c < clist->ncnt; c++) 
     if (i == clist->cnt[c].i && j == clist->cnt[c].j) isbp = clist->cnt[c].isbp;
 
@@ -313,32 +378,49 @@ accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
   return FALSE;
 }
 
-// annotate as ct=-1 for covariations not in the structure
-static int
-covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh)
+// now look for residues that covary but not in the structure and assign then ct = -1
+// we don't want them to basepair with anything else either
+static int 
+covariations_not_in_structure(int *ct, struct mutual_s *mi, CLIST *clist, THRESH *thresh, int *ret_ncv_in, int verbose)
 {
-  double cov;
-  int    L = mi->alen;
-  int    i, j;
-  int    isbp;
-  int    c;
-
+  double   cov;
+  int      ncv_in = 0;
+  int      L = mi->alen;
+  int      i, j;
+  int      isbp;
+  int      c;
+  
   for (i = 1; i < L; i ++) {
 
-    if (ct[i] > 0) continue; // it is in the ss
+    if (ct[i] > 0) { if (ct[i] > i) ncv_in ++; continue; } // it is in the ss
  
     for (j = i+1; j <= L; j ++) {
       if (ct[j] > 0) continue; // it is in the ss
       
       isbp = FALSE;
       for (c = 0; c < clist->ncnt; c++) 
-	if (i == clist->cnt[c].i && j == clist->cnt[c].j) isbp = clist->cnt[c].isbp;
+	if (i == clist->cnt[c].i && j == clist->cnt[c].j) isbp = clist->cnt[c].isbp; 
       cov = mi->COV->mx[i-1][j-1];
       
       if ( isbp && cov > thresh->sc_bp)  { ct[i] = -1; ct[j] = -1; }
       if (!isbp && cov > thresh->sc_nbp) { ct[i] = -1; ct[j] = -1; }
     }
   }
+
+  *ret_ncv_in = ncv_in;
   
   return eslOK;
 }
+
+// this function modifies ct_input so that all pairs in ct get -1
+static int 
+remove_ct_from_ctinput(int *ct_input, int L, const int *ct)
+{
+  int i;
+
+  for (i = 1; i <= L; i ++)
+    if (ct[i] > 0) ct_input[i] = -1; // already accounted in ct remove from ct_input
+     
+  return eslOK;
+}
+

@@ -48,6 +48,7 @@
 --CCF,--CCFp,--CCFa"
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
+
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc"
 
 #define NULLOPTS     "--null"
@@ -352,7 +353,7 @@ static ESL_OPTIONS options[] = {
        1 },
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
-  { "--minloop",       eslARG_INT,       "5",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
+  { "--minloop",       eslARG_INT,       "3",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
   { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cyk calculation options are [BGR,G6S,G6]",                                 0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },

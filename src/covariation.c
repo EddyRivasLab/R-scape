@@ -48,20 +48,29 @@ static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRA
 				   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
 
+				    
 				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
 static int    cykcov_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop);
 static int    is_stacked_pair(int i, int j, int L, int *ct);
 static int    is_cannonical_pair(char nti, char ntj);
-
+static int    break_in_helices(int *ret_nct, int ***ret_ctlist, int L);
+static int    ct2helices(int *ct, int L, int *ret_idx, int ***ret_ctlist);
+static int    helices_keep_if_cov(int nct1, int **ctlist1, int *ret_nct, int ***ret_ctlist, int L);
+static int    esl_wuss_split(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose);
+static int    esl_wuss_join(int nct, int **ctlist, int L, int **ret_ct, int verbose);
 
 int                 
 cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analyze)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist = NULL;
+  int          **ctlist = NULL;
+  char          *ss = NULL;
   COVCLASS       covclass = data->mi->class;
   int            shiftnonneg = FALSE;
+  int            nct = 0;
+  int            s;
   int            status;
 
   /* Calculate the covariation matrix */
@@ -239,22 +248,30 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 
   if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0 && hitlist) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, TRUE, data->verbose, data->errbuf);
+      esl_wuss_split(data->ct, msa->alen, &nct, &ctlist, FALSE);
+      
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+			   TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
-      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, data->ct, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist, FALSE, data->verbose, data->errbuf);
+      status = cov_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+			   FALSE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
-      status = cov_R2R(data->R2Rfile, data->R2Rall, msa, data->ct, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+      status = cov_R2R(data->R2Rfile, data->R2Rall, msa, nct, ctlist, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
     }
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
   return eslOK;
   
  ERROR:
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
   return status;
 }
 
@@ -1270,7 +1287,7 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
 	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
-	fprintf(fp, "~\t %10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
+	fprintf(fp, " \t~%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
    }
     
@@ -1279,7 +1296,7 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
 	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else if (cykhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
+	fprintf(fp, "~\t?\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
 	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
@@ -1420,11 +1437,14 @@ int
 cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
 {
   HITLIST       *cykhitlist = NULL;
-  int           *cykct      = NULL;
+  int          **cykctlist  = NULL;
+  int           *cykct;
   char          *covtype    = NULL;
   char          *threshtype = NULL;
   SCVAL          sc;
+  int            nct;
   int            i;
+  int            s;
   int            status;
             
   /* calculate the cykcov ct vector.
@@ -1432,41 +1452,44 @@ cov_CYKCOVCT(struct data_s *data, ESL_MSA *msa, int **ret_cykct, int minloop, RA
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
    * These pairs become constrains for the second part of the folding in cov_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, data->clist, &cykct, NULL, &sc, minloop, thresh, data->errbuf, data->verbose);
+  status = CYKCOV(data->r, data->mi, data->clist, &nct, &cykctlist, hitlist->nhit, minloop, thresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
-  if (data->verbose) {
-    printf("cykcov score = %f minloop %d covthresh %f %f\n", sc, minloop, thresh->sc_bp, thresh->sc_nbp);
-  }
 
   /* Use the CT from covariation to do a contrain folding */
-  status = cov_ExpandCT(data->R2Rcykfile, data->R2Rall, data->r, msa, &cykct, minloop, G, data->verbose, data->errbuf);
+  status = cov_ExpandCT(data->R2Rcykfile, data->R2Rall, data->r, msa, &nct, &cykctlist, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   // create a new contact list from the cykct
-  data->ct = cykct;
   CMAP_ReuseCList(data->clist);
-  status = ContacMap_FromCT(data->clist, msa->alen, cykct, data->clist->mind, data->msamap, NULL);
-  if (status != eslOK) goto ERROR;
+  for (s = 0; s < nct; s ++) {
+    status = ContacMap_FromCT(data->clist, msa->alen, cykctlist[s], data->clist->mind, data->msamap, NULL);
+    if (status != eslOK) goto ERROR;
+  }
   
   /* redo the hitlist since the ct has now changed */
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
   status = cov_CreateCYKHitList(data, ranklist, hitlist, &cykhitlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
-
-  for (i = 1; i <= msa->alen; i ++) {
-    if (cykct[i] >= 0 && i < cykct[i]) data->nbpairs_cyk ++;
+  
+  for (s = 0; s < nct; s ++) {
+    cykct = cykctlist[s];
+    
+    for (i = 1; i <= msa->alen; i ++) 
+      if (cykct[i] > 0 && i < cykct[i]) data->nbpairs_cyk ++;
   }
 
   if (data->nbpairs_cyk > 0) {
     /* R2R */
-    status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, cykct, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = cov_R2R(data->R2Rcykfile, data->R2Rall, msa, nct, cykctlist, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
     
     /* DotPlots (pdf,svg) */
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist, TRUE,  data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+			 TRUE,  data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, cykct, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist, FALSE, data->verbose, data->errbuf);
+    status = cov_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+			 FALSE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
 
@@ -1997,12 +2020,13 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
 
 
 int              
-cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual_s *mi, int *msamap, int firstpos, SAMPLESIZE samplesize, HITLIST *hitlist, 
+cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int nct, int **ctlist, struct mutual_s *mi, int *msamap, int firstpos, SAMPLESIZE samplesize, HITLIST *hitlist, 
 	    int dosvg, int verbose, char *errbuf)
 {
   FILE    *pipe;
   char    *filename = NULL;
   char    *outplot = NULL;
+  int     *ct;
   double   pointsize;
   double   ps_max = 0.40;
   double   ps_min = 0.0003;
@@ -2012,6 +2036,7 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
   int      h;           /* index for hitlist */
   int      i, ipair;
   int      ih, jh;
+  int      s;
   int      status;
 
   if (gnuplot   == NULL) return eslOK;
@@ -2058,10 +2083,13 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   ileft  = msa->alen;
   iright = 1;
-  for (i = 1; i <= msa->alen; i ++) {
-    if (ct[i] > 0) {
-      if (ct[i] > i && i < ileft)  ileft  = i;
-      if (ct[i] < i && i > iright) iright = i;
+  for (s = 0; s < nct; s ++) {
+    ct = ctlist[s];
+    for (i = 1; i <= msa->alen; i ++) {
+      if (ct[i] > 0) {
+	if (ct[i] > i && i < ileft)  ileft  = i;
+	if (ct[i] < i && i > iright) iright = i;
+      }
     }
   }
   if (ileft == msa->alen && iright == 1) {//no structure
@@ -2088,21 +2116,28 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 
   // the actual ct
   isempty = TRUE;
-  for (i = 1; i <= msa->alen; i ++) { if (ct[i] > 0) { isempty = FALSE; break; } }
+  for (s = 0; s < nct; s ++) {
+    ct = ctlist[s];
+    for (i = 1; i <= msa->alen; i ++) { if (ct[i] > 0) { isempty = FALSE; break; } }
+    if (isempty == FALSE) break;
+  }
   if (!isempty) {
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");  
     fprintf(pipe, "plot '-' u 1:2:3 with points ls 9\n");
-    for (i = 1; i <= msa->alen; i ++) {
-      ipair = ct[i];
-      
-      if (ipair > 0) {
-	fprintf(pipe, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
-		(mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
-	fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
-		(mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
-      }	
-    } 
+    for (s = 0; s < nct; s ++) {
+      ct = ctlist[s];
+      for (i = 1; i <= msa->alen; i ++) {
+	ipair = ct[i];
+	
+	if (ipair > 0) {
+	  fprintf(pipe, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
+		  (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
+	  fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
+		  (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
+	}	
+      }
+    }
     fprintf(pipe, "e\n");
   }
   
@@ -2221,39 +2256,56 @@ cov_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int *ct, struct mutual
 }
 
 int
-cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
  {
   ESL_MSAFILE *afp = NULL;
-  FILE         *fp = NULL;
-  ESL_MSA      *r2rmsa = NULL;
-  char          tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
-  char          tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char          covtag[12] = "cov_SS_cons";
-  char         *args = NULL;
-  char         *cmd = NULL;
-  char         *ssstr = NULL;
-  char         *covstr = NULL;
-  char         *prv_covstr = NULL;
-  char         *tok = NULL;
-  int           found;
-  int           i;
-  int           h;
-  int           ih, jh;
-  int           tagidx, tagidx2;
-  int           idx;
-  int           do_r2rcovmarkup = FALSE;
-  int           status;
+  FILE        *fp = NULL;
+  int         *ct;
+  ESL_MSA     *r2rmsa = NULL;
+  char         tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
+  char         tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char         covtag[12]     = "cov_SS_cons";
+  char        *covtag1;
+  char        *args = NULL;
+  char        *cmd  = NULL;
+  char        *ssstr      = NULL;
+  char        *covstr     = NULL;
+  char        *prv_covstr = NULL;
+  char        *tok = NULL;
+  char        *tag;
+  int          found;
+  int          i;
+  int          h;
+  int          ih, jh;
+  int          tagidx, tagidx2;
+  int          idx;
+  int          do_r2rcovmarkup = FALSE;
+  int          s;
+  int          status;
 
   if (r2rfile == NULL) return eslOK;
-   
-  /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
-   */
-  ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
-  esl_ct2simplewuss(ct, msa->alen, ssstr);
 
-  /* replace the 'SS_cons' GC line with the new ss */
-  strcpy(msa->ss_cons, ssstr);
-    
+  ESL_ALLOC(ssstr, sizeof(char) * (msa->alen+1));
+  for (s = 0; s < nct; s++) {
+    ct = ctlist[s];
+    /* first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
+     */
+    esl_ct2simplewuss(ct, msa->alen, ssstr);
+
+    // if the primary structure (s==0), replace the 'SS_cons' GC line with the new ss
+    //
+    // all the other substructures add as GC tag as
+    //
+    // #GC SS_cons_1 
+    // #GC SS_cons_2
+    //
+    if (s == 0) strcpy(msa->ss_cons, ssstr);
+    else {
+      esl_sprintf(&tag, "SS_cons_%d", s);
+      esl_msa_AppendGC(msa, tag, ssstr);
+    }
+  }
+ 
   /* R2R input and output in PFAM format (STOCKHOLM in one single block) */
   if ((status = esl_tmpfile_named(tmpinfile,  &fp))                     != eslOK) ESL_XFAIL(status, errbuf, "failed to create input file");
   if ((status = esl_msafile_Write(fp, (ESL_MSA *)msa, eslMSAFILE_PFAM)) != eslOK) ESL_XFAIL(status, errbuf, "Failed to write PFAM file\n");
@@ -2310,8 +2362,8 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
   
   /* add line #=GF R2R keep allpairs 
    * so that it does not truncate ss.
-   * cannot use the standard esl_msa_addGF:
-   *             esl_msa_AddGF(msa, "R2R", -1, " keep allpairs", -1);
+   * cannot use the standard esl_msa_AddGF:
+   *             esl_msa_AddGF(msa, "R2R", -1, "keep allpairs", -1);
    * since it does not parse with r2r
    *
    * turns out the above solution can only deal with the  <> annotation
@@ -2328,7 +2380,7 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
 	esl_sprintf(&r2rmsa->gf[idx],     r2rmsa->gf[idx+1]);
       }
       r2rmsa->ngf --;
-      }
+    }
     
     esl_msa_AddGF(r2rmsa, "R2R keep all", -1, "", -1);
   }
@@ -2349,38 +2401,35 @@ cov_R2R(char *r2rfile, int r2rall, ESL_MSA *msa, int *ct, HITLIST *hitlist, int 
     esl_msa_AddGF(r2rmsa, "R2R keep allpairs", -1, "", -1);
   }
   
-  /* replace the r2r 'cov_SS_cons' GC line with our own */
+  /* replace the r2r 'cov_SS_cons' GC line(s) with our own */
   if (!do_r2rcovmarkup) {
-    for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
-      if (strcmp(r2rmsa->gc_tag[tagidx], covtag) == 0) break;
-    if (tagidx == r2rmsa->ngc) {
-      ESL_REALLOC(r2rmsa->gc_tag, (r2rmsa->ngc+1) * sizeof(char **));
-      ESL_REALLOC(r2rmsa->gc,     (r2rmsa->ngc+1) * sizeof(char **));
-      r2rmsa->gc[r2rmsa->ngc] = NULL;
-      r2rmsa->ngc++;
+    for (s = 0; s < nct; s ++) {
+      if (s == 0) esl_sprintf(&covtag1, "%s", covtag);
+      else        esl_sprintf(&covtag1, "%s_%d", covtag, s);
+      for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++)
+	if (strcmp(r2rmsa->gc_tag[tagidx], covtag1) == 0) break;
+      if (tagidx == r2rmsa->ngc) {
+	ESL_REALLOC(r2rmsa->gc_tag, (r2rmsa->ngc+1) * sizeof(char **));
+	ESL_REALLOC(r2rmsa->gc,     (r2rmsa->ngc+1) * sizeof(char **));
+	r2rmsa->gc[r2rmsa->ngc] = NULL;
+	r2rmsa->ngc++;
+      }
+      if (r2rmsa->gc_tag[tagidx]) free(r2rmsa->gc_tag[tagidx]); r2rmsa->gc_tag[tagidx] = NULL;
+      if ((status = esl_strdup(covtag1, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+      free(r2rmsa->gc[tagidx]); r2rmsa->gc[tagidx] = NULL; 
+      esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", prv_covstr);
     }
-    if (r2rmsa->gc_tag[tagidx]) free(r2rmsa->gc_tag[tagidx]); r2rmsa->gc_tag[tagidx] = NULL;
-    if ((status = esl_strdup(covtag, -1, &(r2rmsa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-    free(r2rmsa->gc[tagidx]); r2rmsa->gc[tagidx] = NULL; 
-    esl_sprintf(&(r2rmsa->gc[tagidx]), "%s", prv_covstr);
     if (verbose) esl_msafile_Write(stdout, r2rmsa, eslMSAFILE_PFAM);
   }
-  
-  /* remove any 'SS_cons_<n>' markup. Only consider 'SS_cons' */
-  for (tagidx = 0; tagidx < r2rmsa->ngc; tagidx++) {
-    if (strncmp("SS_cons_", r2rmsa->gc_tag[tagidx],      8) == 0 ||
-	strncmp("cov_SS_cons_", r2rmsa->gc_tag[tagidx], 12) == 0)
-      {
-	for (tagidx2 = tagidx+1; tagidx2 < r2rmsa->ngc; tagidx2++) {
-	  r2rmsa->gc_tag[tagidx2-1] = r2rmsa->gc_tag[tagidx2]; 
-	  r2rmsa->gc[tagidx2-1]     = r2rmsa->gc[tagidx2]; 
-	}
-	tagidx --;
-	r2rmsa->ngc --;
-      }
+
+  // 'SS_cons_<n>' are potential pseudoknots draw them
+  // this is the R2R incantation to draw an outline around them
+  for (s = 1; s < nct; s ++) {
+    esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%d outline", s);
+    esl_msa_AddGF(r2rmsa, tag, -1, "", -1);
   }
-  
-  /* write the R2R annotated to PFAM format */
+
+ /* write the R2R annotated to PFAM format */
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
@@ -2487,44 +2536,79 @@ cov_R2Rsvg(char *r2rfile, int verbose, char *errbuf)
 }
 
 int
-cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, int minloop, enum grammar_e G, int verbose, char *errbuf)
+cov_ExpandCT(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist, int minloop, enum grammar_e G, int verbose, char *errbuf)
 {
-  FILE *fp = NULL;
-  char *ss = NULL;
-  int   tagidx;
-  int   L = msa->alen;
-  int   status;
+  FILE  *fp = NULL;
+  char  *ss = NULL;
+  char  *tag;
+  int    nct       = *ret_nct;
+  int  **ctlist    = *ret_ctlist;
+  int    new;
+  int  **newctlist = NULL;
+  int    tagidx;
+  int    L = msa->alen;
+  int    keep;
+  int    s, s1;
+  int    i;
+  int    status;
   
   if (r2rfile == NULL) return eslOK;
 
-  /* replace any R2R line with a new one not tab delimited 
-   * R2R chockes on tab delimited lines
-   */
-  for (tagidx = 0; tagidx < msa->ngf; tagidx++) 
-    if (strcmp(msa->gf_tag[tagidx], "R2R") == 0) {
-      esl_sprintf(&(msa->gf_tag[tagidx]), "R2R %s", msa->gf[tagidx]);
-      esl_sprintf(&(msa->gf[tagidx]), "");
+  ESL_ALLOC(ss,        sizeof(char)  * (L+1));
+  ESL_ALLOC(newctlist, sizeof(int *) * nct);
+  new = nct;
+  
+  for (s = 0; s < nct; s ++) {
+    // covariance-constraint CYK using a probabilistic grammar
+    ESL_ALLOC(newctlist[s], sizeof(int) * (L+1));
+    esl_vec_ICopy(ctlist[s], L+1, newctlist[s]);
+    status = cov_ExpandCT_CCCYK(r, msa, &newctlist[s], G, minloop, verbose, errbuf);
+    if (status != eslOK) goto ERROR;     
+  }
+  
+  // for the extra structures, break in individual helices
+  // maintain only the helices with covariation support
+  status = break_in_helices(&new, &newctlist, L);
+  if (status != eslOK) goto ERROR;     
+  
+  // all substructures are tested for including at least 1 cov,
+  // otherwise they get removed.
+  status = helices_keep_if_cov(nct, ctlist, &new, &newctlist, L);
+  if (status != eslOK) goto ERROR;     
+  
+  // if the primary structure (s==0), replace the 'SS_cons' GC line with the new ss
+  //
+  // all the other substructures add as GC tag as
+  //
+  // #GC SS_cons_1 
+  // #GC SS_cons_2
+  for (s = 0; s < new; s ++) {
+    esl_ct2simplewuss(newctlist[s], L, ss);
+    if (1||verbose) printf("^^%d cyk structure\n%s\n", s, ss);
+    
+    if (s == 0) strcpy(msa->ss_cons, ss);
+    else {
+      esl_sprintf(&tag, "SS_cons_%d", s);
+      esl_msa_AppendGC(msa, tag, ss);
+    }
   }
 
-  // covariance-constraint CYK using a probabilistic grammar
-  status = cov_ExpandCT_CCCYK(r, msa, ret_ct, G, minloop, verbose, errbuf);
-  if (status != eslOK) goto ERROR;
-
-  /* replace the 'SS_cons' GC line with the new ss */
-  ESL_ALLOC(ss, sizeof(char) * (L+1));
-  esl_ct2simplewuss(*ret_ct, L, ss);
-  strcpy(msa->ss_cons, ss);
-  if (verbose) printf("cyk structure\n%s\n", ss);
-   
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, msa, eslMSAFILE_PFAM);
   fclose(fp);
+
+  *ret_nct    = new;
+  *ret_ctlist = newctlist;
   
   free(ss);
+  for (s = 0; s < nct; s ++) free(ctlist[s]);
+  free(ctlist);
   return eslOK;
 
  ERROR:
   if (ss) free(ss);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  free(ctlist);
   return status;
 }
 
@@ -3051,4 +3135,277 @@ is_cannonical_pair(char nti, char ntj)
   if (nti == 'Y' && ntj == 'R') is_cannonical = TRUE;
 
   return is_cannonical;
+}
+
+
+static int
+break_in_helices(int *ret_nct, int ***ret_ctlist, int L)
+{
+  int **ctlist = *ret_ctlist;
+  int **ctnew  = NULL;
+  int   nct    = *ret_nct;
+  int   new    = 1;
+  int   s;
+  int   status;
+  
+  // modify only the additional structures
+  ESL_ALLOC(ctnew,    sizeof(int *) * new);
+  ESL_ALLOC(ctnew[0], sizeof(int)    * (L+1));
+  esl_vec_ICopy(ctlist[0], L+1, ctnew[0]);
+   
+  for (s = 1; s < nct; s ++) 
+    ct2helices(ctlist[s], L, &new, &ctnew);
+
+  *ret_nct    = new;
+  *ret_ctlist = ctnew;
+  
+  for (s = 1; s < nct; s ++) free(ctlist[s]);
+  free(ctlist);
+  
+  return eslOK;
+  
+ ERROR:
+  for (s = 1; s < new; s ++) if (ctnew[s])  free(ctnew[s]);
+  for (s = 1; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
+  return status;
+}
+
+static int
+ct2helices(int *ct, int L, int *ret_nct, int ***ret_ctlist)
+{
+  ESL_STACK  *pda    = NULL;         /* stack for secondary structure */
+  int       **ctlist = *ret_ctlist;
+  int         nct    = *ret_nct;
+  int         nfaces;                /* number of faces in a cWW structure */
+  int         minface;               /* max depth of faces in a cWW structure */
+  int         npairs = 0;            /* total number of basepairs */
+  int         npairs_reached = 0;    /* number of basepairs found so far */
+  int         found_partner;         /* true if we've found left partner of a given base in stack pda */
+  int         i, j;
+  int         s;
+  int         status;
+
+  /* total number of basepairs */
+  for (j = 1; j <= L; j ++) { if (ct[j] > 0 && j < ct[j]) npairs ++; }
+  
+  /* Initialization */
+  if ((pda  = esl_stack_ICreate()) == NULL) goto FINISH;
+
+  for (j = 1; j <= L; j++)
+    {
+      if (ct[j] == 0) {   /* unparied, do nothing */
+      }
+      else if (ct[j] > j) /* left side of a bp: push j. */
+	{
+	  if (esl_stack_IPush(pda, j) != eslOK) goto FINISH;
+	}
+      else                /* right side of a bp; main routine: fingh the left partner */
+	{
+	  found_partner = FALSE;
+	  /* Pop back until we find the left partner of j;
+	   * In case this is not a nested structure, finding
+	   * the left partner of j will require to put bases 
+	   * aside into stack auxpk.
+	   *
+	   * After we find the left partner of j,
+	   * store single stranded residues in auxss;
+	   * keep track of #faces and the maximum face depth.
+	   */
+	  nfaces  = 0;
+	  minface = -1;
+	  
+	  while (esl_stack_ObjectCount(pda)) 
+	    {
+	      if (esl_stack_IPop(pda, &i) != eslOK) goto FINISH;
+	      
+	      if (i < 0) 		/* a face counter */
+		{
+		  nfaces++;
+		  if (i < minface) minface = i;
+		}
+	      
+	      else if (ct[i] == j)  /* we found the i,j pair. */
+		{
+		  found_partner = TRUE;
+		  npairs_reached ++;	
+		  
+		  /* Now we know i,j pair; and we know how many faces are
+		   * above them; and we know the max depth of those faces.
+		   * That's enough to label the pair in WUSS notation.
+		   * if nfaces == 0, minface is -1; <> a closing bp of a hairpin.
+		   * if nfaces == 1, inherit minface, we're continuing a stem.
+		   * if nfaces > 1, bump minface in depth; we're closing a bifurc.
+		   */
+		  if (nfaces > 1) minface--;
+		  if (esl_stack_IPush(pda, minface) != eslOK) goto FINISH;
+
+		  if (nfaces == 0) {
+		    nct ++;
+		    ESL_REALLOC(ctlist, sizeof(int *) * nct);
+		    ESL_ALLOC(ctlist[nct-1], sizeof(int) * (L+1));
+		    esl_vec_ISet(ctlist[nct-1], L+1, 0);
+		  }
+		    
+		  ctlist[nct-1][i] = j;
+		  ctlist[nct-1][j] = i;		  
+		  break;
+		}
+	    }
+	  if (!found_partner) {
+	    esl_stack_Destroy(pda); 
+	    ESL_EXCEPTION(eslEINVAL, "Cannot find left partner (%d) of base %d. Likely a triplet", ct[j], j);
+	  }
+	} /* finished finding the left partner of j */
+      
+    }
+
+  *ret_nct    = nct;
+  *ret_ctlist = ctlist;
+      
+  return eslOK;
+  
+ ERROR:
+ FINISH:
+  if (npairs != npairs_reached) 		  
+    ESL_EXCEPTION(eslFAIL, "found %d out of %d pairs.", npairs_reached, npairs);
+  if (pda   != NULL) esl_stack_Destroy(pda);
+  return status;
+}
+
+static int
+helices_keep_if_cov(int nct1, int **ctlist1, int *ret_nct, int ***ret_ctlist, int L)
+{
+  int **ctlist = *ret_ctlist;
+  int **ctnew  = NULL;
+  int   nct    = *ret_nct;
+  int   new    = 1;
+  int   keep;
+  int   s, s1;
+  int   i;
+  int   status;
+  
+  // modify only the additional structures
+  ESL_ALLOC(ctnew,    sizeof(int *) * new);
+  ESL_ALLOC(ctnew[0], sizeof(int)   * (L+1));
+  esl_vec_ICopy(ctlist[0], L+1, ctnew[0]);
+  
+  for (s = 1; s < nct; s ++) {
+    keep = FALSE;
+    for (i = 1; i <= L; i ++)
+      if (ctlist[s][i] > 0) {
+	for (s1 = 0; s1 < nct1; s1 ++)
+	  if (ctlist1[s1][i] > 0) { keep = TRUE; break; }
+      }
+    
+    if (keep) {
+      new ++;
+      ESL_REALLOC(ctnew,      sizeof(int *) * new);
+      ESL_ALLOC(ctnew[new-1], sizeof(int)   * (L+1));
+      esl_vec_ICopy(ctlist[s], L+1, ctnew[new-1]);
+    }
+  }
+
+  *ret_nct    = new;
+  *ret_ctlist = ctnew;
+  
+  for (s = 1; s < nct; s ++) free(ctlist[s]);
+  free(ctlist);
+  
+  return eslOK;
+  
+ ERROR:
+  for (s = 1; s < new; s ++) if (ctnew[s])  free(ctnew[s]);
+  for (s = 1; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
+  return status;
+}
+
+static int
+esl_wuss_join(int nct, int **ctlist, int L, int **ret_ct, int verbose)
+{
+  int *ct = NULL;
+  int  status;
+
+  ESL_ALLOC(ct, sizeof(int) * (L+1));
+  
+  *ret_ct = ct;
+  return eslOK;
+
+ ERROR:
+  if (ct) free(ct);
+  return status;
+}
+
+// take a ct vector possibly with pseudoknots, and separate
+// into one ct without pseudoknots and additional ct's one with
+// each of the pseudoknots
+static int
+esl_wuss_split(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
+{
+  int  **ctlist = NULL;
+  char  *ss1 = NULL;
+  char  *ss2 = NULL;
+  int    nct = 1;
+  int    use;
+  int    n;
+  int    c;
+  int    s;
+  int    status;
+
+  ESL_ALLOC(ss1, sizeof(char)  * (L+1));
+  ESL_ALLOC(ss2, sizeof(char)  * (L+1));
+
+  esl_ct2wuss(ct, L, ss1);
+  if (verbose) printf("%s\n", ss1);
+  
+  // the nested structure
+  ESL_ALLOC(ctlist,    sizeof(int *) * nct);
+  ESL_ALLOC(ctlist[0], sizeof(int)   * (L+1));
+  for (n = 0; n < L; n ++)
+    {
+      if (isalpha(ss1[n])) ss2[n] = '.';
+      else                 ss2[n] = ss1[n];
+    }
+  ss2[L] = '\0';
+  if (1||verbose) printf("main structure\n%s\n", ss2);
+  esl_wuss2ct(ss2, L, ctlist[0]);
+
+  // the pseudoknots
+  for (c = 'a'; c <= 'z'; c ++) {
+    use = FALSE;
+    for (n = 0; n < L; n ++)
+      {
+	if      (ss1[n] == c)          { ss2[n] = '>'; use = TRUE; }
+	else if (ss1[n] == toupper(c))   ss2[n] = '<';
+	else                             ss2[n] = '.';
+      }
+    ss2[L] = '\0';
+    
+    if (use) {
+      nct ++;
+      ESL_REALLOC(ctlist,      sizeof(int *) * nct);
+      ESL_ALLOC(ctlist[nct-1], sizeof(int)   * (L+1));
+
+      esl_wuss2ct(ss2, L, ctlist[nct-1]);
+      if (1||verbose) printf("pseudoknot %d\n%s\n", nct-1, ss2);
+    }
+    
+  }
+
+  break_in_helices(&nct, &ctlist, L);
+  
+  *ret_nct    = nct;
+  *ret_ctlist = ctlist;
+
+  free(ss1);
+  free(ss2);
+  return eslOK;
+
+ ERROR:
+  if (ss1) free(ss1);
+  if (ss2) free(ss2);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  if (ctlist) free(ctlist);
+  return status;
 }
