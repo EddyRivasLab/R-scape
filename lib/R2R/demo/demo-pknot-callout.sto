@@ -8,12 +8,10 @@ topology                    AGGUAUUUGAACCGUAUUGUGCACCUAGCAUGA.GUUAAAGCACAA
 #=GC SUBFAM_pknot_R2R_LABEL ------------------....------------------....--
 
 #=GF R2R ignore_ss_except_for_pairs _1 outline
-#=GF R2R var_backbone_range 1 2
-#=GF R2R place_explicit 3 3-- -45 1 0 0 0 -90
 
 #=GF SUBFAM_PERL_PRED pknot return 1;
 #=GF SUBFAM_pknot_R2R subst_ss _1 primary
 #=GF SUBFAM_pknot_R2R no5
 #=GF SUBFAM_pknot_R2R outline_nuc all
-#=GF SUBFAM_pknot_R2R set_dir pos0 90 f
+#=GF SUBFAM_pknot_R2R set_dir pos0 -90 f
 //

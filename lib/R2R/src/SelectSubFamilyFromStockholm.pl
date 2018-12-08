@@ -332,7 +332,7 @@ sub ParsePred {
     if ($debug) { print STDERR "pred $thisName = $2\n"; }
 }
 use strict;
-use Clone qw(clone);
+#use Clone qw(clone);
 
 package StockholmDuplicates;
 

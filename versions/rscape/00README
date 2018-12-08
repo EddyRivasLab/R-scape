@@ -41,6 +41,8 @@ cp ~/src/src/mysource/src/pottsim.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/plot.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/appcov.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/power.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/r2rdepict.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/structure.* ~/src/src/mysource/versions/$v/src/. ;\
 
 cp ~/src/src/mysource/lib/FastTree/src/*.c ~/src/src/mysource/versions/$v/lib/FastTree/src/. ;\
 cp ~/src/src/mysource/lib/FastTree/src/*.h ~/src/src/mysource/versions/$v/lib/FastTree/src/. ;\

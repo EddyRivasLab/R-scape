@@ -139,11 +139,13 @@ OBJS     = e1_bg.o\
            pottsbuild.o\
            pottsscore.o\
 	   pottsim.o\
+           r2rdepict.o\
            ratematrix.o\
            ratebuilder.o\
            fasta.o\
            ssifile.o\
 	   ribosum_matrix.o\
+	   structure.o\
 	   cov_simulate.o\
 
 

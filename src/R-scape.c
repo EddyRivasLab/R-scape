@@ -32,6 +32,7 @@
 #include "plot.h"
 #include "power.h"
 #include "ribosum_matrix.h"
+#include "structure.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
@@ -382,7 +383,7 @@ static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *ns
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_omsacyk(struct cfg_s *cfg, int L, int *cykct);
+static int  write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -1848,13 +1849,15 @@ static int
 run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
 	   RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
-  char            *title    = NULL;
-  struct mutual_s *mi       = cfg->mi;
+  char            *title     = NULL;
+  struct mutual_s *mi        = cfg->mi;
   struct data_s    data;
-  PT              *ptlocal  = NULL;
-  int             *cykct    = NULL;
-  RANKLIST        *ranklist = NULL;
-  HITLIST         *hitlist  = NULL;
+  PT              *ptlocal   = NULL;
+  int            **cykctlist = NULL;
+  RANKLIST        *ranklist  = NULL;
+  HITLIST         *hitlist   = NULL;
+  int              nct = 0;
+  int              s;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -1967,22 +1970,24 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->docyk && cfg->mode != RANSS) {
 
     data.mode = CYKSS;    
-    status = cov_CYKCOVCT(&data, msa, &cykct, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
+    status = struct_CYKCOV(&data, msa, &nct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
-    status = write_omsacyk(cfg, msa->alen, cykct);
+    status = write_omsacyk(cfg, msa->alen, nct, cykctlist);
     if (status != eslOK) goto ERROR;
   }
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  if (cykct) free(cykct);
+  for (s = 0; s < nct; s ++) if (cykctlist[s]) free(cykctlist[s]);
+  if (cykctlist) free(cykctlist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
-  if (cykct)    free(cykct);
+  for (s = 0; s < nct; s ++) if (cykctlist[s]) free(cykctlist[s]);
+  if (cykctlist) free(cykctlist);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
   if (title)    free(title);
@@ -2189,33 +2194,57 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 }
 
 static int
-write_omsacyk(struct cfg_s *cfg, int L, int *cykct)
+write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist)
 {
   ESL_MSA *omsa = cfg->omsa;
+  char    *ss = NULL;
+  char    *tag;
   int     *ct = NULL;
+  int      OL = omsa->alen;
+  int      s;
   int      i;
   int      status;
 
-  ESL_ALLOC(ct, sizeof(int)*(omsa->alen+1));
-  esl_vec_ISet(ct, omsa->alen+1, 0);
-  
-  for (i = 0; i < L; i++) 
-    if (cykct[i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykct[i+1]-1]+1;
- 
+  // initialize
+  ESL_ALLOC(ct, sizeof(int)  * (OL+1));
+  ESL_ALLOC(ss, sizeof(char) * (OL+1));
   if (omsa->ss_cons == NULL) {
-    ESL_ALLOC(omsa->ss_cons, sizeof(char)*(omsa->alen+1));
-    omsa->ss_cons[omsa->alen] = '\0';
+    ESL_ALLOC(omsa->ss_cons, sizeof(char)*(OL+1));
+    omsa->ss_cons[OL] = '\0';
   }
-   
-  esl_ct2wuss(ct, omsa->alen, omsa->ss_cons);
 
+  // the main nested structure (s=0) is annotated as SS_cons
+  // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
+  //
+  // SS_cons_xx is not orthodox stockholm format.
+  // I may end up chainging it later.
+  // It is used by R2R, and I keep it here because some of my
+  // secondary/pseudoknot structure may overlap with the main nested structure.
+  // That is not wrong, it is just showing our uncertainty about the structure due to lack
+  // of more covariations.
+  for (s = 0; s < nct; s ++) {
+    esl_vec_ISet(ct, OL+1, 0);
+    for (i = 0; i < L; i++) 
+      if (cykctlist[s][i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykctlist[s][i+1]-1]+1;
+
+    esl_ct2wuss(ct, OL, ss);
+    if (s == 0) strcpy(omsa->ss_cons, ss);
+    else {
+      esl_sprintf(&tag, "SS_cons_%d", s);
+      esl_msa_AppendGC(omsa, tag, ss);
+    }
+  }
+  
+  // write alignment with the cykcov structure to file
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
 
   free(ct);
+  free(ss);
   return eslOK;
 
  ERROR:
   if (ct) free(ct);
+  if (ss) free(ss);
   return status;
 }
 
