@@ -67,6 +67,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
 int
 CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, int ncvpairs, int minloop, THRESH *thresh, char *errbuf, int verbose) 
 {
+  char    *ss = NULL;
   int    **ctlist   = NULL;
   int     *ct_input = NULL; // ct_input=0 allowed ct_input=-1 disallowed
   int     *ct;
@@ -82,6 +83,7 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
 
   // all allowed at first
   ESL_ALLOC(ct_input, sizeof(int) * (L+1));
+  if (1||verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
   esl_vec_ISet(ct_input, L+1, 0);
   
   while(ncv_left > 0) {
@@ -93,6 +95,7 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     if (sc == 0) break; // the covariations left don't form a structure
     
     ct = ctlist[nct];
+    if (1||verbose) esl_ct2wuss(ct, L, ss);
     
     // now look for residues that covary but not in the structure and assign then ct = -1
     // we don't want them to basepair with anything else either
@@ -103,7 +106,7 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     if (remove_ct_from_ctinput(ct_input, mi->alen, ct) != eslOK) goto ERROR;
 
     if (1||verbose) 
-      printf("structure %d [%d cv pairs] CYKscore = %f at covthres %f %f\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp);
+      printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f\n%s\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ss);
        
     nct ++;
   }
@@ -121,12 +124,14 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
   *ret_ctlist = ctlist;
 
   free(ct_input);
+  if (ss) free(ss);
   return eslOK;
 
  ERROR:
   if (ct_input) free(ct_input);
   for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
   if (ctlist) free(ctlist);
+  if (ss) free(ss);
   return status;
 }
 

@@ -1970,7 +1970,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->docyk && cfg->mode != RANSS) {
 
     data.mode = CYKSS;    
-    status = struct_CYKCOV(&data, msa, &nct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
+    status = struct_COCOMCYK(&data, msa, &nct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
     status = write_omsacyk(cfg, msa->alen, nct, cykctlist);

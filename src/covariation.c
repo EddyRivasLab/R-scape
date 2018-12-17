@@ -242,7 +242,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 
   if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0 && hitlist) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      struct_SplitCT(data->ct, msa->alen, &nct, &ctlist, FALSE);
+      struct_SplitCT(data->ct, msa->alen, &nct, &ctlist, TRUE);
       
       status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
 			   TRUE, data->verbose, data->errbuf);

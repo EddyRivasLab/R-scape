@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 1.1.0, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 1.2.0, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the usexr is overriding CFLAGS
@@ -89,15 +89,14 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="November 2018"
+RSCAPE_DATE="January 2019"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://selab.org/"
 
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
-RSCAPE_R2RDIR="lib/R2R/src"
-R2R_INFERNALDIR="lib/R2R/NotByZasha/infernal-0.7"
+RSCAPE_R2RDIR="lib/R2R/R2R-current"
 RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/easel"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
@@ -166,7 +165,6 @@ AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
 AC_SUBST(RSCAPE_FASTTREEDIR)
 AC_SUBST(RSCAPE_R2RDIR)
-AC_SUBST(R2R_INFERNALDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
@@ -645,7 +643,7 @@ lib/R-view/src/rview_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
-AC_CONFIG_SUBDIRS(lib/R2R/NotByZasha/infernal-0.7/squid)
+AC_CONFIG_SUBDIRS(lib/R2R/R2R-current)
 
 AC_CONFIG_FILES([
 Makefile
@@ -654,9 +652,7 @@ documentation/Makefile
 documentation/e2msa/Makefile
 documentation/titlepage.tex
 documentation/copyright.tex
-lib/R2R/NotByZasha/infernal-0.7/Makefile
-lib/R2R/NotByZasha/infernal-0.7/squid/Makefile
-lib/R2R/src/Makefile
+lib/R2R/R2R-current/src/Makefile
 lib/FastTree/src/Makefile
 lib/hmmer/libdivsufsort/Makefile
 lib/hmmer/easel/Makefile

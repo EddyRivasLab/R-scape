@@ -19,7 +19,6 @@ SHELL          = /bin/sh
 # location of hmmer, easel, FastTree, R2R, rnaview
 FASTTREEDIR    = @RSCAPE_FASTTREEDIR@
 R2RDIR         = @RSCAPE_R2RDIR@
-INFERNALDIR    = @R2R_INFERNALDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
 RNAVIEWDIR     = @RSCAPE_RNAVIEWDIR@
@@ -98,7 +97,6 @@ endif
 #
 all: 
 	${QUIET_SUBDIR0}${FASTTREEDIR}        ${QUIET_SUBDIR1} all
-	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${R2RDIR}             ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${ESLDIR}             ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${SADIR}              ${QUIET_SUBDIR1} all
@@ -138,7 +136,6 @@ uninstall:
 #
 clean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}      ${QUIET_SUBDIR1} clean
-	${QUIET_SUBDIR0}${INFERNALDIR}      ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${HMMERDIR}         ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${ESLDIR}           ${QUIET_SUBDIR1} clean
@@ -154,7 +151,6 @@ clean:
 #
 distclean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}        ${QUIET_SUBDIR1} distclean
-	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${R2RDIR}             ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${HMMERlDIR}           ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${ESLDIR}             ${QUIET_SUBDIR1} distclean
