@@ -855,7 +855,7 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
       if (ctlist[s][i] > 0)                  ntot ++;
       if (ctlist[s][i] > 0 && ctmain[i] > 0) nincomp ++;
     }
-    if (nincomp > incfraq*ntot) iscompatible = FALSE;
+    if (nincomp > incfraq*ntot || (hascov == FALSE && ntot < 3)) iscompatible = FALSE;
 
     // a final check for duplications
     ndup = 0;
@@ -868,7 +868,7 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
       if (ctlist[s][i] > 0) ctcum[i] = ctlist[s][i];
     
     if (verbose) {
-      esl_ct2wuss(ctlist[s],    L, ss);
+      esl_ct2wuss(ctlist[s], L, ss);
       printf("%s\n%s\n^^tot %d nincompatible %d iscomp %d isunique %d\n", ssmain, ss, ntot, nincomp, iscompatible, isunique);
     }
 

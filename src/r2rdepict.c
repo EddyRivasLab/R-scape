@@ -26,6 +26,7 @@
 static int   r2r_depict_pdf             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_keep                   (ESL_MSA *msa, int r2rall);
+static int   r2r_pseudoknot_order       (int nct, int L, int **ctlist);
 static int   r2r_pseudoknot_outline     (ESL_MSA *msa, int nct, int **ctlist);
 static int   r2r_pseudoknot_callout     (char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfiles, char *errbuf, int verbose);
 static int   r2r_run_consensus_from_msa (ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf);
@@ -41,14 +42,19 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   char     *metafile  = NULL;
   char     *filename  = NULL;
   char     *buf;
+  char     *args;
   FILE     *fp        = NULL;
   ESL_MSA  *r2rmsa    = NULL;
   int       pkcallout = TRUE;
   int       s;
-  int      status;
-
+  int       status;
+  
   if (r2rfile == NULL) return eslOK;
 
+  // order the pknots by the first paired position
+  status = r2r_pseudoknot_order(nct, msa->alen, ctlist);
+  if (status != eslOK) goto ERROR;
+  
   status = r2r_Overwrite_SS_cons(msa, nct, ctlist, verbose);
   if (status != eslOK) goto ERROR;
 
@@ -72,6 +78,11 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
+  // we need to modify a perfectly valid stockholm formatted msa intop
+  // the weirdness that R2R accepts
+  esl_sprintf(&args, "%s/scripts/r2r_msa_comply.pl %s", RSCAPE_HOME, r2rfile);
+  status = system(args);
+  if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
 
   // run script to produce the additional callout msas
   esl_sprintf(&buf, r2rfile);
@@ -125,8 +136,6 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
   char  sstag[8]  = "SS_cons";
   char  sstagx[9] = "SS_cons_";
   char  tok[9];
-  int  *first     = NULL;
-  int  *perm      = NULL;
   int   L = msa->alen;
   int   tagidx;
   int   idx;
@@ -134,13 +143,6 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
   int   i;
   int   status;
 
-  // sort in increasing order
-  ESL_ALLOC(first, sizeof(int) * nct);
-  first[0] = 0;
-  for (s = 1; s < nct; s ++) 
-    for (i = 1; i <= L; i ++) if (ctlist[s][i] > 0) { first[s] = i; break; }
-  perm = sorted_order(first, nct);
-     
   // remove the given SS_cons_ annotations
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
     strncpy(tok, msa->gc_tag[tagidx], 8);
@@ -161,7 +163,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
   
   for (s = 0; s < nct; s ++) {
     // first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
-    esl_ct2simplewuss(ctlist[perm[s]], msa->alen, ss);
+    esl_ct2simplewuss(ctlist[s], msa->alen, ss);
     
     if (s == 0) { // replace the 'SS_cons' GC line with the new ss 
       strcpy(msa->ss_cons, ss);
@@ -176,15 +178,11 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
 
   free(ss);
   free(tag);
-  free(first);
-  free(perm);
   return eslOK;
 
  ERROR:
   if (ss)    free(ss);
   if (tag)   free(tag);
-  if (first) free(first);
-  if (perm)  free(perm);
   return status;
 }
 
@@ -404,6 +402,45 @@ r2r_keep(ESL_MSA *msa, int r2rall)
   return eslOK;
 }
 
+// order pseudoknots by increasing first paired position
+static int
+r2r_pseudoknot_order(int nct, int L, int **ctlist)
+{
+   int **order = NULL;
+  int  *first  = NULL;
+  int  *perm   = NULL;
+  int   s;
+  int   i;
+  int   status;
+  
+  // sort in increasing order
+  ESL_ALLOC(first, sizeof(int) * nct);
+  first[0] = 0;
+  for (s = 1; s < nct; s ++) 
+    for (i = 1; i <= L; i ++) if (ctlist[s][i] > 0) { first[s] = i; break; }
+  perm = sorted_order(first, nct);
+  if (perm == NULL) goto ERROR;
+
+  ESL_ALLOC(order, sizeof(int *) * nct);
+  for (s = 0; s < nct; s ++) {
+    ESL_ALLOC(order[s], sizeof(int) * (L+1));
+    esl_vec_ICopy(ctlist[perm[s]], L+1, order[s]);
+  }
+  for (s = 0; s < nct; s ++)  esl_vec_ICopy(order[s], L+1, ctlist[s]);
+  
+  free(first);
+  free(perm);
+  for (s = 0; s < nct; s ++) free(order[s]);
+  free(order);
+  return eslOK;
+
+ ERROR:
+  if (first) free(first);
+  if (perm)  free(perm);
+  for (s = 0; s < nct; s ++) if (order[s]) free(order[s]);
+  if (order) free(order);
+  return status;
+}
 
 // R2R outline style for pseudoknots
 // (1) annotate the msa with the special syntax
@@ -499,6 +536,11 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
     esl_sprintf(&args, " %s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R script SelectSubFamilyFromStockholm.pl\n");
+
+    // now again run the script to modify a perfectly good stockholm file into something that R2R can digest
+    esl_sprintf(&args, "%s/scripts/r2r_msa_comply.pl %s", RSCAPE_HOME, r2rpkfile[s]);
+    status = system(args);
+    if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
   }
   
   free(cmd);
