@@ -105,7 +105,7 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     // this function modifies ct_input to exclude the pairs in ct by assigning them ct_input = -1
     if (remove_ct_from_ctinput(ct_input, mi->alen, ct) != eslOK) goto ERROR;
 
-    if (1||verbose) 
+    if (verbose) 
       printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f\n%s\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ss);
        
     nct ++;

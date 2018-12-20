@@ -25,6 +25,7 @@
 
 static int   r2r_depict_pdf             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verbose, char *errbuf);
+static int   r2r_esl_msa_AppendGC       (ESL_MSA *msa, char *tag, char *value);
 static int   r2r_keep                   (ESL_MSA *msa, int r2rall);
 static int   r2r_pseudoknot_order       (int nct, int L, int **ctlist);
 static int   r2r_pseudoknot_outline     (ESL_MSA *msa, int nct, int **ctlist);
@@ -41,14 +42,14 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   char    **r2rpkfile = NULL;
   char     *metafile  = NULL;
   char     *filename  = NULL;
+  char     *args      = NULL;
   char     *buf;
-  char     *args;
   FILE     *fp        = NULL;
   ESL_MSA  *r2rmsa    = NULL;
   int       pkcallout = TRUE;
   int       s;
   int       status;
-  
+
   if (r2rfile == NULL) return eslOK;
 
   // order the pknots by the first paired position
@@ -113,6 +114,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   for (s = 1; s < nct; s ++) remove(r2rpkfile[s]);
   remove(metafile);
 
+  free(args);
   free(r2rpkfile);
   free(metafile);
   esl_msa_Destroy(r2rmsa);
@@ -121,7 +123,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
  ERROR:
   for (s = 1; s < nct; s ++) remove(r2rpkfile[s]);
   remove(metafile);
-
+  if (args)      free(args);
   if (r2rpkfile) free(r2rpkfile);
   if (metafile)  free(metafile);
   if (r2rmsa)    esl_msa_Destroy(r2rmsa);
@@ -131,11 +133,9 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
 int
 r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
 {
-  char *tag       = NULL;
-  char *ss        = NULL;
   char  sstag[8]  = "SS_cons";
-  char  sstagx[9] = "SS_cons_";
-  char  tok[9];
+  char *ss        = NULL;
+  char *tag       = NULL;
   int   L = msa->alen;
   int   tagidx;
   int   idx;
@@ -143,21 +143,19 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
   int   i;
   int   status;
 
-  // remove the given SS_cons_ annotations
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
-    strncpy(tok, msa->gc_tag[tagidx], 8);
-    tok[8] = '\0';
-    
-    if (esl_strcmp(tok, sstagx) == 0) {
+  // remove the SS_cons_ annotations from r2r
+  // remove the SS_cons2 annotations from Rfam
+  for (tagidx = 0; tagidx < msa->ngc; tagidx++) {    
+    if (strncmp(msa->gc_tag[tagidx], sstag, 7) == 0) {
       for (idx = tagidx+1; idx < msa->ngc; idx ++) {
-	msa->gc_tag[idx-1] = msa->gc_tag[idx];
-	msa->gc[idx-1]     = msa->gc[idx];
-      }
+  	msa->gc_tag[idx-1] = msa->gc_tag[idx];
+  	msa->gc[idx-1]     = msa->gc[idx];
+       }
       tagidx   --;
       msa->ngc --;
     }
   }
- 
+  
   // allocate string 
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
   
@@ -171,8 +169,8 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
      }
     else {
       esl_sprintf(&tag, "%s_%d", sstag, s);
-      esl_msa_AppendGC(msa, tag, ss);
-      if (verbose) printf("SS_cons_%d\n%s\n", s, ss);
+      if (verbose) printf("%s\n%s\n", tag, ss);
+      r2r_esl_msa_AppendGC(msa, tag, ss);
      }
   }
 
@@ -181,8 +179,8 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
   return eslOK;
 
  ERROR:
-  if (ss)    free(ss);
-  if (tag)   free(tag);
+  if (ss)  free(ss);
+  if (tag) free(tag);
   return status;
 }
 
@@ -190,12 +188,10 @@ int
 r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, HITLIST *hitlist, int nct, int verbose)
 {
   char  covtag[12]  = "cov_SS_cons";
-  char  covtagx[13] = "cov_SS_cons_";
   char *covstr      = NULL;
   char *prv_covstr  = NULL;
   char *tok         = NULL;
   char *tag         = NULL;
-  char  tok1[13];
   char *covtag1;
   int   tagidx;
   int   idx;
@@ -206,12 +202,10 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, HITLIST *hitlist, int nct, int verbose)
   int   ih, jh;
   int   status;
 
-  // remove the given cov_SS_cons_ annotations
+  // remove the cov_SS_cons_ annotations from r2r
+  // remove the cov_SS_cons2 annotations from Rfam
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
-    strncpy(tok1, msa->gc_tag[tagidx], 12);
-    tok1[12] = '\0';
-
-    if (esl_strcmp(tok1, covtagx) == 0) {
+    if (strncmp(msa->gc_tag[tagidx], covtag, 11) == 0) {
       for (idx = tagidx+1; idx < msa->ngc; idx ++) {
 	msa->gc_tag[idx-1] = msa->gc_tag[idx];
 	msa->gc[idx-1]     = msa->gc[idx];
@@ -276,8 +270,8 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, HITLIST *hitlist, int nct, int verbose)
   return eslOK;
 
  ERROR:
-  if (tag)    free(tag);
   if (tok)    free(tok);
+  if (tag)    free(tag);
   if (covstr) free(covstr);
   if (prv_covstr) free(prv_covstr);
   return status;
@@ -285,6 +279,53 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, HITLIST *hitlist, int nct, int verbose)
 
 
 /*------- internal functions -------------------*/
+
+// A version of esl_msa_AppendGC that assumes
+// we are adding a new tag, which is the case here.
+//
+// The proper esl_msa_AppenGC is more general and looks at the gc_idx hash table to figure out whether it's
+// a new tag or not. Because I have to first remove the given gc tags to add R-scapes's the hash table would have
+// to be propertly
+//
+int
+r2r_esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
+{
+  int   tagidx;
+  int   status;
+  void *p;
+
+  /* Is this an unparsed tag name that we recognize?
+   * If not, handle adding it to index, and reallocating
+   * as needed.
+   */
+  tagidx = msa->ngc;
+  
+  if (msa->gc_tag == NULL)	/* first tag? init&allocate  */
+    {
+      msa->gc_idx = esl_keyhash_Create();
+      if (status != eslOK && status != eslEDUP) return status;
+      ESL_DASSERT1((tagidx == 0));
+
+      ESL_ALLOC(msa->gc_tag, sizeof(char *));
+      ESL_ALLOC(msa->gc,     sizeof(char *));
+      msa->gc[0]  = NULL;
+    }
+  else
+    {
+      ESL_RALLOC(msa->gc_tag, p, (msa->ngc+1) * sizeof(char **));
+      ESL_RALLOC(msa->gc,     p, (msa->ngc+1) * sizeof(char **));
+      msa->gc[tagidx] = NULL;
+   }
+  
+  // store the new tag
+  if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  msa->ngc++;
+    
+  return (esl_strcat(&(msa->gc[tagidx]), -1, value, -1));
+
+ ERROR:
+  return status;
+}
 
 static int
 r2r_depict_pdf(char *r2rfile, char *metafile, int verbose, char *errbuf)
@@ -301,7 +342,7 @@ r2r_depict_pdf(char *r2rfile, char *metafile, int verbose, char *errbuf)
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
-  if (1||verbose) esl_sprintf(&args, "%s %s %s ",           cmd, metafile, r2rpdf);
+  if (verbose) esl_sprintf(&args, "%s %s %s ",           cmd, metafile, r2rpdf);
   else         esl_sprintf(&args, "%s %s %s >/dev/null", cmd, metafile, r2rpdf);
  
   status = system(args);
@@ -483,8 +524,8 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
     }
     
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R_LABEL", s);
-    esl_msa_AppendGC(msa, tag, new);
-    
+    r2r_esl_msa_AppendGC(msa, tag, new);
+
     // other markups necessary for r2r to plot the pseudokntos
     esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%d outline", s);
     esl_msa_AddGF(msa, tag, -1, "", -1);
@@ -565,7 +606,7 @@ r2r_run_consensus_from_file(char *inmsafile, char *outmsafile, char *errbuf)
   else
     ESL_XFAIL(status, errbuf, "Failed to find R2R executable\n");
   
-  esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1", cmd, inmsafile, outmsafile);
+  esl_sprintf(&args, "%s --GSC-weighted-consensus %s %s 3 0.97 0.9 0.75 4 0.97 0.9 0.75 0.5 0.1 >/dev/null", cmd, inmsafile, outmsafile);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R\n");
   

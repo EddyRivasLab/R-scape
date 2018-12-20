@@ -383,7 +383,8 @@ static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *ns
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist);
+static int  write_structure(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, int verbose);
+static int  write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -1107,7 +1108,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ribosum       = cfg->ribosum;
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
+  data.OL            = cfg->omsa->alen;
   data.msa2pdb       = cfg->msa2pdb;
+  data.OL            = cfg->omsa->alen;
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
@@ -1784,9 +1787,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->powerdouble) 
     status = doublesubs   (cfg, msa, cfg->power, cfg->clist, &ndouble, &spair, cfg->verbose);
   else
-    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);
-   
+    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);   
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  
   // conditioned on has_ss ? 
   structure_information(cfg, spair, msa);
   
@@ -1933,6 +1936,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
   data.msa2pdb       = cfg->msa2pdb;
+  data.OL            = cfg->omsa->alen;
   data.msamap        = cfg->msamap;
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
@@ -1973,7 +1977,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     status = struct_COCOMCYK(&data, msa, &nct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
-    status = write_omsacyk(cfg, msa->alen, nct, cykctlist);
+    status = write_omsacyk(cfg, msa->alen, nct, cykctlist, TRUE);
     if (status != eslOK) goto ERROR;
   }
 
@@ -2046,7 +2050,7 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
   else
     return eslOK;
 
-  power_SPAIR_Write(stdout,        dim, spair);  
+  power_SPAIR_Write(stdout, dim, spair);  
   
   return eslOK;
 }
@@ -2193,21 +2197,19 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
   return status;
 }
 
+
 static int
-write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist)
+write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose)
 {
-  ESL_MSA *omsa = cfg->omsa;
-  char    *ss = NULL;
-  char    *tag;
-  int     *ct = NULL;
-  int      OL = omsa->alen;
-  int      s;
-  int      i;
-  int      status;
+  ESL_MSA  *omsa = cfg->omsa;
+  char    **osslist = NULL;
+  char     *tag;
+  int       OL = omsa->alen;
+  int       s;
+  int       i;
+  int       status;
 
   // initialize
-  ESL_ALLOC(ct, sizeof(int)  * (OL+1));
-  ESL_ALLOC(ss, sizeof(char) * (OL+1));
   if (omsa->ss_cons == NULL) {
     ESL_ALLOC(omsa->ss_cons, sizeof(char)*(OL+1));
     omsa->ss_cons[OL] = '\0';
@@ -2217,34 +2219,33 @@ write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist)
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-  // I may end up chainging it later.
+  // I may end up changing this later.
   // It is used by R2R, and I keep it here because some of my
   // secondary/pseudoknot structure may overlap with the main nested structure.
   // That is not wrong, it is just showing our uncertainty about the structure due to lack
   // of more covariations.
+  status = struct_CTMAP(L, nct, cykctlist, OL, cfg->msamap, &osslist, verbose);
+  if (status != eslOK) goto ERROR;
+  
   for (s = 0; s < nct; s ++) {
-    esl_vec_ISet(ct, OL+1, 0);
-    for (i = 0; i < L; i++) 
-      if (cykctlist[s][i+1] > 0) ct[cfg->msamap[i]+1] = cfg->msamap[cykctlist[s][i+1]-1]+1;
-
-    esl_ct2wuss(ct, OL, ss);
-    if (s == 0) strcpy(omsa->ss_cons, ss);
+     if (s == 0) 
+      strcpy(omsa->ss_cons, osslist[s]);
     else {
       esl_sprintf(&tag, "SS_cons_%d", s);
-      esl_msa_AppendGC(omsa, tag, ss);
+      esl_msa_AppendGC(omsa, tag, osslist[s]);
     }
   }
   
   // write alignment with the cykcov structure to file
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
-
-  free(ct);
-  free(ss);
+  
+  for (s = 0; s < nct; s ++) free(osslist[s]);
+  free(osslist);
   return eslOK;
 
  ERROR:
-  if (ct) free(ct);
-  if (ss) free(ss);
+  for (s = 0; s < nct; s ++) if (osslist[s]) free(osslist[s]);
+  if (osslist) free(osslist);
   return status;
 }
 

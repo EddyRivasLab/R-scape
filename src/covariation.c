@@ -240,15 +240,20 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
 
-  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0 && hitlist) { // do the plots only for GIVSS
+  printf("^^ nofigures %d\n", data->nofigures);
+  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      struct_SplitCT(data->ct, msa->alen, &nct, &ctlist, TRUE);
-      
+      struct_SplitCT(data->ct, msa->alen, &nct, &ctlist, data->verbose);
+      if (status != eslOK) goto ERROR;
+     
+      status = struct_CTMAP(data->mi->alen, nct, ctlist, data->OL, data->msamap, NULL, TRUE);
+      if (status != eslOK) goto ERROR;  
+
       status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
-			   TRUE, data->verbose, data->errbuf);
+			      TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
       status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
-			   FALSE, data->verbose, data->errbuf);
+			      FALSE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
       status = r2r_Depict(data->R2Rfile, data->R2Rall, msa, nct, ctlist, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
@@ -950,7 +955,7 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
     
     power_SPAIR_Write(stdout,         dim, spair);
     power_SPAIR_Write(data->outsrtfp, dim, spair);
-   
+    
     fprintf(stdout,         "# BPAIRS observed to covary %d\n#\n", tf);
     fprintf(data->outsrtfp, "# BPAIRS observed to covary %d\n#\n", tf);
  

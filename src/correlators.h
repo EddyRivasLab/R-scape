@@ -227,6 +227,7 @@ struct data_s {
   int                 *ct;
   CLIST               *clist;
   int                 *msa2pdb;
+  int                  OL;
   int                 *msamap;
   int                  firstpos;
   double               bmin;

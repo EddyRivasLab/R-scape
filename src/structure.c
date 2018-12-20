@@ -76,7 +76,7 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykc
     status = ContacMap_FromCT(data->clist, msa->alen, cykctlist[s], data->clist->mind, data->msamap, NULL);
     if (status != eslOK) goto ERROR;
   }
-  
+
   /* redo the hitlist since the ct has now changed */
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
@@ -357,6 +357,73 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int nct, int **ctli
 }
 
 
+// take the ctlist and convert to octlist in the coordinates of the original alignment
+// using the map function msamap
+int
+struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, int verbose)
+{
+  char **sslist = NULL;
+  int   *oct    = NULL;
+  int   *ct;
+  char  *oss;
+  char  *tag;
+  int    maxtaglen;
+  int    s;
+  int    i;
+  int    status;
+
+  // initialize
+  ESL_ALLOC(oct,    sizeof(int)    * OL);
+  ESL_ALLOC(sslist, sizeof(char *) * nct);
+  for (s = 0; s < nct; s ++) sslist[s] = NULL;
+  
+  esl_sprintf(&tag, "SS_cons_%d\n", nct);
+  maxtaglen = strlen(tag);
+  
+  // the main nested structure (s=0) is annotated as SS_cons
+  // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
+  //
+  // SS_cons_xx is not orthodox stockholm format.
+  // I may end up changing this later.
+  // It is used by R2R, and I keep it here because some of my
+  // secondary/pseudoknot structure may overlap with the main nested structure.
+  // That is not wrong, it is just showing our uncertainty about the structure due to lack
+  // of more covariations.
+  for (s = 0; s < nct; s ++) {
+    ESL_ALLOC(sslist[s], sizeof(char) * (OL+1));
+    oss = sslist[s];
+    
+    ct  = ctlist[s];
+    esl_vec_ISet(oct, OL+1, 0); // initialize the oct
+
+    // use the mapping to create the oct from ct
+    for (i = 0; i < L; i++) 
+      if (ct[i+1] > 0) oct[msamap[i]+1] = msamap[ct[i+1]-1]+1;
+ 
+    // the structure in the coordenates of the original alignment
+    esl_ct2wuss(oct, OL, oss);
+    
+    if (s == 0) esl_sprintf(&tag, "SS_cons");
+    else        esl_sprintf(&tag, "SS_cons_%d", s);
+    if (verbose) printf("%-*s %s\n", maxtaglen, tag, oss);     
+  }
+  
+  if (ret_sslist) *ret_sslist = sslist;
+  else
+    {
+      for (s = 0; s < nct; s ++) free(sslist[s]);
+      free(sslist);
+    }
+  
+  free(oct);
+  return eslOK;
+
+ ERROR:
+  for (s = 0; s < nct; s ++) if (sslist[s]) free(sslist[s]);
+  if (sslist) free(sslist);
+  if (oct) free(oct);
+  return status;
+}
 
 // take a ct vector possibly with pseudoknots, and separate
 // into one ct without pseudoknots and additional ct's one with
@@ -490,7 +557,7 @@ struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
   // all substructures are tested for including at least 1 cov,
   // if they don't they have to be compatible with the major nested structure
   // otherwise they get removed.
-  status = ctlist_helices_select(nct, ctlist, &new, &newctlist, L, TRUE);
+  status = ctlist_helices_select(nct, ctlist, &new, &newctlist, L, verbose);
   if (status != eslOK) goto ERROR;     
   
   // if the primary structure (s==0), replace the 'SS_cons' GC line with the new ss
@@ -498,7 +565,7 @@ struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
   //
   // #GC SS_cons_1 
   // #GC SS_cons_2
-  status = r2r_Overwrite_SS_cons(msa, new, newctlist, TRUE);
+  status = r2r_Overwrite_SS_cons(msa, new, newctlist, verbose);
   if (status != eslOK) goto ERROR;     
   
   if ((fp = fopen(r2rfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to open r2rfile %s", r2rfile);
@@ -849,13 +916,14 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
       }
     
     // check for compatiblity with main structure
+    // or for a helix with fewer than 3 bpairs
     nincomp = 0;
     ntot    = 0;
     for (i = 1; i <= L; i ++) {
       if (ctlist[s][i] > 0)                  ntot ++;
       if (ctlist[s][i] > 0 && ctmain[i] > 0) nincomp ++;
     }
-    if (nincomp > incfraq*ntot || (hascov == FALSE && ntot < 3)) iscompatible = FALSE;
+    if (nincomp > incfraq*ntot || (hascov == FALSE && ntot < 6)) iscompatible = FALSE;
 
     // a final check for duplications
     ndup = 0;
