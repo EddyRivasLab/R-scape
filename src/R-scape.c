@@ -5,7 +5,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -166,6 +165,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   MSA_STAT        *mstat;               /* statistics of the analyzed alignment */
   float           *msafrq;
   int             *ct;
+
+  int             nct;
+  int           **ctlist;
   int              onbpairs;
   int              nbpairs;
   int              nbpairs_cyk;
@@ -383,7 +385,6 @@ static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *ns
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_structure(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, int verbose);
 static int  write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose);
 
 /* process_commandline()
@@ -1099,6 +1100,10 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.OL            = cfg->omsa->alen;
+  data.ct            = cfg->ct;
+  data.nct           = cfg->nct;
+  data.ctlist        = cfg->ctlist;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
@@ -1106,11 +1111,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.power         = NULL;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
-  data.ct            = cfg->ct;
   data.clist         = cfg->clist;
-  data.OL            = cfg->omsa->alen;
   data.msa2pdb       = cfg->msa2pdb;
-  data.OL            = cfg->omsa->alen;
   data.msamap        = cfg->msamap;
   data.bmin          = cfg->bmin;
   data.w             = cfg->w;
@@ -1646,6 +1648,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   int       has_ss   = FALSE;
   int       nshuffle;
   int       analyze;
+  int       s;
   int       status;
 
   if (msa == NULL) return eslOK;
@@ -1728,6 +1731,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
+  if (cfg->abcisRNA) {
+    struct_SplitCT(cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
+    if (status != eslOK) goto ERROR;
+  }
+
   /* produce a tree
    */
   if (cfg->covmethod == AKMAEV) {
@@ -1798,6 +1806,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
+  for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
+  if (cfg->ctlist) free(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
   if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
@@ -1823,6 +1833,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
  ERROR:
   if (cfg->ct) free(cfg->ct);
+  for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
+  if (cfg->ctlist) free(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist);
   if (cfg->msa2pdb) free(cfg->msa2pdb); 
   if (cfg->msafrq) free(cfg->msafrq); 
@@ -1859,7 +1871,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   int            **cykctlist = NULL;
   RANKLIST        *ranklist  = NULL;
   HITLIST         *hitlist   = NULL;
-  int              nct = 0;
+  int              cyknct = 0;
   int              s;
   int              status;
 
@@ -1924,6 +1936,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.nct           = cfg->nct;
+  data.ctlist        = cfg->ctlist;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_cyk   = cfg->nbpairs_cyk;
@@ -1933,10 +1947,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.power         = cfg->power;
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
+  data.OL            = cfg->omsa->alen;
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
   data.msa2pdb       = cfg->msa2pdb;
-  data.OL            = cfg->omsa->alen;
   data.msamap        = cfg->msamap;
   data.firstpos      = cfg->firstpos;
   data.bmin          = cfg->bmin;
@@ -1974,15 +1988,15 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->docyk && cfg->mode != RANSS) {
 
     data.mode = CYKSS;    
-    status = struct_COCOMCYK(&data, msa, &nct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
+    status = struct_COCOMCYK(&data, msa, &cyknct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
-    status = write_omsacyk(cfg, msa->alen, nct, cykctlist, TRUE);
+    status = write_omsacyk(cfg, msa->alen, cyknct, cykctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  for (s = 0; s < nct; s ++) if (cykctlist[s]) free(cykctlist[s]);
+  for (s = 0; s < cyknct; s ++) if (cykctlist[s]) free(cykctlist[s]);
   if (cykctlist) free(cykctlist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
@@ -1990,7 +2004,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   return eslOK;
   
  ERROR:
-  for (s = 0; s < nct; s ++) if (cykctlist[s]) free(cykctlist[s]);
+  for (s = 0; s < cyknct; s ++) if (cykctlist[s]) free(cykctlist[s]);
   if (cykctlist) free(cykctlist);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
@@ -2035,6 +2049,7 @@ static int
 structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
 {
   int64_t dim = msa->alen * (msa->alen - 1) / 2;
+  int     status;
   
   if (cfg->samplesize == SAMPLE_ALL) return eslOK;
   if (spair == NULL) return eslOK;
@@ -2050,9 +2065,17 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
   else
     return eslOK;
 
+  if (cfg->mode == GIVSS && cfg->abcisRNA && cfg->omsa->ss_cons && cfg->samplesize != SAMPLE_ALL)
+    {
+      status = struct_CTMAP(cfg->mi->alen, cfg->nct, cfg->ctlist, cfg->omsa->alen, cfg->msamap, NULL, NULL, TRUE);
+      if (status != eslOK) goto ERROR;
+    }
   power_SPAIR_Write(stdout, dim, spair);  
   
   return eslOK;
+
+ ERROR:
+  return status;
 }
 
 static int
@@ -2199,7 +2222,7 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 
 
 static int
-write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose)
+write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose)
 {
   ESL_MSA  *omsa = cfg->omsa;
   char    **osslist = NULL;
@@ -2224,10 +2247,10 @@ write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose)
   // secondary/pseudoknot structure may overlap with the main nested structure.
   // That is not wrong, it is just showing our uncertainty about the structure due to lack
   // of more covariations.
-  status = struct_CTMAP(L, nct, cykctlist, OL, cfg->msamap, &osslist, verbose);
+  status = struct_CTMAP(L, cyknct, cykctlist, OL, cfg->msamap, &osslist, NULL, verbose);
   if (status != eslOK) goto ERROR;
   
-  for (s = 0; s < nct; s ++) {
+  for (s = 0; s < cyknct; s ++) {
      if (s == 0) 
       strcpy(omsa->ss_cons, osslist[s]);
     else {
@@ -2239,12 +2262,12 @@ write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose)
   // write alignment with the cykcov structure to file
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
   
-  for (s = 0; s < nct; s ++) free(osslist[s]);
+  for (s = 0; s < cyknct; s ++) free(osslist[s]);
   free(osslist);
   return eslOK;
 
  ERROR:
-  for (s = 0; s < nct; s ++) if (osslist[s]) free(osslist[s]);
+  for (s = 0; s < cyknct; s ++) if (osslist[s]) free(osslist[s]);
   if (osslist) free(osslist);
   return status;
 }

@@ -34,9 +34,14 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
+// paramters to include extra helices
+#define  INCOMPFRAC  0.3          // max fraction of residues in a helix that overlap with another existing helix
+#define  MINHELIX    4            // min length of a helix without any covarying basepairs
+
 static int struct_cocomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist,
 			   int minloop, enum grammar_e G, int verbose, char *errbuf);
 static int struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
+static int struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop, int verbose);
 static int ct_split_helices(int *ct, int L, int *ret_idx, int ***ret_ctlist, int verbose);
 static int ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int L, int verbose);
@@ -45,7 +50,7 @@ static int ctlist_join(int nct, int **ctlist, int L, int **ret_ct, int verbose);
 
 // covariation-constrained multi-CYK (COCOMCYK)
 int
-struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
+struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_cykctlist, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
 {
   HITLIST       *cykhitlist = NULL;
   char          *covtype    = NULL;
@@ -53,7 +58,7 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykc
   int          **cykctlist  = NULL;
   int           *cykct;
   SCVAL          sc;
-  int            nct;
+  int            cyknct;
   int            i;
   int            s;
   int            status;
@@ -63,16 +68,16 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykc
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
    * These pairs become constrains for the second part of the folding in struct_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, data->clist, &nct, &cykctlist, (hitlist)?hitlist->nhit:0, minloop, thresh, data->errbuf, data->verbose);
+  status = CYKCOV(data->r, data->mi, data->clist, &cyknct, &cykctlist, (hitlist)?hitlist->nhit:0, minloop, thresh, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
   // Use the CT from covariation to do a cov-constrained multi-cyk folding
-  status = struct_cocomcyk(data->R2Rcykfile, data->R2Rall, data->r, msa, &nct, &cykctlist, minloop, G, data->verbose, data->errbuf);
+  status = struct_cocomcyk(data->R2Rcykfile, data->R2Rall, data->r, msa, &cyknct, &cykctlist, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   // create a new contact list from the cykct
   CMAP_ReuseCList(data->clist);
-  for (s = 0; s < nct; s ++) {
+  for (s = 0; s < cyknct; s ++) {
     status = ContacMap_FromCT(data->clist, msa->alen, cykctlist[s], data->clist->mind, data->msamap, NULL);
     if (status != eslOK) goto ERROR;
   }
@@ -80,10 +85,11 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykc
   /* redo the hitlist since the ct has now changed */
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
-  status = cov_CreateCYKHitList(data, ranklist, hitlist, &cykhitlist, covtype, threshtype);
+
+  status = cov_CreateCYKHitList(data, cyknct, cykctlist, ranklist, hitlist, &cykhitlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
   
-  for (s = 0; s < nct; s ++) {
+  for (s = 0; s < cyknct; s ++) {
     cykct = cykctlist[s];
     
     for (i = 1; i <= msa->alen; i ++) 
@@ -92,19 +98,19 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykc
 
   if (data->nbpairs_cyk > 0) {
     /* R2R */
-    status = r2r_Depict(data->R2Rcykfile, data->R2Rall, msa, nct, cykctlist, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = r2r_Depict(data->R2Rcykfile, data->R2Rall, msa, cyknct, cykctlist, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
     
     /* DotPlots (pdf,svg) */
-    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, cyknct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
 			 TRUE,  data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, cyknct, cykctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
 			 FALSE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
 
-  *ret_nct       = nct;
+  *ret_cyknct    = cyknct;
   *ret_cykctlist = cykctlist;
 
   cov_FreeHitList(cykhitlist);
@@ -360,25 +366,21 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int nct, int **ctli
 // take the ctlist and convert to octlist in the coordinates of the original alignment
 // using the map function msamap
 int
-struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, int verbose)
+struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, FILE *fp, int verbose)
 {
   char **sslist = NULL;
   int   *oct    = NULL;
   int   *ct;
   char  *oss;
-  char  *tag;
-  int    maxtaglen;
+  int    blqsize = 60;
   int    s;
   int    i;
   int    status;
 
   // initialize
-  ESL_ALLOC(oct,    sizeof(int)    * OL);
+  ESL_ALLOC(oct,    sizeof(int)    * (OL+1));
   ESL_ALLOC(sslist, sizeof(char *) * nct);
   for (s = 0; s < nct; s ++) sslist[s] = NULL;
-  
-  esl_sprintf(&tag, "SS_cons_%d\n", nct);
-  maxtaglen = strlen(tag);
   
   // the main nested structure (s=0) is annotated as SS_cons
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
@@ -392,21 +394,19 @@ struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_ssli
   for (s = 0; s < nct; s ++) {
     ESL_ALLOC(sslist[s], sizeof(char) * (OL+1));
     oss = sslist[s];
-    
-    ct  = ctlist[s];
+  
+    ct = ctlist[s];
     esl_vec_ISet(oct, OL+1, 0); // initialize the oct
-
+    
     // use the mapping to create the oct from ct
     for (i = 0; i < L; i++) 
       if (ct[i+1] > 0) oct[msamap[i]+1] = msamap[ct[i+1]-1]+1;
- 
+     
     // the structure in the coordenates of the original alignment
     esl_ct2wuss(oct, OL, oss);
-    
-    if (s == 0) esl_sprintf(&tag, "SS_cons");
-    else        esl_sprintf(&tag, "SS_cons_%d", s);
-    if (verbose) printf("%-*s %s\n", maxtaglen, tag, oss);     
   }
+  if (fp)      struct_write_ss(fp,     blqsize, nct, sslist);
+  if (verbose) struct_write_ss(stdout, blqsize, nct, sslist);
   
   if (ret_sslist) *ret_sslist = sslist;
   else
@@ -644,6 +644,59 @@ struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum gr
   return status;
 }
 
+static int
+struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist)
+{
+  char  *buf;
+  char  *ss;
+  char **tag = NULL;
+  int   sslen;
+  int   tagsize = 0;
+  int   n;
+  int   s;
+  int   status;
+
+  // alocate
+  ESL_ALLOC(tag, sizeof(char *) * nss);
+  ESL_ALLOC(buf, sizeof(char) * (blqsize+1));
+  buf[blqsize] = '\0';
+
+  for (s = 0; s < nss; s ++) {
+    if (s == 0) esl_sprintf(&tag[s], "SS_cons");
+    else        esl_sprintf(&tag[s], "SS_cons_%d", s);
+    tagsize = ESL_MAX(tagsize, strlen(tag[s]));
+  }
+
+  // initialize
+  n     = 0;
+  sslen = strlen(sslist[0]);
+  while (n < sslen) {
+      
+    for (s = 0; s < nss; s ++) {
+      ss = sslist[s];
+      
+      if (blqsize < 0) 
+	fprintf(fp, "# %-*s %s\n", tagsize, tag[s], ss);
+      else {
+	strncpy(buf, ss+n, blqsize);
+	fprintf(fp, "# %-*s %s\n", tagsize, tag[s], buf);
+      }      
+    }
+    
+    fprintf(fp, "#\n");
+    n += (blqsize > 0)? blqsize : sslen;
+  }
+
+  free(tag);
+  if (buf) free(buf);
+  return eslOK;
+
+ ERROR:
+  if (tag) free(tag);
+  if (buf) free(buf);
+  return status;
+}
+
 // removes covariations that correspond to gap-gap in the RF sequence
 // it also removes covariation that are closer than minloop in RF 
 static int
@@ -870,16 +923,17 @@ ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int L, int verbose)
 static int
 ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctlist, int L, int verbose)
 {
-  char   *ssmain = NULL;
-  char   *ss     = NULL;
-  int   **ctlist = *ret_ctlist;
-  int   **ctnew  = NULL;
-  int    *ctcum  = NULL;
-  int    *ctmain = ctlist[0];
-  int    *useme  = NULL;
-  int     nct    = *ret_nct;
-  double incfraq = 0.3;
-  int     new    = 1;
+  char   *ssmain   = NULL;
+  char   *ss       = NULL;
+  int   **ctlist   = *ret_ctlist;
+  int   **ctnew    = NULL;
+  int    *ctcum    = NULL;
+  int    *ctmain   = ctlist[0];
+  int    *useme    = NULL;
+  int     nct      = *ret_nct;
+  double  incompfrac = INCOMPFRAC;
+  int     minhelix   = MINHELIX;
+  int     new = 1;
   int     hascov;
   int     iscompatible;
   int     isunique;
@@ -923,7 +977,7 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
       if (ctlist[s][i] > 0)                  ntot ++;
       if (ctlist[s][i] > 0 && ctmain[i] > 0) nincomp ++;
     }
-    if (nincomp > incfraq*ntot || (hascov == FALSE && ntot < 6)) iscompatible = FALSE;
+    if (nincomp > incompfrac * ntot || (hascov == FALSE && ntot < 2*minhelix)) iscompatible = FALSE;
 
     // a final check for duplications
     ndup = 0;

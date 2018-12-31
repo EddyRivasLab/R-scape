@@ -86,10 +86,11 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
 
   // run script to produce the additional callout msas
-  esl_sprintf(&buf, r2rfile);
-  filename = strtokm(buf, ".cyk.R2R");
-  buf      = filename;
+  esl_FileTail(r2rfile, TRUE, &buf);
   filename = strtokm(buf, ".R2R");
+  buf      = filename;
+  filename = strtokm(buf, ".cyk");
+    
   ESL_ALLOC(r2rpkfile, sizeof(char *) * nct);
   r2rpkfile[0] = NULL;
   for (s = 1; s < nct; s ++)  esl_sprintf(&r2rpkfile[s], "%s.pk%d.sto", filename, s);
@@ -670,10 +671,10 @@ r2r_write_meta(char *metafile, char *r2rfile, int nct, char **r2rpkfile, int pkc
   
   if ((fp = fopen(metafile, "w")) == NULL) esl_fatal("Failed to open metafile %s", metafile);
 
-  esl_sprintf(&buf, r2rfile);
-  name = strtokm(buf, ".cyk.R2R");
+  esl_FileTail(r2rfile, TRUE, &buf);
+  name = strtokm(buf, ".R2R");
   buf  = name;
-      name = strtokm(buf, ".R2R.sto");
+  name = strtokm(buf, ".cyk");
    fprintf(fp, "%s\tdisplayname\t%s\n", r2rfile, name);
    
   if (pkcallout) {

@@ -58,9 +58,9 @@ int
 cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analyze)
 {
   RANKLIST      *ranklist = NULL;
-  HITLIST       *hitlist = NULL;
-  int          **ctlist = NULL;
-  char          *ss = NULL;
+  HITLIST       *hitlist  = NULL;
+  int          **ctlist   = NULL;
+  char          *ss       = NULL;
   COVCLASS       covclass = data->mi->class;
   int            shiftnonneg = FALSE;
   int            nct = 0;
@@ -87,151 +87,151 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     shiftnonneg = TRUE; // gremling shifts scores to be nonnegative
     status = potts_CalculateCOV(data);
     if (status != eslOK) goto ERROR; 
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR;
     break;
   case CHIa: 
-    status = corr_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateCHI         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CHIp:
-    status = corr_CalculateCHI         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateCHI         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case CHI: 
-    status = corr_CalculateCHI         (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCHI         (covclass, data);
     if (status != eslOK) goto ERROR;     
     break;
   case GTa: 
-    status = corr_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
+    status = corr_CalculateGT          (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case GTp: 
-    status = corr_CalculateGT          (covclass, data, FALSE,  NULL,      NULL);
+    status = corr_CalculateGT          (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case GT: 
-    status = corr_CalculateGT          (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateGT          (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
   case MIa: 
-    status = corr_CalculateMI          (covclass, data, FALSE,  NULL,      NULL);
+    status = corr_CalculateMI          (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIp: 
-    status = corr_CalculateMI          (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateMI          (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MI: 
-    status = corr_CalculateMI          (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateMI          (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
   case MIra: 
-    status = corr_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateMIr         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIrp:
-    status = corr_CalculateMIr         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateMIr         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case MIr: 
-    status = corr_CalculateMIr         (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateMIr         (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
   case MIga: 
-    status = corr_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateMIg         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case MIgp:
-    status = corr_CalculateMIg         (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateMIg         (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR;  
     break;
   case MIg: 
-    status = corr_CalculateMIg          (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateMIg          (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
   case OMESa: 
-    status = corr_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateOMES        (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case OMESp: 
-    status = corr_CalculateOMES        (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateOMES        (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data,  shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case OMES: 
-    status = corr_CalculateOMES        (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateOMES        (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
  case RAFa: 
-   status = corr_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
+   status = corr_CalculateRAF         (covclass, data, msa);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFp: 
-    status = corr_CalculateRAF         (covclass, data, msa, FALSE,   NULL,      NULL);
+    status = corr_CalculateRAF         (covclass, data, msa);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAF:
-    status = corr_CalculateRAF         (covclass, data, msa, analyze, &ranklist, &hitlist);
+    status = corr_CalculateRAF         (covclass, data, msa);
     if (status != eslOK) goto ERROR;
     break;
   case RAFSa: 
-    status = corr_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
+    status = corr_CalculateRAFS        (covclass, data, msa);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFSp: 
-    status = corr_CalculateRAFS        (covclass, data, msa, FALSE,   NULL,      NULL);
+    status = corr_CalculateRAFS        (covclass, data, msa);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,      data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,      data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case RAFS: 
-    status = corr_CalculateRAFS        (covclass, data, msa, analyze, &ranklist, &hitlist);
+    status = corr_CalculateRAFS        (covclass, data, msa);
     if (status != eslOK) goto ERROR;
     break;
   case CCFa: 
-    status = corr_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateCCF        (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(ASC,     data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(ASC,     data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CCFp: 
-    status = corr_CalculateCCF        (covclass, data, FALSE,   NULL,      NULL);
+    status = corr_CalculateCCF        (covclass, data);
     if (status != eslOK) goto ERROR;
-    status = corr_CalculateCOVCorrected(APC,     data, analyze, &ranklist, &hitlist, shiftnonneg);
+    status = corr_CalculateCOVCorrected(APC,     data, shiftnonneg);
     if (status != eslOK) goto ERROR; 
     break;
   case CCF: 
-    status = corr_CalculateCCF        (covclass, data, analyze, &ranklist, &hitlist);
+    status = corr_CalculateCCF        (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
   default:
@@ -240,22 +240,20 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
   if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
 
-  printf("^^ nofigures %d\n", data->nofigures);
-  if (!data->nofigures && data->mode == GIVSS && data->nbpairs > 0) { // do the plots only for GIVSS
-    if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      struct_SplitCT(data->ct, msa->alen, &nct, &ctlist, data->verbose);
-      if (status != eslOK) goto ERROR;
-     
-      status = struct_CTMAP(data->mi->alen, nct, ctlist, data->OL, data->msamap, NULL, TRUE);
-      if (status != eslOK) goto ERROR;  
+  if (analyze) {
+    status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
+    if (status != eslOK) goto ERROR;
+  }
 
-      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+  if (!data->nofigures && data->mode == GIVSS) { // do the plots only for GIVSS
+    if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
+      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, data->nct, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
 			      TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
-      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, data->nct, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
 			      FALSE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
-      status = r2r_Depict(data->R2Rfile, data->R2Rall, msa, nct, ctlist, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
+      status = r2r_Depict(data->R2Rfile, data->R2Rall, msa, data->nct, data->ctlist, hitlist, TRUE, TRUE, data->verbose, data->errbuf);
       if  (status != eslOK) goto ERROR;
     }
   }
@@ -297,9 +295,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   struct mutual_s *mi  = data->mi;
   ESL_DMATRIX     *mtx = mi->COV;
   char            *threshtype = NULL;
-  char            *covtype = NULL;
-  RANKLIST        *ranklist = NULL;
-  HITLIST         *hitlist = NULL;
+  char            *covtype    = NULL;
+  RANKLIST        *ranklist   = NULL;
+  HITLIST         *hitlist    = NULL;
   double           pmass, newmass;
   double           bmax;
   double           add;
@@ -851,7 +849,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
 
 int 
-cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist, char *covtype, char *threshtype)
+cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist, char *covtype, char *threshtype)
 {
   HITLIST  *cykhitlist = NULL;
   SPAIR    *spair      = NULL;
@@ -940,7 +938,9 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
   
   if (data->outfp) {
     fprintf(data->outfp, "\n# The predicted cyk-cov structure\n");
-
+    status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, data->outfp, FALSE);
+    if (status != eslOK) goto ERROR;
+    
     power_SPAIR_Write(data->outfp, dim, spair);
     
     fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
@@ -948,25 +948,29 @@ cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     cov_WriteCYKHitList(data->outfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos);
   }
+
   
-  if (data->outsrtfp) {
-    fprintf(stdout,         "\n# The predicted cyk-cov structure\n");
-    fprintf(data->outsrtfp, "\n# The predicted cyk-cov structure\n");
+  fprintf(stdout, "\n# The predicted cyk-cov structure\n");
+  status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, TRUE);
+  if (status != eslOK) goto ERROR;
+
+  power_SPAIR_Write(stdout, dim, spair);
+  
+  fprintf(stdout, "# BPAIRS observed to covary %d\n#\n", tf);
+  fprintf(stdout, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+  fprintf(stdout, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	  covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
+  cov_WriteCYKRankedHitList(stdout, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
     
-    power_SPAIR_Write(stdout,         dim, spair);
+  if (data->outsrtfp) {
+    fprintf(data->outsrtfp, "\n# The predicted cyk-cov structure\n");
+
     power_SPAIR_Write(data->outsrtfp, dim, spair);
     
-    fprintf(stdout,         "# BPAIRS observed to covary %d\n#\n", tf);
     fprintf(data->outsrtfp, "# BPAIRS observed to covary %d\n#\n", tf);
- 
-    fprintf(stdout,         "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
-	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-
-    cov_WriteCYKRankedHitList(stdout,         nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
     cov_WriteCYKRankedHitList(data->outsrtfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
   }
 

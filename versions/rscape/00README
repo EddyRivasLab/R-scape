@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape/rscape_v1.1 ; do \
+for v in rscape/rscape_v1.2 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -44,6 +44,14 @@ cp ~/src/src/mysource/src/power.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/r2rdepict.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/structure.* ~/src/src/mysource/versions/$v/src/. ;\
 
+cp -rf ~/src/src/mysource/lib/R2R/R2R-current/*      ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/. ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*/* ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*sto ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*pdf ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*svg ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*meta ;\
+rm -rf ~/src/src/mysource/versions/$v/lib/R2R/R2R-current/demo/*err ;\
+
 cp ~/src/src/mysource/lib/FastTree/src/*.c ~/src/src/mysource/versions/$v/lib/FastTree/src/. ;\
 cp ~/src/src/mysource/lib/FastTree/src/*.h ~/src/src/mysource/versions/$v/lib/FastTree/src/. ;\
 cp ~/src/src/mysource/lib/FastTree/src/Makefile.in ~/src/src/mysource/versions/$v/lib/FastTree/src/. ;\
@@ -62,6 +70,7 @@ cp ~/src/src/mysource/scripts/PDBFUNCS.pm ~/src/src/mysource/versions/$v/scripts
 cp ~/src/src/mysource/scripts/pdb_parse.pl ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/scripts/rocplot.pl ~/src/src/mysource/versions/$v/scripts/. ;\
 cp ~/src/src/mysource/scripts/rocplot_together.pl ~/src/src/mysource/versions/$v/scripts/. ;\
+cp ~/src/src/mysource/scripts/r2r_msa_comply.pl ~/src/src/mysource/versions/$v/scripts/. ;\
 
 cp ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs.csv   ~/src/src/mysource/versions/$v/data/power/. ;\
 cp ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.double.csv ~/src/src/mysource/versions/$v/data/power/. ;\
@@ -70,11 +79,11 @@ cp ~/src/src/mysource/data/power/Rfam.14.0.seed.power.double.csv    ~/src/src/my
 
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf    ~/src/src/mysource/versions/$v/documentation/. ;\
 
-ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.subs.csv   ~/src/src/mysource/versions/$v/data/power/R-scape.power.subs.csv
-ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.double.csv ~/src/src/mysource/versions/$v/data/power/R-scape.power.double.csv
+ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.subs.csv   ~/src/src/mysource/versions/$v/data/power/R-scape.power.subs.csv ;\
+ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.double.csv ~/src/src/mysource/versions/$v/data/power/R-scape.power.double.csv ;\
 
-rm -rf ~/src/src/mysource/versions/$v/lib/hmmer/src/impl
-rm ~/src/src/mysource/versions/$v/bin/*
+rm -rf ~/src/src/mysource/versions/$v/lib/hmmer/src/impl ;\
+rm ~/src/src/mysource/versions/$v/bin/* ;\
 done
 
 
@@ -85,7 +94,7 @@ last minute steps to make an R-scape tarball:
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v1.1 ; do \
+for v in rscape_v1.2 ; do \
 for x in 0 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\

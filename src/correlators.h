@@ -214,6 +214,10 @@ struct data_s {
   int                  abcisRNA;  // MSA is RNA or DNA
   int                  hasss;     // Has a ss_cons secondary structure
   COVTYPE              covtype;
+
+  int                  OL;
+  int                  nct;
+  int                **ctlist;
   int                  onbpairs;
   int                  nbpairs;
   int                  nbpairs_cyk;
@@ -224,10 +228,10 @@ struct data_s {
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
+  
   int                 *ct;
   CLIST               *clist;
   int                 *msa2pdb;
-  int                  OL;
   int                 *msamap;
   int                  firstpos;
   double               bmin;
@@ -249,29 +253,29 @@ struct data_s {
 };
 
 
-extern int              corr_CalculateCHI     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateCHI     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateCHI_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateCHI_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateOMES_C16(struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateOMES_C2 (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateGT      (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateGT      (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateGT_C16  (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateGT_C2   (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateMI      (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateMI      (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateMI_C16  (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateMI_C2   (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateMIr     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateMIr     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateMIr_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateMIr_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateMIg     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateMIg     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateMIg_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateMIg_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateRAF     (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
-extern int              corr_CalculateRAFS    (COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
-extern int              corr_CalculateCCF     (COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              corr_CalculateRAF     (COVCLASS covclass, struct data_s *data, ESL_MSA *msa);
+extern int              corr_CalculateRAFS    (COVCLASS covclass, struct data_s *data, ESL_MSA *msa);
+extern int              corr_CalculateCCF     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateCCF_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
-extern int              corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int shiftnonneg);
+extern int              corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int shiftnonneg);
 extern struct mutual_s *corr_Create(int64_t alen, int64_t nseq, int isshuffled, int nseqthresh, int thresh, ESL_ALPHABET *abc, COVCLASS covclass);
 extern int              corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass);
 extern int              corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);

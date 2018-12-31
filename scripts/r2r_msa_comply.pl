@@ -56,6 +56,8 @@ while (<FILE>) {
 
 	print OUT "$field $tag $val\n";
     }
+    elsif (/^#=GS/) { # R2R script src/SelectSubFamilyFromStockholm.plchokes one some of these, remove
+    }
     elsif (/\/\//){
 	if ($is_pk) { print OUT "#=GF R2R keep p\n"; }
 	print OUT $_;

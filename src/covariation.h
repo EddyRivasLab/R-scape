@@ -33,7 +33,7 @@ extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist,
 					  char *covtype, char *threshtype);
-extern int              cov_CreateCYKHitList(struct data_s *data, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist,
+extern int              cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist,
 					     char *covtype, char *threshtype);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
 extern int              cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos);

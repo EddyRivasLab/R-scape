@@ -45,7 +45,7 @@ static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, str
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
 
 int                 
-corr_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateCHI(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi; 
   char            *errbuf = data->errbuf;
@@ -74,11 +74,6 @@ corr_CalculateCHI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
       for (j = i+1; j < mi->alen; j++) {
 	if (i==5&&j==118) printf("CHI[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
-  }
-
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
   }
 
   return status;
@@ -181,7 +176,7 @@ corr_CalculateCHI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 
 
 int                 
-corr_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateOMES(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -212,12 +207,7 @@ corr_CalculateOMES(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST
       } 
   }
   
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
-  }
-
-  return status;
+ return status;
   
  ERROR:
   return status;
@@ -314,7 +304,7 @@ corr_CalculateOMES_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, 
 }
 
 int                 
-corr_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateGT(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -346,12 +336,7 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
       } 
   }
 
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
-  }
- 
-  return status;
+ return status;
   
  ERROR:
   return status;
@@ -453,7 +438,7 @@ corr_CalculateGT_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
 
 
 int                 
-corr_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateMI(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -482,11 +467,6 @@ corr_CalculateMI(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST *
       for (j = i+1; j < mi->alen; j++) {
 	if (i==5&&j==118) printf("MI[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
-  }
-  
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
   }
   
   return status;
@@ -578,7 +558,7 @@ corr_CalculateMI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
 
 
 int                 
-corr_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateMIr(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -607,11 +587,6 @@ corr_CalculateMIr(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
       for (j = i+1; j < mi->alen; j++) {
 	if (i==5&&j==118) printf("MIr[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
-  }
-  
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
   }
   
   return status;
@@ -710,7 +685,7 @@ corr_CalculateMIr_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 
 
 int                 
-corr_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateMIg(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi;
   char            *errbuf = data->errbuf;
@@ -739,11 +714,6 @@ corr_CalculateMIg(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
       for (j = i+1; j < mi->alen; j++) {
 	if (i==5&&j==118) printf("MIg[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
-  }
-  
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
   }
   
   return status;
@@ -839,7 +809,7 @@ corr_CalculateMIg_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 }
 
 int                 
-corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
 {
   struct mutual_s *mi = data->mi;
   ESL_DMATRIX     *allowpair = data->allowpair;
@@ -894,11 +864,6 @@ corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
       } 
   }
   
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
-  }
-
   return status;
   
  ERROR:
@@ -906,7 +871,7 @@ corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int anal
 }
 
 int                 
-corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
 {
   struct mutual_s *mi = data->mi;
   int              verbose = data->verbose;
@@ -916,7 +881,7 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int ana
   int              status = eslOK;
 
   corr_ReuseCOV(mi, RAF, C2);
-  corr_CalculateRAF(C2, data, msa, FALSE, NULL, NULL);
+  corr_CalculateRAF(C2, data, msa);
 
   // RAFS
   bij = esl_dmatrix_Clone(mi->COV);
@@ -943,11 +908,6 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int ana
       } 
   }
   
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
-  }
-
   esl_dmatrix_Destroy(bij);
   return status;
   
@@ -957,7 +917,7 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa, int ana
 }
 
 int                 
-corr_CalculateCCF(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+corr_CalculateCCF(COVCLASS covclass, struct data_s *data)
 {
   struct mutual_s *mi = data->mi; 
   char            *errbuf = data->errbuf;
@@ -973,11 +933,6 @@ corr_CalculateCCF(COVCLASS covclass, struct data_s *data, int analyze, RANKLIST 
       for (j = i+1; j < mi->alen; j++) {
 	if (i==5&&j==118) printf("CCF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
-  }
-
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
   }
 
   return status;
@@ -1041,17 +996,17 @@ corr_CalculateCCF_C16(struct mutual_s *mi, int verbose, char *errbuf)
 }
 
 int                 
-corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int shiftnonneg)
+corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int shiftnonneg)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
-  char            *type = NULL;
+  char            *type    = NULL;
   char            *covtype = NULL;
-  ESL_DMATRIX     *COV  = NULL;
-  double          *COVx = NULL;
-  double           COVavg = 0.0;
-  int              L = mi->alen;
+  ESL_DMATRIX     *COV     = NULL;
+  double          *COVx    = NULL;
+  double           COVavg  = 0.0;
+  int              L       = mi->alen;
   int              i, j;
   int              status = eslOK;
 
@@ -1121,11 +1076,6 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int analyze, RANK
       } 
   }
 
-  if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, ret_ranklist, ret_hitlist);
-    if (status != eslOK) goto ERROR;
-  }
-  
   free(type);
   free(covtype);
   esl_dmatrix_Destroy(COV);
