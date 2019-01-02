@@ -35,8 +35,8 @@
 #include "structure.h"
 
 // paramters to include extra helices
-#define  INCOMPFRAC  0.3          // max fraction of residues in a helix that overlap with another existing helix
-#define  MINHELIX    4            // min length of a helix without any covarying basepairs
+#define  INCOMPFRAC  0.51          // max fraction of residues in a helix that overlap with another existing helix
+#define  MINHELIX    4             // min length of a helix without any covarying basepairs
 
 static int struct_cocomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist,
 			   int minloop, enum grammar_e G, int verbose, char *errbuf);
@@ -970,7 +970,7 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
       }
     
     // check for compatiblity with main structure
-    // or for a helix with fewer than 3 bpairs
+    // or for a helix with fewer than minhelix bpairs
     nincomp = 0;
     ntot    = 0;
     for (i = 1; i <= L; i ++) {
@@ -991,7 +991,7 @@ ctlist_helices_select(int nctcov, int **ctlistcov, int *ret_nct, int ***ret_ctli
     
     if (verbose) {
       esl_ct2wuss(ctlist[s], L, ss);
-      printf("%s\n%s\n^^tot %d nincompatible %d iscomp %d isunique %d\n", ssmain, ss, ntot, nincomp, iscompatible, isunique);
+      printf("%s\n%s\ntot %d nincompatible %d iscomp %d isunique %d\n", ssmain, ss, ntot, nincomp, iscompatible, isunique);
     }
 
     // add if it satisfies all conditions

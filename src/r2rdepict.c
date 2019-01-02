@@ -81,7 +81,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   fclose(fp);
   // we need to modify a perfectly valid stockholm formatted msa intop
   // the weirdness that R2R accepts
-  esl_sprintf(&args, "%s/scripts/r2r_msa_comply.pl %s", RSCAPE_HOME, r2rfile);
+  esl_sprintf(&args, "%s/r2r_msa_comply.pl %s", RSCAPE_BIN, r2rfile);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
 
@@ -574,13 +574,13 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
   // (4) write r2r_meta file with the names of all files
   //
   for (s = 1; s < nct; s ++) {
-    esl_sprintf(&cmd, "perl %s/lib/R2R/R2R-current/src/SelectSubFamilyFromStockholm.pl", RSCAPE_HOME);
+    esl_sprintf(&cmd, "%s/SelectSubFamilyFromStockholm.pl", RSCAPE_BIN);
     esl_sprintf(&args, " %s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R script SelectSubFamilyFromStockholm.pl\n");
 
     // now again run the script to modify a perfectly good stockholm file into something that R2R can digest
-    esl_sprintf(&args, "%s/scripts/r2r_msa_comply.pl %s", RSCAPE_HOME, r2rpkfile[s]);
+    esl_sprintf(&args, "%s/r2r_msa_comply.pl %s", RSCAPE_BIN, r2rpkfile[s]);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
   }

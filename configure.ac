@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 1.2.0, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 1.2.1, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the usexr is overriding CFLAGS
@@ -120,6 +120,12 @@ else
   RSCAPE_BIN=${prefix}/bin
 fi
 
+if  test "$prefix" = NONE ; then 
+  RSCAPE_SHARE="`pwd`/share"
+else
+  RSCAPE_SHARE=${prefix}/share
+fi
+
 E2MSA_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
 
@@ -171,6 +177,7 @@ AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
+AC_SUBST(RSCAPE_SHARE)
 
 AC_SUBST(RVIEW_NAME)
 AC_SUBST(RVIEW_DATE)
@@ -206,6 +213,7 @@ AC_DEFINE_UNQUOTED(RSCAPE_VERSION,   "$RSCAPE_VERSION")
 AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
+AC_DEFINE_UNQUOTED(RSCAPE_SHARE,     "$RSCAPE_SHARE")
 
 AC_DEFINE_UNQUOTED(RVIEW_NAME,      "$RVIEW_NAME")
 AC_DEFINE_UNQUOTED(RVIEW_DATE,      "$RVIEW_DATE")

@@ -6,9 +6,9 @@ use Class::Struct;
 
 our $VERSION = "1.00";
 
-my $easel        = "~/src/hmmer/hmmer/easel/miniapps";
-my $esl_reformat = "$easel/esl-reformat";
-my $esl_afetch   = "$easel/esl-afetch";
+my $esl_reformat = "esl-reformat";
+my $esl_afetch   = "esl-afetch";
+
 
 sub afa2sto {
     my ($root, $file) = @_;

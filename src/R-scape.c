@@ -841,8 +841,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
    }
   else { // read the power file
-    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
-    else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
+    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.double.csv", RSCAPE_SHARE);
+    else                 esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.subs.csv",   RSCAPE_SHARE);
     power_Read(cfg.powerfile, cfg.powerdouble, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   

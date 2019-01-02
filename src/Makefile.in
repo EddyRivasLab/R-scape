@@ -26,6 +26,7 @@ prefix      = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 bindir      = @bindir@
+datadir     = @datadir@
 libdir      = @libdir@
 includedir  = @includedir@
 mandir      = @mandir@
@@ -73,8 +74,13 @@ endif
 
 # Code manifests
 #
-SUBDIRS    = ../src
-SCRIPTSDIR = ../scripts
+SUBDIRS     = ../src
+SCRIPTSDIR  = ../scripts
+R2RSRCDIR   = ../@RSCAPE_R2RDIR@/src
+EASELDIR    = ../@RSCAPE_ESLDIR@/miniapps
+RIBOSUMDIR  = ../data/ribosum
+POWERDIR    = ../data/power
+EVOPARAMDIR = ../data/training/evoparam
 
 PROGS    = scorematrix2rate\
 	   e1sim\
@@ -149,10 +155,30 @@ OBJS     = e1_bg.o\
 	   cov_simulate.o\
 
 
+EASEL     = \
+        esl-afetch \
+        esl-reformat \
+
 SCRIPTS   = \
 	FUNCS.pm \
 	PDBFUNCS.pm \
 	pdb_parse.pl \
+	r2r_msa_comply.pl \
+
+RIBOSUM  = \
+	ssu-lsu.final.er.ribosum \
+
+EVOPARAM  = \
+	Pfam.seed.S1000.trainGD.AIF.param \
+	Pfam.seed.S1000.trainGD.AFG.param \
+
+POWER   = \
+	R-scape.power.subs.csv  \
+	R-scape.power.double.csv  \
+
+R2R     = \
+	Stockholm.pm  \
+	SelectSubFamilyFromStockholm.pl  \
 
 all: libsrc.a ${PROGS} 
 
@@ -178,6 +204,21 @@ install:
 	for file in ${SCRIPTS}; do \
 	   cp ${SCRIPTSDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
 	done
+	for file in ${EASEL}; do \
+	   cp ${EASELDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${R2R}; do \
+	   cp ${R2RSRCDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${RIBOSUM}; do \
+	   cp ${RIBOSUMDIR}/$$file ${DESTDIR}${datadir}/doc/$$file ;\
+	done
+	for file in ${EVOPARAM}; do \
+	   cp ${EVOPARAMDIR}/$$file ${DESTDIR}${datadir}/doc/$$file ;\
+	done
+	for file in ${POWER}; do \
+	   cp ${POWERDIR}/$$file ${DESTDIR}${datadir}/doc/$$file ;\
+	done
 
 uninstall:
 	for file in ${PROGS}; do \
@@ -185,6 +226,21 @@ uninstall:
 	done
 	for file in ${SCRIPTS}; do \
 	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${EASEL}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${R2R}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${RIBOSUM}; do \
+	   rm -f ${DESTDIR}${datadir}/doc/$$file ;\
+	done
+	for file in ${EVOPARAM}; do \
+	   rm -f ${DESTDIR}${datadir}/doc/$$file ;\
+	done
+	for file in ${POWER}; do \
+	   rm -f ${DESTDIR}${datadir}/doc/$$file ;\
 	done
 
 clean:

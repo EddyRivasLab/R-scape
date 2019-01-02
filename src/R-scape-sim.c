@@ -362,9 +362,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* the paramfile  */
   cfg.paramfile = NULL;
   if (cfg.evomodel == AIF)
-    esl_sprintf(&cfg.paramfile, "%s/data/training/evoparam/Pfam.seed.S1000.trainGD.AIF.param", RSCAPE_HOME);
+    esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AIF.param", RSCAPE_SHARE);
   else if (cfg.evomodel == AFG)
-    esl_sprintf(&cfg.paramfile, "%s/data/training/evoparam/Pfam.seed.S1000.trainGD.AFG.param", RSCAPE_HOME);
+    esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AFG.param", RSCAPE_SHARE);
   else esl_fatal("could not identify evomodel");
   status = e1_rate_ReadParamfile(cfg.paramfile, &cfg.rateparam, &cfg.evomodel, cfg.errbuf, cfg.verbose);
   if (status != eslOK) esl_fatal("Failed to read paramfile %s\n%s", cfg.paramfile, cfg.errbuf);
@@ -519,8 +519,8 @@ create_subsmodel(ESL_GETOPTS *go, struct cfg_s *cfg)
   case eslDNA:
   case eslRNA:
     if ( esl_opt_IsOn(go, "--ribofile") ) { cfg->ribofile = esl_opt_GetString(go, "--ribofile"); }
-    else if (RSCAPE_HOME) esl_sprintf(&cfg->ribofile, "%s/data/ribosum/ssu-lsu.final.er.ribosum", RSCAPE_HOME);  
-    else                  ESL_XFAIL(status, cfg->errbuf, "Failed to find ribosum matrices\n");
+    else if (RSCAPE_SHARE) esl_sprintf(&cfg->ribofile, "%s/doc/ssu-lsu.final.er.ribosum", RSCAPE_SHARE);  
+    else                   ESL_XFAIL(status, cfg->errbuf, "Failed to find ribosum matrices\n");
     
     /* if RNA/DNA, calculate ribosum mtx */
     cfg->ribosum = Ribosum_matrix_Read(cfg->ribofile, cfg->abc, FALSE, cfg->errbuf);
