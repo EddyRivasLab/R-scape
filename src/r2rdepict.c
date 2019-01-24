@@ -575,7 +575,7 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
   //
   for (s = 1; s < nct; s ++) {
     esl_sprintf(&cmd, "%s/SelectSubFamilyFromStockholm.pl", RSCAPE_BIN);
-    esl_sprintf(&args, " %s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
+    esl_sprintf(&args, "%s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R script SelectSubFamilyFromStockholm.pl\n");
 
