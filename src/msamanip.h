@@ -48,6 +48,7 @@ extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msa
 extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, 
 				     int **ret_map, int **ret_revmap, int **ret_useme, char *errbuf, int verbose);
 extern int msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *ret_seq_cons_len);
+extern int msamanip_SingleSequenceRemoveGaps(ESL_MSA *msa, char *errbuf, int verbose);
 extern int msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_startpos, int64_t *ret_endpos, char *errbuf);
 extern int msamanip_SelectConsensus(ESL_MSA *msa, int **ret_useme, int verbose);
 extern int msamanip_SelectSubsetBymaxID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, int singlelink, int *ret_nremoved);

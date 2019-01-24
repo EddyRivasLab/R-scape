@@ -71,7 +71,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
   
   if (ret_spair == NULL) return eslOK;
 
-  if (!nsubs && !ndouble) esl_fatal("need some kind of substituions!");
+  if (!nsubs && !ndouble) esl_fatal("need some kind of substitutions!");
   
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 

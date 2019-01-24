@@ -650,7 +650,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.allowpair->mx[1][2] = cfg.allowpair->mx[2][1] = 1.0;
   cfg.allowpair->mx[2][3] = cfg.allowpair->mx[3][2] = 1.0;
 
-  
   /* for the cov histograms */
   cfg.hpts    = HPTS;                                                               /* number of points in the histogram */
   cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin") : BMIN; /* lowest cov score to bound the histogram */
@@ -697,7 +696,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   cfg.cntmaxD = esl_opt_GetReal   (go, "--cntmaxD");
   cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
-  cfg.clist = NULL;
+  cfg.clist   = NULL;
   cfg.msa2pdb = NULL;
 
   /* potts output parameter values */
@@ -756,15 +755,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* file with the null alignments */
   cfg.allbranchfile = NULL;
-   if (esl_opt_IsOn(go, "--allbranch")) {
+  if (esl_opt_IsOn(go, "--allbranch")) {
     esl_sprintf(&cfg.allbranchfile, "%s", esl_opt_GetString(go, "--allbranch"));
   } 
-
-   /* msa-specific files */
+  
+  /* msa-specific files */
   cfg.R2Rfile    = NULL;
   cfg.R2Rcykfile = NULL;
   cfg.R2Rcykfp   = NULL;
-
+  
   /* covhis file */
   cfg.covhisfile    = NULL;
   
@@ -774,7 +773,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* dotplot file */
   cfg.dplotfile    = NULL;
   cfg.cykdplotfile = NULL;
- 
+  
   cfg.treefile  = NULL;
   cfg.treefp    = NULL;
   cfg.T         = NULL;
@@ -1101,6 +1100,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
   data.OL            = cfg->omsa->alen;
+  data.nseq          = cfg->omsa->nseq;
   data.ct            = cfg->ct;
   data.nct           = cfg->nct;
   data.ctlist        = cfg->ctlist;
@@ -1155,18 +1155,21 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (status != eslOK) esl_fatal(cfg->errbuf); 
   }
 
-  /* match the tree leaves to the msa names */
-  status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) esl_fatal(cfg->errbuf); 
-
   if (cfg->T) {
+    /* match the tree leaves to the msa names */
+    status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) esl_fatal(cfg->errbuf); 
+
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
     
     /* outtree file if requested */
     if (cfg->outtreefp) esl_tree_WriteNewick(cfg->outtreefp, cfg->T);
+    if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   }
-  if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+
+  // only case in which T=NULL
+  if (!cfg->T && msa->nseq > 1) { printf("You need a tree for this msa. nseq = %d\n", msa->nseq); esl_fatal(cfg->errbuf); }
   
   return eslOK;
 }
@@ -1246,7 +1249,7 @@ msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpa
     fprintf(fp, "# wMSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
 	    msaname, mstat->nseq, mstat->alen, mstat->avgid, nbpairs);
 
-  if (statsmethod != NAIVE) {
+  if (statsmethod != NAIVE && mstat->nseq > 1) {
     if (samplesize == SAMPLE_ALL) fprintf(fp, "# One-set statistical test (all pairs are tested as equivalent) \n#\n");
     else                          fprintf(fp, "# Two-set statistical test (one test for annotated basepairs, another for all other pairs)\n#\n");
   }
@@ -1322,7 +1325,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-
+  
   msa = *omsa;
   if (msa->alen != alen) {
     printf("filtering altered the length of the alignemnt!\n");
@@ -1381,7 +1384,11 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (cfg->covmethod == POTTS) msamanip_ConvertDegen2Gap(msa); // what gremlin does
   else                         msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
-  
+
+  // if a single sequence, remove gaps if any
+  if (msa->nseq == 1  && msamanip_SingleSequenceRemoveGaps(msa, cfg->errbuf, cfg->verbose) != eslOK) {
+    printf("%s\nSingleSequenceRemoveGaps failed\n", cfg->errbuf); esl_fatal(msg); }
+
   /* these are development tools
    * we do it this late so the annotated structure if any is preserved */
   // Shuffle the residues in a column
@@ -1529,9 +1536,10 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   int       status;
 
   status = create_tree(go, cfg, msa);
-   if (status != eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
+   
   if (cfg->T == NULL) {
-    if (msa->nseq == 1) return eslOK;
+    if (msa->nseq == 1) { cfg->statsmethod = NAIVE; cfg->thresh->val = 1e+12; return eslOK; }
     else                return eslFAIL;
   }
 
@@ -1655,7 +1663,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   /* weight the sequences */
   msaweight(go, cfg, msa);
-
+  
   // reset the docyk flag in case it changed with the previous alignment
   cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
   if (cfg->docyk == TRUE && cfg->abcisRNA == FALSE)
@@ -1674,7 +1682,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     }
   }
   
-  if (msa->nseq <= 1) {
+  if (msa->nseq < 1) {
     msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
     msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
     return eslOK; 
@@ -1798,7 +1806,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);   
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
-  // conditioned on has_ss ? 
+  // conditioned on has_ss ?
   structure_information(cfg, spair, msa);
   
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
@@ -1948,6 +1956,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.T             = cfg->T;
   data.ribosum       = cfg->ribosum;
   data.OL            = cfg->omsa->alen;
+  data.nseq          = cfg->omsa->nseq;
   data.ct            = cfg->ct;
   data.clist         = cfg->clist;
   data.msa2pdb       = cfg->msa2pdb;
@@ -2093,8 +2102,6 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   int      p;
   int      status;
 
-  if (cfg->T == NULL) return eslOK;
-  
   status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   

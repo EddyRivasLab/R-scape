@@ -216,6 +216,7 @@ struct data_s {
   COVTYPE              covtype;
 
   int                  OL;
+  int                  nseq;
   int                  nct;
   int                **ctlist;
   int                  onbpairs;

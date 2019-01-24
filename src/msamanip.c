@@ -497,6 +497,42 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 }
 
 int
+msamanip_SingleSequenceRemoveGaps(ESL_MSA *msa, char *errbuf, int verbose)
+{
+  int     *useme = NULL;
+  int      s = 0;
+  int      l;
+  int      status;
+
+  if (msa->nseq > 1) return eslOK;
+  
+  // find the gaps (useme = FALSE)
+  ESL_ALLOC(useme, sizeof(int) * msa->alen);
+  esl_vec_ISet(useme, msa->alen, TRUE);
+
+  if (! (msa->flags & eslMSA_DIGITAL)) {
+    for (l = 0; l < msa->alen; l++)
+      if (esl_abc_CIsGap(msa->abc, msa->aseq[s][l])) useme[l] = FALSE;
+  }
+  else {
+    for (l = 0; l < msa->alen; l++)
+      if (esl_abc_XIsGap(msa->abc, msa->ax[s][l+1])) useme[l] = FALSE;
+  }
+
+  if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK)
+    ESL_XFAIL(eslFAIL, errbuf, "Truncation failed\n");
+
+  if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
+  
+  free(useme);
+  return eslOK;
+
+ ERROR:
+  if (useme) free(useme); 
+  return status;
+}
+
+int
 msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_startpos, int64_t *ret_endpos, char *errbuf)
 {
   int      *useme = NULL;

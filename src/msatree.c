@@ -45,6 +45,7 @@ static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
 int
 Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose)
 {
+
   char     *treefile = NULL;
   FILE     *treefp   = NULL;
   ESL_TREE *T        = NULL;
@@ -1385,7 +1386,19 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
   int         i, j;
   int         status;
   
-  if (T == NULL) return eslOK;
+  if (T == NULL) {
+     if (ret_nsubs) {
+       ESL_ALLOC(nsubs, sizeof(int) * msa->alen);
+       esl_vec_ISet(nsubs, msa->alen, 0);
+       *ret_nsubs = nsubs;
+     }
+     if (ret_ndouble) {
+       ESL_ALLOC(ndouble, sizeof(int) * msa->alen * msa->alen);
+       esl_vec_ISet(ndouble, msa->alen*msa->alen, 0);
+       *ret_ndouble = ndouble;
+     }
+     return eslOK;
+  }
   
   status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;

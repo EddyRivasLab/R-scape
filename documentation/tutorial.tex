@@ -18,7 +18,7 @@ The E-values are calculated in one of two ways:
 \multicolumn{2}{l}{\textbf{A one-set statistical test:} \textit{default}} \\ 
  & \\ 
 \textbf{}   & E-values are calculated assuming that all pairs are possible.\\
-\textbf{}   & This is the default behaviour of \rscape.\\
+\textbf{}   & This is the default behavior of \rscape.\\
  & \\ 
 \multicolumn{2}{l}{\textbf{A two-set statistical test: } \prog{option -s}} \\ 
  & \\ 
@@ -268,7 +268,7 @@ Similarly using
 \noindent
 The output includes first the same output as \emprog{option -s} of
 \rscape\ alone, followed by \rscape's proposed structure including a
-maximal number of the covaryiations obtained under the two-set test.
+maximal number of the covariations obtained under the two-set test.
 
 
 \begin{sreoutput}
@@ -498,7 +498,19 @@ where pseudoknots are also annotated.  \rscape] option -s produces the
  \end{figure}
  
 
-\subsection{Default parameters}
+ \subsection{Single sequence structure prediction}
+
+ If the alignment includes only one sequence, no statistical test is performed. \\
+
+ \noindent
+ \user{bin/R-scape --cyk tutorial/manA-oneseq.sto}\\
+%
+ reports the best structure given the sequence. No covariation support
+ is possible for any of the basepairs reported from this
+ analysis. Structures produced this way have to taken with great
+ skepticism. 
+
+ \subsection{Default parameters}
 
 Default parameters are:
 

@@ -56,7 +56,7 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_c
   char          *covtype    = NULL;
   char          *threshtype = NULL;
   int          **cykctlist  = NULL;
-  int           *cykct;
+  int           *cykct      = NULL;
   SCVAL          sc;
   int            cyknct;
   int            i;
@@ -86,7 +86,7 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_c
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
-  status = cov_CreateCYKHitList(data, cyknct, cykctlist, ranklist, hitlist, &cykhitlist, covtype, threshtype);
+  status = cov_CreateCYKHitList(data, cyknct, cykctlist, ranklist, (data->statsmethod != NAIVE)? hitlist : NULL, &cykhitlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
   
   for (s = 0; s < cyknct; s ++) {
