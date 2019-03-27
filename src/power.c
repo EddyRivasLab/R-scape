@@ -147,6 +147,7 @@ power_Destroy(POWER *power)
   if (power == NULL) return;
   if (power->subs) free(power->subs);
   if (power->prob) free(power->prob);
+  free(power);
 }
 
 int

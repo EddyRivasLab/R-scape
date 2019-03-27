@@ -959,7 +959,7 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
   
   if (data->outfp) {
     fprintf(data->outfp, "\n# The predicted cyk-cov structure\n");
-    status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, data->outfp, FALSE);
+    status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, data->outfp, FALSE);
     if (status != eslOK) goto ERROR;
     
     power_SPAIR_Write(data->outfp, dim, spair);
@@ -972,7 +972,7 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
 
   
   fprintf(stdout, "\n# The predicted cyk-cov structure\n");
-  status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, TRUE);
+  status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, NULL, TRUE);
   if (status != eslOK) goto ERROR;
 
   power_SPAIR_Write(stdout, dim, spair);
@@ -2055,7 +2055,7 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
       exp = survfit[b];
       if (exp * (double)Nc >= eval) break;
     }
-    cov = esl_histogram_Bin2LBound(h, b+1);
+    cov = esl_histogram_Bin2LBound(h, b);
   }
 
   /* otherwise, use the sampled distribution */
@@ -2064,7 +2064,7 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
       c += h->obs[i];
       if ((double)c * (double)Nc / (double)h->Nc > eval) break;
     }    
-    cov = esl_histogram_Bin2LBound(h, i+1);
+    cov = esl_histogram_Bin2LBound(h, i);
   }
   
   return cov;

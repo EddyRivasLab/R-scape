@@ -34,13 +34,15 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
+#define LASTFOLD 1
+
 // paramters to include extra helices
 #define  INCOMPFRAC  0.51          // max fraction of residues in a helix that overlap with another existing helix
 #define  MINHELIX    4             // min length of a helix without any covarying basepairs
 
-static int struct_cocomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist,
+static int struct_cocomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist,
 			   int minloop, enum grammar_e G, int verbose, char *errbuf);
-static int struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
+static int struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf);
 static int struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int minloop, int verbose);
 static int ct_split_helices(int *ct, int L, int *ret_idx, int ***ret_ctlist, int verbose);
@@ -50,29 +52,43 @@ static int ctlist_join(int nct, int **ctlist, int L, int **ret_ct, int verbose);
 
 // covariation-constrained multi-CYK (COCOMCYK)
 int
-struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_cykctlist, int minloop, RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
+struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_cykctlist, int minloop,
+		RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
 {
   HITLIST       *cykhitlist = NULL;
   char          *covtype    = NULL;
   char          *threshtype = NULL;
   int          **cykctlist  = NULL;
+  CLIST        **cykexclude = NULL;
   int           *cykct      = NULL;
   SCVAL          sc;
   int            cyknct;
-  int            i;
+  int            i, j;
   int            s;
+  int            h;
+  int            found;
   int            status;
             
   /* calculate the cykcov ct vector.
    *
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
-   * These pairs become constrains for the second part of the folding in struct_ExpandCT()
+   * These pairs become constraints for the second part of the folding in struct_ExpandCT()
    */
-  status = CYKCOV(data->r, data->mi, data->clist, &cyknct, &cykctlist, (hitlist)?hitlist->nhit:0, minloop, thresh, data->errbuf, data->verbose);
-  if (status != eslOK) goto ERROR;
+  status = CYKCOV(data->r, data->mi, data->clist, &cyknct, &cykctlist, &cykexclude, (hitlist)?hitlist->nhit:0, minloop, thresh, data->errbuf, data->verbose);
+  if (status != eslOK) {
+    for (h = 0; h < hitlist->nhit; h ++) {
+      i = hitlist->hit[h].i + 1;
+      j = hitlist->hit[h].j + 1;
+      found = FALSE;
+      for (s = 0; s < cyknct; s ++) 
+	if (cykctlist[s][i] == j) { found = TRUE; break; }
+      if (!found) printf("hit %d %d not found\n", i, j);
+    }
+    goto ERROR;
+  }
 
   // Use the CT from covariation to do a cov-constrained multi-cyk folding
-  status = struct_cocomcyk(data->R2Rcykfile, data->R2Rall, data->r, msa, &cyknct, &cykctlist, minloop, G, data->verbose, data->errbuf);
+  status = struct_cocomcyk(data->R2Rcykfile, data->R2Rall, data->r, msa, data->spair, &cyknct, &cykctlist, minloop, G, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   // create a new contact list from the cykct
@@ -113,12 +129,15 @@ struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_cyknct, int ***ret_c
   *ret_cyknct    = cyknct;
   *ret_cykctlist = cykctlist;
 
+  free(cykexclude);
   cov_FreeHitList(cykhitlist);
   free(covtype);
   free(threshtype);
   return eslOK;
   
  ERROR:
+  for (s = 0; s < cyknct; s ++) { if (cykctlist[s]) free(cykctlist[s]); }
+  if (cykctlist)  free(cykctlist); 
   if (cykhitlist) cov_FreeHitList(cykhitlist);
   if (covtype)    free(covtype);
   if (threshtype) free(threshtype);
@@ -366,21 +385,23 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, int nct, int **ctli
 // take the ctlist and convert to octlist in the coordinates of the original alignment
 // using the map function msamap
 int
-struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, FILE *fp, int verbose)
+struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, int ***ret_octlist, char ***ret_sslist, FILE *fp, int verbose)
 {
-  char **sslist = NULL;
-  int   *oct    = NULL;
+  int  **octlist = NULL;
+  char **sslist  = NULL;
   int   *ct;
   char  *oss;
+  int   *oct;
   int    blqsize = 60;
   int    s;
   int    i;
   int    status;
 
   // initialize
-  ESL_ALLOC(oct,    sizeof(int)    * (OL+1));
-  ESL_ALLOC(sslist, sizeof(char *) * nct);
-  for (s = 0; s < nct; s ++) sslist[s] = NULL;
+  ESL_ALLOC(octlist, sizeof(int  *) * nct);
+  ESL_ALLOC(sslist,  sizeof(char *) * nct);
+  for (s = 0; s < nct; s ++) sslist[s]  = NULL;
+  for (s = 0; s < nct; s ++) octlist[s] = NULL;
   
   // the main nested structure (s=0) is annotated as SS_cons
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
@@ -392,7 +413,9 @@ struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_ssli
   // That is not wrong, it is just showing our uncertainty about the structure due to lack
   // of more covariations.
   for (s = 0; s < nct; s ++) {
-    ESL_ALLOC(sslist[s], sizeof(char) * (OL+1));
+    ESL_ALLOC(octlist[s], sizeof(int)  * (OL+1));
+    ESL_ALLOC(sslist[s],  sizeof(char) * (OL+1));
+    oct = octlist[s];
     oss = sslist[s];
   
     ct = ctlist[s];
@@ -408,20 +431,27 @@ struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_ssli
   if (fp)      struct_write_ss(fp,     blqsize, nct, sslist);
   if (verbose) struct_write_ss(stdout, blqsize, nct, sslist);
   
-  if (ret_sslist) *ret_sslist = sslist;
+  if (ret_octlist) *ret_octlist = octlist;
+  else
+    {
+      for (s = 0; s < nct; s ++) free(octlist[s]);
+      free(octlist);
+    }
+
+  if (ret_sslist)  *ret_sslist =  sslist;
   else
     {
       for (s = 0; s < nct; s ++) free(sslist[s]);
       free(sslist);
     }
-  
-  free(oct);
+ 
   return eslOK;
 
  ERROR:
   for (s = 0; s < nct; s ++) if (sslist[s]) free(sslist[s]);
   if (sslist) free(sslist);
-  if (oct) free(oct);
+  for (s = 0; s < nct; s ++) if (octlist[s]) free(octlist[s]);
+  if (octlist) free(octlist);
   return status;
 }
 
@@ -432,8 +462,8 @@ int
 struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 {
   int  **ctlist = NULL;
-  char  *ss1 = NULL;
-  char  *ss2 = NULL;
+  char  *ss1    = NULL;
+  char  *ss2    = NULL;
   int    nct = 1;
   int    use;
   int    n;
@@ -510,15 +540,15 @@ struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 /*------------------------------ internal functions -----------------------------*/
 
 static int
-struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist, int minloop, enum grammar_e G, int verbose, char *errbuf)
+struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, int minloop, enum grammar_e G, int verbose, char *errbuf)
 {
-  FILE  *fp = NULL;
-  char  *ss = NULL;
+  FILE  *fp        = NULL;
+  char  *ss        = NULL;
   int    nct       = (ret_nct)?*ret_nct:0;
   int  **ctlist    = *ret_ctlist;
+  int  **newctlist = NULL;
   int   *newct;
   int    new;
-  int  **newctlist = NULL;
   int    L = msa->alen;
   int    s;
   int    i;
@@ -528,27 +558,33 @@ struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
 
   ESL_ALLOC(ss,        sizeof(char)  * (L+1));
   ESL_ALLOC(newctlist, sizeof(int *) * (nct+1));
-  new = nct + 1;
-  
+   
   for (s = 0; s < nct; s ++) {
     // covariance-constraint CYK using a probabilistic grammar
     ESL_ALLOC(newctlist[s], sizeof(int) * (L+1));
     esl_vec_ICopy(ctlist[s], L+1, newctlist[s]);
-    status = struct_cocomcyk_expandct(r, msa, &newctlist[s], G, minloop, verbose, errbuf);
+    status = struct_cocomcyk_expandct(r, msa, spair, &newctlist[s], G, minloop, verbose, errbuf);
     if (status != eslOK) goto ERROR;     
   }
 
-  // Do one more folding in which we constrain to be upaired all that has been paired before
+#if LASTFOLD
+   new = nct + 1;
+  // Do one more folding in which we force unpaired all that has been paired before
   ESL_ALLOC(newctlist[nct], sizeof(int) * (L+1));
   esl_vec_ISet(newctlist[nct], L+1, 0);
   for (s = 0; s < nct; s ++) {
     newct = newctlist[s];
     
-    for (i = 1; i <= L; i ++) 
-      if (newct[i] > 0 || newct[i] == -1) newctlist[nct][i] = -1;
+    for (i = 1; i <= L; i ++) {
+      if (newct[i] > 0) newctlist[nct][i] = -newct[i];
+      if (newct[i] < 0) newctlist[nct][i] =  newct[i];
+    }
   }
-  status = struct_cocomcyk_expandct(r, msa, &newctlist[nct], G, minloop, verbose, errbuf);
-  if (status != eslOK) goto ERROR;     
+  status = struct_cocomcyk_expandct(r, msa, spair, &newctlist[nct], G, minloop, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+#else
+  new = nct;
+#endif
   
   // for the extra structures, break in individual helices
   status = ctlist_break_in_helices(&new, &newctlist, L, verbose);
@@ -588,13 +624,13 @@ struct_cocomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, int 
 }
 
 static int
-struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf)
+struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, enum grammar_e G, int minloop, int verbose, char *errbuf)
 {
   char    *rfline = NULL;
-  char    *newss = NULL;
-  ESL_SQ  *sq = NULL;
-  int     *ct = *ret_ct;
-  int     *cct = NULL;
+  char    *newss  = NULL;
+  ESL_SQ  *sq     = NULL;
+  int     *cct    = NULL;
+  int     *ct     = *ret_ct;
   SCVAL    sc;
   float    idthresh = 0.0;
   int      i;
@@ -615,10 +651,10 @@ struct_cocomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, int **ret_ct, enum gr
   ct_remove_inconsistencies(sq, ct, minloop, verbose);
 
   /* calculate the convariance-constraint CYK structure using a probabilistic grammar */
-  status = COCOCYK(r, G, sq, ct, &cct, &sc, errbuf, verbose);
+  status = COCOCYK(r, G, sq, spair, ct, &cct, &sc, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
-  if (verbose) {
+  if (1||verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);
     printf("coco-cyk score = %f\n%s\n", sc, newss);
@@ -687,11 +723,13 @@ struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist)
     n += (blqsize > 0)? blqsize : sslen;
   }
 
+  for (s = 0; s < nss; s ++) free(tag[s]);
   free(tag);
   if (buf) free(buf);
   return eslOK;
 
  ERROR:
+  for (s = 0; s < nss; s ++) if (tag[s]) free(tag[s]);
   if (tag) free(tag);
   if (buf) free(buf);
   return status;
@@ -816,8 +854,8 @@ ct_split_helices(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 		       (nfaces == 1 && nsingle > nsingle_max)  ) // break long stems if they have more than > nsingle_max single stranded residudes
 		    {	       
 		      nct ++;
-		      ESL_REALLOC(ctlist, sizeof(int *) * nct);
-		      ESL_ALLOC(ctlist[nct-1], sizeof(int) * (L+1));
+		      ESL_REALLOC(ctlist,      sizeof(int *) * nct);
+		      ESL_ALLOC(ctlist[nct-1], sizeof(int)   * (L+1));
 		      esl_vec_ISet(ctlist[nct-1], L+1, 0);
 		  }
 		    
@@ -847,13 +885,14 @@ ct_split_helices(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
   *ret_nct    = nct;
   *ret_ctlist = ctlist;
       
+  esl_stack_Destroy(pda);
   return eslOK;
   
  ERROR:
  FINISH:
   if (npairs != npairs_reached) 		  
     ESL_EXCEPTION(eslFAIL, "found %d out of %d pairs.", npairs_reached, npairs);
-  if (pda   != NULL) esl_stack_Destroy(pda);
+  if (pda) esl_stack_Destroy(pda);
   return status;
 }
 
@@ -870,12 +909,12 @@ ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int L, int verbose)
   int     s;
   int     s1;
   int     status;
-  
+
   // modify only the additional structures
   if (verbose) ESL_ALLOC(ss, sizeof(char)  * (L+1));
-  ESL_ALLOC(ctnew, sizeof(int *) * new);
   
   // main structure (s=0) remains intact
+  ESL_ALLOC(ctnew,        sizeof(int *) * new);
   ESL_ALLOC(ctnew[new-1], sizeof(int)   * (L+1));
   esl_vec_ICopy(ctlist[new-1], L+1, ctnew[new-1]);
   
@@ -897,20 +936,20 @@ ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int L, int verbose)
 	printf("broken pknot %d\n%s\n", s1, ss);
       }
     }
+    free(ctlist[s]); ctlist[s] = NULL;
   }
 
   *ret_nct    = new;
   *ret_ctlist = ctnew;
   
-  for (s = 1; s < nct; s ++) free(ctlist[s]);
   free(ctlist);
   if (ss) free(ss);
   
   return eslOK;
   
  ERROR:
-  for (s = 1; s < new; s ++) if (ctnew[s])  free(ctnew[s]);
-  for (s = 1; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
+  for (s = 0; s < new; s ++) if (ctnew[s])  free(ctnew[s]);
+  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
   if (ctlist) free(ctlist);
   if (ss)     free(ss);
   return status;

@@ -16,7 +16,7 @@
 #include "correlators.h"
 
 extern int r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf);
-extern int r2r_Overwrite_SS_cons      (ESL_MSA *msa, int nct, int **ctlist, int verbose);
-extern int r2r_Overwrite_cov_SS_cons  (ESL_MSA *msa, HITLIST *hitlist, int nct, int verbose);
+extern int r2r_Overwrite_SS_cons    (ESL_MSA *msa, int nct, int **ctlist,                   int verbose);
+extern int r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int verbose);
 
 #endif

@@ -377,6 +377,8 @@ static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int  original_msa_doctor_names(ESL_MSA **omsa);
+static int  read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa);
+static int  no_overlap(int i, int j, int L, int *ct);
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
@@ -899,6 +901,8 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
+    read_msa_sscons_r2rformat(&cfg, msa);
+    
     cfg.omsa = esl_msa_Clone(msa); // save original msa to output the cyk structure with it
      
     /* the msaname */
@@ -1620,6 +1624,77 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
 }
 
 static int
+read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
+{
+  char  *tag = NULL;
+  int  **ct  = NULL;
+  int    L = msa->alen;
+  int    nct = msa->ngc + 1;
+  int    c;
+  int    gc;
+  int    i;
+  int    status;
+  
+  if (msa->ngc == 0) return eslOK;
+  
+  ESL_ALLOC(ct, sizeof(int *) * nct);
+  for (c = 0; c < nct; c ++) ESL_ALLOC(ct[c], sizeof(int) * (L+1));
+  c = 0;
+  esl_wuss2ct(msa->ss_cons, L, ct[c]);
+  
+  // create a ct for each GC SS_cons_x
+  for (gc = 0; gc < msa->ngc; gc ++) {  
+    esl_sprintf(&tag, "SS_cons_%d", gc+1);   
+    if (!strcmp(msa->gc_tag[gc], tag)) {
+      esl_wuss2ct(msa->gc[gc], L, ct[++c]);
+    }
+    free(tag); tag = NULL;
+  }
+  
+  // add to ct[0] all other non-overlapping pairs
+  for (c = 1; c < nct; c ++) {
+    for (i = 1; i <= L; i ++) {
+      if (no_overlap(i, ct[c][i], L, ct[0]))  {
+	ct[0][i]        = ct[c][i];
+	ct[0][ct[c][i]] = i;
+      }
+    }
+  }
+  
+  // modify the ss_cons 
+  esl_ct2wuss(ct[0], L, msa->ss_cons);
+  if (1||cfg->verbose) printf("all structure\n%s\n", msa->ss_cons);
+
+  for (c = 0; c < nct; c ++) free(ct[c]);
+  free(ct);
+  if (tag) free(tag);
+
+  return eslOK;
+
+ ERROR:
+  for (c = 0; c < nct; c ++) if (ct[c]) free(ct[c]);
+  if (ct)  free(ct);
+  if (tag) free(tag);
+  return status;
+}
+
+static int
+no_overlap(int i, int j, int L, int *ct)
+{
+  int keep = TRUE;
+  int k;
+
+  if (j == 0) return FALSE;
+  if (j < i)  return FALSE;
+  
+  for (k = 1; k <= L; k ++) {
+    if (i == ct[k]) return FALSE;
+    if (j == ct[k]) return FALSE;
+  }
+  return keep;
+}
+
+static int
 rscape_banner(FILE *fp, char *progname, char *banner)
 {
   char *appname = NULL;
@@ -1812,6 +1887,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
+ 
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
@@ -2076,7 +2152,7 @@ structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
 
   if (cfg->mode == GIVSS && cfg->abcisRNA && cfg->omsa->ss_cons && cfg->samplesize != SAMPLE_ALL)
     {
-      status = struct_CTMAP(cfg->mi->alen, cfg->nct, cfg->ctlist, cfg->omsa->alen, cfg->msamap, NULL, NULL, TRUE);
+      status = struct_CTMAP(cfg->mi->alen, cfg->nct, cfg->ctlist, cfg->omsa->alen, cfg->msamap, NULL, NULL, NULL, TRUE);
       if (status != eslOK) goto ERROR;
     }
   power_SPAIR_Write(stdout, dim, spair);  
@@ -2232,6 +2308,7 @@ static int
 write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose)
 {
   ESL_MSA  *omsa = cfg->omsa;
+  int     **octlist = NULL;
   char    **osslist = NULL;
   char     *tag;
   int       OL = omsa->alen;
@@ -2249,33 +2326,42 @@ write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-  // I may end up changing this later.
-  // It is used by R2R, and I keep it here because some of my
-  // secondary/pseudoknot structure may overlap with the main nested structure.
-  // That is not wrong, it is just showing our uncertainty about the structure due to lack
-  // of more covariations.
-  status = struct_CTMAP(L, cyknct, cykctlist, OL, cfg->msamap, &osslist, NULL, verbose);
+   status = struct_CTMAP(L, cyknct, cykctlist, OL, cfg->msamap, &octlist, &osslist, NULL, verbose);
   if (status != eslOK) goto ERROR;
-  
-  for (s = 0; s < cyknct; s ++) {
-     if (s == 0) 
-      strcpy(omsa->ss_cons, osslist[s]);
-    else {
-      esl_sprintf(&tag, "SS_cons_%d", s);
-      esl_msa_AppendGC(omsa, tag, osslist[s]);
+
+  // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
+  for (s = 1; s < cyknct; s ++) {
+
+    // these are the extra GC lines.
+    // I keep it in case there is overlap
+    esl_sprintf(&tag, "SS_cons_%d", s);
+    esl_msa_AppendGC(omsa, tag, osslist[s]);
+    free(tag); tag = NULL;
+    
+    for (i = 1; i <= OL; i ++) {
+      if (no_overlap(i, octlist[s][i], OL, octlist[0]))  {
+	octlist[0][i]             = octlist[s][i];
+	octlist[0][octlist[s][i]] = i;
+      }
     }
   }
+  esl_ct2wuss(octlist[0], OL, omsa->ss_cons);
   
   // write alignment with the cykcov structure to file
   esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
   
   for (s = 0; s < cyknct; s ++) free(osslist[s]);
   free(osslist);
+  for (s = 0; s < cyknct; s ++) free(octlist[s]);
+  free(octlist);
   return eslOK;
 
  ERROR:
   for (s = 0; s < cyknct; s ++) if (osslist[s]) free(osslist[s]);
   if (osslist) free(osslist);
+  for (s = 0; s < cyknct; s ++) if (octlist[s]) free(octlist[s]);
+  if (octlist) free(octlist);
   return status;
 }
 
+    

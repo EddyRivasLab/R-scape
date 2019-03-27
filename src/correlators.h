@@ -1,7 +1,7 @@
 /* correlators.h
  *
  *   
-*/
+ */
 #ifndef CORRELATORS_INCLUDED
 #define CORRELATORS_INCLUDED
 

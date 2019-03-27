@@ -15,10 +15,10 @@
 #include "covgrammars.h"
 #include "correlators.h"
 
-extern int struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, int minloop, RANKLIST *ranklist, HITLIST *hitlist,
-			   enum grammar_e G, THRESH *thresh);
+extern int struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, int minloop,
+			   RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh);
 extern int struct_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int nct, int **ctlist, struct mutual_s *mi, int *msamap, int firstpos,
 			  SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, int verbose, char *errbuf);
 extern int struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose);
-extern int struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, char ***ret_sslist, FILE *fp, int verbose);
+extern int struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, int ***ret_octlist, char ***ret_sslist, FILE *fp, int verbose);
 #endif

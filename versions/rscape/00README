@@ -87,6 +87,8 @@ ln -s ~/src/src/mysource/versions/$v/data/power/Rfam.14.0.seed.3D.power.double.c
 
 rm -rf ~/src/src/mysource/versions/$v/lib/hmmer/src/impl ;\
 rm ~/src/src/mysource/versions/$v/bin/* ;\
+rm ~/src/src/mysource/versions/$v/share/doc/* ;\
+rm ~/src/src/mysource/versions/$v/share/man/* ;\
 done
 
 

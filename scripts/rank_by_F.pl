@@ -222,9 +222,9 @@ sub parse_rscapeout {
 	    my $avgid = $4;
 	    my $acc = $fam;
 	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
+	    #if ($fam =~ /^RF\d\d\d\d\d\_(\S+)$/) { $fam = $1; }
 	    
 	    $usefam = 1;
-	    
 	    
 	    $iscyk  = 0;
 	    
@@ -395,7 +395,8 @@ sub filter_fam {
 
 	my $fam = $allfam[$f];
 
-	if ($nofilter || (!$nofilter && $allfam_true{$fam}  > 10) ) {
+	if ($nofilter || (!$nofilter && $allfam_true{$fam}  > 10)) {
+	    
 	    $fam[$nf] = $fam;
 	    
 	    $fam_idx{$fam}  = $nf + 1;
@@ -466,11 +467,13 @@ sub plot_allfam {
     $cmd .= "\n";
     print GP "plot $cmd\n";
    
+    print GP "set xrange [1:1031]\n";
     $ylabel = "fraction of covarying pairs in the structure (%)";
     print GP "set ylabel '$ylabel'\n";
     $cmd  = "";
     $cmd .= "'$outfile_allfam'      using $idx:$iSpower:(0.7) with boxes  title '' ls 1111, "; 
     $cmd .= "'$outfile_outlierp'    using $idx:$iSpower:(0.7) with boxes  title '' ls 1117, "; 
+    $cmd .= "'$outfile_allfam'      using $idx:$iS            with points title '' ls 1114, "; 
     $cmd .= "'$outfile_allfam'      using $idx:$iP            with points title '' ls 1118 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
@@ -562,14 +565,14 @@ sub plot_allvsall {
     
     print GP "set xrange [-0.5:100]\n";
     print GP "set yrange [-0.5:100]\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iSpower:$iS:$ifam  title '' with labels ls 1112, "; 
-    $cmd     .= "'$outfile_allfam' using $iSpower:$iS        title '' with points ls 1112"; 
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam' using $iSpower:$iS:$ifam  title '' with labels ls 1112, "; 
+    $cmd .= "'$outfile_allfam' using $iSpower:$iS        title '' with points ls 1112"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
-    print GP "set xrange [-0.5:20]\n";
-    print GP "set yrange [-0.5:20]\n";
+    print GP "set xrange [-0.5:100]\n";
+    print GP "set yrange [-0.5:100]\n";
     $cmd = "";
     $cmd     .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
     $cmd .= "\n";
@@ -752,13 +755,13 @@ sub outfile_outlierp{
     open (OUT, ">$outfile_outlierp") || die;
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam = $allfam[$f];
+	my $fam   = $S_order[$f];
 	my $sen   = $fam_S{$fam};
-	my $power = $fam_Spower{$fam};
+	my $power = $fam_Spower{$fam}; 
 	if ($sen < 2 && $power > 10) {
 	    $m ++;
 	    print     "outlierp $m $fam sen $sen power $power\n";
-	    print OUT "$fam_table{$fam}\n";
+	    printf OUT "$fam_table{$fam} %f\n", $power*$fam_true{$fam}/100;
 	}
     }
     close(OUT);
@@ -767,10 +770,12 @@ sub outfile_outlierp{
 sub outfile_outlierc{
     my ($outfile_outlierc) = @_;
 
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
     open (OUT, ">$outfile_outlierc") || die;
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam   = $fam[$f];
+	my $fam   = $S_order[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam};
 	if ($sen > 10 && $power < 2) {

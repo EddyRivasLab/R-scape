@@ -91,7 +91,9 @@ PROGS    = scorematrix2rate\
 	   msafilter\
 	   appcov\
 	   msaq\
-           Phcar\
+           #Phcar\
+	   e2msa\
+	   e2sim\
 	   #gappenalties\
 	   #programs/ehmmalign\
 	   #programs/ehmmemit\
@@ -103,8 +105,6 @@ PROGS    = scorematrix2rate\
 	   #e2DickersonSynthetic\
 	   #tkfsim\
 	   #ptransmark\
-	   e2msa\
-	   e2sim\
 	   e2train\
 	   pfamsets\
 	   pfamtrio\
