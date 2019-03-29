@@ -1,0 +1,33 @@
+# STOCKHOLM 1.0
+Bsu-1                       AGCAAGGGGAGAGACCUGACCGAAAACCUCGGGAUA.CAGGCGCCGAAGGAGCAA.ACU.....GCGG........AGUGAAUCUCUCAGGCAAAAGAACUCUUGCU
+Bsu-2                       ---CUCUGGAGAGUGUUUGUGCGGAUGCGC------.AAACCACCUUUGGGGACGUCUUUGC..GUAU.....GCAAAGUAAACUUUCAGGUGCCAGGACAGAG...
+Bsomething-2                ...CUCUGGAGAGUGUUCACGGCCAGU..........GAACCACCAAAGAGGAAACCU.AUU..GCCA.....AAUAGGGAAACUUUCAGGUGCCAGGACAGAG...
+Bsomething-1                ...CUCUGGAGAGAGUUUGUAUCAUAUUAUGUUUUGCAAACCACCAAAGGGGACAUCUUUGC..UUUUGAU..GCAAAGUAAACUUUCAGGUGCCAGGACAGAG...
+Bpu-1                       ...CUCUGGAGAGUGUUUGCUCAUCGUUUUUUAGC..AAACCACCAAAGGGGAAAACG.CACAAUGAUG..UUGUGCUGUAAACUUUCAGGUGCAAGGACAGAG...
+#=GC SS_cons                ((((((((,,,,<-<<<<__________________.>>>>><<<---<<<<--.-<<<<<<<<_.__...>>>>>>>>---->>>>-->>>,,,,,,,))))))))
+#=GC R2R_LABEL              kkk....j................................................................................................kkk
+
+#=GF R2R multistem_junction_circular_solver j s0 0 ai s1 -45 ai s2 0 ai align_stem_horiz 0 2
+
+#=GF R2R SetDrawingParam defaultOneseqLabeling false
+#=GF R2R SetDrawingParam indicateOneseqWobblesAndNonCanonicals false
+
+#=GF R2R delcols k
+
+
+#=GF R2R shade_along_backbone all rgb:152,199,222
+
+#=GF Makefile oneseq Bsu-1
+#=GF Makefile oneseq Bsu-2
+#=GC cons                   ---nnnnGGAGAGnnYUnRYnnnnnRYYnYnnnnn--nARnCRCCRAAGGRGnnAnnYnnnn--nYnn-----nnnARnnAAnCUYUCAGGYRnnAGRACnnnn---
+#=GC conss                  00011111111111111111111113333344444001111111133313111134134444001311000004443311111111111111111111111111000
+#=GC col_entropy_0          00000000000000000100111111111111111101000000010000000001010111000111000001110100000000000000000000000000000
+#=GC col_entropy_1          ...........................................................................................................
+#=GC col_entropy_2          88888880000009880499944824458555995464088080046607808969849994779494966774997489008008000008889008008888888
+#=GC col_entropy_3          66666660000009660690366697111117331136066060013301606036666666114936433116661969006006000006669006006666666
+#=GC cov_SS_cons            00022220....0.2202...................20220200...0210....22?22200.......00222?22....0120..002.......02222000
+#=GF NUM_COV 14
+#=GF WEIGHT_MAP  Bsu-1 1.42655 Bsu-2 0.807359 Bsomething-2 0.979367 Bsomething-1 0.807359 Bpu-1 0.979367
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,107
+//

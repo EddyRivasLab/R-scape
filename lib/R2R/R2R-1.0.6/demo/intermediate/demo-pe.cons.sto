@@ -1,0 +1,21 @@
+# STOCKHOLM 1.0
+biologist      AACCCUUCGGAAACGGAGUAA
+chemist        AACCCUUGCUUCGGCGAGUAA
+physicist      AUCCCAUUUCUUGAAGAGAAA
+#=GC SS_cons   <<...>><<....>>......
+#=GC R2R_LABEL .......a.......b..c..
+#=GF R2R place_explicit a a-- 0 1 0 0 0 0 f
+#=GF R2R place_explicit b b-- +45 1 0 0 0 +90 f
+#=GF R2R place_explicit c c-- -45 1 0 0 0 -90
+#=GC cons           AnCCCnUnnnnnRnnGAGnAA
+#=GC conss          111111111111111111111
+#=GC col_entropy_0  000000011101011000000
+#=GC col_entropy_1  .....................
+#=GC col_entropy_2  090009055595955000900
+#=GC col_entropy_3  030003088818188000300
+#=GC cov_SS_cons    02...2022....22......
+#=GF NUM_COV 3
+#=GF WEIGHT_MAP  biologist 0.980769 chemist 0.980769 physicist 1.03846
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,21
+//

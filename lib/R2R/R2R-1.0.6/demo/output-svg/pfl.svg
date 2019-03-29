@@ -1,0 +1,1315 @@
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.0"
+   width="288"
+   height="498.981"
+   id="svg2403"
+   xml:space="preserve">
+<text x="0" y="8.616" id="text1000">
+  <tspan x="0" y="8.616" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1001">WARNING: R2R is not intended to evaluate evidence</tspan>
+</text>
+<text x="0" y="18.9552" id="text1002">
+  <tspan x="0" y="18.9552" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1003">for covariation or RNA structure where this is in</tspan>
+</text>
+<text x="0" y="29.2944" id="text1004">
+  <tspan x="0" y="29.2944" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1005">question. It is not appropriate to use R2R&apos;s covariation</tspan>
+</text>
+<text x="0" y="42.6144" id="text1006">
+  <tspan x="0" y="42.6144" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1007">markings to declare that there is evidence of</tspan>
+</text>
+<text x="0" y="55.9344" id="text1008">
+  <tspan x="0" y="55.9344" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1009">structural conservation within an alignment. R2R is a</tspan>
+</text>
+<text x="0" y="69.2544" id="text1010">
+  <tspan x="0" y="69.2544" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1011">drawing program. As the original paper, Weinberg</tspan>
+</text>
+<text x="0" y="82.5744" id="text1012">
+  <tspan x="0" y="82.5744" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1013">and Breaker, 2011 wrote:</tspan>
+</text>
+<text x="0" y="92.9136" id="text1014">
+  <tspan x="0" y="92.9136" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1015">&quot;This automated R2R annotation [of covariation] does</tspan>
+</text>
+<text x="0" y="103.253" id="text1016">
+  <tspan x="0" y="103.253" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1017">not reflect the extent or confidence of covariation.</tspan>
+</text>
+<text x="0" y="113.592" id="text1018">
+  <tspan x="0" y="113.592" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1019">While such information can be useful, we believe that</tspan>
+</text>
+<text x="0" y="123.931" id="text1020">
+  <tspan x="0" y="123.931" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1021">thorough evaluation of covariation evidence ultimately</tspan>
+</text>
+<text x="0" y="137.251" id="text1022">
+  <tspan x="0" y="137.251" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1023">requires analysis of the full sequence alignment. For</tspan>
+</text>
+<text x="0" y="150.571" id="text1024">
+  <tspan x="0" y="150.571" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1025">example, misleading covariation can result from an</tspan>
+</text>
+<text x="0" y="163.891" id="text1026">
+  <tspan x="0" y="163.891" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1027">incorrect alignment of sequences, or from alignments</tspan>
+</text>
+<text x="0" y="177.211" id="text1028">
+  <tspan x="0" y="177.211" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1029">of sequences that do not function as structured RNAs.</tspan>
+</text>
+<text x="0" y="190.531" id="text1030">
+  <tspan x="0" y="190.531" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1031">Unfortunately, there is no accepted method to assign</tspan>
+</text>
+<text x="0" y="203.851" id="text1032">
+  <tspan x="0" y="203.851" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1033">confidence that entirely eliminates the need to</tspan>
+</text>
+<text x="0" y="217.171" id="text1034">
+  <tspan x="0" y="217.171" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1035">analyze the full alignment. To disable this warning,</tspan>
+</text>
+<text x="0" y="230.491" id="text1036">
+  <tspan x="0" y="230.491" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1037">run r2r with --disable-usage-warning&quot;</tspan>
+</text>
+<path
+ fill="none" stroke="#666666" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 0 0 L 288 0 L 288 235.195 L 0 235.195 L 0 0 "/>
+<text x="0" y="253.811" id="text1038">
+  <tspan x="0" y="253.811" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1039">pfl.cons</tspan>
+</text>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 412.194 L 73.8315 412.194 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 404.634 L 73.8315 404.634 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 397.074 L 73.8315 397.074 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 389.514 L 73.8315 389.514 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 381.954 L 73.8315 381.954 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 62.85 371.702 L 62.85,371.702L 80.925,371.702L 80.925,377.087L 62.85,377.087Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 374.394 L 73.8315 374.394 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 62.85 364.142 L 62.85,364.142L 80.925,364.142L 80.925,369.527L 62.85,369.527Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 366.834 L 73.8315 366.834 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 62.85 356.582 L 62.85,356.582L 80.925,356.582L 80.925,361.967L 62.85,361.967Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 359.274 L 73.8315 359.274 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 62.85 349.022 L 62.85,349.022L 80.925,349.022L 80.925,354.407L 62.85,354.407Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 351.714 L 73.8315 351.714 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 62.85 341.462 L 62.85,341.462L 80.925,341.462L 80.925,346.847L 62.85,346.847Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 69.9435 344.154 L 73.8315 344.154 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 68.685 309.047 L 68.685,309.047L 50.61,309.047L 50.61,303.662L 68.685,303.662Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 61.5915 306.354 L 57.7035 306.354 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 68.685 301.487 L 68.685,301.487L 50.61,301.487L 50.61,296.102L 68.685,296.102Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 61.5915 298.794 L 57.7035 298.794 "/>
+<path
+ fill="#ffd8d8" stroke="none"
+ d="M 68.685 293.927 L 68.685,293.927L 50.61,293.927L 50.61,288.542L 68.685,288.542Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 61.5915 291.234 L 57.7035 291.234 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 68.685 286.367 L 68.685,286.367L 50.61,286.367L 50.61,280.982L 68.685,280.982Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 61.5915 283.674 L 57.7035 283.674 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 61.5915 276.114 L 57.7035 276.114 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 86.2707 286.076 L 86.2707,286.076L 86.2707,303.701L 80.4357,303.701L 80.4357,286.076Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 83.3532 292.945 L 83.3532 296.833 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 93.8307 286.076 L 93.8307,286.076L 93.8307,303.701L 87.9957,303.701L 87.9957,286.076Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 90.9132 292.945 L 90.9132 296.833 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 101.391 286.076 L 101.391,286.076L 101.391,303.701L 95.5557,303.701L 95.5557,286.076Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 98.4732 292.945 L 98.4732 296.833 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 108.951 286.076 L 108.951,286.076L 108.951,303.701L 103.116,303.701L 103.116,286.076Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 106.033 292.945 L 106.033 296.833 "/>
+<path
+ fill="#ffd8d8" stroke="none"
+ d="M 116.511 286.076 L 116.511,286.076L 116.511,303.701L 110.676,303.701L 110.676,286.076Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 113.593 292.945 L 113.593 296.833 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 10.0575 288.984 L 10.0575 292.872 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 17.6175 288.984 L 17.6175 292.872 "/>
+<path
+ fill="#d7efc5" stroke="none"
+ d="M 28.095 282.116 L 28.095,282.116L 28.095,299.741L 22.26,299.741L 22.26,282.116Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 25.1775 288.984 L 25.1775 292.872 "/>
+<path
+ fill="#c8d8fa" stroke="none"
+ d="M 35.655 282.116 L 35.655,282.116L 35.655,299.741L 29.82,299.741L 29.82,282.116Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 32.7375 288.984 L 32.7375 292.872 "/>
+<path
+ fill="#ffd8d8" stroke="none"
+ d="M 43.215 282.116 L 43.215,282.116L 43.215,299.741L 37.38,299.741L 37.38,282.116Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 40.2975 288.984 L 40.2975 292.872 "/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 412.194 A 2.5575,2.5575 0 0,1 63.21,412.194A 2.5575,2.5575 0 0,1 68.325,412.194Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 404.634 A 2.5575,2.5575 0 0,1 63.21,404.634A 2.5575,2.5575 0 0,1 68.325,404.634Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 397.074 A 2.5575,2.5575 0 0,1 63.21,397.074A 2.5575,2.5575 0 0,1 68.325,397.074Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 389.514 A 2.5575,2.5575 0 0,1 63.21,389.514A 2.5575,2.5575 0 0,1 68.325,389.514Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 381.954 A 2.5575,2.5575 0 0,1 63.21,381.954A 2.5575,2.5575 0 0,1 68.325,381.954Z"/>
+<text x="63.2662" y="377.087" id="text1040">
+  <tspan x="63.2662" y="377.087" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1041">Y</tspan>
+</text>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.325 366.834 A 2.5575,2.5575 0 0,1 63.21,366.834A 2.5575,2.5575 0 0,1 68.325,366.834Z"/>
+<text x="63.2662" y="361.967" id="text1042">
+  <tspan x="63.2662" y="361.967" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1043">Y</tspan>
+</text>
+<text x="63.06" y="354.407" id="text1044">
+  <tspan x="63.06" y="354.407" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1045">R</tspan>
+</text>
+<text x="63.2662" y="346.847" id="text1046">
+  <tspan x="63.2662" y="346.847" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1047">Y</tspan>
+</text>
+<text x="63.06" y="339.287" id="text1048">
+  <tspan x="63.06" y="339.287" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1049">R</tspan>
+</text>
+<text x="63.2662" y="331.727" id="text1050">
+  <tspan x="63.2662" y="331.727" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1051">A</tspan>
+</text>
+<text x="63.06" y="324.167" id="text1052">
+  <tspan x="63.06" y="324.167" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1053">C</tspan>
+</text>
+<text x="63.06" y="316.607" id="text1054">
+  <tspan x="63.06" y="316.607" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1055">U</tspan>
+</text>
+<text x="62.85" y="309.047" id="text1056">
+  <tspan x="62.85" y="309.047" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1057">G</tspan>
+</text>
+<text x="63.06" y="301.487" id="text1058">
+  <tspan x="63.06" y="301.487" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1059">R</tspan>
+</text>
+<text x="63.06" y="293.927" id="text1060">
+  <tspan x="63.06" y="293.927" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1061">C</tspan>
+</text>
+<text x="62.85" y="286.367" id="text1062">
+  <tspan x="62.85" y="286.367" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1063">G</tspan>
+</text>
+<text x="63.06" y="278.807" id="text1064">
+  <tspan x="63.06" y="278.807" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1065">R</tspan>
+</text>
+<path
+ fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 68.9228 273.928 A 10.9824,10.9824 0 0,1 84.4243,285.082"/>
+<path
+ fill="#ffffff" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 85.9107 288.769 A 2.5575,2.5575 0 0,1 80.7957,288.769A 2.5575,2.5575 0 0,1 85.9107,288.769Z"/>
+<text x="87.9957" y="291.461" id="text1066">
+  <tspan x="87.9957" y="291.461" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1067">G</tspan>
+</text>
+<text x="95.7657" y="291.461" id="text1068">
+  <tspan x="95.7657" y="291.461" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1069">U</tspan>
+</text>
+<text x="103.116" y="291.461" id="text1070">
+  <tspan x="103.116" y="291.461" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1071">G</tspan>
+</text>
+<text x="110.676" y="291.461" id="text1072">
+  <tspan x="110.676" y="291.461" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1073">G</tspan>
+</text>
+<text x="117.129" y="287.198" id="text1074">
+  <tspan x="117.129" y="287.198" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1075">R</tspan>
+</text>
+<path
+ fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 123.673 284.288 A 10.6832,10.6832 0 0,1 123.673,305.49"/>
+<text x="117.335" y="307.965" id="text1076">
+  <tspan x="117.335" y="307.965" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1077">A</tspan>
+</text>
+<text x="110.886" y="303.701" id="text1078">
+  <tspan x="110.886" y="303.701" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1079">C</tspan>
+</text>
+<text x="103.326" y="303.701" id="text1080">
+  <tspan x="103.326" y="303.701" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1081">C</tspan>
+</text>
+<text x="95.972" y="303.701" id="text1082">
+  <tspan x="95.972" y="303.701" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1083">A</tspan>
+</text>
+<text x="88.2057" y="303.701" id="text1084">
+  <tspan x="88.2057" y="303.701" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1085">C</tspan>
+</text>
+<path
+ fill="#ffffff" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 85.9107 301.009 A 2.5575,2.5575 0 0,1 80.7957,301.009A 2.5575,2.5575 0 0,1 85.9107,301.009Z"/>
+<text x="75.3" y="309.047" id="text1086">
+  <tspan x="75.3" y="309.047" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1087">R</tspan>
+</text>
+<text x="75.09" y="316.607" id="text1088">
+  <tspan x="75.09" y="316.607" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1089">G</tspan>
+</text>
+<text x="75.09" y="324.167" id="text1090">
+  <tspan x="75.09" y="324.167" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1091">G</tspan>
+</text>
+<text x="75.3" y="331.727" id="text1092">
+  <tspan x="75.3" y="331.727" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1093">R</tspan>
+</text>
+<text x="75.5062" y="339.287" id="text1094">
+  <tspan x="75.5062" y="339.287" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1095">A</tspan>
+</text>
+<text x="75.09" y="346.847" id="text1096">
+  <tspan x="75.09" y="346.847" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1097">G</tspan>
+</text>
+<text x="75.5062" y="354.407" id="text1098">
+  <tspan x="75.5062" y="354.407" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1099">Y</tspan>
+</text>
+<text x="75.3" y="361.967" id="text1100">
+  <tspan x="75.3" y="361.967" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1101">R</tspan>
+</text>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 366.834 A 2.5575,2.5575 0 0,1 75.45,366.834A 2.5575,2.5575 0 0,1 80.565,366.834Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 374.394 A 2.5575,2.5575 0 0,1 75.45,374.394A 2.5575,2.5575 0 0,1 80.565,374.394Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 381.954 A 2.5575,2.5575 0 0,1 75.45,381.954A 2.5575,2.5575 0 0,1 80.565,381.954Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 389.514 A 2.5575,2.5575 0 0,1 75.45,389.514A 2.5575,2.5575 0 0,1 80.565,389.514Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 397.074 A 2.5575,2.5575 0 0,1 75.45,397.074A 2.5575,2.5575 0 0,1 80.565,397.074Z"/>
+<path
+ fill="#000000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 404.634 A 2.5575,2.5575 0 0,1 75.45,404.634A 2.5575,2.5575 0 0,1 80.565,404.634Z"/>
+<path
+ fill="#000000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 80.565 412.194 A 2.5575,2.5575 0 0,1 75.45,412.194A 2.5575,2.5575 0 0,1 80.565,412.194Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 12.615 284.808 A 2.5575,2.5575 0 0,1 7.5,284.808A 2.5575,2.5575 0 0,1 12.615,284.808Z"/>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.175 284.808 A 2.5575,2.5575 0 0,1 15.06,284.808A 2.5575,2.5575 0 0,1 20.175,284.808Z"/>
+<text x="22.26" y="287.501" id="text1102">
+  <tspan x="22.26" y="287.501" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1103">G</tspan>
+</text>
+<text x="30.03" y="287.501" id="text1104">
+  <tspan x="30.03" y="287.501" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1105">C</tspan>
+</text>
+<text x="37.59" y="287.501" id="text1106">
+  <tspan x="37.59" y="287.501" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1107">C</tspan>
+</text>
+<text x="37.3605" y="279.941" id="text1108">
+  <tspan x="37.3605" y="279.941" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1109">G</tspan>
+</text>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 49.1534 273.097 A 2.5575,2.5575 0 0,1 44.0384,273.097A 2.5575,2.5575 0 0,1 49.1534,273.097Z"/>
+<text x="51.0262" y="278.807" id="text1110">
+  <tspan x="51.0262" y="278.807" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1111">Y</tspan>
+</text>
+<text x="50.82" y="286.367" id="text1112">
+  <tspan x="50.82" y="286.367" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1113">C</tspan>
+</text>
+<text x="50.61" y="293.927" id="text1114">
+  <tspan x="50.61" y="293.927" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1115">G</tspan>
+</text>
+<text x="51.0262" y="301.487" id="text1116">
+  <tspan x="51.0262" y="301.487" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1117">Y</tspan>
+</text>
+<text x="50.82" y="309.047" id="text1118">
+  <tspan x="50.82" y="309.047" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1119">C</tspan>
+</text>
+<text x="43.7224" y="311.65" id="text1120">
+  <tspan x="43.7224" y="311.65" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1121">U</tspan>
+</text>
+<text x="37.3289" y="307.301" id="text1122">
+  <tspan x="37.3289" y="307.301" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1123">G</tspan>
+</text>
+<text x="37.38" y="299.741" id="text1124">
+  <tspan x="37.38" y="299.741" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1125">G</tspan>
+</text>
+<text x="29.82" y="299.741" id="text1126">
+  <tspan x="29.82" y="299.741" fill="#d90000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1127">G</tspan>
+</text>
+<text x="22.47" y="299.741" id="text1128">
+  <tspan x="22.47" y="299.741" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1129">C</tspan>
+</text>
+<text x="14.91" y="299.741" id="text1130">
+  <tspan x="14.91" y="299.741" fill="#807b88"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1131">R</tspan>
+</text>
+<path
+ fill="#d90000" stroke="#000000" stroke-width="0.72" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 12.615 297.048 A 2.5575,2.5575 0 0,1 7.5,297.048A 2.5575,2.5575 0 0,1 12.615,297.048Z"/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 78.0075 415.758 A 1.78191,1.78191 90 0,0 79.7894,417.54L 83.3532 417.54 L 220.093 417.54 L 115.075 351.174 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 65.7675 415.758 A 1.78191,1.78191 0 0,1 63.9856,417.54L 60.4218 417.54 "/>
+<text x="138.283" y="296.805" id="text1132">
+  <tspan x="138.283" y="296.805" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1133">1-70 nt (above 6 nt, has stable hairpin)</tspan>
+</text>
+<text x="83.3532" y="426.925" id="text1134">
+  <tspan x="83.3532" y="426.925" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1135">2-121 nt (above 23 nt, has stable hairpin)</tspan>
+</text>
+<text x="18.7858" y="269.18" id="text1136">
+  <tspan x="18.7858" y="269.18" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1137">1-79 nt (above 8 nt, has stable hairpin)</tspan>
+</text>
+<text x="53.3193" y="420.233" id="text1138">
+  <tspan x="53.3193" y="420.233" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1139">5&apos;</tspan>
+</text>
+<text x="0" y="444.594" id="text1140">
+  <tspan x="0" y="444.594" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1141">pfl.cons skeleton-with-bp</tspan>
+</text>
+<path
+ fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+ d="M 21.8282 489.395 L 21.8282 455.375 A 2.7456,2.7456 0 0,1 26.2246,458.538L 33.7846 458.538 A 2.67081,2.67081 0 1,1 33.7846,461.598L 26.2246 461.598 A 1.33643,1.33643 0 0,0 24.8882,462.935L 24.8882 490.286 A 0.445477,0.445477 90 0,0 25.3336,490.731L 60.4096 490.731 L 7.90066 457.548 L 15.4607 457.548 A 1.98567,1.98567 0 0,1 18.7682,455.375L 18.7682 462.935 A 2.03753,2.03753 0 0,1 15.4607,460.608L 7.90066 460.608 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 489.395 L 23.8442 489.395 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 487.505 L 23.8442 487.505 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 485.615 L 23.8442 485.615 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 483.725 L 23.8442 483.725 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 481.835 L 23.8442 481.835 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 479.945 L 23.8442 479.945 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 478.055 L 23.8442 478.055 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 476.165 L 23.8442 476.165 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 474.275 L 23.8442 474.275 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 22.8722 472.385 L 23.8442 472.385 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.7842 462.935 L 19.8122 462.935 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.7842 461.045 L 19.8122 461.045 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.7842 459.155 L 19.8122 459.155 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.7842 457.265 L 19.8122 457.265 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 20.7842 455.375 L 19.8122 455.375 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 26.2246 459.582 L 26.2246 460.554 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 28.1146 459.582 L 28.1146 460.554 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 30.0046 459.582 L 30.0046 460.554 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 31.8946 459.582 L 31.8946 460.554 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 33.7846 459.582 L 33.7846 460.554 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 7.90066 458.592 L 7.90066 459.564 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 9.79066 458.592 L 9.79066 459.564 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 11.6807 458.592 L 11.6807 459.564 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 13.5707 458.592 L 13.5707 459.564 "/>
+<path
+ fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d="M 15.4607 458.592 L 15.4607 459.564 "/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+<path
+ fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
+ d=""/>
+</svg>

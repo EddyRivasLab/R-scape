@@ -1,6 +1,6 @@
 /* cococyk.c */
 
-#include <stdlib.h>
+#include <stdlib.h> 
 #include <stdio.h>
 #include <string.h>
 
@@ -17,22 +17,14 @@
 #include "covgrammars.h"
 #include "cococyk.h"
 #include "correlators.h"
+#include "structure.h"
 
-// power threshold
-#define POWER_THRESH 0.80
 
 // index for (i,j,L)
 //     for i=0 < L-1; j=i+1 < L
 //     \sum_{k=0}^{i-1} (L - 1 - k)  + j - i - 1 = (L-1)*i - i*(i-1)/2 + (j - i - 1)
 //
 #define INDEX(i, j, L) ( ((L) - 1)*(i) - (i)*((i)-1)/2 + (j) - (i) - 1 )
-
-/* LENIENT = 1  The covarying pairs that have been explained already are not allowed to pair with each other again but 
- *              could be pair with some other residue. Would allow to see triplets
- *
- * LENINEN = 0  The already explained covarying residues are forced to remaoin unpared in cacading foldings
- */
-#define  LENIENT 0
 
 static int   dp_recursion_g6 (G6param  *p, ESL_SQ *sq, SPAIR *spair, int *ct, G6_MX  *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
 static int   dp_recursion_g6s(G6Sparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, G6_MX  *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
@@ -1250,12 +1242,11 @@ dp_recursion_bgr(BGRparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, BGR_MX *cyk, in
    
   i = j - d + 1;
 
-  if (d < 1 && w == BGR_P)  { *ret_sc = -eslINFINITY; return eslOK; }  // P  has at least 1 residues
-  if (d < 3 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 3 residues
-  if (d < 3 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 3 residues
-  if (d < 3 && w == BGR_F5) { *ret_sc = -eslINFINITY; return eslOK; }  // F5 has at least 3 residues
-  if (d < 3 && w == BGR_R)  { *ret_sc = -eslINFINITY; return eslOK; }  // R  has at least 3 residues
-  if (d < 3 && w == BGR_M1) { *ret_sc = -eslINFINITY; return eslOK; }  // M1 has at least 3 residues
+  if (d < 2 && w == BGR_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 2 residues
+  if (d < 2 && w == BGR_F0) { *ret_sc = -eslINFINITY; return eslOK; }  // F0 has at least 2 residues
+  if (d < 2 && w == BGR_F5) { *ret_sc = -eslINFINITY; return eslOK; }  // F5 has at least 2 residues
+  if (d < 2 && w == BGR_R)  { *ret_sc = -eslINFINITY; return eslOK; }  // R  has at least 2 residues
+  if (d < 2 && w == BGR_M1) { *ret_sc = -eslINFINITY; return eslOK; }  // M1 has at least 2 residues
   
   switch(w) {
   case BGR_S:

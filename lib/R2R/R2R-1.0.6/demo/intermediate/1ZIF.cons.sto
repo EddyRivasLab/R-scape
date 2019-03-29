@@ -1,0 +1,21 @@
+# STOCKHOLM 1.0
+seq            GGGCGAAAGCCU
+#=GC SS_cons   <<<<....>>>>
+#=GC R2R_LABEL GGGCGAAAGCCU
+#=GF R2R nuc_color G rgb:255,0,0
+#=GF R2R nuc_color A rgb:0,255,0
+#=GF R2R nuc_color C rgb:0,0,255
+#=GF R2R nuc_color U rgb:255,0,255
+#=GF Makefile oneseq seq
+#=GC cons           GGGCGAAAGCCU
+#=GC conss          111111111111
+#=GC col_entropy_0  000000000000
+#=GC col_entropy_1  ............
+#=GC col_entropy_2  000000000000
+#=GC col_entropy_3  000000000000
+#=GC cov_SS_cons    0000....0000
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  seq 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,12
+//

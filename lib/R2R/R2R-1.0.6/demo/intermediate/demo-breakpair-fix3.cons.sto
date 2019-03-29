@@ -1,0 +1,19 @@
+# STOCKHOLM 1.0
+lemur          AAACUACCCCUAUUGG
+blueberry      AAACAUCCCCAU-UGG
+smurf          AAGCAACCCCUU-CGG
+#=GC SS_cons   ..<<<<....>>>>..
+#=GC R2R_LABEL ...p........p...
+#=GF R2R depair p
+#=GC cons           AARCnnCCCCnn-YGG
+#=GC conss          1111111111110111
+#=GC col_entropy_0  0000000000000000
+#=GC col_entropy_1  ................
+#=GC col_entropy_2  0090990000999900
+#=GC col_entropy_3  0010110000111100
+#=GC cov_SS_cons    ..2?22....22?2..
+#=GF NUM_COV 3
+#=GF WEIGHT_MAP  lemur 1 blueberry 1 smurf 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,16
+//

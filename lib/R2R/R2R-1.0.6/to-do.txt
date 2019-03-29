@@ -1,0 +1,1 @@
+try NLopt as a replacement to CFSQP (http://ab-initio.mit.edu/wiki/index.php/NLopt)

@@ -1,0 +1,18 @@
+# STOCKHOLM 1.0
+seq                  GAUC
+#=GC SS_cons         <<>>
+#=GC R2R_LABEL       ....
+#=GF R2R set_dir pos0 +90 f
+#=GF Makefile oneseq seq
+#=GC cons            GAUC
+#=GC conss           1111
+#=GC col_entropy_0   0000
+#=GC col_entropy_1   ....
+#=GC col_entropy_2   0000
+#=GC col_entropy_3   0000
+#=GC cov_SS_cons     0000
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  seq 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,4
+//

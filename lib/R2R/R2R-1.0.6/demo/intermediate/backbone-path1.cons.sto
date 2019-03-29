@@ -1,0 +1,25 @@
+# STOCKHOLM 1.0
+seq1              AAAAAAAAAAAAAAA
+#=GC SS_cons      ...<<.<<...>>>>
+
+#=GF R2R ifndef skeleton
+#=GF R2R shade_along_backbone all rgb:0,0,255
+#=GF R2R endif
+
+#=GF R2R ifdef skeleton
+#=GF R2R SetDrawingParam scaleMeasurementsBy 1
+#=GF R2R endif
+
+#=GF Makefile skeleton-with-pairbonds
+#=GC cons           AAAAAAAAAAAAAAA
+#=GC conss          111111111111111
+#=GC col_entropy_0  000000000000000
+#=GC col_entropy_1  ...............
+#=GC col_entropy_2  000000000000000
+#=GC col_entropy_3  000000000000000
+#=GC cov_SS_cons    ...??.??...????
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  seq1 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,15
+//

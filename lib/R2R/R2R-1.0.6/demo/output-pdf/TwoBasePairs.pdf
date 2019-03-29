@@ -1,0 +1,371 @@
+%PDF-1.0
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /FH
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+4 0 obj
+[/PDF /Text /ImageC]
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/Resources 9 0 R
+/MediaBox [0 0 288.000000 331.492655]
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<< /Length 8 0 R>>
+stream
+0 g
+BT
+/FH 12 Tf
+ 0 Tr
+0 322.876655 Td
+(WARNING: R2R is not intended to evaluate evidence)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 312.537455 Td
+(for covariation or RNA structure where this is in)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 302.198255 Td
+(question. It is not appropriate to use R2R´s covariation)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 288.878255 Td
+(markings to declare that there is evidence of)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 275.558255 Td
+(structural conservation within an alignment. R2R is a)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 262.238255 Td
+(drawing program. As the original paper, Weinberg)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 248.918255 Td
+(and Breaker, 2011 wrote:)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 238.579055 Td
+("This automated R2R annotation [of covariation] does)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 228.239855 Td
+(not reflect the extent or confidence of covariation.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 217.900655 Td
+(While such information can be useful, we believe that)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 207.561455 Td
+(thorough evaluation of covariation evidence ultimately)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 194.241455 Td
+(requires analysis of the full sequence alignment. For)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 180.921455 Td
+(example, misleading covariation can result from an)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 167.601455 Td
+(incorrect alignment of sequences, or from alignments)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 154.281455 Td
+(of sequences that do not function as structured RNAs.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 140.961455 Td
+(Unfortunately, there is no accepted method to assign)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 127.641455 Td
+(confidence that entirely eliminates the need to)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 114.321455 Td
+(analyze the full alignment. To disable this warning,)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 101.001455 Td
+(run r2r with --disable-usage-warning")Tj
+ET
+.5 w
+.4 G
+0 96.297455 288 235.1952 re
+s
+BT
+/FH 12 Tf
+ 0 Tr
+0 77.681455 Td
+(TwoBasePairs seq)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+0 G
+24.124227 59.659227 m
+28.012227 59.659227 l
+S
+.5 w
+1.44 w
+24.124227 52.099227 m
+28.012227 52.099227 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 56.966727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 49.406727 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 49.406727 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 56.966727 Td
+(C)Tj
+ET
+0 G
+1.5 w
+19.948227 63.223045 m
+19.948227 64.207167 19.150439 65.004955 18.166318 65.004955 c
+14.6025 65.004955 l
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 62.312455 Td
+(5´)Tj
+ET
+.5 w
+BT
+/FH 12 Tf
+ 0 Tr
+0 33.290727 Td
+(TwoBasePairs.cons)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1 .845401 .847059 rg
+17.030727 20.445 m
+35.105727 20.445 l
+35.105727 15.06 l
+17.030727 15.06 l
+h
+f
+1.44 w
+24.124227 17.7525 m
+28.012227 17.7525 l
+S
+.5 w
+17.030727 12.885 m
+35.105727 12.885 l
+35.105727 7.5 l
+17.030727 7.5 l
+h
+f
+1.44 w
+24.124227 10.1925 m
+28.012227 10.1925 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 15.06 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 7.5 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 7.5 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 15.06 Td
+(C)Tj
+ET
+0 G
+1.5 w
+19.948227 21.316318 m
+19.948227 22.300439 19.150439 23.098227 18.166318 23.098227 c
+14.6025 23.098227 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 20.405727 Td
+(5´)Tj
+ET
+.5 w
+endstream
+endobj
+10 0 obj<</Type/ExtGState/SA true/OP false/op false/OPM 1/ca 1.0/CA 1.0/BM/Normal/SMask/None/AIS false>>
+endobj
+9 0 obj
+<< /Font <</FH 5 0 R>> /ProcSet[/PDF/Text/ImageC]/XObject << >>/ExtGState<</GS0 10 0 R>>/Properties<</MC0<</Color[20224.0 -32768.0 -1.0]/Title(Layer 1)/Visible true/Preview true/Editable true/Printed true/Dimmed true>>>>>>
+endobj
+8 0 obj
+3280
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+/Outlines 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [6 0 R ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Outlines
+/Count 0
+>>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000003971 00000 n 
+0000004094 00000 n 
+0000004036 00000 n 
+0000000116 00000 n 
+0000000009 00000 n 
+0000000152 00000 n 
+0000000270 00000 n 
+0000003951 00000 n 
+0000003713 00000 n 
+0000003601 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+>>
+startxref
+4140
+%%EOF

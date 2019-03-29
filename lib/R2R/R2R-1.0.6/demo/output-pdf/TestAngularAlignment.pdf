@@ -1,0 +1,969 @@
+%PDF-1.0
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /FH
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+4 0 obj
+[/PDF /Text /ImageC]
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/Resources 9 0 R
+/MediaBox [0 0 458.208000 516.278971]
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<< /Length 8 0 R>>
+stream
+0 g
+BT
+/FH 12 Tf
+ 0 Tr
+0 507.662971 Td
+(WARNING: R2R is not intended to evaluate evidence for covariation or RNA)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 497.323771 Td
+(structure where this is in question. It is not appropriate to use R2R´s)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 484.003771 Td
+(covariation markings to declare that there is evidence of structural)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 470.683771 Td
+(conservation within an alignment. R2R is a drawing program. As the original)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 457.363771 Td
+(paper, Weinberg and Breaker, 2011 wrote:)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 444.043771 Td
+("This automated R2R annotation [of covariation] does not reflect the extent or)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 433.704571 Td
+(confidence of covariation. While such information can be useful, we believe)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 423.365371 Td
+(that thorough evaluation of covariation evidence ultimately requires analysis)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 410.045371 Td
+(of the full sequence alignment. For example, misleading covariation can)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 396.725371 Td
+(result from an incorrect alignment of sequences, or from alignments of)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 383.405371 Td
+(sequences that do not function as structured RNAs. Unfortunately, there is no)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 370.085371 Td
+(accepted method to assign confidence that entirely eliminates the need to)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 356.765371 Td
+(analyze the full alignment. To disable this warning, run r2r with)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 343.445371 Td
+(--disable-usage-warning")Tj
+ET
+.5 w
+.4 G
+0 338.741371 412.3872 177.5376 re
+s
+BT
+/FH 12 Tf
+ 0 Tr
+0 320.125371 Td
+(TestAngularAlignment.cons)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+0 G
+42.287589 255.324696 m
+46.175589 255.324696 l
+S
+.5 w
+1.44 w
+66.512896 303.272871 m
+66.512896 299.384871 l
+S
+.5 w
+1.44 w
+74.072896 303.272871 m
+74.072896 299.384871 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+35.610339 252.632196 Td
+(A)Tj
+ET
+1.5 w
+35.20327 257.74782 m
+0 G
+21.931326 265.024228 17.070984 281.681958 24.347392 294.953902 c
+31.6238 308.225846 48.28153 313.086188 61.553474 305.80978 c
+61.821001 305.663107 62.08606 305.511977 62.34854 305.356453 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+63.805396 304.756371 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+71.365396 304.756371 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+71.365396 292.516371 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+63.805396 292.516371 Td
+(C)Tj
+ET
+71.85999 295.909792 m
+79.664321 282.941252 75.477903 266.101513 62.509364 258.297182 c
+59.950019 256.756995 57.156093 255.645577 54.238129 255.006901 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+47.850339 252.632196 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+53.196066 247.286469 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+60.549816 247.286469 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+68.109816 247.286469 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+75.669816 247.286469 Td
+(U)Tj
+ET
+38.111589 259.473454 m
+38.111589 260.619102 37.470972 261.547833 36.680732 261.547833 c
+33.819017 261.547833 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 297.953748 Td
+(2 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+78.369187 263.4731 Td
+(3 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+26.716517 258.855333 Td
+(5´)Tj
+ET
+.5 w
+BT
+/FH 12 Tf
+ 0 Tr
+229.104 320.125371 Td
+(TestAngularAlignment.cons alignangle=-32)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+252.229273 238.141371 m
+256.117273 238.141371 l
+S
+.5 w
+1.44 w
+282.537942 257.809583 m
+282.537942 253.921583 l
+S
+.5 w
+1.44 w
+290.097942 257.809583 m
+290.097942 253.921583 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+245.552023 235.448871 Td
+(A)Tj
+ET
+1.5 w
+245.639817 241.059393 m
+0 G
+235.534893 248.794927 233.614124 263.257476 241.349658 273.362399 c
+249.085192 283.467323 263.547741 285.388093 273.652664 277.652558 c
+277.578785 274.647029 280.433997 270.458302 281.796441 265.705263 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+279.830442 259.293083 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+287.390442 259.293083 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+287.390442 247.053083 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+279.830442 247.053083 Td
+(C)Tj
+ET
+279.397362 247.488456 m
+276.063238 241.93947 270.548684 238.048954 264.202915 236.768777 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+257.792023 235.448871 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+263.137751 230.103144 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+270.491501 230.103144 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+278.051501 230.103144 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+285.611501 230.103144 Td
+(U)Tj
+ET
+248.053273 242.461335 m
+248.053273 243.65426 247.472126 244.621317 246.755245 244.621317 c
+244.159188 244.621317 l
+S
+2 w
+254.173273 238.141371 m
+254.173273 310.141371 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+237.455993 282.733716 Td
+(2 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+269.700997 230.852959 Td
+(3 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+237.056688 241.928817 Td
+(5´)Tj
+ET
+.5 w
+BT
+/FH 12 Tf
+ 0 Tr
+0 213.987144 Td
+(TestAngularAlignment.cons alignangle=-45)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+38.471328 132.003144 m
+42.359328 132.003144 l
+S
+.5 w
+1.44 w
+73.069095 166.600911 m
+73.069095 162.712911 l
+S
+.5 w
+1.44 w
+80.629095 166.600911 m
+80.629095 162.712911 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+31.794078 129.310644 Td
+(A)Tj
+ET
+1.5 w
+30.653528 133.024623 m
+0 G
+13.348134 138.593432 3.833753 157.136637 9.402562 174.44203 c
+14.971371 191.747423 33.514576 201.261805 50.819969 195.692995 c
+60.917705 192.443583 68.830661 184.527042 72.075499 174.427835 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+70.361595 168.084411 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+77.921595 168.084411 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+77.921595 155.844411 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+70.361595 155.844411 Td
+(C)Tj
+ET
+72.2461 154.837079 m
+69.055853 144.279901 60.790558 136.021925 50.230558 132.841034 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+44.034078 129.310644 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+49.379805 123.964916 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+56.733555 123.964916 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+64.293555 123.964916 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+71.853555 123.964916 Td
+(U)Tj
+ET
+34.295328 135.898944 m
+34.295328 136.97474 33.579531 137.846844 32.696552 137.846844 c
+29.499 137.846844 l
+S
+2 w
+40.415328 132.003144 m
+40.415328 204.003144 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 191.352783 Td
+(2 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+61.457652 131.973994 Td
+(3 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+22.3965 135.154344 Td
+(5´)Tj
+ET
+.5 w
+BT
+/FH 12 Tf
+ 0 Tr
+229.104 213.987144 Td
+(TestAngularAlignment.cons alignangle=45)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+267.493879 132.003144 m
+271.381879 132.003144 l
+S
+.5 w
+1.44 w
+251.016408 152.368614 m
+251.016408 148.480614 l
+S
+.5 w
+1.44 w
+258.576408 152.368614 m
+258.576408 148.480614 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+260.816629 129.310644 Td
+(A)Tj
+ET
+1.5 w
+260.692065 134.717866 m
+0 G
+254.82998 138.898828 251.24411 145.566902 250.988168 152.762663 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+248.308908 153.852114 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+255.868908 153.852114 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+255.868908 141.612114 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+248.308908 141.612114 Td
+(C)Tj
+ET
+251.627894 148.118088 m
+248.607786 160.556459 256.242797 173.088032 268.681169 176.10814 c
+281.11954 179.128248 293.651113 171.493236 296.67122 159.054865 c
+299.691328 146.616494 292.056317 134.084921 279.617946 131.064813 c
+279.581701 131.056013 279.545435 131.0473 279.509149 131.038675 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+273.056629 129.310644 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+278.402357 123.964916 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+285.756107 123.964916 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+293.316107 123.964916 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+300.876107 123.964916 Td
+(U)Tj
+ET
+263.317879 136.279878 m
+263.317879 137.460865 262.720924 138.418245 261.984543 138.418245 c
+259.317869 138.418245 l
+S
+2 w
+269.437879 132.003144 m
+269.437879 204.003144 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+236.604 134.738181 Td
+(2 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+282.743174 177.826073 Td
+(3 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+252.215369 135.725745 Td
+(5´)Tj
+ET
+.5 w
+BT
+/FH 12 Tf
+ 0 Tr
+0 107.848916 Td
+(TestAngularAlignment.cons rots0=-15)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1.44 w
+33.892096 24.696785 m
+37.647615 23.690496 l
+S
+.5 w
+1.44 w
+73.970972 47.371435 m
+72.026972 44.004328 l
+S
+.5 w
+1.44 w
+80.518125 43.591435 m
+78.574125 40.224328 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+27.35714 23.085113 Td
+(A)Tj
+ET
+1.5 w
+26.386967 27.288021 m
+0 G
+9.471568 35.787953 2.649484 56.39115 11.149416 73.306549 c
+19.649348 90.221949 40.252545 97.044033 57.167944 88.544101 c
+69.769327 82.211948 77.206302 68.807884 75.909744 54.764739 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+73.351472 48.295457 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+79.898625 44.515457 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+73.778625 33.915306 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+67.231472 37.695306 Td
+(C)Tj
+ET
+68.67711 36.671002 m
+62.936276 29.402184 54.498122 24.766076 45.284278 23.818463 c
+S
+BT
+/FH 7.5 Tf
+ 0 Tr
+39.180072 19.917168 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+42.960072 13.370016 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.056221 11.413344 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+57.35862 9.456672 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+64.661019 7.5 Td
+(U)Tj
+ET
+2 w
+35.769856 24.193641 m
+54.404827 93.7403 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+16.345395 92.479916 Td
+(2 nt)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+54.556105 17.888025 Td
+(3 nt)Tj
+ET
+.5 w
+endstream
+endobj
+10 0 obj<</Type/ExtGState/SA true/OP false/op false/OPM 1/ca 1.0/CA 1.0/BM/Normal/SMask/None/AIS false>>
+endobj
+9 0 obj
+<< /Font <</FH 5 0 R>> /ProcSet[/PDF/Text/ImageC]/XObject << >>/ExtGState<</GS0 10 0 R>>/Properties<</MC0<</Color[20224.0 -32768.0 -1.0]/Title(Layer 1)/Visible true/Preview true/Editable true/Printed true/Dimmed true>>>>>>
+endobj
+8 0 obj
+9527
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+/Outlines 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [6 0 R ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Outlines
+/Count 0
+>>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000010218 00000 n 
+0000010341 00000 n 
+0000010283 00000 n 
+0000000116 00000 n 
+0000000009 00000 n 
+0000000152 00000 n 
+0000000270 00000 n 
+0000010198 00000 n 
+0000009960 00000 n 
+0000009848 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+>>
+startxref
+10387
+%%EOF

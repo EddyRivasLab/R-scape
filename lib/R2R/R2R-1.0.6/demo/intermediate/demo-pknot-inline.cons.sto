@@ -1,0 +1,35 @@
+# STOCKHOLM 1.0
+rope                        AGGCAUUUGAACCAUAUUGUGCGCCUAACAUC..GCCAAAGCACAA
+speed                       GGGUAUUUGAACUGUAUUAUGCACCCAGCAUAAUGUGGAACCAUAA
+topology                    AGGUAUUUGAACCGUAUUGUGCACCUAGCAUGA.GUUAAAGCACAA
+#=GC SS_cons                <<<<..................>>>>....................
+#=GC SS_cons_1              ..................<<<<..................>>>>..
+#=GC R2R_LABEL              ....a.................t...b....1.2..........3.
+
+#=GF R2R ifndef default
+#=GF R2R place_explicit t-- t 0 -1 0 0 0 0 f
+#=GF R2R place_explicit 3 3-- +45 1 0 0 0 +90 f
+#=GF R2R var_backbone_range 1 2
+#=GF R2R bulge a
+#=GF R2R bulge_flip b
+#=GF R2R ifdef debug_place_explicit SetDrawingParam showPlaceExplicit true
+#=GF R2R endif
+
+#=GF R2R ifdef labelnucs tick_label_regular_numbering 1 1 zero
+
+#=GF Makefile define default 1
+#=GF Makefile define debug_place_explicit 1
+#=GF Makefile define default 1 define labelnucs 1
+#=GC cons                   RGGYAUUUGAACYRUAUURUGCRCCYARCAUnn-GYnRAAnCAYAA
+#=GC conss                  1111111111111111111111111111111140111111111111
+#=GC col_entropy_0          0000000000000000000000000000000100001000000000
+#=GC col_entropy_1          ..............................................
+#=GC col_entropy_2          9009000000009900009000900909000599095900900900
+#=GC col_entropy_3          4000000000004000004000000400000804008400400400
+#=GC cov_SS_cons            2002..................2002....................
+#=GC cov_SS_cons_1          ..................200?..................?002..
+#=GF NUM_COV 3
+#=GF WEIGHT_MAP  rope 0.963415 speed 1.07317 topology 0.963415
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,46
+//

@@ -1,0 +1,45 @@
+# STOCKHOLM 1.0
+
+#=GF ORIGINAL_NAME COG4708
+NC_006086.1/587336-587498     UGUUUUAUGGUACAAUGUAACCGUUGC...UUU.....G.CAAC.CCUUGGUGCUUAGUUCCCUUUCACCAAGCAUAUUAGAAACGUAGAUAGCUUUUGA.GAGU.UAUCCAGACGUU.AAAGGAGAAAAA.AUGACAAAAUUGACUGUACACGACUAUGUUCACAUUGGGCUAGUA
+NC_007432.1/925396-925551     UGUGAUAUA...CUUAGUAA..GUUGU...UUUAC...A.CAAC.CCUUGAUGCUUAGUUCCCUUUCAUCAAGCAUAUUACAAACGUU.AGAAGUGUU.A..ACUAUCU..AAACGUU.AAAGGAGAAAUU.AUGAACACAUUUACAACUCGCGAUUACGCUCACAUGGCUAUUGUA
+NC_003028.1/955901-956039     UGUGCUAUA...CU.AGUAAG.GUUGA...AUGAA...U.CAAC.CCUUGGUGCUUAGCUU.CUUUCACCAAGCAUAUUACACGCGG.........AU.A............ACCGCC.AAAGGAGAAAAG.AUGAAAAAAUUAACUAUUCGUGAUGUUGCAGAUAUUGCAAUCGUC
+NC_004350.1/1474191-1474053   UAUGCUAUA...CUGGAUAA..GUUGU...CUG.....A.CAAC.CCUUGGUGCUUAUUUCCCUUUCACCAAGCAUAUUACAAACGGU........AGAU.............CCGUU.AAAGGAGAAACA.AUGAAACAACUAACUGUUCGUGAUUUAGCCCAUAUCGCCAUUGUG
+NZ_AAJR01000052.1/12937-13092 UGUGAUAUA...CUUAGUAA..GUUGU...UUUAC...A.CAAC.CCUUGAUGCUUAGUUCCCUUUCAUCAAGCAUAUUACAAACGUU.AGAAGUGUU.A..ACUGUCU..AAACGUU.AAAGGAGAAAUU.AUGAACACAUUUACAACUCGCGAUUACGCUCACAUGGCUAUUGUA
+NC_002662.1/802553-802700     UCUGCUAAA...AU.AAAAAC.GUUGCUCAAUAG.UGAGUUAAC.CCUUGAGCCUUCAUCCCU.UUGCUCAAGCAUAUUAUAGGCGAA........UU.U...........UGUCGCC.AAAGGAGAACCUUUUGAAAAAAUCAAAAACUUAUGAUAUUGUUACAAUCGCAAUUGUU
+#=GC SS_cons                  ........,...,,,,,,,,,.<<<<<<<<.....>>>>.>>>>,.<<<<<<<---..____..-->>>>>>>,........<<<<<-.<<<<<<___._..>>>->>>---->>>>>.::::::....................................................
+#=GC SS_cons_1                ...........................................................<<<<<<<.....................................................>>>>>.>>..................................................
+#=GC R2R_LABEL                ...........................<.........>.......XX.....21.....4......3.....87.......n9...[..........................]...5.6.SSSDSsA....MmM------------------------------------------
+#=GC SUBFAM_LABEL             .........................................................................................A.......................................................................................
+#=GC SUBFAM_MODSTEM_R2R_LABEL ---------------------------------------------.-------------------------------------------1.....-------.......--------------------------------------------------------------------
+#=GF R2R var_hairpin < >
+#=GF R2R var_hairpin [ ]
+#=GF R2R shade_along_backbone S s D rgb:230,230,230
+#=GF R2R tick_label D SD
+#=GF R2R shade_along_backbone M m rgb:230,230,230
+#=GF R2R tick_label m start
+#=GF R2R bulge 1
+#=GF R2R tick_label 4-- needs \n manual \n adjustment
+#=GF R2R place_explicit 4 3 0 -7 0 0 0 0 f
+#=GF R2R place_explicit 5 6 +135 1 0 0 0 -90
+#=GF R2R place_explicit 9 9-- 0 1 0 0 0 +90
+#=GF R2R place_explicit A s +45 1 0 0 0 +90
+#=GF R2R bulge_flip 7
+#=GF SUBFAM_PRED MODSTEM A+
+#=GF SUBFAM_MODSTEM_R2R no5
+#=GF SUBFAM_MODSTEM_R2R set_dir 1 0
+
+#=GF qR2R mark_flip
+#=GC cons                     URUGYUAUA---CUnRRUAAn-GUUGY---nUnn----R-CAAC-CCUUGRUGCUUARUUCCCUUUCAYCAAGCAUAUUAYARRCGnn--------nU-n-----------nRnCGYY-AAAGGAGAAAnn-AUGAAAAAAUURACnRYUCRYGAUnnYGYYnAYAUYGCnAUYGUn
+#=GC conss                    131331133000334313114011113000111400003031110111111331113333333311331111111111113131111300000000130100000000000431111101111111113110311133331333131113311113113113133113131313111
+#=GC col_entropy_0            010010000000001100001000001000101110001000000000000000000100000000000000000000001010001100101101001000010001000111000000000000000110000000000001000000000000101001101001001001001
+#=GC col_entropy_1            .................................................................................................................................................................................
+#=GC col_entropy_2            040730087777878398004700004888505538884880000000009880008468668800889000000000004049005479393393963907939893977545009900000000008548800077670683089997899007493093485005078703009
+#=GC col_entropy_3            000150001111018380009100009000005620009000000000008000000080880000008000000000003008005916565565483801656965611595008800000000000190000010800805008581096001062090005001018103002
+#=GC cov_SS_cons              ......................00012000.....0002.1000..0000222.............2220000.........?2002..020120.......021.020....2002?...........................................................
+#=GC cov_SS_cons_1            ...........................................................?1?1?00.....................................................00?1?.1?..................................................
+#=GF NUM_COV 8
+#=GF WEIGHT_MAP  NC_006086.1/587336-587498 1.17733 NC_007432.1/925396-925551 0.576334 NC_003028.1/955901-956039 1.0902 NC_004350.1/1474191-1474053 1.0902 NZ_AAJR01000052.1/12937-13092 0.576334 NC_002662.1/802553-802700 1.48961
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,177
+//

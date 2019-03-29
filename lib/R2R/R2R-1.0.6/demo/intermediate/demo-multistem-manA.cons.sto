@@ -1,0 +1,63 @@
+# STOCKHOLM 1.0
+something              UUGAGUGACUAAUGUAAAUGAAAAUUGUAGUUCACUAAACUUGAGAGUAACUCUCCUCAA
+somethingelse          AUGUCUGUGUAAUCAAACCGAAAGGUGUAACUCACUAAGUUUCGGU.UAA.ACCGGACAU
+#=GC SS_cons           [[[[[,,<<-...>>,,((....))...<<<<_____>>>>-<<<<<..,>>>>>]]]]]
+#=GC R2R_LABEL         ....j...........................................L...........
+#=GC R2R_XLABEL_align  .................X......X.............................YY....
+#=GC R2R_XLABEL_junc   .....xx........xx........xxx.............x..................
+
+#=GF R2R ifdef solver
+#=GF R2R no5
+#=GF R2R set_dir pos0 -60
+#=GF R2R endif
+#=GF R2R ifdefeq solver 1
+#=GF R2R tick_label L note: R2R cannot find a feasible solution for \n this problem using the multistem_junction_circular_solver command.  \n However, it can with (1) a user-input optimization starting point, (2) with \n the try_harder directive or (3) with the multistem_junction_bulgecircley_solver \n command, as shown in other drawings here.
+#=GF R2R ifndef domanual multistem_junction_circular_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai
+#=GF R2R ifdef domanual multistem_junction_bulgey j J0/base 0 1.58341 -2.38103 0 0 -120 J1/base 0 5.71141 -2.05297 0 0 -30 J2/base 0 5.2733 2.85867 0 0 -300 J3/base 0 1.92381 3.28325 0 0 -240 bspecifyendpoints0 0 2.62901e-13 -3.00098e-12 0.156812 -0.262251 bspecifyendpoints1 0 0.311257 -0.317565 0.598907 -0.214497 bspecifyendpoints2 0 0.684698 -0.068338 0.561578 0.308648 bspecifyendpoints3 0 0.406737 0.375882 0.200994 0.347977
+#=GF R2R endif
+#=GF R2R ifdefeq solver 1tryharder
+#=GF R2R multistem_junction_circular_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai try_harder
+#=GF R2R endif
+#=GF R2R ifdefeq solver 1explicitinitial
+#=GF R2R multistem_junction_circular_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai initial_first_point_angle 50.7929 initial_radius 0.34956
+#=GF R2R endif
+#=GF R2R ifdefeq solver 2
+#=GF R2R ifndef domanual multistem_junction_bulgecircley_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai
+#=GF R2R ifdef domanual multistem_junction_bulgey j J0/base 0 1.25998 -2.59734 0 0 240 J1/base 0 5.52661 -2.69304 0 0 330 J2/base 0 5.56667 2.35145 0 0 60 J3/base 0 2.18884 3.0459 0 0 120
+#=GF R2R endif
+#=GF R2R ifdefeq solver 3
+#=GF R2R ifdef annot
+#=GF R2R nuc_color align:X rgb:128,0,128
+#=GF R2R nuc_color align:Y rgb:128,128,0
+#=GF R2R outline_nuc junc:x
+#=GF R2R ifdef fewiters
+#=GF R2R SetDrawingParam solverMaxIters 5
+#=GF R2R draw_circ junc:x
+#=GF R2R SetDrawingParam internucleotideLen 0.10505
+#=GF R2R-COMMENT we change the internucleotideLen slightly to force the solver to run separately with fewer iterations, rather than getting the many-iters solution from the cache
+#=GF R2R endif
+#=GF R2R ifndef domanual multistem_junction_bulgecircley_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai align_nuc_centers_angle 60 align:X . align:Y . align_angle -30 0 4 draw_zero_degrees draw_circ
+#=GF R2R else
+#=GF R2R ifndef domanual multistem_junction_bulgecircley_solver j s0 -15 ai s1 -135 ai s2 -45 ai s3 45 ai s4 105 ai align_nuc_centers_angle 60 align:X . align:Y . align_angle -30 0 4
+#=GF R2R endif
+#=GF R2R endif
+
+#=GF Makefile define solver 1
+#=GF Makefile define solver 1tryharder
+#=GF Makefile define solver 1explicitinitial
+#=GF Makefile define solver 2
+#=GF Makefile define solver 3
+#=GF Makefile define solver 3 define annot 1
+#=GF Makefile define solver 3 define annot 1 define fewiters 1
+#=GC cons              nUGnnUGnnUAAUnnAAnYGAAARnUGUARYUCACUAARYUUnRGnnUAAnnCYnnnCAn
+#=GC conss             111111111111111111111111111111111111111111111141114111111111
+#=GC col_entropy_0     100110011000011001100001100001100000001100110110001101111001
+#=GC col_entropy_1     ............................................................
+#=GC col_entropy_2     000000000000000000000000000000000000000000000000000000000000
+#=GC col_entropy_3     000000000000000000000000000000000000000000000000000000000000
+#=GC cov_SS_cons       20022..22....22..22....22...0220.....0220.22020...0202222002
+#=GF NUM_COV 12
+#=GF WEIGHT_MAP  something 1 somethingelse 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,60
+//

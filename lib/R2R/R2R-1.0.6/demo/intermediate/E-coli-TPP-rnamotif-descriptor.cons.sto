@@ -1,0 +1,23 @@
+# STOCKHOLM 1.0
+consensus          NNNNNNNGUG..CUGAGA..NNNN..ANNNGA..NNNNNU..UNNNNNCG..NNNGANNN
+#=GC SS_cons       <<<<<<<.............>>>>...<<<....<<<<......>>>>....>>>..>>>
+#=GC R2R_LABEL     ..........ab......cd....ef......gh......ij........kl........
+#=GC R2R_XLABEL_ol .......OOOOOOOOOOOOO....OOO...OOOO....OOOOOO....OOOO........
+#=GF R2R var_backbone_range a b
+#=GF R2R var_backbone_range c d
+#=GF R2R var_backbone_range e f
+#=GF R2R var_backbone_range g h
+#=GF R2R outline_nuc ol:O
+#=GF R2R keep allpairs
+#=GC cons           -------GUG--CUGAGA--------A---GA-------U--U-----CG-----GA---
+#=GC conss          000000011100111111000000001000110000000100100000110000011000
+#=GC col_entropy_0  000000000000000000000000000000000000000000000000000000000000
+#=GC col_entropy_1  ............................................................
+#=GC col_entropy_2  000000000000000000000000000000000000000000000000000000000000
+#=GC col_entropy_3  000000000000000000000000000000000000000000000000000000000000
+#=GC cov_SS_cons    ???????.............????...???....????......????....???..???
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  consensus 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,60
+//

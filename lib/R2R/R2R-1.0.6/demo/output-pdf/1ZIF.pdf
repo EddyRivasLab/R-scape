@@ -1,0 +1,555 @@
+%PDF-1.0
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /FH
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+4 0 obj
+[/PDF /Text /ImageC]
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/Resources 9 0 R
+/MediaBox [0 0 288.000000 388.345664]
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<< /Length 8 0 R>>
+stream
+0 g
+BT
+/FH 12 Tf
+ 0 Tr
+0 379.729664 Td
+(WARNING: R2R is not intended to evaluate evidence)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 369.390464 Td
+(for covariation or RNA structure where this is in)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 359.051264 Td
+(question. It is not appropriate to use R2R´s covariation)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 345.731264 Td
+(markings to declare that there is evidence of)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 332.411264 Td
+(structural conservation within an alignment. R2R is a)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 319.091264 Td
+(drawing program. As the original paper, Weinberg)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 305.771264 Td
+(and Breaker, 2011 wrote:)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 295.432064 Td
+("This automated R2R annotation [of covariation] does)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 285.092864 Td
+(not reflect the extent or confidence of covariation.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 274.753664 Td
+(While such information can be useful, we believe that)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 264.414464 Td
+(thorough evaluation of covariation evidence ultimately)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 251.094464 Td
+(requires analysis of the full sequence alignment. For)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 237.774464 Td
+(example, misleading covariation can result from an)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 224.454464 Td
+(incorrect alignment of sequences, or from alignments)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 211.134464 Td
+(of sequences that do not function as structured RNAs.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 197.814464 Td
+(Unfortunately, there is no accepted method to assign)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 184.494464 Td
+(confidence that entirely eliminates the need to)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 171.174464 Td
+(analyze the full alignment. To disable this warning,)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 157.854464 Td
+(run r2r with --disable-usage-warning")Tj
+ET
+.5 w
+.4 G
+0 153.150464 288 235.1952 re
+s
+BT
+/FH 12 Tf
+ 0 Tr
+0 134.534464 Td
+(1ZIF seq)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+27.508227 85.871459 m
+27.508227 85.076169 26.863517 84.431459 26.068227 84.431459 c
+25.272937 84.431459 24.628227 85.076169 24.628227 85.871459 c
+24.628227 86.666749 25.272937 87.311459 26.068227 87.311459 c
+26.863517 87.311459 27.508227 86.666749 27.508227 85.871459 c
+f
+1.44 w
+0 G
+24.124227 93.431459 m
+28.012227 93.431459 l
+S
+.5 w
+1.44 w
+24.124227 100.991459 m
+28.012227 100.991459 l
+S
+.5 w
+1.44 w
+24.124227 108.551459 m
+28.012227 108.551459 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 83.178959 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 90.738959 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 98.298959 Td
+(G)Tj
+ET
+0 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 105.858959 Td
+(C)Tj
+ET
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+14.858064 113.100032 Td
+(G)Tj
+ET
+0 .996483 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+19.786977 119.165464 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+27.346977 119.165464 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+31.859641 113.100032 Td
+(A)Tj
+ET
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.270727 105.858959 Td
+(G)Tj
+ET
+0 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 98.298959 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 90.738959 Td
+(C)Tj
+ET
+.996483 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 83.178959 Td
+(U)Tj
+ET
+0 G
+1.5 w
+19.948227 82.307641 m
+19.948227 81.32352 19.150439 80.525732 18.166318 80.525732 c
+14.6025 80.525732 l
+S
+.5 w
+35.938227 100.991459 m
+39.938227 100.991459 l
+S
+0 g
+BT
+/FH 6 Tf
+ 0 Tr
+41.438227 98.837459 Td
+(10)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 77.833232 Td
+(5´)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 61.717232 Td
+(1ZIF.cons)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+1 .845401 .847059 rg
+17.030727 18.230727 m
+35.105727 18.230727 l
+35.105727 12.845727 l
+17.030727 12.845727 l
+h
+f
+1.44 w
+24.124227 15.538227 m
+28.012227 15.538227 l
+S
+.5 w
+17.030727 25.790727 m
+35.105727 25.790727 l
+35.105727 20.405727 l
+17.030727 20.405727 l
+h
+f
+1.44 w
+24.124227 23.098227 m
+28.012227 23.098227 l
+S
+.5 w
+17.030727 33.350727 m
+35.105727 33.350727 l
+35.105727 27.965727 l
+17.030727 27.965727 l
+h
+f
+1.44 w
+24.124227 30.658227 m
+28.012227 30.658227 l
+S
+.5 w
+17.030727 40.910727 m
+35.105727 40.910727 l
+35.105727 35.525727 l
+17.030727 35.525727 l
+h
+f
+1.44 w
+24.124227 38.218227 m
+28.012227 38.218227 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 12.845727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 20.405727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 27.965727 Td
+(G)Tj
+ET
+0 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 35.525727 Td
+(C)Tj
+ET
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+14.858064 42.7668 Td
+(G)Tj
+ET
+0 .996483 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+19.786977 48.832232 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+27.346977 48.832232 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+31.859641 42.7668 Td
+(A)Tj
+ET
+.996483 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.270727 35.525727 Td
+(G)Tj
+ET
+0 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 27.965727 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 20.405727 Td
+(C)Tj
+ET
+.996483 0 .996483 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.480727 12.845727 Td
+(U)Tj
+ET
+0 G
+1.5 w
+19.948227 11.974409 m
+19.948227 10.990288 19.150439 10.1925 18.166318 10.1925 c
+14.6025 10.1925 l
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 7.5 Td
+(5´)Tj
+ET
+.5 w
+endstream
+endobj
+10 0 obj<</Type/ExtGState/SA true/OP false/op false/OPM 1/ca 1.0/CA 1.0/BM/Normal/SMask/None/AIS false>>
+endobj
+9 0 obj
+<< /Font <</FH 5 0 R>> /ProcSet[/PDF/Text/ImageC]/XObject << >>/ExtGState<</GS0 10 0 R>>/Properties<</MC0<</Color[20224.0 -32768.0 -1.0]/Title(Layer 1)/Visible true/Preview true/Editable true/Printed true/Dimmed true>>>>>>
+endobj
+8 0 obj
+5156
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+/Outlines 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [6 0 R ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Outlines
+/Count 0
+>>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000005847 00000 n 
+0000005970 00000 n 
+0000005912 00000 n 
+0000000116 00000 n 
+0000000009 00000 n 
+0000000152 00000 n 
+0000000270 00000 n 
+0000005827 00000 n 
+0000005589 00000 n 
+0000005477 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+>>
+startxref
+6016
+%%EOF

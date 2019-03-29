@@ -1,0 +1,20 @@
+# STOCKHOLM 1.0
+martian        CAGGGAAACCUGAUUUUAGGA
+venusian       CGU.UUCG.ACGUA...AGGA
+#=GC SS_cons   <<<<....>>>>.........
+#=GC R2R_LABEL ...[....]...1...2T...
+#=GF R2R var_hairpin [ ]
+#=GF R2R var_backbone_range 1 2
+#=GF R2R turn_ss T -90
+#=GC cons           CRnnnnnRnnYGnnnnnAGGA
+#=GC conss          111411114111114441111
+#=GC col_entropy_0  011111111110111110000
+#=GC col_entropy_1  .....................
+#=GC col_entropy_2  000000000000000000000
+#=GC col_entropy_3  000000000000000000000
+#=GC cov_SS_cons    0220....0220.........
+#=GF NUM_COV 2
+#=GF WEIGHT_MAP  martian 1 venusian 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,21
+//

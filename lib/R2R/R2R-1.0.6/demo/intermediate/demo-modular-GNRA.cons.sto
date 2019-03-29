@@ -1,0 +1,49 @@
+# STOCKHOLM 1.0
+one                        GAGAAA.UCAACCCUUGGGGGAGCA
+
+
+
+#=GC SS_cons               <<.....>>..<<....>>......
+
+
+
+#=GC R2R_LABEL -.......-----------------
+
+
+
+#=GF Makefile noshowpred HAS_GNRA HAS_UNCG FOUR
+
+
+
+
+
+
+
+#=GF R2R no5
+#=GF R2R set_dir pos0 -90
+
+
+
+
+
+
+
+
+
+
+
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,25
+#=GF SUBFAM_WEIGHT 0.230158174604564
+#=GC cons                  GAGAAA-UCAACCCUUGGGGGAGCA
+#=GC conss                 1111110111111111111111111
+#=GC col_entropy_0         0000000000000000000000000
+#=GC col_entropy_1         .........................
+#=GC col_entropy_2         0000000000000000000000000
+#=GC col_entropy_3         0000000000000000000000000
+#=GC cov_SS_cons           00.....00..00....00......
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  one 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,25
+//

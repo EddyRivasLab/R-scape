@@ -1,0 +1,10 @@
+# STOCKHOLM 1.0
+biologist      AACCCUUCGGAAACGGAGUAA
+chemist        AACCCUUGCUUCGGCGAGUAA
+physicist      AUCCCAUUUCUUGAAGAGAAA
+#=GC SS_cons   <<...>><<....>>......
+#=GC R2R_LABEL .......a.......b..c..
+#=GF R2R place_explicit a a-- 0 1 0 0 0 0 f
+#=GF R2R place_explicit b b-- +45 1 0 0 0 +90 f
+#=GF R2R place_explicit c c-- -45 1 0 0 0 -90
+//

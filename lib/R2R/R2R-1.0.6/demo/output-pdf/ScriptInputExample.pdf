@@ -1,0 +1,317 @@
+%PDF-1.0
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /FH
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+4 0 obj
+[/PDF /Text /ImageC]
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/Resources 9 0 R
+/MediaBox [0 0 288.000000 329.600200]
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<< /Length 8 0 R>>
+stream
+0 g
+BT
+/FH 12 Tf
+ 0 Tr
+0 320.9842 Td
+(WARNING: R2R is not intended to evaluate evidence)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 310.645 Td
+(for covariation or RNA structure where this is in)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 300.3058 Td
+(question. It is not appropriate to use R2R´s covariation)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 286.9858 Td
+(markings to declare that there is evidence of)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 273.6658 Td
+(structural conservation within an alignment. R2R is a)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 260.3458 Td
+(drawing program. As the original paper, Weinberg)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 247.0258 Td
+(and Breaker, 2011 wrote:)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 236.6866 Td
+("This automated R2R annotation [of covariation] does)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 226.3474 Td
+(not reflect the extent or confidence of covariation.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 216.0082 Td
+(While such information can be useful, we believe that)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 205.669 Td
+(thorough evaluation of covariation evidence ultimately)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 192.349 Td
+(requires analysis of the full sequence alignment. For)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 179.029 Td
+(example, misleading covariation can result from an)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 165.709 Td
+(incorrect alignment of sequences, or from alignments)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 152.389 Td
+(of sequences that do not function as structured RNAs.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 139.069 Td
+(Unfortunately, there is no accepted method to assign)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 125.749 Td
+(confidence that entirely eliminates the need to)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 112.429 Td
+(analyze the full alignment. To disable this warning,)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 99.109 Td
+(run r2r with --disable-usage-warning")Tj
+ET
+.5 w
+.4 G
+0 94.405 288 235.1952 re
+s
+BT
+/FH 12 Tf
+ 0 Tr
+0 75.789 Td
+(ScriptInputExample.cons)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 60.42 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+37.53375 22.62 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+45.09375 22.62 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+52.65375 22.62 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+57.205679 28.491766 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+64.260814 31.700773 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+71.82021 31.605258 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+78.37208 28.224323 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+83.40038 22.234115 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+84.524005 14.832603 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+82.89375 7.5 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+97.80375 7.5 Td
+(G)Tj
+ET
+endstream
+endobj
+10 0 obj<</Type/ExtGState/SA true/OP false/op false/OPM 1/ca 1.0/CA 1.0/BM/Normal/SMask/None/AIS false>>
+endobj
+9 0 obj
+<< /Font <</FH 5 0 R>> /ProcSet[/PDF/Text/ImageC]/XObject << >>/ExtGState<</GS0 10 0 R>>/Properties<</MC0<</Color[20224.0 -32768.0 -1.0]/Title(Layer 1)/Visible true/Preview true/Editable true/Printed true/Dimmed true>>>>>>
+endobj
+8 0 obj
+2540
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+/Outlines 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [6 0 R ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Outlines
+/Count 0
+>>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000003231 00000 n 
+0000003354 00000 n 
+0000003296 00000 n 
+0000000116 00000 n 
+0000000009 00000 n 
+0000000152 00000 n 
+0000000270 00000 n 
+0000003211 00000 n 
+0000002973 00000 n 
+0000002861 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+>>
+startxref
+3400
+%%EOF

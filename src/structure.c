@@ -34,11 +34,6 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
-#define LASTFOLD 1
-
-// paramters to include extra helices
-#define  INCOMPFRAC  0.51          // max fraction of residues in a helix that overlap with another existing helix
-#define  MINHELIX    4             // min length of a helix without any covarying basepairs
 
 static int struct_cocomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist,
 			   int minloop, enum grammar_e G, int verbose, char *errbuf);

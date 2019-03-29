@@ -1,0 +1,21 @@
+# STOCKHOLM 1.0
+a                         AAG..CUU
+b                         GGG..GAA
+c                         UUGUUUUU
+#=GC SS_cons              ........
+#=GF R2R tick_label #:0 pos 0
+#=GF qR2R tick_label #:3 pos 3, this should cause an error when running r2r
+#=GF R2R tick_label #:6 pos 6
+#=GF R2R SetDrawingParam dumpInfoFile test-dump.tab
+#=GC cons                 nnG--nnn
+#=GC conss                11100111
+#=GC col_entropy_0        11000100
+#=GC col_entropy_1        ........
+#=GC col_entropy_2        55088599
+#=GC col_entropy_3        77099766
+#=GC cov_SS_cons          ........
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  a 0.923077 b 1.15385 c 0.923077
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,8
+//

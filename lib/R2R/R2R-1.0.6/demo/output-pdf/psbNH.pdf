@@ -1,0 +1,846 @@
+%PDF-1.0
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /FH
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+4 0 obj
+[/PDF /Text /ImageC]
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/Resources 9 0 R
+/MediaBox [0 0 288.000000 400.453578]
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<< /Length 8 0 R>>
+stream
+0 g
+BT
+/FH 12 Tf
+ 0 Tr
+0 391.837578 Td
+(WARNING: R2R is not intended to evaluate evidence)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 381.498378 Td
+(for covariation or RNA structure where this is in)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 371.159178 Td
+(question. It is not appropriate to use R2R´s covariation)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 357.839178 Td
+(markings to declare that there is evidence of)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 344.519178 Td
+(structural conservation within an alignment. R2R is a)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 331.199178 Td
+(drawing program. As the original paper, Weinberg)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 317.879178 Td
+(and Breaker, 2011 wrote:)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 307.539978 Td
+("This automated R2R annotation [of covariation] does)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 297.200778 Td
+(not reflect the extent or confidence of covariation.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 286.861578 Td
+(While such information can be useful, we believe that)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 276.522378 Td
+(thorough evaluation of covariation evidence ultimately)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 263.202378 Td
+(requires analysis of the full sequence alignment. For)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 249.882378 Td
+(example, misleading covariation can result from an)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 236.562378 Td
+(incorrect alignment of sequences, or from alignments)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 223.242378 Td
+(of sequences that do not function as structured RNAs.)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 209.922378 Td
+(Unfortunately, there is no accepted method to assign)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 196.602378 Td
+(confidence that entirely eliminates the need to)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 183.282378 Td
+(analyze the full alignment. To disable this warning,)Tj
+ET
+BT
+/FH 12 Tf
+ 0 Tr
+0 169.962378 Td
+(run r2r with --disable-usage-warning")Tj
+ET
+.5 w
+.4 G
+0 165.258378 288 235.1952 re
+s
+BT
+/FH 12 Tf
+ 0 Tr
+0 146.642378 Td
+(psbNH.cons)Tj
+ET
+8.96 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.5 w
+0 J
+0 j
+7.56 w
+1 J
+1 j
+.898789 G
+98.931136 83.578227 m
+98.931136 98.698227 l
+S
+.5 w
+0 J
+0 j
+.784314 .847059 .980392 rg
+50.402182 18.230727 m
+68.477182 18.230727 l
+68.477182 12.845727 l
+50.402182 12.845727 l
+h
+f
+1.44 w
+0 G
+57.495682 15.538227 m
+61.383682 15.538227 l
+S
+.5 w
+1.44 w
+57.495682 23.098227 m
+61.383682 23.098227 l
+S
+.5 w
+1 .845401 .847059 rg
+50.402182 33.350727 m
+68.477182 33.350727 l
+68.477182 27.965727 l
+50.402182 27.965727 l
+h
+f
+1.44 w
+57.495682 30.658227 m
+61.383682 30.658227 l
+S
+.5 w
+1.44 w
+57.495682 38.218227 m
+61.383682 38.218227 l
+S
+.5 w
+1.44 w
+57.495682 45.778227 m
+61.383682 45.778227 l
+S
+.5 w
+.843137 .937255 .772549 rg
+50.402182 56.030727 m
+68.477182 56.030727 l
+68.477182 50.645727 l
+50.402182 50.645727 l
+h
+f
+1.44 w
+57.495682 53.338227 m
+61.383682 53.338227 l
+S
+.5 w
+50.402182 63.590727 m
+68.477182 63.590727 l
+68.477182 58.205727 l
+50.402182 58.205727 l
+h
+f
+1.44 w
+57.495682 60.898227 m
+61.383682 60.898227 l
+S
+.5 w
+50.402182 71.150727 m
+68.477182 71.150727 l
+68.477182 65.765727 l
+50.402182 65.765727 l
+h
+f
+1.44 w
+57.495682 68.458227 m
+61.383682 68.458227 l
+S
+.5 w
+50.402182 78.710727 m
+68.477182 78.710727 l
+68.477182 73.325727 l
+50.402182 73.325727 l
+h
+f
+1.44 w
+57.495682 76.018227 m
+61.383682 76.018227 l
+S
+.5 w
+50.402182 86.270727 m
+68.477182 86.270727 l
+68.477182 80.885727 l
+50.402182 80.885727 l
+h
+f
+1.44 w
+57.495682 83.578227 m
+61.383682 83.578227 l
+S
+.5 w
+1.44 w
+57.495682 91.138227 m
+61.383682 91.138227 l
+S
+.5 w
+.360784 G
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+S
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 88.445727 Td
+(A)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 80.885727 Td
+(G)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 73.325727 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 65.765727 Td
+(C)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 58.205727 Td
+(Y)Tj
+ET
+.72 w
+0 G
+22.505727 53.338227 m
+22.505727 51.925759 21.360696 50.780727 19.948227 50.780727 c
+18.535759 50.780727 17.390727 51.925759 17.390727 53.338227 c
+17.390727 54.750696 18.535759 55.895727 19.948227 55.895727 c
+21.360696 55.895727 22.505727 54.750696 22.505727 53.338227 c
+b
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.030727 43.085727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 35.525727 Td
+(A)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 27.965727 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.446977 20.405727 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+17.240727 12.845727 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+22.586455 7.5 Td
+(U)Tj
+ET
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+29.936455 7.5 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+37.706455 7.5 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+45.472705 7.5 Td
+(A)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.402182 12.845727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.402182 20.405727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.402182 27.965727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.402182 35.525727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.818432 43.085727 Td
+(Y)Tj
+ET
+1 g
+48.317182 45.778227 m
+48.317182 44.365759 47.17215 43.220727 45.759682 43.220727 c
+44.347214 43.220727 43.202182 44.365759 43.202182 45.778227 c
+43.202182 47.190696 44.347214 48.335727 45.759682 48.335727 c
+47.17215 48.335727 48.317182 47.190696 48.317182 45.778227 c
+b
+48.317182 53.338227 m
+48.317182 51.925759 47.17215 50.780727 45.759682 50.780727 c
+44.347214 50.780727 43.202182 51.925759 43.202182 53.338227 c
+43.202182 54.750696 44.347214 55.895727 45.759682 55.895727 c
+47.17215 55.895727 48.317182 54.750696 48.317182 53.338227 c
+b
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.612182 50.645727 Td
+(C)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.612182 58.205727 Td
+(R)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.612182 65.765727 Td
+(R)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.818432 73.325727 Td
+(Y)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.818432 80.885727 Td
+(Y)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+50.612182 88.445727 Td
+(C)Tj
+ET
+1.5 w
+53.319682 96.005727 m
+53.319682 113.818227 l
+47.46538 117.19821 45.459548 124.684076 48.839531 130.538378 c
+52.219514 136.39268 59.70538 138.398512 65.559682 135.018529 c
+71.413984 131.638546 73.419815 124.15268 70.039833 118.298378 c
+68.965548 116.437663 67.420397 114.892512 65.559682 113.818227 c
+65.559682 96.005727 l
+S
+1.44 w
+57.495682 98.698227 m
+61.383682 98.698227 l
+S
+1.5 w
+1.44 w
+57.495682 106.258227 m
+61.383682 106.258227 l
+S
+1.5 w
+1.44 w
+57.495682 113.818227 m
+61.383682 113.818227 l
+S
+1.5 w
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.642182 88.445727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.642182 80.885727 Td
+(G)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.642182 73.325727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+63.058432 65.765727 Td
+(Y)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+63.058432 58.205727 Td
+(Y)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.642182 50.645727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.852182 43.085727 Td
+(R)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.852182 35.525727 Td
+(U)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.852182 27.965727 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.852182 20.405727 Td
+(C)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+62.852182 12.845727 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+67.987909 7.5 Td
+(G)Tj
+ET
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+75.757909 7.5 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+83.317909 7.5 Td
+(C)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+90.667909 7.5 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.429886 12.845727 Td
+(A)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.013636 20.405727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.429886 27.965727 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.013636 35.525727 Td
+(G)Tj
+ET
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.429886 43.085727 Td
+(A)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.223636 50.645727 Td
+(U)Tj
+ET
+0 g
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.013636 58.205727 Td
+(G)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.223636 65.765727 Td
+(U)Tj
+ET
+.501961 .482353 .533333 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.013636 73.325727 Td
+(G)Tj
+ET
+.85098 0 0 rg
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.429886 80.885727 Td
+(A)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.223636 88.445727 Td
+(U)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+96.013636 96.005727 Td
+(G)Tj
+ET
+19.948227 94.702045 m
+19.948227 95.686167 19.150439 96.483955 18.166318 96.483955 c
+14.6025 96.483955 l
+S
+.5 w
+95.181136 91.138227 m
+91.181136 91.138227 l
+S
+0 g
+BT
+/FH 6 Tf
+ 0 Tr
+78.011136 88.984227 Td
+(start)Tj
+ET
+BT
+/FH 7.5 Tf
+ 0 Tr
+7.5 93.791455 Td
+(5´)Tj
+ET
+endstream
+endobj
+10 0 obj<</Type/ExtGState/SA true/OP false/op false/OPM 1/ca 1.0/CA 1.0/BM/Normal/SMask/None/AIS false>>
+endobj
+9 0 obj
+<< /Font <</FH 5 0 R>> /ProcSet[/PDF/Text/ImageC]/XObject << >>/ExtGState<</GS0 10 0 R>>/Properties<</MC0<</Color[20224.0 -32768.0 -1.0]/Title(Layer 1)/Visible true/Preview true/Editable true/Printed true/Dimmed true>>>>>>
+endobj
+8 0 obj
+8326
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+/Outlines 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [6 0 R ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Outlines
+/Count 0
+>>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000009017 00000 n 
+0000009140 00000 n 
+0000009082 00000 n 
+0000000116 00000 n 
+0000000009 00000 n 
+0000000152 00000 n 
+0000000270 00000 n 
+0000008997 00000 n 
+0000008759 00000 n 
+0000008647 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+>>
+startxref
+9186
+%%EOF

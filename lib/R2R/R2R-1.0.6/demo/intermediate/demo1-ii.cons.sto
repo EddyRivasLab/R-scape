@@ -1,0 +1,21 @@
+# STOCKHOLM 1.0
+human          ACACGCGAAA.GCGCAA.CAAACGUGCACGG
+chimp          GAAUGUGAAAAACACCA.CUCUUGAGGACCU
+bigfoot        UUGAG.UUCG..CUCGUUUUCUCGAGUACAC
+#=GC SS_cons   ...<<<.....>>>....<<....>>.....
+#=GC R2R_LABEL --...<.....>...1.2.....L.....--
+#=GF R2R var_hairpin < >
+#=GF R2R var_backbone_range 1 2
+#=GF R2R tick_label L magic G
+#=GC cons           nnRnGnnnnR-nCnCnn-YnnnYGnGnACnn
+#=GC conss          1111141111041111101111111111111
+#=GC col_entropy_0  1101010000010101000000000010011
+#=GC col_entropy_1  ...............................
+#=GC col_entropy_2  5595059999950505999999909050055
+#=GC col_entropy_3  8838083333080808333000000080088
+#=GC cov_SS_cons    ...202.....202....12....21.....
+#=GF NUM_COV 3
+#=GF WEIGHT_MAP  human 0.97404 chimp 0.97404 bigfoot 1.05192
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,31
+//

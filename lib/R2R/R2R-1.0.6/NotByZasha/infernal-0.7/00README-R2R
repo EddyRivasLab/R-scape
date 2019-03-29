@@ -1,0 +1,7 @@
+The files in this directory were extracted from Infernal version 0.7, which was written by Sean Eddy.
+
+Only the Squid library is needed by R2R, and so other files were removed.
+
+The full infernal package, including more recent releases, is available from
+http://eddylab.org/infernal/
+

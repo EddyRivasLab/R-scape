@@ -1,0 +1,35 @@
+# STOCKHOLM 1.0
+one                                            GCGAGAGGUGAAA..GCUCUCCAAAAGACCACCAACUAAGGGGAAAGACGACCUUGGCAGGAGGGUGAAUUAGUCAACAAGUCACCACACUCUCG
+two                                            GAGAAGGUCGAAAA.GCCUCCCAAAGAGCCACCUAGGCUAAGCAACGAGGAUUAGCCAAGGAGGGAGAAUUAGUCUUCAAGUCUCCACCCCUUCG
+three                                          GCGGGGCGUGAAAAAGCUCUCCAAAAGACCACCAAUCAACCGGAAAGUGGAGGUUGAAAGGUGGAUGAAAUAGUGAACC.GUCAUCACGGCCUCG
+four                                           GCGAGAGGAGAAACCGCCCCCCAAAGGGCCACCAACUAAGGAGGGUGAAUACCUUGGAAGGAGGGCCCAUUAGUCAACAAGGGGCCACUCUCUCG
+#=GC SS_cons                                   ,<<<<<<..____....<<<_____>>>,,,,,,,<<<<<<__._______>>>>>>,,..--<<<<<<.._________>>>>>>--.>>>>>>
+#=GC R2R_LABEL                                 .k....j......34......................................................78........................
+
+#=GF R2R var_backbone_range 3 4
+#=GF R2R var_backbone_range 7 8
+#=GF R2R place_explicit k k-- -45 1 0 0 0 -45
+
+#=GF R2R ifdefeq solver 1
+#=GF R2R ifndef domanual multistem_junction_circular_solver j s0 0 m s1 -45 m s2 +45 m s3 +135 m flipstem 2
+#=GF R2R ifdef domanual multistem_junction_bulgey j J0/base 0 9.6538 -3.65136 0 0 -45 J1/base 0 10.6113 4.95935 0 0 -135 f J2/base 0 2.76051 6.34234 0 0 -225 bspecifyendpoints0 0 0.00986684 0.00325672 1.01084 -0.378772 backbonelen 3 3.20235 bspecifyendpoints1 0 1.12861 -0.26007 1.1122 0.519383 bspecifyendpoints2 0 0.989718 0.632895 0.295467 0.652859 bspecifyendpoints3 0 0.167502 0.547468 0.00109922 0.169812
+#=GF R2R endif
+#=GF R2R ifdefeq solver 2
+#=GF R2R ifndef domanual multistem_junction_bulgecircleynormals_solver j s0 0 m s1 -45 m s2 +45 m s3 +135 m flipstem 2
+#=GF R2R ifdef domanual multistem_junction_bulgey j J0/base 0 8.17847 -3.39598 0 0 315 J1/base 0 9.91512 5.01376 0 0 225 f J2/base 0 2.3481 6.42635 0 0 135 backbonelen 3 1
+#=GF R2R endif
+
+#=GF Makefile define solver 1
+#=GF Makefile define solver 2
+#=GC cons                                      GnGARRGnYGAAAn-GCYYYCCAAARRRCCACCnAnnnnRRGnAAnGARGAYYnnnnAAGGAGGGnGAAUUAGUCnnCAAGUCnCCACnCYYUCG
+#=GC conss                                     11131131311113011111111111111111111111133313311333133111131113113133131111311133133131111311111
+#=GC col_entropy_0                             00000000100001100000000000000000000110011000010010011000100000000100000000000000000100001000000
+#=GC col_entropy_1                             ...............................................................................................
+#=GC col_entropy_2                             08088988500004400989000009890000080558855787750847055888570008008577080000888088077580009898000
+#=GC col_entropy_3                             09009909200003600999000009990000090449944696620036044999460000000266000000099000066200008099000
+#=GC cov_SS_cons                               .?01222..........222.....222.......222222..........222222......02222?...........?22220...22210?
+#=GF NUM_COV 16
+#=GF WEIGHT_MAP  one 0.888461 two 1.25 three 0.973077 four 0.888461
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,95
+//

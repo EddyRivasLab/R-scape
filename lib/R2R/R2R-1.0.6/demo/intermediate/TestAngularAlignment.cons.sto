@@ -1,0 +1,46 @@
+# STOCKHOLM 1.0
+seq               AAACCCCAAAAAUUU
+#=GC SS_cons      <..<<>>...>....
+#=GC R2R_LABEL    J12....3.4.....
+
+#=GF R2R var_backbone_range 1 2
+#=GF R2R var_backbone_range 3 4
+
+#=GF R2R ifndef alignangle
+#=GF R2R multistem_junction_circular_solver J s0 0 ai s1 90 ai
+#=GF R2R set_dir pos0 -90
+#=GF R2R endif
+#=GF R2R ifdefeq alignangle 45
+#=GF R2R multistem_junction_circular_solver J s0 0 ai s1 90 ai align_angle 45 0 1 draw_zero_degrees
+#=GF R2R set_dir pos0 -90
+#=GF R2R endif
+#=GF R2R ifdefeq alignangle -45
+#=GF R2R multistem_junction_circular_solver J s0 0 ai s1 90 ai align_angle -45 0 1 draw_zero_degrees
+#=GF R2R set_dir pos0 -90
+#=GF R2R endif
+#=GF R2R ifdefeq alignangle -32
+#=GF R2R multistem_junction_circular_solver J s0 0 ai s1 90 ai align_angle -32 0 1 draw_zero_degrees
+#=GF R2R set_dir pos0 -90
+#=GF R2R endif
+#=GF R2R ifdefeq rots0 -15
+#=GF R2R multistem_junction_circular_solver J s0 -15 ai s1 90 ai align_angle -45 0 1 draw_zero_degrees
+#=GF R2R no5
+#=GF R2R set_dir pos0 -75
+#=GF R2R endif
+
+#=GF Makefile define alignangle 45
+#=GF Makefile define alignangle -45
+#=GF Makefile define alignangle -32
+#=GF Makefile define rots0 -15
+#=GC cons           AAACCCCAAAAAUUU
+#=GC conss          111111111111111
+#=GC col_entropy_0  000000000000000
+#=GC col_entropy_1  ...............
+#=GC col_entropy_2  000000000000000
+#=GC col_entropy_3  000000000000000
+#=GC cov_SS_cons    ?..????...?....
+#=GF NUM_COV 0
+#=GF WEIGHT_MAP  seq 1
+#=GF USED_GSC TRUE
+#=GF DID_FRAGMENTARY FALSE.  globalOuterFirst,Last=0,15
+//
