@@ -11,9 +11,9 @@ use constant GNUPLOT => '/usr/local/bin/gnuplot';
 use lib '/Users/erivas/src/src/mysource/scripts';
 use FUNCS;
 
-use vars qw ($opt_v $opt_F);  # required if strict used
+use vars qw ($opt_v $opt_f $opt_F);  # required if strict used
 use Getopt::Std;
-getopts ('vF:');
+getopts ('vf:F:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -196,6 +196,13 @@ plot_allfam($plotallfamfile);
  
 my $plotallvsallfile = "$outname.plot.allvsall";
 plot_allvsall($plotallvsallfile);
+
+my $lncRNAsfile = "";
+my $plotlncRNAsfile = "$outname.plot.allvsall.lncRNAs";
+if ($opt_f) {
+    $lncRNAsfile = "$opt_f";
+    plot_allvsall_lncRNAs($plotlncRNAsfile, $lncRNAsfile);
+}
 
 my $plotallvsid = "$outname.plot.allvsid";
 plot_allvsid($plotallvsid);
@@ -581,6 +588,55 @@ sub plot_allvsall {
     
     system("open $pdf\n");
 }
+
+sub plot_allvsall_lncRNAs {
+    my ($file, $lncRNAsfile) = @_;
+
+    my $pdf    = "$file.ps";
+    my $xlabel = "Expected Covaring  (% basepairs)";
+    my $ylabel = "Significantly Covaring (% basepairs)";
+    my $cmd;
+
+    my $lncRNAsf = "$lncRNAsfile.p";
+    open(OUT,  ">$lncRNAsf")   || die;
+    open(FILE, "$lncRNAsfile") || die;
+    while(<FILE>) {
+	if (/^\s*([^\&]+)\s+\&\s+.+\s+(\d+)\s+\&\s+(\d+)\s+\&\s+(\d+)\s*\\\\s*$/) {
+	    my $name  = $1;
+	    my $bp    = $2;
+	    my $pred  = $3;
+	    my $found = $4;
+
+	    printf     "$name %f %f\n", $pred/$bp, $found/$bp;
+	    printf OUT "%f %f %s\n", 100*$pred/$bp, 100*$found/$bp, $name;
+	}
+    }
+    close(FILE);
+    close(OUT);
+
+    
+    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
+    print GP "set terminal postscript color 14\n";
+    FUNCS::gnuplot_define_styles (*GP);
+ 
+    print GP "set output '$pdf'\n";
+    print GP "set key right top\n";
+    print GP "set nokey\n";
+    print GP "set size square\n";
+    print GP "set xlabel '$xlabel'\n";
+    print GP "set ylabel '$ylabel'\n";
+    
+    print GP "set xrange [-0.5:100]\n";
+    print GP "set yrange [-0.5:100]\n";
+    $cmd = "";
+    $cmd     .= "'$outfile_allfam' using $iSpower:$iS       title '' with points ls 1116, "; 
+    $cmd     .= "'$lncRNAsf' using 1:2                      title '' with points ls 1117"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    system("open $pdf\n");
+}
+
 sub plot_allvsid {
     my ($file) = @_;
 

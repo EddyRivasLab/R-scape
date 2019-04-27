@@ -480,7 +480,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
  
   esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
-  if ( cfg.outdir ) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
+  if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
   if (esl_opt_IsOn(go, "--submsa")) { 
     cfg.submsa = esl_opt_GetInteger(go, "--submsa"); 
@@ -1770,10 +1770,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
-    if (cfg->outdir) {
+  if (cfg->outdir) {
     /* covhis file */
     esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
-
+    
     /* contact map file */
     if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s/%s.cmap",     cfg->outdir, outname);
   }
@@ -1782,7 +1782,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     esl_sprintf(&cfg->covhisfile,    "%s.surv",     outname);
     
     /* contact map file */
-     if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
+    if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
   }
   
   /* R2R annotated sto file */

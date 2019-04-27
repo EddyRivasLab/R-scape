@@ -79,7 +79,8 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
-  // we need to modify a perfectly valid stockholm formatted msa intop
+  
+  // we need to modify a perfectly valid stockholm formatted msa into
   // the weirdness that R2R accepts
   esl_sprintf(&args, "%s/r2r_msa_comply.pl %s", RSCAPE_BIN, r2rfile);
   status = system(args);
@@ -254,8 +255,8 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist,
 	free(tok); tok = NULL;
 	free(covstr); covstr = NULL;
       }
-      if (aux_covstr) free(aux_covstr); aux_covstr = NULL;
       esl_sprintf(&new_covstr[s], "%s", aux_covstr);
+      free(aux_covstr); aux_covstr = NULL;
     }
   }
   else {

@@ -15,23 +15,34 @@
 #include "covgrammars.h"
 #include "correlators.h"
 
-// some folding parameters
+// folding parameters
 //
 // power threshold
 #define POWER_THRESH 0.80
 
 // paramters to include extra helices
-#define  INCOMPFRAC  0.20          // max fraction of residues in a helix that overlap with another existing helix in order to be removed
-#define  MINHELIX    4             // min length of a helix without any covarying basepairs
-#define  LASTFOLD    1
+#define  INCOMPFRAC     0.51          // max fraction of residues in a helix that overlap with another existing helix in order to be removed
+#define  MINHELIX       15            // min length of a helix without any covarying basepairs in order to be reported
+#define  LASTFOLD       1
+#define  HELIX_UNPAIRED 2             // max number of unpaired residues in the definition of a helix
 
-/* LENIENT = 1  The covarying pairs that have been explained already are not allowed to pair with each other again but 
- *              could be pair with some other residue. Would allow to see triplets
- *
- * LENINEN = 0  The already explained covarying residues are forced to remaoin unpared in cacading foldings
- */
-#define  LENIENT 0
+typedef struct cov_s {
+  int64_t i;
+  int64_t j;
+  
+  int64_t nsubs;
+  double  power;
+  double  score;
 
+  int     isbp;
+  
+} COV;
+
+typedef struct covlist_s {
+  int64_t  n;
+  COV     *cov;
+  
+} COVLIST;
 
 extern int struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, int minloop,
 			   RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh);
