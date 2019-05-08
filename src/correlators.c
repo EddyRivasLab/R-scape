@@ -24,7 +24,7 @@
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
-#include "cococyk.h"
+#include "cacocyk.h"
 #include "contactmap.h"
 #include "correlators.h"
 #include "covariation.h"

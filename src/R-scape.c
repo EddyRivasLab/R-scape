@@ -123,7 +123,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              cykLmax;
   char            *R2Rcykfile;
   FILE            *R2Rcykfp;
-  int              minloop;
   enum grammar_e   grammar;
 
   char            *covhisfile;
@@ -350,14 +349,11 @@ static ESL_OPTIONS options[] = {
   { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* subsitution power analysis */  
-  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",
-       1 },
-  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",
-       1 },
+  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",                                                   1 },
+  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
   /* other options */  
   { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
-  { "--minloop",       eslARG_INT,       "3",    NULL,      "n>0",   NULL,    NULL, NULL,                "minloop in cykcov calculation",                                                             0 },   
-  { "--grammar",    eslARG_STRING,     "BGR",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cyk calculation options are [BGR,G6S,G6]",                                 0 },   
+  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cyk calculation options are [RBG,G6S,G6]",                                 0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -509,7 +505,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
-  cfg.minloop     = esl_opt_GetInteger(go, "--minloop");
   cfg.docyk       = esl_opt_IsOn(go, "--cyk")?                                         TRUE : FALSE;
   cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
@@ -524,7 +519,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if ( esl_opt_IsOn(go, "--grammar") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "BGR") == 0) cfg.grammar = BGR;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG") == 0) cfg.grammar = RBG;
     else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
   }
   
@@ -1925,8 +1920,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->T) esl_tree_Destroy(cfg->T); 
   if (cfg->msaname) free(cfg->msaname); cfg->msaname = NULL;
   if (outname) free(outname);
-  if (ranklist_null) cov_FreeRankList(ranklist_null); 
-  if (ranklist_aux) cov_FreeRankList(ranklist_aux);
+  if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
+  if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); 
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
@@ -2073,7 +2068,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->docyk && cfg->mode != RANSS) {
 
     data.mode = CYKSS;    
-    status = struct_COCOMCYK(&data, msa, &cyknct, &cykctlist, cfg->minloop, ranklist, hitlist, cfg->grammar, cfg->thresh);
+    status = struct_CACOMCYK(&data, msa, &cyknct, &cykctlist, ranklist, hitlist, cfg->grammar, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
     status = write_omsacyk(cfg, msa->alen, cyknct, cykctlist, FALSE);

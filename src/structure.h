@@ -1,7 +1,7 @@
 /* structure.h
  *
  *   
-*/
+ */
 #ifndef STRUCTURE_INCLUDED
 #define STRUCTURE_INCLUDED
 
@@ -17,14 +17,22 @@
 
 // folding parameters
 //
-// power threshold
-#define POWER_THRESH 0.80
+// TRUE if we do one last fold without covariations
+#define  LASTFOLD       0
 
-// paramters to include extra helices
-#define  INCOMPFRAC     0.51          // max fraction of residues in a helix that overlap with another existing helix in order to be removed
-#define  MINHELIX       15            // min length of a helix without any covarying basepairs in order to be reported
-#define  LASTFOLD       1
-#define  HELIX_UNPAIRED 2             // max number of unpaired residues in the definition of a helix
+// power threshold
+#define POWER_THRESH 1.0
+
+// parameters for nested structures
+#define HLOOP_MIN 5    // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = 3
+                       // unless there are covariations forcing a smaller hairpin loop.
+
+// paramters to break non-nested structures in helices
+#define  HELIX_UNPAIRED 2     // max number of unpaired residues in a non-nested helix
+
+// parameters for selecting non-nested helices wihtout covariations
+#define  OVERLAPFRAC    0.51          // max fraction of paired residues that overlap with another existing helix in order to be removed
+#define  MINHELIX       15            // min length to be reported
 
 typedef struct cov_s {
   int64_t i;
@@ -44,7 +52,17 @@ typedef struct covlist_s {
   
 } COVLIST;
 
-extern int struct_COCOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, int minloop,
+typedef struct pair_s {
+  int64_t i;
+  int64_t j;
+} PAIR;
+typedef struct pairlist_s {
+  int64_t   n;
+  PAIR     *pair;
+  
+} PAIRLIST;
+
+extern int struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, 
 			   RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh);
 extern int struct_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int nct, int **ctlist, struct mutual_s *mi, int *msamap, int firstpos,
 			  SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, int verbose, char *errbuf);

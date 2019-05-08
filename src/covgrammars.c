@@ -20,18 +20,18 @@
  * See tornado/notebook/23-10-train
  */
 const G6param G6_PRELOADS_TrATrBTrB = {
-{ -0.157808, -1.924245}, // t1 S -> LS | L
-{ -2.141199, -0.125012}, // t2 L -> a F a' | a
-{ -0.293165, -1.370024}, // t3 F -> a F a' | LS
+{ -0.157808, -1.924245},        // t1 S -> LS | L
+{ -2.141199, -15.0, -0.125012}, // t2 L -> a F a' | a a' | a    (aa' will be normalized later)
+{ -0.293165, -15.0, -1.370024}, // t3 F -> a F a' | a a' | LS   (aa' will be normalized later)
 { -1.013848, -1.753817, -1.518912, -1.406016}, // e_sing
 { -6.806743, -6.992375, -6.455039, -1.876469, -6.625799, -7.651289, -1.317139, -7.048656, -6.562339, -1.265317, -6.906609, -2.820901, -1.797403, -7.022681, -2.807708, -6.423562} // e_pair
 };
 
 const G6Sparam G6S_PRELOADS_TrATrBTrB = {
-{ -0.157808, -1.924245}, // t1 S -> LS | L
-{ -2.141199, -0.125012}, // t2 L -> a F a' | a
-{ -0.293165, -1.370024}, // t3 F -> a F a' | LS
-{ -1.013848, -1.753817, -1.518912, -1.406016}, // e_sing
+{ -0.157808, -1.924245},        // t1 S -> LS | L
+{ -2.141199, -15.0, -0.125012}, // t2 L -> a F a' | a a' | a         (aa' will be normalized later)
+{ -0.293165, -15.0, -1.370024}, // t3 F -> a F a' | a a' | LS        (aa' will be normalized later)
+{ -1.013848, -1.753817, -1.518912, -1.406016}, // e_sing       
 { -6.393123, -6.531273, -5.888770, -1.954274, -6.494906, -6.900371, -1.349282, -6.993897, -6.262284, -1.173116, -6.635263, -2.398579, -1.977657, -6.483071, -3.131724, -5.976963}, // e_pair
 { //e_stck
 { -3.035827, -4.335110, -2.725672, -2.066426, -3.824284, -4.335110, -1.878374, -4.740575, -3.487812, -1.672522, -5.433722, -3.487812, -1.627060, -5.433722, -2.600509, -3.824284}, // e_stck 0
@@ -53,14 +53,14 @@ const G6Sparam G6S_PRELOADS_TrATrBTrB = {
 }
 };
 
-const BGRparam BGR_PRELOADS_TrATrBTrB = {
+const RBGparam RBG_PRELOADS_TrATrBTrB = {
 { -1.048927, -2.370805, -2.370805, -1.082283, -2.087036}, // P --> m..m | m..m F0 | F0 m..m | m..m F0 m..m | M1 M
-{ -0.223274, -2.139489, -2.496295}, // S  -> a S | F0 S | epsilon
-{ -0.136271, -2.060474}, // F0 -> a F5 a' | a P a'
-{ -0.353167, -1.212207}, // F5 -> a F5 a' | a P a'
-{ -0.876334, -0.538379}, // M  -> M1 M | R
-{ -0.200071, -1.707450}, // M1 -> a M1 | F0
-{ -0.238314, -1.550958}, // R  -> R  a | M1
+{ -0.223274, -2.139489, -2.496295},                       // S  -> a S | F0 S | epsilon
+{ -0.136271, -2.060474, -15.0},                           // F0 -> a F5 a' | a P a' | a a' 
+{ -0.353167, -1.212207, -15.0},                           // F5 -> a F5 a' | a P a' | a a' 
+{ -0.876334, -0.538379},                                  // M  -> M1 M | R
+{ -0.200071, -1.707450},                                  // M1 -> a M1 | F0
+{ -0.238314, -1.550958},                                  // R  -> R  a | M1
 { -1.016725, -1.729724, -1.500931, -1.435626}, // e_sing1
 { -6.299321, -6.431248, -5.777322, -1.953912, -6.405931, -6.937810, -1.355754, -6.896137, -6.143566, -1.148826, -6.553851, -2.372133, -2.030174, -6.357141, -3.197610, -5.959644}, // e_pair1
 { -7.256579, -7.767405, -7.256579, -1.957263, -7.256579, -6.563432, -1.302817, -7.767405, -7.767405, -1.362728, -7.256579, -2.612189, -1.678360, -8.866017, -2.765698, -6.032804}, // e_pair2
@@ -187,23 +187,23 @@ G6MX_Create(int L)
   return NULL;
 }
 
-BGR_MX *
-BGRMX_Create(int L)
+RBG_MX *
+RBGMX_Create(int L)
 {
-  BGR_MX *bgrmx = NULL;
+  RBG_MX *rbgmx = NULL;
   int     status;
 
-  ESL_ALLOC(bgrmx, sizeof(BGR_MX));
+  ESL_ALLOC(rbgmx, sizeof(RBG_MX));
 
-  bgrmx->S  = GMX_Create(L);
-  bgrmx->F0 = GMX_Create(L);
-  bgrmx->F5 = GMX_Create(L);
-  bgrmx->P  = GMX_Create(L);
-  bgrmx->M  = GMX_Create(L);
-  bgrmx->R  = GMX_Create(L);
-  bgrmx->M1 = GMX_Create(L);
+  rbgmx->S  = GMX_Create(L);
+  rbgmx->F0 = GMX_Create(L);
+  rbgmx->F5 = GMX_Create(L);
+  rbgmx->P  = GMX_Create(L);
+  rbgmx->M  = GMX_Create(L);
+  rbgmx->R  = GMX_Create(L);
+  rbgmx->M1 = GMX_Create(L);
 
-  return bgrmx;
+  return rbgmx;
  ERROR:
   return NULL;
 }
@@ -227,7 +227,7 @@ G6MX_Destroy(G6_MX *gmx)
   free(gmx);
 }
 void 
-BGRMX_Destroy(BGR_MX *gmx)
+RBGMX_Destroy(RBG_MX *gmx)
 {
   if (gmx == NULL) return;
   if (gmx->S)  GMX_Destroy(gmx->S);

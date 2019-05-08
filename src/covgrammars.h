@@ -12,15 +12,9 @@
 #include "esl_random.h"
 
 
-#define FITLOOP_H 30   // fitted loop length
-#define FITLOOP_B 30   // fitted loop length
-#define FITLOOP_I 30   // fitted loop length
-
 #define MAXLOOP_H 30   // maximum loop length
 #define MAXLOOP_B 30   // maximum loop length
 #define MAXLOOP_I 30   // maximum loop length
-
-#define MINHAIRPIN 5   // minumum length of a hairping (including the 2 closing pairs)
 
 #define NB 4
 #define NP 16
@@ -28,7 +22,7 @@
 enum grammar_e {
   G6,
   G6S,
-  BGR
+  RBG
 };
 
 /* G6 nonterminals */
@@ -41,47 +35,51 @@ enum grammar_e {
 #define G6_S_2  1
 #define G6_L_1  2
 #define G6_L_2  3
-#define G6_F_1  4
-#define G6_F_2  5
-#define G6_NR   6
+#define G6_L_3  4
+#define G6_F_1  5
+#define G6_F_2  6
+#define G6_F_3  7
+#define G6_NR   8
 
-/* BGR nonterminals */
-#define BGR_S  0
-#define BGR_F0 1
-#define BGR_F5 2
-#define BGR_P  3
-#define BGR_M  4
-#define BGR_R  5
-#define BGR_M1 6
-#define BGR_NT 7
+/* RBG nonterminals */
+#define RBG_S  0
+#define RBG_F0 1
+#define RBG_F5 2
+#define RBG_P  3
+#define RBG_M  4
+#define RBG_R  5
+#define RBG_M1 6
+#define RBG_NT 7
 
-/* BGR rules */
-#define BGR_S_1  0
-#define BGR_S_2  1
-#define BGR_S_3  2
-#define BGR_F0_1 3
-#define BGR_F0_2 4
-#define BGR_F5_1 5
-#define BGR_F5_2 6
-#define BGR_P_1  7
-#define BGR_P_2  8
-#define BGR_P_3  9
-#define BGR_P_4  10
-#define BGR_P_5  11
-#define BGR_M_1  12
-#define BGR_M_2  13
-#define BGR_R_1  14
-#define BGR_R_2  15
-#define BGR_M1_1 16
-#define BGR_M1_2 17
-#define BGR_NR   18
+/* RBG rules */
+#define RBG_S_1  0
+#define RBG_S_2  1
+#define RBG_S_3  2
+#define RBG_F0_1 3
+#define RBG_F0_2 4
+#define RBG_F0_3 5
+#define RBG_F5_1 6
+#define RBG_F5_2 7
+#define RBG_F5_3 8
+#define RBG_P_1  9
+#define RBG_P_2  10
+#define RBG_P_3  11
+#define RBG_P_4  12
+#define RBG_P_5  13
+#define RBG_M_1  14
+#define RBG_M_2  15
+#define RBG_R_1  16
+#define RBG_R_2  17
+#define RBG_M1_1 18
+#define RBG_M1_2 19
+#define RBG_NR   20
 
 typedef float SCVAL;
 
 typedef struct {
   SCVAL  t1[2];  // S -> LS     | L
-  SCVAL  t2[2];  // L -> a F a' | a
-  SCVAL  t3[2];  // F -> a F a' | LS
+  SCVAL  t2[3];  // L -> a F a' | a a' | a
+  SCVAL  t3[3];  // F -> a F a' | a a' | LS
 
   SCVAL e_sing[NB];
   SCVAL e_pair[NP];
@@ -89,8 +87,8 @@ typedef struct {
 
 typedef struct {
   SCVAL  t1[2];  // S -> LS     | L
-  SCVAL  t2[2];  // L -> a F a' | a
-  SCVAL  t3[2];  // F -> a F a' | LS
+  SCVAL  t2[3];  // L -> a F a' | a a' | a
+  SCVAL  t3[3];  // F -> a F a' | a a' | LS
 
   SCVAL e_sing[NB];
   SCVAL e_pair[NP];
@@ -100,11 +98,11 @@ typedef struct {
 typedef struct {
   SCVAL tP[5];     // P  -> m..m | m..m F0 | F0 m..m | d..d F0 d..d | M1 M
   SCVAL tS[3];     // S  -> a s | F0 S | epsilon
-  SCVAL tF0[2];    // F0 -> a F5 a' | a P a'
-  SCVAL tF5[2];    // F5 -> a F5 a' | a P a'
+  SCVAL tF0[3];    // F0 -> a F5 a' | a P a' | a a'  
+  SCVAL tF5[3];    // F5 -> a F5 a' | a P a' | a a'
   SCVAL tM[2];     // M  -> M M1 | R
   SCVAL tM1[2];    // M1 -> a M1 | F0
-  SCVAL tR[2];     // R  ->  R a | M1
+  SCVAL tR[2];     // R  -> R a  | M1
 
   SCVAL e_sing[NB];
   SCVAL e_pair1[NP];
@@ -120,7 +118,7 @@ typedef struct {
   
   SCVAL e_sing_l3[NB];
   SCVAL l3[MAXLOOP_I][MAXLOOP_I]; // internal loops
-} BGRparam;
+} RBGparam;
 
 
 
@@ -144,18 +142,18 @@ typedef struct {
   GMX *R;
   GMX *M1;
 
-} BGR_MX;
+} RBG_MX;
 
 extern const G6param  G6_PRELOADS_TrATrBTrB;
 extern const G6Sparam G6S_PRELOADS_TrATrBTrB;
-extern const BGRparam BGR_PRELOADS_TrATrBTrB;
+extern const RBGparam RBG_PRELOADS_TrATrBTrB;
 
 extern GMX    *GMX_Create   (int L);
 extern G6_MX  *G6MX_Create  (int L);
-extern BGR_MX *BGRMX_Create (int L);
+extern RBG_MX *RBGMX_Create (int L);
 extern void    GMX_Destroy  (GMX *gmx);
 extern void    G6MX_Destroy (G6_MX *g6mx);
-extern void    BGRMX_Destroy(BGR_MX *bgrmx);
+extern void    RBGMX_Destroy(RBG_MX *rbgmx);
 extern void    GMX_Dump     (FILE *fp, GMX *gmx);
 
 

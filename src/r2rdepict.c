@@ -524,6 +524,7 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
   int         L = msa->alen;
   int         i;
   int         s;
+  int         s2;
   int         status;
 
   if (nct == 1) return eslOK;
@@ -552,13 +553,30 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
       else  status = eslFAIL;
     }
     
-    esl_sprintf(&tag, "SUBFAM_pknot%d_R2R_LABEL", s);
-    r2r_esl_msa_AppendGC(msa, tag, new); free(tag); tag = NULL;
-
     // other markups necessary for r2r to plot the pseudokntos
     esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%d outline", s);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+#if 0
+    for (s2 = 1; s2 < nct; s2 ++) {
+      if (s2 != s) {
+	esl_sprintf(&tag, "R2R ignore_ss _%d", s, s2);
+	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+      }
+    }
+#endif
 
+    esl_sprintf(&tag, "SUBFAM_pknot%d_R2R_LABEL", s);
+    r2r_esl_msa_AppendGC(msa, tag, new); free(tag); tag = NULL;
+
+    // extra annotation suggested by zasha
+    esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss primary", s);
+    esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+    for (s2 = 1; s2 < nct; s2 ++) {
+      if (s2 != s) {
+	esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss _%d", s, s2);
+	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+      }
+    }
     esl_sprintf(&tag, "SUBFAM_PERL_PRED pknot%d return 1;", s);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R subst_ss _%d primary", s, s);
@@ -569,6 +587,7 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
     esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R set_dir pos0 90 f", s);
     esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
+
   }
 
   free(ss);

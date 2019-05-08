@@ -30,7 +30,7 @@ cp ~/src/src/mysource/src/e2_config.h.in ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e2.h ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/cykcov.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/covgrammars.* ~/src/src/mysource/versions/$v/src/. ;\
-cp ~/src/src/mysource/src/cococyk.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/cacocyk.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/msafilter.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/contactmap.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/correlators.* ~/src/src/mysource/versions/$v/src/. ;\

@@ -27,7 +27,7 @@
 #include "contactmap.h"
 #include "covariation.h"
 #include "correlators.h"
-#include "cococyk.h"
+#include "cacocyk.h"
 #include "covgrammars.h"
 #include "cykcov.h"
 #include "logsum.h"

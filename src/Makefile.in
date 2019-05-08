@@ -121,7 +121,7 @@ OBJS     = e1_bg.o\
 	   e1_simulate.o\
 	   allbranchmsa.o\
 	   contactmap.o\
-	   cococyk.o\
+	   cacocyk.o\
 	   correlators.o\
 	   covgrammars.o\
 	   covariation.o\

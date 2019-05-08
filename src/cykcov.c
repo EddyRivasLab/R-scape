@@ -21,7 +21,7 @@
 static int  accept_pair(int i, int j, struct mutual_s *mi, CLIST *clist, COVLIST *covlist, THRESH *thresh);
 static int  cov_explained(int i, int j, COVLIST *covlist);
 static int  covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **ret_totalcov, int verbose);
-static int  dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
+static int  dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
 			   char *errbuf, int verbose);
 static int  add_to_explained(COVLIST **ret_explained, int L, const int *ct);
 static int  covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST ***ret_exclude, int verbose);
@@ -46,7 +46,7 @@ static int  covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov
 
 int
 CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, COVLIST ***ret_exclude,
-       int ncvpairs, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+       int ncvpairs, THRESH *thresh, char *errbuf, int verbose) 
 {
   int n;
   int status;
@@ -66,7 +66,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
   //
   // Use a Nussinov/CYK algorithm to make a selection of the max number of cov pairs that can be put together in a nested structure.
   // Remove those from the pool, and keep appplying the algorithm until no covarying pairs are left to be explained
-  if ((status = CYKCOV_Structures(r, mi, clist, ret_nct, ret_ctlist, ret_exclude, ncvpairs, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
+  if ((status = CYKCOV_Structures(r, mi, clist, ret_nct, ret_ctlist, ret_exclude, ncvpairs, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
   
   return eslOK;
   
@@ -82,7 +82,7 @@ CYKCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
  */
 int
 CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, COVLIST ***ret_exclude,
-		  int ncvpairs, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+		  int ncvpairs, THRESH *thresh, char *errbuf, int verbose) 
 {
   int      **ctlist    = NULL; // list of included covariations for a given nested fold
   COVLIST  **exclude   = NULL; // list of excluded covariations for a given nested fold
@@ -117,12 +117,17 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     ctlist[nct] = NULL;
  
     // explained describes the covariations already taken into account before this fold
-    if ((status = CYKCOV_Both(rng, mi, clist, explained, &sc, &ctlist[nct], &ncv_in, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;
-     if (sc == 0) 
-      ESL_XFAIL(eslFAIL, errbuf, "%d covarying pairs cannot be explained. Impossible!", ncv_left);
-
+    ncv_in = 0;
+    if ((status = CYKCOV_Both(rng, mi, clist, explained, &sc, &ctlist[nct], &ncv_in, thresh, errbuf, verbose)) != eslOK) goto ERROR;
+    if (ncv_in == 0) {
+      *ret_nct     = nct;
+      *ret_ctlist  = ctlist;
+      *ret_exclude = exclude;
+      ESL_XFAIL(eslFAIL, errbuf, "%d covarying pairs cannot be explained. Impossible!\n", ncv_left);
+    }
+    
      ct = ctlist[nct]; // the current skeleton of this structure
-    if (1||verbose) esl_ct2wuss(ct, L, ss);
+     if (1||verbose) esl_ct2wuss(ct, L, ss);
     
     // number of covarying pairs that remain to be explained
     ncv_left -= ncv_in;
@@ -147,15 +152,17 @@ CYKCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
   return eslOK;
 
  ERROR:
-  for (s = 0; s < nct; s ++) if (exclude[s]->cov) free(exclude[s]->cov);
-  if (exclude) free(exclude); exclude = NULL;
-  if (ss) free(ss); ss = NULL;
+  if (exclude) {
+    for (s = 0; s < nct; s ++) if (exclude[s]->cov) free(exclude[s]->cov);
+    free(exclude);
+  }
+  if (ss) free(ss); 
   return status;
 }
 
 int
 CYKCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, SCVAL *ret_sc, int **ret_ct, int *ret_ncv,
-	    int minloop, THRESH *thresh, char *errbuf, int verbose) 
+	    THRESH *thresh, char *errbuf, int verbose) 
 {
   GMX    *cyk = NULL;  // CYK DP matrix: M x (L x L triangular)
   int     ncv = 0;
@@ -166,10 +173,10 @@ CYKCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *exp
   cyk = GMX_Create(mi->alen);
   
   /* Fill the cyk matrix */
-  if ((status = CYKCOV_Fill(mi, clist, explained, cyk, ret_sc, minloop, thresh, errbuf, verbose)) != eslOK) goto ERROR;
+  if ((status = CYKCOV_Fill(mi, clist, explained, cyk, ret_sc, thresh, errbuf, verbose)) != eslOK) goto ERROR;
   
   /* Report a traceback */
-  if ((status = CYKCOV_Traceback(rng, mi, clist, explained, cyk, ret_ct, minloop, thresh, errbuf, verbose))  != eslOK) goto ERROR;
+  if ((status = CYKCOV_Traceback(rng, mi, clist, explained, cyk, ret_ct, thresh, errbuf, verbose))  != eslOK) goto ERROR;
 
   for (i = 1; i < L; i ++) if ((*ret_ct)[i] > i) ncv ++;
   *ret_ncv = ncv;
@@ -183,7 +190,7 @@ CYKCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *exp
 }
 
 int
-CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCVAL *ret_sc, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCVAL *ret_sc, THRESH *thresh, char *errbuf, int verbose) 
 {
   SCVAL  sc;
   int    L = mi->alen;
@@ -194,11 +201,11 @@ CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCV
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
-	status = dp_recursion(mi, clist, explained, cyk, minloop, thresh, j, d, &(cyk->dp[j][d]), NULL, errbuf, verbose);
+	status = dp_recursion(mi, clist, explained, cyk, thresh, j, d, &(cyk->dp[j][d]), NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
 	if (verbose) printf("\nCYK %f j=%d d=%d L=%d\n", cyk->dp[j][d], j, d, L); 
      } 
-  sc = cyk->dp[L][L];
+  sc = (SCVAL)cyk->dp[L][L];
   if (verbose) printf("CYKscore = %f at thresh %f %f\n", sc, thresh->sc_bp, thresh->sc_nbp);
 
   if (ret_sc)  *ret_sc  = sc;
@@ -211,7 +218,7 @@ CYKCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCV
 
 
 int
-CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int **ret_ct, int minloop, THRESH *thresh, char *errbuf, int verbose) 
+CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int **ret_ct, THRESH *thresh, char *errbuf, int verbose) 
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
@@ -261,7 +268,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST
       esl_stack_IPop(ns, &i);
       d = j-i+1;
       
-      status = dp_recursion(mi, clist, explained, cyk, minloop, thresh, j, d, &bestsc, alts, errbuf, verbose);
+      status = dp_recursion(mi, clist, explained, cyk, thresh, j, d, &bestsc, alts, errbuf, verbose);
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "CYK failed");
       
       /* Some assertions.
@@ -327,7 +334,7 @@ CYKCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST
 
 
 static int
-dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, int minloop, THRESH *thresh, int j, int d, SCVAL *ret_bestsc,
+dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, THRESH *thresh, int j, int d, SCVAL *ret_bestsc,
 	     ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;
@@ -352,7 +359,7 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, i
 
   /* rule2: a S a' S  */
   r = 1;
-  for (d1 = minloop; d1 <= d; d1++) {
+  for (d1 = 1; d1 <= d; d1++) {
     k = i + d1 - 1;
     sc = (accept_pair(i, k, mi, clist, explained, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + mi->COV->mx[i-1][k-1] : -eslINFINITY;
     
@@ -462,7 +469,7 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
      
     }
 
-  if (1||verbose) {
+  if (verbose) {
     printf("total covs %lld\n", totalcov->n);
     for (n = 0; n < totalcov->n; n ++) {
       cov = &totalcov->cov[n];
@@ -554,16 +561,17 @@ covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST **
   }
 
   // last one with all covariations
-  ESL_ALLOC(exclude[nct],      sizeof(COVLIST));
-  ESL_ALLOC(exclude[nct]->cov, sizeof(COV) * totalcov->n);
-  exclude[nct]->n = totalcov->n;
-  for (n = 0; n < totalcov->n; n++) {
-    exclude[nct]->cov[n].i     = totalcov->cov[n].i;
-    exclude[nct]->cov[n].j     = totalcov->cov[n].j;
-    exclude[nct]->cov[n].isbp  = totalcov->cov[n].isbp;
-    exclude[nct]->cov[n].score = totalcov->cov[n].score;
+  if (totalcov->n > 0) {
+    ESL_ALLOC(exclude[nct],      sizeof(COVLIST));
+    ESL_ALLOC(exclude[nct]->cov, sizeof(COV) * totalcov->n);
+    exclude[nct]->n = totalcov->n;
+    for (n = 0; n < totalcov->n; n++) {
+      exclude[nct]->cov[n].i     = totalcov->cov[n].i;
+      exclude[nct]->cov[n].j     = totalcov->cov[n].j;
+      exclude[nct]->cov[n].isbp  = totalcov->cov[n].isbp;
+      exclude[nct]->cov[n].score = totalcov->cov[n].score;
+    }
   }
- 
   if (verbose) {
     for (s = 0; s <= nct; s ++) {
       printf("structure %d exclude %lld\n", s+1, exclude[s]->n);
