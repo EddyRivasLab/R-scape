@@ -27,7 +27,7 @@
 #include "contactmap.h"
 #include "covariation.h"
 #include "correlators.h"
-#include "cacocyk.h"
+#include "cacofold.h"
 #include "covgrammars.h"
 #include "cykcov.h"
 #include "ribosum_matrix.h"
@@ -35,10 +35,10 @@
 #include "structure.h"
 
  
-static int  struct_cacomcyk(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
-	   		    enum grammar_e G, int verbose, char *errbuf);
-static int  struct_cacomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-				      enum grammar_e G, int verbose, char *errbuf);
+static int  struct_cacofold(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
+	   		    enum grammar_e G, enum fold_e F, int verbose, char *errbuf);
+static int  struct_cacofold_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
+				      enum grammar_e G, enum fold_e F, int verbose, char *errbuf);
 static int  struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int  ct_add_if_nested(int *ct, int *ctmain, int L);
 static int  ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
@@ -50,12 +50,12 @@ static int  ctlist_helices_merge(int *ret_nct, int ***ret_ctlist, int L, int ver
 static int  ctlist_reorder(int nct, int **ctlist, double *sc, int L, int verbose);
 static int *sorted_decreasing_order(int *nbp, double *sc, int n);
 
-// covariation-constrained multi-CYK (CACOMCYK)
+// cascade covariation/variation constrain folding algorithm (CACOFold)
 int
-struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist, 
-		RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, THRESH *thresh)
+struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist, 
+		RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, enum fold_e F, THRESH *thresh)
 {
-  HITLIST       *cykhitlist = NULL;
+  HITLIST       *foldhitlist = NULL;
   char          *covtype    = NULL;
   char          *threshtype = NULL;
   int          **ctlist     = NULL;
@@ -89,9 +89,9 @@ struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
     goto ERROR;
   }
   
-  // Use the CT from covariation to do a cov-constrained multi-cyk folding
+  // Use the CT from covariation to do a cov-constrained cascade folding
   nct = cyknct;
-  status = struct_cacomcyk(data->R2Rcykfile, data->R2Rall, data->r, msa, data->spair, &nct, &ctlist, exclude, G, data->verbose, data->errbuf);
+  status = struct_cacofold(data->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, &nct, &ctlist, exclude, G, F, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   // create a new contact list from the ct
@@ -105,26 +105,26 @@ struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
-  status = cov_CreateCYKHitList(data, nct, ctlist, ranklist, (data->statsmethod != NAIVE)? hitlist : NULL, &cykhitlist, covtype, threshtype);
+  status = cov_CreateFOLDHitList(data, nct, ctlist, ranklist, (data->statsmethod != NAIVE)? hitlist : NULL, &foldhitlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
   
   for (s = 0; s < nct; s ++) {
     ct = ctlist[s];
     
     for (i = 1; i <= msa->alen; i ++) 
-      if (ct[i] > 0 && i < ct[i]) data->nbpairs_cyk ++;
+      if (ct[i] > 0 && i < ct[i]) data->nbpairs_fold ++;
   }
 
-  if (data->nbpairs_cyk > 0) {
+  if (data->nbpairs_fold > 0) {
     /* R2R */
-    status = r2r_Depict(data->R2Rcykfile, data->R2Rall, msa, nct, ctlist, cykhitlist, TRUE, TRUE, data->verbose, data->errbuf);
+    status = r2r_Depict(data->R2Rfoldfile, data->R2Rall, msa, nct, ctlist, foldhitlist, TRUE, TRUE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
     
     /* DotPlots (pdf,svg) */
-    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+    status = struct_DotPlot(data->gnuplot, data->folddplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
 			 TRUE,  data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
-    status = struct_DotPlot(data->gnuplot, data->cykdplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, cykhitlist,
+    status = struct_DotPlot(data->gnuplot, data->folddplotfile, msa, nct, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
 			 FALSE, data->verbose, data->errbuf);
     if (status != eslOK) goto ERROR;
   }
@@ -137,7 +137,7 @@ struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
     free(exclude[s]);
   }
   free(exclude);
-  cov_FreeHitList(cykhitlist);
+  cov_FreeHitList(foldhitlist);
   free(covtype);
   free(threshtype);
   return eslOK;
@@ -150,7 +150,7 @@ struct_CACOMCYK(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
     }
     free(exclude);
   }
-  if (cykhitlist) cov_FreeHitList(cykhitlist);
+  if (foldhitlist) cov_FreeHitList(foldhitlist);
   if (covtype)    free(covtype);
   if (threshtype) free(threshtype);
   if (ct)         free(ct);
@@ -554,8 +554,8 @@ struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 /*------------------------------ internal functions -----------------------------*/
 
 static int
-struct_cacomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
-		enum grammar_e G, int verbose, char *errbuf)
+struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
+		enum grammar_e G, enum fold_e F, int verbose, char *errbuf)
 {
   FILE   *fp        = NULL;
   char   *ss        = NULL;
@@ -578,10 +578,10 @@ struct_cacomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   ESL_ALLOC(sc,        sizeof(double) * ((nct>0)?nct:1));
    
   for (s = 0; s < nct; s ++) {
-    // covariance-constraint CYK using a probabilistic grammar
+    // covariance-constraint FOLD using a probabilistic grammar
     ESL_ALLOC(newctlist[s], sizeof(int) * (L+1));
     esl_vec_ICopy(ctlist[s], L+1, newctlist[s]);
-    status = struct_cacomcyk_expandct(r, msa, spair, &newctlist[s], &sc[s], exclude[s], G, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &newctlist[s], &sc[s], exclude[s], G, F, verbose, errbuf);
     if (status != eslOK) goto ERROR;     
   }
 
@@ -593,7 +593,7 @@ struct_cacomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     exclude[nct]->n = 0;
  
     esl_vec_ISet(newctlist[nct], L+1, 0);
-    status = struct_cacomcyk_expandct(r, msa, spair, &newctlist[nct], &sc[nct], exclude[nct], G, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &newctlist[nct], &sc[nct], exclude[nct], G, F, verbose, errbuf);
     if (status != eslOK) goto ERROR;
     nct  ++;
   }
@@ -603,7 +603,7 @@ struct_cacomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     ESL_REALLOC(sc,        sizeof(double) * (nct+1));
     ESL_ALLOC(newctlist[nct], sizeof(int) * (L+1));
     esl_vec_ISet(newctlist[nct], L+1, 0);
-    status = struct_cacomcyk_expandct(r, msa, spair, &newctlist[nct], &sc[nct], exclude[nct], G, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &newctlist[nct], &sc[nct], exclude[nct], G, F, verbose, errbuf);
     if (status != eslOK) goto ERROR;
     nct ++;
   }
@@ -696,8 +696,8 @@ struct_cacomcyk(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 }
 
 static int
-struct_cacomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-			  enum grammar_e G, int verbose, char *errbuf)
+struct_cacofold_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
+			  enum grammar_e G, enum fold_e F, int verbose, char *errbuf)
 {
   char    *rfline = NULL;
   char    *newss  = NULL;
@@ -723,13 +723,22 @@ struct_cacomcyk_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **r
   ct_remove_inconsistencies(sq, ct, verbose);
 
   /* calculate the cascade power/covariation constrained structure using a probabilistic grammar */
-  status = CACOCYK(r, G, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
+  
+  switch(F) {
+  case CYK:
+    status = CACO_CYK(r, G, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+    break;
+  case DECODING:
+    status = CACO_DECODING(r, G, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+    break;
+  }
 
   if (verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(cct, msa->alen, newss);
-    printf("caco-cyk score = %f\n%s\n", sc, newss);
+    printf("caco-fold score = %f\n%s\n", sc, newss);
   }
 
   *ret_sc = sc;
@@ -1374,7 +1383,7 @@ ctlist_reorder(int nct, int **ctlist, double *sc, int L, int verbose)
     ESL_ALLOC(ss, sizeof(char) * (L+1));
     for (s = 0; s < nct; s ++) {
       esl_ct2wuss(ctlist[s], L, ss);
-      printf("caco-cyk %f\n%s\n", sc[perm[s]], ss);
+      printf("caco-fold %f\n%s\n", sc[perm[s]], ss);
     }
     free(ss);
   }

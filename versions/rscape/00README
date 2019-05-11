@@ -2,7 +2,7 @@ ER, Thu Mar  3 08:59:18 EST 2016
 
 files to copy
 -------------
-for v in rscape/rscape_v1.2 ; do \
+for v in rscape/rscape_v1.4 ; do \
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -30,7 +30,7 @@ cp ~/src/src/mysource/src/e2_config.h.in ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e2.h ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/cykcov.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/covgrammars.* ~/src/src/mysource/versions/$v/src/. ;\
-cp ~/src/src/mysource/src/cacocyk.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/cacofold.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/msafilter.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/contactmap.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/correlators.* ~/src/src/mysource/versions/$v/src/. ;\
@@ -99,7 +99,7 @@ last minute steps to make an R-scape tarball:
 (2) distclean
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
-for v in rscape_v1.2 ; do \
+for v in rscape_v1.4 ; do \
 for x in 3 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\

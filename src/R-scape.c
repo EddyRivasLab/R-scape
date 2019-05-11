@@ -54,6 +54,7 @@
 #define NULLOPTS     "--null"
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
+#define FOLDOPTS     "--CYK,--DECODING"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -115,20 +116,21 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              R2Rall;
   char            *R2Rfile;
 
-  int              docyk;
+  int              dofold;
   ESL_MSA         *omsa;
-  int             *ocykct;
-  char            *omsacykfile;
-  FILE            *omsacykfp;
-  int              cykLmax;
-  char            *R2Rcykfile;
-  FILE            *R2Rcykfp;
+  int             *ofoldct;
+  char            *omsafoldfile;
+  FILE            *omsafoldfp;
+  int              foldLmax;
+  char            *R2Rfoldfile;
+  FILE            *R2Rfoldfp;
   enum grammar_e   grammar;
+  enum fold_e      fold;
 
   char            *covhisfile;
   char            *covqqfile;
   char            *dplotfile;
-  char            *cykdplotfile;
+  char            *folddplotfile;
 
   char            *allbranchfile;
 
@@ -169,7 +171,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int           **ctlist;
   int              onbpairs;
   int              nbpairs;
-  int              nbpairs_cyk;
+  int              nbpairs_fold;
 
   
   double           ptmuh;               // regularization coefficients
@@ -237,11 +239,11 @@ static ESL_OPTIONS options[] = {
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   /* options for statistical analysis */
   { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
-  { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                  1 },
-  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",               1 },
+  { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                    1 },
+  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                       1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
-  { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                   1 },
-  { "--cyk",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--pdbfile",          "obtain the structure with maximum covariation",                                             1 },
+  { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
+  { "--fold",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--pdbfile",          "obtain the structure with maximum covariation",                                             1 },
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
@@ -270,7 +272,7 @@ static ESL_OPTIONS options[] = {
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--cyk",              "read pdb file from file <f>",                                                               1 },
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--fold",              "read pdb file from file <f>",                                                               1 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
   { "--onlypdb",     eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdbfile",NULL,              "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
   /* msa format */
@@ -352,8 +354,9 @@ static ESL_OPTIONS options[] = {
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",                                                   1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
   /* other options */  
-  { "--cykLmax",       eslARG_INT,    "5000",    NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do cykcov calculation",                                                       0 },   
-  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--cyk",  NULL,                "grammar used for cyk calculation options are [RBG,G6S,G6]",                                 0 },   
+  { "--foldLmax",       eslARG_INT,    "5000",   NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do foldcov calculation",                                                       0 },   
+  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6S,G6]",                                0 },   
+  { "--foldmethod", eslARG_STRING,     "CYK",    NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -383,7 +386,7 @@ static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *ns
 static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_omsacyk(struct cfg_s *cfg, int L, int nct, int **cykctlist, int verbose);
+static int  write_omsafold(struct cfg_s *cfg, int L, int nct, int **foldctlist, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -505,8 +508,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
-  cfg.docyk       = esl_opt_IsOn(go, "--cyk")?                                         TRUE : FALSE;
-  cfg.cykLmax     = esl_opt_GetInteger(go, "--cykLmax");
+  cfg.dofold      = esl_opt_IsOn(go, "--fold")?                                        TRUE : FALSE;
+  cfg.foldLmax    = esl_opt_GetInteger(go, "--foldLmax");
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
@@ -522,7 +525,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG") == 0) cfg.grammar = RBG;
     else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
   }
-  
+  if ( esl_opt_IsOn(go, "--foldmethod") ) {
+    if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.fold = CYK;
+    else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.fold = DECODING;
+    else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
+  }
 
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
@@ -657,7 +664,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.omsa   = NULL;
   cfg.mstat  = NULL;
   cfg.omstat = NULL;
-  cfg.ocykct = NULL;
+  cfg.ofoldct = NULL;
 
   /* the pdb contacts */
   cfg.pdbfile = NULL;
@@ -718,12 +725,12 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
   if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
   
-  /* if docyk write original alignment with cyk structure */
-  cfg.omsacykfile = NULL;
-  cfg.omsacykfp   = NULL;
-  if (cfg.docyk) {
-    esl_sprintf(&cfg.omsacykfile, "%s.cyk.sto", cfg.outheader);
-    if ((cfg.omsacykfp = fopen(cfg.omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg.omsacykfile);
+  /* if dofold write original alignment with fold structure */
+  cfg.omsafoldfile = NULL;
+  cfg.omsafoldfp   = NULL;
+  if (cfg.dofold) {
+    esl_sprintf(&cfg.omsafoldfile, "%s.fold.sto", cfg.outheader);
+    if ((cfg.omsafoldfp = fopen(cfg.omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omafold file %s", cfg.omsafoldfile);
   }
 
   /* file with the msa actually used */
@@ -758,8 +765,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* msa-specific files */
   cfg.R2Rfile    = NULL;
-  cfg.R2Rcykfile = NULL;
-  cfg.R2Rcykfp   = NULL;
+  cfg.R2Rfoldfile = NULL;
+  cfg.R2Rfoldfp   = NULL;
   
   /* covhis file */
   cfg.covhisfile    = NULL;
@@ -769,7 +776,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* dotplot file */
   cfg.dplotfile    = NULL;
-  cfg.cykdplotfile = NULL;
+  cfg.folddplotfile = NULL;
   
   cfg.treefile  = NULL;
   cfg.treefp    = NULL;
@@ -786,7 +793,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ct = NULL;
   cfg.onbpairs    = 0;
   cfg.nbpairs     = 0;
-  cfg.nbpairs_cyk = 0;
+  cfg.nbpairs_fold = 0;
 
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
@@ -898,7 +905,7 @@ main(int argc, char **argv)
 
     read_msa_sscons_r2rformat(&cfg, msa);
     
-    cfg.omsa = esl_msa_Clone(msa); // save original msa to output the cyk structure with it
+    cfg.omsa = esl_msa_Clone(msa); // save original msa to output the fold structure with it
      
     /* the msaname */
     status = get_msaname(go, &cfg, msa);
@@ -1010,7 +1017,7 @@ main(int argc, char **argv)
   fclose(cfg.outsrtfp);
   if (cfg.rocfp) fclose(cfg.rocfp);
   fclose(cfg.sumfp);
-  if (cfg.omsacykfp) fclose(cfg.omsacykfp);
+  if (cfg.omsafoldfp) fclose(cfg.omsafoldfp);
   if (cfg.outmsafp) fclose(cfg.outmsafp);
   if (cfg.outtreefp) fclose(cfg.outtreefp);
   if (cfg.outpottsfp) fclose(cfg.outpottsfp);
@@ -1023,7 +1030,7 @@ main(int argc, char **argv)
   if (cfg.ct) free(cfg.ct);
   esl_msafile_Close(afp);
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
-  if (cfg.ocykct) free(cfg.ocykct);
+  if (cfg.ofoldct) free(cfg.ofoldct);
   if (cfg.ribofile) free(cfg.ribofile);
   if (cfg.treefile) free(cfg.treefile);
   if (cfg.outfile) free(cfg.outfile);
@@ -1035,7 +1042,7 @@ main(int argc, char **argv)
   free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
-  if (cfg.omsacykfile) free(cfg.omsacykfile);
+  if (cfg.omsafoldfile) free(cfg.omsafoldfile);
   if (cfg.outmsafile) free(cfg.outmsafile);
   if (cfg.outtreefile) free(cfg.outtreefile);
   if (cfg.outpottsfile) free(cfg.outpottsfile);
@@ -1079,9 +1086,9 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.rocfp         = NULL;
   data.sumfp         = NULL;
   data.dplotfile     = NULL;
-  data.cykdplotfile  = NULL;
+  data.folddplotfile  = NULL;
   data.R2Rfile       = NULL;
-  data.R2Rcykfile    = NULL;
+  data.R2Rfoldfile    = NULL;
   data.R2Rall        = FALSE;
   data.gnuplot       = NULL;
   data.r             = cfg->r;
@@ -1105,7 +1112,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ctlist        = cfg->ctlist;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
-  data.nbpairs_cyk   = cfg->nbpairs_cyk;
+  data.nbpairs_fold   = cfg->nbpairs_fold;
   data.spair         = NULL;
   data.power         = NULL;
   data.T             = cfg->T;
@@ -1734,21 +1741,21 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* weight the sequences */
   msaweight(go, cfg, msa);
   
-  // reset the docyk flag in case it changed with the previous alignment
-  cfg->docyk = esl_opt_IsOn(go, "--cyk")? TRUE : FALSE;
-  if (cfg->docyk == TRUE && cfg->abcisRNA == FALSE)
+  // reset the dofold flag in case it changed with the previous alignment
+  cfg->dofold = esl_opt_IsOn(go, "--fold")? TRUE : FALSE;
+  if (cfg->dofold == TRUE && cfg->abcisRNA == FALSE)
     esl_fatal("Peptide alignment, cannot calculate a RNA structure");
   
-  if (cfg->docyk && msa->alen > cfg->cykLmax) { //length restriction
+  if (cfg->dofold && msa->alen > cfg->foldLmax) { //length restriction
     printf("Alignment is too long to calculate a structure\n");
-    cfg->docyk = FALSE;
+    cfg->dofold = FALSE;
   }
   
-  // write the original msa annotated with the cyk structure
-  if (cfg->docyk) {
-    if (cfg->omsacykfile == NULL) {
-      esl_sprintf(&cfg->omsacykfile, "%s.cyk.sto", cfg->outheader);
-      if ((cfg->omsacykfp = fopen(cfg->omsacykfile, "w")) == NULL) esl_fatal("Failed to open omacyk file %s", cfg->omsacykfile);
+  // write the original msa annotated with the fold structure
+  if (cfg->dofold) {
+    if (cfg->omsafoldfile == NULL) {
+      esl_sprintf(&cfg->omsafoldfile, "%s.fold.sto", cfg->outheader);
+      if ((cfg->omsafoldfp = fopen(cfg->omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omafold file %s", cfg->omsafoldfile);
     }
   }
   
@@ -1783,25 +1790,25 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* R2R annotated sto file */
   if (cfg->outdir && !cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, outname);
-    if (cfg->docyk) esl_sprintf(&cfg->R2Rcykfile, "%s/%s.cyk.R2R.sto", cfg->outdir, cfg->msaname);
+    if (cfg->dofold) esl_sprintf(&cfg->R2Rfoldfile, "%s/%s.fold.R2R.sto", cfg->outdir, cfg->msaname);
     
    /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, outname);
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s/%s.cyk.dplot", cfg->outdir, cfg->msaname);
+    if (cfg->dofold) esl_sprintf(&cfg->folddplotfile, "%s/%s.fold.dplot", cfg->outdir, cfg->msaname);
   }
   else if (!cfg->nofigures) {
     esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     outname);
-    if (cfg->docyk) esl_sprintf(&cfg->R2Rcykfile, "%s.cyk.R2R.sto", cfg->msaname);
+    if (cfg->dofold) esl_sprintf(&cfg->R2Rfoldfile, "%s.fold.R2R.sto", cfg->msaname);
         
     /* covqq file */
     esl_sprintf(&cfg->covqqfile,    "%s.qq",     outname);
     
     /* dotplot file */
     esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
-    if (cfg->docyk) esl_sprintf(&cfg->cykdplotfile, "%s.cyk.dplot", cfg->msaname);
+    if (cfg->dofold) esl_sprintf(&cfg->folddplotfile, "%s.fold.dplot", cfg->msaname);
   }
 
   /* the structure/contact map */
@@ -1898,9 +1905,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->covhisfile) free(cfg->covhisfile); cfg->covhisfile = NULL;
   if (cfg->covqqfile)  free(cfg->covqqfile); cfg->covqqfile = NULL;
   if (cfg->dplotfile) free(cfg->dplotfile); cfg->dplotfile = NULL;
-  if (cfg->cykdplotfile) free(cfg->cykdplotfile); cfg->cykdplotfile = NULL;
+  if (cfg->folddplotfile) free(cfg->folddplotfile); cfg->folddplotfile = NULL;
   if (cfg->R2Rfile) free(cfg->R2Rfile); cfg->R2Rfile = NULL;
-  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); cfg->R2Rcykfile = NULL;
+  if (cfg->R2Rfoldfile) free(cfg->R2Rfoldfile); cfg->R2Rfoldfile = NULL;
   if (cfg->cmapfile) free(cfg->cmapfile); cfg->cmapfile = NULL;
   if (cfg->mi) corr_Destroy(cfg->mi); cfg->mi = NULL;
   if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
@@ -1926,9 +1933,9 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->covhisfile) free(cfg->covhisfile); 
   if (cfg->covqqfile)  free(cfg->covqqfile); 
   if (cfg->dplotfile) free(cfg->dplotfile);
-  if (cfg->cykdplotfile) free(cfg->cykdplotfile);
+  if (cfg->folddplotfile) free(cfg->folddplotfile);
   if (cfg->R2Rfile) free(cfg->R2Rfile); 
-  if (cfg->R2Rcykfile) free(cfg->R2Rcykfile); 
+  if (cfg->R2Rfoldfile) free(cfg->R2Rfoldfile); 
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
@@ -1947,10 +1954,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   struct mutual_s *mi        = cfg->mi;
   struct data_s    data;
   PT              *ptlocal   = NULL;
-  int            **cykctlist = NULL;
+  int            **foldctlist = NULL;
   RANKLIST        *ranklist  = NULL;
   HITLIST         *hitlist   = NULL;
-  int              cyknct = 0;
+  int              foldnct = 0;
   int              s;
   int              status;
 
@@ -1985,7 +1992,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   
   /* write MSA info to the rocfile */
   if (cfg->doroc) {
-    if (cfg->mode == GIVSS || cfg->mode == CYKSS)
+    if (cfg->mode == GIVSS || cfg->mode == FOLDSS)
       fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n",
 	      msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);
   }
@@ -1996,9 +2003,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.rocfp         = cfg->rocfp;
   data.sumfp         = (cfg->mode == RANSS)? NULL : cfg->sumfp;
   data.dplotfile     = cfg->dplotfile;
-  data.cykdplotfile  = cfg->cykdplotfile;
+  data.folddplotfile  = cfg->folddplotfile;
   data.R2Rfile       = cfg->R2Rfile;
-  data.R2Rcykfile    = cfg->R2Rcykfile;
+  data.R2Rfoldfile    = cfg->R2Rfoldfile;
   data.R2Rall        = cfg->R2Rall;
   data.gnuplot       = cfg->gnuplot;
   data.r             = cfg->r;
@@ -2019,7 +2026,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.ctlist        = cfg->ctlist;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
-  data.nbpairs_cyk   = cfg->nbpairs_cyk;
+  data.nbpairs_fold   = cfg->nbpairs_fold;
   data.spair         = spair;
   data.nsubs         = nsubs;
   data.ndouble       = ndouble;
@@ -2064,28 +2071,28 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
 
-  /* find the cykcov structure, and do the cov analysis on it */
-  if (cfg->docyk && cfg->mode != RANSS) {
+  /* find the foldcov structure, and do the cov analysis on it */
+  if (cfg->dofold && cfg->mode != RANSS) {
 
-    data.mode = CYKSS;    
-    status = struct_CACOMCYK(&data, msa, &cyknct, &cykctlist, ranklist, hitlist, cfg->grammar, cfg->thresh);
+    data.mode = FOLDSS;    
+    status = struct_CACOFOLD(&data, msa, &foldnct, &foldctlist, ranklist, hitlist, cfg->grammar, cfg->fold, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
-    status = write_omsacyk(cfg, msa->alen, cyknct, cykctlist, FALSE);
+    status = write_omsafold(cfg, msa->alen, foldnct, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
 
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  for (s = 0; s < cyknct; s ++) if (cykctlist[s]) free(cykctlist[s]);
-  if (cykctlist) free(cykctlist);
+  for (s = 0; s < foldnct; s ++) if (foldctlist[s]) free(foldctlist[s]);
+  if (foldctlist) free(foldctlist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
-  for (s = 0; s < cyknct; s ++) if (cykctlist[s]) free(cykctlist[s]);
-  if (cykctlist) free(cykctlist);
+  for (s = 0; s < foldnct; s ++) if (foldctlist[s]) free(foldctlist[s]);
+  if (foldctlist) free(foldctlist);
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
   if (title)    free(title);
@@ -2300,7 +2307,7 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 
 
 static int
-write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose)
+write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verbose)
 {
   ESL_MSA  *omsa = cfg->omsa;
   int     **octlist = NULL;
@@ -2321,11 +2328,11 @@ write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-   status = struct_CTMAP(L, cyknct, cykctlist, OL, cfg->msamap, &octlist, &osslist, NULL, verbose);
+   status = struct_CTMAP(L, foldnct, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, verbose);
   if (status != eslOK) goto ERROR;
 
   // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
-  for (s = 1; s < cyknct; s ++) {
+  for (s = 1; s < foldnct; s ++) {
 
     // these are the extra GC lines.
     // I keep it in case there is overlap
@@ -2342,19 +2349,19 @@ write_omsacyk(struct cfg_s *cfg, int L, int cyknct, int **cykctlist, int verbose
   }
   esl_ct2wuss(octlist[0], OL, omsa->ss_cons);
   
-  // write alignment with the cykcov structure to file
-  esl_msafile_Write(cfg->omsacykfp, omsa, eslMSAFILE_STOCKHOLM);
+  // write alignment with the foldcov structure to file
+  esl_msafile_Write(cfg->omsafoldfp, omsa, eslMSAFILE_STOCKHOLM);
   
-  for (s = 0; s < cyknct; s ++) free(osslist[s]);
+  for (s = 0; s < foldnct; s ++) free(osslist[s]);
   free(osslist);
-  for (s = 0; s < cyknct; s ++) free(octlist[s]);
+  for (s = 0; s < foldnct; s ++) free(octlist[s]);
   free(octlist);
   return eslOK;
 
  ERROR:
-  for (s = 0; s < cyknct; s ++) if (osslist[s]) free(osslist[s]);
+  for (s = 0; s < foldnct; s ++) if (osslist[s]) free(osslist[s]);
   if (osslist) free(osslist);
-  for (s = 0; s < cyknct; s ++) if (octlist[s]) free(octlist[s]);
+  for (s = 0; s < foldnct; s ++) if (octlist[s]) free(octlist[s]);
   if (octlist) free(octlist);
   return status;
 }

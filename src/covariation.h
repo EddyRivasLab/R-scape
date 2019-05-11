@@ -33,12 +33,12 @@ extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist,
 					  char *covtype, char *threshtype);
-extern int              cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist,
+extern int              cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist,
 					     char *covtype, char *threshtype);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
-extern int              cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos);
+extern int              cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos);
 extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);
-extern int              cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);
+extern int              cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);
 extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);

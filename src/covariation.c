@@ -27,7 +27,7 @@
 #include "contactmap.h"
 #include "covariation.h"
 #include "correlators.h"
-#include "cacocyk.h"
+#include "cacofold.h"
 #include "covgrammars.h"
 #include "cykcov.h"
 #include "logsum.h"
@@ -363,7 +363,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       esl_histogram_Add(ranklist->ha, add);
  
       /* add to the histogram of base pairs (hb) and not bps (ht) */
-      if (data->mode == GIVSS || data->mode == CYKSS) {
+      if (data->mode == GIVSS || data->mode == FOLDSS) {
 
 	switch(data->samplesize) {
 	case SAMPLE_CONTACTS:
@@ -446,7 +446,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (hitlist)    cov_FreeHitList(hitlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
-  if (data->ranklist_null && (data->mode == GIVSS || data->mode == CYKSS)) free(data->ranklist_null->survfit);
+  if (data->ranklist_null && (data->mode == GIVSS || data->mode == FOLDSS)) free(data->ranklist_null->survfit);
   return status;
 }
 
@@ -497,7 +497,7 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
       else        eval->mx[i][j] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
     }    
   
-  if (data->mode == GIVSS || data->mode == CYKSS) {
+  if (data->mode == GIVSS || data->mode == FOLDSS) {
     fprintf(data->rocfp, "# Method: %s\n", covtype);      
     if (mi->ishuffled)
       fprintf(data->rocfp, "#shuffled_cov_score    FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
@@ -548,7 +548,7 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
     neg  = L * (L-1) / 2 - t;
     
-    if (data->mode == GIVSS || data->mode == CYKSS) 
+    if (data->mode == GIVSS || data->mode == FOLDSS) 
       fprintf(data->rocfp, "%.5f\t%8d\t%8d\t%8d\t%8d\t%8d\t%.2f\t%.2f\t%.2f\t%g\n", target_cov, fp, tf, f, t, neg, sen, ppv, F, target_eval);
   }
 
@@ -870,9 +870,9 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
 
 int 
-cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_cykhitlist, char *covtype, char *threshtype)
+cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
 {
-  HITLIST  *cykhitlist = NULL;
+  HITLIST  *foldhitlist = NULL;
   SPAIR    *spair      = NULL;
   double    sen, ppv, F;
   int       dim;
@@ -885,27 +885,27 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
   int       status;
 
   if (nhit > 0) {
-    ESL_ALLOC(cykhitlist, sizeof(HITLIST));
-    cykhitlist->hit    = hitlist->hit;
-    cykhitlist->srthit = hitlist->srthit;
+    ESL_ALLOC(foldhitlist, sizeof(HITLIST));
+    foldhitlist->hit    = hitlist->hit;
+    foldhitlist->srthit = hitlist->srthit;
     
-    cykhitlist->nhit = nhit;
-    ESL_ALLOC(cykhitlist->hit,    sizeof(HIT)   * nhit);
-    ESL_ALLOC(cykhitlist->srthit, sizeof(HIT *) * nhit);
-    cykhitlist->srthit[0] = cykhitlist->hit;
+    foldhitlist->nhit = nhit;
+    ESL_ALLOC(foldhitlist->hit,    sizeof(HIT)   * nhit);
+    ESL_ALLOC(foldhitlist->srthit, sizeof(HIT *) * nhit);
+    foldhitlist->srthit[0] = foldhitlist->hit;
     
-    // the cyk hitlist is identical expect for the basepair annotation
+    // the fold hitlist is identical expect for the basepair annotation
     for (h = 0; h < nhit; h ++) {
-      cykhitlist->hit[h].i             = hitlist->hit[h].i;
-      cykhitlist->hit[h].j             = hitlist->hit[h].j;
-      cykhitlist->hit[h].sc            = hitlist->hit[h].sc;
-      cykhitlist->hit[h].Eval          = hitlist->hit[h].Eval;
-      cykhitlist->hit[h].nsubs         = hitlist->hit[h].nsubs;
-      cykhitlist->hit[h].power         = hitlist->hit[h].power;
-      cykhitlist->hit[h].bptype        = CMAP_GetBPTYPE(hitlist->hit[h].i+1, hitlist->hit[h].j+1, data->clist);
-      cykhitlist->hit[h].is_compatible = FALSE;
+      foldhitlist->hit[h].i             = hitlist->hit[h].i;
+      foldhitlist->hit[h].j             = hitlist->hit[h].j;
+      foldhitlist->hit[h].sc            = hitlist->hit[h].sc;
+      foldhitlist->hit[h].Eval          = hitlist->hit[h].Eval;
+      foldhitlist->hit[h].nsubs         = hitlist->hit[h].nsubs;
+      foldhitlist->hit[h].power         = hitlist->hit[h].power;
+      foldhitlist->hit[h].bptype        = CMAP_GetBPTYPE(hitlist->hit[h].i+1, hitlist->hit[h].j+1, data->clist);
+      foldhitlist->hit[h].is_compatible = FALSE;
       if (data->abcisRNA && data->ct[hitlist->hit[h].i+1] == 0 && data->ct[hitlist->hit[h].j+1] == 0) {
-	cykhitlist->hit[h].is_compatible  = TRUE;
+	foldhitlist->hit[h].is_compatible  = TRUE;
       }
     }
   }
@@ -930,16 +930,16 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
     
     switch(data->samplesize) {
     case SAMPLE_CONTACTS:
-      select = (cykhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      select = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
       break;
     case SAMPLE_BP:
-      select = (cykhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+      select = (foldhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
       break;
     case SAMPLE_WC:
-     select = (cykhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
+     select = (foldhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
       break;
     case SAMPLE_ALL: // use all contacts here
-      select = (cykhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      select = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
      break;	
     }
     if (select) tf ++;
@@ -958,8 +958,8 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
   if (status != eslOK) ESL_XFAIL(status, data->errbuf, "%s\n", data->errbuf);
   
   if (data->outfp) {
-    fprintf(data->outfp, "\n# The predicted cyk-cov structure\n");
-    status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, data->outfp, FALSE);
+    fprintf(data->outfp, "\n# The predicted fold-cov structure\n");
+    status = struct_CTMAP(data->mi->alen, foldnct, foldctlist, data->OL, data->msamap, NULL, NULL, data->outfp, FALSE);
     if (status != eslOK) goto ERROR;
     
     power_SPAIR_Write(data->outfp, dim, spair);
@@ -967,12 +967,12 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
     fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteCYKHitList(data->outfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos);
+    cov_WriteFOLDHitList(data->outfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos);
   }
 
   
-  fprintf(stdout, "\n# The predicted cyk-cov structure\n");
-  status = struct_CTMAP(data->mi->alen, cyknct, cykctlist, data->OL, data->msamap, NULL, NULL, NULL, TRUE);
+  fprintf(stdout, "\n# The predicted fold-cov structure\n");
+  status = struct_CTMAP(data->mi->alen, foldnct, foldctlist, data->OL, data->msamap, NULL, NULL, NULL, TRUE);
   if (status != eslOK) goto ERROR;
 
   power_SPAIR_Write(stdout, dim, spair);
@@ -981,10 +981,10 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
   fprintf(stdout, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
   fprintf(stdout, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	  covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-  cov_WriteCYKRankedHitList(stdout, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
+  cov_WriteFOLDRankedHitList(stdout, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
     
   if (data->outsrtfp) {
-    fprintf(data->outsrtfp, "\n# The predicted cyk-cov structure\n");
+    fprintf(data->outsrtfp, "\n# The predicted fold-cov structure\n");
 
     power_SPAIR_Write(data->outsrtfp, dim, spair);
     
@@ -992,16 +992,16 @@ cov_CreateCYKHitList(struct data_s *data, int cyknct, int **cykctlist, RANKLIST 
     fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteCYKRankedHitList(data->outsrtfp, nhit, hitlist, cykhitlist, data->msamap, data->firstpos, data->statsmethod);
+    cov_WriteFOLDRankedHitList(data->outsrtfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
   }
 
   if (spair) free(spair);
-  if (ret_cykhitlist) *ret_cykhitlist = cykhitlist; else cov_FreeHitList(cykhitlist);
+  if (ret_foldhitlist) *ret_foldhitlist = foldhitlist; else cov_FreeHitList(foldhitlist);
   return eslOK;
   
  ERROR:
   if (spair) free(spair);
-  if (cykhitlist) cov_FreeHitList(cykhitlist);
+  if (foldhitlist) cov_FreeHitList(foldhitlist);
   return status;
 }
 
@@ -1057,15 +1057,15 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 }
 
 int 
-cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos)
+cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos)
 {
   int h;
   int ih, jh;
 
   if (!fp)         return eslOK;
-  if (!cykhitlist) return eslOK;
+  if (!foldhitlist) return eslOK;
 
-  fprintf(fp, "# in_cyk  in_given   left_pos       right_pos      score           E-value substitutions    power\n");
+  fprintf(fp, "# in_fold  in_given   left_pos       right_pos      score           E-value substitutions    power\n");
   fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
    if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
@@ -1074,10 +1074,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
     jh = hitlist->hit[h].j;
     
     if (hitlist->hit[h].bptype == WWc)      {
-      if (cykhitlist->hit[h].bptype == WWc) 
+      if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1086,10 +1086,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
       }
     
     else if (hitlist->hit[h].bptype < STACKED) {
-      if (cykhitlist->hit[h].bptype == WWc) 
+      if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1098,10 +1098,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
     }
     
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) {
-      if (cykhitlist->hit[h].bptype == WWc) 
+      if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1110,10 +1110,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
     }
     
    else if (hitlist->hit[h].bptype < BPNONE) {
-           if (cykhitlist->hit[h].bptype == WWc) 
+           if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1122,10 +1122,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
    }
     
     else if (hitlist->hit[h].is_compatible) {
-            if (cykhitlist->hit[h].bptype == WWc) 
+            if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1134,10 +1134,10 @@ cov_WriteCYKHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, i
     }
     
     else {
-            if (cykhitlist->hit[h].bptype == WWc) 
+            if (foldhitlist->hit[h].bptype == WWc) 
 	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
-      else if (cykhitlist->hit[h].is_compatible)
+      else if (foldhitlist->hit[h].is_compatible)
 	fprintf(fp, "~\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
       else 
@@ -1236,18 +1236,18 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
 }
 
 int 
-cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
+cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
 {
   int h;
   int ih, jh;
 
   if (!fp)         return eslOK;
-  if (!cykhitlist) return eslOK;
+  if (!foldhitlist) return eslOK;
 
-  for (h = 0; h < nhit; h++) cykhitlist->srthit[h] = cykhitlist->hit + h;
-  if (nhit > 1) qsort(cykhitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
+  for (h = 0; h < nhit; h++) foldhitlist->srthit[h] = foldhitlist->hit + h;
+  if (nhit > 1) qsort(foldhitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
-  fprintf(fp, "# in_cyk in_given   left_pos       right_pos      score           E-value    substitutions      power\n");
+  fprintf(fp, "# in_fold in_given   left_pos       right_pos      score           E-value    substitutions      power\n");
   fprintf(fp, "#----------------------------------------------------------------------------------------------------------------\n");
   if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
@@ -1256,10 +1256,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
     jh = hitlist->srthit[h]->j;
     
     if (hitlist->srthit[h]->bptype == WWc) {
-      if (cykhitlist->srthit[h]->bptype == WWc) 
+      if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1268,10 +1268,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
    }
     
     else if (hitlist->srthit[h]->bptype < STACKED) { 
-      if (cykhitlist->srthit[h]->bptype == WWc) 
+      if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1280,10 +1280,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
   }
     
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) {
-           if (cykhitlist->srthit[h]->bptype == WWc) 
+           if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1292,10 +1292,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
    }
     
     else if (hitlist->srthit[h]->bptype < BPNONE) {
-           if (cykhitlist->srthit[h]->bptype == WWc) 
+           if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1304,10 +1304,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
     }
     
     else if (hitlist->srthit[h]->is_compatible) {
-           if (cykhitlist->srthit[h]->bptype == WWc) 
+           if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1316,10 +1316,10 @@ cov_WriteCYKRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *cykhitl
    }
     
     else {
-           if (cykhitlist->srthit[h]->bptype == WWc) 
+           if (foldhitlist->srthit[h]->bptype == WWc) 
 	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
-      else if (cykhitlist->srthit[h]->is_compatible)
+      else if (foldhitlist->srthit[h]->is_compatible)
 	fprintf(fp, "~\t?\t%10d\t%10d\t%.5f\t%g\t%lld\t\t%.2f\n", 
 		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
       else 
@@ -1667,8 +1667,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   if (covhisfile == NULL) return eslOK;
   if (ranklist   == NULL) return eslOK;
   
-  if (data->mode == GIVSS && data->nbpairs     > 0) has_bpairs = TRUE;
-  if (data->mode == CYKSS && data->nbpairs_cyk > 0) has_bpairs = TRUE;
+  if (data->mode == GIVSS && data->nbpairs       > 0) has_bpairs = TRUE;
+  if (data->mode == FOLDSS && data->nbpairs_fold > 0) has_bpairs = TRUE;
 
   esl_FileTail(covhisfile, FALSE, &filename);
   

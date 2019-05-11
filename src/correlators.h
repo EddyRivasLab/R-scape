@@ -95,9 +95,9 @@ typedef enum{
 } STATSMETHOD;
 
 typedef enum {
-  GIVSS = 0,
-  CYKSS = 1,
-  RANSS = 2,
+  GIVSS  = 0,
+  FOLDSS = 1,
+  RANSS  = 2,
 } MODE;
 
 struct mutual_s {
@@ -196,9 +196,9 @@ struct data_s {
   FILE                *sumfp; 
   char                *gnuplot;
   char                *dplotfile;
-  char                *cykdplotfile;
+  char                *folddplotfile;
   char                *R2Rfile;
-  char                *R2Rcykfile;
+  char                *R2Rfoldfile;
   int                  R2Rall;
   ESL_RANDOMNESS      *r;
 
@@ -221,7 +221,7 @@ struct data_s {
   int                **ctlist;
   int                  onbpairs;
   int                  nbpairs;
-  int                  nbpairs_cyk;
+  int                  nbpairs_fold;
   int                 *nsubs;
   int                 *ndouble;
   SPAIR               *spair;
