@@ -355,7 +355,7 @@ static ESL_OPTIONS options[] = {
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
   /* other options */  
   { "--foldLmax",       eslARG_INT,    "5000",   NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do foldcov calculation",                                                       0 },   
-  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6S,G6]",                                0 },   
+  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                                0 },   
   { "--foldmethod", eslARG_STRING,     "CYK",    NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
@@ -520,9 +520,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
     
   if ( esl_opt_IsOn(go, "--grammar") ) {
-    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6")  == 0) cfg.grammar = G6;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6S") == 0) cfg.grammar = G6S;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG") == 0) cfg.grammar = RBG;
+    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.grammar = G6X;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.grammar = G6XS;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.grammar = RBG;
     else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
   }
   if ( esl_opt_IsOn(go, "--foldmethod") ) {
@@ -921,7 +921,7 @@ main(int argc, char **argv)
       
       // if msa does not include a ss_cons structure (or a pdffile is not provided), we cannot apply this option
       if (cfg.abcisRNA) {
-	if (!cfg.omsa->ss_cons && cfg.pdbfile == NULL)
+	if (cfg.omsa->nseq > 1 && !cfg.omsa->ss_cons && cfg.pdbfile == NULL)
 	  esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
       }
       else if (cfg.pdbfile == NULL)
@@ -2022,6 +2022,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.mode          = cfg->mode;
   data.abcisRNA      = cfg->abcisRNA;
   data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.gapthresh     = cfg->gapthresh;
   data.nct           = cfg->nct;
   data.ctlist        = cfg->ctlist;
   data.onbpairs      = cfg->onbpairs;
@@ -2347,7 +2348,7 @@ write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verb
       }
     }
   }
-  esl_ct2wuss(octlist[0], OL, omsa->ss_cons);
+  if (foldnct > 0) esl_ct2wuss(octlist[0], OL, omsa->ss_cons);
   
   // write alignment with the foldcov structure to file
   esl_msafile_Write(cfg->omsafoldfp, omsa, eslMSAFILE_STOCKHOLM);

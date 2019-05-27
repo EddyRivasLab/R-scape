@@ -18,21 +18,30 @@
 // folding parameters
 //
 // TRUE if we do one last fold without covariations
-#define  LASTFOLD       0
+#define  LASTFOLD    0
 
 // power threshold
-#define POWER_THRESH 1.0
+#define POWER_THRESH 0.95
 
-// parameters for nested structures
-#define HLOOP_MIN 5    // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = 3
-                       // unless there are covariations forcing a smaller hairpin loop.
+// parameters for the main nested structure
+#define HLOOP_MIN 1                  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = 3
+                                     // unless there are covariations forcing a smaller hairpin loop.
 
-// paramters to break non-nested structures in helices
-#define  HELIX_UNPAIRED 2     // max number of unpaired residues in a non-nested helix
+// parameters to break non-nested structures in helices
+#define  HELIX_UNPAIRED 2            // max number of unpaired residues in a non-nested helix
 
-// parameters for selecting non-nested helices wihtout covariations
-#define  OVERLAPFRAC    0.51          // max fraction of paired residues that overlap with another existing helix in order to be removed
-#define  MINHELIX       15            // min length to be reported
+// parameters for selecting non-nested helices without covariations
+#define  OVERLAPFRAC       0.51      // max fraction of paired residues that overlap with another existing helix in order to be removed
+#define  MINHELIX          15        // min length to be reported
+
+// special parameter for selecting helices with covariations
+//
+// use these setting for maximal display of basepairing even if overlaping or contiguous
+// REMOVE_CONTCOV     0
+// HELIX_OVERLAP_TRIM 0
+//
+#define REMOVE_CONTCOV     1         // if TRUE it does not display covariations between contiguous residues
+#define HELIX_OVERLAP_TRIM 0         // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
 
 typedef struct cov_s {
   int64_t i;

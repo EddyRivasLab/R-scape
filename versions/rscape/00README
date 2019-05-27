@@ -28,7 +28,7 @@ cp ~/src/src/mysource/src/msamanip.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e2_profilesq.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e2_config.h.in ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e2.h ~/src/src/mysource/versions/$v/src/. ;\
-cp ~/src/src/mysource/src/cykcov.* ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/maxcov.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/covgrammars.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/cacofold.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/msafilter.* ~/src/src/mysource/versions/$v/src/. ;\

@@ -125,7 +125,7 @@ OBJS     = e1_bg.o\
 	   correlators.o\
 	   covgrammars.o\
 	   covariation.o\
-	   cykcov.o\
+	   maxcov.o\
            fastsp.o\
            fetchpfamdb.o\
            homology.o\

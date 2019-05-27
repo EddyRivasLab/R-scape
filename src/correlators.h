@@ -111,6 +111,7 @@ struct mutual_s {
   COVTYPE         type;
   COVCLASS        class;
   ESL_DMATRIX    *COV;         // covariation matrix (MI, MIp, MIr, MIa, CHI,...)  mutual information
+  ESL_DMATRIX    *Eval;        // E-values matrix
  
   double          besthreshCOV;
   double          minCOV;
@@ -230,6 +231,7 @@ struct data_s {
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
   
+  int                  gapthresh;  // used with --fold to calculate the reference sequence
   int                 *ct;
   CLIST               *clist;
   int                 *msa2pdb;

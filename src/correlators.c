@@ -1126,7 +1126,8 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
     }
   }
 
-  mi->COV = esl_dmatrix_Create(alen, alen);
+  mi->COV  = esl_dmatrix_Create(alen, alen);
+  mi->Eval = esl_dmatrix_Create(alen, alen);
  
   /* initialize for adding counts */
   for (i = 0; i < alen; i++) {
@@ -1185,7 +1186,8 @@ corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS miclass)
   mi->type  = mitype;
   mi->class = miclass;
 
-  if (mi->COV) esl_dmatrix_SetZero(mi->COV);
+  if (mi->COV)  esl_dmatrix_SetZero(mi->COV);
+  if (mi->Eval) esl_dmatrix_Set(mi->Eval, eslINFINITY);
 
   mi->besthreshCOV = -eslINFINITY;
   mi->minCOV       =  eslINFINITY;
@@ -1212,6 +1214,7 @@ corr_Destroy(struct mutual_s *mi)
     }
 
     if (mi->COV)  esl_dmatrix_Destroy(mi->COV);
+    if (mi->Eval) esl_dmatrix_Destroy(mi->Eval);
     free(mi->nseff);
     free(mi->ngap);
     free(mi->pp);

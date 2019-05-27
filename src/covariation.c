@@ -46,6 +46,7 @@ static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *su
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
 					   int linespoints, int style1, int style2);
+
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
@@ -453,9 +454,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 int
 cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 {
-  struct mutual_s *mi = data->mi;
-  ESL_DMATRIX     *mtx = mi->COV;
-  ESL_DMATRIX     *eval = NULL;
+  struct mutual_s *mi   = data->mi;
+  ESL_DMATRIX     *mtx  = mi->COV;
+  ESL_DMATRIX     *eval = mi->Eval;
   double           sen;
   double           ppv;
   double           F;
@@ -473,7 +474,6 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
   if (data->ranklist_null == NULL) return eslOK;
   if (data->nseq          == 1)    return eslOK;
 
-  eval = esl_dmatrix_Create(L, L);
   for (i = 0; i < L-1; i ++) 
     for (j = i+1; j < L; j ++) {
       cov = mtx->mx[i][j];
@@ -493,8 +493,8 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 	break;	
       }
       
-      if (select) eval->mx[i][j] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-      else        eval->mx[i][j] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+      if (select) eval->mx[i][j] = eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+      else        eval->mx[i][j] = eval->mx[j][i] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
     }    
   
   if (data->mode == GIVSS || data->mode == FOLDSS) {
@@ -552,7 +552,6 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
       fprintf(data->rocfp, "%.5f\t%8d\t%8d\t%8d\t%8d\t%8d\t%.2f\t%.2f\t%.2f\t%g\n", target_cov, fp, tf, f, t, neg, sen, ppv, F, target_eval);
   }
 
-  esl_dmatrix_Destroy(eval);
   return eslOK;
 }
 
@@ -757,14 +756,16 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	break;	
       }
       
-      cov = mi->COV->mx[i][j];
+      cov  = mi->COV->mx[i][j];
+
       if (data->ranklist_null == NULL) eval = 0; // naive method: eval does not inform of statistical significance
       else {
 	if (select)
-	  eval = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	  mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
 	else 
-	  eval = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	  mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
       }
+      eval = mi->Eval->mx[i][j];
 
       if (eval < data->thresh->val) {	
 	if (h == nhit - 1) {
@@ -873,7 +874,7 @@ int
 cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
 {
   HITLIST  *foldhitlist = NULL;
-  SPAIR    *spair      = NULL;
+  SPAIR    *spair       = NULL;
   double    sen, ppv, F;
   int       dim;
   int       nhit = (hitlist)? hitlist->nhit : 0;
@@ -970,7 +971,6 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
     cov_WriteFOLDHitList(data->outfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos);
   }
 
-  
   fprintf(stdout, "\n# The predicted fold-cov structure\n");
   status = struct_CTMAP(data->mi->alen, foldnct, foldctlist, data->OL, data->msamap, NULL, NULL, NULL, TRUE);
   if (status != eslOK) goto ERROR;

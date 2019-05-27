@@ -376,7 +376,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
       
       /* apply gapthresh */
       expgap = ceil(gapthresh*(double)msa->nseq);
-      if (ngap > expgap) useme[apos-1] = FALSE;
+      if (ngap >= expgap) useme[apos-1] = FALSE;
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)

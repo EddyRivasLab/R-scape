@@ -74,16 +74,16 @@ my %allfam_P;
 my %allfam_F;
 my %allfam_Spower;
 
-my %allfam_tp_cyk;
-my %allfam_true_cyk;
-my %allfam_found_cyk;
-my %allfam_tpexp_cyk;
-my %allfam_avgsub_cyk;
+my %allfam_tp_fold;
+my %allfam_true_fold;
+my %allfam_found_fold;
+my %allfam_tpexp_fold;
+my %allfam_avgsub_fold;
 
-my %allfam_S_cyk;
-my %allfam_P_cyk;
-my %allfam_F_cyk;
-my %allfam_Spower_cyk;
+my %allfam_S_fold;
+my %allfam_P_fold;
+my %allfam_F_fold;
+my %allfam_Spower_fold;
 my %allfam_all;
 my %allfam_table;
 my %allfam_tabless;
@@ -93,7 +93,7 @@ filter_families_by3d($file, \%usefam3d);
 
 # fields:
 #
-# idx       1     (cyk)
+# idx       1     (fold)
 # fam       2
 #
 # S         3      12
@@ -160,16 +160,16 @@ my %fam_P;
 my %fam_F;
 my %fam_Spower;
 
-my %fam_tp_cyk;
-my %fam_true_cyk;
-my %fam_found_cyk;
-my %fam_tpexp_cyk;
-my %fam_avgsub_cyk;
+my %fam_tp_fold;
+my %fam_true_fold;
+my %fam_found_fold;
+my %fam_tpexp_fold;
+my %fam_avgsub_fold;
 
-my %fam_S_cyk;
-my %fam_P_cyk;
-my %fam_F_cyk;
-my %fam_Spower_cyk;
+my %fam_S_fold;
+my %fam_P_fold;
+my %fam_F_fold;
+my %fam_Spower_fold;
 my %fam_all;
 my %fam_table;
 my %fam_tabless;
@@ -215,7 +215,7 @@ sub parse_rscapeout {
     my  ($file, $usefam3d_ref) = @_;
 
     my $usefam;
-    my $iscyk;
+    my $isfold;
     my $fam;
     
     my $nf  = 0;
@@ -233,7 +233,7 @@ sub parse_rscapeout {
 	    
 	    $usefam = 1;
 	    
-	    $iscyk  = 0;
+	    $isfold  = 0;
 	    
 	    if ($usefam) {
 		$allfam[$nf]       = $fam; 
@@ -253,16 +253,16 @@ sub parse_rscapeout {
 		
 		$allfam_Spower{$fam}     = 0.0;
 		
-		$allfam_tp_cyk{$fam}     = 0.0;
-		$allfam_true_cyk{$fam}   = 0.0;
-		$allfam_found_cyk{$fam}  = 0.0;
-		$allfam_tpexp_cyk{$fam}  = 0.0;
+		$allfam_tp_fold{$fam}     = 0.0;
+		$allfam_true_fold{$fam}   = 0.0;
+		$allfam_found_fold{$fam}  = 0.0;
+		$allfam_tpexp_fold{$fam}  = 0.0;
 		
-		$allfam_S_cyk{$fam}      = 0.0;
-		$allfam_P_cyk{$fam}      = 0.0;
-		$allfam_F_cyk{$fam}      = 0.0;
+		$allfam_S_fold{$fam}      = 0.0;
+		$allfam_P_fold{$fam}      = 0.0;
+		$allfam_F_fold{$fam}      = 0.0;
 		
-		$allfam_Spower_cyk{$fam} = 0.0;
+		$allfam_Spower_fold{$fam} = 0.0;
 	    }
 	}
 	# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
@@ -277,11 +277,11 @@ sub parse_rscapeout {
 	    my $F       = $6;
 	    
 	    if ($usefam) {	    
-		if ($iscyk) {
-		    printf "%d FAM CYK $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
-		    $allfam_tp_cyk{$fam}    = $tp;
-		    $allfam_true_cyk{$fam}  = $true;
-		    $allfam_found_cyk{$fam} = $found;
+		if ($isfold) {
+		    printf "%d FAM FOLD $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
+		    $allfam_tp_fold{$fam}    = $tp;
+		    $allfam_true_fold{$fam}  = $true;
+		    $allfam_found_fold{$fam} = $found;
 		}
 		else {
 		    printf "%d FAM $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
@@ -298,29 +298,29 @@ sub parse_rscapeout {
 	elsif (/^#\s+avg substitutions per BP\s+(\S+)/) {
 	    my $avgsub = $1;
 	    if ($usefam) {
-		if ($iscyk) { $allfam_avgsub_cyk{$fam} = $avgsub; }
+		if ($isfold) { $allfam_avgsub_fold{$fam} = $avgsub; }
 		else        { $allfam_avgsub{$fam}     = $avgsub; }
 	    }
 	}
 	elsif (/^#\s+BPAIRS expected to covary\s+(\S+)/) {
 	    my $tpexp = $1;
 	    if ($usefam) { 
-		if ($iscyk) { $allfam_tpexp_cyk{$fam} = $tpexp; }
+		if ($isfold) { $allfam_tpexp_fold{$fam} = $tpexp; }
 		else        { $allfam_tpexp{$fam}     = $tpexp; }
 	    }
 	}
-	elsif (/^# The predicted cyk-cov structure/) {
-	    $iscyk = 1;
+	elsif (/^# The predicted fold-cov structure/) {
+	    $isfold = 1;
 	}
-	# add compatible pairs in the cyk structure
+	# add compatible pairs in the fold structure
 	#~	               320	     321	194.17596	0.0153764	127	0.87
 	#~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
 	elsif (/^~\s+.+\d+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+)$/) {
 	    my $pp = $1;
-	    if ($iscyk) {
-		$allfam_tp_cyk{$fam}    ++; 
-		$allfam_true_cyk{$fam}  ++; 
-		$allfam_tpexp_cyk{$fam} += $pp; 
+	    if ($isfold) {
+		$allfam_tp_fold{$fam}    ++; 
+		$allfam_true_fold{$fam}  ++; 
+		$allfam_tpexp_fold{$fam} += $pp; 
 	    }
 	}
     }
@@ -341,18 +341,18 @@ sub parse_rscapeout {
 	
 	# recalculate in case we added "compatible" covarying pairs ~
 	FUNCS::calculateF  ($allfam_tp{$fam},     $allfam_true{$fam},     $allfam_found{$fam},     \$allfam_S{$fam},     \$allfam_P{$fam},     \$allfam_F{$fam});
-	FUNCS::calculateF  ($allfam_tp_cyk{$fam}, $allfam_true_cyk{$fam}, $allfam_found_cyk{$fam}, \$allfam_S_cyk{$fam}, \$allfam_P_cyk{$fam}, \$allfam_F_cyk{$fam});
+	FUNCS::calculateF  ($allfam_tp_fold{$fam}, $allfam_true_fold{$fam}, $allfam_found_fold{$fam}, \$allfam_S_fold{$fam}, \$allfam_P_fold{$fam}, \$allfam_F_fold{$fam});
 	
 	FUNCS::calculateSEN($allfam_tpexp{$fam},     $allfam_true{$fam},     \$allfam_Spower{$fam});
-	FUNCS::calculateSEN($allfam_tpexp_cyk{$fam}, $allfam_true_cyk{$fam}, \$allfam_Spower_cyk{$fam});
+	FUNCS::calculateSEN($allfam_tpexp_fold{$fam}, $allfam_true_fold{$fam}, \$allfam_Spower_fold{$fam});
 
 	$allfam_Spower{$fam} = sprintf("%.1f", $allfam_Spower{$fam});
 	$allfam_S{$fam}      = sprintf("%.1f", $allfam_S{$fam});
 	$allfam_P{$fam}      = sprintf("%.1f", $allfam_P{$fam});
 	$allfam_F{$fam}      = sprintf("%.1f", $allfam_F{$fam});
-	$allfam_S_cyk{$fam}  = sprintf("%.1f", $allfam_S_cyk{$fam});
-	$allfam_P_cyk{$fam}  = sprintf("%.1f", $allfam_P_cyk{$fam});
-	$allfam_F_cyk{$fam}  = sprintf("%.1f", $allfam_F_cyk{$fam});
+	$allfam_S_fold{$fam}  = sprintf("%.1f", $allfam_S_fold{$fam});
+	$allfam_P_fold{$fam}  = sprintf("%.1f", $allfam_P_fold{$fam});
+	$allfam_F_fold{$fam}  = sprintf("%.1f", $allfam_F_fold{$fam});
 	$allfam_id{$fam}     = sprintf("%.1f", $allfam_id{$fam});
 	    
 	my $name = $fam;
@@ -367,9 +367,9 @@ sub parse_rscapeout {
 	$allfam_all{$fam} .= "\t$allfam_Spower{$fam}";    
 	$allfam_all{$fam} .= "\t$allfam_true{$fam}\t$allfam_found{$fam}\t$allfam_tp{$fam}\t$allfam_tpexp{$fam}\t$allfam_avgsub{$fam}";
 	
-	$allfam_all{$fam} .= "\t$allfam_S_cyk{$fam}\t$allfam_P_cyk{$fam}\t$allfam_F_cyk{$fam}";
-	$allfam_all{$fam} .= "\t$allfam_Spower_cyk{$fam}";    
-	$allfam_all{$fam} .= "\t$allfam_true_cyk{$fam}\t$allfam_found_cyk{$fam}\t$allfam_tp_cyk{$fam}\t$allfam_tpexp_cyk{$fam}\t$allfam_avgsub_cyk{$fam}";
+	$allfam_all{$fam} .= "\t$allfam_S_fold{$fam}\t$allfam_P_fold{$fam}\t$allfam_F_fold{$fam}";
+	$allfam_all{$fam} .= "\t$allfam_Spower_fold{$fam}";    
+	$allfam_all{$fam} .= "\t$allfam_true_fold{$fam}\t$allfam_found_fold{$fam}\t$allfam_tp_fold{$fam}\t$allfam_tpexp_fold{$fam}\t$allfam_avgsub_fold{$fam}";
 	
 	$allfam_all{$fam} .= "\t$allfam_id{$fam}\t$allfam_alen{$fam}\t$allfam_nseq{$fam}";
 
@@ -382,11 +382,11 @@ sub parse_rscapeout {
 	$allfam_table{$fam} .= "$allfam_nseq{$fam}\n\\\\"; 
    
 	$allfam_tabless{$fam}  = "$name & ";
-	$allfam_tabless{$fam} .= "$allfam_tp_cyk{$fam}    & $allfam_tp{$fam}    & ";    
-	$allfam_tabless{$fam} .= "$allfam_true_cyk{$fam}  & $allfam_true{$fam}  & ";    
-	$allfam_tabless{$fam} .= "$allfam_S_cyk{$fam}     & $allfam_S{$fam}    & ";    
+	$allfam_tabless{$fam} .= "$allfam_tp_fold{$fam}    & $allfam_tp{$fam}    & ";    
+	$allfam_tabless{$fam} .= "$allfam_true_fold{$fam}  & $allfam_true{$fam}  & ";    
+	$allfam_tabless{$fam} .= "$allfam_S_fold{$fam}     & $allfam_S{$fam}    & ";    
 	$allfam_tabless{$fam} .= "$allfam_found{$fam} & ";    
-	$allfam_tabless{$fam} .= "$allfam_P_cyk{$fam}     & $allfam_P{$fam}     ";    
+	$allfam_tabless{$fam} .= "$allfam_P_fold{$fam}     & $allfam_P{$fam}     ";    
 	$allfam_tabless{$fam} .= "\n\\\\";    
     }
 
@@ -422,16 +422,16 @@ sub filter_fam {
 	    $fam_F{$fam}      = $allfam_F{$fam};
 	    $fam_Spower{$fam} = $allfam_Spower{$fam};
 	    
-	    $fam_tp_cyk{$fam}     = $allfam_tp_cyk{$fam};
-	    $fam_true_cyk{$fam}   = $allfam_true_cyk{$fam};
-	    $fam_found_cyk{$fam}  = $allfam_found_cyk{$fam};
-	    $fam_tpexp_cyk{$fam}  = $allfam_tpexp_cyk{$fam};
-	    $fam_avgsub_cyk{$fam} = $allfam_avgsub_cyk{$fam};
+	    $fam_tp_fold{$fam}     = $allfam_tp_fold{$fam};
+	    $fam_true_fold{$fam}   = $allfam_true_fold{$fam};
+	    $fam_found_fold{$fam}  = $allfam_found_fold{$fam};
+	    $fam_tpexp_fold{$fam}  = $allfam_tpexp_fold{$fam};
+	    $fam_avgsub_fold{$fam} = $allfam_avgsub_fold{$fam};
 	    
-	    $fam_S_cyk{$fam}      = $allfam_S_cyk{$fam};
-	    $fam_P_cyk{$fam}      = $allfam_P_cyk{$fam};
-	    $fam_F_cyk{$fam}      = $allfam_F_cyk{$fam};
-	    $fam_Spower_cyk{$fam} = $allfam_Spower_cyk{$fam};
+	    $fam_S_fold{$fam}      = $allfam_S_fold{$fam};
+	    $fam_P_fold{$fam}      = $allfam_P_fold{$fam};
+	    $fam_F_fold{$fam}      = $allfam_F_fold{$fam};
+	    $fam_Spower_fold{$fam} = $allfam_Spower_fold{$fam};
 	    
 	    $fam_all{$fam}     = $allfam_all{$fam};
 	    $fam_table{$fam}   = $allfam_table{$fam};
@@ -696,9 +696,9 @@ sub outfile_rank {
     $cmd .= "\tSEN\tPPV\tF";
     $cmd .= "\tSENpower";
     $cmd .= "\tTRUE\tFOUND\tTP\tTPexp\tavgsub";
-    $cmd .= "\tSENcyk\tPPVcyk\tFcyk";
-    $cmd .= "\tSENpowercyk";
-    $cmd .= "\tTRUEcyk\tFOUNDcyk\tTPcyk\tTPexpcyk\tavgsubcyk";
+    $cmd .= "\tSENfold\tPPVfold\tFfold";
+    $cmd .= "\tSENpowerfold";
+    $cmd .= "\tTRUEfold\tFOUNDfold\tTPfold\tTPexpfold\tavgsubfold";
     $cmd .= "\tavgid\talen\tnseq";
     
     printf OUT1 "$cmd\n";
@@ -855,15 +855,15 @@ sub outfile_betterss{
 	my $fam     = $S_order[$f];
 	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
-	my $sen_cyk = $fam_S_cyk{$fam};
+	my $sen_fold = $fam_S_fold{$fam};
 	my $ppv     = $fam_P{$fam};
-	my $ppv_cyk = $fam_P_cyk{$fam};
+	my $ppv_fold = $fam_P_fold{$fam};
 	my $tp      = $fam_tp{$fam};
-	my $tp_cyk  = $fam_tp_cyk{$fam};
+	my $tp_fold  = $fam_tp_fold{$fam};
 	my $power = $fam_Spower{$fam};
-	if ($ppv_cyk > $ppv) {
+	if ($ppv_fold > $ppv) {
 	    $m ++;
-	    print     "better_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print     "better_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    #print     "better_ss $fam_tabless{$fam}\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
@@ -882,15 +882,15 @@ sub outfile_muchbettss{
 	my $fam     = $S_order[$f];
 	my $which   = $fam_idx{$fam};
 	my $sen     = $fam_S{$fam};
-	my $sen_cyk = $fam_S_cyk{$fam};
+	my $sen_fold = $fam_S_fold{$fam};
 	my $ppv     = $fam_P{$fam};
-	my $ppv_cyk = $fam_P_cyk{$fam};
+	my $ppv_fold = $fam_P_fold{$fam};
 	my $tp      = $fam_tp{$fam};
-	my $tp_cyk  = $fam_tp_cyk{$fam};
+	my $tp_fold  = $fam_tp_fold{$fam};
 	my $power   = $fam_Spower{$fam};
-	if ($tp_cyk > $tp+2) {
+	if ($tp_fold > $tp+2) {
 	    $m ++;
-	    print     "much_better_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print     "much_better_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -905,18 +905,18 @@ sub outfile_worsess{
     open (OUT, ">$outfile_worsess") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $S_order[$f];
-	my $which   = $fam_idx{$fam};
-	my $sen     = $fam_S{$fam};
-	my $sen_cyk = $fam_S_cyk{$fam};
-	my $ppv     = $fam_P{$fam};
-	my $ppv_cyk = $fam_P_cyk{$fam};
-	my $tp      = $fam_tp{$fam};
-	my $tp_cyk  = $fam_tp_cyk{$fam};
-	my $power   = $fam_Spower{$fam};
-	if ($ppv_cyk < $ppv) {
+	my $fam      = $S_order[$f];
+	my $which    = $fam_idx{$fam};
+	my $sen      = $fam_S{$fam};
+	my $sen_fold = $fam_S_fold{$fam};
+	my $ppv      = $fam_P{$fam};
+	my $ppv_fold = $fam_P_fold{$fam};
+	my $tp       = $fam_tp{$fam};
+	my $tp_fold  = $fam_tp_fold{$fam};
+	my $power    = $fam_Spower{$fam};
+	if ($ppv_fold < $ppv) {
 	    $m ++;
-	    print "worse_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print "worse_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -929,18 +929,18 @@ sub outfile_equalss{
     open (OUT, ">$outfile_equalss") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $fam[$f];
-	my $which   = $fam_idx{$fam};
-	my $sen     = $fam_S{$fam};
-	my $sen_cyk = $fam_S_cyk{$fam};
-	my $ppv     = $fam_P{$fam};
-	my $ppv_cyk = $fam_P_cyk{$fam};
-	my $tp      = $fam_tp{$fam};
-	my $tp_cyk  = $fam_tp_cyk{$fam};
+	my $fam      = $fam[$f];
+	my $which    = $fam_idx{$fam};
+	my $sen      = $fam_S{$fam};
+	my $sen_fold = $fam_S_fold{$fam};
+	my $ppv      = $fam_P{$fam};
+	my $ppv_fold = $fam_P_fold{$fam};
+	my $tp       = $fam_tp{$fam};
+	my $tp_fold  = $fam_tp_fold{$fam};
 	my $power = $fam_Spower{$fam};
-	if ($ppv_cyk == $ppv) {
+	if ($ppv_fold == $ppv) {
 	    $m ++;
-	    print "equal_ss $m $which $fam sen $sen sen_cyk $sen_cyk ppv $ppv ppv_cyk $ppv_cyk tp $tp tp_cyk $tp_cyk\n";
+	    print "equal_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }

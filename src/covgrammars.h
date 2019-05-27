@@ -20,26 +20,28 @@
 #define NP 16
 
 enum grammar_e {
-  G6,
-  G6S,
+  G6X,
+  G6XS,
   RBG
 };
 
-/* G6 nonterminals */
-#define G6_S  0
-#define G6_L  1
-#define G6_F  2
-#define G6_NT 3
-/* G6 rules */
-#define G6_S_1  0
-#define G6_S_2  1
-#define G6_L_1  2
-#define G6_L_2  3
-#define G6_L_3  4
-#define G6_F_1  5
-#define G6_F_2  6
-#define G6_F_3  7
-#define G6_NR   8
+/* G6X nonterminals */
+#define G6X_S  0
+#define G6X_L  1
+#define G6X_F  2
+#define G6X_NT 3
+
+/* G6X rules */
+#define G6X_S_1  0
+#define G6X_S_2  1
+#define G6X_S_3  2
+#define G6X_L_1  3
+#define G6X_L_2  4
+#define G6X_L_3  5
+#define G6X_F_1  6
+#define G6X_F_2  7
+#define G6X_F_3  8
+#define G6X_NR   9
 
 /* RBG nonterminals */
 #define RBG_S  0
@@ -77,23 +79,23 @@ enum grammar_e {
 typedef float SCVAL;
 
 typedef struct {
-  SCVAL  t1[2];  // S -> LS     | L
+  SCVAL  t1[3];  // S -> LS     | L    | epsilon
   SCVAL  t2[3];  // L -> a F a' | a a' | a
   SCVAL  t3[3];  // F -> a F a' | a a' | LS
 
   SCVAL e_sing[NB];
   SCVAL e_pair[NP];
-} G6param;
+} G6Xparam;
 
 typedef struct {
-  SCVAL  t1[2];  // S -> LS     | L
+  SCVAL  t1[3];  // S -> LS     | L    | epsilon
   SCVAL  t2[3];  // L -> a F a' | a a' | a
   SCVAL  t3[3];  // F -> a F a' | a a' | LS
 
   SCVAL e_sing[NB];
   SCVAL e_pair[NP];
   SCVAL e_stck[NP][NP];
-} G6Sparam;
+} G6XSparam;
 
 typedef struct {
   SCVAL tP[5];     // P  -> m..m | m..m F0 | F0 m..m | d..d F0 d..d | M1 M
@@ -131,7 +133,7 @@ typedef struct {
   GMX *S;
   GMX *L;
   GMX *F;
-} G6_MX;
+} G6X_MX;
 
 typedef struct {
   GMX *S;
@@ -144,17 +146,17 @@ typedef struct {
 
 } RBG_MX;
 
-extern const G6param  G6_PRELOADS_TrATrBTrB;
-extern const G6Sparam G6S_PRELOADS_TrATrBTrB;
-extern const RBGparam RBG_PRELOADS_TrATrBTrB;
+extern const G6Xparam  G6X_PRELOADS_TrATrBTrB;
+extern const G6XSparam G6XS_PRELOADS_TrATrBTrB;
+extern const RBGparam  RBG_PRELOADS_TrATrBTrB;
 
-extern GMX    *GMX_Create   (int L);
-extern G6_MX  *G6MX_Create  (int L);
-extern RBG_MX *RBGMX_Create (int L);
-extern void    GMX_Destroy  (GMX *gmx);
-extern void    G6MX_Destroy (G6_MX *g6mx);
-extern void    RBGMX_Destroy(RBG_MX *rbgmx);
-extern void    GMX_Dump     (FILE *fp, GMX *gmx);
+extern GMX     *GMX_Create   (int L);
+extern G6X_MX  *G6XMX_Create (int L);
+extern RBG_MX  *RBGMX_Create (int L);
+extern void     GMX_Destroy  (GMX *gmx);
+extern void     G6XMX_Destroy(G6X_MX *g6xmx);
+extern void     RBGMX_Destroy(RBG_MX *rbgmx);
+extern void     GMX_Dump     (FILE *fp, GMX *gmx);
 
 
 #endif
