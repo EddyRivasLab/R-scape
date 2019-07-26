@@ -29,7 +29,7 @@
 #include "correlators.h"
 #include "cacofold.h"
 #include "covgrammars.h"
-#include "cykcov.h"
+#include "maxcov.h"
 #include "logsum.h"
 #include "pottsbuild.h"
 #include "pottsscore.h"
@@ -698,11 +698,12 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 {
   HITLIST  *hitlist = NULL;
   int      *msa2pdb = data->msa2pdb;
+  double    expBP   = data->expBP;
   double    sen, ppv, F;
   double    cov;
   double    eval;
   BPTYPE    bptype;
-  int       select;
+  int       isbp;
   int       is_compatible;
   int       alloc_nhit = 5;
   int       tf = 0;
@@ -743,16 +744,16 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
       switch(data->samplesize) {
       case SAMPLE_CONTACTS:
-	select = (bptype < BPNONE)?  TRUE : FALSE;
+	isbp = (bptype < BPNONE)?  TRUE : FALSE;
 	break;
       case SAMPLE_BP:
-	select = (bptype < STACKED)? TRUE : FALSE;
+	isbp = (bptype < STACKED)? TRUE : FALSE;
 	break;
       case SAMPLE_WC:
-	select = (bptype == WWc)?    TRUE : FALSE;
+	isbp = (bptype == WWc)?    TRUE : FALSE;
 	break;
       case SAMPLE_ALL:
-	select = FALSE;
+	isbp = FALSE;
 	break;	
       }
       
@@ -760,12 +761,17 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
       if (data->ranklist_null == NULL) eval = 0; // naive method: eval does not inform of statistical significance
       else {
-	if (select)
+	if (isbp)
 	  mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
-	else 
-	  mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	else {
+	  if (h < expBP)
+	    mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, expBP,            data->ranklist_null->ha, data->ranklist_null->survfit);
+	  else
+	    mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	}
+	
+	eval = mi->Eval->mx[i][j];
       }
-      eval = mi->Eval->mx[i][j];
 
       if (eval < data->thresh->val) {	
 	if (h == nhit - 1) {
@@ -812,19 +818,19 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     
     switch(data->samplesize) {
     case SAMPLE_CONTACTS:
-      select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
       break;
     case SAMPLE_BP:
-      select = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+      isbp = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
       break;
     case SAMPLE_WC:
-     select = (hitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
+     isbp = (hitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
       break;
     case SAMPLE_ALL: // use all contacts here
-      select = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
      break;	
     }
-    if (select) tf ++;
+    if (isbp) tf ++;
   }
   
   fp = f - tf;
@@ -878,7 +884,7 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
   double    sen, ppv, F;
   int       dim;
   int       nhit = (hitlist)? hitlist->nhit : 0;
-  int       select;
+  int       isbp;
   int       tf = 0;
   int       f  = 0;
   int       t, fp;
@@ -931,19 +937,19 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
     
     switch(data->samplesize) {
     case SAMPLE_CONTACTS:
-      select = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
       break;
     case SAMPLE_BP:
-      select = (foldhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
+      isbp = (foldhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
       break;
     case SAMPLE_WC:
-     select = (foldhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
+     isbp = (foldhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
       break;
     case SAMPLE_ALL: // use all contacts here
-      select = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
+      isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
      break;	
     }
-    if (select) tf ++;
+    if (isbp) tf ++;
   }
   fp = f - tf;
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;

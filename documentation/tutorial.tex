@@ -28,14 +28,14 @@ The E-values are calculated in one of two ways:
  & \\ 
 \end{tabular}
 
-\subsection {Option --cyk}
+\subsection {Option --fold}
 
 After performing one of the two statistical tests, this option:\\
 
 \begin{tabular}{ll}
 \textbf{}   & Builds the best consensus structure that includes the largest possible number of significantly covarying pairs,\\
 \textbf{}   & \hspace{5mm}\emph{the maximum-covariation optimal consensus structure}. The algorithm identifies pseudoknots and\\
-\textbf{}   & \hspace{5mm}other not nested interactions by running a cascade of cyk nested algorithms until all covarying pairs\\
+\textbf{}   & \hspace{5mm}other not nested interactions by running a cascade of nested algorithms until all covarying pairs\\
 \textbf{}   & \hspace{5mm}are taken into account.\\
 \textbf{}   & Draws the \emph{maximum-covariation optimal consensus structure} annotated with the significantly \\
 \textbf{}   & \hspace{5mm}covarying base pairs.\\
@@ -180,14 +180,14 @@ The scores of the pairs are identical to those in the one-set
 test. The E-values have changed relative to those of the one-set test.
 
 
-\subsection{The --cyk option}
+\subsection{The --fold option}
 
-\user{bin/R-scape --cyk tutorial/updated\_Arisong.sto}\\
+\user{bin/R-scape --fold tutorial/updated\_Arisong.sto}\\
 
 \noindent
 The output includes first the same output as default \rscape\ alone,
 followed by \rscape's proposed structure that under the heading ``\#
-The predicted cyk-cov structure'' as follows,
+The predicted structure'' as follows,
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
@@ -209,7 +209,7 @@ The predicted cyk-cov structure'' as follows,
 *	      96	     108	89.46430	0.000148586	25		0.27
 *	     120	     139	75.03790	0.00537656	85		0.75
 
-# The predicted cyk-cov structure
+# The predicted structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons ::::::::::::::::::::::::::::::::::<<<<<_____>>>>>:<<<<<---<<
@@ -263,7 +263,7 @@ alternative structures or triplets.
 \noindent
 Similarly using
 
-\user{bin/R-scape -s --cyk tutorial/updated\_Arisong.sto}\\
+\user{bin/R-scape -s --fold tutorial/updated\_Arisong.sto}\\
 
 \noindent
 The output includes first the same output as \emprog{option -s} of
@@ -334,7 +334,7 @@ maximal number of the covariations obtained under the two-set test.
 *	      97	     107	44.72409	0.0293269	58		0.59
 *	     115	     144	41.87792	0.0490385	48		0.51
 
-# The predicted cyk-cov structure
+# The predicted structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons :::::::::::::::::::::::::::::::::<<<<<<_____>>>>>><<<<<---<<
@@ -401,7 +401,7 @@ Consider the manA RNA motif. Both the proposed structure for manA RNA
 and the predicted \rscape\ structure have 2 pseudoknots with
 covariation support:
 
-\user{bin/R-scape -s --cyk tutorial/manA.sto}\\
+\user{bin/R-scape -s --fold tutorial/manA.sto}\\
 
 
 \begin{sreoutput}
@@ -443,7 +443,7 @@ covariation support:
 
   ...
   
-# The predicted cyk-cov structure
+# The predicted structure
 # SS_cons   <<<<<_________________________________>>>>>:[---[[[[[,,,<<--
 # SS_cons_1 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # SS_cons_2 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -478,20 +478,20 @@ covariation support:
 \rscape\, uses R2R to produce figures of the consensus structures
 where pseudoknots are also annotated.  \rscape] option -s produces the
   file \emprog{tutorial/manA.R2R.sto.\{pdf,svg\}} with the structure
-  annotated in the input alignment. \rscape] option --cyk produces the
-    file \emprog{tutorial/manA.cyk.R2R.sto.\{pdf,svg\}} with the
+  annotated in the input alignment. \rscape] option --fold produces the
+    file \emprog{tutorial/manA.fold.R2R.sto.\{pdf,svg\}} with the
     structure produced by \rscape. See Figure~\ref{fig:manA_r2r}.
 
 
  \begin{figure}[h]
    \includegraphics[scale=0.7]{manA_R2R.pdf} 
-  \includegraphics[scale=0.7]{manA_cyk_R2R.pdf} 
+  \includegraphics[scale=0.7]{manA_fold_R2R.pdf} 
   \caption{\small\textbf{Left:}
     \emprog{tutorial/manA.R2R.sto.\{pdf,svg\}}, the consensus
     secondary structure given in the input alignment, depicted by
     \rscape, using the program R2R.  \textbf{Right:}
-    \emprog{tutorial/manA.cyk.R2R.sto.\{pdf,svg\}}, The consensus
-    structure produced by \rscape\ (option --cyk).  Base pairs with
+    \emprog{tutorial/manA.fold.R2R.sto.\{pdf,svg\}}, The consensus
+    structure produced by \rscape\ (option --fold).  Base pairs with
     covariation scores equal or below the target E-value (0.05 as
     default) are depicted in green.  }
  \label{fig:manA_r2r}
@@ -503,7 +503,7 @@ where pseudoknots are also annotated.  \rscape] option -s produces the
  If the alignment includes only one sequence, no statistical test is performed. \\
 
  \noindent
- \user{bin/R-scape --cyk tutorial/manA-oneseq.sto}\\
+ \user{bin/R-scape --fold tutorial/manA-oneseq.sto}\\
 %
  reports the best structure given the sequence. No covariation support
  is possible for any of the basepairs reported from this

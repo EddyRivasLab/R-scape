@@ -264,6 +264,21 @@ msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa)
   return eslOK;
 }
 
+extern
+int msamanip_Getsqlen(ESL_MSA *msa)
+{
+  int n;
+  int status;
+  
+  ESL_ALLOC(msa->sqlen, sizeof(int64_t) * msa->nseq);  
+  for (n = 0; n < msa->nseq; n++) msa->sqlen[n] = esl_abc_dsqlen(msa->ax[n]);
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 int
 msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf)
 {
@@ -351,9 +366,10 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
   int     *map    = NULL;
   int     *revmap = NULL;
   int     *useme  = *ret_useme;
-  int      expgap;
+  double   idthresh = 1.0 - gapthresh;
+  double   r;
+  double   totwgt;
   int64_t  alen = msa->alen; //alen of the truncated alignment
-  int      ngap;
   int      apos;
   int      newpos = 0;
   int      i;
@@ -368,15 +384,22 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
   }
  
   if (dofilter) {
+    // count the gaps/missing in apos
     for (apos = 1; apos <= alen; apos++) {
-      /* count the gaps/missing in apos */
-      ngap = 0;
-      for (i = 0; i < msa->nseq; i++) 
-	if (esl_abc_XIsGap(msa->abc, msa->ax[i][apos]) || esl_abc_XIsMissing(msa->abc, msa->ax[i][apos])) ngap ++;
+      r = totwgt = 0.;
+      for (i = 0; i < msa->nseq; i++)
+        {
+          if  (esl_abc_XIsResidue(msa->abc, msa->ax[i][apos]))
+	    {
+	      r += msa->wgt[i]; totwgt += msa->wgt[i];
+	    }
+          else if  (esl_abc_XIsGap(msa->abc,     msa->ax[i][apos])) totwgt += msa->wgt[i];
+          else if  (esl_abc_XIsMissing(msa->abc, msa->ax[i][apos]))  continue;
+        }
       
-      /* apply gapthresh */
-      expgap = ceil(gapthresh*(double)msa->nseq);
-      if (ngap >= expgap) useme[apos-1] = FALSE;
+      // apply gapthresh 
+      if (r > 0. && r / totwgt < idthresh) useme[apos-1] = FALSE;
+      else                                 useme[apos-1] = TRUE;
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)

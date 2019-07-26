@@ -28,6 +28,9 @@ if ($outname =~ /^(\S+).rscape/) { $outname = "$1"; }
 
 my $outfile_rank         = "$outname.rank";        # file with all families ranked by Sensitivity/power 
 my $outfile_allfam       = "$outname.allfam";      # file with all families ranked by Sensitivity to plot
+my $outfile_allfam_l1    = "$outname.allfam.l1";   # file with all families ranked by Sensitivity to plot
+my $outfile_allfam_l2    = "$outname.allfam.l2";   # file with all families ranked by Sensitivity to plot
+my $outfile_allfam_l3    = "$outname.allfam.l3";   # file with all families ranked by Sensitivity to plot
 my $outfile_nopower      = "$outname.nopower";     # families with no power (power = 0) 
 my $outfile_withpower    = "$outname.withpower";   # families with power   (power > 0)
 my $outfile_nocov        = "$outname.nocov";       # families with no significant covariations   (sen = 0)
@@ -175,9 +178,9 @@ my %fam_table;
 my %fam_tabless;
 
 my $nf = filter_fam($nofilter);
-print "NFAM $nf\n";
+print "filtered NFAM $nf\n";
 
-outfile_rank       ($outfile_rank, $outfile_allfam);
+outfile_rank       ($outfile_rank, $outfile_allfam, $outfile_allfam_l1, $outfile_allfam_l2, $outfile_allfam_l3);
 outfile_nopower    ($outfile_nopower);
 outfile_withpower  ($outfile_withpower);
 outfile_nocov      ($outfile_nocov);
@@ -255,7 +258,7 @@ sub parse_rscapeout {
 		
 		$allfam_tp_fold{$fam}     = 0.0;
 		$allfam_true_fold{$fam}   = 0.0;
-		$allfam_found_fold{$fam}  = 0.0;
+  		$allfam_found_fold{$fam}  = 0.0;
 		$allfam_tpexp_fold{$fam}  = 0.0;
 		
 		$allfam_S_fold{$fam}      = 0.0;
@@ -299,17 +302,18 @@ sub parse_rscapeout {
 	    my $avgsub = $1;
 	    if ($usefam) {
 		if ($isfold) { $allfam_avgsub_fold{$fam} = $avgsub; }
-		else        { $allfam_avgsub{$fam}     = $avgsub; }
+		else         { $allfam_avgsub{$fam}      = $avgsub; }
 	    }
 	}
 	elsif (/^#\s+BPAIRS expected to covary\s+(\S+)/) {
 	    my $tpexp = $1;
 	    if ($usefam) { 
 		if ($isfold) { $allfam_tpexp_fold{$fam} = $tpexp; }
-		else        { $allfam_tpexp{$fam}     = $tpexp; }
+		else         { $allfam_tpexp{$fam}      = $tpexp; }
 	    }
 	}
-	elsif (/^# The predicted fold-cov structure/) {
+	#elsif (/^# The predicted fold-cov structure/) {
+	elsif (/^# The predicted cyk-cov structure/) {
 	    $isfold = 1;
 	}
 	# add compatible pairs in the fold structure
@@ -340,20 +344,20 @@ sub parse_rscapeout {
 	my $fam = $allfam[$f];
 	
 	# recalculate in case we added "compatible" covarying pairs ~
-	FUNCS::calculateF  ($allfam_tp{$fam},     $allfam_true{$fam},     $allfam_found{$fam},     \$allfam_S{$fam},     \$allfam_P{$fam},     \$allfam_F{$fam});
-	FUNCS::calculateF  ($allfam_tp_fold{$fam}, $allfam_true_fold{$fam}, $allfam_found_fold{$fam}, \$allfam_S_fold{$fam}, \$allfam_P_fold{$fam}, \$allfam_F_fold{$fam});
+	FUNCS::calculateF($allfam_tp{$fam},      $allfam_true{$fam},      $allfam_found{$fam},      \$allfam_S{$fam},      \$allfam_P{$fam},      \$allfam_F{$fam});
+	FUNCS::calculateF($allfam_tp_fold{$fam}, $allfam_true_fold{$fam}, $allfam_found_fold{$fam}, \$allfam_S_fold{$fam}, \$allfam_P_fold{$fam}, \$allfam_F_fold{$fam});
 	
-	FUNCS::calculateSEN($allfam_tpexp{$fam},     $allfam_true{$fam},     \$allfam_Spower{$fam});
+	FUNCS::calculateSEN($allfam_tpexp{$fam},      $allfam_true{$fam},      \$allfam_Spower{$fam});
 	FUNCS::calculateSEN($allfam_tpexp_fold{$fam}, $allfam_true_fold{$fam}, \$allfam_Spower_fold{$fam});
 
-	$allfam_Spower{$fam} = sprintf("%.1f", $allfam_Spower{$fam});
-	$allfam_S{$fam}      = sprintf("%.1f", $allfam_S{$fam});
-	$allfam_P{$fam}      = sprintf("%.1f", $allfam_P{$fam});
-	$allfam_F{$fam}      = sprintf("%.1f", $allfam_F{$fam});
+	$allfam_Spower{$fam}  = sprintf("%.1f", $allfam_Spower{$fam});
+	$allfam_S{$fam}       = sprintf("%.1f", $allfam_S{$fam});
+	$allfam_P{$fam}       = sprintf("%.1f", $allfam_P{$fam});
+	$allfam_F{$fam}       = sprintf("%.1f", $allfam_F{$fam});
 	$allfam_S_fold{$fam}  = sprintf("%.1f", $allfam_S_fold{$fam});
 	$allfam_P_fold{$fam}  = sprintf("%.1f", $allfam_P_fold{$fam});
 	$allfam_F_fold{$fam}  = sprintf("%.1f", $allfam_F_fold{$fam});
-	$allfam_id{$fam}     = sprintf("%.1f", $allfam_id{$fam});
+	$allfam_id{$fam}      = sprintf("%.1f", $allfam_id{$fam});
 	    
 	my $name = $fam;
 	if ($n3d > 0 && $usefam3d_ref->{$fam}) { $name .= "**"; }
@@ -580,8 +584,15 @@ sub plot_allvsall {
     
     print GP "set xrange [-0.5:100]\n";
     print GP "set yrange [-0.5:100]\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam_l1' using $iSpower:$iS      title '' with points ls 1112, "; 
+    $cmd .= "'$outfile_allfam_l2' using $iSpower:$iS      title '' with points ls 1114, "; 
+    $cmd .= "'$outfile_allfam_l3' using $iSpower:$iS      title '' with points ls 1113 "; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
@@ -683,13 +694,20 @@ sub plot_allvsid {
 }
 
 sub outfile_rank {
-    my ($outfile_rank, $outfile_allfam) = @_;
+    my ($outfile_rank, $outfile_allfam, $outfile_allfam_l1, $outfile_allfam_l2, $outfile_allfam_l3) = @_;
     
     #my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
    
-    open (OUT1, ">$outfile_rank")   || die;
-    open (OUT2, ">$outfile_allfam") || die;
+    open (OUT1,  ">$outfile_rank")      || die;
+    open (OUT2,  ">$outfile_allfam")    || die;
+    open (OUT21, ">$outfile_allfam_l1") || die;
+    open (OUT22, ">$outfile_allfam_l2") || die;
+    open (OUT23, ">$outfile_allfam_l3") || die;
+
+    # ppv levels for display
+    my $l1 = 95;
+    my $l2 = 50;
 	
     my $cmd = "";
     $cmd .= "# family\t\t\t\t";
@@ -708,6 +726,18 @@ sub outfile_rank {
 	printf OUT1 "$fam_all{$fam}\n";
 	$fam_all{$fam} = $n." ".$fam_all{$fam};
 	printf OUT2 "$fam_all{$fam}\n";
+	
+	# separate by ppv value
+	if ($fam_P{$fam} > $l1) {
+	    printf OUT21 "$fam_all{$fam}\n";
+	}
+	elsif ($fam_P{$fam} > $l2) {
+	    printf OUT22 "$fam_all{$fam}\n";
+	}
+	else {
+	    printf OUT23 "$fam_all{$fam}\n";
+	}
+	
 	$fam_table{$fam} = "$n & $fam_table{$fam}";
 	printf  "$fam_table{$fam}\n";
 	$fam_tabless{$fam} = "$n & $fam_tabless{$fam}";
@@ -715,6 +745,9 @@ sub outfile_rank {
     
     close(OUT1);  
     close(OUT2);      
+    close(OUT21);      
+    close(OUT22);      
+    close(OUT23);      
 }
 
 sub outfile_nopower{

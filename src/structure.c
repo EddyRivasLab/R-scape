@@ -35,18 +35,18 @@
 #include "structure.h"
 
  
-static int   struct_cacofold(char *r2rfile, int r2rall,  ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
-			     enum grammar_e G, enum fold_e F, double gapthresh, int verbose, char *errbuf);
-static int   struct_cacofold_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-				       enum grammar_e G, enum fold_e F, double gapthresh, int verbose, char *errbuf);
+static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
+			     FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf);
+static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
+				      FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int   ct_add_if_nested(int *ct, int *ctmain, int L);
 static int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
 static void  ct_dump(int L, int *ct);
-static int   ct_split_helices(int *ct, int *cov, int L, int *ret_idx, int ***ret_ctlist, int ***ret_covlist, int verbose);
+static int   ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, int *ret_idx, int ***ret_ctlist, int ***ret_covlist, int verbose);
 static int   ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose);
-static int   ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose);
-static int   ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose);
+static int   ctlist_break_in_helices(int helix_unpaired, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose);
+static int   ctlist_helices_select(FOLDPARAM *foldparam, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose);
 static int   ctlist_helices_merge(int *ret_nct, int ***ret_ctlist, int L, int verbose);
 static int   ctlist_reorder(int nct, int **ctlist, double *sc, int L, int verbose);
 static int  *sorted_decreasing_order(int *nbp, double *sc, int n);
@@ -54,7 +54,7 @@ static int  *sorted_decreasing_order(int *nbp, double *sc, int n);
 // cascade covariation/variation constrain folding algorithm (CACOFold)
 int
 struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctlist, 
-		RANKLIST *ranklist, HITLIST *hitlist, enum grammar_e G, enum fold_e F, THRESH *thresh)
+		RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh)
 {
   HITLIST       *foldhitlist = NULL;
   char          *covtype    = NULL;
@@ -92,7 +92,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
   
   // Use the CT from covariation to do a cov-constrained cascade folding
   nct = cyknct;
-  status = struct_cacofold(data->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, &nct, &ctlist, exclude, G, F, data->gapthresh, data->verbose, data->errbuf);
+  status = struct_cacofold(data->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, &nct, &ctlist, exclude, foldparam, data->gapthresh, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
 
   // create a new contact list from the ct
@@ -476,7 +476,7 @@ struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, int ***ret_octli
 // into one ct without pseudoknots and additional ct's one with
 // each of the pseudoknots
 int
-struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
+struct_SplitCT(int helix_unpaired, int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 {
   int  **ctlist = NULL;
   char  *ss1    = NULL;
@@ -527,7 +527,7 @@ struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
     }    
   }
 
-  status = ctlist_break_in_helices(&nct, &ctlist, NULL, L, verbose);
+  status = ctlist_break_in_helices(helix_unpaired, &nct, &ctlist, NULL, L, verbose);
   if (status != eslOK) goto ERROR;
 
   if (verbose) {
@@ -558,7 +558,7 @@ struct_SplitCT(int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose)
 
 static int
 struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
-		enum grammar_e G, enum fold_e F, double gapthresh, int verbose, char *errbuf)
+		FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf)
 {
   FILE   *fp      = NULL;
   char   *ss      = NULL;
@@ -581,12 +581,12 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   // the main fold uses the RBG grammar. For the rest, we don't look for a 2D, so no
   // no need to look for hairpin loops, bulges, internal loops. The G6X grammar is a better choice
   for (s = 0; s < nct; s ++) {
-    if (s > 0) G = G6X;
+    if (s > 0) foldparam->G = G6X;
     
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
     ESL_ALLOC(ctlist[s], sizeof(int) * (L+1));
     esl_vec_ICopy(covlist[s], L+1, ctlist[s]);
-    status = struct_cacofold_expandct(r, msa, spair, &ctlist[s], &sc[s], exclude[s], G, F, gapthresh, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &ctlist[s], &sc[s], exclude[s], foldparam, gapthresh, verbose, errbuf);
     if (status != eslOK) goto ERROR;     
   }
 
@@ -609,7 +609,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     // and covarying basepairs cannot be present
     ESL_ALLOC(ctlist[nct], sizeof(int) * (L+1));
     esl_vec_ISet(ctlist[nct], L+1, 0);
-    status = struct_cacofold_expandct(r, msa, spair, &ctlist[nct], &sc[nct], exclude[nct], G, F, gapthresh, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &ctlist[nct], &sc[nct], exclude[nct], foldparam, gapthresh, verbose, errbuf);
     if (status != eslOK) goto ERROR;
     nct  ++;
   }
@@ -626,7 +626,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   
   // for the extra structures, break in individual helices
   // A helix is definded as...
-  status = ctlist_break_in_helices(&nct, &ctlist, &covlist, L, verbose);
+  status = ctlist_break_in_helices(foldparam->helix_unpaired, &nct, &ctlist, &covlist, L, verbose);
   if (status != eslOK) goto ERROR;     
   
   if (verbose) {
@@ -642,7 +642,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   // All substructures are tested for including at least 1 cov.
   // Substructures w/o covariations have to be compatible with the major nested structure
   // otherwise they get removed.
-  status = ctlist_helices_select(&nct, &ctlist, &covlist, L, verbose);
+  status = ctlist_helices_select(foldparam, &nct, &ctlist, &covlist, L, verbose);
   if (status != eslOK) goto ERROR;
 
   if (verbose) {
@@ -697,8 +697,8 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 }
 
 static int
-struct_cacofold_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-			  enum grammar_e G, enum fold_e F, double gapthresh, int verbose, char *errbuf)
+struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
+			 FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf)
 {
   char    *rfline = NULL;
   char    *newss  = NULL;
@@ -724,13 +724,13 @@ struct_cacofold_expandct( ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **r
   if (verbose) ct_dump(msa->alen, ct);
 
   // calculate the cascade power/covariation constrained structure using a probabilistic grammar 
-  switch(F) {
+  switch(foldparam->F) {
   case CYK:
-    status = CACO_CYK(r, G, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    status = CACO_CYK(r, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case DECODING:
-    status = CACO_DECODING(r, G, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    status = CACO_DECODING(r, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -926,13 +926,13 @@ ct_dump(int L, int *ct)
 
 // split in helices
 static int
-ct_split_helices(int *ct, int *cov, int L, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int verbose)
+ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int verbose)
 {
   ESL_STACK  *pda     = NULL;                // stack for secondary structure 
   int       **covlist = *ret_covlist;
   int       **ctlist  = *ret_ctlist;
   int         nct     = *ret_nct;
-  int         nsingle_max = HELIX_UNPAIRED; // break stems when there is more than nsigle_max unpaired residues
+  int         nsingle_max = helix_unpaired; // break stems when there is more than nsigle_max unpaired residues
   int         nsingle;
   int         nfaces;                       // number of faces in a structure 
   int         minface;                      // max depth of faces in a structure 
@@ -1082,7 +1082,7 @@ ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose)
 }
 
 static int
-ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose)
+ctlist_break_in_helices(int helix_unpaired, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose)
 {
   int   **covlist = (ret_covlist)? *ret_covlist : NULL;
   int   **ctlist  = *ret_ctlist;
@@ -1120,7 +1120,7 @@ ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int
       esl_ct2wuss(ctlist[s], L, ss);
       printf("break_in_helices: pknot %d\n%s\n", s, ss);
     }
-    status = ct_split_helices(ctlist[s], (covlist)?covlist[s]:NULL, L, &new, &ctnew, &covnew, verbose);
+    status = ct_split_helices(helix_unpaired, ctlist[s], (covlist)?covlist[s]:NULL, L, &new, &ctnew, &covnew, verbose);
     if (status != eslOK) goto ERROR;
     
     if (verbose) {
@@ -1176,15 +1176,14 @@ ctlist_break_in_helices(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int
 //
 //
 // Arguments:
-//             nctcov  
-//             ctlistcov is the list of original covariations split into a main nested structure and others
+//             nct       The number of structures.
+//             ctlist    The current list of the structures.
+//             covlist   The list of original covariations split into a main nested structure and others
 //                       that cannot explained by it.
-//             nct       current number of structures.
-//             ctlist    is the current list of the structures.
-//             L         the length of the alignment
+//             L         The length of the alignment
 //
 static int
-ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose)
+ctlist_helices_select(FOLDPARAM *foldparam, int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L, int verbose)
 {
   char      *ssmain   = NULL;
   char      *ss       = NULL;
@@ -1197,8 +1196,8 @@ ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L
   int       *ct;                         // the current structure
   int       *cov;                        // the covs for the current structdure
   int        nct         = *ret_nct;
-  double     overlapfrac = OVERLAPFRAC;
-  int        minhelix    = MINHELIX;
+  double     overlapfrac = foldparam->helix_overlapfrac;
+  int        minhelix    = foldparam->minhelix;
   int        new = 1;
   int        hascov;       // TRUE if helix has at least covariation
   int        isallowed;    // TRUE if helix overlaps less the overlapfraq with main structure and has at least min
@@ -1212,8 +1211,19 @@ ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L
   int        n;
   int        status;
 
-  if (nct <= 1) return eslOK;
-  
+  if (nct == 0) return eslOK;
+
+  if (foldparam->cov_min_dist > 1) {
+    for (i = 1; i <= L; i ++) {
+      j = ctmain[i];
+      
+      if (j > i && j < i+foldparam->cov_min_dist) {
+	ctmain[i] = 0;
+	ctmain[j] = 0;
+      }
+    }
+  }
+
   // allocate
   ESL_ALLOC(useme,   sizeof(int) * nct);
   ESL_ALLOC(cumpair, sizeof(PAIRLIST));
@@ -1240,15 +1250,19 @@ ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L
     ct  = ctlist[s];
     cov = covlist[s];
 
-    // REMOVE_CONTCOV = 1
-    // remove covariation that are next to each other in the non-nested structures
-    if (REMOVE_CONTCOV) {
-      for (i = 1; i <= L; i ++) 
-	if (cov[i] == i+1) { cov[i] = 0; cov[i+1] = 0; }
+    // remove covariations in the extra structures that are next to each other
+    if (COV_MIN_DIST > 1) {
+      for (i = 1; i <= L; i ++) {
+	j = cov[i];
+	if (j > i && j < i+foldparam->cov_min_dist) {
+	  cov[i] = 0;
+	  cov[j] = 0;
+	}
+      }
     }
  
     // does helix have covariations?
-    // use ctcov to decide
+    // use cov_ct to decide
     for (i = 1; i <= L; i ++)
       if (ct[i] > 0 && cov[i] > 0) { hascov = TRUE; break; }
    
@@ -1272,7 +1286,7 @@ ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L
 
     // if the helix has covariations, but it isallowed = FALSE,
     // remove from the helix the non-overlap/no-covariation part
-    if (HELIX_OVERLAP_TRIM && hascov && !isallowed) {
+    if (foldparam->helix_overlap_trim && hascov && !isallowed) {
       for (i = 1; i <= L; i ++) {
 	if (ct[i] > 0 && cov[i] == 0 && ctmain[i] > 0)
 	  {
@@ -1281,7 +1295,7 @@ ctlist_helices_select(int *ret_nct, int ***ret_ctlist, int ***ret_covlist, int L
       }
     }
 
-    if (1||verbose) {
+    if (verbose) {
       esl_ct2wuss(ct, L, ss);
       printf("\n%s\n%s\nn_tot %d n_overlap %d n_dup %d | hascov %d isallowed %d isunique %d\n", ssmain, ss, n_tot, n_overlap, n_dup, hascov, isallowed, isunique);
     }

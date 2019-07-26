@@ -29,7 +29,7 @@
 #include "correlators.h"
 #include "covariation.h"
 #include "covgrammars.h"
-#include "cykcov.h"
+#include "maxcov.h"
 #include "logsum.h"
 #include "pottsbuild.h"
 #include "ratematrix.h"

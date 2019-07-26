@@ -220,6 +220,7 @@ struct data_s {
   int                  nseq;
   int                  nct;
   int                **ctlist;
+  int                  expBP;   // if no structure given but it is a structural RNA, give an expected number of BPs. Default -1
   int                  onbpairs;
   int                  nbpairs;
   int                  nbpairs_fold;

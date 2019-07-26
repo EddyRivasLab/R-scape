@@ -12,6 +12,7 @@
 #include "esl_msacluster.h"
 #include "esl_msafile.h"
 #include "esl_msaweight.h"
+#include "esl_stats.h"
 #include "esl_stopwatch.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
@@ -124,9 +125,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              foldLmax;
   char            *R2Rfoldfile;
   FILE            *R2Rfoldfp;
-  enum grammar_e   grammar;
-  enum fold_e      fold;
 
+  FOLDPARAM       *foldparam;
+  
   char            *covhisfile;
   char            *covqqfile;
   char            *dplotfile;
@@ -173,7 +174,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nbpairs;
   int              nbpairs_fold;
 
-  
+  double           expBP;               // expected number of basepairs expected (avg_sqlen/2) when a unknown structure is assumed
   double           ptmuh;               // regularization coefficients
   double           ptmue;
   PTTRAIN          pttrain;
@@ -229,7 +230,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *powerhisfp;
   POWER           *power;
   int              powerdouble;
-  
+
   float            tol;
   int              verbose;
 };
@@ -240,6 +241,7 @@ static ESL_OPTIONS options[] = {
   /* options for statistical analysis */
   { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
   { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                    1 },
+  { "--structured",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "-s",               "This is a structural RNA of unknown structure",                                            1 },
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                       1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
@@ -264,7 +266,7 @@ static ESL_OPTIONS options[] = {
   { "--consensus",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "analyze only consensus (seq_cons) positions",                                               1 },
   { "--submsa",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "take n random sequences from the alignment, all if NULL",                                   1 },
   { "--nseqmin",      eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "minimum number of sequences in the alignment",                                              1 },  
-  { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
+  { "--gapthresh",    eslARG_REAL,     "0.75",   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
   { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              1 },
@@ -353,10 +355,12 @@ static ESL_OPTIONS options[] = {
   /* subsitution power analysis */  
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",                                                   1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
-  /* other options */  
-  { "--foldLmax",       eslARG_INT,    "5000",   NULL,      "n>0",   NULL,    NULL, NULL,                "max length to do foldcov calculation",                                                       0 },   
+  /* folding options */
+  { "--minhloop",     eslARG_INT,  HLOOP_MIN,    NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",   1 },
+  { "--foldLmax",       eslARG_INT,    "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                       0 },   
   { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                                0 },   
   { "--foldmethod", eslARG_STRING,     "CYK",    NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
+  /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
@@ -518,19 +522,36 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
-    
-  if ( esl_opt_IsOn(go, "--grammar") ) {
-    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.grammar = G6X;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.grammar = G6XS;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.grammar = RBG;
-    else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
-  }
-  if ( esl_opt_IsOn(go, "--foldmethod") ) {
-    if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.fold = CYK;
-    else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.fold = DECODING;
-    else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
-  }
 
+  if (esl_opt_IsOn(go, "--structured") && esl_opt_IsOn(go, "-s"))
+    esl_fatal("option --structure cannot be used with a proposed structure");  
+  cfg.expBP = -1;
+
+  /* folding parameters */
+  cfg.foldparam = NULL;
+  if (esl_opt_IsOn(go, "--fold")) {
+    ESL_ALLOC(cfg.foldparam, sizeof(FOLDPARAM));
+    
+    if ( esl_opt_IsOn(go, "--grammar") ) {
+      if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.foldparam->G = G6X;
+      else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.foldparam->G = G6XS;
+      else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.foldparam->G = RBG;
+      else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
+    }
+    if ( esl_opt_IsOn(go, "--foldmethod") ) {
+      if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.foldparam->F = CYK;
+      else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.foldparam->F = DECODING;
+      else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
+    }
+    
+    cfg.foldparam->hloop_min          = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
+    cfg.foldparam->power_thresh       = POWER_THRESH;
+    cfg.foldparam->helix_unpaired     = HELIX_UNPAIRED;
+    cfg.foldparam->helix_overlapfrac  = OVERLAPFRAC;
+    cfg.foldparam->helix_overlap_trim = HELIX_OVERLAP_TRIM;
+    cfg.foldparam->cov_min_dist       = COV_MIN_DIST;
+  }
+    
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   cfg.YSeffect = FALSE;
@@ -581,7 +602,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
   else                                        cfg.covclass = CSELECT;  
-  
+
   /* POTTS model */
   cfg.pt = NULL;
   
@@ -1056,6 +1077,7 @@ main(int argc, char **argv)
   if (cfg.powerfile) free(cfg.powerfile);
   if (cfg.powerhisfile) free(cfg.powerhisfile);
   if (cfg.power) power_Destroy(cfg.power);
+  if (cfg.foldparam) free(cfg.foldparam);
   return 0;
 }
 
@@ -1110,6 +1132,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.ct            = cfg->ct;
   data.nct           = cfg->nct;
   data.ctlist        = cfg->ctlist;
+  data.expBP         = cfg->expBP;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_fold   = cfg->nbpairs_fold;
@@ -1426,6 +1449,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* add the name */
   esl_msa_SetName(msa, cfg->msaname, -1);
+
+  // The structure is not given, but we are assuming the RNA does have a structure
+  //
+  if (esl_opt_IsOn(go, "--structured")) {
+    msamanip_Getsqlen(msa);
+    if (!msa->sqlen) esl_fatal("msamanip_Getsqlen failed");
+    cfg->expBP = 0.50 * esl_vec_LSum(msa->sqlen, msa->nseq) / msa->nseq;
+  }
  
   /* print some info */
   if (cfg->verbose) {
@@ -1817,7 +1848,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
   if (cfg->abcisRNA) {
-    struct_SplitCT(cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
+    struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
     if (status != eslOK) goto ERROR;
   }
 
@@ -2025,6 +2056,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.gapthresh     = cfg->gapthresh;
   data.nct           = cfg->nct;
   data.ctlist        = cfg->ctlist;
+  data.expBP         = cfg->expBP;
   data.onbpairs      = cfg->onbpairs;
   data.nbpairs       = cfg->nbpairs;
   data.nbpairs_fold   = cfg->nbpairs_fold;
@@ -2076,7 +2108,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->dofold && cfg->mode != RANSS) {
 
     data.mode = FOLDSS;    
-    status = struct_CACOFOLD(&data, msa, &foldnct, &foldctlist, ranklist, hitlist, cfg->grammar, cfg->fold, cfg->thresh);
+    status = struct_CACOFOLD(&data, msa, &foldnct, &foldctlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
 
     status = write_omsafold(cfg, msa->alen, foldnct, foldctlist, FALSE);

@@ -1,4 +1,4 @@
-/* cykcov.c */
+/* maxcov.c */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,7 +43,6 @@ static int  covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov
  *                        ctlist[s][i] =  0 unrestricted
  *        exclude[nct]  - exclude[s] is a CLIST with those covarying pairs forced to remain unpaired in structures s.
  */
-
 int
 MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, COVLIST ***ret_exclude,
        int ncvpairs, THRESH *thresh, char *errbuf, int verbose) 
@@ -104,7 +103,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
   ESL_ALLOC(explained, sizeof(COVLIST));
   explained->n   = 0;
   explained->cov = NULL;
-  if (1||verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
+  if (verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
 
   // list with all covarying pairs
   if ((status = covariations_total(mi, clist, thresh, &totalcov, verbose)) != eslOK) goto ERROR;
@@ -116,7 +115,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     else          ESL_REALLOC(ctlist, sizeof(int *) * (nct+1));
     ctlist[nct] = NULL;
  
-    // explained describes the covariations already taken into account before this fold
+    // "explained" describes the covariations already taken into account before this fold
     ncv_in = 0;
     if ((status = MAXCOV_Both(rng, mi, clist, explained, &sc, &ctlist[nct], &ncv_in, thresh, errbuf, verbose)) != eslOK) goto ERROR;
     if (ncv_in == 0) {
@@ -127,7 +126,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     }
     
      ct = ctlist[nct]; // the current skeleton of this structure
-     if (1||verbose) esl_ct2wuss(ct, L, ss);
+     if (verbose) esl_ct2wuss(ct, L, ss);
     
     // number of covarying pairs that remain to be explained
     ncv_left -= ncv_in;
@@ -135,7 +134,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     // add the current list of cov pairs to explained
     if (add_to_explained(&explained, mi->alen, ct) != eslOK) goto ERROR;
 
-    if (1||verbose) 
+    if (verbose) 
       printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f | not explained %d\n%s\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ncv_left, ss);
        
     nct ++;
@@ -216,7 +215,6 @@ MAXCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCV
  ERROR:
   return status;
 }
-
 
 int
 MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int **ret_ct, THRESH *thresh, char *errbuf, int verbose) 
@@ -340,7 +338,7 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, T
 {
   SCVAL  bestsc = -eslINFINITY;
   SCVAL  sc;
-  double eval;
+  double eval, evalsc;
   int    d1;
   int    r;
   int    i, k;
@@ -363,10 +361,11 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, T
   r = 1;
   for (d1 = 1; d1 <= d; d1++) {
     k = i + d1 - 1;
-    eval = mi->Eval->mx[i-1][k-1];
+    eval   = mi->Eval->mx[i-1][k-1];
+    evalsc = (eval < 1.)? -log(eval) : eval;
 
     if (eval > 0) 
-      sc = (accept_pair(i, k, mi, clist, explained, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] - log(eval) : -eslINFINITY;
+      sc = (accept_pair(i, k, mi, clist, explained, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + evalsc : -eslINFINITY;
     else
       sc = +eslINFINITY;
     
@@ -557,7 +556,6 @@ covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST **
 	exclude[s]->cov[nn].score = score;
 	exclude[s]->n ++;
       }
-      
     }
   }
 
