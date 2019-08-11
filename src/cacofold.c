@@ -39,14 +39,11 @@ static int   dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *s
 				  int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
 static int   dp_recursion_rbg_cyk (FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, COVLIST *exclude, RBG_MX *cyk,
 				   int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
-static int   allow_single(int i, int *ct) ;
-static int   force_single(int i, int *ct) ;
-static int   allow_loop(int i, int j, int *ct);
-static int   allow_hairpin(int i, int j, int *ct);
-static int   force_loop(int i, int j, int *ct);
-static int   force_hairpin(int hloop_min, int i, int j, int *ct);
 static int   allow_bpair(double power_thresh, int hloop_min, int i, int j, int L, int *ct, COVLIST *exclude, SPAIR *spair);
 static int   force_bpair(int i, int j, int *ct);
+static int   allow_hairpin(int hloop_min, int i, int j, int L, int *ct);
+static int   allow_loop(int i, int j, int *ct);
+static int   allow_single(int i, int *ct);
 static SCVAL emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
 static SCVAL emitsc_pair(int i, int j,        ESL_DSQ *dsq, SCVAL e_pair[NP]);
 static SCVAL emitsc_sing(int i,               ESL_DSQ *dsq, SCVAL e_sing[NB]);
@@ -75,8 +72,21 @@ static int   dvec_SCVAL_LogNorm(int n1, int n2, SCVAL dvec[n1][n2]);
  *  M1 -> a M1    | F0
  *
  */
+
+/* Inputs are:
+ *
+ *        ct[L+1]   - ct[i] >  0 a covarying pair forced to  basepair in structure s (the covariation skeleton of s)
+ *                    ct[i] = -1 residue is covarying in some other ct (see exclude list to figure out to what)
+ *                    ct[i] =  0 unrestricted
+ *
+ *        exclude   - a CLIST with those covarying pairs forced to remain unpaired in this strcture.
+ *
+ * Outputs are:
+ *
+ *        cct[L+1]  - A complete structure in ct format
+ */
 int
-CACO_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int *ct, int **ret_cct, SCVAL *ret_sc, COVLIST *exclude, char *errbuf, int verbose) 
+CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int *ct, int **ret_cct, SCVAL *ret_sc, COVLIST *exclude, char *errbuf, int verbose) 
 {
   G6Xparam  *g6p  = NULL;
   G6XSparam *g6sp = NULL;
@@ -85,7 +95,7 @@ CACO_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int 
   int       status;
 
   /* get the grammar parameters and run the corresponding CYK */
-  switch(foldparam->G) {
+  switch(G) {
   case G6X:
     /* Transfer scores from static built-in storage */
     status = CACO_G6X_GetParam(&g6p, errbuf, verbose);
@@ -119,7 +129,7 @@ CACO_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int 
 }
 
 int
-CACO_DECODING(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int *ct, int **ret_cct, SCVAL *ret_sc, COVLIST *exclude, char *errbuf, int verbose) 
+CACO_DECODING(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair, int *ct, int **ret_cct, SCVAL *ret_sc, COVLIST *exclude, char *errbuf, int verbose) 
 {
   G6Xparam  *g6p  = NULL;
   G6XSparam *g6sp = NULL;
@@ -128,7 +138,7 @@ CACO_DECODING(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair,
   int        status;
 
   /* get the grammar parameters and run the corresponding DECODING */
-  switch(foldparam->G) {
+  switch(G) {
   case G6X:
     /* Transfer scores from static built-in storage */
     status = CACO_G6X_GetParam(&g6p, errbuf, verbose);
@@ -139,7 +149,7 @@ CACO_DECODING(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, ESL_SQ *sq, SPAIR *spair,
   case G6XS:
     status = CACO_G6XS_GetParam(&g6sp, errbuf, verbose);
     if (status != eslOK) goto ERROR; 
-    status = CACO_G6XS_DECODING(r, foldparam, g6sp, sq, spair, ct, ret_cct, ret_sc, exclude, errbuf, verbose);
+    status = CACO_G6XS_DECODING(r,foldparam, g6sp, sq, spair, ct, ret_cct, ret_sc, exclude, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case RBG:
@@ -1145,6 +1155,10 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
   ESL_DSQ *dsq    = sq->dsq;
   SCVAL    bestsc = -eslINFINITY;
   SCVAL    sc;
+  double   emitsc_singi;
+  double   emitsc_pairij;
+  int      allow_bp, force_bp;
+  int      allow_si;
   int      d1;
   int      i, k;
   int      status;
@@ -1153,6 +1167,16 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
    
   i = j - d + 1;
 
+  // decide on constrains
+  force_bp = force_bpair(i, j, ct);
+  allow_bp = allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair);
+  allow_si = allow_single(i, ct);
+  
+  // emission scores
+  emitsc_singi  = emitsc_sing(i, dsq, p->e_sing);
+  emitsc_pairij = emitsc_pair(i, j, dsq, p->e_pair);
+  
+  // Follow the grammar
   switch(w) {
   case G6X_S:
     /* rule0: S -> LS */
@@ -1206,12 +1230,12 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
   case G6X_L:
     /* rule3: L -> a F a' */
     d1 = 0;
-    if (force_bpair(i, j, ct)) {
-      sc = cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, p->e_pair);
+    if (force_bp) {
+      sc = cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pairij;
     }
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pairij : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1226,11 +1250,11 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
      /* rule4: L -> a a' */
     d1 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->t2[1] + emitsc_pair(i, j, dsq, p->e_pair);
+      if (force_bp) 
+	sc = p->t2[1] + emitsc_pairij;
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	  p->t2[1] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+	sc = (allow_bp)?
+	  p->t2[1] + emitsc_pairij : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1247,10 +1271,7 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
     /* rule5: L -> a */
     d1 = 0;
     if (d == 1) {
-      if (force_single(i, ct)) 
-	sc = p->t2[2] + emitsc_sing(i, dsq, p->e_sing);
-      else 
-	sc = (allow_single(i, ct))? p->t2[2] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+      sc = (allow_si)? p->t2[2] + emitsc_singi : -eslINFINITY;
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -1267,11 +1288,11 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
   case G6X_F:
     /* rule6: F -> a F a' */
     d1 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pair(i, j, dsq, p->e_pair);
+    if (force_bp) 
+      sc = cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pairij;
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pairij : -eslINFINITY;
       
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1287,11 +1308,11 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
      /* rule7: F -> a a' */
     d1 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->t3[1] + emitsc_pair(i, j, dsq, p->e_pair);
+      if (force_bp) 
+	sc = p->t3[1] + emitsc_pairij;
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	  p->t3[1] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+	sc = (allow_bp)?
+	  p->t3[1] + emitsc_pairij : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1334,11 +1355,17 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, ESL_SQ *sq, SPAIR *spair
 }
 
 static int 
-dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, COVLIST *exclude, G6X_MX  *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, COVLIST *exclude, G6X_MX  *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts,
+		      char *errbuf, int verbose)
 {
   ESL_DSQ *dsq = sq->dsq;
   SCVAL    bestsc = -eslINFINITY;
   SCVAL    sc;
+  double   emitsc_singi;
+  double   emitsc_pairij;
+  double   emitsc_stckij;
+  int      allow_bp, force_bp;
+  int      allow_si;
   int      d1;
   int      i, k;
   int      status;
@@ -1347,6 +1374,17 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
    
   i = j - d + 1;
 
+  // decide on constrains
+  force_bp = force_bpair(i, j, ct);
+  allow_bp = allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair);
+  allow_si = allow_single(i, ct);
+  
+  // emission scores
+  emitsc_singi  = emitsc_sing(i, dsq, p->e_sing);
+  emitsc_pairij = emitsc_pair(i, j, dsq, p->e_pair);
+  emitsc_stckij = emitsc_stck(i, j, sq->n, dsq, p->e_pair, p->e_stck);
+  
+  // Follow the grammar
   switch(w) {
   case G6X_S:
     /* rule0: S -> LS */
@@ -1402,11 +1440,11 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
   case G6X_L:
     /* rule3: L -> a F a' */
     d1 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, p->e_pair);
+    if (force_bp) 
+      sc = cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pairij;
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F->dp[j-1][d-2] + p->t2[0] + emitsc_pairij : -eslINFINITY;
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -1421,11 +1459,11 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
     /* rule4: L -> a a' */
     d1 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->t2[1] + emitsc_pair(i, j, dsq, p->e_pair);
+      if (force_bp) 
+	sc = p->t2[1] + emitsc_pairij;
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	  p->t2[1] + emitsc_pair(i, j, dsq, p->e_pair) : -eslINFINITY;
+	sc = (allow_bp)?
+	  p->t2[1] + emitsc_pairij : -eslINFINITY;
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -1441,10 +1479,7 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
     /* rule5: L -> a */
     d1 = 0;
     if (d == 1) {
-      if (force_single(i, ct)) 
-	sc = p->t2[2] + emitsc_sing(i, dsq, p->e_sing);
-      else 
-	sc = (allow_single(i, ct))? p->t2[2] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+      sc = (allow_si)? p->t2[2] + emitsc_singi : -eslINFINITY;
 	
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1462,11 +1497,11 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
   case G6X_F:
     /* rule6: F -> a F a' */
     d1 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pair(i, j, dsq, p->e_pair);     
+    if (force_bp) 
+      sc = cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_pairij;     
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stck(i, j, sq->n, dsq, p->e_pair, p->e_stck) : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F->dp[j-1][d-2] + p->t3[0] + emitsc_stckij : -eslINFINITY;
       
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1481,11 +1516,11 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
     /* rule7: F -> a a' */
     d1 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->t3[1] + emitsc_pair(i, j, dsq, p->e_pair);     
+      if (force_bp) 
+	sc = p->t3[1] + emitsc_pairij;     
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	  p->t3[1] + emitsc_stck(i, j, sq->n, dsq, p->e_pair, p->e_stck) : -eslINFINITY;
+	sc = (allow_bp)?
+	  p->t3[1] + emitsc_stckij : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1527,11 +1562,18 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, ESL_SQ *sq, SPAIR *spa
 }
 
 static int 
-dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, COVLIST *exclude, RBG_MX *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair, int *ct, COVLIST *exclude, RBG_MX *cyk, int w, int j, int d, SCVAL *ret_sc, ESL_STACK *alts,
+		     char *errbuf, int verbose)
 {
   ESL_DSQ *dsq = sq->dsq;
   SCVAL    bestsc = -eslINFINITY;
   SCVAL    sc;
+  double   emitsc_singi, emitsc_singj;
+  double   emitsc_pair1, emitsc_pair2;
+  double   emitsc_stck1, emitsc_stck2;
+  int      allow_si, allow_sj;
+  int      allow_bp, force_bp;
+  int      allow_hp;
   int      d1, d2;
   int      i, k, l;
   int      d_ng, d1_ng, d2_ng;
@@ -1546,7 +1588,23 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   if (d < 1 && w == RBG_F5) { *ret_sc = -eslINFINITY; return eslOK; }  // F5 has at least 2 residues
   if (d < 1 && w == RBG_R)  { *ret_sc = -eslINFINITY; return eslOK; }  // R  has at least 2 residues
   if (d < 1 && w == RBG_M1) { *ret_sc = -eslINFINITY; return eslOK; }  // M1 has at least 2 residues
+
+  // decide on constrains
+  force_bp = force_bpair(i, j, ct);
+  allow_bp = allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair);
+  allow_hp = allow_hairpin(foldparam->hloop_min, i, j, sq->n, ct);
+  allow_si = allow_single(i, ct);
+  allow_sj = allow_single(j, ct);
+
+  // emission scores
+  emitsc_singi = emitsc_sing(i, dsq, p->e_sing);
+  emitsc_singj = emitsc_sing(j, dsq, p->e_sing);
+  emitsc_pair1 = emitsc_pair(i, j, dsq, p->e_pair1);
+  emitsc_pair2 = emitsc_pair(i, j, dsq, p->e_pair2);
+  emitsc_stck1 = emitsc_stck(i, j, sq->n, dsq, p->e_pair1, p->e_stck1);
+  emitsc_stck2 = emitsc_stck(i, j, sq->n, dsq, p->e_pair2, p->e_stck2);
   
+  // Follow the grammar
   switch(w) {
   case RBG_S:
     /* rule0: S -> a S */
@@ -1554,10 +1612,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     sc = -eslINFINITY;
     
     if (d > 0) {
-      if (force_single(i, ct)) 
-	sc = cyk->S->dp[j][d-1] + p->tS[0] + emitsc_sing(i, dsq, p->e_sing);
-     else 
-	sc = (allow_single(i, ct))? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+      sc = (allow_si)? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_singi : -eslINFINITY;
 	
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1613,10 +1668,11 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   case RBG_F0:
     /* rule3: F0 -> a F5 a' */
     d1 = d2 = 0;
-   if (force_bpair(i, j, ct)) 
-      sc = cyk->F5->dp[j-1][d-2] + p->tF0[0] + emitsc_pair(i, j, dsq, p->e_pair1);
+   if (force_bp) 
+      sc = cyk->F5->dp[j-1][d-2] + p->tF0[0] + emitsc_pair1;
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?  cyk->F5->dp[j-1][d-2] + p->tF0[0] + emitsc_pair(i, j, dsq, p->e_pair1) : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F5->dp[j-1][d-2] + p->tF0[0] + emitsc_pair1 : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1632,10 +1688,11 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   
     /* rule4: F0 -> a P a' */
     d1 = d2 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair(i, j, dsq, p->e_pair2);     
+    if (force_bp) 
+      sc = cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair2;     
      else 
-       sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?  cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair(i, j, dsq, p->e_pair2) : -eslINFINITY;
+       sc = (allow_bp)?
+	 cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair2 : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1652,10 +1709,10 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     /* rule5: F0 -> a a' */
     d1 = d2 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->tF0[2] + emitsc_pair(i, j, dsq, p->e_pair2);     
+      if (force_bp) 
+	sc = p->tF0[2] + emitsc_pair2;     
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))? p->tF0[2] + emitsc_pair(i, j, dsq, p->e_pair2) : -eslINFINITY;
+	sc = (allow_bp)? p->tF0[2] + emitsc_pair2 : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1675,11 +1732,11 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   case RBG_F5:
     /* rule6: F5 -> a F5^{bb'} a' */
     d1 = d2 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->F5->dp[j-1][d-2] + p->tF5[0] + emitsc_stck(i, j, sq->n, dsq, p->e_pair1, p->e_stck1);
+    if (force_bp) 
+      sc = cyk->F5->dp[j-1][d-2] + p->tF5[0] + emitsc_stck1;
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->F5->dp[j-1][d-2] + p->tF5[0] + emitsc_stck(i, j, sq->n, dsq, p->e_pair1, p->e_stck1)  : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->F5->dp[j-1][d-2] + p->tF5[0] + emitsc_stck1 : -eslINFINITY;
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1695,11 +1752,11 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     
     /* rule7: F5 -> a P^{bb'} a' */
     d1 = d2 = 0;
-    if (force_bpair(i, j, ct)) 
-      sc = cyk->P->dp[j-1][d-2] + p->tF5[1] + emitsc_stck(i, j, sq->n, dsq, p->e_pair2, p->e_stck2);
+    if (force_bp) 
+      sc = cyk->P->dp[j-1][d-2] + p->tF5[1] + emitsc_stck2;
     else 
-      sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	cyk->P->dp[j-1][d-2] + p->tF5[1] + emitsc_stck(i, j, sq->n, dsq, p->e_pair2, p->e_stck2)  : -eslINFINITY;
+      sc = (allow_bp)?
+	cyk->P->dp[j-1][d-2] + p->tF5[1] + emitsc_stck2 : -eslINFINITY;
  
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1717,11 +1774,11 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     /* rule8: F5 -> a a' */
     d1 = d2 = 0;
     if (d == 2) {
-      if (force_bpair(i, j, ct)) 
-	sc = p->tF5[2] + emitsc_stck(i, j, sq->n, dsq, p->e_pair2, p->e_stck2);
+      if (force_bp) 
+	sc = p->tF5[2] + emitsc_stck2;
       else 
-	sc = (allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair))?
-	  p->tF5[2] + emitsc_stck(i, j, sq->n, dsq, p->e_pair2, p->e_stck2)  : -eslINFINITY;
+	sc = (allow_bp)?
+	  p->tF5[2] + emitsc_stck2 : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1744,10 +1801,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     else {
       d_ng = segment_remove_gaps(i,j,dsq); if (d_ng == 0) d_ng = d;
 
-      if (force_hairpin(foldparam->hloop_min, i, j, ct)) 
-	sc = p->tP[0] + p->l1[d_ng-1] + score_loop_hairpin(i, j, p, dsq);
-      else 
-	sc = (allow_hairpin(i, j, ct))? p->tP[0] + p->l1[d_ng-1] + score_loop_hairpin(i, j, p, dsq) : -eslINFINITY;
+      sc = (allow_hp)? p->tP[0] + p->l1[d_ng-1] + score_loop_hairpin(i, j, p, dsq) : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1770,10 +1824,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
       
       d1_ng = segment_remove_gaps(i,k,dsq); if (d1_ng == 0) d1_ng = d1;
 
-      if (force_loop(i, k, ct)) 
-	sc = cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1_ng-1] + score_loop_bulge(i, k, p, dsq);
-      else 
-	sc = allow_loop(i, k, ct)? cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1_ng-1] + score_loop_bulge(i, k, p, dsq) : -eslINFINITY;
+      sc = allow_loop(i, k, ct)? cyk->F0->dp[j][d-d1] + p->tP[1] + p->l2[d1_ng-1] + score_loop_bulge(i, k, p, dsq) : -eslINFINITY;
 	
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1796,10 +1847,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
       
       d2_ng = segment_remove_gaps(l,j,dsq); if (d2_ng == 0) d2_ng = d2;
 
-      if (force_loop(l, j, ct)) 
-	sc = cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2_ng-1] + score_loop_bulge(l, j, p, dsq);
-      else 
-	sc = allow_loop(l, j, ct)? cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2_ng-1] + score_loop_bulge(l, j, p, dsq) : -eslINFINITY;
+      sc = allow_loop(l, j, ct)? cyk->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[d2_ng-1] + score_loop_bulge(l, j, p, dsq) : -eslINFINITY;
 
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1826,10 +1874,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
 	d1_ng = segment_remove_gaps(i,k,dsq); if (d1_ng == 0) d1_ng = d1;
 	d2_ng = segment_remove_gaps(l,j,dsq); if (d2_ng == 0) d2_ng = d2;
 
-	if (l > 0 && force_loop(i,k,ct) && force_loop(l,j,ct)) 
-	  sc = cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1_ng-1][d2_ng-1] + score_loop_intloop(i, k, p, dsq) + score_loop_intloop(l, j, p, dsq);
-	else 
-	  sc = (l > 0 && allow_loop(i,k,ct) && allow_loop(l,j,ct))?
+	sc = (l > 0 && allow_loop(i,k,ct) && allow_loop(l,j,ct))?
 	    cyk->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[d1_ng-1][d2_ng-1] + score_loop_intloop(i, k, p, dsq) + score_loop_intloop(l, j, p, dsq) : -eslINFINITY;
 	  
 	if (sc >= bestsc) {
@@ -1908,10 +1953,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     /* rule16: R -> R a */
     d1 = d2 = 0;
     if (d > 0) {
-      if (force_single(j, ct)) 
-	sc = cyk->R->dp[j-1][d-1] + p->tR[0] + emitsc_sing(j, dsq, p->e_sing);
-      else 
-	sc = (allow_single(j, ct))? cyk->R->dp[j-1][d-1] + p->tR[0] + emitsc_sing(j, dsq, p->e_sing) : -eslINFINITY;
+      sc = (allow_sj)? cyk->R->dp[j-1][d-1] + p->tR[0] + emitsc_singj : -eslINFINITY;
 	
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1947,10 +1989,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
     /* rule18: M1 -> a M1 */
     d1 = d2 = 0;
     if (d > 0) {
-      if (force_single(i, ct)) 
-	sc = cyk->M1->dp[j][d-1] + p->tM1[0] + emitsc_sing(i, dsq, p->e_sing);
-      else 
-	sc = (allow_single(i, ct))? cyk->M1->dp[j][d-1] + p->tM1[0] + emitsc_sing(i, dsq, p->e_sing) : -eslINFINITY;
+      sc = (allow_si)? cyk->M1->dp[j][d-1] + p->tM1[0] + emitsc_singi : -eslINFINITY;
       
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -1993,74 +2032,6 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   return status;
 }
 
-
-// ct = 0  allow single
-static int
-allow_single(int i, int *ct) 
-{
-  int allow = FALSE;
-
-  if (ct[i] <= 0) allow = TRUE; // not paired
-
-  return allow;
-}
-
-// ct < 0 stay single
-static int
-force_single(int i, int *ct) 
-{
-  int force = FALSE;
-
-  return force;
-}
-
-static int
-force_loop(int i, int j, int *ct)
-{
-  int force = TRUE;
-  int k;
-  
-  for (k = i; k <= j; k ++) if (ct[k] >= 0) return FALSE;
-  
-  return force;
-}
-static int
-force_hairpin(int hloop_min, int i, int j, int *ct)
-{
-  int force = TRUE;
-  int k;
-  
-  for (k = i; k <= j; k ++) if (ct[k] >= 0) return FALSE;
-  
-  // check if is has the minimum loop requeriment
-  if (j - i - 1 < hloop_min) return FALSE;
-
-  return force;
-}
-
-static int
-allow_hairpin(int i, int j, int *ct)
-{
-  int allow = TRUE;
-  int k;
-
-  // first check that there is no covariation inside
-  for (k = i; k <= j; k ++) if (ct[k] > 0) return FALSE;
-
-  return allow;
-}
-static int
-allow_loop(int i, int j, int *ct)
-{
-  int allow = TRUE;
-  int k;
-
-  // first check that there is no covariation inside
-  for (k = i; k <= j; k ++) if (ct[k] > 0) return FALSE;
-
-  return allow;
-}
-
 // do not allow if pair is in the exclude list
 static int
 allow_bpair(double power_thresh, int hloop_min, int i, int j, int L, int *ct, COVLIST *exclude, SPAIR *spair) 
@@ -2088,7 +2059,7 @@ allow_bpair(double power_thresh, int hloop_min, int i, int j, int L, int *ct, CO
   
   return allow;
 }
-
+// a basepair is forced only if a covarying pair, eg, ct[i] = j
 static int
 force_bpair(int i, int j, int *ct) 
 {
@@ -2100,6 +2071,61 @@ force_bpair(int i, int j, int *ct)
 }
 
 
+// a set of residues i..j is allowed to form a hairpin loop if
+//
+//    (1) there are no cov residues inside
+//    (2) if the closing pair is a covaring pair, allow any length
+//    (3) if the closing pair is not covaring enforce the hloop_min cutoff
+//
+static int
+allow_hairpin(int hloop_min, int i, int j, int L, int *ct)
+{
+  int allow = TRUE;
+  int iscov;         // TRUE if closing basepair is a covariation
+  int hlen;          // hairpin len
+  int ibp, jbp;
+  int k;
+
+  hlen = j - i + 1;
+  ibp  = (i > 0)? i - 1 : 0;
+  jbp  = (j < L)? j + 1 : 0;
+  
+  // first check that there is no covariation inside
+  for (k = i; k <= j; k ++) if (ct[k] > 0) return FALSE;
+  
+  // if closing pair is not a covarying pair, force the hloop_min limit
+  iscov = force_bpair(ibp, jbp, ct);
+  if (!iscov && hlen < hloop_min) return FALSE;
+
+  return allow;
+}
+
+// a set of residues i..j is allowed to form a loop, unless any of the residues
+// is involved in a covarying basepair
+static int
+allow_loop(int i, int j, int *ct)
+{
+  int allow = TRUE;
+  int k;
+
+  // first check that there is no covariation inside
+  for (k = i; k <= j; k ++) if (ct[k] > 0) return FALSE;
+
+  return allow;
+}
+
+// A residue is allowed to be single stranded unless it is involved in  a covariation
+// ct[i] > 0 if in a covarying pair
+//
+static int
+allow_single(int i, int *ct) 
+{
+  int allow = TRUE;
+
+  if (ct[i] > 0) allow = FALSE; // in a covarying pair
+
+  return allow;
+}
 
 static SCVAL
 emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP])
@@ -2124,7 +2150,6 @@ emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP
     idx = dsq[i]*NB + dsq[j];
     sc = e_stck[cdx][idx];
   }
-
   return sc;
 }
 

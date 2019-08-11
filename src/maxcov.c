@@ -66,7 +66,7 @@ MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
   // Use a Nussinov/CYK algorithm to make a selection of the max number of cov pairs that can be put together in a nested structure.
   // Remove those from the pool, and keep appplying the algorithm until no covarying pairs are left to be explained
   if ((status = MAXCOV_Structures(r, mi, clist, ret_nct, ret_ctlist, ret_exclude, ncvpairs, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
-  
+
   return eslOK;
   
  ERROR:

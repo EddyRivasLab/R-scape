@@ -38,7 +38,7 @@
 static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
 			     FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf);
 static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-				      FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf);
+				      enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int   ct_add_if_nested(int *ct, int *ctmain, int L);
 static int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
@@ -89,12 +89,13 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_ctli
     }
     goto ERROR;
   }
-  
+ 
   // Use the CT from covariation to do a cov-constrained cascade folding
   nct = cyknct;
+
   status = struct_cacofold(data->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, &nct, &ctlist, exclude, foldparam, data->gapthresh, data->verbose, data->errbuf);
   if (status != eslOK) goto ERROR;
-
+ 
   // create a new contact list from the ct
   CMAP_ReuseCList(data->clist);
   for (s = 0; s < nct; s ++) {
@@ -560,19 +561,20 @@ static int
 struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *ret_nct, int ***ret_ctlist, COVLIST **exclude,
 		FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf)
 {
-  FILE   *fp      = NULL;
-  char   *ss      = NULL;
-  char   *newss   = NULL;
-  double *sc      = NULL;
-  int     nct     = (ret_nct)? *ret_nct : 0;
-  int   **covlist = *ret_ctlist;
-  int   **ctlist  = NULL;
-  int    *newct;
-  int     new;
-  int     L = msa->alen;
-  int     s;
-  int     i;
-  int     status;
+  enum grammar_e    G;
+  FILE             *fp      = NULL;
+  char             *ss      = NULL;
+  char             *newss   = NULL;
+  double           *sc      = NULL;
+  int               nct     = (ret_nct)? *ret_nct : 0;
+  int             **covlist = *ret_ctlist;
+  int             **ctlist  = NULL;
+  int              *newct;
+  int               new;
+  int               L = msa->alen;
+  int               s;
+  int               i;
+  int               status;
   
   ESL_ALLOC(ss,     sizeof(char)   * (L+1));
   ESL_ALLOC(ctlist, sizeof(int *)  * ((nct>0)?nct:1));
@@ -581,12 +583,13 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   // the main fold uses the RBG grammar. For the rest, we don't look for a 2D, so no
   // no need to look for hairpin loops, bulges, internal loops. The G6X grammar is a better choice
   for (s = 0; s < nct; s ++) {
-    if (s > 0) foldparam->G = G6X;
+    if (s == 0) G = foldparam->G0;
+    else        G = foldparam->GP;
     
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
     ESL_ALLOC(ctlist[s], sizeof(int) * (L+1));
-    esl_vec_ICopy(covlist[s], L+1, ctlist[s]);
-    status = struct_cacofold_expandct(r, msa, spair, &ctlist[s], &sc[s], exclude[s], foldparam, gapthresh, verbose, errbuf);
+     esl_vec_ICopy(covlist[s], L+1, ctlist[s]);
+    status = struct_cacofold_expandct(r, msa, spair, &ctlist[s], &sc[s], exclude[s], G, foldparam, gapthresh, verbose, errbuf);
     if (status != eslOK) goto ERROR;     
   }
 
@@ -599,22 +602,25 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
       ESL_ALLOC(exclude,      sizeof(COVLIST *));
       ESL_ALLOC(exclude[nct], sizeof(COVLIST  ));
       exclude[nct]->n = 0;
+      G = foldparam->G0;
     }
     else {
       ESL_REALLOC(ctlist,    sizeof(int *)  * (nct+1));
       ESL_REALLOC(sc,        sizeof(double) * (nct+1));
+      G = foldparam->GP;
     }
 
     // nothing is forced to basepair in this last/unique fold
     // and covarying basepairs cannot be present
     ESL_ALLOC(ctlist[nct], sizeof(int) * (L+1));
     esl_vec_ISet(ctlist[nct], L+1, 0);
-    status = struct_cacofold_expandct(r, msa, spair, &ctlist[nct], &sc[nct], exclude[nct], foldparam, gapthresh, verbose, errbuf);
+    status = struct_cacofold_expandct(r, msa, spair, &ctlist[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, verbose, errbuf);
+
     if (status != eslOK) goto ERROR;
     nct  ++;
   }
   
-  if (verbose) {
+  if (1||verbose) {
     printf("\nCaCoFold nct = %d\n", nct);
     ESL_ALLOC(newss, sizeof(char) * (L+1));
     for (s = 0; s < nct; s ++) {
@@ -698,7 +704,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 
 static int
 struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **ret_ct, double *ret_sc, COVLIST *exclude,
-			 FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf)
+			 enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, int verbose, char *errbuf)
 {
   char    *rfline = NULL;
   char    *newss  = NULL;
@@ -726,11 +732,11 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int **re
   // calculate the cascade power/covariation constrained structure using a probabilistic grammar 
   switch(foldparam->F) {
   case CYK:
-    status = CACO_CYK(r, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    status = CACO_CYK(r, G, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case DECODING:
-    status = CACO_DECODING(r, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
+    status = CACO_DECODING(r, G, foldparam, sq, spair, ct, &cct, &sc, exclude, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -1236,7 +1242,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, int *ret_nct, int ***ret_ctlist, int
   status = ct_add_to_pairlist(ctmain, L, cumpair);  
   if (status != eslOK) goto ERROR;
 
-  if (1||verbose) {
+  if (verbose) {
     ESL_ALLOC(ssmain, sizeof(char)  * (L+1));
     ESL_ALLOC(ss,     sizeof(char)  * (L+1));
     esl_ct2wuss(ctmain, L, ssmain);

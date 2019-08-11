@@ -230,7 +230,7 @@ sub parse_rscapeout {
 	    my $nseq  = $2;
 	    my $alen  = $3;
 	    my $avgid = $4;
-	    my $acc = $fam;
+	    my $acc   = $fam;
 	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
 	    #if ($fam =~ /^RF\d\d\d\d\d\_(\S+)$/) { $fam = $1; }
 	    
@@ -312,8 +312,7 @@ sub parse_rscapeout {
 		else         { $allfam_tpexp{$fam}      = $tpexp; }
 	    }
 	}
-	#elsif (/^# The predicted fold-cov structure/) {
-	elsif (/^# The predicted cyk-cov structure/) {
+	elsif (/^# The predicted fold-cov structure/ || /^# The predicted cyk-cov structure/) {
 	    $isfold = 1;
 	}
 	# add compatible pairs in the fold structure

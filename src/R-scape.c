@@ -356,15 +356,15 @@ static ESL_OPTIONS options[] = {
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",                                                   1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
   /* folding options */
-  { "--minhloop",     eslARG_INT,  HLOOP_MIN,    NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",   1 },
-  { "--foldLmax",       eslARG_INT,    "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                       0 },   
-  { "--grammar",    eslARG_STRING,     "RBG",    NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                                0 },   
-  { "--foldmethod", eslARG_STRING,     "CYK",    NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
+  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",   1 },
+  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                       0 },   
+  { "--grammar",    eslARG_STRING,      "RBG",   NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                                0 },   
+  { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
   /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,    "0.0005",  NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                1 },
+  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                1 },
   { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                            0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
@@ -529,28 +529,40 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* folding parameters */
   cfg.foldparam = NULL;
-  if (esl_opt_IsOn(go, "--fold")) {
-    ESL_ALLOC(cfg.foldparam, sizeof(FOLDPARAM));
-    
-    if ( esl_opt_IsOn(go, "--grammar") ) {
-      if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.foldparam->G = G6X;
-      else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.foldparam->G = G6XS;
-      else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.foldparam->G = RBG;
-      else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
-    }
-    if ( esl_opt_IsOn(go, "--foldmethod") ) {
-      if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.foldparam->F = CYK;
-      else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.foldparam->F = DECODING;
-      else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
-    }
-    
-    cfg.foldparam->hloop_min          = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
-    cfg.foldparam->power_thresh       = POWER_THRESH;
-    cfg.foldparam->helix_unpaired     = HELIX_UNPAIRED;
-    cfg.foldparam->helix_overlapfrac  = OVERLAPFRAC;
-    cfg.foldparam->helix_overlap_trim = HELIX_OVERLAP_TRIM;
-    cfg.foldparam->cov_min_dist       = COV_MIN_DIST;
+  ESL_ALLOC(cfg.foldparam, sizeof(FOLDPARAM));
+
+  cfg.foldparam->G0 = RBG;
+  if ( esl_opt_IsOn(go, "--grammar") ) {
+    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.foldparam->G0 = G6X;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.foldparam->G0 = G6XS;
+    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.foldparam->G0 = RBG;
+    else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
   }
+  cfg.foldparam->GP = G6X;
+  if ( esl_opt_IsOn(go, "--foldmethod") ) {
+    if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.foldparam->F = CYK;
+    else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.foldparam->F = DECODING;
+    else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
+  }
+  
+  // power threshold. default 0.95
+  cfg.foldparam->power_thresh       = POWER_THRESH;
+  
+  // parameters for the main nested structure
+  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j, minhloop = j-i-1 = 2
+  // unless there are covariations forcing a smaller hairpin loop.
+  cfg.foldparam->hloop_min          = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
+  
+  // parameters to break non-nested structures in helices
+  cfg.foldparam->helix_unpaired     = HELIX_UNPAIRED;     // max number of unpaired residues in a non-nested helix. default 2
+  
+  // parameters for selecting non-nested helices without covariations
+  cfg.foldparam->helix_overlapfrac  = OVERLAPFRAC;        // max fraction of paired residues that overlap with another existing helix in order to be removed
+  cfg.foldparam->minhelix           = MINHELIX;           // min length to be reported
+  
+  // special parameter for selecting helices with covariations
+  cfg.foldparam->helix_overlap_trim = HELIX_OVERLAP_TRIM; // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure. default FALSE
+  cfg.foldparam->cov_min_dist       = COV_MIN_DIST;       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs).    default 1
     
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
@@ -1009,7 +1021,6 @@ main(int argc, char **argv)
 
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
-
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -1463,7 +1474,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     fprintf(stdout, "Used alignment\n");
     fprintf(stdout, "%6d          %s\n", msa->nseq, cfg->msafile);
     if (msa->alen > 0 && esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
-    msamanip_DumpStats(stdout, msa, cfg->mstat); 
+    msamanip_DumpStats(stdout, msa, cfg->mstat);
+    printf("%s\n", msa->ss_cons);
   }
 
   if (tok) free(tok);
@@ -1662,7 +1674,7 @@ read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
   char  *tag = NULL;
   int  **ct  = NULL;
   int    L = msa->alen;
-  int    nct = msa->ngc + 1;
+  int    nct = 1;
   int    c;
   int    gc;
   int    i;
@@ -1670,16 +1682,20 @@ read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
   
   if (msa->ngc == 0) return eslOK;
   
-  ESL_ALLOC(ct, sizeof(int *) * nct);
-  for (c = 0; c < nct; c ++) ESL_ALLOC(ct[c], sizeof(int) * (L+1));
-  c = 0;
-  esl_wuss2ct(msa->ss_cons, L, ct[c]);
+  ESL_ALLOC(ct,        sizeof(int *) * nct);
+  ESL_ALLOC(ct[nct-1], sizeof(int)   * (L+1));
+  esl_wuss2ct(msa->ss_cons, L, ct[nct-1]);
   
   // create a ct for each GC SS_cons_x
   for (gc = 0; gc < msa->ngc; gc ++) {  
-    esl_sprintf(&tag, "SS_cons_%d", gc+1);   
+    esl_sprintf(&tag, "SS_cons_%d", gc+1);
+
     if (!strcmp(msa->gc_tag[gc], tag)) {
-      esl_wuss2ct(msa->gc[gc], L, ct[++c]);
+      nct ++;
+      ESL_REALLOC(ct,      sizeof(int *) * nct);
+      ESL_ALLOC(ct[nct-1], sizeof(int)   * (L+1));
+
+      esl_wuss2ct(msa->gc[gc], L, ct[nct-1]);
     }
     free(tag); tag = NULL;
   }
@@ -1696,7 +1712,7 @@ read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
   
   // modify the ss_cons 
   esl_ct2wuss(ct[0], L, msa->ss_cons);
-  if (1||cfg->verbose) printf("all structure\n%s\n", msa->ss_cons);
+  if (1||cfg->verbose) printf("all structure (nct = %d)\n%s\n", nct, msa->ss_cons);
 
   for (c = 0; c < nct; c ++) free(ct[c]);
   free(ct);
@@ -1848,8 +1864,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
   if (cfg->abcisRNA) {
-    struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
-    if (status != eslOK) goto ERROR;
+    status = struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nstruct_SplitCT() failed.", cfg->errbuf);
   }
 
   /* produce a tree
@@ -1920,7 +1936,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
- 
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
   for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
@@ -2029,60 +2044,60 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   }
  
   /* main function */
-  data.outfp         = (cfg->mode == RANSS)? NULL : cfg->outfp;
-  data.outsrtfp      = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
-  data.rocfp         = cfg->rocfp;
-  data.sumfp         = (cfg->mode == RANSS)? NULL : cfg->sumfp;
-  data.dplotfile     = cfg->dplotfile;
+  data.outfp          = (cfg->mode == RANSS)? NULL : cfg->outfp;
+  data.outsrtfp       = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
+  data.rocfp          = cfg->rocfp;
+  data.sumfp          = (cfg->mode == RANSS)? NULL : cfg->sumfp;
+  data.dplotfile      = cfg->dplotfile;
   data.folddplotfile  = cfg->folddplotfile;
-  data.R2Rfile       = cfg->R2Rfile;
+  data.R2Rfile        = cfg->R2Rfile;
   data.R2Rfoldfile    = cfg->R2Rfoldfile;
-  data.R2Rall        = cfg->R2Rall;
-  data.gnuplot       = cfg->gnuplot;
-  data.r             = cfg->r;
-  data.samplesize    = cfg->samplesize;
-  data.ranklist_null = ranklist_null;
-  data.ranklist_aux  = ranklist_aux;
-  data.mi            = cfg->mi;
-  data.pt            = ptlocal;
-  data.covtype       = cfg->covtype;
-  data.allowpair     = cfg->allowpair;
-  data.thresh        = cfg->thresh;
-  data.statsmethod   = cfg->statsmethod;
-  data.covmethod     = cfg->covmethod;
-  data.mode          = cfg->mode;
-  data.abcisRNA      = cfg->abcisRNA;
-  data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
-  data.gapthresh     = cfg->gapthresh;
-  data.nct           = cfg->nct;
-  data.ctlist        = cfg->ctlist;
-  data.expBP         = cfg->expBP;
-  data.onbpairs      = cfg->onbpairs;
-  data.nbpairs       = cfg->nbpairs;
+  data.R2Rall         = cfg->R2Rall;
+  data.gnuplot        = cfg->gnuplot;
+  data.r              = cfg->r;
+  data.samplesize     = cfg->samplesize;
+  data.ranklist_null  = ranklist_null;
+  data.ranklist_aux   = ranklist_aux;
+  data.mi             = cfg->mi;
+  data.pt             = ptlocal;
+  data.covtype        = cfg->covtype;
+  data.allowpair      = cfg->allowpair;
+  data.thresh         = cfg->thresh;
+  data.statsmethod    = cfg->statsmethod;
+  data.covmethod      = cfg->covmethod;
+  data.mode           = cfg->mode;
+  data.abcisRNA       = cfg->abcisRNA;
+  data.hasss          = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.gapthresh      = cfg->gapthresh;
+  data.nct            = cfg->nct;
+  data.ctlist         = cfg->ctlist;
+  data.expBP          = cfg->expBP;
+  data.onbpairs       = cfg->onbpairs;
+  data.nbpairs        = cfg->nbpairs;
   data.nbpairs_fold   = cfg->nbpairs_fold;
-  data.spair         = spair;
-  data.nsubs         = nsubs;
-  data.ndouble       = ndouble;
-  data.power         = cfg->power;
-  data.T             = cfg->T;
-  data.ribosum       = cfg->ribosum;
-  data.OL            = cfg->omsa->alen;
-  data.nseq          = cfg->omsa->nseq;
-  data.ct            = cfg->ct;
-  data.clist         = cfg->clist;
-  data.msa2pdb       = cfg->msa2pdb;
-  data.msamap        = cfg->msamap;
-  data.firstpos      = cfg->firstpos;
-  data.bmin          = cfg->bmin;
-  data.w             = cfg->w;
-  data.fracfit       = cfg->fracfit;
-  data.pmass         = cfg->pmass;
-  data.doexpfit      = cfg->doexpfit;
-  data.tol           = cfg->tol;
-  data.nofigures     = cfg->nofigures;
-  data.verbose       = cfg->verbose;
-  data.errbuf        = cfg->errbuf;
-  data.ignorebps     = FALSE;
+  data.spair          = spair;
+  data.nsubs          = nsubs;
+  data.ndouble        = ndouble;
+  data.power          = cfg->power;
+  data.T              = cfg->T;
+  data.ribosum        = cfg->ribosum;
+  data.OL             = cfg->omsa->alen;
+  data.nseq           = cfg->omsa->nseq;
+  data.ct             = cfg->ct;
+  data.clist          = cfg->clist;
+  data.msa2pdb        = cfg->msa2pdb;
+  data.msamap         = cfg->msamap;
+  data.firstpos       = cfg->firstpos;
+  data.bmin           = cfg->bmin;
+  data.w              = cfg->w;
+  data.fracfit        = cfg->fracfit;
+  data.pmass          = cfg->pmass;
+  data.doexpfit       = cfg->doexpfit;
+  data.tol            = cfg->tol;
+  data.nofigures      = cfg->nofigures;
+  data.verbose        = cfg->verbose;
+  data.errbuf         = cfg->errbuf;
+  data.ignorebps      = FALSE;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
   if (status != eslOK) goto ERROR; 
@@ -2114,7 +2129,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     status = write_omsafold(cfg, msa->alen, foldnct, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
-
+  
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   for (s = 0; s < foldnct; s ++) if (foldctlist[s]) free(foldctlist[s]);
   if (foldctlist) free(foldctlist);
@@ -2352,10 +2367,9 @@ write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verb
   int       status;
 
   // initialize
-  if (omsa->ss_cons == NULL) {
+  if (omsa->ss_cons == NULL) 
     ESL_ALLOC(omsa->ss_cons, sizeof(char)*(OL+1));
-    omsa->ss_cons[OL] = '\0';
-  }
+  omsa->ss_cons[0] = '\0';
 
   // the main nested structure (s=0) is annotated as SS_cons
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2

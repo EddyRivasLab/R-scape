@@ -1,3 +1,4 @@
+
 /* structure.h
  *
  *   
@@ -24,7 +25,7 @@
 #define POWER_THRESH 0.95
 
 // parameters for the main nested structure
-#define HLOOP_MIN 0                  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = 2
+#define HLOOP_MIN 3                  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = j-i-1 = 2
                                      // unless there are covariations forcing a smaller hairpin loop.
 
 // parameters to break non-nested structures in helices
@@ -77,7 +78,8 @@ enum foldmethod_e {
 };
 
 typedef struct fold_s {
-  enum grammar_e    G;
+  enum grammar_e    G0; // main grammar
+  enum grammar_e    GP; // extra folds grammar
   enum foldmethod_e F;
 
   double            power_thresh;

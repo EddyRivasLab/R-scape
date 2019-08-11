@@ -398,8 +398,8 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
         }
       
       // apply gapthresh 
-      if (r > 0. && r / totwgt < idthresh) useme[apos-1] = FALSE;
-      else                                 useme[apos-1] = TRUE;
+      if (r > 0. && r / totwgt >= idthresh) useme[apos-1] = TRUE;
+      else                                  useme[apos-1] = FALSE;
     }
     
     if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
