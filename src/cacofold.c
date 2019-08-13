@@ -42,6 +42,7 @@ static int   dp_recursion_rbg_cyk (FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq
 static int   allow_bpair(double power_thresh, int hloop_min, int i, int j, int L, int *ct, COVLIST *exclude, SPAIR *spair);
 static int   force_bpair(int i, int j, int *ct);
 static int   allow_hairpin(int hloop_min, int i, int j, int L, int *ct);
+static int   force_hairpin(int hloop_min, int i, int j, int L, int *ct);
 static int   allow_loop(int i, int j, int *ct);
 static int   allow_single(int i, int *ct);
 static SCVAL emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
@@ -556,7 +557,7 @@ CACO_RBG_Fill_CYK(FOLDPARAM *foldparam, RBGparam  *p, ESL_SQ *sq, SPAIR *spair, 
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG M caco failed");
 	status = dp_recursion_rbg_cyk(foldparam, p, sq, spair, ct, exclude, cyk, RBG_S,  j, d, &(cyk->S->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG S caco failed");
-	if (verbose) 
+	if ((j-d+1==1&&j==5) ||(j-d+1==6&&j==97) ||verbose) 
 	  printf("\nRBG caco P=%f M=%f M1=%f R=%f F5=%f F0=%f S=%f | i=%d j=%d d=%d L=%d | ct %d %d\n", 
 		 cyk->P->dp[j][d], cyk->M->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],
 		 cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j-d+1, j, d, L, ct[j-d+1], ct[j]); 
@@ -1574,6 +1575,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   int      allow_si, allow_sj;
   int      allow_bp, force_bp;
   int      allow_hp;
+  int      force_hp;
   int      d1, d2;
   int      i, k, l;
   int      d_ng, d1_ng, d2_ng;
@@ -1593,6 +1595,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   force_bp = force_bpair(i, j, ct);
   allow_bp = allow_bpair(foldparam->power_thresh, foldparam->hloop_min, i, j, sq->n, ct, exclude, spair);
   allow_hp = allow_hairpin(foldparam->hloop_min, i, j, sq->n, ct);
+  force_hp = force_hairpin(foldparam->hloop_min, i, j, sq->n, ct);
   allow_si = allow_single(i, ct);
   allow_sj = allow_single(j, ct);
 
@@ -1797,7 +1800,10 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   case RBG_P:
     /* rule9: P -> m..m */
     d1 = d2 = 0;
-    if (d > MAXLOOP_H) sc = -eslINFINITY;
+    if (d >= MAXLOOP_H) {
+      if (force_hp) sc = p->tP[0] + p->l1[MAXLOOP_H-1] + score_loop_hairpin(i, j, p, dsq);
+      else          sc = -eslINFINITY;
+    }
     else {
       d_ng = segment_remove_gaps(i,j,dsq); if (d_ng == 0) d_ng = d;
 
@@ -2098,6 +2104,26 @@ allow_hairpin(int hloop_min, int i, int j, int L, int *ct)
   if (!iscov && hlen < hloop_min) return FALSE;
 
   return allow;
+}
+
+// force a hairpin if allowed and closing basepair is covaring
+static int
+force_hairpin(int hloop_min, int i, int j, int L, int *ct)
+{
+  int force = FALSE;
+  int allow;
+  int iscov;         // TRUE if closing basepair is a covariation
+  int ibp, jbp;
+
+  ibp  = (i > 0)? i - 1 : 0;
+  jbp  = (j < L)? j + 1 : 0;
+
+  allow = allow_hairpin(hloop_min, i, j, L, ct);
+  // if closing pair is not a covarying pair, force the hloop_min limit
+  iscov = force_bpair(ibp, jbp, ct);
+  if (allow && iscov) return TRUE;
+
+  return force;
 }
 
 // a set of residues i..j is allowed to form a loop, unless any of the residues

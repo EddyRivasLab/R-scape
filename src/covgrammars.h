@@ -112,14 +112,14 @@ typedef struct {
   SCVAL e_stck1[NP][NP];
   SCVAL e_stck2[NP][NP];
 
-  SCVAL e_sing_l1[NB];
-  SCVAL l1[MAXLOOP_H]; // hairpin  loops
+  SCVAL  e_sing_l1[NB];
+  SCVAL  l1[MAXLOOP_H]; // hairpin  loops
   
-  SCVAL e_sing_l2[NB];
-  SCVAL l2[MAXLOOP_B]; // bulge    loops
-  
-  SCVAL e_sing_l3[NB];
-  SCVAL l3[MAXLOOP_I][MAXLOOP_I]; // internal loops
+  SCVAL  e_sing_l2[NB];
+  SCVAL  l2[MAXLOOP_B]; // bulge    loops
+
+  SCVAL   e_sing_l3[NB];
+  SCVAL   l3[MAXLOOP_I][MAXLOOP_I]; // internal loops
 } RBGparam;
 
 
