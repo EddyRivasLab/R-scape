@@ -38,6 +38,9 @@ my $outfile_withcov      = "$outname.withcov";     # families with    significan
 my $outfile_greyzone     = "$outname.greyzone";
 my $outfile_outlierp     = "$outname.outlierp";
 my $outfile_outlierc     = "$outname.outlierc";
+my $outfile_nopnoc       = "$outname.nopnoc";
+my $outfile_nopc         = "$outname.nopc";
+my $outfile_pnoc         = "$outname.pnoc";
 my $outfile_goodpower    = "$outname.goodpower";
 my $outfile_betterss     = "$outname.betterss";
 my $outfile_muchbettss   = "$outname.muchbetterss";
@@ -187,6 +190,9 @@ outfile_nocov      ($outfile_nocov);
 outfile_withcov    ($outfile_withcov);
 outfile_outlierp   ($outfile_outlierp);
 outfile_outlierc   ($outfile_outlierc);
+outfile_nopnoc     ($outfile_nopnoc);
+outfile_nopc       ($outfile_nopc);
+outfile_pnoc       ($outfile_pnoc);
 outfile_greyzone   ($outfile_greyzone);
 outfile_betterss   ($outfile_betterss);
 outfile_muchbettss ($outfile_muchbettss);
@@ -846,7 +852,7 @@ sub outfile_outlierp{
 	my $fam   = $S_order[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam}; 
-	if ($sen < 2 && $power > 10) {
+	if ($sen == 0  && $power > 10) {
 	    $m ++;
 	    print     "outlierp $m $fam sen $sen power $power\n";
 	    printf OUT "$fam_table{$fam} %f\n", $power*$fam_true{$fam}/100;
@@ -869,6 +875,64 @@ sub outfile_outlierc{
 	if ($sen > 10 && $power < 2) {
 	    $m ++;
 	    print     "outlierc $m $fam sen $sen power $power\n";
+	    print OUT "$fam_all{$fam}\n";
+	}
+    }
+    close(OUT);
+}
+sub outfile_nopnoc{
+    my ($outfile_nopnoc) = @_;
+
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
+    open (OUT, ">$outfile_nopnoc") || die;
+    my $m = 0;    
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam   = $S_order[$f];
+	my $sen   = $fam_S{$fam};
+	my $power = $fam_Spower{$fam};
+	if ($sen == 0 && $power == 0) {
+	    $m ++;
+	    print     "nopnoc $m $fam sen $sen power $power\n";
+	    print OUT "$fam_all{$fam}\n";
+	}
+    }
+    close(OUT);
+}
+sub outfile_nopc{
+    my ($outfile_nopc) = @_;
+
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
+    open (OUT, ">$outfile_nopc") || die;
+    my $m = 0;    
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam   = $S_order[$f];
+	my $sen   = $fam_S{$fam};
+	my $power = $fam_Spower{$fam};
+	if ($sen > 0 && $power == 0) {
+	    $m ++;
+	    print     "nopc $m $fam sen $sen power $power\n";
+	    print OUT "$fam_all{$fam}\n";
+	}
+    }
+    close(OUT);
+}
+
+sub outfile_pnoc{
+    my ($outfile_pnoc) = @_;
+
+    my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
+
+    open (OUT, ">$outfile_pnoc") || die;
+    my $m = 0;    
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam   = $S_order[$f];
+	my $sen   = $fam_S{$fam};
+	my $power = $fam_Spower{$fam};
+	if ($sen == 0 && $power > 0) {
+	    $m ++;
+	    print     "pnoc $m $fam sen $sen power $power\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }

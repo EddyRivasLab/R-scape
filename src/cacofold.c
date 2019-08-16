@@ -557,7 +557,7 @@ CACO_RBG_Fill_CYK(FOLDPARAM *foldparam, RBGparam  *p, ESL_SQ *sq, SPAIR *spair, 
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG M caco failed");
 	status = dp_recursion_rbg_cyk(foldparam, p, sq, spair, ct, exclude, cyk, RBG_S,  j, d, &(cyk->S->dp[j][d]),NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG S caco failed");
-	if ((j-d+1==1&&j==5) ||(j-d+1==6&&j==97) ||verbose) 
+	if (verbose) 
 	  printf("\nRBG caco P=%f M=%f M1=%f R=%f F5=%f F0=%f S=%f | i=%d j=%d d=%d L=%d | ct %d %d\n", 
 		 cyk->P->dp[j][d], cyk->M->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],
 		 cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j-d+1, j, d, L, ct[j-d+1], ct[j]); 
@@ -1598,7 +1598,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
   force_hp = force_hairpin(foldparam->hloop_min, i, j, sq->n, ct);
   allow_si = allow_single(i, ct);
   allow_sj = allow_single(j, ct);
-
+  
   // emission scores
   emitsc_singi = emitsc_sing(i, dsq, p->e_sing);
   emitsc_singj = emitsc_sing(j, dsq, p->e_sing);
@@ -1808,17 +1808,16 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, ESL_SQ *sq, SPAIR *spair
       d_ng = segment_remove_gaps(i,j,dsq); if (d_ng == 0) d_ng = d;
 
       sc = (allow_hp)? p->tP[0] + p->l1[d_ng-1] + score_loop_hairpin(i, j, p, dsq) : -eslINFINITY;
-      
-      if (sc >= bestsc) {
-	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
-	  if (alts) esl_stack_Reuse(alts);
-	  bestsc = sc;
-	}     
-	if (alts) {
-	  esl_stack_IPush(alts, RBG_P_1);
-	  esl_stack_IPush(alts, d1);
-	  esl_stack_IPush(alts, d2);
-	}
+    }
+    if (sc >= bestsc) {
+      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	if (alts) esl_stack_Reuse(alts);
+	bestsc = sc;
+      }     
+      if (alts) {
+	esl_stack_IPush(alts, RBG_P_1);
+	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, d2);
       }
     }
     

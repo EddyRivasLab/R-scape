@@ -96,14 +96,15 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
   int        nct = 0;
   int        i;
   int        n;
-  int        s; 
+  int        s;
+  int        be_verbose =  FALSE;
   int        status;
   
   // allocate explained. No covariations explaned so far
   ESL_ALLOC(explained, sizeof(COVLIST));
   explained->n   = 0;
   explained->cov = NULL;
-  if (verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
+  if (be_verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
 
   // list with all covarying pairs
   if ((status = covariations_total(mi, clist, thresh, &totalcov, verbose)) != eslOK) goto ERROR;
@@ -126,7 +127,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     }
     
      ct = ctlist[nct]; // the current skeleton of this structure
-     if (verbose) esl_ct2wuss(ct, L, ss);
+     if (be_verbose) esl_ct2wuss(ct, L, ss);
     
     // number of covarying pairs that remain to be explained
     ncv_left -= ncv_in;
@@ -134,7 +135,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
     // add the current list of cov pairs to explained
     if (add_to_explained(&explained, mi->alen, ct) != eslOK) goto ERROR;
 
-    if (verbose) 
+    if (be_verbose) 
       printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f | not explained %d\n%s\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ncv_left, ss);
        
     nct ++;

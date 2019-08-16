@@ -78,3 +78,12 @@ ln -s Rfam.14.0.seed.3D.power.subs.csv   R-scape.power.subs.csv
 
 
 
+---------------------------------------------------------------------------------------
+14 AUG 2019
+new method
+------------------------------------------------------------------------------------------
+~/src/src/mysource/scripts/power_by_equal_size_bin.pl ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs > ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs.bin
+
+same python script produces new power figure:
+
+open Rfam.14.0.seed.3D.power.subs.pdf
