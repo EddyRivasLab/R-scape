@@ -12,7 +12,10 @@ For an input alignment, \rscape\ reports all pairs that have
 covariation scores with E-values smaller than a target E-value.\\
 
 \noindent
-The E-values are calculated in one of two ways:
+R-scape has two different \textbf{modes} of operation which determine
+how it calculates E-values, for which it needs to know how many
+possible base pairs were tested (i.e. E-values are
+multiple-test-corrected). The E-values are calculated in one of two ways:
 
 \begin{tabular}{ll}
 \multicolumn{2}{l}{\textbf{A one-set statistical test:} \textit{default}} \\ 
@@ -28,25 +31,93 @@ The E-values are calculated in one of two ways:
  & \\ 
 \end{tabular}
 
-\subsection {Option --fold}
+\subsection {The four options to run \rscape}
 
-After performing one of the two statistical tests, this option:\\
+These are the four options to run R-scape.
 
-\begin{tabular}{ll}
-\textbf{}   & Builds the best consensus structure that includes the largest possible number of significantly covarying pairs,\\
-\textbf{}   & \hspace{5mm}\emph{the maximum-covariation optimal consensus structure}. The algorithm identifies pseudoknots and\\
-\textbf{}   & \hspace{5mm}other not nested interactions by running a cascade of nested algorithms until all covarying pairs\\
-\textbf{}   & \hspace{5mm}are taken into account.\\
-\textbf{}   & Draws the \emph{maximum-covariation optimal consensus structure} annotated with the significantly \\
-\textbf{}   & \hspace{5mm}covarying base pairs.\\
-\textbf{}   & It also returns the alignment in Stockholm format annotated with the max-cov optimal consensus structure.\\
- & \\ 
-\end{tabular}
+\begin{labeling}{Evaluate region for conserved structure}
+  
+\item[Evaluate region for conserved structure]
+
+  All possible pairs are analyzed equally as a one set test.  If a
+  consensus structure is provided, that structure is ignored in the
+  covariation test, but it is visualized with the significant
+  covarying pairs highlighted in green.
+
+  \textbf{preferred use:}\\
+  This option is most appropriate if you're trying to determine if a conserved structure exists.\\
+  
+\item[Predict new structure]
+
+  All possible pairs are analyzed equally.
+  A structure is predicted and visualized with the significant covarying pairs highlighted in green.
+
+  \textbf{preferred use:}\\
+  This option is most appropriate for obtaining a new consensus
+  structure prediction based on covariation analysis.
+
+\item[Evaluate given structure]
+  
+  Requires that your Stockholm file has a proposed consensus structure annotation.
+  Two independent covariation tests are performed, one on the set of proposed basepairs, the other on all other possible pairs.
+  The given structure is visualized with significant covarying pairs highlighted in green.
+
+  \textbf{preferred use:}\\
+  This option is most appropriate for evaluating how well an
+  independently proposed consensus structure is supported by
+  covariation analysis.
+
+
+\item[Improve given structure]
+
+  Requires that your Stockholm file has a proposed consensus structure annotation.
+  Two independent covariation tests are performed, one on the set of proposed basepairs, the other on all other possible pairs.
+  A new consensus structure is predicted and visualized with the significant covarying pairs highlighted in green.
+
+  \textbf{preferred use:}\\
+  This option is most appropriate for using covariation analysis to improve your current consensus structure.
+
+\end{labeling}
+
 
 
 I'll show examples of running each mode, using examples in the
 \ccode{tutorial/} subdirectory of the distribution.
 
+\subsection {Option --RAF(S) disallowed}
+
+The options to use the covariation measures RAF, RAFa, RAFp, RAFS, RAFSp, and RAFSa has
+been disallowed, unless they are used in combination with option
+--naive which reports the list of values for all possible pairs
+without any statistical significance associated to them.
+
+The following disclamer appears otherwise.
+
+\user{bin/R-scape --RAF tutorial/updated\_Arisong.sto}\\
+
+\begin{sreoutput}
+DISCLAIMER: This measure can only be used in combination with the --naive option.
+
+The --naive option reports a ranked list of scores for all possible
+pairs without assigning E-values. RAF, RAFS and related measures
+(RAFp, RAFa, RAFSp, RAFSa) cannot be used in combination with
+R-scape's statistical test.
+
+The RAF(S) statistics measure covariation and consistency. RAFS
+assigns relatively high scores to pairs of alignment columns that are
+consistent with base pairing even if there is no covariation at
+all. The RAFS statistic was developed for the purpose of predicting
+consensus RNA structures from alignments of sequences already presumed
+to have a structure (Hofacker et al., 2002; Lindgreen et al.,
+2006). For this purpose, both covariation and consistency are useful
+cues. Distinguishing a conserved RNA structure from a conserved
+primary sequence is a different problem that requires using a
+statistic that does not systematically detect significant signals on
+conserved primary sequence alone. That is R-scape's statistical
+test. The R-scape statistical test can only be used with measures that
+estimate covariation alone such as mutual information (MI) or G-test
+(GT).
+\end{sreoutput}
 
 \subsection{Files used in the tutorial}
 
@@ -79,23 +150,21 @@ The output is a list of the significantly covarying positions under the one-set 
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 1.2.0 (January 2019)
-# Copyright (C) 2016-2019 Howard Hughes Medical Institute.
+# R-scape 1.4.0 (Oct 2019)
+# Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#-------------------------------------------------------------------------------------------------------
+# MSA updated_Arisong_1 nseq 95 (95) alen 66 (150) avgid 65.82 (64.97) nbpairs 20 (20)
 # One-set statistical test (all pairs are tested as equivalent) 
 #
-# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
 #
-# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 4 20 4 | 20.00 100.00 33.33] 
+# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.78,121.66]     [0 | 2 20 2 | 10.00 100.00 18.18] 
 #
 #       left_pos       right_pos        score          E-value       substitutions      power
 #-------------------------------------------------------------------------------------------------------
-*	      98	     106	121.80433	3.95915e-08	44		0.44
-*	     122	     137	91.75573	8.34366e-05	59		0.55
-*	      96	     108	89.46430	0.000148586	25		0.26
-*	     120	     139	75.03790	0.00537656	85		0.70
+*	      98	     106	121.65645	0.00241628	45		0.48
+*	     122	     137	91.44593	0.038356	57		0.58
 \end{sreoutput}
 A star ``*'' in the first column indicates that the pair is part of
 the annotated structure in the \prog{updated\_Arisong.sto} file. A
@@ -116,65 +185,68 @@ The output is a list of the significantly covarying positions under the two-set 
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 1.2.0 (January 2019)
-# Copyright (C) 2016-2019 Howard Hughes Medical Institute.
+# R-scape 1.4.0 (Oct 2019)
+# Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#-------------------------------------------------------------------------------------------------------
+# MSA updated_Arisong_1 nseq 95 (95) alen 66 (150) avgid 65.82 (64.97) nbpairs 20 (20)
 # Two-set statistical test (one test for annotated basepairs, another for all other pairs)
 #
-# Structure obtained from the msa
+#
+# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.78,121.66]     [0 | 11 20 11 | 55.00 100.00 70.97] 
+#
+#       left_pos       right_pos        score          E-value       substitutions      power
+#-------------------------------------------------------------------------------------------------------
+*	      98	     106	121.65645	2.25295e-05	45		0.48
+*	     122	     137	91.44593	0.000357632	57		0.58
+*	      96	     108	88.43400	0.000466924	26		0.28
+*	     120	     139	74.80289	0.00162024	87		0.76
+*	     119	     140	58.72158	0.00678565	90		0.78
+*	     121	     138	58.34837	0.00691674	99		0.82
+*	      94	     110	57.27959	0.00760538	37		0.40
+*	     124	     134	55.67692	0.0086606	20		0.21
+*	     123	     135	54.59630	0.00946822	72		0.68
+*	      99	     105	53.44797	0.0107226	15		0.14
+*	      97	     107	44.91842	0.0405594	58		0.59
+
+# The given structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons :::::::::::::::::::::::::::::::::<<<<<<<___>>>>>>><<<<<<--<<
 #
 # SS_cons <<<<<_______>>>->>>>-->>>>>>::
 #
-# left_pos      right_pos    substitutions      power
-#--------------------------------------------------------
-# 94		110		34		0.35
-# 95		109		29		0.30
-# 96		108		25		0.26
-# 97		107		58		0.55
-# 98		106		44		0.44
-# 99		105		15		0.14
-# 100		104		20		0.20
-# 111		148		0		0.00
-# 112		147		18		0.18
-# 113		146		1		0.00
-# 114		145		9		0.07
-# 115		144		48		0.47
-# 116		143		110		0.80
-# 119		140		88		0.72
-# 120		139		85		0.70
-# 121		138		97		0.76
-# 122		137		59		0.55
-# 123		135		73		0.64
-# 124		134		27		0.28
-# 125		133		31		0.32
+
+# Power analysis of given structure 
+#
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    94		110		37		0.40
+          95		109		28		0.31
+     *    96		108		26		0.28
+     *    97		107		58		0.59
+     *    98		106		45		0.48
+     *    99		105		15		0.14
+          100		104		20		0.21
+          111		148		0		0.00
+          112		147		18		0.18
+          113		146		1		0.00
+          114		145		15		0.14
+          115		144		49		0.52
+          116		143		106		0.84
+     *    119		140		90		0.78
+     *    120		139		87		0.76
+     *    121		138		99		0.82
+     *    122		137		57		0.58
+     *    123		135		72		0.68
+     *    124		134		20		0.21
+          125		133		31		0.34
 #
 # BPAIRS 20
-# avg substitutions per BP  43.5
-# BPAIRS expected to covary 7.7
-# BPAIRS observed to covary 12
-#
-#
-# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 12 20 12 | 60.00 100.00 75.00] 
-#
-#       left_pos       right_pos        score          E-value       substitutions      power
-#-------------------------------------------------------------------------------------------------------
-*	      98	     106	121.80433	3.80688e-10	44		0.44
-*	     122	     137	91.75573	8.02275e-07	59		0.55
-*	      96	     108	89.46430	1.42871e-06	25		0.26
-*	     120	     139	75.03790	5.16977e-05	85		0.70
-*	     119	     140	58.25176	0.00255411	88		0.72
-*	     121	     138	57.96915	0.00265136	97		0.76
-*	      94	     110	56.91065	0.00330664	34		0.35
-*	     124	     134	55.84207	0.00409643	27		0.28
-*	     123	     135	55.50367	0.00439184	73		0.64
-*	      99	     105	53.86423	0.00611505	15		0.14
-*	      97	     107	44.72409	0.0293269	58		0.55
-*	     115	     144	41.87792	0.0490385	48		0.47
+# avg substitutions per BP  43.7
+# BPAIRS expected to covary 8.3
+# BPAIRS observed to covary 11
 \end{sreoutput}
 The scores of the pairs are identical to those in the one-set
 test. The E-values have changed relative to those of the one-set test.
@@ -182,75 +254,60 @@ test. The E-values have changed relative to those of the one-set test.
 
 \subsection{The --fold option}
 
+After performing one of the two statistical tests, this option implements the CaCoFold algorithm:\\
+
+\begin{tabular}{ll}
+\textbf{}   & Builds the best consensus structure that includes the largest possible number of significantly covarying pairs,\\
+\textbf{}   & \hspace{5mm}\emph{the maximum-covariation optimal consensus structure}. The algorithm identifies pseudoknots and\\
+\textbf{}   & \hspace{5mm}other not nested interactions by running a cascade of nested algorithms until all covarying pairs\\
+\textbf{}   & \hspace{5mm}are taken into account.\\
+\textbf{}   & Draws the \emph{maximum-covariation optimal consensus structure} annotated with the significantly \\
+\textbf{}   & \hspace{5mm}covarying base pairs.\\
+\textbf{}   & It also returns the alignment in Stockholm format annotated with the max-cov optimal consensus structure.\\
+ & \\ 
+\end{tabular}
+
 \user{bin/R-scape --fold tutorial/updated\_Arisong.sto}\\
 
 \noindent
 The output includes first the same output as default \rscape\ alone,
 followed by \rscape's proposed structure that under the heading ``\#
-The predicted structure'' as follows,
+The predicted CaCoFold structure'' as follows,
 
 \begin{sreoutput}
-# R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 1.2.0 (January 2019)
-# Copyright (C) 2016 Howard Hughes Medical Institute.
-# Freely distributed under the GNU General Public License (GPLv3).
-#-------------------------------------------------------------------------------------------------------
-# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
-# One-set statistical test (all pairs are tested as equivalent) 
-#
-#
-# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 4 20 4 | 20.00 100.00 33.33] 
-#
-#       left_pos       right_pos        score          E-value       substitutions      power
-#-------------------------------------------------------------------------------------------------------
-*	      98	     106	121.80433	3.95915e-08	44		0.47
-*	     122	     137	91.75573	8.34366e-05	59		0.60
-*	      96	     108	89.46430	0.000148586	25		0.27
-*	     120	     139	75.03790	0.00537656	85		0.75
-
-# The predicted structure
+# The predicted CaCoFold structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons ::::::::::::::::::::::::::::::::::<<<<<_____>>>>>:<<<<<---<<
 #
-# SS_cons <<<<<_______>>>->>>>--->>>>>::
+# SS_cons <<<<_________>>->>>>--->>>>>::
 #
-# left_pos      right_pos    substitutions      power
-#--------------------------------------------------------
-# 95		109		29		0.32
-# 96		108		25		0.27
-# 97		107		58		0.59
-# 98		106		44		0.47
-# 99		105		15		0.14
-# 111		148		0		0.00
-# 112		147		18		0.18
-# 113		146		1		0.00
-# 114		145		9		0.06
-# 115		144		48		0.51
-# 119		140		88		0.77
-# 120		139		85		0.75
-# 121		138		97		0.81
-# 122		137		59		0.60
-# 123		135		73		0.69
-# 124		134		27		0.30
-# 125		133		31		0.34
+
+# Power analysis of CaCoFold structure 
 #
-# BPAIRS 17
-# avg substitutions per BP  41.6
-# BPAIRS expected to covary 6.8
-# BPAIRS observed to covary 4
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+          95		109		28		0.31
+          96		108		26		0.28
+          97		107		58		0.59
+     *    98		106		45		0.48
+          99		105		15		0.14
+          111		148		0		0.00
+          112		147		18		0.18
+          113		146		1		0.00
+          114		145		15		0.14
+          115		144		49		0.52
+          119		140		90		0.78
+          120		139		87		0.76
+          121		138		99		0.82
+     *    122		137		57		0.58
+          123		135		72		0.68
+          124		134		20		0.21
 #
-#
-# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 4 17 4 | 23.53 100.00 38.10] 
-#
-# in_cyk in_given   left_pos       right_pos      score           E-value    substitutions      power
-#----------------------------------------------------------------------------------------------------------------
-*	*	        98	       106	121.80433	3.95915e-08	44		0.47
-*	*	       122	       137	91.75573	8.34366e-05	59		0.60
-*	*	        96	       108	89.46430	0.000148586	25		0.27
-*	*	       120	       139	75.03790	0.00537656	85		0.75
+# BPAIRS 16
+# avg substitutions per BP  42.5
+# BPAIRS expected to covary 6.5
+# BPAIRS observed to covary 2
 \end{sreoutput}
 
 The structure predicted by \rscape\ includes all the basepairs
@@ -267,154 +324,146 @@ Similarly using
 
 \noindent
 The output includes first the same output as \emprog{option -s} of
-\rscape\ alone, followed by \rscape's proposed structure including a
-maximal number of the covariations obtained under the two-set test.
-
+\rscape\ alone, followed by \rscape's proposed CaCoFild structure including all the 
+the covarying pairs  obtained under the two-set test.
 
 \begin{sreoutput}
 # R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 1.2.0 (January 2019)
+# R-scape 1.4.0 (Oct 2019)
 # Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
 #-------------------------------------------------------------------------------------------------------
-# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
+# MSA updated_Arisong_1 nseq 95 (95) alen 66 (150) avgid 65.82 (64.97) nbpairs 20 (20)
 # Two-set statistical test (one test for annotated basepairs, another for all other pairs)
 #
-# Structure obtained from the msa
+#
+# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05         [-9.78,121.66]     [0 | 11 20 11 | 55.00 100.00 70.97] 
+#
+#       left_pos       right_pos        score          E-value       substitutions      power
+#-------------------------------------------------------------------------------------------------------
+*	      98	     106	121.65645	2.25295e-05	45		0.48
+*	     122	     137	91.44593	0.000357632	57		0.58
+*	      96	     108	88.43400	0.000466924	26		0.28
+*	     120	     139	74.80289	0.00162024	87		0.76
+*	     119	     140	58.72158	0.00678565	90		0.78
+*	     121	     138	58.34837	0.00691674	99		0.82
+*	      94	     110	57.27959	0.00760538	37		0.40
+*	     124	     134	55.67692	0.0086606	20		0.21
+*	     123	     135	54.59630	0.00946822	72		0.68
+*	      99	     105	53.44797	0.0107226	15		0.14
+*	      97	     107	44.91842	0.0405594	58		0.59
+
+# The given structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons :::::::::::::::::::::::::::::::::<<<<<<<___>>>>>>><<<<<<--<<
 #
 # SS_cons <<<<<_______>>>->>>>-->>>>>>::
 #
-# left_pos      right_pos    substitutions      power
-#--------------------------------------------------------
-# 94		110		34		0.37
-# 95		109		29		0.32
-# 96		108		25		0.27
-# 97		107		58		0.59
-# 98		106		44		0.47
-# 99		105		15		0.14
-# 100		104		20		0.21
-# 111		148		0		0.00
-# 112		147		18		0.18
-# 113		146		1		0.00
-# 114		145		9		0.06
-# 115		144		48		0.51
-# 116		143		110		0.86
-# 119		140		88		0.77
-# 120		139		85		0.75
-# 121		138		97		0.81
-# 122		137		59		0.60
-# 123		135		73		0.69
-# 124		134		27		0.30
-# 125		133		31		0.34
+
+# Power analysis of given structure 
+#
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    94		110		37		0.40
+          95		109		28		0.31
+     *    96		108		26		0.28
+     *    97		107		58		0.59
+     *    98		106		45		0.48
+     *    99		105		15		0.14
+          100		104		20		0.21
+          111		148		0		0.00
+          112		147		18		0.18
+          113		146		1		0.00
+          114		145		15		0.14
+          115		144		49		0.52
+          116		143		106		0.84
+     *    119		140		90		0.78
+     *    120		139		87		0.76
+     *    121		138		99		0.82
+     *    122		137		57		0.58
+     *    123		135		72		0.68
+     *    124		134		20		0.21
+          125		133		31		0.34
 #
 # BPAIRS 20
-# avg substitutions per BP  43.5
-# BPAIRS expected to covary 8.2
-# BPAIRS observed to covary 12
+# avg substitutions per BP  43.7
+# BPAIRS expected to covary 8.3
+# BPAIRS observed to covary 11
 #
 #
 # Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 12 20 12 | 60.00 100.00 75.00] 
+# GTp    0.05         [-9.78,121.66]     [0 | 11 17 11 | 64.71 100.00 78.57] 
 #
-#       left_pos       right_pos        score          E-value       substitutions      power
-#-------------------------------------------------------------------------------------------------------
-*	      98	     106	121.80433	3.80688e-10	44		0.47
-*	     122	     137	91.75573	8.02275e-07	59		0.60
-*	      96	     108	89.46430	1.42871e-06	25		0.27
-*	     120	     139	75.03790	5.16977e-05	85		0.75
-*	     119	     140	58.25176	0.00255411	88		0.77
-*	     121	     138	57.96915	0.00265136	97		0.81
-*	      94	     110	56.91065	0.00330664	34		0.37
-*	     124	     134	55.84207	0.00409643	27		0.30
-*	     123	     135	55.50367	0.00439184	73		0.69
-*	      99	     105	53.86423	0.00611505	15		0.14
-*	      97	     107	44.72409	0.0293269	58		0.59
-*	     115	     144	41.87792	0.0490385	48		0.51
+# in_fold in_given   left_pos       right_pos      score           E-value    substitutions      power
+#----------------------------------------------------------------------------------------------------------------
+*	*	        98	       106	121.65645	2.25295e-05	45		0.48
+*	*	       122	       137	91.44593	0.000357632	57		0.58
+*	*	        96	       108	88.43400	0.000466924	26		0.28
+*	*	       120	       139	74.80289	0.00162024	87		0.76
+*	*	       119	       140	58.72158	0.00678565	90		0.78
+*	*	       121	       138	58.34837	0.00691674	99		0.82
+*	*	        94	       110	57.27959	0.00760538	37		0.40
+*	*	       124	       134	55.67692	0.0086606	20		0.21
+*	*	       123	       135	54.59630	0.00946822	72		0.68
+*	*	        99	       105	53.44797	0.0107226	15		0.14
+*	*	        97	       107	44.91842	0.0405594	58		0.59
 
-# The predicted structure
+# The predicted CaCoFold structure
 # SS_cons ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
 # SS_cons :::::::::::::::::::::::::::::::::<<<<<<_____>>>>>><<<<<---<<
 #
-# SS_cons <<<<<_______>>>->>>>--->>>>>::
+# SS_cons <<<<_________>>->>>>--->>>>>::
 #
-# left_pos      right_pos    substitutions      power
-#--------------------------------------------------------
-# 94		110		34		0.37
-# 95		109		29		0.32
-# 96		108		25		0.27
-# 97		107		58		0.59
-# 98		106		44		0.47
-# 99		105		15		0.14
-# 111		148		0		0.00
-# 112		147		18		0.18
-# 113		146		1		0.00
-# 114		145		9		0.06
-# 115		144		48		0.51
-# 119		140		88		0.77
-# 120		139		85		0.75
-# 121		138		97		0.81
-# 122		137		59		0.60
-# 123		135		73		0.69
-# 124		134		27		0.30
-# 125		133		31		0.34
+
+# Power analysis of CaCoFold structure 
 #
-# BPAIRS 18
-# avg substitutions per BP  41.2
-# BPAIRS expected to covary 7.2
-# BPAIRS observed to covary 12
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    94		110		37		0.40
+          95		109		28		0.31
+     *    96		108		26		0.28
+     *    97		107		58		0.59
+     *    98		106		45		0.48
+     *    99		105		15		0.14
+          111		148		0		0.00
+          112		147		18		0.18
+          113		146		1		0.00
+          114		145		15		0.14
+          115		144		49		0.52
+     *    119		140		90		0.78
+     *    120		139		87		0.76
+     *    121		138		99		0.82
+     *    122		137		57		0.58
+     *    123		135		72		0.68
+     *    124		134		20		0.21
 #
-#
-# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05         [-9.82,121.80]     [0 | 12 18 12 | 66.67 100.00 80.00] 
-#
-# in_cyk in_given   left_pos       right_pos      score           E-value    substitutions      power
-#----------------------------------------------------------------------------------------------------------------
-*	*	        98	       106	121.80433	3.80688e-10	44		0.47
-*	*	       122	       137	91.75573	8.02275e-07	59		0.60
-*	*	        96	       108	89.46430	1.42871e-06	25		0.27
-*	*	       120	       139	75.03790	5.16977e-05	85		0.75
-*	*	       119	       140	58.25176	0.00255411	88		0.77
-*	*	       121	       138	57.96915	0.00265136	97		0.81
-*	*	        94	       110	56.91065	0.00330664	34		0.37
-*	*	       124	       134	55.84207	0.00409643	27		0.30
-*	*	       123	       135	55.50367	0.00439184	73		0.69
-*	*	        99	       105	53.86423	0.00611505	15		0.14
-*	*	        97	       107	44.72409	0.0293269	58		0.59
-*	*	       115	       144	41.87792	0.0490385	48		0.51
+# BPAIRS 17
+# avg substitutions per BP  42.2
+# BPAIRS expected to covary 6.9
+# BPAIRS observed to covary 11
 \end{sreoutput}
 
 
 \subsection{Example of an RNA with pseudoknots}
 
-After version 1.2.0, \rscape\ annotates pseudoknots. \rscape's folding
-algorithm is capable of predicting pseudoknots using a cascade of
-dynamic programming algorithms.  In addition, if the structure given
-with the input alignment includes pseudoknots, \rscape\ uses the
-program R2R to automatically include the pseudoknots in the display of
-the consensus structure.
+\rscape\ implements the CaCoFold folding algorithm capable of
+predicting pseudoknots and other non nested interactions using a
+cascade of dynamic programming algorithms.  \rscape\ had adapted the
+program R2R to automatically include in the display all covarying
+interactions whether they are nested or not.
 
 Consider the manA RNA motif. Both the proposed structure for manA RNA
-and the predicted \rscape\ structure have 2 pseudoknots with
+and the predicted CaCoFold structure have 2 pseudoknots with
 covariation support:
 
 \user{bin/R-scape -s --fold tutorial/manA.sto}\\
 
-
 \begin{sreoutput}
-# R-scape :: RNA Structural Covariation Above Phylogenetic Expectation
-# R-scape 1.2.0 (January 2019)
-# Copyright (C) 2016-2019 Howard Hughes Medical Institute.
-# Freely distributed under the GNU General Public License (GPLv3).
-#-------------------------------------------------------------------------------------------------------
-# MSA manA nseq 193 (193) alen 189 (350) avgid 74.06 (71.38) nbpairs 62 (93)
-# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
-#
-# Structure obtained from the msa
-# SS_cons   <<<<<_________________________________>>>>>:::::[[[[[,,,<<--
+# The given structure
+# SS_cons   <<<<<<_______________________________>>>>>>:::::[[[[[,,,<<--
 # SS_cons_1 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # SS_cons_2 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
@@ -439,12 +488,85 @@ covariation support:
 # SS_cons_2 _________________________>>>>:::::::::::::::::::::
 #
 
+# Power analysis of given structure 
+#
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    1		43		61		0.61
+     *    2		42		61		0.61
+     *    3		41		72		0.68
+     *    4		40		104		0.83
+     *    5		39		106		0.84
+     *    6		38		126		0.90
+          49		344		15		0.14
+     *    50		343		16		0.16
+     *    51		342		26		0.28
+     *    52		341		77		0.71
+     *    53		340		26		0.28
+     *    57		107		38		0.41
+     *    58		106		16		0.16
+     *    72		101		71		0.68
+     *    73		100		38		0.41
+     *    74		99		60		0.60
+     *    75		98		34		0.37
+     *    76		97		31		0.34
+          77		96		27		0.30
+     *    112		241		41		0.44
+     *    113		240		51		0.53
+     *    115		237		61		0.61
+     *    116		236		46		0.49
+     *    117		235		62		0.62
+     *    118		234		49		0.52
+     *    150		162		52		0.54
+     *    151		161		47		0.50
+     *    152		160		36		0.39
+          155		223		31		0.34
+     *    156		222		30		0.33
+          157		221		28		0.31
+          158		220		27		0.30
+     *    164		206		29		0.32
+     *    165		205		54		0.56
+     *    166		204		148		0.94
+     *    167		203		109		0.85
+     *    168		202		154		0.95
+     *    169		201		147		0.94
+          210		231		48		0.51
+     *    211		230		77		0.71
+     *    212		229		71		0.68
+     *    213		228		59		0.60
+     *    214		227		75		0.70
+     *    246		314		62		0.62
+     *    247		313		92		0.79
+     *    248		312		141		0.93
+     *    249		311		90		0.78
+     *    250		310		99		0.82
+     *    251		309		105		0.84
+     *    252		308		37		0.40
+     *    265		300		61		0.61
+     *    266		299		44		0.47
+     *    267		298		42		0.45
+     *    268		297		36		0.39
+     *    274		329		47		0.50
+     *    275		328		36		0.39
+     *    276		327		39		0.42
+          278		326		42		0.45
+          317		339		13		0.12
+     *    318		338		37		0.40
+     *    319		337		60		0.60
+     *    320		336		18		0.18
+          321		335		0		0.00
+#
+# BPAIRS 63
+# avg substitutions per BP  57.7
+# BPAIRS expected to covary 33.2
+# BPAIRS observed to covary 54
+
   ...
 
   ...
   
-# The predicted structure
-# SS_cons   <<<<<_________________________________>>>>>:[---[[[[[,,,<<--
+# The predicted CaCoFold structure
+# SS_cons   <<<<<<_______________________________>>>>>>:[---[[[[[,,,<<--
 # SS_cons_1 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # SS_cons_2 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
@@ -460,14 +582,92 @@ covariation support:
 # SS_cons_1 _______________________________________>>>>:::::::::::::::::
 # SS_cons_2 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
-# SS_cons   )--),<<<<<<<------------<<<<____________________________>>>>
+# SS_cons   )--),<<<<<<<------------<<<<-<<______>>----------------->>>>
 # SS_cons_1 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# SS_cons_2 :::::::::::::::::::::::::::::::::<<<-<<_____________________
+# SS_cons_2 :::::::::::::::::::::::::::::::::<<<-<______________________
 #
 # SS_cons   ------->>>>>>>,,<<<<<_____________>>>>>]]]]]-]::::
 # SS_cons_1 ::::::::::::::::::::::::::::::::::::::::::::::::::
-# SS_cons_2 _______________________>->>>>:::::::::::::::::::::
+# SS_cons_2 _________________________>>>>:::::::::::::::::::::
 #
+
+# Power analysis of CaCoFold structure 
+#
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    1		43		61		0.61
+     *    2		42		61		0.61
+     *    3		41		72		0.68
+     *    4		40		104		0.83
+     *    5		39		106		0.84
+     *    6		38		126		0.90
+          45		346		82		0.74
+          49		344		15		0.14
+     *    50		343		16		0.16
+     *    51		342		26		0.28
+     *    52		341		77		0.71
+     *    53		340		26		0.28
+     *    57		107		38		0.41
+     *    58		106		16		0.16
+     *    72		101		71		0.68
+     *    73		100		38		0.41
+     *    74		99		60		0.60
+     *    75		98		34		0.37
+     *    76		97		31		0.34
+          77		96		27		0.30
+     *    109		244		37		0.40
+     *    112		241		41		0.44
+     *    113		240		51		0.53
+     *    115		237		61		0.61
+     *    116		236		46		0.49
+     *    117		235		62		0.62
+     *    118		234		49		0.52
+     *    150		162		52		0.54
+     *    151		161		47		0.50
+     *    152		160		36		0.39
+          155		223		31		0.34
+     *    156		222		30		0.33
+          157		221		28		0.31
+          158		220		27		0.30
+     *    164		206		29		0.32
+     *    165		205		54		0.56
+     *    166		204		148		0.94
+     *    167		203		109		0.85
+     *    168		202		154		0.95
+     *    169		201		147		0.94
+          210		231		48		0.51
+     *    211		230		77		0.71
+     *    212		229		71		0.68
+     *    213		228		59		0.60
+     *    214		227		75		0.70
+          218		223		59		0.60
+     *    246		314		62		0.62
+     *    247		313		92		0.79
+     *    248		312		141		0.93
+     *    249		311		90		0.78
+     *    250		310		99		0.82
+     *    251		309		105		0.84
+     *    252		308		37		0.40
+     *    265		300		61		0.61
+     *    266		299		44		0.47
+     *    267		298		42		0.45
+     *    268		297		36		0.39
+          270		279		47		0.50
+          271		278		81		0.73
+     *    274		329		47		0.50
+     *    275		328		36		0.39
+     *    276		327		39		0.42
+          278		326		42		0.45
+          317		339		13		0.12
+     *    318		338		37		0.40
+     *    319		337		60		0.60
+     *    320		336		18		0.18
+          321		335		0		0.00
+#
+# BPAIRS 68
+# avg substitutions per BP  58.0
+# BPAIRS expected to covary 36.2
+# BPAIRS observed to covary 55
 \end{sreoutput}
 
 \noindent

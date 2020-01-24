@@ -472,7 +472,7 @@ void
 rview_atom_Write(FILE *fp, ATOM *atom)
 {
   if (atom == NULL) return;
-  fprintf(fp, "%lld %s %lld %s %s %lld %s %s %f %f %f ",
+  fprintf(fp, "%ld %s %ld %s %s %ld %s %s %f %f %f ",
 	  atom->seqid, atom->chain, atom->resid, atom->reschr, (atom->type == ATYPE_ATOM)? "ATOM":"NONE", atom->idx,
 	  atom->atomid, atom->atomidx, atom->x, atom->y, atom->z);
   if (atom->isring) fprintf(fp, "is ring atom");
@@ -564,14 +564,14 @@ rview_chain_Write(FILE *fp, struct chain_s *chain, int verbose)
   
   if (chain->name)    fprintf(fp, "\nchain: %s\n", chain->name); 
   if (chain->seqtype) fprintf(fp, "type: %s\n",    chain->seqtype); 
-  if (chain->hetero)  fprintf(fp, "seqid: %lld (hetero)\n", chain->seqid);
-  else                fprintf(fp, "seqid: %lld\n", chain->seqid); 
-  if (chain->seq)     fprintf(fp, "sequence: (%lld)\n%s\n", chain->L, chain->seq);
+  if (chain->hetero)  fprintf(fp, "seqid: %ld (hetero)\n", chain->seqid);
+  else                fprintf(fp, "seqid: %ld\n", chain->seqid); 
+  if (chain->seq)     fprintf(fp, "sequence: (%ld)\n%s\n", chain->L, chain->seq);
 
   if (chain->resseq)
-    fprintf(fp, "res_sequence: (%lld)\n%s\n", chain->nr, chain->resseq);
+    fprintf(fp, "res_sequence: (%ld)\n%s\n", chain->nr, chain->resseq);
   else
-    fprintf(fp, "nres: (%lld)\n", chain->nr);
+    fprintf(fp, "nres: (%ld)\n", chain->nr);
 
   if (1||verbose) {
     for (r = 0; r < chain->nr; r ++)
@@ -598,7 +598,7 @@ rview_pdbx_AtomAdd(PDBX *pdbx, ATOM *atom, int verbose)
   }
   if (c == pdbx->nch) {
     for (c = 0; c < pdbx->nch; c ++) printf("chain[%d] %s\n", c, pdbx->chain[c].name);
-    esl_fatal("could not find chain %s in pdbx %s. nch = %lld\n", atom->chain, pdbx->pdbname, pdbx->nch);
+    esl_fatal("could not find chain %s in pdbx %s. nch = %ld\n", atom->chain, pdbx->pdbname, pdbx->nch);
   }
 
   // find the residue or create a new one
@@ -705,7 +705,7 @@ rview_pdbx_Checksum(PDBX *pdbx, int verbose)
       }
       
       if (checksum != eslOK) 
-	esl_fatal("pdbx %s did not checksum at chain %s (seqid %lld) at position (%lld) seqres=%s|reschr=%s\n",
+	esl_fatal("pdbx %s did not checksum at chain %s (seqid %ld) at position (%ld) seqres=%s|reschr=%s\n",
 		  pdbx->pdbname, chain->name, chain->seqid, res->resnum, seqchr, res->reschr[0]);
     }
   }
@@ -783,7 +783,7 @@ rview_res_AtomAdd(RES *res, ATOM *atom)
       ESL_REALLOC(res->reschr, sizeof(char *) * (res->h+1));
       esl_sprintf(&res->reschr[res->h], atom->reschr);
       res->h ++;
-      //printf("hetero residue %lld in chain %s seq %lld\n", res->resnum, atom->chain, atom->seqid);
+      //printf("hetero residue %ld in chain %s seq %ld\n", res->resnum, atom->chain, atom->seqid);
     }
   }
   
@@ -835,7 +835,7 @@ rview_res_AtomRing(RES *res, int verbose)
 	}
     }
   }
-  if (verbose) printf("res %s (%lld) has %d ring atoms\n", res->reschr[0], res->resnum, nring);
+  if (verbose) printf("res %s (%ld) has %d ring atoms\n", res->reschr[0], res->resnum, nring);
   if (nring > R_NRING && res->restype == RBASE) esl_fatal("A purine     should have %d atoms not %d\n", R_NRING, nring);
   if (nring > Y_NRING && res->restype == YBASE) esl_fatal("A pyrimidine should have %d atoms not %d\n", Y_NRING, nring);
 
@@ -1334,7 +1334,7 @@ rview_res_Write(FILE *fp, RES *res, int verbose)
   else if (res->restype == YBASE) fprintf(fp, "Y ");
   else if (res->restype == AMINO) fprintf(fp, "AA ");
   else                            fprintf(fp, "  ");
-  fprintf(fp, "%s %lld %s natoms %lld idx %lld\n", res->reschr[0], res->resnum, res->chain, res->na, res->from_atomidx);
+  fprintf(fp, "%s %ld %s natoms %ld idx %ld\n", res->reschr[0], res->resnum, res->chain, res->na, res->from_atomidx);
   
   if (verbose) {
     for (a = 0; a < res->na; a ++)
@@ -2025,7 +2025,7 @@ parse_sequence_hetero(PDBX *pdbx, char *p, esl_pos_t n, int verbose)
   resnum = atoi(field[0]);
   reschr = field[2];
   if (esl_strcmp(field[3], "y") == eslOK) {
-    if (verbose) printf("hetero sequence %lld residue %lld chr %s\n", seqid, resnum, reschr);    
+    if (verbose) printf("hetero sequence %ld residue %ld chr %s\n", seqid, resnum, reschr);    
     for (c = 0; c < pdbx->nch; c ++) 
       if (pdbx->chain[c].seqid == seqid)
 	pdbx->chain[c].hetero = TRUE;     
@@ -2509,7 +2509,7 @@ parse_sasymfield(PDBX *pdbx, char *p, esl_pos_t n, int nsl, char **sasymlabel, i
       
       // short version
       if (salloc > 0) {
-	if (verbose) printf ("_struct_saym is short version (salloc = %lld)\n", salloc);
+	if (verbose) printf ("_struct_saym is short version (salloc = %ld)\n", salloc);
  
 	ESL_ALLOC(field, sizeof(char) * (salloc+1));
 	for (i = slen; i < n; i++) 
@@ -2521,7 +2521,7 @@ parse_sasymfield(PDBX *pdbx, char *p, esl_pos_t n, int nsl, char **sasymlabel, i
 	// we need to assign the chain variables right here (hard coded)
 	// chain variables (name and seqid)
 	//
-	if (pdbx->nch != 1) esl_fatal("a short struct_asym format only compatible with having one chain, you have %lld chains\n", pdbx->nch);
+	if (pdbx->nch != 1) esl_fatal("a short struct_asym format only compatible with having one chain, you have %ld chains\n", pdbx->nch);
 	if (s == 0) esl_sprintf(&(pdbx->chain[0].name), field);
 	if (s == 1) pdbx->chain[0].seqid = atoi(field);  
       }

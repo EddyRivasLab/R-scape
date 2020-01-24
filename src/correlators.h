@@ -173,8 +173,13 @@ typedef struct spair_s {
   
   int64_t nsubs;
   double  power;
+
+  int     covary; // TRUE if pair covaries
+  double  sc;
+  double  Eval;
   
-  BPTYPE  bptype;
+  BPTYPE  bptype_given; // in given structure
+  BPTYPE  bptype_caco;  // in cacofold structure
   
 } SPAIR;
 
@@ -190,16 +195,56 @@ typedef struct power_s {
   double    *prob;
 } POWER;
 
+struct outfiles_s {
+  char            *covfile;             // list of covariations for given    structure
+  char            *covfoldfile;         // list of covariations for CaCoFold structure
+  char            *covsrtfile;          // list of covariations for given    structure sorted by E-value   
+  char            *covfoldsrtfile;      // list of covariations for CaCoFold structure sorted by E-value   
+
+  char            *alipowerfile;        // list of pairs in given    structure annotated with power/substitutions
+  char            *alipowerfoldfile;    // list of pairs in CaCoFOld structure annotated with power/substitutions
+
+  char            *covhisfile;          // covariations survival plot
+  char            *covqqfile;           // covariations qq plot
+
+  char            *R2Rfile;             // msa annotated with given    structure to be drawn by R2R
+  char            *R2Rfoldfile;         // msa annotated with CaCoFold structure to be drawn by R2R
+  
+  char            *dplotfile;           // dotplot of given    structure
+  char            *folddplotfile;       // dotplot of CaCoFold structure
+
+  char            *cmapfile;            // cmapfile has the contacts (including bpairs) mapped to the input alignment coordinates
+  char            *omsafoldfile;        // ouput msa with CaCoFold structure
+  
+  char            *rocfile;             // roc plot (optional)
+  char            *outmsafile;          // output msa only with consensus columns used (optional)
+  char            *outtreefile;         // output tree (optional)
+  char            *outnullfile;         // output of null alignments (optional)
+  char            *allbranchfile;       // (optional)
+  char            *outpottsfile;        // (optional)
+};
+
+enum cttype_e {
+  CTTYPE_NESTED,
+  CTTYPE_PK,
+  CTTYPE_XCOV,
+  CTTYPE_NONE,
+};
+
+// structure to keep all the ct's with the complete structure
+typedef struct ctlist_s {
+  int             nct;     // number of ct's to describe the complete structure
+  int             L;
+  int           **ct;      // all the basepairs
+  int           **covct;   // just the covarying pairs
+  enum cttype_e  *cttype;
+  char          **ctname;
+} CTLIST;
+
+
 struct data_s {
-  FILE                *outfp;
-  FILE                *outsrtfp;
-  FILE                *rocfp;
-  FILE                *sumfp; 
+  struct outfiles_s   *ofile;
   char                *gnuplot;
-  char                *dplotfile;
-  char                *folddplotfile;
-  char                *R2Rfile;
-  char                *R2Rfoldfile;
   int                  R2Rall;
   ESL_RANDOMNESS      *r;
 
@@ -218,8 +263,7 @@ struct data_s {
 
   int                  OL;
   int                  nseq;
-  int                  nct;
-  int                **ctlist;
+  CTLIST              *ctlist;
   int                  expBP;   // if no structure given but it is a structural RNA, give an expected number of BPs. Default -1
   int                  onbpairs;
   int                  nbpairs;

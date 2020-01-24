@@ -1,4 +1,3 @@
-
 /* structure.h
  *
  *   
@@ -28,14 +27,14 @@
 #define HLOOP_MIN 3                  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = j-i-1 = 2
                                      // unless there are covariations forcing a smaller hairpin loop.
 
-// parameters to break non-nested structures in helices
-#define  HELIX_UNPAIRED 2            // max number of unpaired residues in a non-nested helix
+// parameters to break structures in helices (definition of a helix)
+#define  HELIX_UNPAIRED 2            // max number of unpaired residues in a helix
 
 // parameters for selecting non-nested helices without covariations
 #define  OVERLAPFRAC       0.51      // max fraction of paired residues that overlap with another existing helix in order to be removed
 #define  MINHELIX          15        // min length to be reported
 
-// special parameter for selecting helices with covariations
+// special parameter for selecting helxices with covariations
 //
 // use these setting for maximal display of basepairing even if overlaping or contiguous
 // COV_MIN_DIST       1
@@ -44,6 +43,7 @@
 #define COV_MIN_DIST       1       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
 #define HELIX_OVERLAP_TRIM 0       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
 
+
 typedef struct cov_s {
   int64_t i;
   int64_t j;
@@ -51,7 +51,7 @@ typedef struct cov_s {
   int64_t nsubs;
   double  power;
   double  score;
-
+  
   int     isbp;
   
 } COV;
@@ -104,11 +104,23 @@ typedef struct fold_s {
   
 } FOLDPARAM;
 
-
-extern int struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, int *ret_nct, int ***ret_cykctlist, 
-			   RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh);
-extern int struct_DotPlot(char *gnuplot, char *dplotfile,  ESL_MSA *msa, int nct, int **ctlist, struct mutual_s *mi, int *msamap, int firstpos,
-			  SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, int verbose, char *errbuf);
-extern int struct_SplitCT(int helix_unpaired, int *ct, int L, int *ret_nct, int ***ret_ctlist, int verbose);
-extern int struct_CTMAP(int L, int nct, int **ctlist, int OL, int *msamap, int ***ret_octlist, char ***ret_sslist, FILE *fp, int verbose);
+extern int       struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_cykctlist, 
+	 	  	         RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh);
+extern int       struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, struct mutual_s *mi, int *msamap, int firstpos,
+	   		        SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, char *errbuf, int verbose);
+extern int       struct_SplitCT(int helix_unpaired, int *ct, int L, CTLIST **ret_ctlist, char *errbuf, int verbose);
+extern int       struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose);
+extern COVLIST  *struct_covlist_Create(int n);
+extern void      struct_covlist_Destroy(COVLIST *covlist);
+extern void      struct_covlist_Dump(COVLIST *covlist);
+extern int       struct_covlist_Realloc(COVLIST *covlist, int n);
+extern CTLIST   *struct_ctlist_Create(int nct, int L);
+extern void      struct_ctlist_Destroy(CTLIST *ctlist);
+extern int       struct_ctlist_Dump(CTLIST *ctlist);
+extern int       struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, char *errbuf, int verbose);
+extern int       struct_ctlist_Realloc(CTLIST *ctlist, int nct);
+extern PAIRLIST *struct_pairlist_Create(int n);
+extern void      struct_pairlist_Destroy(PAIRLIST *pairlist);
+extern void      struct_pairlist_Dump(PAIRLIST *pairlist);
+extern int       struct_pairlist_Realloc(PAIRLIST *pairlist, int n);
 #endif

@@ -41,12 +41,12 @@
 
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *surv);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit);
+static int    cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
 					   int linespoints, int style1, int style2);
-
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
@@ -60,12 +60,8 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist  = NULL;
-  int          **ctlist   = NULL;
-  char          *ss       = NULL;
   COVCLASS       covclass = data->mi->class;
   int            shiftnonneg = FALSE;
-  int            nct = 0;
-  int            s;
   int            status;
 
   /* Calculate the covariation matrix */
@@ -239,37 +235,32 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     ESL_XFAIL(eslFAIL, data->errbuf, "wrong covariation type\n");
     break;
   }
-  if (data->mode != RANSS) fprintf(data->sumfp, "\n");   
 
   if (analyze) {
     status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
     if (status != eslOK) goto ERROR;
   }
-
+ 
   if (!data->nofigures && data->mode == GIVSS) { // do the plots only for GIVSS
     if  (msa->abc->type == eslRNA || msa->abc->type == eslDNA) {
-      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, data->nct, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
-			      TRUE, data->verbose, data->errbuf);
+      status = struct_DotPlot(data->gnuplot, data->ofile->dplotfile, msa, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+			      TRUE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
-      status = struct_DotPlot(data->gnuplot, data->dplotfile, msa, data->nct, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
-			      FALSE, data->verbose, data->errbuf);
+      status = struct_DotPlot(data->gnuplot, data->ofile->dplotfile, msa, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
+			      FALSE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
-      status = r2r_Depict(data->R2Rfile, data->R2Rall, msa, data->nct, data->ctlist, (data->statsmethod != NAIVE)? hitlist:NULL, TRUE, TRUE, data->verbose, data->errbuf);
+      status = r2r_Depict(data->ofile->R2Rfile, data->R2Rall, msa, data->ctlist, (data->statsmethod != NAIVE)? hitlist:NULL, TRUE, TRUE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
     }
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
-  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
-  if (ctlist) free(ctlist);
   return eslOK;
   
  ERROR:
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
-  for (s = 0; s < nct; s ++) if (ctlist[s]) free(ctlist[s]);
-  if (ctlist) free(ctlist);
   return status;
 }
 
@@ -302,12 +293,9 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           pmass, newmass;
   double           bmax;
   double           add;
-  double           cov;
-  double           eval;
   double           tol = 1e-2;
   int              select;
   int              i, j;
-  int              b;
   int              status;
 
   corr_COVTYPEString(&covtype, mi->type, data->errbuf);
@@ -321,6 +309,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "covariation scores are almost constant, no further analysis.\n");
+      data->thresh->sc_bp  = eslINFINITY;
+      data->thresh->sc_nbp = eslINFINITY;
     }
 
     free(threshtype); 
@@ -402,19 +392,17 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				      &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad exponential fit.");
-      if (data->verbose) {
-	fprintf(data->outfp, "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
-	fprintf(stdout,      "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
-      }
+      if (data->verbose) 
+	fprintf(stdout, "# ExpFIT: pmass %f mu %f lambda %f\n", newmass, data->mu, data->lambda);
+   
     }
     else { // a gamma fit
       status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				&newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
-      if (data->verbose) {
-	fprintf(data->outfp, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
-	fprintf(stdout,      "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
-      }
+      if (data->verbose) 
+	fprintf(stdout, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
+      
     }
   }
   
@@ -454,9 +442,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 int
 cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
 {
-  struct mutual_s *mi   = data->mi;
-  ESL_DMATRIX     *mtx  = mi->COV;
-  ESL_DMATRIX     *eval = mi->Eval;
+  FILE            *rocfp = NULL;
+  struct mutual_s *mi    = data->mi;
+  ESL_DMATRIX     *mtx   = mi->COV;
+  ESL_DMATRIX     *eval  = mi->Eval;
   double           sen;
   double           ppv;
   double           F;
@@ -470,10 +459,12 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
   int              b;
   int              fp, tf, t, f, neg;
 
-  if (data->rocfp         == NULL) return eslOK;
-  if (data->ranklist_null == NULL) return eslOK;
-  if (data->nseq          == 1)    return eslOK;
+  if (data->ofile->rocfile == NULL) return eslOK;
+  if (data->ranklist_null  == NULL) return eslOK;
+  if (data->nseq           == 1)    return eslOK;
 
+  if ((rocfp = fopen(data->ofile->rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", data->ofile->rocfile);
+  
   for (i = 0; i < L-1; i ++) 
     for (j = i+1; j < L; j ++) {
       cov = mtx->mx[i][j];
@@ -498,11 +489,11 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     }    
   
   if (data->mode == GIVSS || data->mode == FOLDSS) {
-    fprintf(data->rocfp, "# Method: %s\n", covtype);      
+    fprintf(rocfp, "# Method: %s\n", covtype);      
     if (mi->ishuffled)
-      fprintf(data->rocfp, "#shuffled_cov_score    FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
+      fprintf(rocfp, "#shuffled_cov_score    FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
     else
-      fprintf(data->rocfp, "#cov_score             FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
+      fprintf(rocfp, "#cov_score             FP              TP           Found            True       Negatives        Sen     PPV     F       E-value\n"); 
   }
  
   for (b = ranklist->ha->imax; b >= ranklist->ha->imin; b --) {
@@ -549,9 +540,10 @@ cov_ROC(struct data_s *data, char *covtype, RANKLIST *ranklist)
     neg  = L * (L-1) / 2 - t;
     
     if (data->mode == GIVSS || data->mode == FOLDSS) 
-      fprintf(data->rocfp, "%.5f\t%8d\t%8d\t%8d\t%8d\t%8d\t%.2f\t%.2f\t%.2f\t%g\n", target_cov, fp, tf, f, t, neg, sen, ppv, F, target_eval);
+      fprintf(rocfp, "%.5f\t%8d\t%8d\t%8d\t%8d\t%8d\t%.2f\t%.2f\t%.2f\t%g\n", target_cov, fp, tf, f, t, neg, sen, ppv, F, target_eval);
   }
 
+  fclose(rocfp);
   return eslOK;
 }
 
@@ -696,13 +688,17 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 int 
 cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, char *covtype, char *threshtype)
 {
-  HITLIST  *hitlist = NULL;
-  int      *msa2pdb = data->msa2pdb;
-  double    expBP   = data->expBP;
+  FILE     *covfp    = NULL;
+  FILE     *covsrtfp = NULL;
+  FILE     *powerfp  = NULL;
+  HITLIST  *hitlist  = NULL;
+  int      *msa2pdb  = data->msa2pdb;
+  double    expBP    = data->expBP;
   double    sen, ppv, F;
   double    cov;
   double    eval;
   BPTYPE    bptype;
+  int       dim = mi->alen * (mi->alen - 1.) / 2;
   int       isbp;
   int       is_compatible;
   int       alloc_nhit = 5;
@@ -715,7 +711,14 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   int64_t   i, j;
   int       status;
 
-  if (data->nseq == 1) return eslOK;
+  if (data->nseq == 1)            return eslOK;
+  if (!data->ofile->covfile)      return eslOK;
+  if (!data->ofile->covsrtfile)   return eslOK;
+  if (!data->ofile->alipowerfile) return eslOK;
+
+  if ((covfp    = fopen(data->ofile->covfile,      "w")) == NULL) esl_fatal("Failed to open covfile %s",    data->ofile->covfile);
+  if ((covsrtfp = fopen(data->ofile->covsrtfile,   "w")) == NULL) esl_fatal("Failed to open covsrtfile %s", data->ofile->covsrtfile);
+  if ((powerfp  = fopen(data->ofile->alipowerfile, "w")) == NULL) esl_fatal("Failed to open powerfile %s",  data->ofile->alipowerfile);
   
   ESL_ALLOC(hitlist, sizeof(HITLIST));
   hitlist->hit    = NULL;
@@ -743,26 +746,19 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       }
 
       switch(data->samplesize) {
-      case SAMPLE_CONTACTS:
-	isbp = (bptype < BPNONE)?  TRUE : FALSE;
-	break;
-      case SAMPLE_BP:
-	isbp = (bptype < STACKED)? TRUE : FALSE;
-	break;
-      case SAMPLE_WC:
-	isbp = (bptype == WWc)?    TRUE : FALSE;
-	break;
-      case SAMPLE_ALL:
-	isbp = FALSE;
-	break;	
+      case SAMPLE_CONTACTS: isbp = (bptype < BPNONE)?  TRUE : FALSE; break;
+      case SAMPLE_BP:       isbp = (bptype < STACKED)? TRUE : FALSE; break;
+      case SAMPLE_WC:       isbp = (bptype == WWc)?    TRUE : FALSE; break;
+      case SAMPLE_ALL:      isbp = FALSE; break;	
       }
       
       cov  = mi->COV->mx[i][j];
 
       if (data->ranklist_null == NULL) eval = 0; // naive method: eval does not inform of statistical significance
       else {
-	if (isbp)
-	  mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	if (isbp) {
+	  mi->Eval->mx[i][j]   = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	}
 	else {
 	  if (h < expBP)
 	    mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, expBP,            data->ranklist_null->ha, data->ranklist_null->survfit);
@@ -791,6 +787,10 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
+
+	data->spair[n].covary = TRUE;
+	data->spair[n].sc     = cov;
+ 	data->spair[n].Eval   = eval;
       }
  
       n ++;
@@ -818,17 +818,13 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     
     switch(data->samplesize) {
     case SAMPLE_CONTACTS:
-      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
-      break;
+      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE; break;
     case SAMPLE_BP:
-      isbp = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
-      break;
+      isbp = (hitlist->hit[h].bptype < STACKED)? TRUE : FALSE; break;
     case SAMPLE_WC:
-     isbp = (hitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
-      break;
+     isbp = (hitlist->hit[h].bptype == WWc)?     TRUE : FALSE; break;
     case SAMPLE_ALL: // use all contacts here
-      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
-     break;	
+      isbp = (hitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE; break;	
     }
     if (isbp) tf ++;
   }
@@ -838,34 +834,39 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
   F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
   
-  if (data->mode != RANSS && data->sumfp) {
-    fprintf(data->sumfp, " %s %d %d %d %.2f %.2f ", 
-	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
-  }
-
-  if (data->spair != NULL && data->samplesize != SAMPLE_ALL && data->nseq > 1) printf("# BPAIRS observed to covary %d\n#\n", tf);
-  
-  if (data->outfp) {
-    CMAP_DumpShort(data->outfp, data->clist);
-    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+  if (covfp) {
+    fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    if (data->nseq > 1) cov_WriteHitList(data->outfp, nhit, hitlist, data->msamap, data->firstpos);
+    if (data->nseq > 1) cov_WriteHitList(covfp, nhit, hitlist, data->msamap, data->firstpos);
   }
-  
-  if (data->outsrtfp) {
-    CMAP_DumpShort(data->outsrtfp, data->clist);
+  if (covsrtfp) {
     if (data->nseq > 1) {
-      fprintf(stdout,         "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-      fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-      fprintf(stdout,         "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+      fprintf(stdout,   "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+      fprintf(covsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+      fprintf(stdout,   "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-      fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+      fprintf(covsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-      cov_WriteRankedHitList(stdout,         nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
-      cov_WriteRankedHitList(data->outsrtfp, nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
+      cov_WriteRankedHitList(stdout,   nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
+      cov_WriteRankedHitList(covsrtfp, nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
     }
   }
+  
+  fprintf(stdout, "\n# The given structure\n");
+  status = struct_CTMAP(data->mi->alen, data->ctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
+  if (status != eslOK) goto ERROR;
+
+  // add the significant covariations to the covct in ctlist
+  cov_add_hitlist2covct(hitlist, data->ctlist, data->verbose);
+  
+  // write the power file output
+  power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
+  power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
+  
+  fclose(covfp);
+  fclose(covsrtfp);
+  fclose(powerfp);
   
   if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
   return eslOK;
@@ -877,12 +878,14 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
 
 int 
-cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
+cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
 {
+  FILE     *covfp       = NULL;
+  FILE     *covsrtfp    = NULL;
+  FILE     *powerfp     = NULL;
   HITLIST  *foldhitlist = NULL;
-  SPAIR    *spair       = NULL;
   double    sen, ppv, F;
-  int       dim;
+  int       dim  = data->mi->alen * (data->mi->alen - 1.) / 2;
   int       nhit = (hitlist)? hitlist->nhit : 0;
   int       isbp;
   int       tf = 0;
@@ -890,6 +893,14 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
   int       t, fp;
   int       h = 0;
   int       status;
+
+  if (!data->ofile->covfoldfile)      return eslOK;
+  if (!data->ofile->covfoldsrtfile)   return eslOK;
+  if (!data->ofile->alipowerfoldfile) return eslOK;
+
+  if ((covfp    = fopen(data->ofile->covfoldfile,      "w")) == NULL) esl_fatal("Failed to open covfile %s",      data->ofile->covfoldfile);
+  if ((covsrtfp = fopen(data->ofile->covfoldsrtfile,   "w")) == NULL) esl_fatal("Failed to open covsrtfile %s",   data->ofile->covfoldsrtfile);
+  if ((powerfp  = fopen(data->ofile->alipowerfoldfile, "w")) == NULL) esl_fatal("Failed to open alipowerfile %s", data->ofile->alipowerfoldfile);
 
   if (nhit > 0) {
     ESL_ALLOC(foldhitlist, sizeof(HITLIST));
@@ -918,36 +929,20 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
   }
   
   switch(data->samplesize) {
-  case SAMPLE_CONTACTS:
-    t = data->clist->ncnt;
-    break;
-  case SAMPLE_BP:
-    t = data->clist->nbps;
-    break;
-  case SAMPLE_WC:
-    t = data->clist->nwwc;
-    break;
-  case SAMPLE_ALL: // use all contacts here
-    t = data->clist->ncnt;
-    break;	
+  case SAMPLE_CONTACTS: t = data->clist->ncnt; break;
+  case SAMPLE_BP:       t = data->clist->nbps; break;
+  case SAMPLE_WC:       t = data->clist->nwwc; break;
+  case SAMPLE_ALL:      t = data->clist->ncnt; break; // use all contacts here
   }
   
   for (h = 0; h < nhit; h ++) {
     f ++;
     
     switch(data->samplesize) {
-    case SAMPLE_CONTACTS:
-      isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
-      break;
-    case SAMPLE_BP:
-      isbp = (foldhitlist->hit[h].bptype < STACKED)? TRUE : FALSE;
-      break;
-    case SAMPLE_WC:
-     isbp = (foldhitlist->hit[h].bptype == WWc)?     TRUE : FALSE;
-      break;
-    case SAMPLE_ALL: // use all contacts here
-      isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE;
-     break;	
+    case SAMPLE_CONTACTS: isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE; break;
+    case SAMPLE_BP:       isbp = (foldhitlist->hit[h].bptype < STACKED)? TRUE : FALSE; break;
+    case SAMPLE_WC:       isbp = (foldhitlist->hit[h].bptype == WWc)?    TRUE : FALSE; break;
+    case SAMPLE_ALL:      isbp = (foldhitlist->hit[h].bptype < BPNONE)?  TRUE : FALSE; break; // use all contacts here
     }
     if (isbp) tf ++;
   }
@@ -955,58 +950,47 @@ cov_CreateFOLDHitList(struct data_s *data, int foldnct, int **foldctlist, RANKLI
   sen = (t > 0)? 100. * (double)tf / (double)t : 0.0;
   ppv = (f > 0)? 100. * (double)tf / (double)f : 0.0;
   F   = (sen+ppv > 0.)? 2.0 * sen * ppv / (sen+ppv) : 0.0;   
-  
-  if (data->mode != RANSS && data->sumfp) {
-    fprintf(data->sumfp, " %s %d %d %d %.2f %.2f ", 
-	    covtype, tf, t, f, (t > 0)? 100.*(double)tf/(double)t:0.0, (f>0)? 100.*(double)tf/(double)f:0.0);
-  }
 
-  status = power_SPAIR_Create(&dim, &spair, data->mi->alen, data->msamap, data->power, data->clist, data->nsubs, data->ndouble, data->errbuf, data->verbose);
-  if (status != eslOK) ESL_XFAIL(status, data->errbuf, "%s\n", data->errbuf);
-  
-  if (data->outfp) {
-    fprintf(data->outfp, "\n# The predicted fold-cov structure\n");
-    status = struct_CTMAP(data->mi->alen, foldnct, foldctlist, data->OL, data->msamap, NULL, NULL, data->outfp, FALSE);
-    if (status != eslOK) goto ERROR;
-    
-    power_SPAIR_Write(data->outfp, dim, spair);
-    
-    fprintf(data->outfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+  if (covfp) {
+    fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteFOLDHitList(data->outfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos);
+    cov_WriteFOLDHitList(covfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos);
   }
 
-  fprintf(stdout, "\n# The predicted fold-cov structure\n");
-  status = struct_CTMAP(data->mi->alen, foldnct, foldctlist, data->OL, data->msamap, NULL, NULL, NULL, TRUE);
-  if (status != eslOK) goto ERROR;
+  status = power_SPAIR_AddCaCo(dim, data->spair, data->clist, data->errbuf, data->verbose);
+  if (status != eslOK) ESL_XFAIL(status, data->errbuf, "%s\n", data->errbuf);
 
-  power_SPAIR_Write(stdout, dim, spair);
-  
-  fprintf(stdout, "# BPAIRS observed to covary %d\n#\n", tf);
   fprintf(stdout, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
   fprintf(stdout, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	  covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
   cov_WriteFOLDRankedHitList(stdout, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
     
-  if (data->outsrtfp) {
-    fprintf(data->outsrtfp, "\n# The predicted fold-cov structure\n");
-
-    power_SPAIR_Write(data->outsrtfp, dim, spair);
-    
-    fprintf(data->outsrtfp, "# BPAIRS observed to covary %d\n#\n", tf);
-    fprintf(data->outsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
-    fprintf(data->outsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+  if (covsrtfp) {
+    fprintf(covsrtfp, "\n# The predicted CaCoFold structure\n");
+    fprintf(covsrtfp, "# BPAIRS observed to covary %d\n#\n", tf);
+    fprintf(covsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+    fprintf(covsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteFOLDRankedHitList(data->outsrtfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
+    cov_WriteFOLDRankedHitList(covsrtfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
   }
 
-  if (spair) free(spair);
+  fprintf(stdout, "\n# The predicted CaCoFold structure\n");
+  status = struct_CTMAP(data->mi->alen, foldctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
+  if (status != eslOK) goto ERROR;
+
+  // write the power file output
+  power_SPAIR_Write(stdout,  dim, data->spair, FALSE);
+  power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
+
+  fclose(covfp);
+  fclose(covsrtfp);
+  fclose(powerfp);
+
   if (ret_foldhitlist) *ret_foldhitlist = foldhitlist; else cov_FreeHitList(foldhitlist);
   return eslOK;
   
  ERROR:
-  if (spair) free(spair);
   if (foldhitlist) cov_FreeHitList(foldhitlist);
   return status;
 }
@@ -1025,7 +1009,7 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
     fprintf(fp, "no significant pairs\n");
   }
   else {
-    fprintf(fp, "#       left_pos       right_pos        score          E-value       substitutions      power\n");
+    fprintf(fp, "# in_given  left_pos       right_pos        score          E-value       substitutions      power\n");
     fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
   }
 
@@ -1071,7 +1055,7 @@ cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist,
   if (!fp)         return eslOK;
   if (!foldhitlist) return eslOK;
 
-  fprintf(fp, "# in_fold  in_given   left_pos       right_pos      score           E-value substitutions    power\n");
+  fprintf(fp, "# in_CaCoFold in_given   left_pos       right_pos      score           E-value substitutions    power\n");
   fprintf(fp, "#-------------------------------------------------------------------------------------------------------\n");
    if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
@@ -2076,6 +2060,44 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
   return cov;
 }
 
+static int
+cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose)
+{
+  int *ct;
+  int *cov;
+  int  nct = ctlist->nct;
+  int  L = ctlist->L;
+  int  s;
+  int  h;
+  int  i;
+  int  ih, jh;
+
+      
+  for (s = 0; s < nct; s ++) {
+    ct  = ctlist->ct[s];
+    cov = ctlist->covct[s];
+    
+    for (i = 1; i <= L; i ++) {
+      
+      if (ct[i] > i) {
+	for (h = 0; h < hitlist->nhit; h ++) {
+	  ih = hitlist->hit[h].i+1;
+	  jh = hitlist->hit[h].j+1;
+	  
+	  if (i == ih) {
+	    cov[i]  = jh;
+	    cov[jh] = i;
+	  }
+	}
+      }
+    }
+    
+  }
+  
+  return eslOK;
+}
+
+
 static double
 cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit)
 {
@@ -2376,4 +2398,3 @@ cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *la
    
   return eslOK;
 }
-

@@ -49,7 +49,7 @@ while (<FILE>) {
 	
 	print OUT "$field $tag $val\n";	
     }
-    elsif (/(^#=GF)\s+(\S+)\s+(\S+.+\S+)\s*$/) {
+    elsif (/(^#=GF)\s+(\S+)\s+(\S+.+\S+)\s*$/ || /(^#=GF)\s+(\S+)\s+(\S+)\s*$/ ) {
 	$field = $1;
 	$tag   = $2;
 	$val   = $3;

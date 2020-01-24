@@ -47,11 +47,11 @@ static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int
 int                 
 corr_CalculateCHI(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi; 
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi; 
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   switch (covclass) {
   case C16:
@@ -66,7 +66,8 @@ corr_CalculateCHI(COVCLASS covclass, struct data_s *data)
     else
       status = corr_CalculateCHI_C16(mi, verbose, errbuf);
     break;
-}
+  }
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateCHI() error\n");
   
   if (verbose) {
     printf("CHI[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -178,11 +179,11 @@ corr_CalculateCHI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 int                 
 corr_CalculateOMES(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   switch (covclass) {
   case C16:
@@ -198,6 +199,7 @@ corr_CalculateOMES(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateOMES_C16(mi, verbose, errbuf);
     break;
   }
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateOMES() error\n");
   
   if (verbose) {
     printf("OMES[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -306,11 +308,11 @@ corr_CalculateOMES_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, 
 int                 
 corr_CalculateGT(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
 
   switch (covclass) {
   case C16:
@@ -328,7 +330,8 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data)
     }
     break;
   }
-  
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateGT() error\n");
+    
   if (verbose) {
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
@@ -440,11 +443,11 @@ corr_CalculateGT_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
 int                 
 corr_CalculateMI(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   switch (covclass) {
   case C16:
@@ -460,6 +463,7 @@ corr_CalculateMI(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateMI_C16(mi, verbose, errbuf);
     break;
   }
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMI() error\n");
   
   if (verbose) {
     printf("MI[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -560,11 +564,11 @@ corr_CalculateMI_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, ch
 int                 
 corr_CalculateMIr(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   switch (covclass) {
   case C16:
@@ -580,6 +584,7 @@ corr_CalculateMIr(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateMIr_C16(mi, verbose, errbuf);
     break;
   }
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIr() error\n");
   
   if (verbose) {
     printf("MIr[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -687,11 +692,11 @@ corr_CalculateMIr_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 int                 
 corr_CalculateMIg(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi;
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   switch (covclass) {
   case C16:
@@ -707,6 +712,7 @@ corr_CalculateMIg(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateMIg_C16(mi, verbose, errbuf);
     break;
   }
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIg() error\n");
   
   if (verbose) {
     printf("MIg[%f,%f]\n", mi->minCOV, mi->maxCOV);
@@ -811,9 +817,9 @@ corr_CalculateMIg_C2(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, c
 int                 
 corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
 {
-  struct mutual_s *mi = data->mi;
+  struct mutual_s *mi        = data->mi;
   ESL_DMATRIX     *allowpair = data->allowpair;
-  int              verbose = data->verbose;
+  int              verbose   = data->verbose;
   double           psi = 1.0;
   double           cij, qij;
   int              i, j;
@@ -865,23 +871,23 @@ corr_CalculateRAF(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
   }
   
   return status;
-  
- ERROR:
-  return status;
 }
 
 int                 
 corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
 {
-  struct mutual_s *mi = data->mi;
+  struct mutual_s *mi      = data->mi;
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
-  ESL_DMATRIX     *bij = NULL;
+  ESL_DMATRIX     *bij     = NULL;
   double           bijs;
   int              i, j;
-  int              status = eslOK;
+  int              status;
 
   corr_ReuseCOV(mi, RAF, C2);
-  corr_CalculateRAF(C2, data, msa);
+  
+  status = corr_CalculateRAF(C2, data, msa);
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateRAF() error\n");
 
   // RAFS
   bij = esl_dmatrix_Clone(mi->COV);
@@ -919,14 +925,15 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
 int                 
 corr_CalculateCCF(COVCLASS covclass, struct data_s *data)
 {
-  struct mutual_s *mi = data->mi; 
-  char            *errbuf = data->errbuf;
+  struct mutual_s *mi      = data->mi; 
+  char            *errbuf  = data->errbuf;
   int              verbose = data->verbose;
   int              i, j;
-  int              status = eslOK;
+  int              status;
   
   status = corr_CalculateCCF_C16  (mi, verbose, errbuf);
-  
+  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateCCF() error\n");
+
   if (verbose) {
     printf("CCF[%f,%f]\n", mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
@@ -934,8 +941,7 @@ corr_CalculateCCF(COVCLASS covclass, struct data_s *data)
 	if (i==5&&j==118) printf("CCF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
-
-  return status;
+  return eslOK;
 
  ERROR:
   return status;

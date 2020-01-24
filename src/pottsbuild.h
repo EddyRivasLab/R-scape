@@ -83,7 +83,7 @@ struct optimize_data {
 
 extern PT   *potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue,
 			 PTTRAIN pttrain, PTMIN ptmintype, PTSCTYPE ptsctype, PTREG ptreg, PTINIT ptinit,
-			 FILE *pottsfp, int isgremlin, float tol, char *errbuf, int verbose);
+			 char *pottsfile, int isgremlin, float tol, char *errbuf, int verbose);
 extern PT   *potts_Create(int64_t L, int K, ESL_ALPHABET *abc, double muh, double mue, PTTRAIN pttrain,
 			  PTMIN ptmintype, PTSCTYPE ptsctype, PTREG ptreg, int isgremlin);
 extern void  potts_Destroy(PT *pt);

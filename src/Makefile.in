@@ -177,7 +177,8 @@ POWER   = \
 	R-scape.power.double.csv  \
 
 R2R     = \
-	Stockholm.pm  \
+	r2r \
+	R2R_Stockholm.pm  \
 	SelectSubFamilyFromStockholm.pl  \
 
 all: libsrc.a ${PROGS} 

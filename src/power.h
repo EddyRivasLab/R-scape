@@ -21,7 +21,8 @@ typedef struct powerhistogram_s {
 extern POWERHIS *power_Histogram_Create(int bmin, int bmax, double w);
 extern void      power_Histogram_Destroy(POWERHIS *powerhis);
 extern int       power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST *clist, int *nsubs, int *ndouble, char *errbuf, int verbose);
-extern void      power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair);
+extern int       power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbose);
+extern void      power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given);
 extern void      power_Destroy(POWER *power);
 extern int       power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int verbose);
 extern void      power_Write(FILE *fp, POWER *power, int verbose);

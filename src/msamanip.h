@@ -39,6 +39,8 @@ typedef struct msa_stat_s {
 
 extern int msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnowc, char *errbuf);
 extern int msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, double **ret_fnbp, char *errbuf);
+extern int msamanip_SeqNames_CheckParenthesis(const ESL_MSA *msa, char *errbuf);
+extern int msamanip_SeqNames_DoctorParenthesis(const ESL_MSA *msa, char *errbuf);
 extern int msamanip_CompareBasecomp(ESL_MSA *msa1, ESL_MSA *msa2, char *errbuf);
 extern int msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa);
 extern int msamanip_ConvertDegen2N(ESL_MSA *msa);

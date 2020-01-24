@@ -24,7 +24,7 @@ static int  covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh
 static int  dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, THRESH *thresh, int j, int d, SCVAL *ret_sc,  ESL_STACK *alts,
 			   char *errbuf, int verbose);
 static int  add_to_explained(COVLIST **ret_explained, int L, const int *ct);
-static int  covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST ***ret_exclude, int verbose);
+static int  covariations_exclude(CTLIST *ctlist, int L, COVLIST *totalcov, COVLIST ***ret_exclude, int verbose);
 
 /* This is a cascade algorithm to decide based on the pairs that covary, 
  * how many different folds we are going to have to do (nct) to account for all of them,
@@ -38,26 +38,21 @@ static int  covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov
  *
  * we return 
  *        nct           - the number of different nested fold that are needed include all covarying pairs
- *        ctlist[nct]   - ctlist[s][i] >  0 a covarying pair forced to  basepair in structure s (the covariation skeleton of s)
- *                        ctlist[s][i] = -1 residue is covarying in some other ct (see exclude list to figure out to what)
- *                        ctlist[s][i] =  0 unrestricted
+ *        ctlist[nct]   - ctlist->covct[s][i] >  0 a covarying pair forced to  basepair in structure s (the covariation skeleton of s)
+ *                        ctlist->covct[s][i] = -1 residue is covarying in some other ct (see exclude list to figure out to what)
+ *                        ctlist->covct[s][i] =  0 unrestricted
  *        exclude[nct]  - exclude[s] is a CLIST with those covarying pairs forced to remain unpaired in structures s.
  */
 int
-MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, COVLIST ***ret_exclude,
+MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, CTLIST **ret_ctlist, COVLIST ***ret_exclude,
        int ncvpairs, THRESH *thresh, char *errbuf, int verbose) 
 {
-  int n;
   int status;
 
   if (ESL_MIN(thresh->sc_bp, thresh->sc_nbp) > mi->maxCOV) {
-    ESL_ALLOC(*ret_exclude,      sizeof(COVLIST *));
-    ESL_ALLOC(*ret_ctlist,       sizeof(int     *));
-    ESL_ALLOC(*ret_exclude[0],   sizeof(COVLIST  ));
-    ESL_ALLOC(*ret_ctlist[0],    sizeof(int      ) * (mi->alen+1));
-    esl_vec_ISet(*ret_ctlist[0], mi->alen+1, 0);
-    (*ret_exclude)[0]->n = 0;
-    *ret_nct = 0;
+    ESL_ALLOC(*ret_exclude, sizeof(COVLIST *));
+    *ret_exclude[0] = struct_covlist_Create(0);
+    *ret_ctlist = struct_ctlist_Create(1, mi->alen); // if there are no covariations, we still calculate one CaCoFold structure
     return eslOK;
   }
   
@@ -65,7 +60,7 @@ MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
   //
   // Use a Nussinov/CYK algorithm to make a selection of the max number of cov pairs that can be put together in a nested structure.
   // Remove those from the pool, and keep appplying the algorithm until no covarying pairs are left to be explained
-  if ((status = MAXCOV_Structures(r, mi, clist, ret_nct, ret_ctlist, ret_exclude, ncvpairs, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
+  if ((status = MAXCOV_Structures(r, mi, clist, ret_ctlist, ret_exclude, ncvpairs, thresh, errbuf, verbose)) != eslOK) goto ERROR;    
 
   return eslOK;
   
@@ -80,10 +75,10 @@ MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, int *ret_nct, int *
  * At each fold s, 
  */
 int
-MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *ret_nct, int ***ret_ctlist, COVLIST ***ret_exclude,
+MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, CTLIST **ret_ctlist, COVLIST ***ret_exclude,
 		  int ncvpairs, THRESH *thresh, char *errbuf, int verbose) 
 {
-  int      **ctlist    = NULL; // list of included covariations for a given nested fold
+  CTLIST    *ctlist    = NULL; // list of included covariations for a given nested fold
   COVLIST  **exclude   = NULL; // list of excluded covariations for a given nested fold
   COVLIST   *totalcov  = NULL; // list of all covariations
   COVLIST   *explained = NULL; // list of covariations already taken into acount
@@ -94,16 +89,17 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
   int        ncv_in;               // number of cov pair part of a given nested structure
   int        ncv_left = ncvpairs;  // number of cov left to account for
   int        nct = 0;
-  int        i;
-  int        n;
   int        s;
-  int        be_verbose =  FALSE;
+  int        be_verbose = FALSE;
   int        status;
-  
+
   // allocate explained. No covariations explaned so far
-  ESL_ALLOC(explained, sizeof(COVLIST));
-  explained->n   = 0;
-  explained->cov = NULL;
+  ctlist = struct_ctlist_Create((nct+1), L);
+  if (ctlist == NULL) ESL_XFAIL(eslFAIL, errbuf, "MAXCOV_Structures() allocation error");
+  
+  explained = struct_covlist_Create(0);
+  if (explained == NULL) ESL_XFAIL(eslFAIL, errbuf, "MAXCOV_Structures() allocation error");
+  
   if (be_verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
 
   // list with all covarying pairs
@@ -111,40 +107,37 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
 
   // add more structures as long as we have covarying pairs to accomodate into a nested folding
   while (ncv_left > 0) {
- 
-    if (nct == 0) ESL_ALLOC  (ctlist, sizeof(int *) * (nct+1));
-    else          ESL_REALLOC(ctlist, sizeof(int *) * (nct+1));
-    ctlist[nct] = NULL;
+
+    struct_ctlist_Realloc(ctlist, nct+1);
  
     // "explained" describes the covariations already taken into account before this fold
     ncv_in = 0;
-    if ((status = MAXCOV_Both(rng, mi, clist, explained, &sc, &ctlist[nct], &ncv_in, thresh, errbuf, verbose)) != eslOK) goto ERROR;
+    if ((status = MAXCOV_Both(rng, mi, clist, explained, &sc, ctlist->covct[nct], &ncv_in, thresh, errbuf, verbose)) != eslOK) goto ERROR;
     if (ncv_in == 0) {
-      *ret_nct     = nct;
       *ret_ctlist  = ctlist;
       *ret_exclude = exclude;
       ESL_XFAIL(eslFAIL, errbuf, "%d covarying pairs cannot be explained. Impossible!\n", ncv_left);
     }
     
-     ct = ctlist[nct]; // the current skeleton of this structure
-     if (be_verbose) esl_ct2wuss(ct, L, ss);
+    ct = ctlist->covct[nct]; // the current skeleton of this structure
+    if (be_verbose) esl_ct2wuss(ct, L, ss);
     
     // number of covarying pairs that remain to be explained
     ncv_left -= ncv_in;
-
+    
     // add the current list of cov pairs to explained
     if (add_to_explained(&explained, mi->alen, ct) != eslOK) goto ERROR;
-
+    
     if (be_verbose) 
-      printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f | not explained %d\n%s\n", nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ncv_left, ss);
+      printf("cv_structure %d [%d cv pairs] CYKscore = %f at covthres %f %f | not explained %d\n%s\n",
+	     nct+1, ncv_in, sc, thresh->sc_bp, thresh->sc_nbp, ncv_left, ss);
        
     nct ++;
   }
 
   // go back to all structures. fill exclude
-  if (covariations_exclude(nct, ctlist, L, totalcov, &exclude, verbose) != eslOK) goto ERROR;
+  if (covariations_exclude(ctlist, L, totalcov, &exclude, verbose) != eslOK) goto ERROR;
 
-  *ret_nct     = nct;
   *ret_ctlist  = ctlist;
   *ret_exclude = exclude;
 
@@ -153,7 +146,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
 
  ERROR:
   if (exclude) {
-    for (s = 0; s < nct; s ++) if (exclude[s]->cov) free(exclude[s]->cov);
+    for (s = 0; s < nct; s ++) struct_covlist_Destroy(exclude[s]);
     free(exclude);
   }
   if (ss) free(ss); 
@@ -161,7 +154,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, int *r
 }
 
 int
-MAXCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, SCVAL *ret_sc, int **ret_ct, int *ret_ncv,
+MAXCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, SCVAL *ret_sc, int *ct, int *ret_ncv,
 	    THRESH *thresh, char *errbuf, int verbose) 
 {
   GMX    *cyk = NULL;  // CYK DP matrix: M x (L x L triangular)
@@ -176,9 +169,9 @@ MAXCOV_Both(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *exp
   if ((status = MAXCOV_Fill(mi, clist, explained, cyk, ret_sc, thresh, errbuf, verbose)) != eslOK) goto ERROR;
   
   /* Report a traceback */
-  if ((status = MAXCOV_Traceback(rng, mi, clist, explained, cyk, ret_ct, thresh, errbuf, verbose))  != eslOK) goto ERROR;
+  if ((status = MAXCOV_Traceback(rng, mi, clist, explained, cyk, ct, thresh, errbuf, verbose))  != eslOK) goto ERROR;
 
-  for (i = 1; i < L; i ++) if ((*ret_ct)[i] > i) ncv ++;
+  for (i = 1; i < L; i ++) if (ct[i] > i) ncv ++;
   *ret_ncv = ncv;
   
   GMX_Destroy(cyk);
@@ -218,11 +211,10 @@ MAXCOV_Fill(struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, SCV
 }
 
 int
-MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int **ret_ct, THRESH *thresh, char *errbuf, int verbose) 
+MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST *explained, GMX *cyk, int *ct, THRESH *thresh, char *errbuf, int verbose) 
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
-  int            *ct = NULL;             /* the ct vector with who is paired to whom */
   SCVAL           bestsc;                /* max score over possible rules */
   int             L = mi->alen;
   int             nequiv;                /* number of equivalent alternatives for a traceback */
@@ -237,7 +229,6 @@ MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST
    * remembers who was a base pair, and keeps a ct[]
    * array. 
    */
-  ESL_ALLOC(ct, sizeof(int) * (L+1));
   esl_vec_ISet(ct, L+1, 0);
   
   /* is sq score is -infty, nothing to traceback */
@@ -318,8 +309,6 @@ MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST
 	ESL_XFAIL(eslFAIL, errbuf, "rule %d disallowed. Max number is 2", r);
   }
 
-  *ret_ct = ct;
-
   esl_stack_Destroy(ns);
   esl_stack_Destroy(alts);
   return eslOK;
@@ -327,7 +316,6 @@ MAXCOV_Traceback(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, COVLIST
  ERROR:
   if (ns)   esl_stack_Destroy(ns);
   if (alts) esl_stack_Destroy(alts);
-  if (ct)   free(ct);
   return status;
 }
 
@@ -443,9 +431,7 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
   int      n;
   int      status;
 
-  ESL_ALLOC(totalcov, sizeof(COVLIST));
-  totalcov->n   = 0;
-  totalcov->cov = NULL;
+  totalcov = struct_covlist_Create(0);
 
   for (i = 1; i < L; i ++) 
     for (j = i+1; j <= L; j ++) {
@@ -457,15 +443,12 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
       if ( ( isbp && covscore >= thresh->sc_bp) ||
 	   (!isbp && covscore >= thresh->sc_nbp)   )
 	{
-	  if (totalcov->n == 0) ESL_ALLOC  (totalcov->cov, sizeof(COV)*(totalcov->n+1));
-	  else                  ESL_REALLOC(totalcov->cov, sizeof(COV)*(totalcov->n+1));
-	  cov        = &totalcov->cov[totalcov->n];
+	  struct_covlist_Realloc(totalcov, totalcov->n+1);
+	  cov        = &totalcov->cov[totalcov->n-1];
 	  cov->i     = i;
 	  cov->j     = j;
 	  cov->isbp  = isbp;
 	  cov->score = covscore;
-	  
-	  totalcov->n ++;
       }
      
     }
@@ -479,12 +462,10 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
   }
   
   *ret_totalcov = totalcov;
-  
   return eslOK;
 
  ERROR:
-  for (c = 0; c < totalcov->n; c ++) if (totalcov->cov) free(totalcov->cov);
-  if (totalcov) free(totalcov);
+  if (totalcov) struct_covlist_Destroy(totalcov);
   return status;
 }
 
@@ -499,12 +480,9 @@ add_to_explained(COVLIST **ret_explained, int L, const int *ct)
 
   for (i = 1; i <= L; i ++)
     if (ct[i] > i) {
-      if (explained->n == 0) ESL_ALLOC  (explained->cov, sizeof(COV) * (explained->n+1));
-      else                   ESL_REALLOC(explained->cov, sizeof(COV) * (explained->n+1));
-
-      explained->cov[explained->n].i = i;
-      explained->cov[explained->n].j = ct[i];
-      explained->n ++;
+      struct_covlist_Realloc(explained, explained->n+1);
+      explained->cov[explained->n-1].i = i;
+      explained->cov[explained->n-1].j = ct[i];
     }
 
   *ret_explained = explained;
@@ -515,28 +493,28 @@ add_to_explained(COVLIST **ret_explained, int L, const int *ct)
 }
 
 static int
-covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST ***ret_exclude, int verbose)
+covariations_exclude(CTLIST *ctlist, int L, COVLIST *totalcov, COVLIST ***ret_exclude, int verbose)
 {
   COVLIST **exclude = NULL;
-  COVLIST  *covlist;           // current exclude list
   int      *ct;                // current ct
   double    score;
   int64_t   covi, covj;
+  int       nct = ctlist->nct;
   int       isbp;
   int       s;
   int       n, nn;
   int       i;
   int       status;
+
+  if (!ctlist) return eslOK;
   
   ESL_ALLOC(exclude, sizeof(COVLIST *) * (nct+1));
 
   for (s = 0; s < nct; s ++) {
-    ct = ctlist[s];
+    ct = ctlist->covct[s];
 
-    ESL_ALLOC(exclude[s], sizeof(COVLIST));
-    exclude[s]->n   = 0;
-    exclude[s]->cov = NULL;
-    
+    exclude[s] = struct_covlist_Create(0);
+     
     for (n = 0; n < totalcov->n; n++) {
       covi  = totalcov->cov[n].i;
       covj  = totalcov->cov[n].j;
@@ -547,24 +525,20 @@ covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST **
 	if ((i == covi && ct[i] == covj) || (i == covj && ct[i] == covi)) break;
       
       if (i == L+1) {
-	if (exclude[s]->n == 0) ESL_ALLOC  (exclude[s]->cov, sizeof(COV) * (exclude[s]->n+1));
-	else                    ESL_REALLOC(exclude[s]->cov, sizeof(COV) * (exclude[s]->n+1));
-	
 	nn = exclude[s]->n;
+	struct_covlist_Realloc(exclude[s], exclude[s]->n+1);
+	
 	exclude[s]->cov[nn].i     = covi;
 	exclude[s]->cov[nn].j     = covj;
 	exclude[s]->cov[nn].isbp  = isbp;
 	exclude[s]->cov[nn].score = score;
-	exclude[s]->n ++;
       }
     }
   }
 
   // last one with all covariations
   if (totalcov->n > 0) {
-    ESL_ALLOC(exclude[nct],      sizeof(COVLIST));
-    ESL_ALLOC(exclude[nct]->cov, sizeof(COV) * totalcov->n);
-    exclude[nct]->n = totalcov->n;
+    exclude[nct] = struct_covlist_Create(totalcov->n);
     for (n = 0; n < totalcov->n; n++) {
       exclude[nct]->cov[n].i     = totalcov->cov[n].i;
       exclude[nct]->cov[n].j     = totalcov->cov[n].j;
@@ -575,8 +549,7 @@ covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST **
   if (verbose) {
     for (s = 0; s <= nct; s ++) {
       printf("structure %d exclude %lld\n", s+1, exclude[s]->n);
-      for (nn = 0; nn < exclude[s]->n; nn++)
-	printf("%lld %lld\n", exclude[s]->cov[nn].i, exclude[s]->cov[nn].j); 
+      struct_covlist_Dump(exclude[s]);
     }
   }
   
@@ -584,10 +557,7 @@ covariations_exclude(int nct, int **ctlist, int L, COVLIST *totalcov, COVLIST **
   return eslOK;
   
  ERROR:
-  for (s = 0; s <=  nct; s ++) {
-    if (exclude[s]->cov) free(exclude[s]->cov);
-    if (exclude[s])      free(exclude[s]);
-  }
+  for (s = 0; s <=  nct; s ++) struct_covlist_Destroy(exclude[s]);
   if (exclude) free(exclude);
   return status;
 }

@@ -30,6 +30,7 @@
 #include "esl_vectorops.h"
 
 #include "allbranchmsa.h"
+#include "msamanip.h"
 #include "msatree.h"
 
 static int     tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float *frq, int *ret_sc, char *errbuf, int verbose);
@@ -53,12 +54,23 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
 
   if (msa->nseq == 1) { *ret_T = NULL; return eslOK; }
 
+  // check that the sequence names do not include a parenthesis.
+  // FastTree truncates the names at the first encounter
+
+  // option1: end
+  // if (msamanip_SeqNames_CheckParenthesis(msa, errbuf) != eslOK) ESL_XFAIL(status,  errbuf, "%s\nFailed to create external tree", errbuf);
+
+  // option2: replace parenthesis with curly brackets.
+  //          danger of this option, one it not waranteed that the names are unique
+  msamanip_SeqNames_DoctorParenthesis(msa, errbuf);
+
   if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to crete external tree");
   if ((treefp = fopen(treefile, "r"))                                == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for reading", treefile);
   if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))             != eslOK) goto ERROR;
   if ((status = esl_tree_Validate(T, NULL))                          != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
   fclose(treefp);
-  
+  if (verbose) { Tree_Dump(stdout, T, "Tree"); esl_tree_WriteNewick(stdout, T); }
+
   /* make sure the seq has the same index in msa and T */
   if ((status = Tree_ReorderTaxaAccordingMSA(msa, T, errbuf, verbose)) != eslOK) goto ERROR;
       

@@ -98,12 +98,11 @@ The default is a ``one-set test'' in which all possible pairs in the
 alignment are tested equivalently.
 
 
-\subsubsection{\prog{--cyk}} An optimal secondary structure is computed that includes all significant base pairs. The files for this
-maximum-covariation optimal structure all include the suffix
-\prog{.cyk.}
+\subsubsection{\prog{--fold}} A CaCoFold structure is computed that includes all significant base pairs. All files related to this 
+CaCoFold structure include the suffix \prog{.fold.}
 
-When option \prog{--cyk} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
-This alignment has the suffix \prog{.cyk.sto}.
+When option \prog{--fold} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
+This alignment has the suffix \prog{.fold.sto}.
 
 \subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
 associated to them. No null alignments are created.
@@ -205,7 +204,7 @@ from it.
 
 A ``.cmap'' file is produced reporting the structure obtained from the PDB file.
 
-Option \prog{--pdbfile} is incompatible with \prog{--cyk}.
+Option \prog{--pdbfile} is incompatible with \prog{--fold}.
 
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
 

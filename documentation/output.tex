@@ -2,44 +2,43 @@
 \setcounter{footnote}{0}
 \section{Outputs}
 
-For each alignment file \prog{rnafile.sto}, \rscape\, produces the
-following output files:
+A Stockholm alignment file can include several different multiple
+sequence alignments (MSAs).  For each alignment file
+rnafile.sto, \rscape\ produces the following output files, one for
+each individual alignment in an input Stockholm file:
 
-\begin{sreitems}{\emprog{rnafile.sorted.out}}
-\item[\emprog{rnafile.out}] Tabular output with the significant pairs,
-  with their score and E-value.
+\begin{sreitems}{\emprog{rnafile\_msaname.sorted.cov}}
 %
-\item[\emprog{rnafile.sorted.out}] Tabular output sorted from highest to
+\item[\emprog{rnafile\_msaname.cov}] Tabular output with the significant pairs,
+  with their score and E-value, estimated number of substitutions and power.
+%
+\item[\emprog{rnafile\_msaname.sorted.cov}] Tabular output sorted from highest to
   lowest E-value.
 %
-%
-\item[\emprog{rnafile.sum}] Tabular output with a line summary statistics
-  per alignment in the file.
+\item[\emprog{rnafile\_msaname.power}]
+Tabular output with the list of basepairs in the proposed RNA structure annotated their power. The file also reports 
+the alignment power, and the expected number of basepairs to covary.
 %
 \end{sreitems}
 
-\subsection{Tabular output per input file}
+\subsection{Covariation tabular output}
 
 The distribution includes in the directory tutorials/ examples of
 output files. If you run \rscape, the outputs will go into your
 current working directory (not necessarily tutorials/).
 
-The output file \emprog{tutorial/updated\_Arisong.out} looks like this:
-\user{more tutorial/updated\_Arisong.out}
+
+The output file \emprog{tutorial/updated\_Arisong\_1.cov} looks like this:\\
+\user{more tutorial/updated\_Arisong\_1.cov}
 
 \begin{sreoutput}
-# MSA updated_Arisong_1 nseq 95 (95) alen 65 (150) avgid 66.35 (64.97) nbpairs 20 (20)
-# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
+# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
+# GTp    0.05           [-9.78,121.66]    [0 | 11 20 11 | 55.00 100.00 70.97] 
 #
-# Structure obtained from the msa
-# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05           [-9.82,121.80]    [0 | 12 20 12 | 60.00 100.00 75.00] 
-#
-#       left_pos       right_pos        score          E-value       substitutions      power
+# in_given  left_pos       right_pos        score          E-value       substitutions      power
 #-------------------------------------------------------------------------------------------------------
-*               94             110      56.91065        0.00330664      34              0.35
-*               96             108      89.46430        1.42871e-06     25              0.26
-*               97             107      44.72409        0.0293269       58              0.55
+*               94             110      57.27959        0.00760538      37              0.40
+*               96             108      88.43400        0.000466924     26              0.28
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:
@@ -64,6 +63,11 @@ The output file is a tabular list of significant pairs sorted by sequence positi
 
  \item[\prog{Fifth column}] is the E-value. Significant positions
    have E-values $<< 1$.
+
+ \item[\prog{Sixth column}] is the estimated number of total substitutions in the two columns.
+ 
+ \item[\prog{Seventh column}] is the basepair power or probability that it should covary.
+ 
  \end{sreitems}
  The output file also includes two comment lines per alignment in the
  file:
@@ -86,43 +90,42 @@ The output file is a tabular list of significant pairs sorted by sequence positi
    (PPV=100.00=11/11), and F-measure (F=70.97 = 2 * SEN * PPV /
    (SEN+PPV)).  \end{sreitems}
 
+\subsection{Power tabular output}
+The output file \emprog{tutorial/updated\_Arisong\_1.power} looks like this:\\
+\user{more tutorial/updated\_Arisong\_1.power}
 
-\subsection{Other tabular outputs}
-
- \rscape\ produces two more tabular outputs per input file that are
- more relevant for benchmarking purposes, those are:\\
-
- File \emprog{tutorial/updated\_Arisong.sum} looks like:
-
-\user{more tutorial/updated\_Arisong.sum}
- \begin{sreoutput}
-#target_E-val   MSA     nseq    alen    avgid   method  TP      True    Found   SEN     PPV
-0.05            updated_Arisong_1       95      65      66.35    GTp 12 20 12 60.00 100.00 
+\begin{sreoutput}
+# Power analysis of given structure 
+#
+# covary  left_pos      right_pos    substitutions      power
+#----------------------------------------------------------------
+     *    94            110             37              0.40
+          95            109             28              0.31
+     *    96            108             26              0.28
+     *    97            107             58              0.59
+     *    98            106             45              0.48
+     *    99            105             15              0.14
+          100           104             20              0.21
+.
+.
+.
+     *    122           137             57              0.58
+     *    123           135             72              0.68
+     *    124           134             20              0.21
+          125           133             31              0.34
+#
+# BPAIRS 20
+# avg substitutions per BP  43.7
+# BPAIRS expected to covary 8.3
+# BPAIRS observed to covary 11
 \end{sreoutput}
- This file produces a one line output per alignment in the file.
- \begin{sreitems}{\prog{Second column}}
- \item[\prog{Column 1}] Target E-value.
- \item[\prog{Column 2}] Alignment name.
- \item[\prog{Column 3}] Number of sequence in the analyzed alignment.
- \item[\prog{Column 4}] Number of columns analyzed.
- \item[\prog{Column 5}] Average percentage identity in the analyzed alignment.
- \item[\prog{Column 6}] Covariation statistic.
- \item[\prog{Column 7}] Number of significant base pairs, TP  (true positives).
- \item[\prog{Column 8}] Number of base pairs, T (True).
- \item[\prog{Column 9}] Number of significant pairs, F (Found).
- \item[\prog{Column 10}] Sensitivity = TP/T.
- \item[\prog{Column 11}] Positive predictive value = TP/F.
+%
+This file includes the list of all basepairs in the proposed structure
+given with the input alignment. Each basepair is annotated with the
+estimated number of substitutions and power.
 
- \end{sreitems}
-
-\subsection{Outputs per alignment}
-
-A Stockholm alignment file can include several different multiple
-sequence alignments (MSAs).  \rscape\ produces the following output
-files, one for each individual alignment in the input Stockholm file:
-
-\subsubsection{Default}
-By default, the following files are produced
+\subsection{Default graphical outputs}
+By default, the following files are also produced
 
 \begin{sreitems}{\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}}
 \item[\emprog{rnafile\_msaname.R2R.sto}] Stockholm file annotated by a
@@ -157,7 +160,7 @@ one of two if the other in not defined).  If none of those fields are
 defined, \emprog{msaname} is a number describing the order in the
 file of the given alignment.
 
-\subsubsection{Details about outputs per alignment}
+\subsection{Details about graphical outputs}
  Two files are produced per alignment in the input file: \\
 
  File \emprog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
@@ -209,7 +212,7 @@ file of the given alignment.
  \item[\prog{Fourth function:}] the expected null survival function according to the tail Gamma fit.
  \end{sreitems}
 
-\subsubsection{Using option \prog{\rscape\ --fold}}
+\subsection{Using option --fold}
 If the option \prog{--fold} is used, \rscape\, produces the
 following additional files describing the maximal-covariation optimal
 secondary structure:
@@ -235,7 +238,7 @@ consensus structure.
 
 
 \clearpage
-\subsubsection{Graphical outputs per alignment}
+\subsection{Graphical outputs per alignment}
  Three plots are produced per alignment in the input file: 
 
  \begin{figure}[h]

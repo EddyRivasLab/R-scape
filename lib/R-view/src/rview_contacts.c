@@ -435,15 +435,15 @@ CMAP_DumpShort(FILE *fp, CLIST *clist)
   fprintf(fp, "# PDB:      %s\n", clist->pdbname);
   if (clist->ch2name == NULL) {
     if (clist->ch1name) fprintf(fp, "# chain:    %s (%s)\n", clist->ch1name, clist->ch1type);
-    if (clist->len1) fprintf(fp, "# seq:      (%lld)\n",  clist->len1);
+    if (clist->len1) fprintf(fp, "# seq:      (%ld)\n",  clist->len1);
     //fprintf(fp, "# %s\n",                clist->ch1seq);
   }
   else {
     fprintf(fp, "# chain1:   %s (%s)\n", clist->ch1name, clist->ch1type);
     fprintf(fp, "# chain2:   %s (%s)\n", clist->ch2name, clist->ch2type);
-    fprintf(fp, "# seq1:     (%lld)\n",  clist->len1);
+    fprintf(fp, "# seq1:     (%ld)\n",  clist->len1);
     //fprintf(fp, "# %s\n",                clist->ch1seq);
-    fprintf(fp, "# seq2:     (%lld)\n",  clist->len2);
+    fprintf(fp, "# seq2:     (%ld)\n",  clist->len2);
     //fprintf(fp, "# %s\n",                clist->ch2seq);
   }
   fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);

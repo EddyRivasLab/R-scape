@@ -100,42 +100,20 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              maxsq_gsc;          /* maximum number of seq to switch from GSC to PG sequence weighting */
   int              tstart;
   int              tend;
-  char            *outmsafile;
-  FILE            *outmsafp;
-  char            *outtreefile;
-  FILE            *outtreefp;
-  char            *outnullfile;
-  FILE            *outnullfp; 
   char            *outdir;
-  char            *outfile;
-  char            *outsrtfile;
-  FILE            *outfp;
-  FILE            *outsrtfp; 
   char            *outheader;          /* header for all output files */
   int              infmt;
  
   int              R2Rall;
-  char            *R2Rfile;
 
   int              dofold;
   ESL_MSA         *omsa;
   int             *ofoldct;
-  char            *omsafoldfile;
-  FILE            *omsafoldfp;
   int              foldLmax;
-  char            *R2Rfoldfile;
-  FILE            *R2Rfoldfp;
 
   FOLDPARAM       *foldparam;
   
-  char            *covhisfile;
-  char            *covqqfile;
-  char            *dplotfile;
-  char            *folddplotfile;
-
-  char            *allbranchfile;
-
-  int              nshuffle;
+   int              nshuffle;
 
   double          *ft;
   double          *fbp;
@@ -168,8 +146,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   float           *msafrq;
   int             *ct;
 
-  int             nct;
-  int           **ctlist;
+  CTLIST          *ctlist;              // includes the complete RNA structure
+
   int              onbpairs;
   int              nbpairs;
   int              nbpairs_fold;
@@ -183,8 +161,6 @@ struct cfg_s { /* Shared configuration in masters & workers */
   PTREG            ptreg;
   PTINIT           ptinit;
   PT              *pt;
-  char            *outpottsfile;
-  FILE            *outpottsfp;
   double           potts_reweight_thresh;
   int              isgremlin;
   
@@ -196,14 +172,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   CLIST           *clist;              // list of pdb contact at a distance < cntmaxD
   int             *msa2pdb;            // map of the pdb sequence to the analyzed alignment
 
-  char            *cmapfile;           // cmapfile has the contacts (including bpairs) mapped to the input alignment coordinates
-  
   int              voutput;
-  int              doroc;
-  char            *rocfile;
-  FILE            *rocfp; 
-  char            *sumfile;
-  FILE            *sumfp; 
 
   double           hpts;    /* number of points in the histogram */
   double           bmin;    /* score histograms */
@@ -231,9 +200,19 @@ struct cfg_s { /* Shared configuration in masters & workers */
   POWER           *power;
   int              powerdouble;
 
+  // flags for optional files
+  int               outmsafile;
+  int               rocfile;
+  int               outtreefile;
+  int               outnullfile;
+  int               outpottsfile;
+  int               allbranchfile;
+  struct outfiles_s ofile;           // the output files
+   
   float            tol;
   int              verbose;
 };
+
 
 static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
@@ -248,12 +227,13 @@ static ESL_OPTIONS options[] = {
   { "--fold",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--pdbfile",          "obtain the structure with maximum covariation",                                             1 },
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
+  { "--outname",    eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a filename for all outputs",                                                        1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
   { "--slide",        eslARG_INT,      "50",     NULL,      "n>0",   NULL,    NULL,  NULL,               "window slide",                                                                              1 },
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "if file has more than one msa, analyze only the first one",                                 1 },
-  { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .out and .sum files only",                                                            1 },
+  { "--nofigures",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "do not produce R2R and dotplot outputs",                                                    1 },
   { "--roc",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write .roc file",                                                                           1 },
   { "--expo",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to do an exponential fit (default is gamma)",                                          0 },
   { "--singlelink",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "true to use single linkage clustering (default is esl_msaweight_IDFilter)",                 0 },
@@ -274,14 +254,14 @@ static ESL_OPTIONS options[] = {
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--fold",              "read pdb file from file <f>",                                                               1 },
+  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--fold",              "read pdb file from file <f>",                                                              1 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
   { "--onlypdb",     eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdbfile",NULL,              "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
   { "--nshuffle",      eslARG_INT,       NULL,   NULL,      "n>0",   NULL,    NULL,  NULL,               "number of shuffled alignments",                                                             1 },   
-  { "--YS",           eslARG_NONE,      FALSE,   NULL,       NULL,      NULL, NULL,  NULL,                "Test the YSeffect:  shuffle alignment rows",                                               0 },
+  { "--YS",           eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "Test the YSeffect:  shuffle alignment rows",                                               0 },
   /* covariation measures */
   { "--CHIa",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  ASC corrected statistic",                                                              1 },
   { "--CHIp",         eslARG_NONE,      FALSE,   NULL,       NULL,COVTYPEOPTS, NULL,  NULL,              "CHI  APC corrected statistic",                                                              1 },
@@ -340,32 +320,35 @@ static ESL_OPTIONS options[] = {
   { "--DCA",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
   { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
   { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
-  { "--outpotts",  eslARG_OUTFILE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters to file <f>",                                               1 },
+  { "--outpotts",     eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters",
+           1 },
   /* reproduce gremlin (a particular potts implementation */
   { "--gremlin",      eslARG_NONE,      FALSE,   NULL,        NULL,  NULL,    NULL,  NULL,               "reproduce gremlin",                                                                         1 },
    /* Control of scoring system - ribosum */
   { "--ribofile",   eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
-  { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "send output to file <f>, not stdout",                                                       1 },
-  { "--outmsa",    eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used to file <f>",                                                         1 },
-  { "--outtree",   eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write phylogenetic tree used to file <f>",                                                  1 },
-  { "--outnull",   eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments to file <f>",                                                         1 },
-  { "--allbranch", eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "fitch plot to file <f>",                                                                    1 },
-  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
+  { "--outmsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used",
+           1 },
+  { "--outtree",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write phylogenetic tree used",
+           1 },
+  { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                    1 },
+  { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                              1 },
+  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                           1 },
   /* subsitution power analysis */  
-  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate alignment substitutions power",                                                   1 },
-  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
+  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
+  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
   /* folding options */
-  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",   1 },
-  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                       0 },   
-  { "--grammar",    eslARG_STRING,      "RBG",   NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                                0 },   
-  { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                         0 },   
+  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
+  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
+  { "--grammar",    eslARG_STRING,      "RBG",   NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                             0 },   
+  { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                        0 },   
+  { "--allownegatives", eslARG_NONE,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "no pairs are forbidden for having power but no covariation",                              0 },
   /* other options */  
-  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 1 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                             1 },
-  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                0 },
-  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                                1 },
-  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                            0 },
+  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                1 },
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                            1 },
+  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                               0 },
+  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                               1 },
+  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                           0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -380,17 +363,20 @@ static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int  original_msa_doctor_names(ESL_MSA **omsa);
+static void outfile_null(struct outfiles_s *ofile);
+static void outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile);
+static void outfile_destroy(struct outfiles_s *ofile);
 static int  read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa);
 static int  no_overlap(int i, int j, int L, int *ct);
+static void rafs_disclaimer(FILE *fp);
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
 static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
 static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
-static int  structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_omsafold(struct cfg_s *cfg, int L, int nct, int **foldctlist, int verbose);
+static int  write_omsafold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -431,7 +417,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (esl_opt_ArgNumber(go) != 1) { 
     if (puts("Incorrect number of command line arguments.")      < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
  
-
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
@@ -457,8 +442,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   /* outheader for all output files */
   cfg.outheader = NULL;
-  msamanip_OutfileHeader(cfg.msafile, &cfg.outheader); 
-  
+  msamanip_OutfileHeader(cfg.msafile, &cfg.outheader);
+
   /* If you know the MSA file format, set it (<infmt>, here). */
   cfg.infmt = eslMSAFILE_UNKNOWN;
   if (esl_opt_IsOn(go, "--informat") &&
@@ -493,7 +478,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   else { cfg.submsa = 0; }
 
-    
   /* other options */
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.vshuffle    = esl_opt_IsOn(go, "--vshuffle")?                                    TRUE : FALSE;
@@ -518,7 +502,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
   cfg.onemsa      = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
-  cfg.doroc       = esl_opt_IsOn(go, "--roc")?        esl_opt_GetBoolean(go, "--roc")       : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
@@ -547,6 +530,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   // power threshold. default 0.95
   cfg.foldparam->power_thresh       = POWER_THRESH;
+  if (esl_opt_IsOn(go, "--allownegatives")) cfg.foldparam->power_thresh = 1.1; // all powers [0,1] allowed
   
   // parameters for the main nested structure
   // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j, minhloop = j-i-1 = 2
@@ -574,6 +558,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
 
   cfg.mi = NULL;
+  
+  /* DISCLAIMER about RAF-related measures */
+  if (!esl_opt_IsOn(go, "--naive") && 
+      (esl_opt_IsOn(go, "--RAF")  || esl_opt_IsOn(go, "--RAFp")  || esl_opt_IsOn(go, "--RAFa") ||
+       esl_opt_IsOn(go, "--RAFS") || esl_opt_IsOn(go, "--RAFSp") || esl_opt_IsOn(go, "--RAFSa")  )
+      )
+    {
+      rafs_disclaimer(stdout);
+    }
   
   if      (esl_opt_GetBoolean(go, "--naive"))     cfg.statsmethod = NAIVE;
   else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.statsmethod = NULLPHYLO;
@@ -715,113 +708,25 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_sprintf(&cfg.outheader, "%s", outname);
   }
   
-  /* output file */
-  if ( esl_opt_IsOn(go, "-o") ) {
-    esl_sprintf(&cfg.outfile, "%s", esl_opt_GetString(go, "-o"));
-    if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
-    esl_sprintf(&cfg.outsrtfile, "%s.sorted", esl_opt_GetString(go, "-o"));
-    if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
-  } 
-  else {
-    if (cfg.window <= 0) esl_sprintf(&cfg.outfile, "%s.out", cfg.outheader);
-    else                 esl_sprintf(&cfg.outfile, "%s.w%d.s%d.out", cfg.outheader, cfg.window, cfg.slide);
-    if ((cfg.outfp    = fopen(cfg.outfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outfile);
-    if (cfg.window <= 0) esl_sprintf(&cfg.outsrtfile, "%s.sorted.out", cfg.outheader);
-    else                 esl_sprintf(&cfg.outsrtfile, "%s.w%d.s%d.sorted.out", cfg.outheader, cfg.window, cfg.slide);
-    if ((cfg.outsrtfp = fopen(cfg.outsrtfile, "w")) == NULL) esl_fatal("Failed to open output file %s", cfg.outsrtfile);
-  }
-
   cfg.cntmaxD = esl_opt_GetReal   (go, "--cntmaxD");
   cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
   cfg.clist   = NULL;
   cfg.msa2pdb = NULL;
+  cfg.T       = NULL;
 
   /* potts output parameter values */
-  cfg.outpottsfile = NULL;
-  cfg.outpottsfp   = NULL;
-  if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) {
-    esl_sprintf(&cfg.outpottsfile, "%s", esl_opt_GetString(go, "--outpotts"));
-    if ((cfg.outpottsfp = fopen(cfg.outpottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s for writing", cfg.outpottsfile);
-  } 
+  cfg.outpottsfile = FALSE;
+  if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) cfg.outpottsfile = TRUE;
 
-  /*  rocplot file */
-  cfg.rocfile = NULL;
-  cfg.rocfp = NULL;
-  if (cfg.doroc) {
-    if (cfg.window <= 0) esl_sprintf(&cfg.rocfile, "%s.roc", cfg.outheader); 
-    else                 esl_sprintf(&cfg.rocfile, "%s.w%d.s%d.roc", cfg.outheader, cfg.window, cfg.slide);
-    if ((cfg.rocfp = fopen(cfg.rocfile, "w")) == NULL) esl_fatal("Failed to open rocfile %s", cfg.rocfile);
-  }
-  
-  /*  summary file */
-  if (cfg.window <= 0) esl_sprintf(&cfg.sumfile, "%s.sum", cfg.outheader); 
-  else                 esl_sprintf(&cfg.sumfile, "%s.w%d.s%d.sum", cfg.outheader, cfg.window, cfg.slide);
-  if ((cfg.sumfp = fopen(cfg.sumfile, "w")) == NULL) esl_fatal("Failed to open sumfile %s", cfg.sumfile);
-  
-  /* if dofold write original alignment with fold structure */
-  cfg.omsafoldfile = NULL;
-  cfg.omsafoldfp   = NULL;
-  if (cfg.dofold) {
-    esl_sprintf(&cfg.omsafoldfile, "%s.fold.sto", cfg.outheader);
-    if ((cfg.omsafoldfp = fopen(cfg.omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omafold file %s", cfg.omsafoldfile);
-  }
+  // optional output files flags
+  cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile = TRUE;         // rocplot file
+  cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile = TRUE;      // the actual msa used just with the consensus columns
+  cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile = TRUE;     // the phylogenetic tree used
+  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile = TRUE;     // the null alignmenst
+  cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
 
-  /* file with the msa actually used */
-  cfg.outmsafile = NULL;
-  cfg.outmsafp   = NULL;
-  if (esl_opt_IsOn(go, "--outmsa")) {
-    esl_sprintf(&cfg.outmsafile, "%s", esl_opt_GetString(go, "--outmsa"));
-    if ((cfg.outmsafp = fopen(cfg.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsa file %s", cfg.outmsafile);
-  } 
-  
-  /* file with the phylogenetic tree used */
-  cfg.outtreefile = NULL;
-  cfg.outtreefp   = NULL;
-  if (esl_opt_IsOn(go, "--outtree")) {
-    esl_sprintf(&cfg.outtreefile, "%s", esl_opt_GetString(go, "--outtree"));
-    if ((cfg.outtreefp = fopen(cfg.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtree file %s", cfg.outtreefile);
-  } 
-  
-  /* file with the null alignments */
-  cfg.outnullfile = NULL;
-  cfg.outnullfp   = NULL;
-  if (esl_opt_IsOn(go, "--outnull")) {
-    esl_sprintf(&cfg.outnullfile, "%s", esl_opt_GetString(go, "--outnull"));
-    if ((cfg.outnullfp = fopen(cfg.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnull file %s", cfg.outnullfile);
-  } 
-  
-  /* file with the null alignments */
-  cfg.allbranchfile = NULL;
-  if (esl_opt_IsOn(go, "--allbranch")) {
-    esl_sprintf(&cfg.allbranchfile, "%s", esl_opt_GetString(go, "--allbranch"));
-  } 
-  
-  /* msa-specific files */
-  cfg.R2Rfile    = NULL;
-  cfg.R2Rfoldfile = NULL;
-  cfg.R2Rfoldfp   = NULL;
-  
-  /* covhis file */
-  cfg.covhisfile    = NULL;
-  
-  /* covqq file */
-  cfg.covqqfile    = NULL;
-  
-  /* dotplot file */
-  cfg.dplotfile    = NULL;
-  cfg.folddplotfile = NULL;
-  
-  cfg.treefile  = NULL;
-  cfg.treefp    = NULL;
-  cfg.T         = NULL;
-  if (esl_opt_IsOn(go, "--treefile")) {
-    esl_sprintf( &cfg.treefile, "%s", esl_opt_GetString(go, "--treefile"));
-    if ((cfg.treefp = fopen(cfg.treefile, "r")) == NULL) esl_fatal("Failed to open tree file %s", cfg.treefile);
-    if (esl_tree_ReadNewick(cfg.treefp, cfg.errbuf, &cfg.T) != eslOK) esl_fatal("Failed to read tree file %s", cfg.treefile);
-  }
-
-  /* cmap file outputs all the contacts mapped to the input aligment  */
-  cfg.cmapfile = NULL;
+  // the output files nullify
+  outfile_null(&cfg.ofile);
   
   cfg.ct = NULL;
   cfg.onbpairs    = 0;
@@ -831,6 +736,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ft   = NULL;
   cfg.fbp  = NULL;
   cfg.fnbp = NULL;
+
+  /*  check if a tree is given */
+  cfg.treefile = esl_opt_GetString(go, "--treefile");     // input a phylogenetic tree
+  cfg.treefp   = NULL;
   
   /* the ribosum matrices */
   cfg.ribofile = NULL;
@@ -996,10 +905,7 @@ main(int argc, char **argv)
 	status = original_msa_manipulate(go, &cfg, &wmsa);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
 	if (wmsa == NULL) continue;
-	if (wmsa->alen <= 0) {
-	  msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs, cfg.samplesize, cfg.statsmethod);
-	  continue;
-	}
+	if (wmsa->alen <= 0) continue;
 
 	cfg.firstpos = first;
 
@@ -1014,10 +920,7 @@ main(int argc, char **argv)
       status = original_msa_manipulate(go, &cfg, &msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;
-      if (msa->alen == 0) {
-	msa_banner(cfg.outfp, cfg.msaname, cfg.mstat, cfg.omstat, cfg.nbpairs, cfg.onbpairs, cfg.samplesize, cfg.statsmethod);
-	continue;
-      }
+      if (msa->alen == 0) continue;
 
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
@@ -1045,15 +948,6 @@ main(int argc, char **argv)
   }
   
   /* cleanup */
-  fclose(cfg.outfp);
-  fclose(cfg.outsrtfp);
-  if (cfg.rocfp) fclose(cfg.rocfp);
-  fclose(cfg.sumfp);
-  if (cfg.omsafoldfp) fclose(cfg.omsafoldfp);
-  if (cfg.outmsafp) fclose(cfg.outmsafp);
-  if (cfg.outtreefp) fclose(cfg.outtreefp);
-  if (cfg.outpottsfp) fclose(cfg.outpottsfp);
-  if (cfg.outnullfp) fclose(cfg.outnullfp);
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -1061,24 +955,15 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   if (cfg.ct) free(cfg.ct);
   esl_msafile_Close(afp);
+  if (cfg.treefile) free(cfg.treefile);
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
   if (cfg.ofoldct) free(cfg.ofoldct);
   if (cfg.ribofile) free(cfg.ribofile);
-  if (cfg.treefile) free(cfg.treefile);
-  if (cfg.outfile) free(cfg.outfile);
-  if (cfg.outsrtfile) free(cfg.outsrtfile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
   if (cfg.pdbname) free(cfg.pdbname);
-  if (cfg.rocfile) free(cfg.rocfile);
-  free(cfg.sumfile);
   free(cfg.gnuplot);
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
-  if (cfg.omsafoldfile) free(cfg.omsafoldfile);
-  if (cfg.outmsafile) free(cfg.outmsafile);
-  if (cfg.outtreefile) free(cfg.outtreefile);
-  if (cfg.outpottsfile) free(cfg.outpottsfile);
-  if (cfg.outnullfile) free(cfg.outnullfile);
   if (cfg.ft) free(cfg.ft);
   if (cfg.fbp) free(cfg.fbp);
   if (cfg.fnbp) free(cfg.fnbp);
@@ -1114,56 +999,48 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
   
   /* main function */
-  data.outfp         = NULL;
-  data.outsrtfp      = NULL;
-  data.rocfp         = NULL;
-  data.sumfp         = NULL;
-  data.dplotfile     = NULL;
-  data.folddplotfile  = NULL;
-  data.R2Rfile       = NULL;
-  data.R2Rfoldfile    = NULL;
-  data.R2Rall        = FALSE;
-  data.gnuplot       = NULL;
-  data.r             = cfg->r;
-  data.samplesize    = cfg->samplesize;
-  data.ranklist_null = NULL;
-  data.ranklist_aux  = NULL;
-  data.mi            = cfg->mi;
-  data.pt            = ptlocal;
-  data.covtype       = cfg->covtype;
-  data.allowpair     = cfg->allowpair;
-  data.thresh        = cfg->thresh;
-  data.statsmethod   = cfg->statsmethod;
-  data.covmethod     = cfg->covmethod;
-  data.mode          = cfg->mode;
-  data.abcisRNA      = cfg->abcisRNA;
-  data.hasss         = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
-  data.OL            = cfg->omsa->alen;
-  data.nseq          = cfg->omsa->nseq;
-  data.ct            = cfg->ct;
-  data.nct           = cfg->nct;
-  data.ctlist        = cfg->ctlist;
-  data.expBP         = cfg->expBP;
-  data.onbpairs      = cfg->onbpairs;
-  data.nbpairs       = cfg->nbpairs;
-  data.nbpairs_fold   = cfg->nbpairs_fold;
-  data.spair         = NULL;
-  data.power         = NULL;
-  data.T             = cfg->T;
-  data.ribosum       = cfg->ribosum;
-  data.clist         = cfg->clist;
-  data.msa2pdb       = cfg->msa2pdb;
-  data.msamap        = cfg->msamap;
-  data.bmin          = cfg->bmin;
-  data.w             = cfg->w;
-  data.fracfit       = cfg->fracfit;
-  data.pmass         = cfg->pmass;
-  data.doexpfit      = cfg->doexpfit;
-  data.tol           = cfg->tol;
-  data.nofigures     = cfg->nofigures;
-  data.verbose       = cfg->verbose;
-  data.errbuf        = cfg->errbuf;
-  data.ignorebps     = FALSE;
+  data.ofile            = NULL;
+  data.R2Rall           = FALSE;
+  data.gnuplot          = NULL;
+  data.r                = cfg->r;
+  data.samplesize       = cfg->samplesize;
+  data.ranklist_null    = NULL;
+  data.ranklist_aux     = NULL;
+  data.mi               = cfg->mi;
+  data.pt               = ptlocal;
+  data.covtype          = cfg->covtype;
+  data.allowpair        = cfg->allowpair;
+  data.thresh           = cfg->thresh;
+  data.statsmethod      = cfg->statsmethod;
+  data.covmethod        = cfg->covmethod;
+  data.mode             = cfg->mode;
+  data.abcisRNA         = cfg->abcisRNA;
+  data.hasss            = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.OL               = cfg->omsa->alen;
+  data.nseq             = cfg->omsa->nseq;
+  data.ct               = cfg->ct;
+  data.ctlist           = cfg->ctlist;
+  data.expBP            = cfg->expBP;
+  data.onbpairs         = cfg->onbpairs;
+  data.nbpairs          = cfg->nbpairs;
+  data.nbpairs_fold     = cfg->nbpairs_fold;
+  data.spair            = NULL;
+  data.power            = NULL;
+  data.T                = cfg->T;
+  data.ribosum          = cfg->ribosum;
+  data.clist            = cfg->clist;
+  data.msa2pdb          = cfg->msa2pdb;
+  data.msamap           = cfg->msamap;
+  data.bmin             = cfg->bmin;
+  data.w                = cfg->w;
+  data.fracfit          = cfg->fracfit;
+  data.pmass            = cfg->pmass;
+  data.doexpfit         = cfg->doexpfit;
+  data.tol              = cfg->tol;
+  data.nofigures        = cfg->nofigures;
+  data.verbose          = cfg->verbose;
+  data.errbuf           = cfg->errbuf;
+  data.ignorebps        = FALSE;
 
   status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
@@ -1187,8 +1064,12 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  int  status; 
- 
+  FILE *outtreefp = NULL;
+  int   status; 
+
+  if (cfg->ofile.outtreefile)
+    if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
+    
   /* create tree from MSA */
   if (cfg->T == NULL) {
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
@@ -1204,13 +1085,14 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
     
     /* outtree file if requested */
-    if (cfg->outtreefp) esl_tree_WriteNewick(cfg->outtreefp, cfg->T);
+    if (outtreefp) esl_tree_WriteNewick(outtreefp, cfg->T);
     if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   }
 
   // only case in which T=NULL
   if (!cfg->T && msa->nseq > 1) { printf("You need a tree for this msa. nseq = %d\n", msa->nseq); esl_fatal(cfg->errbuf); }
-  
+
+  if (outtreefp) fclose(outtreefp);
   return eslOK;
 }
 
@@ -1227,7 +1109,12 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int   n;
   int   i;
   int   t;
-  
+
+  if (esl_opt_IsOn(go, "--outname")) {
+    esl_sprintf( &cfg->msaname, "%s", esl_opt_GetString(go, "--outname"));
+    return eslOK;
+  }
+
   /* the msaname */
   for (t = 0; t < msa->ngf; t++) 
     if (!esl_strcmp(msa->gf_tag[t], "TP")) {
@@ -1277,6 +1164,7 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   return eslOK;
 }
 
+
 static int
 msa_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs, int samplesize, int statsmethod)
 {
@@ -1315,6 +1203,160 @@ msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->verbose) printf("Nseq %d Neff %f\n", msa->nseq, esl_vec_DSum(msa->wgt, msa->nseq));
   
   return eslOK;
+}
+
+static int
+null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf)
+{
+  RANKLIST *cumranklist = *ocumranklist;
+  int       b;
+  int       cumb;
+
+  if (ranklist == NULL) return eslOK;
+  
+  if (*ocumranklist == NULL) {
+    *ocumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
+    cumranklist = *ocumranklist;
+    cumranklist->ha->n     = ranklist->ha->n;
+    cumranklist->ha->xmin  = ranklist->ha->xmin;
+    cumranklist->ha->xmax  = ranklist->ha->xmax;
+    cumranklist->ha->imin  = ranklist->ha->imin;
+    cumranklist->ha->imax  = ranklist->ha->imax;
+  }
+  else {                    
+    cov_GrowRankList(ocumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
+    cumranklist = *ocumranklist;
+    cumranklist->ha->n    += ranklist->ha->n;
+    cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin, ranklist->ha->xmin);
+    cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax, ranklist->ha->xmax);
+    cumranklist->ha->imin  = ESL_MIN(cumranklist->ha->imin, ranklist->ha->imin);
+    cumranklist->ha->imax  = ESL_MAX(cumranklist->ha->imax, ranklist->ha->imax);
+  }
+ 
+  for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
+    cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
+    
+    if (cumb < cumranklist->ha->nb) {
+      cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
+      cumranklist->ha->Nc        += ranklist->ha->obs[b];
+      cumranklist->ha->No        += ranklist->ha->obs[b];
+    }
+  }
+  
+  if (verbose) {
+    printf("null distribution \n");
+    printf("imin %d imax %d xmax %f xmin %f | imin %d imax %d xmax %f xmin %f\n", 
+	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin,
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, ranklist->ha);
+    //esl_histogram_PlotSurvival(stdout, ranklist->ha);
+  }
+
+ return eslOK;
+}
+
+/* use a tree to generate residues independently for each alignment column */
+static int
+null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+{
+  FILE      *outnullfp = NULL;
+  ESL_MSA   *allmsa = NULL;
+  ESL_MSA   *shmsa = NULL;
+  MSA_STAT  *shmstat = NULL;
+  RANKLIST  *cumranklist = NULL;
+  RANKLIST  *ranklist = NULL;
+  int       *usecol = NULL;
+  int       sc;
+  int       s;
+  int       n;
+  int       status;
+
+  status = create_tree(go, cfg, msa);
+  if (status != eslOK) goto ERROR;
+   
+  if (cfg->T == NULL) {
+    if (msa->nseq == 1) { cfg->statsmethod = NAIVE; cfg->thresh->val = 1e+12; return eslOK; }
+    else                return eslFAIL;
+  }
+
+  // use all columns to do the shuffling
+  ESL_ALLOC(usecol, sizeof(int) * (msa->alen+1));
+  esl_vec_ISet(usecol, msa->alen+1, TRUE);
+
+  for (s = 0; s < nshuffle; s ++) {
+ 
+    status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) goto ERROR;
+
+    if (cfg->verbose) {
+      esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+      printf("fitch sc %d\n", sc);
+    }
+    
+    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
+     
+    /* Weigth the sequences.
+     * Null sequences don't need to be weigted as they have the same phylogeny
+     * and basecomp than the original alignment. We just copy the weights
+     */
+    for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
+    
+    /* output null msas to file if requested */
+    if (cfg->ofile.outnullfile) {
+      if ((outnullfp = fopen(cfg->ofile.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnullfile %s", cfg->ofile.outnullfile);
+      esl_msafile_Write(outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+      fclose(outnullfp);
+    }
+    
+    if (cfg->verbose) {
+      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      msamanip_XStats(shmsa, &shmstat);
+      msamanip_DumpStats(stdout, shmsa, shmstat);
+    }
+    
+    if (s == 0) {
+      status = calculate_width_histo(go, cfg, shmsa);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+    }
+
+    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
+    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
+    
+    status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
+    if (status != eslOK) goto ERROR;
+
+    esl_msa_Destroy(allmsa); allmsa = NULL;
+    esl_msa_Destroy(shmsa); shmsa = NULL;
+    cov_FreeRankList(ranklist); ranklist = NULL;
+  }
+  
+  if (cfg->verbose) {
+    printf("null distribution - cumulative\n");
+    printf("imin %d imax %d xmax %f xmin %f\n", 
+	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
+    //esl_histogram_Plot(stdout, cumranklist->ha);
+    esl_histogram_PlotSurvival(stdout, cumranklist->ha);
+  }
+  
+  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
+  
+  *ret_cumranklist = cumranklist;
+
+  if (allmsa) esl_msa_Destroy(allmsa);
+  free(usecol);
+  free(shmstat);
+  return eslOK;
+  
+ ERROR:
+  if (allmsa) esl_msa_Destroy(allmsa);
+  if (shmsa) esl_msa_Destroy(shmsa);
+  if (usecol) free(usecol);
+  if (shmstat) free(shmstat);
+  if (ranklist) cov_FreeRankList(ranklist);
+  if (cumranklist) cov_FreeRankList(cumranklist);
+  return status;
 }
 
 static int
@@ -1519,153 +1561,186 @@ original_msa_doctor_names(ESL_MSA **omsa)
   return eslOK;
 }
 
-static int
-null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf)
-{
-  RANKLIST *cumranklist = *ocumranklist;
-  int       b;
-  int       cumb;
 
-  if (ranklist == NULL) return eslOK;
+static void
+outfile_null(struct outfiles_s *ofile)
+{
+  ofile->covfile          = NULL;           
+  ofile->covfoldfile      = NULL;         
+  ofile->covsrtfile       = NULL;          
+  ofile->covfoldsrtfile   = NULL;      
+  ofile->alipowerfile     = NULL;       
+  ofile->alipowerfoldfile = NULL;
+
+  // cov survival plots
+  ofile->covhisfile = NULL;
+  ofile->covqqfile  = NULL;
+
+  // structure files
+  ofile->omsafoldfile = NULL;        
+  ofile->cmapfile     = NULL;        
+
+  // structure plots
+  ofile->R2Rfile       = NULL;             
+  ofile->R2Rfoldfile   = NULL;
+  ofile->dplotfile     = NULL;           
+  ofile->folddplotfile = NULL;
   
-  if (*ocumranklist == NULL) {
-    *ocumranklist = cov_CreateRankList(ranklist->ha->bmax, ranklist->ha->bmin, ranklist->ha->w);
-    cumranklist = *ocumranklist;
-    cumranklist->ha->n     = ranklist->ha->n;
-    cumranklist->ha->xmin  = ranklist->ha->xmin;
-    cumranklist->ha->xmax  = ranklist->ha->xmax;
-    cumranklist->ha->imin  = ranklist->ha->imin;
-    cumranklist->ha->imax  = ranklist->ha->imax;
-  }
-  else {                    
-    cov_GrowRankList(ocumranklist, ranklist->ha->bmax, ranklist->ha->bmin);
-    cumranklist = *ocumranklist;
-    cumranklist->ha->n    += ranklist->ha->n;
-    cumranklist->ha->xmin  = ESL_MIN(cumranklist->ha->xmin, ranklist->ha->xmin);
-    cumranklist->ha->xmax  = ESL_MAX(cumranklist->ha->xmax, ranklist->ha->xmax);
-    cumranklist->ha->imin  = ESL_MIN(cumranklist->ha->imin, ranklist->ha->imin);
-    cumranklist->ha->imax  = ESL_MAX(cumranklist->ha->imax, ranklist->ha->imax);
-  }
- 
-  for (b = ranklist->ha->imin; b <= ranklist->ha->imax; b ++) {
-    cov_ranklist_Bin2Bin(b, ranklist->ha, cumranklist->ha, &cumb);
+  // optional files
+  ofile->rocfile       = NULL;            
+  ofile->outmsafile    = NULL;          
+  ofile->outtreefile   = NULL;         
+  ofile->outnullfile   = NULL;         
+  ofile->allbranchfile = NULL;       
+  ofile->outpottsfile  = NULL;
+
+}
+static void
+outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
+{
+
+  // first nullify
+  outfile_null(ofile);
+
+  if (cfg->outdir) {
+    // covariations file 
+    esl_sprintf(&ofile->covfile, "%s/%s.cov", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s/%s.fold.cov", cfg->outdir, outname);
     
-    if (cumb < cumranklist->ha->nb) {
-      cumranklist->ha->obs[cumb] += ranklist->ha->obs[b];
-      cumranklist->ha->Nc        += ranklist->ha->obs[b];
-      cumranklist->ha->No        += ranklist->ha->obs[b];
+    esl_sprintf(&ofile->covsrtfile, "%s/%s.sorted.cov", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s/%s.sorted.fold.cov", cfg->outdir, outname);
+    
+    // alignment power file 
+    esl_sprintf(&ofile->alipowerfile, "%s/%s.power", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s/%s.fold.power", cfg->outdir, outname);
+
+    // original msa annotated with CaCoFold structure
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.fold.sto", cfg->outdir, outname);
+    
+    // contact map file 
+    if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s/%s.cmap", cfg->outdir, outname);
+    
+    // rocfile
+    if (cfg->rocfile) esl_sprintf(&ofile->rocfile, "%s/%s.roc", cfg->outdir, outname);
+
+    // outmsa with consensus columns
+    if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s/%s.cons.sto", cfg->outdir, outname);
+
+    // output the phylogenetic tree
+    if (cfg->outtreefile) esl_sprintf(&ofile->outmsafile, "%s/%s.tree", cfg->outdir, outname);
+ 
+    // output with the null alignments 
+    if (cfg->outnullfile) esl_sprintf(&ofile->outmsafile, "%s/%s.null.sto", cfg->outdir, outname);
+
+    // output with msa with all branches
+    if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s/%s.allbranch.sto", cfg->outdir, outname);
+
+    // output file with potts parameter values */
+    if (cfg->outpottsfile) esl_sprintf(&ofile->outpottsfile, "%s/%s.param.potts", cfg->outdir, outname);
+    
+    // Figures
+    if (!cfg->nofigures) {
+      // covhis file 
+      esl_sprintf(&ofile->covhisfile, "%s/%s.surv", cfg->outdir, outname);
+
+      // covqq file 
+      esl_sprintf(&ofile->covqqfile, "%s/%s.qq", cfg->outdir, outname);
+      
+      // R2R annotated sto file 
+      esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.fold.R2R.sto", cfg->outdir, outname);
+      
+      // dotplot file 
+      esl_sprintf(&ofile->dplotfile, "%s/%s.dplot", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s/%s.fold.dplot", cfg->outdir, outname);
+    }
+  }
+
+  // when no outdir is provided
+  else {
+    // covariations file 
+    esl_sprintf(&ofile->covfile, "%s.cov", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s.fold.cov", outname);
+    esl_sprintf(&ofile->covsrtfile, "%s.sorted.cov", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s.sorted.fold.cov",outname);
+    
+    // alignment power file 
+    esl_sprintf(&ofile->alipowerfile, "%s.power", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s.fold.power", outname);
+    
+    // original msa annotated with CaCoFold structure
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.fold.sto", outname);
+    
+    
+    // contact map file 
+    if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s.cmap", outname);
+        
+    // rocfile
+    if (cfg->rocfile)  esl_sprintf(&ofile->rocfile, "%s.roc", outname);
+
+    // outmsa with consensus columns
+    if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s.cons.sto", outname);
+
+    // output the phylogenetic tree
+    if (cfg->outtreefile) esl_sprintf(&ofile->outmsafile, "%s/%s.tree", cfg->outdir, outname);
+    
+    // output with the null alignments 
+    if (cfg->outnullfile) esl_sprintf(&ofile->outmsafile, "%s.null.sto", outname);
+    
+    // output with msa with all branches
+    if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s/%s.allbranch.sto", cfg->outdir, outname);
+    
+    // output file with potts parameter values */
+    if (cfg->outpottsfile) esl_sprintf(&ofile->outpottsfile, "%s.param.potts", outname);
+    
+    // Figures 
+    if (!cfg->nofigures) {
+      // covhis file 
+      esl_sprintf(&ofile->covhisfile, "%s.surv", outname);
+      
+      // covqq file 
+      esl_sprintf(&ofile->covqqfile, "%s.qq", outname);
+      
+     // R2R annotated sto file 
+      esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.fold.R2R.sto", outname);
+      
+       // dotplot file 
+      esl_sprintf(&ofile->dplotfile, "%s.dplot", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.fold.dplot", outname);
     }
   }
   
-  if (verbose) {
-    printf("null distribution \n");
-    printf("imin %d imax %d xmax %f xmin %f | imin %d imax %d xmax %f xmin %f\n", 
-	   ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin,
-	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, ranklist->ha);
-    //esl_histogram_PlotSurvival(stdout, ranklist->ha);
-  }
-
- return eslOK;
 }
 
-/* use a tree to generate residues independently for each alignment column */
-static int
-null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_cumranklist)
+static void
+outfile_destroy(struct outfiles_s *ofile)
 {
-  ESL_MSA   *allmsa = NULL;
-  ESL_MSA   *shmsa = NULL;
-  MSA_STAT  *shmstat = NULL;
-  RANKLIST  *cumranklist = NULL;
-  RANKLIST  *ranklist = NULL;
-  int       *usecol = NULL;
-  int       sc;
-  int       s;
-  int       n;
-  int       status;
+  if (ofile->covfile)          free(ofile->covfile);           
+  if (ofile->covfoldfile)      free(ofile->covfoldfile);         
+  if (ofile->covsrtfile)       free(ofile->covsrtfile);          
+  if (ofile->covfoldsrtfile)   free(ofile->covfoldsrtfile);      
+  if (ofile->alipowerfile)     free(ofile->alipowerfile);       
+  if (ofile->alipowerfoldfile) free(ofile->alipowerfoldfile);    
 
-  status = create_tree(go, cfg, msa);
-  if (status != eslOK) goto ERROR;
-   
-  if (cfg->T == NULL) {
-    if (msa->nseq == 1) { cfg->statsmethod = NAIVE; cfg->thresh->val = 1e+12; return eslOK; }
-    else                return eslFAIL;
-  }
+  if (ofile->covhisfile) free(ofile->covhisfile);
+  if (ofile->covqqfile)  free(ofile->covqqfile);
 
-  // use all columns to do the shuffling
-  ESL_ALLOC(usecol, sizeof(int) * (msa->alen+1));
-  esl_vec_ISet(usecol, msa->alen+1, TRUE);
+  if (ofile->R2Rfile)       free(ofile->R2Rfile);             
+  if (ofile->R2Rfoldfile)   free(ofile->R2Rfoldfile);  
+  if (ofile->dplotfile)     free(ofile->dplotfile);           
+  if (ofile->folddplotfile) free(ofile->folddplotfile);
 
-  for (s = 0; s < nshuffle; s ++) {
- 
-    status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) goto ERROR;
-
-    if (cfg->verbose) {
-      esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
-      printf("fitch sc %d\n", sc);
-    }
-    
-    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
-     
-    /* Weigth the sequences.
-     * Null sequences don't need to be weigted as they have the same phylogeny
-     * and basecomp than the original alignment. We just copy the weights
-     */
-    for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
-    
-    /* output null msas to file if requested */
-    if (cfg->outnullfp) esl_msafile_Write(cfg->outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-    
-    if (cfg->verbose) {
-      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
-      msamanip_XStats(shmsa, &shmstat);
-      msamanip_DumpStats(stdout, shmsa, shmstat);
-    }
-    
-    if (s == 0) {
-      status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-    }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
-    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
-    
-    status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-    if (status != eslOK) goto ERROR;
-
-    esl_msa_Destroy(allmsa); allmsa = NULL;
-    esl_msa_Destroy(shmsa); shmsa = NULL;
-    cov_FreeRankList(ranklist); ranklist = NULL;
-  }
+  if (ofile->cmapfile)     free(ofile->cmapfile);        
+  if (ofile->omsafoldfile) free(ofile->omsafoldfile);        
   
-  if (cfg->verbose) {
-    printf("null distribution - cumulative\n");
-    printf("imin %d imax %d xmax %f xmin %f\n", 
-	   cumranklist->ha->imin, cumranklist->ha->imax, cumranklist->ha->xmax, cumranklist->ha->xmin);
-    //esl_histogram_Plot(stdout, cumranklist->ha);
-    esl_histogram_PlotSurvival(stdout, cumranklist->ha);
-  }
-  
-  if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
-  
-  *ret_cumranklist = cumranklist;
+  if (ofile->rocfile)       free(ofile->rocfile);            
+  if (ofile->outmsafile)    free(ofile->outmsafile);          
+  if (ofile->outtreefile)   free(ofile->outtreefile);         
+  if (ofile->outnullfile)   free(ofile->outnullfile);         
+  if (ofile->allbranchfile) free(ofile->allbranchfile);       
+  if (ofile->outpottsfile)  free(ofile->outpottsfile);
 
-  if (allmsa) esl_msa_Destroy(allmsa);
-  free(usecol);
-  free(shmstat);
-  return eslOK;
-  
- ERROR:
-  if (allmsa) esl_msa_Destroy(allmsa);
-  if (shmsa) esl_msa_Destroy(shmsa);
-  if (usecol) free(usecol);
-  if (shmstat) free(shmstat);
-  if (ranklist) cov_FreeRankList(ranklist);
-  if (cumranklist) cov_FreeRankList(cumranklist);
-  return status;
 }
 
 static int
@@ -1712,7 +1787,7 @@ read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
   
   // modify the ss_cons 
   esl_ct2wuss(ct[0], L, msa->ss_cons);
-  if (1||cfg->verbose) printf("all structure (nct = %d)\n%s\n", nct, msa->ss_cons);
+  if (cfg->verbose) printf("all structure (nct = %d)\n%s\n", nct, msa->ss_cons);
 
   for (c = 0; c < nct; c ++) free(ct[c]);
   free(ct);
@@ -1743,6 +1818,14 @@ no_overlap(int i, int j, int L, int *ct)
   return keep;
 }
 
+static void
+rafs_disclaimer(FILE *fp)
+{
+  fprintf(fp, "\nDISCLAIMER: This measure can only be used in combination with the --naive option.\n\nThe --naive option reports a ranked list of scores for all possible pairs without assigning E-values. RAF, RAFS and related measures (RAFp, RAFa, RAFSp, RAFSa) cannot be used in combination with R-scape's statistical test.\n\nThe RAF(S) statistics measure covariation and consistency. RAFS assigns relatively high scores to pairs of alignment columns that are consistent with base pairing even if there is no covariation at all. The RAFS statistic was developed for the purpose of predicting consensus RNA structures from alignments of sequences already presumed to have a structure  (Hofacker et al., 2002; Lindgreen et al., 2006). For this purpose, both covariation and consistency are useful cues. Distinguishing a conserved RNA structure from a conserved primary sequence is a different problem that requires using a statistic that does not systematically detect significant signals on conserved primary sequence alone. That is R-scape's statistical test. The R-scape statistical test can only be used with measures that estimate covariation alone such as mutual information (MI) or G-test (GT).\n");
+  
+  exit(1);
+}
+
 static int
 rscape_banner(FILE *fp, char *progname, char *banner)
 {
@@ -1768,6 +1851,7 @@ rscape_banner(FILE *fp, char *progname, char *banner)
 static int
 rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 {
+  FILE     *outmsafp = NULL;
   RANKLIST *ranklist_null      = NULL;
   RANKLIST *ranklist_aux       = NULL;
   RANKLIST *ranklist_allbranch = NULL;
@@ -1780,10 +1864,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   int       has_ss   = FALSE;
   int       nshuffle;
   int       analyze;
-  int       s;
   int       status;
 
-  if (msa == NULL) return eslOK;
+  if (msa == NULL)   return eslOK;
+  if (msa->nseq < 1) return eslOK; 
 
   /* weight the sequences */
   msaweight(go, cfg, msa);
@@ -1798,73 +1882,27 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     cfg->dofold = FALSE;
   }
   
-  // write the original msa annotated with the fold structure
-  if (cfg->dofold) {
-    if (cfg->omsafoldfile == NULL) {
-      esl_sprintf(&cfg->omsafoldfile, "%s.fold.sto", cfg->outheader);
-      if ((cfg->omsafoldfp = fopen(cfg->omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omafold file %s", cfg->omsafoldfile);
-    }
-  }
-  
-  if (msa->nseq < 1) {
-    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
-    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
-    return eslOK; 
-  }
-  
-  /* outmsa file if requested */
-  if (cfg->outmsafp) esl_msafile_Write(cfg->outmsafp, msa, eslMSAFILE_STOCKHOLM);
-
   /* add the name of the pdbfile used to extract the structure (if any) */
   if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
-  if (cfg->outdir) {
-    /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s/%s.surv",     cfg->outdir, outname);
+  // the output files
+  outfile_create(cfg, outname, &cfg->ofile);
     
-    /* contact map file */
-    if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s/%s.cmap",     cfg->outdir, outname);
-  }
-  else {
-    /* covhis file */
-    esl_sprintf(&cfg->covhisfile,    "%s.surv",     outname);
-    
-    /* contact map file */
-    if (cfg->pdbfile) esl_sprintf(&cfg->cmapfile,      "%s.cmap",     outname);
-  }
-  
-  /* R2R annotated sto file */
-  if (cfg->outdir && !cfg->nofigures) {
-    esl_sprintf(&cfg->R2Rfile,    "%s/%s.R2R.sto",     cfg->outdir, outname);
-    if (cfg->dofold) esl_sprintf(&cfg->R2Rfoldfile, "%s/%s.fold.R2R.sto", cfg->outdir, cfg->msaname);
-    
-   /* covqq file */
-    esl_sprintf(&cfg->covqqfile,    "%s/%s.qq",     cfg->outdir, outname);
-    
-    /* dotplot file */
-    esl_sprintf(&cfg->dplotfile,    "%s/%s.dplot",     cfg->outdir, outname);
-    if (cfg->dofold) esl_sprintf(&cfg->folddplotfile, "%s/%s.fold.dplot", cfg->outdir, cfg->msaname);
-  }
-  else if (!cfg->nofigures) {
-    esl_sprintf(&cfg->R2Rfile,    "%s.R2R.sto",     outname);
-    if (cfg->dofold) esl_sprintf(&cfg->R2Rfoldfile, "%s.fold.R2R.sto", cfg->msaname);
-        
-    /* covqq file */
-    esl_sprintf(&cfg->covqqfile,    "%s.qq",     outname);
-    
-    /* dotplot file */
-    esl_sprintf(&cfg->dplotfile,    "%s.dplot",     outname);
-    if (cfg->dofold) esl_sprintf(&cfg->folddplotfile, "%s.fold.dplot", cfg->msaname);
+  /* outmsa file if requested */
+  if (cfg->ofile.outmsafile) {
+    if ((outmsafp = fopen(cfg->ofile.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsafile %s", cfg->ofile.outmsafile);
+    esl_msafile_Write(outmsafp, msa, eslMSAFILE_STOCKHOLM);
+    fclose(outmsafp);
   }
 
-  /* the structure/contact map */
-  status = ContactMap(cfg->cmapfile, cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
+ /* the structure/contact map */
+  status = ContactMap(cfg->ofile.cmapfile, cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
   if (cfg->abcisRNA) {
-    status = struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->nct, &cfg->ctlist, cfg->verbose);
+    status = struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->ctlist, cfg->errbuf, cfg->verbose);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nstruct_SplitCT() failed.", cfg->errbuf);
   }
 
@@ -1913,7 +1951,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null_rscape", cfg->errbuf);
   }  
   
-  if (cfg->allbranchfile) {
+  if (cfg->ofile.allbranchfile) {
     status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run allbranch", cfg->errbuf);
   }
@@ -1929,17 +1967,13 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   else
     status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);   
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
-  // conditioned on has_ss ?
-  structure_information(cfg, spair, msa);
-  
+   
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
+
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
-  for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
-  if (cfg->ctlist) free(cfg->ctlist);
+  struct_ctlist_Destroy(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
   if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
@@ -1947,26 +1981,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); ranklist_allbranch = NULL;
-
-  if (cfg->covhisfile) free(cfg->covhisfile); cfg->covhisfile = NULL;
-  if (cfg->covqqfile)  free(cfg->covqqfile); cfg->covqqfile = NULL;
-  if (cfg->dplotfile) free(cfg->dplotfile); cfg->dplotfile = NULL;
-  if (cfg->folddplotfile) free(cfg->folddplotfile); cfg->folddplotfile = NULL;
-  if (cfg->R2Rfile) free(cfg->R2Rfile); cfg->R2Rfile = NULL;
-  if (cfg->R2Rfoldfile) free(cfg->R2Rfoldfile); cfg->R2Rfoldfile = NULL;
-  if (cfg->cmapfile) free(cfg->cmapfile); cfg->cmapfile = NULL;
   if (cfg->mi) corr_Destroy(cfg->mi); cfg->mi = NULL;
   if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
   if (nsubs) free(nsubs);
   if (ndouble) free(ndouble);
   if (spair) free(spair);
-
+  outfile_destroy(&cfg->ofile);
+  outfile_null(&cfg->ofile);
+  
   return eslOK;
 
  ERROR:
   if (cfg->ct) free(cfg->ct);
-  for (s = 0; s < cfg->nct; s++) if (cfg->ctlist[s]) free(cfg->ctlist[s]);
-  if (cfg->ctlist) free(cfg->ctlist);
+  if (cfg->ctlist) struct_ctlist_Destroy(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist);
   if (cfg->msa2pdb) free(cfg->msa2pdb); 
   if (cfg->msafrq) free(cfg->msafrq); 
@@ -1975,36 +2002,28 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (outname) free(outname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
-  if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); 
-  if (cfg->covhisfile) free(cfg->covhisfile); 
-  if (cfg->covqqfile)  free(cfg->covqqfile); 
-  if (cfg->dplotfile) free(cfg->dplotfile);
-  if (cfg->folddplotfile) free(cfg->folddplotfile);
-  if (cfg->R2Rfile) free(cfg->R2Rfile); 
-  if (cfg->R2Rfoldfile) free(cfg->R2Rfoldfile); 
+  if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch);
   if (cfg->mi) corr_Destroy(cfg->mi);
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
   if (ndouble) free(ndouble);
   if (spair) free(spair);
+  outfile_destroy(&cfg->ofile);
   return status;
 }
-
 
 
 static int
 run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
 	   RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
-  char            *title     = NULL;
-  struct mutual_s *mi        = cfg->mi;
+  char            *title = NULL;
+  struct mutual_s *mi = cfg->mi;
   struct data_s    data;
-  PT              *ptlocal   = NULL;
-  int            **foldctlist = NULL;
-  RANKLIST        *ranklist  = NULL;
-  HITLIST         *hitlist   = NULL;
-  int              foldnct = 0;
-  int              s;
+  PT              *ptlocal    = NULL;
+  CTLIST          *foldctlist = NULL;
+  RANKLIST        *ranklist   = NULL;
+  HITLIST         *hitlist    = NULL;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -2013,7 +2032,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->covmethod == POTTS) {
     if (cfg->pt == NULL) {
       ptlocal = potts_Build(cfg->r, msa, cfg->ptmuh, cfg->ptmue, cfg->pttrain, cfg->ptmin, cfg->ptsctype, cfg->ptreg, cfg->ptinit,
-			    (cfg->mode == GIVSS)? cfg->outpottsfp:NULL, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
+			    (cfg->mode == GIVSS)? cfg->ofile.outpottsfile:NULL, cfg->isgremlin, cfg->tol, cfg->errbuf, cfg->verbose);
       if (ptlocal == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to optimize potts parameters", cfg->errbuf);
     }
     else ptlocal = cfg->pt;
@@ -2022,88 +2041,67 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   corr_Reuse(mi, (cfg->mode == RANSS)? TRUE : FALSE, cfg->covtype, cfg->covclass);
   
   /* print to stdout */
-  if (cfg->mode != RANSS) {
-    msa_banner(cfg->outfp,    cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
-    msa_banner(cfg->outsrtfp, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
-
+  if (cfg->mode != RANSS) 
     esl_sprintf(&title, "%s (seqs %d alen %" PRId64 " avgid %d bpairs %d)", 
 		cfg->msaname, msa->nseq, msa->alen, (int)ceil(cfg->mstat->avgid), cfg->nbpairs);
-  }
 
-  /* write MSA info to the sumfile */
-  if (cfg->mode != RANSS) {
-    fprintf(cfg->sumfp, "#target_E-val\tMSA\tnseq\talen\tavgid\tmethod\tTP\tTrue\tFound\tSEN\tPPV\n");
-    fprintf(cfg->sumfp, "%g\t\t%s\t%d\t%d\t%.2f\t", cfg->thresh->val, cfg->msaname, msa->nseq, (int)msa->alen, cfg->mstat->avgid); 
-  }
-  
-  /* write MSA info to the rocfile */
-  if (cfg->doroc) {
-    if (cfg->mode == GIVSS || cfg->mode == FOLDSS)
-      fprintf(cfg->rocfp, "# MSA nseq %d alen %" PRId64 " avgid %f nbpairs %d (%d)\n",
-	      msa->nseq, msa->alen, cfg->mstat->avgid, cfg->nbpairs, cfg->onbpairs);
-  }
- 
   /* main function */
-  data.outfp          = (cfg->mode == RANSS)? NULL : cfg->outfp;
-  data.outsrtfp       = (cfg->mode == RANSS)? NULL : cfg->outsrtfp;
-  data.rocfp          = cfg->rocfp;
-  data.sumfp          = (cfg->mode == RANSS)? NULL : cfg->sumfp;
-  data.dplotfile      = cfg->dplotfile;
-  data.folddplotfile  = cfg->folddplotfile;
-  data.R2Rfile        = cfg->R2Rfile;
-  data.R2Rfoldfile    = cfg->R2Rfoldfile;
-  data.R2Rall         = cfg->R2Rall;
-  data.gnuplot        = cfg->gnuplot;
-  data.r              = cfg->r;
-  data.samplesize     = cfg->samplesize;
-  data.ranklist_null  = ranklist_null;
-  data.ranklist_aux   = ranklist_aux;
-  data.mi             = cfg->mi;
-  data.pt             = ptlocal;
-  data.covtype        = cfg->covtype;
-  data.allowpair      = cfg->allowpair;
-  data.thresh         = cfg->thresh;
-  data.statsmethod    = cfg->statsmethod;
-  data.covmethod      = cfg->covmethod;
-  data.mode           = cfg->mode;
-  data.abcisRNA       = cfg->abcisRNA;
-  data.hasss          = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
-  data.gapthresh      = cfg->gapthresh;
-  data.nct            = cfg->nct;
-  data.ctlist         = cfg->ctlist;
-  data.expBP          = cfg->expBP;
-  data.onbpairs       = cfg->onbpairs;
-  data.nbpairs        = cfg->nbpairs;
-  data.nbpairs_fold   = cfg->nbpairs_fold;
-  data.spair          = spair;
-  data.nsubs          = nsubs;
-  data.ndouble        = ndouble;
-  data.power          = cfg->power;
-  data.T              = cfg->T;
-  data.ribosum        = cfg->ribosum;
-  data.OL             = cfg->omsa->alen;
-  data.nseq           = cfg->omsa->nseq;
-  data.ct             = cfg->ct;
-  data.clist          = cfg->clist;
-  data.msa2pdb        = cfg->msa2pdb;
-  data.msamap         = cfg->msamap;
-  data.firstpos       = cfg->firstpos;
-  data.bmin           = cfg->bmin;
-  data.w              = cfg->w;
-  data.fracfit        = cfg->fracfit;
-  data.pmass          = cfg->pmass;
-  data.doexpfit       = cfg->doexpfit;
-  data.tol            = cfg->tol;
-  data.nofigures      = cfg->nofigures;
-  data.verbose        = cfg->verbose;
-  data.errbuf         = cfg->errbuf;
-  data.ignorebps      = FALSE;
+  data.ofile            = &cfg->ofile;
+  data.R2Rall           = cfg->R2Rall;
+  data.gnuplot          = cfg->gnuplot;
+  data.r                = cfg->r;
+  data.samplesize       = cfg->samplesize;
+  data.ranklist_null    = ranklist_null;
+  data.ranklist_aux     = ranklist_aux;
+  data.mi               = cfg->mi;
+  data.pt               = ptlocal;
+  data.covtype          = cfg->covtype;
+  data.allowpair        = cfg->allowpair;
+  data.thresh           = cfg->thresh;
+  data.statsmethod      = cfg->statsmethod;
+  data.covmethod        = cfg->covmethod;
+  data.mode             = cfg->mode;
+  data.abcisRNA         = cfg->abcisRNA;
+  data.hasss            = (cfg->omsa->ss_cons && cfg->abcisRNA)? TRUE:FALSE;
+  data.gapthresh        = cfg->gapthresh;
+  data.ctlist           = cfg->ctlist;
+  data.expBP            = cfg->expBP;
+  data.onbpairs         = cfg->onbpairs;
+  data.nbpairs          = cfg->nbpairs;
+  data.nbpairs_fold     = cfg->nbpairs_fold;
+  data.spair            = spair;
+  data.nsubs            = nsubs;
+  data.ndouble          = ndouble;
+  data.power            = cfg->power;
+  data.T                = cfg->T;
+  data.ribosum          = cfg->ribosum;
+  data.OL               = cfg->omsa->alen;
+  data.nseq             = cfg->omsa->nseq;
+  data.ct               = cfg->ct;
+  data.clist            = cfg->clist;
+  data.msa2pdb          = cfg->msa2pdb;
+  data.msamap           = cfg->msamap;
+  data.firstpos         = cfg->firstpos;
+  data.bmin             = cfg->bmin;
+  data.w                = cfg->w;
+  data.fracfit          = cfg->fracfit;
+  data.pmass            = cfg->pmass;
+  data.doexpfit         = cfg->doexpfit;
+  data.tol              = cfg->tol;
+  data.nofigures        = cfg->nofigures;
+  data.verbose          = cfg->verbose;
+  data.errbuf           = cfg->errbuf;
+  data.ignorebps        = FALSE;
 
-  status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);   
-  if (status != eslOK) goto ERROR; 
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);
+  if (status != eslOK) goto ERROR;
+  
   if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS && ranklist) {
+
+    struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+
     if (cfg->verbose) {
       printf("score total distribution\n");
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
@@ -2112,39 +2110,39 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
       printf("imin %d imax %d xmax %f xmin %f width %f\n",
 	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->covhisfile, cfg->covqqfile, cfg->samplesize, ranklist, title);
+    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->ofile.covhisfile, cfg->ofile.covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR;
 
     if (cfg->power_train) 
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
 
-  /* find the foldcov structure, and do the cov analysis on it */
+  // find the CaCoFold structure 
   if (cfg->dofold && cfg->mode != RANSS) {
 
-    data.mode = FOLDSS;    
-    status = struct_CACOFOLD(&data, msa, &foldnct, &foldctlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
+    data.mode = FOLDSS;
+    // notice: data->clist is reused here for the cacofold structure
+    status = struct_CACOFOLD(&data, msa, &foldctlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-
-    status = write_omsafold(cfg, msa->alen, foldnct, foldctlist, FALSE);
+    struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+ 
+    status = write_omsafold(cfg, msa->alen, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
   
-  if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  for (s = 0; s < foldnct; s ++) if (foldctlist[s]) free(foldctlist[s]);
-  if (foldctlist) free(foldctlist);
+  if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);  
+  struct_ctlist_Destroy(foldctlist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
-  for (s = 0; s < foldnct; s ++) if (foldctlist[s]) free(foldctlist[s]);
-  if (foldctlist) free(foldctlist);
+  if (foldctlist) struct_ctlist_Destroy(foldctlist);
   if (ranklist) cov_FreeRankList(ranklist);
-  if (hitlist)  cov_FreeHitList(hitlist);
-  if (title)    free(title);
-  if (ptlocal)  potts_Destroy(ptlocal);
+  if (hitlist) cov_FreeHitList(hitlist);
+  if (title) free(title);
+  if (ptlocal) potts_Destroy(ptlocal);
   return status;
 }
 
@@ -2154,7 +2152,7 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
   ESL_MSA   *allmsa = NULL;
   int        status;
 
-  if (cfg->allbranchfile == NULL) return eslOK;
+  if (cfg->ofile.allbranchfile == NULL) return eslOK;
   
   status = create_tree(go, cfg, msa);
    if (status != eslOK) goto ERROR;
@@ -2165,7 +2163,7 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
   
   status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, NULL, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  status = AllBranchMSA_Plot(cfg->allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ct, cfg->clist, cfg->errbuf, cfg->verbose);
+  status = AllBranchMSA_Plot(cfg->ofile.allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ct, cfg->clist, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   
   if (cfg->verbose) {
@@ -2180,38 +2178,6 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
   return status;
 }
 
-static int
-structure_information(struct cfg_s *cfg, SPAIR *spair, ESL_MSA *msa)
-{
-  int64_t dim = msa->alen * (msa->alen - 1) / 2;
-  int     status;
-  
-  if (cfg->samplesize == SAMPLE_ALL) return eslOK;
-  if (spair == NULL) return eslOK;
-
-  if (cfg->omsa->ss_cons && cfg->pdbfile) {
-    if (cfg->onlypdb) printf("# Structure obtained from the pdbfile\n");
-    else printf("# Structure obtained from the msa and the pdbfile\n");
-  }
-  else if (cfg->omsa->ss_cons)
-    printf("# Structure obtained from the msa\n");
-  else if (cfg->pdbfile)
-      printf("# Structure obtained from the pdbfile\n");
-  else
-    return eslOK;
-
-  if (cfg->mode == GIVSS && cfg->abcisRNA && cfg->omsa->ss_cons && cfg->samplesize != SAMPLE_ALL)
-    {
-      status = struct_CTMAP(cfg->mi->alen, cfg->nct, cfg->ctlist, cfg->omsa->alen, cfg->msamap, NULL, NULL, NULL, TRUE);
-      if (status != eslOK) goto ERROR;
-    }
-  power_SPAIR_Write(stdout, dim, spair);  
-  
-  return eslOK;
-
- ERROR:
-  return status;
-}
 
 static int
 substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
@@ -2219,8 +2185,6 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   int     *nsubs = NULL;
   SPAIR   *spair;
   double   avgsubs = 0.;
-  int64_t  s;
-  int64_t  n;
   int      i;
   int      ipos;
   int      c;
@@ -2260,7 +2224,7 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   if (cfg->power_train) {
     spair = *ret_spair;
     for (p = 0; p < np; p ++) {
-      if (spair[p].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+      if (spair[p].bptype_given == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
     }
   }
   
@@ -2283,12 +2247,9 @@ static int
 doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose)
 {
   int     *ndouble = NULL;
-  SPAIR   *spair;
   double   avgdouble = 0.;
   int64_t  dim       = msa->alen * (msa->alen-1) / 2;
   int64_t  idx;
-  int64_t  s;
-  int64_t  n;
   int      i, j;
   int      ipos, jpos;
   int      c;
@@ -2355,10 +2316,11 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 
 
 static int
-write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verbose)
+write_omsafold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
 {
+  FILE     *omsafoldfp = NULL;
   ESL_MSA  *omsa = cfg->omsa;
-  int     **octlist = NULL;
+  CTLIST   *octlist = NULL;
   char    **osslist = NULL;
   char     *tag;
   int       OL = omsa->alen;
@@ -2375,11 +2337,11 @@ write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verb
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-   status = struct_CTMAP(L, foldnct, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, verbose);
+  status = struct_CTMAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
   // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
-  for (s = 1; s < foldnct; s ++) {
+  for (s = 1; s < foldctlist->nct; s ++) {
 
     // these are the extra GC lines.
     // I keep it in case there is overlap
@@ -2388,28 +2350,28 @@ write_omsafold(struct cfg_s *cfg, int L, int foldnct, int **foldctlist, int verb
     free(tag); tag = NULL;
     
     for (i = 1; i <= OL; i ++) {
-      if (no_overlap(i, octlist[s][i], OL, octlist[0]))  {
-	octlist[0][i]             = octlist[s][i];
-	octlist[0][octlist[s][i]] = i;
+      if (no_overlap(i, octlist->ct[s][i], OL, octlist->ct[0]))  {
+	octlist->ct[0][i]                 = octlist->ct[s][i];
+	octlist->ct[0][octlist->ct[s][i]] = i;
       }
     }
   }
-  if (foldnct > 0) esl_ct2wuss(octlist[0], OL, omsa->ss_cons);
+  if (foldctlist->nct > 0) esl_ct2wuss(octlist->ct[0], OL, omsa->ss_cons);
   
   // write alignment with the foldcov structure to file
-  esl_msafile_Write(cfg->omsafoldfp, omsa, eslMSAFILE_STOCKHOLM);
-  
-  for (s = 0; s < foldnct; s ++) free(osslist[s]);
+  if ((omsafoldfp = fopen(cfg->ofile.omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omsafoldfile %s", cfg->ofile.omsafoldfile);
+  esl_msafile_Write(omsafoldfp, omsa, eslMSAFILE_STOCKHOLM);
+  fclose(omsafoldfp);
+
+  struct_ctlist_Destroy(octlist);
+  for (s = 0; s < foldctlist->nct; s ++) free(osslist[s]);
   free(osslist);
-  for (s = 0; s < foldnct; s ++) free(octlist[s]);
-  free(octlist);
   return eslOK;
 
  ERROR:
-  for (s = 0; s < foldnct; s ++) if (osslist[s]) free(osslist[s]);
+  if (octlist) struct_ctlist_Destroy(octlist);
+  for (s = 0; s < foldctlist->nct; s ++) if (osslist[s]) free(osslist[s]);
   if (osslist) free(osslist);
-  for (s = 0; s < foldnct; s ++) if (octlist[s]) free(octlist[s]);
-  if (octlist) free(octlist);
   return status;
 }
 

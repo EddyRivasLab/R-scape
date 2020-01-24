@@ -383,15 +383,15 @@ sub gnuplot_ave_histo_with_dots {
 
 sub gnuplot_define_styles {
     my ($gp) = @_;
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.6 lw 1\n";
-    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 1\n";
-    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 3\n";
-    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 1 ps 0.6 lw 3\n";
-    print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 3\n";
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.6 lw 6\n";
+    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 1 ps 0.6 lw 6\n";
+    print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 6\n";
    
     print $gp "set style line 88   lt 1 lc rgb 'cyan'   pt 7 pi -1  ps 1.0 lw 2\nset pointintervalbox 1\n";
 
@@ -1916,56 +1916,68 @@ sub parse_sqfile {
 }
 
 sub parse_stofile {
-    my ($sqfile, $ret_nsq, $name_ref, $sq_ref, $ret_ss, $ct_ref, $ret_rfsq) = @_;
+    my ($sqfile, $ret_nsq, $name_ref, $sq_ref, $ret_ss, $ct_ref, $ret_rfsq, $which) = @_;
 
+    my $nali = 0;
     my $nsq = 0;
     my $sq = "";
     my $ss = "";
     my $name = "";
     my $rfsq = "";
-
+    my $thisone = 0;
+    
     my $b = 0;
+    my $nsq_prv = 0;
     open(FILE, "$sqfile") || die;
     while (<FILE>) {
 	if (/# STO/) {
+	    $nali ++;
+	    if ($nali > $which) { last; }
 	}
 	elsif (/#=GC\s+SS_cons\s+(\S+)\s*$/) {
-	    $ss .= "$1";
+	    if ($nali == $which) { $ss .= "$1"; }
 	}
 	elsif (/#=GC\s+RF\s+(\S+)\s*$/) {
-	    $rfsq .= "$1";
+	    if ($nali == $which) { $rfsq .= "$1"; }
 	}
 	elsif (/^#/) {
 	}
 	elsif (/^$/) {
-	    $b ++;
-	    $nsq = 0;
+	    if ($nali == $which) { 
+		$b ++;
+		$nsq_prv = $nsq;
+		$nsq = 0;
+	    }
 	}
 	elsif (/^([^#]\S+)\s+(\S+)\s*$/) {
-	    $name_ref->[$nsq]  = $1;
-	    $sq_ref->[$nsq]   .= "$2";
-	    $nsq ++;
-	}
-	elsif ($nsq > 0 && /^(\S+)\s+(\S+)\s*$/) {
-	    my $name  = $1;
-	    my $sq    = $2;
-	    
-	    if ($name =~ /^$name_ref->[$nsq]$/) {
-		$sq_ref->[$nsq] .= "$sq";
+	    if ($nali == $which) {
+		$name_ref->[$nsq]  = $1;
+		$sq_ref->[$nsq]   .= "$2";
 		$nsq ++;
 	    }
-	    else { print "bad sq $name | $name_ref->[$nsq]\n"; die; }
+	}
+	elsif ($nsq > 0 && /^(\S+)\s+(\S+)\s*$/) {
+	    if ($nali == $which) { 
+		my $name  = $1;
+		my $sq    = $2;
+		
+		if ($name =~ /^$name_ref->[$nsq]$/) {
+		    $sq_ref->[$nsq] .= "$sq";
+		    $nsq ++;
+		}
+		else { print "bad sq $name | $name_ref->[$nsq]\n"; die; }
+	    }
 	}
     }
     close(FILE);
-
+    
     ss2ct($ss, $ct_ref);
 
     $$ret_ss   = $ss;
     $$ret_rfsq = $rfsq;
-    $$ret_nsq  = $nsq;
+    $$ret_nsq  = $nsq_prv;
  
-    return length($ss);
+    return length($sq_ref->[0]);
 }
 
 sub ss2ct {

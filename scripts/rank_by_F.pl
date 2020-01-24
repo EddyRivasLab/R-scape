@@ -79,7 +79,7 @@ my %allfam_S;
 my %allfam_P;
 my %allfam_F;
 my %allfam_Spower;
-
+ 
 my %allfam_tp_fold;
 my %allfam_true_fold;
 my %allfam_found_fold;
@@ -93,6 +93,62 @@ my %allfam_Spower_fold;
 my %allfam_all;
 my %allfam_table;
 my %allfam_tabless;
+
+my %allfam_main_nh;
+my %allfam_main_nhc;
+my %allfam_main_nc;
+my %allfam_main_nh_fold;
+my %allfam_main_nhc_fold;
+my %allfam_main_nc_fold;
+
+my %allfam_main1_nh;
+my %allfam_main1_nhc;
+my %allfam_main1_nc;
+my %allfam_main1_nh_fold;
+my %allfam_main1_nhc_fold;
+my %allfam_main1_nc_fold;
+
+my %allfam_main2_nh;
+my %allfam_main2_nhc;
+my %allfam_main2_nc;
+my %allfam_main2_nh_fold;
+my %allfam_main2_nhc_fold;
+my %allfam_main2_nc_fold;
+
+my %allfam_main3_nh;
+my %allfam_main3_nhc;
+my %allfam_main3_nc;
+my %allfam_main3_nh_fold;
+my %allfam_main3_nhc_fold;
+my %allfam_main3_nc_fold;
+
+my %allfam_alt_nh;
+my %allfam_alt_nhc;
+my %allfam_alt_nc;
+my %allfam_alt_nh_fold;
+my %allfam_alt_nhc_fold;
+my %allfam_alt_nc_fold;
+
+my %allfam_alt1_nh;
+my %allfam_alt1_nhc;
+my %allfam_alt1_nc;
+my %allfam_alt1_nh_fold;
+my %allfam_alt1_nhc_fold;
+my %allfam_alt1_nc_fold;
+
+my %allfam_alt2_nh;
+my %allfam_alt2_nhc;
+my %allfam_alt2_nc;
+my %allfam_alt2_nh_fold;
+my %allfam_alt2_nhc_fold;
+my %allfam_alt2_nc_fold;
+
+my %allfam_alt3_nh;
+my %allfam_alt3_nhc;
+my %allfam_alt3_nc;
+my %allfam_alt3_nh_fold;
+my %allfam_alt3_nhc_fold;
+my %allfam_alt3_nc_fold;
 
 my %usefam3d;
 filter_families_by3d($file, \%usefam3d);
@@ -226,7 +282,8 @@ sub parse_rscapeout {
     my $usefam;
     my $isfold;
     my $fam;
-    
+
+    my $nmode;
     my $nf  = 0;
     open (FILE, "$file")    || die;
     while(<FILE>) {
@@ -243,6 +300,7 @@ sub parse_rscapeout {
 	    $usefam = 1;
 	    
 	    $isfold  = 0;
+	    $nmode   = 0;
 	    
 	    if ($usefam) {
 		$allfam[$nf]       = $fam; 
@@ -270,11 +328,79 @@ sub parse_rscapeout {
 		$allfam_S_fold{$fam}      = 0.0;
 		$allfam_P_fold{$fam}      = 0.0;
 		$allfam_F_fold{$fam}      = 0.0;
+
+		$allfam_avgsub{$fam}      = 0.0;
+		$allfam_avgsub_fold{$fam} = 0.0;
+		$allfam_tpexp{$fam}       = 0.0;
+		$allfam_tpexp_fold{$fam}  = 0.0;
 		
 		$allfam_Spower_fold{$fam} = 0.0;
+
+		$allfam_main_nh{$fam}       = 0;  
+		$allfam_main_nhc{$fam}      = 0;  
+		$allfam_main_nc{$fam}       = 0;  
+		$allfam_main_nh_fold{$fam}  = 0;  
+		$allfam_main_nhc_fold{$fam} = 0;  
+		$allfam_main_nc_fold{$fam}  = 0;
+		
+		$allfam_main1_nh{$fam}       = 0;  
+		$allfam_main1_nhc{$fam}      = 0;  
+		$allfam_main1_nc{$fam}       = 0;  
+		$allfam_main1_nh_fold{$fam}  = 0;  
+		$allfam_main1_nhc_fold{$fam} = 0;  
+		$allfam_main1_nc_fold{$fam}  = 0;  
+		
+		$allfam_main2_nh{$fam}       = 0;  
+		$allfam_main2_nhc{$fam}      = 0;  
+		$allfam_main2_nc{$fam}       = 0;  
+		$allfam_main2_nh_fold{$fam}  = 0;  
+		$allfam_main2_nhc_fold{$fam} = 0;  
+		$allfam_main2_nc_fold{$fam}  = 0;  
+
+		$allfam_main3_nh{$fam}       = 0;  
+		$allfam_main3_nhc{$fam}      = 0;  
+		$allfam_main3_nc{$fam}       = 0;  
+		$allfam_main3_nh_fold{$fam}  = 0;  
+		$allfam_main3_nhc_fold{$fam} = 0;  
+		$allfam_main3_nc_fold{$fam}  = 0;  
+
+		
+		$allfam_alt_nh{$fam}       = 0;  
+		$allfam_alt_nhc{$fam}      = 0;  
+		$allfam_alt_nc{$fam}       = 0;  
+		$allfam_alt_nh_fold{$fam}  = 0;  
+		$allfam_alt_nhc_fold{$fam} = 0;  
+		$allfam_alt_nc_fold{$fam}  = 0;
+		
+		$allfam_alt1_nh{$fam}       = 0;  
+		$allfam_alt1_nhc{$fam}      = 0;  
+		$allfam_alt1_nc{$fam}       = 0;  
+		$allfam_alt1_nh_fold{$fam}  = 0;  
+		$allfam_alt1_nhc_fold{$fam} = 0;  
+		$allfam_alt1_nc_fold{$fam}  = 0;  
+		
+		$allfam_alt2_nh{$fam}       = 0;  
+		$allfam_alt2_nhc{$fam}      = 0;  
+		$allfam_alt2_nc{$fam}       = 0;  
+		$allfam_alt2_nh_fold{$fam}  = 0;  
+		$allfam_alt2_nhc_fold{$fam} = 0;  
+		$allfam_alt2_nc_fold{$fam}  = 0;  
+
+		$allfam_alt3_nh{$fam}       = 0;  
+		$allfam_alt3_nhc{$fam}      = 0;  
+		$allfam_alt3_nc{$fam}       = 0;  
+		$allfam_alt3_nh_fold{$fam}  = 0;  
+		$allfam_alt3_nhc_fold{$fam} = 0;  
+		$allfam_alt3_nc_fold{$fam}  = 0;  
+
+
 	    }
 	}
-	# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F] 
+	# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F]
+	elsif (/^# Method/) {
+	    $nmode ++;
+	    if ($nmode == 2) { $isfold = 1; }
+	}
 	# GTp    0.05         [-9.35,1389.53]     [8 | 22 34 30 | 64.71 73.33 68.75] 
 	elsif (/^#\s+\S+\s+\S+\s+\[\S+\]\s+\[\d+\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\S+)\s+(\S+)\s+(\S+)\]/) {
 	    my $tp      = $1;
@@ -286,7 +412,7 @@ sub parse_rscapeout {
 	    my $F       = $6;
 	    
 	    if ($usefam) {	    
-		if ($isfold) {
+		if ($nmode == 2) {
 		    printf "%d FAM FOLD $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
 		    $allfam_tp_fold{$fam}    = $tp;
 		    $allfam_true_fold{$fam}  = $true;
@@ -318,9 +444,7 @@ sub parse_rscapeout {
 		else         { $allfam_tpexp{$fam}      = $tpexp; }
 	    }
 	}
-	elsif (/^# The predicted fold-cov structure/ || /^# The predicted cyk-cov structure/) {
-	    $isfold = 1;
-	}
+	
 	# add compatible pairs in the fold structure
 	#~	               320	     321	194.17596	0.0153764	127	0.87
 	#~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
@@ -332,11 +456,156 @@ sub parse_rscapeout {
 		$allfam_tpexp_fold{$fam} += $pp; 
 	    }
 	}
+	elsif (/^# Main\s+Helices\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_main_nh_fold{$fam}  = $nh;  
+		    $allfam_main_nhc_fold{$fam} = $nhc;  
+		    $allfam_main_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_main_nh{$fam}  = $nh;  
+		    $allfam_main_nhc{$fam} = $nhc;  
+		    $allfam_main_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Main\s+Helices\s+1 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_main1_nh_fold{$fam}  = $nh;  
+		    $allfam_main1_nhc_fold{$fam} = $nhc;  
+		    $allfam_main1_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_main1_nh{$fam}  = $nh;  
+		    $allfam_main1_nhc{$fam} = $nhc;  
+		    $allfam_main1_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Main\s+Helices\s+2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_main2_nh_fold{$fam}  = $nh;  
+		    $allfam_main2_nhc_fold{$fam} = $nhc;  
+		    $allfam_main2_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_main2_nh{$fam}  = $nh;  
+		    $allfam_main2_nhc{$fam} = $nhc;  
+		    $allfam_main2_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Main\s+Helices\s+\>2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_main3_nh_fold{$fam}  = $nh;  
+		    $allfam_main3_nhc_fold{$fam} = $nhc;  
+		    $allfam_main3_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_main3_nh{$fam}  = $nh;  
+		    $allfam_main3_nhc{$fam} = $nhc;  
+		    $allfam_main3_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Alt\s+Helices\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_alt_nh_fold{$fam}  = $nh;  
+		    $allfam_alt_nhc_fold{$fam} = $nhc;  
+		    $allfam_alt_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_alt_nh{$fam}  = $nh;  
+		    $allfam_alt_nhc{$fam} = $nhc;  
+		    $allfam_alt_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Alt\s+Helices\s+1 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_alt1_nh_fold{$fam}  = $nh;  
+		    $allfam_alt1_nhc_fold{$fam} = $nhc;  
+		    $allfam_alt1_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_alt1_nh{$fam}  = $nh;  
+		    $allfam_alt1_nhc{$fam} = $nhc;  
+		    $allfam_alt1_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Alt\s+Helices\s+2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_alt2_nh_fold{$fam}  = $nh;  
+		    $allfam_alt2_nhc_fold{$fam} = $nhc;  
+		    $allfam_alt2_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_alt2_nh{$fam}  = $nh;  
+		    $allfam_alt2_nhc{$fam} = $nhc;  
+		    $allfam_alt2_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+	elsif (/^# Alt\s+Helices\s+\>2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
+	    my $nh  = $1;
+	    my $nhc = $2;
+	    my $nc  = $3;
+	    
+	    if ($usefam) { 
+		if ($isfold) { 
+		    $allfam_alt3_nh_fold{$fam}  = $nh;  
+		    $allfam_alt3_nhc_fold{$fam} = $nhc;  
+		    $allfam_alt3_nc_fold{$fam}  = $nc;  
+		}
+		else { 
+		    $allfam_alt3_nh{$fam}  = $nh;  
+		    $allfam_alt3_nhc{$fam} = $nhc;  
+		    $allfam_alt3_nc{$fam}  = $nc;  
+		}
+	    }
+	}
+
     }
     close (FILE);
     print "NFAMILIES parsed $nf\n";
        
-    #
+    # check
     for (my $f = 0; $f < $nf-1; $f ++) {
 	my $fam = $allfam[$f];
 	for (my $ff = $f+1; $ff < $nf; $ff ++) {
@@ -345,6 +614,180 @@ sub parse_rscapeout {
 	}
     }
     
+    # cummulatives
+    my $tp_tot         = 0;
+    my $true_tot       = 0;
+    my $found_tot      = 0;
+    my $tp_fold_tot    = 0;
+    my $true_fold_tot  = 0;
+    my $found_fold_tot = 0;
+    my $nf_used = 0;
+    my $min_power = 0.1;
+    my $min_nbps  = 10;
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam = $allfam[$f];
+
+	if ($allfam_tpexp{$fam} >= $min_power &&
+	    $allfam_true{$fam}  >= $min_nbps) 
+	{
+	    $tp_tot         += $allfam_tp{$fam};
+	    $true_tot       += $allfam_true{$fam};
+	    $found_tot      += $allfam_found{$fam};
+	    $tp_fold_tot    += $allfam_tp_fold{$fam};
+	    $true_fold_tot  += $allfam_true_fold{$fam};
+	    $found_fold_tot += $allfam_found_fold{$fam};
+	    $nf_used ++;
+	}
+    }
+    printf("Totals for %d/$nf families\n       given    CaCoFOld\n", $nf_used, $nf);
+    printf("cov_bps        %f  %f\n", $tp_tot,    $tp_fold_tot);
+    printf("all_bps        %f  %f\n", $true_tot,  $true_fold_tot);
+    printf("found cov_bps  %f  %f\n", $found_tot, $found_fold_tot);
+
+    # helices cummulatives
+    my $main_nh_tot  = 0;
+    my $main_nhc_tot = 0;
+    my $main_nc_tot  = 0;
+    my $main_nh_fold_tot  = 0;
+    my $main_nhc_fold_tot = 0;
+    my $main_nc_fold_tot  = 0;
+    
+    my $main1_nh_tot  = 0;
+    my $main1_nhc_tot = 0;
+    my $main1_nc_tot  = 0;
+    my $main1_nh_fold_tot  = 0;
+    my $main1_nhc_fold_tot = 0;
+    my $main1_nc_fold_tot  = 0;
+    
+    my $main2_nh_tot  = 0;
+    my $main2_nhc_tot = 0;
+    my $main2_nc_tot  = 0;
+    my $main2_nh_fold_tot  = 0;
+    my $main2_nhc_fold_tot = 0;
+    my $main2_nc_fold_tot  = 0;
+    
+    my $main3_nh_tot  = 0;
+    my $main3_nhc_tot = 0;
+    my $main3_nc_tot  = 0;
+    my $main3_nh_fold_tot  = 0;
+    my $main3_nhc_fold_tot = 0;
+    my $main3_nc_fold_tot  = 0;
+    
+    my $alt_nh_tot  = 0;
+    my $alt_nhc_tot = 0;
+    my $alt_nc_tot  = 0;
+    my $alt_nh_fold_tot  = 0;
+    my $alt_nhc_fold_tot = 0;
+    my $alt_nc_fold_tot  = 0;
+    
+    my $alt1_nh_tot  = 0;
+    my $alt1_nhc_tot = 0;
+    my $alt1_nc_tot  = 0;
+    my $alt1_nh_fold_tot  = 0;
+    my $alt1_nhc_fold_tot = 0;
+    my $alt1_nc_fold_tot  = 0;
+    
+    my $alt2_nh_tot  = 0;
+    my $alt2_nhc_tot = 0;
+    my $alt2_nc_tot  = 0;
+    my $alt2_nh_fold_tot  = 0;
+    my $alt2_nhc_fold_tot = 0;
+    my $alt2_nc_fold_tot  = 0;
+    
+    my $alt3_nh_tot  = 0;
+    my $alt3_nhc_tot = 0;
+    my $alt3_nc_tot  = 0;
+    my $alt3_nh_fold_tot  = 0;
+    my $alt3_nhc_fold_tot = 0;
+    my $alt3_nc_fold_tot  = 0;
+
+    $nf_used = 0;
+    for (my $f = 0; $f < $nf; $f ++) {
+	my $fam = $allfam[$f];
+	
+	if ($allfam_tpexp{$fam} >= $min_power &&
+	    $allfam_true{$fam}  >= $min_nbps) 
+	{
+	    $main_nh_tot       += $allfam_main_nh{$fam};
+	    $main_nhc_tot      += $allfam_main_nhc{$fam};
+	    $main_nc_tot       += $allfam_main_nc{$fam};    
+	    $main_nh_fold_tot  += $allfam_main_nh_fold{$fam};
+	    $main_nhc_fold_tot += $allfam_main_nhc_fold{$fam};
+	    $main_nc_fold_tot  += $allfam_main_nc_fold{$fam};
+	    
+	    $main1_nh_tot       += $allfam_main1_nh{$fam};
+	    $main1_nhc_tot      += $allfam_main1_nhc{$fam};
+	    $main1_nc_tot       += $allfam_main1_nc{$fam};    
+	    $main1_nh_fold_tot  += $allfam_main1_nh_fold{$fam};
+	    $main1_nhc_fold_tot += $allfam_main1_nhc_fold{$fam};
+	    $main1_nc_fold_tot  += $allfam_main1_nc_fold{$fam};
+	    
+	    $main2_nh_tot       += $allfam_main2_nh{$fam};
+	    $main2_nhc_tot      += $allfam_main2_nhc{$fam};
+	    $main2_nc_tot       += $allfam_main2_nc{$fam};    
+	    $main2_nh_fold_tot  += $allfam_main2_nh_fold{$fam};
+	    $main2_nhc_fold_tot += $allfam_main2_nhc_fold{$fam};
+	    $main2_nc_fold_tot  += $allfam_main2_nc_fold{$fam};
+	    
+	    $main3_nh_tot       += $allfam_main3_nh{$fam};
+	    $main3_nhc_tot      += $allfam_main3_nhc{$fam};
+	    $main3_nc_tot       += $allfam_main3_nc{$fam};    
+	    $main3_nh_fold_tot  += $allfam_main3_nh_fold{$fam};
+	    $main3_nhc_fold_tot += $allfam_main3_nhc_fold{$fam};
+	    $main3_nc_fold_tot  += $allfam_main3_nc_fold{$fam};
+	    
+	    $alt_nh_tot       += $allfam_alt_nh{$fam};
+	    $alt_nhc_tot      += $allfam_alt_nhc{$fam};
+	    $alt_nc_tot       += $allfam_alt_nc{$fam};    
+	    $alt_nh_fold_tot  += $allfam_alt_nh_fold{$fam};
+	    $alt_nhc_fold_tot += $allfam_alt_nhc_fold{$fam};
+	    $alt_nc_fold_tot  += $allfam_alt_nc_fold{$fam};
+	    
+	    $alt1_nh_tot       += $allfam_alt1_nh{$fam};
+	    $alt1_nhc_tot      += $allfam_alt1_nhc{$fam};
+	    $alt1_nc_tot       += $allfam_alt1_nc{$fam};    
+	    $alt1_nh_fold_tot  += $allfam_alt1_nh_fold{$fam};
+	    $alt1_nhc_fold_tot += $allfam_alt1_nhc_fold{$fam};
+	    $alt1_nc_fold_tot  += $allfam_alt1_nc_fold{$fam};
+	    
+	    $alt2_nh_tot       += $allfam_alt2_nh{$fam};
+	    $alt2_nhc_tot      += $allfam_alt2_nhc{$fam};
+	    $alt2_nc_tot       += $allfam_alt2_nc{$fam};    
+	    $alt2_nh_fold_tot  += $allfam_alt2_nh_fold{$fam};
+	    $alt2_nhc_fold_tot += $allfam_alt2_nhc_fold{$fam};
+	    $alt2_nc_fold_tot  += $allfam_alt2_nc_fold{$fam};
+	    
+	    $alt3_nh_tot       += $allfam_alt3_nh{$fam};
+	    $alt3_nhc_tot      += $allfam_alt3_nhc{$fam};
+	    $alt3_nc_tot       += $allfam_alt3_nc{$fam};    
+	    $alt3_nh_fold_tot  += $allfam_alt3_nh_fold{$fam};
+	    $alt3_nhc_fold_tot += $allfam_alt3_nhc_fold{$fam};
+	    $alt3_nc_fold_tot  += $allfam_alt3_nc_fold{$fam};
+	    
+	    $nf_used ++;
+	}
+    }
+    printf("HELICES\n");
+    printf("Totals for %d/%d families\n", $nf_used, $nf);
+    printf("            n_helices n_helices_covary n_covs\n");   
+    printf("main            %d  %d (%.2f) %d\n",   $main_nh_tot,       $main_nhc_tot,       $main_nhc_tot/ $main_nh_tot,       $main_nc_tot);
+    printf("main fold       %d  %d (%.2f) %d\n\n", $main_nh_fold_tot,  $main_nhc_fold_tot,  $main_nhc_fold_tot/$main_nh_fold_tot,   $main_nc_fold_tot);
+    printf("main       1bp  %d  %d (%.2f) %d\n",   $main1_nh_tot,      $main1_nhc_tot,      $main1_nhc_tot/$main1_nh_tot,      $main1_nc_tot);
+    printf("main fold  1bp  %d  %d (%.2f) %d\n\n", $main1_nh_fold_tot, $main1_nhc_fold_tot, $main1_nhc_fold_tot/$main1_nh_fold_tot, $main1_nc_fold_tot);
+    printf("main       2bp  %d  %d (%.2f) %d\n",   $main2_nh_tot,      $main2_nhc_tot,      $main2_nhc_tot/$main2_nh_tot,      $main2_nc_tot);
+    printf("main fold  2bp  %d  %d (%.2f) %d\n\n", $main2_nh_fold_tot, $main2_nhc_fold_tot, $main2_nhc_fold_tot/$main2_nh_fold_tot, $main2_nc_fold_tot);
+    printf("main      >2bp  %d  %d (%.2f) %d\n",   $main3_nh_tot,      $main3_nhc_tot,      $main3_nhc_tot/$main3_nh_tot,      $main3_nc_tot);
+    printf("main fold >2bp  %d  %d (%.2f) %d\n\n", $main3_nh_fold_tot, $main3_nhc_fold_tot, $main3_nhc_fold_tot/$main3_nh_fold_tot, $main3_nc_fold_tot);
+    printf("alt             %d  %d (%.2f) %d\n",   $alt_nh_tot,        $alt_nhc_tot,        $alt_nhc_tot/$alt_nh_tot,         $alt_nc_tot);
+    printf("alt fold        %d  %d (%.2f) %d\n\n", $alt_nh_fold_tot,   $alt_nhc_fold_tot,   $alt_nhc_fold_tot/$alt_nh_fold_tot,    $alt_nc_fold_tot);
+    printf("alt        1bp  %d  %d (%.2f) %d\n",   $alt1_nh_tot,       $alt1_nhc_tot,       $alt1_nhc_tot/$alt1_nh_tot,       $alt1_nc_tot);
+    printf("alt fold   1bp  %d  %d (%.2f) %d\n\n", $alt1_nh_fold_tot,  $alt1_nhc_fold_tot,  $alt1_nhc_fold_tot/$alt1_nh_fold_tot,  $alt1_nc_fold_tot);
+    printf("alt        2bp  %d  %d (%.2f) %d\n",   $alt2_nh_tot,       $alt2_nhc_tot,       $alt2_nhc_tot/$alt2_nh_tot,       $alt2_nc_tot);
+    printf("alt fold   2bp  %d  %d (%.2f) %d\n\n", $alt2_nh_fold_tot,  $alt2_nhc_fold_tot,  $alt2_nhc_fold_tot/$alt2_nh_fold_tot,  $alt2_nc_fold_tot);
+    printf("alt       >2bp  %d  %d (%.2f) %d\n",   $alt3_nh_tot,       $alt3_nhc_tot,       $alt3_nhc_tot/$alt3_nh_tot,       $alt3_nc_tot);
+    printf("alt fold  >2bp  %d  %d (%.2f) %d\n\n", $alt3_nh_fold_tot,  $alt3_nhc_fold_tot,  $alt3_nhc_fold_tot/$alt3_nh_fold_tot,  $alt3_nc_fold_tot);
+
+	
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $allfam[$f];
 	
@@ -358,7 +801,7 @@ sub parse_rscapeout {
 	$allfam_Spower{$fam}  = sprintf("%.1f", $allfam_Spower{$fam});
 	$allfam_S{$fam}       = sprintf("%.1f", $allfam_S{$fam});
 	$allfam_P{$fam}       = sprintf("%.1f", $allfam_P{$fam});
-	$allfam_F{$fam}       = sprintf("%.1f", $allfam_F{$fam});
+ 	$allfam_F{$fam}       = sprintf("%.1f", $allfam_F{$fam});
 	$allfam_S_fold{$fam}  = sprintf("%.1f", $allfam_S_fold{$fam});
 	$allfam_P_fold{$fam}  = sprintf("%.1f", $allfam_P_fold{$fam});
 	$allfam_F_fold{$fam}  = sprintf("%.1f", $allfam_F_fold{$fam});
@@ -393,9 +836,10 @@ sub parse_rscapeout {
 	$allfam_tabless{$fam}  = "$name & ";
 	$allfam_tabless{$fam} .= "$allfam_tp_fold{$fam}    & $allfam_tp{$fam}    & ";    
 	$allfam_tabless{$fam} .= "$allfam_true_fold{$fam}  & $allfam_true{$fam}  & ";    
-	$allfam_tabless{$fam} .= "$allfam_S_fold{$fam}     & $allfam_S{$fam}    & ";    
+	$allfam_tabless{$fam} .= "$allfam_S_fold{$fam}     & $allfam_S{$fam}     & ";    
 	$allfam_tabless{$fam} .= "$allfam_found{$fam} & ";    
-	$allfam_tabless{$fam} .= "$allfam_P_fold{$fam}     & $allfam_P{$fam}     ";    
+	$allfam_tabless{$fam} .= "$allfam_P_fold{$fam}     & $allfam_P{$fam}     & ";    
+	$allfam_tabless{$fam} .= "$allfam_tpexp_fold{$fam} & $allfam_tpexp{$fam} ";    
 	$allfam_tabless{$fam} .= "\n\\\\";    
     }
 
@@ -723,6 +1167,7 @@ sub outfile_rank {
     $cmd .= "\tSENpowerfold";
     $cmd .= "\tTRUEfold\tFOUNDfold\tTPfold\tTPexpfold\tavgsubfold";
     $cmd .= "\tavgid\talen\tnseq";
+
     
     printf OUT1 "$cmd\n";
     for (my $f = 0; $f < $nf; $f ++) {
@@ -780,7 +1225,8 @@ sub outfile_withpower{
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $fam[$f];
 	my $power = $fam_Spower{$fam};
-	if ($power > 0) {
+	my $sen   = $fam_S{$fam};
+	if ($power > 0 && $sen ==0) {
 	    $m ++;
 	    print     "withpower $m $fam power $power\n";
 	    print OUT "$fam_all{$fam}\n";
@@ -948,15 +1394,15 @@ sub outfile_betterss{
     open (OUT, ">$outfile_betterss") || die;    
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
-	my $fam     = $S_order[$f];
-	my $which   = $fam_idx{$fam};
-	my $sen     = $fam_S{$fam};
+	my $fam      = $S_order[$f];
+	my $which    = $fam_idx{$fam};
+	my $sen      = $fam_S{$fam};
 	my $sen_fold = $fam_S_fold{$fam};
-	my $ppv     = $fam_P{$fam};
+	my $ppv      = $fam_P{$fam};
 	my $ppv_fold = $fam_P_fold{$fam};
-	my $tp      = $fam_tp{$fam};
+	my $tp       = $fam_tp{$fam};
 	my $tp_fold  = $fam_tp_fold{$fam};
-	my $power = $fam_Spower{$fam};
+	my $power    = $fam_Spower{$fam};
 	if ($ppv_fold > $ppv) {
 	    $m ++;
 	    print     "better_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";

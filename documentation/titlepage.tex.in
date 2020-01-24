@@ -11,7 +11,6 @@
 \vspace*{\fill}
 
 \begin{center}
-\url{http://eddylab.org/R-scape/}\\
 Version v@RSCAPE_VERSION@;   % ./configure replaces RSCAPE_VERSION
 @RSCAPE_DATE@      %    ... and RSCAPE_DATE
 
@@ -23,7 +22,7 @@ Department of Molecular and Celullar Biology\\
 Harvard University\\
 16 Divinity Avenue\\
 Cambridge MA 02138 USA\\
-\url{http://eddylab.org/} \\
+\url{http://rivaslab.org/} \\
 \end{center}
 
 \vspace*{\fill}

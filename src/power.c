@@ -65,7 +65,6 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
   int64_t  n = 0;
   int64_t  s;
   int      i, j;
-  int      ipos;
   int      c;
   int      status;
   
@@ -82,7 +81,12 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
       spair[n].j      = msamap[j]+1;
       spair[n].nsubs  = subs;
       spair[n].power  = 0.;
-      spair[n].bptype = BPNONE;
+      spair[n].covary = FALSE;
+      spair[n].sc     = -1;
+      spair[n].Eval   = -1;
+      
+      spair[n].bptype_given = BPNONE;  // bptype in given structure
+      spair[n].bptype_caco  = BPNONE;  // bptype in cacofold structure
       
       if (power) {
 	prob = 0.;
@@ -96,13 +100,13 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
       if (clist) {
 	for (c = 0; c < clist->ncnt; c++) {
 	  if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
-	    spair[n].bptype = clist->cnt[c].bptype;
+	    spair[n].bptype_given = clist->cnt[c].bptype;
 	    break;
 	  }
 	}
       }
       
-      if (spair[n].bptype == WWc) 
+      if (spair[n].bptype_given == WWc) 
 	if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
       
       n ++;
@@ -116,29 +120,59 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
   if (spair) free(spair);
   return status;
 }
- 
+
+int 
+power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbose)
+{
+  int n;
+  int c;
+
+  for (n = 0; n < dim; n ++) {
+    for (c = 0; c < clist->ncnt; c++) {
+      if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
+	spair[n].bptype_caco = clist->cnt[c].bptype;
+	break;
+      }
+    }
+
+    if (spair[n].bptype_given == WWc) 
+      if (verbose) printf("CaCo WWc: %lld-%lld \n", spair[n].i, spair[n].j);
+
+  }
+
+  return eslOK;
+}
+
 void
-power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair)
+power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 {
   double     expect    = 0.;
   double     avgsub    = 0;
   int64_t    nbp       = 0;
+  int64_t    ncv       = 0;
   int64_t    n;
 
-  fprintf(fp, "# left_pos      right_pos    substitutions      power\n");
-  fprintf(fp, "#--------------------------------------------------------\n");
+  if (fp == NULL) return;
+  
+  if (in_given) fprintf(fp, "\n# Power analysis of given structure \n#\n");
+  else          fprintf(fp, "\n# Power analysis of CaCoFold structure \n#\n");
+  fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
+  fprintf(fp, "#----------------------------------------------------------------\n");
   for (n = 0; n < dim; n ++)
-    if (spair[n].bptype == WWc) {
+    if ( ( in_given && spair[n].bptype_given == WWc) ||
+	 (!in_given && spair[n].bptype_caco  == WWc)) {
       nbp ++;
       expect    += spair[n].power;
       avgsub    += spair[n].nsubs;
-      fprintf(fp, "# %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+      if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power); ncv ++; }
+      else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
   
   fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
   fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
   fprintf(fp, "# BPAIRS expected to covary %.1f\n", expect);
+  fprintf(fp, "# BPAIRS observed to covary %lld\n#\n", ncv);
 }
 
 void

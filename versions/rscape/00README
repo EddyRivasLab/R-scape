@@ -100,11 +100,13 @@ last minute steps to make an R-scape tarball:
 (3) make tar and zip
 -----------------------------------------------------------------------------------------------------------------
 for v in rscape_v1.4 ; do \
-for x in 3 ; do \
+for x in 0 ; do \
 cp ~/src/src/mysource/documentation/R-scape_userguide.pdf ~/src/src/mysource/versions/rscape/$v/documentation/. ;\
 cd ~/src/src/mysource/versions/rscape/$v ;\
+autoconf ;\
 make clean ;\
 make distclean ;\
+rm src/*.o ;\
 cd .. ;\
 cp -rf $v $v.$x ;\
 cd $v.$x ;\

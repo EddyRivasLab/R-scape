@@ -2349,7 +2349,7 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="May 2019"
+RSCAPE_DATE="Oct 2019"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION

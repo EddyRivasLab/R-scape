@@ -1,7 +1,6 @@
 /* r2rdepict.c */
 
 #include "rscape_config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,17 +26,15 @@ static int   r2r_depict_pdf             (char *r2rfile, char *metafile, int verb
 static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_esl_msa_AppendGC       (ESL_MSA *msa, char *tag, char *value);
 static int   r2r_keep                   (ESL_MSA *msa, int r2rall);
-static int   r2r_pseudoknot_order       (int nct, int L, int **ctlist);
-static int   r2r_pseudoknot_outline     (ESL_MSA *msa, int nct, int **ctlist);
+static int   r2r_pseudoknot_outline     (ESL_MSA *msa, CTLIST *ctlist);
 static int   r2r_pseudoknot_callout     (char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfiles, char *errbuf, int verbose);
 static int   r2r_run_consensus_from_msa (ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf);
 static int   r2r_run_consensus_from_file(char *inmsafile, char *outmsafile, char *errbuf);
-static int   r2r_write_meta             (char *metafile, char *r2rfile, int nct, char **r2rplfile, int pkcallout);
-static int  *sorted_order(const int *vec, int n);
+static int   r2r_write_meta             (char *metafile, char *r2rfile, CTLIST *ctlist, char **r2rplfile, int pkcallout);
 static char *strtokm(char *str, const char *delim);
 
 int 
-r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int makepdf, int makesvg, int verbose, char *errbuf)
+r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, int makepdf, int makesvg, char *errbuf, int verbose)
 {
   char    **r2rpkfile = NULL;
   char     *metafile  = NULL;
@@ -47,16 +44,15 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   FILE     *fp        = NULL;
   ESL_MSA  *r2rmsa    = NULL;
   int       pkcallout = TRUE;
+  int       nct       = ctlist->nct;
   int       s;
   int       status;
 
   if (r2rfile == NULL) return eslOK;
 
-  // order the pknots by the first paired position
-  status = r2r_pseudoknot_order(nct, msa->alen, ctlist);
-  if (status != eslOK) goto ERROR;
-  
-  status = r2r_Overwrite_SS_cons(msa, nct, ctlist, verbose);
+  esl_msa_AddGF(msa, "R2R SetDrawingParam prefixSsWithPkInDrawings false", -1, "", -1);
+    
+  status = r2r_Overwrite_SS_cons(msa, ctlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
   // run R2R 
@@ -64,7 +60,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   if (status != eslOK) goto ERROR;
   
   // replace the r2r 'cov_SS_cons' GC line(s) with our own
-  status = r2r_Overwrite_cov_SS_cons(r2rmsa, nct, ctlist, hitlist, verbose);
+  status = r2r_Overwrite_cov_SS_cons(r2rmsa, ctlist, hitlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
   // add line #=GF R2R keep allpairs, so that it does not truncate ss 
@@ -72,7 +68,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   if (status != eslOK) goto ERROR;
   
   // add to r2rmsa the lines to draw outlines for the pseudoknots
-  status = r2r_pseudoknot_outline(r2rmsa, nct, ctlist);
+  status = r2r_pseudoknot_outline(r2rmsa, ctlist);
   if (status != eslOK) goto ERROR;
   
   // write the R2R annotated msa to PFAM format 
@@ -90,17 +86,18 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
   esl_FileTail(r2rfile, TRUE, &buf);
   filename = strtokm(buf, ".R2R");
   buf      = filename;
-  filename = strtokm(buf, ".cyk");
-    
+  filename = strtokm(buf, ".fold");
+
+  // create additional sto files with the extra structures
   ESL_ALLOC(r2rpkfile, sizeof(char *) * nct);
   r2rpkfile[0] = NULL;
-  for (s = 1; s < nct; s ++)  esl_sprintf(&r2rpkfile[s], "%s.pk%d.sto", filename, s);
+  for (s = 1; s < nct; s ++) esl_sprintf(&r2rpkfile[s], "%s.%s.sto", filename, ctlist->ctname[s]);
   status = r2r_pseudoknot_callout(r2rfile, hitlist, nct, r2rpkfile, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
   // the r2r_meta file including callouts
   esl_sprintf(&metafile, "%s.r2r_meta", filename);
-  status = r2r_write_meta(metafile, r2rfile, nct, r2rpkfile, pkcallout);
+  status = r2r_write_meta(metafile, r2rfile, ctlist, r2rpkfile, pkcallout);
   if (status != eslOK) goto ERROR;
 
   // produce the R2R pdf 
@@ -136,16 +133,15 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, int nct, int **ctlist, HITLI
 }
 
 int
-r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
+r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
 {
-  char  sstag[8]  = "SS_cons";
-  char *ss        = NULL;
-  char *tag       = NULL;
-  int   L = msa->alen;
+  char  sstag[8] = "SS_cons";
+  char *ss       = NULL;
+  char *tag      = NULL;
+  int   nct      = ctlist->nct;
   int   tagidx;
   int   idx;
   int   s;
-  int   i;
   int   status;
 
   // remove the SS_cons_ annotations from r2r
@@ -160,26 +156,40 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
       msa->ngc --;
     }
   }
-  
+
   // allocate string 
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
-  
   for (s = 0; s < nct; s ++) {
     // first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
-    esl_ct2simplewuss(ctlist[s], msa->alen, ss);
-    
-    if (s == 0) { // replace the 'SS_cons' GC line with the new ss 
+    esl_ct2simplewuss(ctlist->ct[s], msa->alen, ss);
+
+    // replace the 'SS_cons' GC line with the new ss
+    switch(ctlist->cttype[s]) {
+    case CTTYPE_NESTED:
       strcpy(msa->ss_cons, ss);
       if (verbose) printf("SS_cons\n%s\n", ss);
-     }
-    else {
-      esl_sprintf(&tag, "%s_%d", sstag, s);
-      if (verbose) printf("%s\n%s\n", tag, ss);
+      break;
+    case CTTYPE_PK:
+      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
-      free(tag); tag = NULL;
-     }
+      break;
+    case CTTYPE_XCOV:
+      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
+      r2r_esl_msa_AppendGC(msa, tag, ss);
+      break;
+    case CTTYPE_NONE:
+     esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
+      r2r_esl_msa_AppendGC(msa, tag, ss);
+      break;
+    default:
+      ESL_XFAIL(eslFAIL, errbuf, "no cttype");
+      break;
+    }
+    
+    if (verbose) printf("%s\n%s\n", tag, ss);
+    if (tag) free(tag); tag = NULL; 
   }
-
+    
   free(ss);
   if (tag) free(tag);
   return eslOK;
@@ -191,15 +201,16 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, int nct, int **ctlist, int verbose)
 }
 
 int
-r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist, int verbose)
+r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *errbuf, int verbose)
 {
-  char   covtag[12]  = "cov_SS_cons";
-  char **new_covstr  = NULL;
-  char  *covstr      = NULL;
-  char  *aux_covstr  = NULL;
-  char  *tok         = NULL;
-  char  *tag         = NULL;
-  char  *covtag1;
+  char   covtag[12] = "cov_SS_cons";
+  char **new_covstr = NULL;
+  char  *covstr     = NULL;
+  char  *aux_covstr = NULL;
+  char  *tok        = NULL;
+  char  *tag        = NULL;
+  char  *covtag1    = NULL;
+  int    nct        = ctlist->nct;
   int    tagidx;
   int    idx;
   int    found;
@@ -233,12 +244,12 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist,
       for (i = 1; i <= msa->alen; i ++) {
 	found = FALSE;
 	
-	if (ctlist[s][i] > 0) {
+	if (ctlist->ct[s][i] > 0) {
 	  for (h = 0; h < hitlist->nhit; h ++) {
 	    ih = hitlist->hit[h].i+1;
 	    jh = hitlist->hit[h].j+1;
 	    
-	    if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc && ctlist[s][ih] == jh) { 
+	    if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc && ctlist->ct[s][ih] == jh) { 
 	      esl_sprintf(&tok, "2"); 
 	      found = TRUE; 
 	    }
@@ -265,8 +276,21 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, int nct, int **ctlist, HITLIST *hitlist,
   }
   
   for (s = 0; s < nct; s ++) {
-    if (s == 0) esl_sprintf(&covtag1, "%s",    covtag);
-    else        esl_sprintf(&covtag1, "%s_%d", covtag, s);
+
+    switch(ctlist->cttype[s]) {
+    case CTTYPE_NESTED:
+      esl_sprintf(&covtag1, "%s",    covtag);
+      break;
+    case CTTYPE_PK:
+    case CTTYPE_XCOV:
+    case CTTYPE_NONE:
+      esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
+      break;
+    default:
+      ESL_XFAIL(eslFAIL, errbuf, "no cttype");
+      break;
+    }
+ 
     for (tagidx = 0; tagidx < msa->ngc; tagidx++)
       if (strcmp(msa->gc_tag[tagidx], covtag1) == 0) break;
     if (tagidx == msa->ngc) {
@@ -318,8 +342,8 @@ int
 r2r_esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
 {
   int   tagidx;
-  int   status;
   void *p;
+  int   status = eslOK;
 
   /* Is this an unparsed tag name that we recognize?
    * If not, handle adding it to index, and reallocating
@@ -472,55 +496,17 @@ r2r_keep(ESL_MSA *msa, int r2rall)
   return eslOK;
 }
 
-// order pseudoknots by increasing first paired position
-static int
-r2r_pseudoknot_order(int nct, int L, int **ctlist)
-{
-  int **order  = NULL;
-  int  *first  = NULL;
-  int  *perm   = NULL;
-  int   s;
-  int   i;
-  int   status;
-  
-  // sort in increasing order
-  ESL_ALLOC(first, sizeof(int) * nct);
-  first[0] = 0;
-  for (s = 1; s < nct; s ++) 
-    for (i = 1; i <= L; i ++) if (ctlist[s][i] > 0) { first[s] = i; break; }
-  perm = sorted_order(first, nct);
-  if (perm == NULL) goto ERROR;
-
-  ESL_ALLOC(order, sizeof(int *) * nct);
-  for (s = 0; s < nct; s ++) {
-    ESL_ALLOC(order[s], sizeof(int) * (L+1));
-    esl_vec_ICopy(ctlist[perm[s]], L+1, order[s]);
-  }
-  for (s = 0; s < nct; s ++)  esl_vec_ICopy(order[s], L+1, ctlist[s]);
-  
-  free(first);
-  free(perm);
-  for (s = 0; s < nct; s ++) free(order[s]);
-  free(order);
-  return eslOK;
-
- ERROR:
-  if (first) free(first);
-  if (perm)  free(perm);
-  for (s = 0; s < nct; s ++) if (order[s]) free(order[s]);
-  if (order) free(order);
-  return status;
-}
 
 // R2R outline style for pseudoknots
 // (1) annotate the msa with the special syntax
 static int
-r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
+r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
 {
   char       *ss   = NULL;
   char       *new  = NULL;
   char       *tag  = NULL;
   char        ssi;
+  int         nct = ctlist->nct;
   int         L = msa->alen;
   int         i;
   int         s;
@@ -531,14 +517,22 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
 		
   // s = 0 correspond to the main nested structure, all the other
   // we annotate a pseudoknots
-
+  s = 0;
   
   /* Initialization */
   ESL_ALLOC(ss,  sizeof(char) * (L+1));
   ESL_ALLOC(new, sizeof(char) * (L+1));
+
+  // markup to remove unnecessary "subfam_weight" labels   
+  esl_sprintf(&tag, "SUBFAM_KEEPALL 1");
+  esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+  esl_sprintf(&tag, "R2R SetDrawingParam disableSubfamWeightText true", s);
+  esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+  esl_sprintf(&tag, "SUBFAM_KEEPALL 0");
+  esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
   
   for (s = 1; s < nct; s ++) {
-    esl_ct2wuss(ctlist[s], L, ss);
+    esl_ct2wuss(ctlist->ct[s], L, ss);
 
     // mark the whole region to form a callout
     new[L] = '\0';
@@ -554,16 +548,8 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
     }
     
     // other markups necessary for r2r to plot the pseudokntos
-    esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%d outline", s);
+    esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%s outline-no-bpannot", ctlist->ctname[s]);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
-#if 0
-    for (s2 = 1; s2 < nct; s2 ++) {
-      if (s2 != s) {
-	esl_sprintf(&tag, "R2R ignore_ss _%d", s, s2);
-	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
-      }
-    }
-#endif
 
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R_LABEL", s);
     r2r_esl_msa_AppendGC(msa, tag, new); free(tag); tag = NULL;
@@ -573,13 +559,13 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
     for (s2 = 1; s2 < nct; s2 ++) {
       if (s2 != s) {
-	esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss _%d", s, s2);
+	esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss _%s", s, ctlist->ctname[s2]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
       }
     }
     esl_sprintf(&tag, "SUBFAM_PERL_PRED pknot%d return 1;", s);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
-    esl_sprintf(&tag, "SUBFAM_pknot%d_R2R subst_ss _%d primary", s, s);
+    esl_sprintf(&tag, "SUBFAM_pknot%d_R2R subst_ss _%s primary", s, ctlist->ctname[s]);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R no5", s);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
@@ -588,6 +574,13 @@ r2r_pseudoknot_outline(ESL_MSA *msa, int nct, int **ctlist)
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R set_dir pos0 90 f", s);
     esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
 
+    //  to avoid broken pairs in the callouts
+    esl_sprintf(&tag, "SUBFAM_KEEPALL 1");
+    esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
+    esl_sprintf(&tag, "R2R SetDrawingParam autoBreakPairs true");
+    esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
+    esl_sprintf(&tag, "SUBFAM_KEEPALL 0");
+    esl_msa_AddGF(msa, tag, -1, "", -1);  free(tag); tag = NULL;
   }
 
   free(ss);
@@ -711,68 +704,36 @@ r2r_run_consensus_from_msa(ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf)
 
 // post R2R-1.0.6
 // by my request, Zasha adds a tag to customize the name in the pdf
+//
+// further bug fixing in R2R-1.0.6.1-42-g7626279
+//
 static int
-r2r_write_meta(char *metafile, char *r2rfile, int nct, char **r2rpkfile, int pkcallout)
+r2r_write_meta(char *metafile, char *r2rfile, CTLIST *ctlist, char **r2rpkfile, int pkcallout)
 {
   FILE *fp   = NULL;
   char *name = NULL;
   char *buf  = NULL;
+  int   nct  = ctlist->nct;
   int   s;
-  
+
   if ((fp = fopen(metafile, "w")) == NULL) esl_fatal("Failed to open metafile %s", metafile);
 
   esl_FileTail(r2rfile, TRUE, &buf);
   name = strtokm(buf, ".R2R");
   buf  = name;
-  name = strtokm(buf, ".cyk");
+  name = strtokm(buf, ".fold");
   fprintf(fp, "%s\tdisplayname\t%s\n", r2rfile, name);
   free(buf); buf = NULL;
    
-  if (pkcallout) {
-    for (s = 1; s < nct; s ++) {
-      esl_sprintf(&buf, r2rpkfile[s]);
-      name = strtokm(buf, ".cyk.R2R");
-      buf  = name;
-      name = strtokm(buf, ".sto");
-      
-      fprintf(fp, "%s\tdisplayname\t%s\n", r2rpkfile[s], name);
-      free(buf); buf = NULL;
-    }
-  }
+  if (pkcallout) 
+    for (s = 1; s < nct; s ++) fprintf(fp, "%s\tdisplayname\t%s\n", r2rpkfile[s], ctlist->ctname[s]);
   fclose(fp);
   
-  if (buf) free(buf);
+  if (buf)  free(buf);
   return eslOK;
 }
 
 
-static int *
-sorted_order(const int *vec, int n)
-{
-  int *idx = NULL;
-  int  i, j, k;
-  int  status;
-  
-  ESL_ALLOC(idx, sizeof (int) * n);
- 
-  for (i = 0; i < n; i++) idx[i] = i;
- 
-  for (i = 0; i < n; i++) 
-    for (j = i + 1; j < n; j++) {
-      if (vec[idx[i]] > vec[idx[j]]) {
-	k      = idx[i];
-	idx[i] = idx[j];
-	idx[j] = k;
-      }
-    }
-  
-  return idx;
-  
- ERROR:
-  if (idx) free(idx);
-  return NULL;
-  
-}
 
 static char *
 strtokm(char *str, const char *delim)

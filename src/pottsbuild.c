@@ -44,8 +44,9 @@ static int             symmetrize                            (PT *pt);
 
 PT *
 potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN pttrain, PTMIN ptmin, PTSCTYPE ptsctype, PTREG ptreg, PTINIT ptinit,
-	    FILE *pottsfp, int isgremlin, float tol, char *errbuf, int verbose)
+	    char *pottsfile, int isgremlin, float tol, char *errbuf, int verbose)
 {
+  FILE   *pottsfp = NULL;
   PT     *pt = NULL;
   double  stol;
   double  neff;
@@ -130,7 +131,11 @@ potts_Build(ESL_RANDOMNESS *r, ESL_MSA *msa, double ptmuh, double ptmue, PTTRAIN
     break;
   }
 
-  if (pottsfp) potts_Write(pottsfp, pt);
+  if (pottsfile) {
+    if ((pottsfp = fopen(pottsfile, "w")) == NULL) esl_fatal("Failed to open outpotts file %s", pottsfile);
+    potts_Write(pottsfp, pt);
+    fclose(pottsfp);
+  }
   return pt;
   
  ERROR:
