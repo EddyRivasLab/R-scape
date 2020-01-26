@@ -112,8 +112,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              foldLmax;
 
   FOLDPARAM       *foldparam;
+  int              helix_stats;        // TRUE to  provide stats on helices (given or calculated with CaCoFold)
   
-   int              nshuffle;
+  int              nshuffle;
 
   double          *ft;
   double          *fbp;
@@ -343,6 +344,7 @@ static ESL_OPTIONS options[] = {
   { "--grammar",    eslARG_STRING,      "RBG",   NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                             0 },   
   { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                        0 },   
   { "--allownegatives", eslARG_NONE,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "no pairs are forbidden for having power but no covariation",                              0 },
+  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
   /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                            1 },
@@ -513,6 +515,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   /* folding parameters */
   cfg.foldparam = NULL;
   ESL_ALLOC(cfg.foldparam, sizeof(FOLDPARAM));
+
+  // helix_stats = TRUE to give stats on helices (in given structure or calculated with CaCoFold)
+  cfg.helix_stats = esl_opt_IsOn(go, "--helixstats")? TRUE : FALSE;
 
   cfg.foldparam->G0 = RBG;
   if ( esl_opt_IsOn(go, "--grammar") ) {
@@ -2100,7 +2105,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
   if (cfg->mode == GIVSS && ranklist) {
 
-    struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
 
     if (cfg->verbose) {
       printf("score total distribution\n");
@@ -2124,7 +2129,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-    struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
  
     status = write_omsafold(cfg, msa->alen, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;

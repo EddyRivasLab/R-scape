@@ -3,6 +3,9 @@ ER, Thu Mar  3 08:59:18 EST 2016
 files to copy
 -------------
 for v in rscape/rscape_v1.4 ; do \
+cp ~/src/src/mysource/src/INSTALL   ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/LICENSE   ~/src/src/mysource/versions/$v/src/. ;\
+cp ~/src/src/mysource/src/README.md ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_bg.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_emit.* ~/src/src/mysource/versions/$v/src/. ;\
 cp ~/src/src/mysource/src/e1_rate.* ~/src/src/mysource/versions/$v/src/. ;\
