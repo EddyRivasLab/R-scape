@@ -21,7 +21,6 @@ FASTTREEDIR    = @RSCAPE_FASTTREEDIR@
 R2RDIR         = @RSCAPE_R2RDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
-RNAVIEWDIR     = @RSCAPE_RNAVIEWDIR@
 RVIEWDIR       = @RVIEW_DIR@
 
 
@@ -105,7 +104,6 @@ all:
 	${QUIET_SUBDIR0}src                   ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}documentation         ${QUIET_SUBDIR1} pdf
 	${QUIET_SUBDIR0}documentation/e2msa   ${QUIET_SUBDIR1} pdf
-	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} all
 
 # install: installs the binaries in ${bindir}/
 #          When man pages are done, will install man pages in MANDIR/man1/  (e.g. if MANSUFFIX is 1)
@@ -120,7 +118,6 @@ install:
 	${QUIET_SUBDIR0}${R2RDIR}           ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} install
 	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} install
-	${QUIET_SUBDIR0}${RNAVIEWDIR}       ${QUIET_SUBDIR1} install
 
 # uninstall: Reverses the steps of "make install".
 #
@@ -130,7 +127,6 @@ uninstall:
 	${QUIET_SUBDIR0}${HMMERDIR}         ${QUIET_SUBDIR1} uninstall
 	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} uninstall
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} uninstall
-	${QUIET_SUBDIR0}${RNAVIEWDIR}       ${QUIET_SUBDIR1} uninstall
 
 # "make clean" removes almost everything except configuration files.
 #
@@ -145,7 +141,6 @@ clean:
 	${QUIET_SUBDIR0}documentation       ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}documentation/e2msa ${QUIET_SUBDIR1} clean
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
-	${QUIET_SUBDIR0}${RNAVIEWDIR}      ${QUIET_SUBDIR1} clean
 
 # "make distclean" leaves a pristine source distribution.
 #
@@ -163,5 +158,4 @@ distclean:
 	${QUIET}-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	${QUIET}-rm Makefile
 	${QUIET}-rm bin/*
-	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} distclean
