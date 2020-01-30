@@ -1,3 +1,0 @@
-These are some instances of input + expected output.
-The runs were made with reweighting_threshold=0.2
-
