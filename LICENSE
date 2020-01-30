@@ -6,7 +6,7 @@ All rights reserved.
 
 ------------------------------------------------------------------
 
-R-sape is open source software, freely distributed under the terms of a
+R-scape is open source software, freely distributed under the terms of a
 standard BSD (Berkeley Software Distribution) license:
 
    Redistribution and use in source and binary forms, with or without
@@ -40,10 +40,14 @@ standard BSD (Berkeley Software Distribution) license:
 
 ------------------------------------------------------------------
 
-Infernal includes the HMMER software package, which is also open source and
+R-scape includes the HMMER software package, which is also open source and
 BSD licensed. See hmmer/LICENSE.
 
-Infernal uses the Easel software library, which is also open source and
+R-scape uses the Easel software library, which is also open source and
 BSD licensed. See easel/LICENSE.
+
+R-scape uses FastTree
+
+R-scape uses R2R
 
 © 2020 GitHub, Inc.
