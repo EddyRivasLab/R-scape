@@ -100,7 +100,6 @@ RSCAPE_R2RDIR="lib/R2R/R2R-current"
 RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/easel"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
-RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
 
 RVIEW_NAME="R-view"
 RVIEW_DATE="May 2018"
@@ -135,14 +134,6 @@ else
   E2MSA_BIN=${prefix}/bin
 fi
 
-RNAVIEW_HOME="`pwd`"        #magic to get full path to current directory
-AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
-
-if  test "$prefix" = NONE ; then 
-  RNAVIEW_HOME="`pwd`/lib/RNAVIEW"
-else
-  RNAVIEW_HOME=${prefix}/lib/RNAVIEW
-fi
 
 RVIEW_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
@@ -174,7 +165,6 @@ AC_SUBST(RSCAPE_R2RDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_SADIR)
-AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
 AC_SUBST(RSCAPE_SHARE)
@@ -187,14 +177,6 @@ AC_SUBST(RVIEW_VERSION)
 AC_SUBST(RVIEW_URL)
 AC_SUBST(RVIEW_DIR)
 AC_SUBST(RVIEW_HOME)
-
-AC_SUBST(RNAVIEW_HOME)
-
-AC_SUBST(INFERNAL_RELCODE)
-AC_SUBST(INFERNAL_DATE)
-AC_SUBST(INFERNAL_COPYRIGHT)
-AC_SUBST(INFERNAL_LICENSE)
-AC_SUBST(INFERNAL_LICENSETAG)
 
 
 # Preprocessor symbols (replace #undefs in e2_config.h)
@@ -223,13 +205,6 @@ AC_DEFINE_UNQUOTED(RVIEW_VERSION,   "$RVIEW_VERSION")
 AC_DEFINE_UNQUOTED(RVIEW_URL,       "$RVIEW_URL")
 AC_DEFINE_UNQUOTED(RVIEW_HOME,      "$RVIEW_HOME")
 AC_DEFINE_UNQUOTED(RVIEW_BIN,       "$RVIEW_BIN")
-
-AC_DEFINE_UNQUOTED(RNAVIEW_HOME,     "$RNAVIEW_HOME")
-
-AC_DEFINE_UNQUOTED(INFERNAL_DATE, "$INFERNAL_DATE")
-AC_DEFINE_UNQUOTED(INFERNAL_COPYRIGHT, "$INFERNAL_COPYRIGHT")
-AC_DEFINE_UNQUOTED(INFERNAL_LICENSE, "$INFERNAL_LICENSE")
-
 
 # Figure out what host we're compiling on.
 # Three GNU scripts must be included in the distro: 
@@ -646,7 +621,6 @@ AC_SYS_LARGEFILE
 AC_CONFIG_HEADERS([
 src/e2_config.h
 src/rscape_config.h
-lib/RNAVIEW/src/rnaview_config.h
 lib/R-view/src/rview_config.h
 ])
 
@@ -665,7 +639,6 @@ lib/FastTree/src/Makefile
 lib/hmmer/libdivsufsort/Makefile
 lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
-lib/RNAVIEW/src/Makefile
 lib/R-view/src/Makefile
 ])
 

@@ -50,7 +50,7 @@
 #define PACKAGE_TARNAME "R2R"
 
 /* Define to the home page for this package. */
-/* #undef PACKAGE_URL */
+#define PACKAGE_URL ""
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "1.0.4"

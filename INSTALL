@@ -33,8 +33,10 @@ First you need to clone easel and hmmer too:
   git clone https://github.com/EddyRivasLab/easel.git
 
 And finally:
-   ln -s lib/R2R/R2R-1.0.6 lib/R2R/R2R-current
-   
+   cd lib/R2R
+   ln -s R2R-1.0.6 R2R-current
+   cd ../../
+
 -------------------------------------------------------------
 The R-scape development team
 Elena Rivas
