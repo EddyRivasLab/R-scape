@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use FindBin qw($Bin);
 use lib $Bin;
-use Stockholm;
+use R2R_Stockholm;
 use Getopt::Long;
 
 my $debug=0;
