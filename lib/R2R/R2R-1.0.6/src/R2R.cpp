@@ -22,7 +22,11 @@
 #endif
 #endif
 
-#define R2R_PACKAGE_VERSION "1.0.something"
+#define R2R_PACKAGE_VERSION "1.0.6.1-49-g7bb81fb"
+
+//#ifndef abs_top_srcdir
+//#define abs_top_srcdir "unknown"
+//#endif
 
 bool debug=true;
 
@@ -56,6 +60,14 @@ std::string GetBaseName (std::string s)
 	return baseFileName;
 }
 
+
+void DieIfNoCommandlineParam(int a,int argc)
+{
+    if (a>=argc) {
+      throw SimpleStringException("missing commandline parameter or flag operand");
+    }
+}
+
 void CheckGscLast(char *argv[],int a,char **last)
 {
 	if (&(argv[a]) >= last) {
@@ -66,9 +78,11 @@ void CheckGscLast(char *argv[],int a,char **last)
 
 void GscSortCommand(int argc,char *argv[],int a)
 {
+  DieIfNoCommandlineParam(a,argc);
   char **lasta=&(argv[argc]);
   a++;
   CheckGscLast(argv,a,lasta);
+  DieIfNoCommandlineParam(a,argc);
   char *stoFileName=argv[a++];
   SortStockholmByGSC(stoFileName);
 }
@@ -299,7 +313,6 @@ void DispatchInputFile(const char *stoFileName,DefinesMap& initialInitialDefines
 	}
 }
 
-
 char usage[]="Command line is wrong (%s).  Please read R2R-manual.pdf for instructions on the use of the r2r executable\n";
 int try_main(int argc, char* argv[])
 {
@@ -325,59 +338,82 @@ int try_main(int argc, char* argv[])
     disableUsageWarning=true;
 #endif
     int a=1;
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--version")==0) {
       printf("version=%s\n",R2R_PACKAGE_VERSION);
       printf("abs_top_srcdir=%s\n",abs_top_srcdir);
       exit(0);
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--topNMostConserved")==0) {
       a++;
       topNMostConserved=atoi(argv[a++]);
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--position-based-weights")==0) {
       a++;
       usePositionBasedWeighting=true;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--maxNonCanonInNoVariationObserved")==0) {
       a++;
+      DieIfNoCommandlineParam(a,argc);
       maxNonCanonInNoVariationObserved=atoi(argv[a++]);
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--make-gr-tag-of-rnie-emblcsv")==0) {
       a++;
+      DieIfNoCommandlineParam(a,argc);
       rnieEmblcsvFileName=argv[a++];
+      DieIfNoCommandlineParam(a,argc);
       rnieOutStoFileName=argv[a++];
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--verbose")==0) {
         a++;
         verbose=true;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--cutEmptyLines")==0 || strcmp(argv[a],"-cutEmptyLines")==0) {
       a++;
       cutEmptyLines=true;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--GSC-weighted-consensus")==0) {
       GscWeightCommand(argc,argv,a,topNMostConserved,usePositionBasedWeighting,maxNonCanonInNoVariationObserved,rnieEmblcsvFileName,rnieOutStoFileName,verbose,cutEmptyLines);
       return 0;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--GSC-sort")==0) {
       GscSortCommand(argc,argv,a);
       return 0;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--disable-usage-warning")==0) {
         a++;
         disableUsageWarning=true;
     }
+    DieIfNoCommandlineParam(a,argc);
     if (strcmp(argv[a],"--disable-solver-cache")==0) {
         a++;
         disableSolverCache=true;
     }
-
+    DieIfNoCommandlineParam(a,argc);
+    if (strcmp(argv[a],"--inkscape-helvetica-font-name")==0) {
+      a++;
+      DieIfNoCommandlineParam(a,argc);
+      SvgGraphics::SetInkscapeHelveticaFontName(argv[a]);
+      a++;
+    }
+    
     if (a+2<3) {
         printf(usage,"need 2 parameters <.r2r_meta file name> <.pdf or .svg output file name>");
-	exit(1);
+        exit(1);
     }
 
+    DieIfNoCommandlineParam(a,argc);
 	const char *stoFileName=argv[a++];
+    DieIfNoCommandlineParam(a,argc);
 	const char *outFileName=argv[a++];
 
 	bool svg;
@@ -404,8 +440,8 @@ int try_main(int argc, char* argv[])
 
 	DrawingParams drawingParams;
 	drawingParams.verbose=verbose;
-    drawingParams.disableUsageWarning=disableUsageWarning;
-    drawingParams.disableSolverCache=disableSolverCache;
+	drawingParams.disableUsageWarning=disableUsageWarning;
+	drawingParams.disableSolverCache=disableSolverCache;
 	drawingParams.isDNA=false;
 	drawingParams.scaleMeasurementsBy=1;
 	if (RNA_FONT_FACE==AdobeGraphics::Font::Helvetica) {
@@ -418,6 +454,8 @@ int try_main(int argc, char* argv[])
 	}
 	drawingParams.nucShrinkWithCircleNuc=0.8;
 	drawingParams.nameFontSize=AdobeGraphics::PointsToInches(12);
+	drawingParams.varBackboneFontSize=drawingParams.nucFontSize;
+	drawingParams.varTermLoopFontSize=drawingParams.nucFontSize;
 
 	drawingParams.drawStandardCleavage=true;
 
@@ -429,12 +467,15 @@ int try_main(int argc, char* argv[])
 	drawingParams.circleRadiusToSmoothDirectionChange=0.025;
 	drawingParams.outlineAutoJoin=true;
 
+	drawingParams.prefixSsWithPkInDrawings=true;
+
 	drawingParams.boxNucExtraMarginWidth=0;
 	drawingParams.boxNucExtraMarginHeight=drawingParams.nucFontSize*0.05;
 
 	drawingParams.nucTickLabel_distFromNuc=drawingParams.nucFontSize*0.5;
 	drawingParams.nucTickLabel_tickLen=AdobeGraphics::PointsToInches(4);
 	drawingParams.nucTickLabel_tickPenWidth=AdobeGraphics::PointsToInches(0.5);
+	drawingParams.nucTickLabel_tickColor=AdobeGraphics::Color_Black();
 	drawingParams.nucTickLabel_fontSize=AdobeGraphics::PointsToInches(6);
 	drawingParams.nucTickLabel_extraSpaceToText=AdobeGraphics::PointsToInches(1.5);
 
@@ -449,6 +490,7 @@ int try_main(int argc, char* argv[])
 	drawingParams.alongBackboneStyle=0;
 	drawingParams.shadeAlongBackboneWidth=-1;
 	drawingParams.alongBackboneMidpointGapLength=0;
+	drawingParams.backboneConnectorCircleRadius=drawingParams.internucleotideLen/3.0;
 
 	drawingParams.pairLinkDist=0.17;
 	drawingParams.pairBondLen=0.054;
@@ -468,7 +510,8 @@ int try_main(int argc, char* argv[])
 	drawingParams.varTerminalLoopRadius=0.17;
 	drawingParams.lineSpacing=1.2;
 	drawingParams.shadeColor=AdobeGraphics::GrayscaleColor(0.9);
-	drawingParams.backboneAnnotTextOffset=AdobeGraphics::PointsToInches(4);
+	drawingParams.backboneAnnotTextOffset=-1; //AdobeGraphics::PointsToInches(4);
+	drawingParams.backboneAnnotTextOffsetToFontSizeRatio=4.0/7.5;
 	drawingParams.strengthColorMap.insert(StringToColorMap::value_type("0",AdobeGraphics::RGBColor(1.0,1.0,1.0)));
 	drawingParams.strengthColorMap.insert(StringToColorMap::value_type("1",AdobeGraphics::RGBColor(217.0/255.0,0,0)));
 	drawingParams.strengthColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(0,0,0)));
@@ -517,6 +560,8 @@ int try_main(int argc, char* argv[])
 	drawingParams.makeRedNucsRedInOneseq=false;
 	drawingParams.makeNonDegenRedNucsRedInOneseq=false;
 
+	drawingParams.disableSubfamWeightText=false;
+	
 	AdobeGraphics::FontFaceSet fontFaceSet;
 	AdobeGraphics::Font::FontFace fontFace=RNA_FONT_FACE;
 	fontFaceSet.push_back(fontFace);
@@ -535,6 +580,13 @@ int try_main(int argc, char* argv[])
 	drawingParams.modular_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.modular_fontSize));
 	drawingParams.showPlaceExplicitFont.SetFontFace(fontFace);
 	drawingParams.showPlaceExplicitFont.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.nucFontSize)/3.0);
+	AdobeGraphics::Font varBackbone_font,varTermLoop_font;
+	varBackbone_font.SetFontFace(fontFace);
+	varBackbone_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.varBackboneFontSize));
+	drawingParams.varBackbone_font=varBackbone_font;
+	varTermLoop_font.SetFontFace(fontFace);
+	varTermLoop_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.varTermLoopFontSize));
+	drawingParams.varTermLoop_font=varTermLoop_font;
 
 	drawingParams.autoBreakPairs=false;
 

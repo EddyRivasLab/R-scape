@@ -1315,6 +1315,7 @@ void AdobeGraphics::LineOrArcList::Append (const LineOrArc& t)
 {
 	if (!empty()) {
 		AdobeGraphics::Point myTo=GetTo(),nextFrom=t.GetFrom();
+		//printf("myTo=(%lg,%lg),nextFrom=(%lg,%lg)\n",myTo.GetX(),myTo.GetY(),nextFrom.GetX(),nextFrom.GetY());
 		assertr(!IsConnected() || empty() || (myTo-nextFrom).Magnitude()<1e-6 );
 	}
 	push_back(t);
@@ -1336,6 +1337,10 @@ void AdobeGraphics::LineOrArcList::AppendLine (Point from,Point to)
 	l.line.from=from;
 	l.line.to=to;
 	Append(l);
+}
+void AdobeGraphics::LineOrArcList::Append (const Arc& arc)
+{
+  AppendArc(arc.center,arc.radius,arc.startAngle,arc.endAngle,arc.increasingAngle);
 }
 void AdobeGraphics::LineOrArcList::AppendArc (Point center,double radius,double startAngle,double endAngle,bool increasingAngle) {
 	Assert(center);
@@ -1363,6 +1368,7 @@ void AdobeGraphics::LineOrArcList::AppendArc (Point center,double radius,double 
 	Append(a);
 }
 void AdobeGraphics::LineOrArcList::Dump (FILE *out) const
+
 {
 	fprintf(out,"path dump  BEGIN <\n");
 	for (const_iterator i=begin(); i!=end(); i++) {

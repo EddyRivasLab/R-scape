@@ -21,4 +21,4 @@ LDADD=@top_srcdir@/NotByZasha/infernal-0.7/squid/libsquid.a $(OPTIONAL_CFSQP_LIB
 bin_PROGRAMS=r2r
 r2r_SOURCES=AdobeGraphics.cpp AdobeGraphicsLayout.cpp AdobeGraphicsPdfLike.cpp Optimize_cfsqp.cpp Optimize_nlopt.cpp CommaSepFileReader.cpp GSCConsensus.cpp LabelsAndProjection.cpp MiscExceptions.cpp Optimize.cpp ParseOneStockholm.cpp ParseSs.cpp PdfGraphics.cpp PositionBackbone.cpp PositionBackbone_MultiStemCircular.cpp PositionBackbone_MultiStemCircularSolver.cpp R2R.cpp R2R-Utils.cpp RnaDrawer.cpp SvgGraphics.cpp SymbolicMath.cpp PositionsToIgnore.cpp
 
-dist_bin_SCRIPTS = ../demo/MetamakeDemos.pl
+dist_bin_SCRIPTS = ../demo/MetamakeDemos.pl SelectSubFamilyFromStockholm.pl R2R_Stockholm.pm

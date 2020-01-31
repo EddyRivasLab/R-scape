@@ -75,7 +75,7 @@
  d="M 38.3082 281.42 A 12.24,12.24 0 0,1 13.8282,281.42A 12.24,12.24 0 0,1 38.3082,281.42"/>
 <path
  fill="#ffffff" stroke="none"
- d="M 17.0307 297.93 L 17.0307,297.93L 35.1057,297.93L 35.1057,285.69L 17.0307,285.69Z"/>
+ d="M 17.0307 286.982 L 17.0307,286.982L 35.1057,286.982L 35.1057,294.785L 17.0307,294.785Z"/>
 <text x="14.3945" y="269.18" id="text1040">
   <tspan x="14.3945" y="269.18" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1041">3-19 nt</tspan>
 </text>
@@ -84,7 +84,7 @@
  d="M 121.72 296.54 A 12.24,12.24 0 0,1 97.2397,296.54A 12.24,12.24 0 0,1 121.72,296.54"/>
 <path
  fill="#ffffff" stroke="none"
- d="M 100.442 313.05 L 100.442,313.05L 118.517,313.05L 118.517,300.81L 100.442,300.81Z"/>
+ d="M 100.442 302.102 L 100.442,302.102L 118.517,302.102L 118.517,309.905L 100.442,309.905Z"/>
 <text x="99.8909" y="284.3" id="text1042">
   <tspan x="99.8909" y="284.3" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1043">4-5 nt</tspan>
 </text>

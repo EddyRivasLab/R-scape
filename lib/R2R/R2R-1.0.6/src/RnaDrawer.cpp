@@ -841,6 +841,7 @@ void RnaDrawer::ShadeOrOutlineAlongBackbone_CalculateConnectors(const AdobeGraph
 		const AdobeGraphics::Point p2=to.pos;
 
 		if (from.partOfCircleThreePrime.isPartOfCircle) {
+          //printf("isPartOfCircle: %d,%d,%s\n",currNucPos,nextNucPos,from.partOfCircleThreePrime.circleDoesNotIntersectNextPoint?"T":"F");
 			if (from.partOfCircleThreePrime.circleDoesNotIntersectNextPoint) {
 				strokeList.joinError=JoinError_CircleDoesNotIntersectNextPoint;
 			}
@@ -1268,16 +1269,24 @@ void RnaDrawer::DrawAllBonds(AdobeGraphics& pdf,double radiusAroundNucCenter)
 				BondType bondType=BondType_WatsonCrick; // default bond type for consensus structure
 				if (otherDrawingStuff.doOneSeq && drawingParams.indicateOneseqWobblesAndNonCanonicals) {
 					bondType=BondType_NonCanonical;
+                    std::string l=posInfoVector[i].nuc;
+                    std::string r=posInfoVector[pair].nuc;
+                    if (l=="T") {
+                      l="U"; // deal with it as RNA, for convenience
+                    }
+                    if (r=="T") {
+                      r="U";
+                    }
 					if (
-						(posInfoVector[i].nuc=="A" && posInfoVector[pair].nuc=="U") ||
-						(posInfoVector[i].nuc=="C" && posInfoVector[pair].nuc=="G") ||
-						(posInfoVector[i].nuc=="G" && posInfoVector[pair].nuc=="C") ||
-						(posInfoVector[i].nuc=="U" && posInfoVector[pair].nuc=="A")) {
+						(l=="A" && r=="U") ||
+						(l=="C" && r=="G") ||
+						(l=="G" && r=="C") ||
+						(l=="U" && r=="A")) {
 							bondType=BondType_WatsonCrick;
 					}
 					if (
-						(posInfoVector[i].nuc=="G" && posInfoVector[pair].nuc=="U") ||
-						(posInfoVector[i].nuc=="U" && posInfoVector[pair].nuc=="G")) {
+						(l=="G" && r=="U") ||
+						(l=="U" && r=="G")) {
 							bondType=BondType_GU;
 					}
 				}
@@ -1536,29 +1545,61 @@ void RnaDrawer::Internal_StartDrawing (AdobeGraphics& pdf_,AdobeGraphics::Point 
 			}
 			double height=sqrt(radius*radius-halfDist*halfDist);
 			double negHeight=height-radius;
+			double circleLineWidth=drawingParams.backboneWidth;
 			AdobeGraphics::Point dirV=AdobeGraphics::Point::UnitDirectionVector(dir);
 			AdobeGraphics::Point heightedVector=dirV*height;
 			AdobeGraphics::Point negHeightedVector=dirV*negHeight;
 			AdobeGraphics::Point circleCenter=midpoint+heightedVector;
-			pdf.SetLineWidth(drawingParams.backboneWidth);
+			pdf.SetLineWidth(circleLineWidth);
 			pdf.EdgeCircle(AdobeGraphics::Color_Black(),circleCenter,radius);
 			// draw white rectangle to hide the bad part of the circle
-			// do it the dumb & easy way
-			AdobeGraphics::Point toPairVector=(posInfoVector[pair].pos-posInfoVector[i].pos);
-			AdobeGraphics::Point actualToRightUnitVector=toPairVector;
-			actualToRightUnitVector.MakeUnitVector();
-			AdobeGraphics::Point toRightVector=AdobeGraphics::Point(drawingParams.genericNucBBox.GetX()/2.0,0)
-				* actualToRightUnitVector;
-			AdobeGraphics::Point toTopVector=-heightedVector;//AdobeGraphics::Point(0,-drawingParams.genericNucBBox.GetY()/2.0) * actualToRightUnitVector;
-			AdobeGraphics::Point toBottomVector=-negHeightedVector;//AdobeGraphics::Point(0,radius-height+AdobeGraphics::PointsToInches(0.5))* actualToRightUnitVector;
-			AdobeGraphics::Point whiteRectPoints[4];
-			whiteRectPoints[0]=AdobeGraphics::Point(posInfoVector[i].pos - toRightVector + toTopVector);
-			whiteRectPoints[1]=AdobeGraphics::Point(posInfoVector[i].pos + toPairVector + toRightVector + toTopVector);
-			whiteRectPoints[2]=AdobeGraphics::Point(posInfoVector[i].pos + toPairVector + toRightVector + toBottomVector);
-			whiteRectPoints[3]=AdobeGraphics::Point(posInfoVector[i].pos - toRightVector + toBottomVector);
-			pdf.FillPolygon(AdobeGraphics::Color_White(),whiteRectPoints,4);
+			if (true) {
+			  // newer strategy to make sure we cover the circle - we go from the top of the base pair rectangle, out to the circle radius plus line width -- then we should definitely cover it
+			  // we can't go to the center of the circle, because then if the circle's radius is small, we'll shave part of its line off
+			  // (it'd be clever to start the rectangle not in the center of the circle, but at the intersection of the circle and the base pair, but that's pointlessly more complicated)
+			  // the width of the rectangle is the width of the base pair
+			  // here's the distance between the center of the nucs
+			  AdobeGraphics::Point toPairVector=(posInfoVector[pair].pos-posInfoVector[i].pos);
+			  // copy this as a unit vector, so we can use it to add the width of the nucs themselves
+			  AdobeGraphics::Point actualToRightUnitVector=toPairVector;
+			  actualToRightUnitVector.MakeUnitVector();
+			  // by taking the distance between the centers of the nucs, we need to add a half of the left nuc plus a half of the right nuc, i.e. an entire nuc width
+			  AdobeGraphics::Point nucWidthVector=AdobeGraphics::Point(drawingParams.genericNucBBox.GetX(),0) * actualToRightUnitVector;
+			  // so now we can calculate the rectangle width, and we use a half the width for convenience later
+			  AdobeGraphics::Point halfRectangleWidthVector=(toPairVector+nucWidthVector)/2.0;
+			  // to get the rectangle height, we first get a unit vector in the appropriate direction
+			  AdobeGraphics::Point rectangleHeightVector=negHeightedVector;
+			  rectangleHeightVector.MakeUnitVector();
+			  AdobeGraphics::Point upVector=-rectangleHeightVector*drawingParams.genericNucBBox.GetY()/2.0;
+			  AdobeGraphics::Point downVector=rectangleHeightVector*(radius+circleLineWidth*0.75-height); // we should divide circleLineWidth by 2.0, because only half of this distance goes outside of the circle.  however, because of drawing bugs due to numerical issues, we use 3/4 of the distance to be sure
+			  // BTW, we need to use pdf.FillPolygon since there's no guarantee that the rectangle is orthogonal to the x-/y-axes.
+			  AdobeGraphics::Point whiteRectPoints[4];
+			  whiteRectPoints[0]=AdobeGraphics::Point(midpoint+upVector-halfRectangleWidthVector);
+			  whiteRectPoints[1]=AdobeGraphics::Point(midpoint+upVector+halfRectangleWidthVector);
+			  whiteRectPoints[2]=AdobeGraphics::Point(midpoint+downVector+halfRectangleWidthVector);
+			  whiteRectPoints[3]=AdobeGraphics::Point(midpoint+downVector-halfRectangleWidthVector);
+			  pdf.FillPolygon(AdobeGraphics::Color_White(),whiteRectPoints,4);
+			}
+			else {
+			  // older code, which was dumb in that it doesn't work, although I'm very puzzled as to why I didn't notice this before.
+			  // it's trying to draw a rectangle around the last base pair, but actually the goal is to cover the circle
+			  // do it the dumb & easy way
+			  AdobeGraphics::Point toPairVector=(posInfoVector[pair].pos-posInfoVector[i].pos);
+			  AdobeGraphics::Point actualToRightUnitVector=toPairVector;
+			  actualToRightUnitVector.MakeUnitVector();
+			  AdobeGraphics::Point toRightVector=AdobeGraphics::Point(drawingParams.genericNucBBox.GetX()/2.0,0)
+			    * actualToRightUnitVector;
+			  AdobeGraphics::Point toTopVector=-heightedVector;//AdobeGraphics::Point(0,-drawingParams.genericNucBBox.GetY()/2.0) * actualToRightUnitVector;
+			  AdobeGraphics::Point toBottomVector=-negHeightedVector;//AdobeGraphics::Point(0,radius-height+AdobeGraphics::PointsToInches(0.5))* actualToRightUnitVector;
+			  AdobeGraphics::Point whiteRectPoints[4];
+			  whiteRectPoints[0]=AdobeGraphics::Point(posInfoVector[i].pos - toRightVector + toTopVector);
+			  whiteRectPoints[1]=AdobeGraphics::Point(posInfoVector[i].pos + toPairVector + toRightVector + toTopVector);
+			  whiteRectPoints[2]=AdobeGraphics::Point(posInfoVector[i].pos + toPairVector + toRightVector + toBottomVector);
+			  whiteRectPoints[3]=AdobeGraphics::Point(posInfoVector[i].pos - toRightVector + toBottomVector);
+			  pdf.FillPolygon(AdobeGraphics::Color_White(),whiteRectPoints,4);
+			}
 			// text
-			Layout_FittingTextBox2 *text=new Layout_FittingTextBox2(drawingParams.font,AdobeGraphics::Color_Black(),posInfoVector[i].varTermLoopText,drawingParams.lineSpacing);
+			Layout_FittingTextBox2 *text=new Layout_FittingTextBox2(drawingParams.varTermLoop_font,AdobeGraphics::Color_Black(),posInfoVector[i].varTermLoopText,drawingParams.lineSpacing);
 			AdobeGraphics::Point textSize=text->GetDimensionsAsPoint(pdf);
 			AdobeGraphics::Point centerOfText=midpoint+dirV*(height+radius//+drawingParams.backboneAnnotTextOffset
 				+textSize.GetY()/2.0);
@@ -1627,9 +1668,23 @@ void RnaDrawer::Internal_StartDrawing (AdobeGraphics& pdf_,AdobeGraphics::Point 
 			std::string nucT=posInfoVector[i].nuc;
 			assertr(posInfoVector[i].nuc.size()==1);
 			char s[2]={posInfoVector[i].nuc[0],0};
-			if (s[0]=='U' && drawingParams.isDNA) {
+            if (drawingParams.isDNA) {
+              if (s[0]=='U') {
 				s[0]='T';
-			}
+              }
+              if (s[0]=='u') {
+                s[0]='t';
+              }
+            }
+            else {
+              // not DNA implies is RNA
+              if (s[0]=='T') {
+				s[0]='U';
+              }
+              if (s[0]=='t') {
+				s[0]='u';
+              }
+            }
 			AdobeGraphics::Color color;
 			AdobeGraphics::Color circleEdgeColor=AdobeGraphics::Color_Black();
 			if (otherDrawingStuff.doOneSeq) {
@@ -1773,7 +1828,7 @@ void RnaDrawer::Internal_StartDrawing (AdobeGraphics& pdf_,AdobeGraphics::Point 
 				p1=RelPosIndexTransform(p1,posInfoVector,li->relPosIndex);
 				p2=RelPosIndexTransform(p2,posInfoVector,li->relPosIndex);
 			}
-			pdf.DrawLine(AdobeGraphics::Color_Black(),p1,p2);
+			pdf.DrawLine(drawingParams.nucTickLabel_tickColor,p1,p2);
 		}
 		// arcs
 		for (OtherDrawingStuff::ArcList::const_iterator ai=otherDrawingStuff.arcList.begin(); ai!=otherDrawingStuff.arcList.end(); ai++) {

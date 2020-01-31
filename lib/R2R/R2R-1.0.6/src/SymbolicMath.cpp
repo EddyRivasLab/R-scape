@@ -27,7 +27,7 @@ inline void AssertIsOkayForLog (double x)
 // SymbolicMath
 
 #ifdef _MSC_VER
-#define PTR2UL(X) (unsigned long)((unsigned __int64)X)
+#define PTR2UL(X) (unsigned long)((unsigned int64_t)X)
 #else
 #define PTR2UL(X) (unsigned long)(X)
 #endif

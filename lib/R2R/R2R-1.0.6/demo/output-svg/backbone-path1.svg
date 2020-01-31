@@ -4,7 +4,7 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    version="1.0"
    width="288"
-   height="383.542"
+   height="353.945"
    id="svg2403"
    xml:space="preserve">
 <text x="0" y="8.616" id="text1000">
@@ -231,19 +231,19 @@
 </text>
 <path
  fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
- d="M 7.5 375.292 L 22.62 375.292 A 5.34573,5.34573 0 0,0 27.9657,369.946L 27.9657 362.386 A 4.36477,4.36477 0 1,1 27.9657,354.826L 27.9657 347.266 A 7.35563,7.35563 0 1,1 40.2057,347.266L 40.2057 369.946 "/>
+ d="M 7.5 345.695 L 11.28 345.695 A 1.33643,1.33643 0 0,0 12.6164,344.359L 12.6164 342.469 A 1.09119,1.09119 0 1,1 12.6164,340.579L 12.6164 338.689 A 1.83891,1.83891 0 1,1 15.6764,338.689L 15.6764 344.359 "/>
 <path
  fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 32.1417 369.946 L 36.0297 369.946 "/>
+ d="M 13.6604 344.359 L 14.6324 344.359 "/>
 <path
  fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 32.1417 362.386 L 36.0297 362.386 "/>
+ d="M 13.6604 342.469 L 14.6324 342.469 "/>
 <path
  fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 32.1417 354.826 L 36.0297 354.826 "/>
+ d="M 13.6604 340.579 L 14.6324 340.579 "/>
 <path
  fill="none" stroke="#000000" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 32.1417 347.266 L 36.0297 347.266 "/>
+ d="M 13.6604 338.689 L 14.6324 338.689 "/>
 <path
  fill="none" stroke="#5c5c5c" stroke-width="0.5" stroke-linecap="butt" stroke-linejoin="miter"
  d=""/>

@@ -1,14 +1,15 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use lib $Bin;
 use R2R_Stockholm;
 use Getopt::Long;
 
 my $debug=0;
-my $cutEmptyLines;
+my ($cutEmptyLines,$cutTrailingWhitespace);
 if (!GetOptions(
 		"debug" => \$debug,
-		"cutEmptyLines" => \$cutEmptyLines
+	 "cutEmptyLines" => \$cutEmptyLines,
+	 "cutTrailingWhitespace" => \$cutTrailingWhitespace,
 	       )) {
     die "bad command-line flags";
 }
@@ -34,6 +35,14 @@ if (!open(S,"$stoFileName")) {
 my @linesPre=<S>;
 for my $l (@linesPre) {
     $l =~ s/[\r\n]//g;
+    
+    if ($cutTrailingWhitespace) {
+	$l =~ s/[ \t]+$//;
+    }
+    if ($l =~ /[ \t]$/) {
+	die "line \"$l\" has trailing whitespace, which is not tolerated well by this script.  Please remove it, or pass -cutTrailingWhitespace and the script will do it (for SelectSubFamilyFromStockholm.pl).";
+    }
+
     push @lines,$l;
 }
 
@@ -177,13 +186,15 @@ $keepAll=0;
 for my $l (@lines) {
     $printedThisLine=0;
     $l =~ s/[\r\n]//g;
-    $l =~ s/(^\S+.+\S+)\s*$/$1/; # ER: remove empty spaces at the end of the line 
 
     #print STDERR  "l=$l\n";
 
     my $stoLine=Stockholm::ParseStoLineToHash($l);
     if ($stoLine->{type} eq "gf" && $stoLine->{tag} eq "SUBFAM_KEEPALL") {
 	$keepAll=$stoLine->{text};
+	if ($keepAll ne "0" && $keepAll ne "1") {
+	    die "for #=GF SUBFAM_KEEPALL, please use the value 0 or 1, not \"$keepAll\"";
+	}
     }
     if ($stoLine->{type} eq "gf" && $stoLine->{tag} eq "SUBFAM_SUBST_STRING") {
 	my ($thisPredName,$s)=split /\s+/,$stoLine->{text};
@@ -256,7 +267,7 @@ for my $l (@lines) {
 			die "no sequences were selected into the subfamily by the predicate \"$selectedPredName\" (or all weights were zero)";
 		    }
 		    $weight=$acceptWeight/($acceptWeight+$rejectWeight);
-		    #print "#=GF SUBFAM_WEIGHT $weight\n"; ER: don't want to print weight
+		    print "#=GF SUBFAM_WEIGHT $weight\n";
 		}
 	    }
 	    if ($l ne "") { # handle blank lines later, to respect the -cutEmptyLines flag

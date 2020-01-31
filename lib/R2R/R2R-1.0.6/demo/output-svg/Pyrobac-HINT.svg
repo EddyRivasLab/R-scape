@@ -75,7 +75,7 @@
  d="M 166.828 281.42 A 12.24,12.24 0 0,1 142.348,281.42A 12.24,12.24 0 0,1 166.828,281.42"/>
 <path
  fill="#ffffff" stroke="none"
- d="M 145.551 297.93 L 145.551,297.93L 163.626,297.93L 163.626,285.69L 145.551,285.69Z"/>
+ d="M 145.551 286.982 L 145.551,286.982L 163.626,286.982L 163.626,294.785L 145.551,294.785Z"/>
 <text x="144.999" y="269.18" id="text1040">
   <tspan x="144.999" y="269.18" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1041">3-6 nt</tspan>
 </text>

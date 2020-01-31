@@ -145,14 +145,14 @@ int CommaSepSeparator::GetFieldAsInt (int fieldNum) const
 	}
 	return result;
 }
-__int64 CommaSepSeparator::GetFieldAsInt64 (int fieldNum) const
+int64_t CommaSepSeparator::GetFieldAsInt64 (int fieldNum) const
 {
 	const char *field=GetField(fieldNum);
 	char *endptr;
 #ifdef _MSC_VER
-	__int64 result=_strtoi64(field,&endptr,10);
+	int64_t result=_strtoi64(field,&endptr,10);
 #else
-	__int64 result=strtoll(field,&endptr,10); // gcc
+	int64_t result=strtoll(field,&endptr,10); // gcc
 #endif
 	if (*endptr!=0) {
 		throw SimpleStringException("Int field had some non-numeric content, field text='%s', %s",
@@ -502,7 +502,7 @@ int CommaSepCacher::GetLineNum () const
 }
 
 
-std::string Int64ToString (__int64 n) 
+std::string Int64ToString (int64_t n) 
 {
 	char buf[64];
 #if defined(_MSC_VER) || defined(WIN32)

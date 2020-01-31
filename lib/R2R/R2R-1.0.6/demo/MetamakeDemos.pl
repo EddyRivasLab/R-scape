@@ -7,7 +7,8 @@ use File::Which qw(which);
 
 my $make="Makefile";
 my $R2R_DUMP_FILE="dump-file.txt";
-my $r2r="../src/r2r";
+my $r2r=undef;
+my @standard_r2rExeList=("../src/r2r","r2r");
 my $subfam="../src/SelectSubFamilyFromStockholm.pl";
 my $pubsto=undef;
 my $cleansto=undef;
@@ -36,6 +37,11 @@ my $outputRnacodeDir="rnacode";
 my $outputRfamStoDir="rfamsto";
 my $outputFastaStoDir="fastasto";
 my $defaultFragmentary=0;
+my $global_weightFlag=""; # for r2r --GSC-weighted-consensus
+my $global_SetDrawingParam=undef;
+my $global_SetDrawingParamFile=undef;
+my $inkscapeHelveticaFontName=undef;
+my $verbose=0;
 
 my $flagsFileName="flags.metamake-r2r";
 if (-e $flagsFileName) {
@@ -51,9 +57,10 @@ if (-e $flagsFileName) {
     }
     close(FLAGS);
 }
+my $commandLineParams=join(" ",map {"\"$_\""} @ARGV);
 #print "command line: \n".join("\n",map {">$_<"} @ARGV)."\n";
 
-my ($srcFileListFileName,$doStoTex,$noall,$help,$doStoOutput,$cleansto,$pubsto,$extraFancifyStockholmFlags,$ravennaPerlBase,$disableChecks,$rfamHits,$minCrossOverlapForConcern,$disableR2RUsageWarning,$useTaxBinFile,$allowNoGenomecontext,$reAnnotCodonLine,$covaryWithRscape,$covaryDiffRscapeR2R,$strictRedShading);
+my ($srcFileListFileName,$doStoTex,$noall,$help,$doStoOutput,$cleansto,$pubsto,$extraFancifyStockholmFlags,$ravennaPerlBase,$disableChecks,$rfamHits,$minCrossOverlapForConcern,$disableR2RUsageWarning,$useTaxBinFile,$allowNoGenomecontext,$reAnnotCodonLine,$covaryWithRscape,$covaryDiffRscapeR2R,$strictRedShading,$covaryUseSsConsWithRscape,$inkscapeHelveticaFontName);
 if (!GetOptions(
 				"srcFileList=s" => \$srcFileListFileName,
 				"makefile=s" => \$make,
@@ -85,7 +92,7 @@ if (!GetOptions(
 				"disableR2RUsageWarning" => \$disableR2RUsageWarning,
 				"autoRemoveSeqsFromDifferentRefseqSections" =>\$autoRemoveSeqsFromDifferentRefseqSections,
 				"useTaxBinFile" => \$useTaxBinFile,
-				"allowNoGenomecontext" => \$allowNoGenomecontext,
+				"allowNoGenomecontext!" => \$allowNoGenomecontext,
 				"reAnnotCodonLine" => \$reAnnotCodonLine,
 				"strictRedShading" => \$strictRedShading,
 				"intermediateDir=s" => \$intermediateDir,
@@ -93,20 +100,27 @@ if (!GetOptions(
 				"outputPdfDir=s" => \$outputPdfDir,
 				"outputSvgDir=s" => \$outputSvgDir,
 				"outputStoDir=s" => \$outputStoDir,
-				"$outputPrettyPdfStoDir=s" => \$outputPrettyPdfStoDir,
+				"outputPrettyPdfStoDir=s" => \$outputPrettyPdfStoDir,
 				"outputSearchStoDir=s" => \$outputSearchStoDir,
 				"outputRfamStoDir=s" => \$outputRfamStoDir,
 				"outputFastaStoDir=s" => \$outputFastaStoDir,
 				"h" => \$help,
 				"covaryWithRscape" => \$covaryWithRscape,
 				"covaryDiffRscapeR2R" => \$covaryDiffRscapeR2R,
-				"defaultFragmentary" => \$defaultFragmentary
+	                        "covaryUseSsConsWithRscape" => \$covaryUseSsConsWithRscape,
+				"defaultFragmentary" => \$defaultFragmentary,
+	 "weightFlag=s" => \$global_weightFlag,
+	 "setDrawingParam=s" => \$global_SetDrawingParam,
+	 "setDrawingParamFile=s" => \$global_SetDrawingParamFile,
+	 "inkscapeHelveticaFontName=s" => \$inkscapeHelveticaFontName,
+	 "verbose" => \$verbose,
 			   )) {
     die "bad command line parameters";
 }
 if ($help) {
     print "perl MetamakeDemos.pl [<options>]\n";
     print "Note: if the file \"$flagsFileName\" is found, it will be added to the command line\n";
+	 print "-verbose : try to print more information that will hopefully aid diagnosing problems\n";
     print "-srcFileList <filename> : do not search for .sto files, instead get them from <filename>.  Each line in <filename> is tab-delimited.  The first field is the path to a source .sto file.  The second name is a new name for the file, which should not include directories or any extension.\n";
     print "-makefile <filename> : create the Makefile into <filename>, instead of the default\n";
     print "-doStoTex : experimental\n";
@@ -130,15 +144,21 @@ if ($help) {
     print "-autoRemoveSeqsFromDifferentRefseqSections : run StockholmRemoveSeqsFromDifferentRefseqSections.pl on all source .sto files\n";
     print "-useTaxBinFile : speed up taxonomy loading by serializing it into a .taxbin file.  WARNING: (1) requires that everything uses the same taxonomy, (2) if the taxonomy changes, you'll probably have to change the .taxbin file (the Makefile won't detect it)\n";
     print "-allowNoGenomecontext : quietly ignores .genomecontext files that don't exist.  This flag is useful if you want to see other things, e.g. do an R2R drawing.  But, you should NOT use it if you're preparing supplementary.pdf, because it can hide errors.\n";
-    print "-disableR2RUsageWarning : disable message in R2R output about how it shouldn't be used to classify covariation.\n";
+    print "-disableR2RUsageWarning : disable message in R2R output about how it should not be used to classify covariation.\n";
     print "-reAnnotCodonLine : for bug in MergeStuffIntoStockholm.pl, re-do this step.  Should be unnecessary after 224 motifs.\n";
     print "-strictRedShading : use new version of R2R's consensus code, where base pairs won't get red shading if there are non-canonical pairs (which counts as variation).  Maybe we should allow like 0.5% variation to account for sequencing errors, but whatever\n";
     print "-covaryWithRscape : attempt to calculate covariation with R-scape by Elena Rivas, instead of R2R\n";
+}
+if ($verbose) {
+    print "cmd line params = $commandLineParams\n";
 }
 
 SubstEnvVarsListOfRefs(\$r2r,\$overlapintervalsExe,\$ravennaPerlBase,\$subfam);
 
 FindExeIfNecc(\$r2r);
+if ($verbose) {
+    print "r2r=$r2r\n";
+}
 
 my $doChecks=$doStoOutput && !$disableChecks;
 
@@ -149,7 +169,13 @@ if ($disableR2RUsageWarning) {
 if ($strictRedShading) {
     push @r2rFlagList,"--maxNonCanonInNoVariationObserved 0";
 }
+if ($inkscapeHelveticaFontName) {
+    push @r2rFlagList,"--inkscape-helvetica-font-name \"$inkscapeHelveticaFontName\"";
+}
 my $r2rFlagListStr=join(" ",@r2rFlagList);
+if ($verbose) {
+    print "r2r flags are: $r2rFlagListStr\n";
+}
 
 my $StockholmRemoveSeqsFromDifferentRefseqSections=undef;
 my $RavennaTaxonomyToBinFile=undef;
@@ -185,6 +211,39 @@ if ($ravennaPerlBase) {
     }
 }
 
+if (defined($global_SetDrawingParam)) {
+    if (defined($global_SetDrawingParamFile)) {
+	die "-setDrawingParam and -setDrawingParamFile can't be used together";
+    }
+    $global_SetDrawingParam =~ tr/ /\t/; # change spaces to tabs (tabs are hard to type on the command line, so the user can just do spaces, but the .r2r_meta file needs tabs)
+    if ($global_SetDrawingParam =~ /SetDrawingParam/) {
+	die "-setDrawingParam : should not contain the SetDrawingParam command -- that's added later";
+    }
+}
+if (defined($global_SetDrawingParamFile)) {
+    $global_SetDrawingParam="";
+    if (!open(F,$global_SetDrawingParamFile)) {
+	die "cannot open $global_SetDrawingParamFile for -setDrawingParamFile";
+    }
+    while (<F>) {
+	s/[\r\n]//g;
+	if (length($_)==0) {
+	    next;
+	}
+	if (length($global_SetDrawingParam)>0) {
+	    die "-setDrawingParamFile $global_SetDrawingParamFile : file can only have one line with text on it";
+	}
+	$global_SetDrawingParam .= $_;
+    }
+    close(F);
+    if (!($global_SetDrawingParam =~ /\t/)) {
+	die "-setDrawingParamFile $global_SetDrawingParamFile : there are no tab characters in the file -- this can't possibly be right.  r2r requires tab characters in the .r2r_meta file.  (However, with the -setDrawingParam <...> flag, it uses spaces, which are then converted to tabs)";
+    }
+    if ($global_SetDrawingParam =~ /SetDrawingParam/) {
+	die "-setDrawingParamFile : should not contain the SetDrawingParam command -- that's added later";
+    }
+}
+
 if (!open(MAKE,">$make")) {
     die "cannot open $make";
 }
@@ -215,12 +274,20 @@ if ($srcFileListFileName) {
 
 		my @f=split /\t/,$line;
 		if ($f[0] eq "PATH_SUBST") {
-			push @pathSubstList,[$f[1],$f[2]];
-			next;
+		    my $f1=$f[1];
+		    my $f2=$f[2];
+		    push @pathSubstList,[$f[1],$f[2]];
+		    if ($verbose) {
+			print "PATH_SUBST $f1 -> $f2\n";
+		    }
+		    next;
 		}
 		if ($line =~ /^\#FLAG: (.*)$/) { # parse in-file flags, make it look like a comment, so other programs parsing the file can ignore it
 			my $s=$1;
 			@ARGV=shellwords($s);
+			if ($verbose) {
+			    print "added flags: ".join(" ",@ARGV)."\n";
+			}
 			if (!GetOptions(
 							"allowNoGenomecontext" => \$allowNoGenomecontext,
 						   )) {
@@ -234,6 +301,9 @@ if ($srcFileListFileName) {
 		}
 
 		my ($src,$name,$latexName)=split /\t/,$line;
+		if ($verbose) {
+		    print "read raw file name \"$src\",\"$name\",\"$latexName\"\n";
+		}
 		$src =~ s/\\/\//g;		# change backslashes (from Windows paths) to front slashes, for my convenience
 
 		for my $subst (@pathSubstList) {
@@ -255,6 +325,12 @@ if ($srcFileListFileName) {
 
 		# remove .sto extension from $name
 		$name =~ s/[.]sto$//g;
+		if ($verbose) {
+		    print "\t processed file name \"$src\",\"$name\",\"$latexName\"\n";
+		}
+		if ($name =~ / /) {
+		    die "the new file name for a motif has a space in it.  This perl script can't handle spaces in names.  Please remove the space.  The source file is \"$src\" and the desired name is \"$name\".";
+		}
 
 		if ($nameSet{$name}) {
 			die ">1 motifs have the name \"$name\", which will cause a conflict";
@@ -288,7 +364,7 @@ if ($srcFileListFileName) {
 					}
 				}
 			} else {
-				die "unexpected, file $src didn't end in .sto";
+				die "unexpected, file $src didn't end in .sto.  By the way, this problem can also happen if you have spaces instead of tab characters to separate file names";
 			}
 		}
 
@@ -364,6 +440,7 @@ for my $sss (@srcFileList) {
     my $consSrc="$intermediateDir/$base.cons.sto";
     my $rawSrc="$intermediateDir/$base.sto";
     my $manualSeqWeighting=undef;
+    my $weightFlag=$global_weightFlag;
     my @thisCons=();
     my $pdfx={pdf=>$pdf,svg=>$svg,meta=>$meta,prettyStoPdf=>$prettyStoPdfFile,cons=>$consSrc};
     push @stoTexList,{cons=>$consSrc,stoTex=>"$intermediateDir/$base.sto.tex",genomecontext=>$sss->{genomecontext},name=>$sss->{name},latexName=>$sss->{latexName}};
@@ -372,6 +449,9 @@ for my $sss (@srcFileList) {
 
     if (!open(META,">$meta")) {
 		die "cannot open $meta";
+    }
+    if (defined($global_SetDrawingParam)) {
+	print META "SetDrawingParam\t$global_SetDrawingParam\n";
     }
     print META join("\t",($consSrc))."\n";
 
@@ -407,6 +487,9 @@ for my $sss (@srcFileList) {
 		}
 		if (/^\#=GF Makefile_SeqWeighting (.*)$/) {
 			$manualSeqWeighting=$1;
+		}
+		if (/^\#=GF Makefile_Weight_Flag (.*)$/) {
+		    $weightFlag=$1;
 		}
 		if (/^\#=GF Makefile pred (.*)$/) {
 			my @l=split / +/,$1;
@@ -460,7 +543,7 @@ for my $sss (@srcFileList) {
     }
     push @thisCons,{src=>$src,dest=>$consSrc};
     for my $c (@thisCons) {
-		push @cons,{src=>$c->{src},dest=>$c->{dest},manualSeqWeighting=>$manualSeqWeighting};
+		push @cons,{src=>$c->{src},dest=>$c->{dest},manualSeqWeighting=>$manualSeqWeighting,weightFlag=>$weightFlag};
     }
     push @pdfList,$pdfx;
     if ($usesSolver) {
@@ -547,9 +630,11 @@ print MAKE "solver.pdf : solver-pdf\n\tgs -dNOPAUSE -dBATCH -dSAFER -sOutputFile
 my $stoTgzFileName="alignments-sto.tgz";
 print MAKE "$stoTgzFileName : all-sto all-search-sto sto-with-annot sto-just-motif\n\ttar -hcvzf $stoTgzFileName \$(WITHANNOTLIST) \$(JUSTMOTIFLIST)\n";
 print MAKE "sto-with-annot :\n\tln -s $outputStoDir sto-with-annot\n";
-my $rfamStoTgzFileName="rfam-sto.tgz";
 print MAKE "sto-just-motif :\n\tln -s $outputSearchStoDir sto-just-motif\n";
+my $rfamStoTgzFileName="rfam-sto.tgz";
 print MAKE "$rfamStoTgzFileName : all-rfam-sto\n\ttar -cvzf $rfamStoTgzFileName rfamsto\n";
+my $rfamStoZipFileName="rfam-sto.zip";
+print MAKE "$rfamStoZipFileName : all-rfam-sto\n\tzip -D $rfamStoZipFileName rfamsto/*\n";
 print MAKE "$justMotifTgzFileName : all-search-sto sto-just-motif\n\ttar --transform=\"s/^.*\\///g\" -cvzf $justMotifTgzFileName sto-just-motif/*\n";
 print MAKE "$justMotifZipFileName : all-search-sto sto-just-motif\n\trm -f $justMotifZipFileName\n\tzip -D $justMotifZipFileName sto-just-motif/*\n";
 print MAKE "$stoAndAnnotTgzFileName : all-search-sto sto-with-annot\n\ttar --transform=\"s/^.*\\///g\" -cvzf $stoAndAnnotTgzFileName sto-with-annot/*\n";
@@ -591,6 +676,9 @@ for my $x (@cons) {
 		if ($covaryWithRscape) {
 			die "-covaryWithRscape with -manualSeqWeighting not implemented, since I don't see the need";
 		}
+		if (length($x->{weightFlag})>0) {
+		    die "you can't set a weight flag with manual sequence weighting -- they contradict";
+		}
 		my $src=$x->{src};
 		my $predest="$x->{dest}.weighted.sto";
 		print MAKE "$predest : $x->{src}\n";
@@ -609,15 +697,18 @@ for my $x (@cons) {
 			}
 			my $tempR2ROutFile="$x->{dest}.temp-r2r";
 			print MAKE "$x->{dest} : $x->{src} \$(R2R)\n"; # should put R-scape here, but I don't feel like it
-			print MAKE "\t\$(R2R) --GSC-weighted-consensus $infile $tempR2ROutFile \$(GSCparams)\n";
+			print MAKE "\t\$(R2R) $x->{weightFlag} --GSC-weighted-consensus $infile $tempR2ROutFile \$(GSCparams)\n";
 			my $replaceStoCovWithRscapeFlags="";
 			if ($covaryDiffRscapeR2R) {
-				$replaceStoCovWithRscapeFlags=" -diffRscapeR2R ";
+                $replaceStoCovWithRscapeFlags=" -diffRscapeR2R ";
 			}
+            if ($covaryUseSsConsWithRscape) {
+                $replaceStoCovWithRscapeFlags=" -useSsCons ";
+            }
 			print MAKE "\tperl $replaceStoCovWithRscape $replaceStoCovWithRscapeFlags $infile $tempR2ROutFile $outfile\n";
 		} else {
 			print MAKE "$x->{dest} : $x->{src} \$(R2R)\n";
-			print MAKE "\t\$(R2R) --GSC-weighted-consensus $infile $outfile \$(GSCparams)\n";
+			print MAKE "\t\$(R2R) $x->{weightFlag} --GSC-weighted-consensus $infile $outfile \$(GSCparams)\n";
 		}
     }
 }
@@ -903,24 +994,39 @@ sub NormalizeMotifName {
 }
 
 sub FindExeIfNecc {
-	my ($exeRef)=@_;
-	my $user=$$exeRef;
-	#print "user=$user\n";
+    my ($exeRef)=@_;
+    my $user=$$exeRef;
+    #print "user=$user\n";
+    if (defined($user)) {
 	if (-e $user) {
-		if (-x $user) {
-			# the given path is an actual executable already, so nothing to do
-			return;
-		} else {
-			die "user-specified executable \"$user\" exists, but is not executable";
-		}
+	    if (-x $user) {
+		# the given path is an actual executable already, so nothing to do
+		return;
+	    } else {
+		die "user-specified executable \"$user\" exists, but is not executable";
+	    }
 	}
 	# okay, assume it's something in the PATH
 	my $actual=which($user);
 	#print "FindExeIfNecc($user-->$actual)\n";
 	if (!-x $actual) {
-		die "user-specified executable \"$user\" does not exist, and is not in PATH";
+	    die "user-specified executable \"$user\" does not exist, and is not in PATH";
 	}
 	$$exeRef=$actual;
+    }
+    else {
+	for my $exe (@standard_r2rExeList) {
+	    if (-x $exe) { # is it a file?
+		$$exeRef=$exe;
+		return;
+	    }
+	    my $actual=which($exe); # is it in the PATH?
+	    if (-x $actual) {
+		$$exeRef=$exe;
+		return;
+	    }
+	}
+    }
 }
 
 sub SubstEnvVars {				# replaces environment variable values into a string.  adapted from https://unix.stackexchange.com/questions/294835/replace-environment-variables-in-a-file-with-their-actual-values

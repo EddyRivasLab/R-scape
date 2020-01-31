@@ -80,7 +80,7 @@ void ProjectColumnStrings(vector<int>& currPosToOriginalPosMap,StringPtrList& co
 		else {
 			reason=stringprintf("Because of command on line #%d.",lineNum);
 		}
-		throw SimpleStringException("One or more pairs is getting broken by one side getting deleted (presumably because it's not conserved), while the other one stays.  NOTE: this error message is explained in the tutorial chapter of the manual, in the sub-section titled \"Common error: 'One or more pairs is getting broken by one side getting deleted'\".  %s  Consider using \"#=GF R2R keep allpairs\".  If you're lazy, you can also use \"#=GF R2R SetDrawingParam autoBreakPairs true\" (Note: another explanation is that you've used #=GF R2R var_backbone_range on columns that includes a pair.)  %s",reason.c_str(),brokenPairs.c_str());
+		throw SimpleStringException("One or more pairs is getting broken by one side getting deleted (presumably because it's not conserved), while the other one stays.  NOTE: this error message is explained in the tutorial chapter of the manual, in the sub-section titled \"Common error: 'One or more pairs is getting broken by one side getting deleted'\".  THAT SECTION IN THE MANUAL ALSO DISCUSSES POSSIBLE SOLUTIONS (of which only a couple are given in the following).  %s  Consider using \"#=GF R2R keep allpairs\".  If you're lazy, you can also use \"#=GF R2R SetDrawingParam autoBreakPairs true\" (Note: another explanation is that you've used #=GF R2R var_backbone_range on columns that includes a pair.)  %s",reason.c_str(),brokenPairs.c_str());
 	}
 
 	{
@@ -214,7 +214,7 @@ PosList FindLabelList(const LabelLine& labelLine,const std::string& label_,const
                                 for (LabelLine::const_iterator i=labelLine.begin(); i!=labelLine.end(); i++) {
                                         validLabelLines += stringprintf(" \"%s\"",i->first.c_str());
                                 }
-                                throw SimpleStringException("position specifier \"%s\" requested label line \"%s\", but no such label line was defined (like with #=GC R2R_XLABEL).  (Note: some variablen-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.  Also, if the label is in a column with many gaps it might have been removed automatically.  (In this latter case, use the 'keep' command, or move the label to a non-gappy column.)  Valid label lines are: # (special for alignment columns) and %s",label.c_str(),labelLineName.c_str(),validLabelLines.c_str());
+                                throw SimpleStringException("position specifier \"%s\" requested label line \"%s\", but no such label line was defined (like with #=GC R2R_XLABEL).  (Note: some variable-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.  Also, if the label is in a column with many gaps it might have been removed automatically.  (In this latter case, use the 'keep' command, or move the label to a non-gappy column.)  Valid label lines are: # (special for alignment columns) and %s",label.c_str(),labelLineName.c_str(),validLabelLines.c_str());
                         }
                         bool handledSpecialLabel=false;
                         std::string subfamLabel="SUBFAM_LABEL";
@@ -275,13 +275,25 @@ PosList FindLabelList(const LabelLine& labelLine,const std::string& label_,const
 	}
 	return l;
 }
-std::string DumpLabelLine (const LabelLine& labelLine)
+std::string DumpLabelLine (const LabelLine& labelLine,bool withSSconsLines,bool onlySSconsLines)
 {
 	std::string msg;
-#if 1
 	std::set<std::string> labelSet;
+	if (!withSSconsLines && onlySSconsLines) {
+	  throw SimpleStringException("the calling function is dumb");
+	}
 	for (LabelLine::const_iterator lli=labelLine.begin(); lli!=labelLine.end(); lli++) {
 		std::string labelName=lli->first;
+		std::string SS_cons="SS_cons";
+		bool isSScons=(labelName.length()>=SS_cons.length() && labelName.substr(0,SS_cons.length())==SS_cons);
+		//printf("%s,%s,%s,%s\n",labelName.c_str(),isSScons?"yes":"no",withSSconsLines?"yes":"no",onlySSconsLines?"yes":"no");
+		if (!withSSconsLines && isSScons) {
+		  continue;
+		}
+		if (onlySSconsLines && !isSScons) {
+		  continue;
+		}
+		bool hasAtLeastOneLabel=false;
 		for (size_t i=0; i<lli->second.size(); i++) {
 			const std::string& label=lli->second[i];
 			if (label!="" && label!=".") {
@@ -291,44 +303,54 @@ std::string DumpLabelLine (const LabelLine& labelLine)
 				else {
 					labelSet.insert(stringprintf("%s:%s",labelName.c_str(),label.c_str()));
 				}
+				hasAtLeastOneLabel=true;
 			}
+		}
+		if (isSScons && hasAtLeastOneLabel) {
+		  labelSet.insert(stringprintf("%s:notinpknot",labelName.c_str()));
 		}
 	}
 	for (std::set<std::string>::iterator i=labelSet.begin(); i!=labelSet.end(); i++) {
 		msg += stringprintf(" %s",i->c_str());
 	}
-#else
-	// old label line (has positions of each label, and redundant labels)
-	for (LabelLine::const_iterator lli=labelLine.begin(); lli!=labelLine.end(); lli++) {
-		std::string labelName=lli->first;
-		for (size_t i=0; i<lli->second.size(); i++) {
-			const std::string& label=lli->second[i];
-			if (label!="" && label!=".") {
-				msg += stringprintf(" %s:%s=%u",labelName.c_str(),label.c_str(),i);
-			}
-		}
-	}
-#endif
 	return msg;
+}
+std::string GenerateValidLabelsForError (const LabelLine& labelLine)
+{
+  std::string validLabels_noSScons=DumpLabelLine(labelLine,false,false);
+  std::string validLabels_ofSScons=DumpLabelLine(labelLine,true,true);
+  if (validLabels_noSScons.empty()) {
+    validLabels_noSScons="there are no labels in this category that are defined in your input alignment file";
+  }
+  if (validLabels_ofSScons.empty()) {
+    validLabels_ofSScons="there are no labels in this category that are defined in your input alignment file";
+  }
+  return stringprintf("Valid labels are listed in the following 4 categories: (1) labels defined in your file: %s , (2) implicit labels from SS_cons lines: %s (3) the generic labels: all allpairs pos0 pos0++ , (4) numeric columns (but DON'T use these unless it's from a computer program, otherwise they'll be invalid if columns are added/removed).  See the explanation of labels in R2R-manual.pdf for details.",validLabels_noSScons.c_str(),validLabels_ofSScons.c_str());
+}
+void CheckLabelIsEmptyString (const std::string& label,int lineNum)
+{
+  if (label.empty()) {
+    throw SimpleStringException("there is a zero-length/empty label in line %d. A label must have at least one symbol in it.  Remember that fields in R2R commands must be separated by exactly one space character.  Check if there are extra spaces in this line, or also if there are space characters at the end of the line; extra spaces could cause R2R to think that you have an empty label.",lineNum);
+  }
 }
 std::string::size_type FindUniqueLabel(const LabelLine& labelLine,const std::string& label,int lineNum,const OtherDrawingStuff& otherDrawingStuff)
 {
-	PosList posList=FindLabelList(labelLine,label,otherDrawingStuff);
-	if (posList.size()!=1) {
-		std::string validLabels=DumpLabelLine(labelLine);
-		throw SimpleStringException("FindUniqueLabel found %u matches for label %s for line %d.  Not unique.  (Note: some variablen-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.)  Valid labels: %s",posList.size(),label.c_str(),lineNum,validLabels.c_str());
-	}
-	return posList.front();
+  CheckLabelIsEmptyString (label,lineNum);
+  PosList posList=FindLabelList(labelLine,label,otherDrawingStuff);
+  if (posList.size()!=1) {
+    throw SimpleStringException("FindUniqueLabel found %u matches for label \"%s\" for line %d.  Not unique.  (Note: some variable-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.)  %s",posList.size(),label.c_str(),lineNum,GenerateValidLabelsForError(labelLine).c_str());
+  }
+  return posList.front();
 }
 PosList FindLabelList_AtLeastOne(int lineNum,const LabelLine& labelLine,const std::string& label,const OtherDrawingStuff& otherDrawingStuff)
 {
-	PosList pl=FindLabelList(labelLine,label,otherDrawingStuff);
-	if (pl.empty()) {
-		std::string validLabels=DumpLabelLine(labelLine);
-		throw SimpleStringException("R2R command in line %d referenced zero columns -- the label %s is not found.  (Note: some variablen-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.)  Valid labels are: %s",
-			lineNum,label.c_str(),validLabels.c_str());
-	}
-	return pl;
+  CheckLabelIsEmptyString (label,lineNum);
+  PosList pl=FindLabelList(labelLine,label,otherDrawingStuff);
+  if (pl.empty()) {
+    throw SimpleStringException("R2R command in line %d referenced zero columns -- the label \"%s\" is not found.  (Note: some variable-length commands like var_hairpin or var_backbone_range might have deleted a column containing your label.)  %s",
+				lineNum,label.c_str(),GenerateValidLabelsForError(labelLine).c_str());
+  }
+  return pl;
 }
 PosList FindLabelList_AtLeastOneEach_ListOfLabels(const CommaSepAbstractFile& f,int& a,const LabelLine& labelLine,std::string desc,bool periodTerminatesList,const OtherDrawingStuff& otherDrawingStuff,bool allowEmptyList)
 {

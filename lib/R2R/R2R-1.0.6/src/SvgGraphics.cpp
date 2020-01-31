@@ -41,6 +41,11 @@ const char *header="\
 const char *trailer="</svg>\n";
 
 
+std::string SvgGraphics::inkscapeHelveticaFontName=INKSCAPE_HELVETICA_FONTNAME;
+void SvgGraphics::SetInkscapeHelveticaFontName (std::string fontName)
+{
+  inkscapeHelveticaFontName=fontName;
+}
 SvgGraphics::SvgGraphics ()
 : AdobeGraphicsPdfLike(0,0)
 {
@@ -303,10 +308,10 @@ void SvgGraphics::Internal_SetLineJoinStyle (LineJoinStyle newStyle)
 }
 std::string SvgGraphics::GetFontSvgCode (const Font& font)
 {
-	const char *fontFace=NULL;
+        std::string fontFace="";
 	switch (font.GetFontFace()) {
 		case Font::Helvetica:
-			fontFace=INKSCAPE_HELVETICA_FONTNAME;
+		        fontFace=inkscapeHelveticaFontName;
 			break;
 		case Font::Myriad:
 			fontFace="Myriad-Roman";
@@ -316,7 +321,7 @@ std::string SvgGraphics::GetFontSvgCode (const Font& font)
 			break;
 		default: assertr(false);
 	}
-	return stringprintf(" font-variant=\"normal\" font-weight=\"normal\" font-style=\"normal\" font-family=\"%s\" font-size=\"%lg\"",fontFace,InchesToPoints(font.GetSizeInInches()));
+	return stringprintf(" font-variant=\"normal\" font-weight=\"normal\" font-style=\"normal\" font-family=\"%s\" font-size=\"%lg\"",fontFace.c_str(),InchesToPoints(font.GetSizeInInches()));
 }
 void SvgGraphics::DrawHorizTextInPoints (const Color& color,Point origin,const Font& font,const char *text)
 {

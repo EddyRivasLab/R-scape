@@ -663,7 +663,7 @@
  d="M 546.936 195.096 A 12.24,12.24 0 0,1 522.456,195.096A 12.24,12.24 0 0,1 546.936,195.096"/>
 <path
  fill="#ffffff" stroke="none"
- d="M 551.205 204.133 L 551.205,204.133L 551.205,186.058L 538.965,186.058L 538.965,204.133Z"/>
+ d="M 540.258 204.133 L 540.258,204.133L 540.258,186.058L 548.061,186.058L 548.061,204.133Z"/>
 <text x="510.174" y="197.788" id="text1128">
   <tspan x="510.174" y="197.788" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1129">4-5 nt</tspan>
 </text>

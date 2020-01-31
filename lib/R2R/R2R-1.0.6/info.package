@@ -5,15 +5,18 @@
 # - then verify & distribute .tar.gz file
 
 packageName	R2R
-packageVersion	1.0.6
+packageVersion	git
 packageVersionVariable	R2R_PACKAGE_VERSION
 autoreconfCommandList	autoreconf -fvi
 
-editFileList	R2R-manual/R2R-manual.tex	src/R2R.cpp
+editFileList	R2R-manual/R2R-manual.tex	src/R2R.cpp	src/SelectSubFamilyFromStockholm.pl
 
 noCopyFileList	NotByZasha/cfsqp/cfsqp.c	# can't distribute this
 
 userManualFile	R2R-manual	R2R-manual
+
+#perlUnifyModule	src/SelectSubFamilyFromStockholm.pl	Stockholm
+perlRenameModule	src/SelectSubFamilyFromStockholm.pl	Stockholm	R2R_Stockholm
 
 #prefixLicenceFile	r2r-gpl-text.txt	src/.*[.]cpp	src/.*[.]h
 #prefixLicenceFile	r2r-perl-gpl-text.txt	src/.*[.]pl	demo/.*[.]pl

@@ -31,14 +31,16 @@ inline bool IntervalOverlap(int f1,int l1,int f2,int l2) // intervals defined by
 // all measurements in inches, including fonts
 struct DrawingParams {
 	bool verbose;
-    bool disableUsageWarning;
-    bool disableSolverCache;
+        bool disableUsageWarning;
+        bool disableSolverCache;
 	bool warnBackboneConnectorAngle;
 	double nameFontSize;
 	double anyNucCircleWidth;
 	double nucFontSize;
 	double internucleotideLen;
 	double backboneWidth;
+        double varBackboneFontSize;
+        double varTermLoopFontSize;
 
 	double nucShrinkWithCircleNuc;
 	bool drawStandardCleavage;
@@ -57,8 +59,11 @@ struct DrawingParams {
 	double cleavageIndicatorPenWidth;
 	StringToColorMap cleavageIndicatorColorMap;
 
+  double backboneConnectorCircleRadius;
+
 	double fivePrimeBackboneLen,fivePrimeExtraLenAfterText;
 	double backboneAnnotTextOffset;
+        double backboneAnnotTextOffsetToFontSizeRatio;
 	int varHairpinNumFakePairs;
 	double varTerminalLoopRadius;
 	double lineSpacing;
@@ -85,9 +90,13 @@ struct DrawingParams {
 	double nucTickLabel_tickPenWidth;
 	double nucTickLabel_fontSize;
 	double nucTickLabel_extraSpaceToText;
-	AdobeGraphics::Font nucTickLabel_font;
+        AdobeGraphics::Color nucTickLabel_tickColor;
+        AdobeGraphics::Font nucTickLabel_font;
+        AdobeGraphics::Font varBackbone_font,varTermLoop_font;
 	bool defaultOneseqLabeling;
 	bool indicateOneseqWobblesAndNonCanonicals;
+
+  bool disableSubfamWeightText;
 
 	double optionalBoxLineWidth;
 	AdobeGraphics::Color optionalBoxColor;
@@ -106,6 +115,8 @@ struct DrawingParams {
 	int modular_digitsOfPrecision;
 	double modular_fontSize;
 	AdobeGraphics::Font modular_font;
+
+        bool prefixSsWithPkInDrawings;
 
 	bool showEachNucleotideDir;
 
@@ -432,7 +443,7 @@ struct SsContextWithPlaceExplicitLinks : public SsContext {
 	PlaceExplicitList links;
 };
 typedef std::list<SsContextWithPlaceExplicitLinks> SsContextWithPlaceExplicitLinksList;
-
+std::string GetExtraPlaceExplicitInfoForDebug(const SsContextWithPlaceExplicitLinks& ss);
 
 // for multistem_junction_bulgey and multistem_junction_circular
 struct MultiStemJunctionPos {
@@ -924,7 +935,8 @@ struct ProjectColumnStringsParams {
 };
 void ProjectColumnStrings(vector<int>& currPosToOriginalPosMap,StringPtrList& columnList,LabelLine& labelLine,PosInfoVector& posInfoVector,const vector<size_t>& colMap,size_t numNewCols,const OtherDrawingStuff& otherDrawingStuff,SsList& ssList,int lineNum,int pairThatsNotReallyKept=-1,bool autoBreakPairs=false);
 PosList FindLabelList(const LabelLine& labelLine,const std::string& label_,const OtherDrawingStuff& otherDrawingStuff);
-std::string DumpLabelLine (const LabelLine& labelLine);
+std::string DumpLabelLine (const LabelLine& labelLine,bool withSSconsLines=true,bool onlySSconsLines=false);
+std::string GenerateValidLabelsForError (const LabelLine& labelLine);
 std::string::size_type FindUniqueLabel(const LabelLine& labelLine,const std::string& label,int lineNum,const OtherDrawingStuff& otherDrawingStuff);
 PosList FindLabelList_AtLeastOne(int lineNum,const LabelLine& labelLine,const std::string& label,const OtherDrawingStuff& otherDrawingStuff);
 PosList FindLabelList_AtLeastOneEach_ListOfLabels(const CommaSepAbstractFile& f,int& a,const LabelLine& labelLine,std::string desc,bool periodTerminatesList,const OtherDrawingStuff& otherDrawingStuff,bool allowEmptyList=false);

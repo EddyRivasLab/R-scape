@@ -306,6 +306,7 @@ public:
 		void append (const LineOrArcList& t);
 		void Assert (Point p) { assert(fabs(p.GetX())<1e6 && fabs(p.GetY())<1e6); } // should be true for normal files
 		void AppendLine (Point from,Point to);
+		void Append (const Arc& arc);
 		void AppendArc (Point center,double radius,double startAngle,double endAngle,bool increasingAngle);
 		double Length () const;
 		void SplitAtFraction (LineOrArcList& first,LineOrArcList& second,double fraction) const; // splits the path into two paths called 'first' and 'second', such that 'first' is 'fraction' of the way along the length

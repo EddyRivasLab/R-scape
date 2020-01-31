@@ -2,3 +2,10 @@ ER, Mon Dec 10 18:08:16 EST 2018
 
 https://sourceforge.net/projects/weinberg-r2r/files/
 
+three files modified:
+
+src/Stockholm.pm repaced wiht src/R2R_Stockholm.pm
+
+src/SelectSubFamilyFromStockholm.pl modified (old saved as src/old.SelectSubFamilyFromStockholm.pl)
+
+demo/MetamakeDemos.pl

@@ -214,7 +214,7 @@ DEFINE_DISABLE_NLOPT = -DDISABLE_NLOPT
 DEFAULT_INCLUDES = -I../NotByZasha/cfsqp -I../NotByZasha/infernal-0.7/squid
 LDADD = ../NotByZasha/infernal-0.7/squid/libsquid.a $(OPTIONAL_CFSQP_LIB) $(OPTIONAL_NLOPT_LIB)
 r2r_SOURCES = AdobeGraphics.cpp AdobeGraphicsLayout.cpp AdobeGraphicsPdfLike.cpp Optimize_cfsqp.cpp Optimize_nlopt.cpp CommaSepFileReader.cpp GSCConsensus.cpp LabelsAndProjection.cpp MiscExceptions.cpp Optimize.cpp ParseOneStockholm.cpp ParseSs.cpp PdfGraphics.cpp PositionBackbone.cpp PositionBackbone_MultiStemCircular.cpp PositionBackbone_MultiStemCircularSolver.cpp R2R.cpp R2R-Utils.cpp RnaDrawer.cpp SvgGraphics.cpp SymbolicMath.cpp PositionsToIgnore.cpp
-dist_bin_SCRIPTS = ../demo/MetamakeDemos.pl
+dist_bin_SCRIPTS = ../demo/MetamakeDemos.pl SelectSubFamilyFromStockholm.pl R2R_Stockholm.pm
 all: r2rconf.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 

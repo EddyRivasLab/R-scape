@@ -63,7 +63,7 @@ void PositionVarBackbone(
 	const DrawingParams& drawingParams,PosInfo& posInfo,const AdobeGraphics& pdf,AdobeGraphics::Point& currPos,
 	double& currDir,OtherDrawingStuff& otherDrawingStuff,int posIndex)
 {
-	Layout_FittingTextBox2 *text=new Layout_FittingTextBox2(drawingParams.font,AdobeGraphics::Color_Black(),posInfo.varBackboneText,drawingParams.lineSpacing);
+	Layout_FittingTextBox2 *text=new Layout_FittingTextBox2(drawingParams.varBackbone_font,AdobeGraphics::Color_Black(),posInfo.varBackboneText,drawingParams.lineSpacing);
 	AdobeGraphics::Point textSize=text->GetDimensionsAsPoint(pdf);
 
 	AdobeGraphics::Point currDirV=AdobeGraphics::Point::UnitDirectionVector(currDir);
@@ -80,9 +80,13 @@ void PositionVarBackbone(
 	OtherDrawingStuff::LayoutRect rect;
 	rect.rect=text;
 	AdobeGraphics::Point midOfBackbone=currPos + currDirV*textLen/2.0;
+	double backboneAnnotTextOffset=drawingParams.backboneAnnotTextOffset;
+	if (backboneAnnotTextOffset < 0) {
+	  backboneAnnotTextOffset=drawingParams.backboneAnnotTextOffsetToFontSizeRatio*drawingParams.varBackboneFontSize;
+	}
 	AdobeGraphics::Point centerOfText=midOfBackbone
 		+ AdobeGraphics::Point::UnitDirectionVector(currDir+90)
-			*(drawingParams.backboneAnnotTextOffset + fabs(textSizeForLen.GetY())/2.0);
+			*(backboneAnnotTextOffset + fabs(textSizeForLen.GetY())/2.0);
 	AdobeGraphics::Point topLeftOfText=centerOfText - textSize/2.0;
 	rect.p=topLeftOfText;
 	otherDrawingStuff.layoutRectList.push_back(rect);
@@ -134,7 +138,8 @@ void AddBackboneHalfTransition(AdobeGraphics::LineOrArcList& path,const DrawingP
 			badAngle=true;
 			//throw SimpleStringException("AddBackboneHalfTransition: endpoints have to be orthogonal");
 		}
-		if (badAngle) {
+		bool badAngleIsFatal=false;
+		if (badAngleIsFatal && badAngle) {
 			if (drawingParams.warnBackboneConnectorAngle) {
 				throw SimpleStringException("AddBackboneHalfTransition: for simplicity, this program only implements backbones whose endpoints are parallel to the X or Y axis, and do not go in opposite directions.  To override this error message, use \"SetDrawingParam warnBackboneConnectorAngle false\", as described in the manual, or if the problem is just drawing the 5' connector to the 5'-most nucleotide, then use the \"no5\" command.");
 			}
@@ -143,74 +148,174 @@ void AddBackboneHalfTransition(AdobeGraphics::LineOrArcList& path,const DrawingP
 			return;
 		}
 
-		double centerX=fabs(v1.GetX())*p1.GetX() + fabs(v2.GetX())*p2.GetX(); // project p1 onto v1 and p2 onto v2, and add.
-		double centerY=fabs(v1.GetY())*p1.GetY() + fabs(v2.GetY())*p2.GetY();
-		AdobeGraphics::Point center(centerX,centerY);
-		double startAngle=(p1-center).GetDirInDegrees();
-		double endAngle=(p2-center).GetDirInDegrees();
+		AdobeGraphics::LineOrArcList myLines;
+		if (badAngle) {
+		  bool d=false;
+		  if (d) { printf("badAngle case\n");}
+		  double dir1=v1.GetDirInDegrees(); // re-do these variables normalized
+		  double dir2=v2.GetDirInDegrees();
+		  // make it so dirs are within 180 degrees of one another
+		  if (dir2>dir1) {
+		    while (dir2-dir1>180.0) {
+		      dir2 -= 360;
+		    }
+		  }
+		  else {
+		    while (dir1-dir2>180.0) {
+		      dir1 -= 360;
+		    }
+		  }
 
-		AdobeGraphics::Point c2=p2-center;
-		double endRadius=c2.Magnitude();
-		AdobeGraphics::Point c1=p1-center;
-		double startRadius=c1.Magnitude();
+		  if (fabs(dir2-dir1)<1e-6) {
+		    // directions are the same
+		    // we just draw a direct line -- either it works, or the problem is impossible
+		    path.AppendLine(p1,p2);
+		    return;
+		  }
 
-		int startQuadrant=(int)floor(startAngle/90.0+0.5)%4; // +0.5 for rounding, %4 to normalize it to the range (-4,4)
-		int endQuadrant=(int)floor(endAngle/90.0+0.5)%4;
-		if (startQuadrant<0) {
-			startQuadrant += 4;
+		  AdobeGraphics::Point vecP1ToCenter,vecP2ToCenter;
+		  if (dir2>dir1) {
+		    vecP1ToCenter=AdobeGraphics::Point::UnitDirectionVector(dir1+90);
+		    vecP2ToCenter=AdobeGraphics::Point::UnitDirectionVector(dir2+90);
+		  }
+		  else {
+		    vecP1ToCenter=AdobeGraphics::Point::UnitDirectionVector(dir1-90);
+		    vecP2ToCenter=AdobeGraphics::Point::UnitDirectionVector(dir2-90);
+		  }
+		  AdobeGraphics::Point vecCenterToP1=-vecP1ToCenter,vecCenterToP2=-vecP2ToCenter;
+		  vecCenterToP1 *= drawingParams.backboneConnectorCircleRadius;
+		  vecCenterToP2 *= drawingParams.backboneConnectorCircleRadius;
+
+		  if (d) { printf("p1=(%lg,%lg), p2=(%lg,%lg), dir1=%lg,dir2=%lg. radius=%lg.  vecCenterToP1=(%lg,%lg), vecCenterToP2=(%lg,%lg)\n",p1.GetX(),p1.GetY(),p2.GetX(),p2.GetY(),dir1,dir2,drawingParams.backboneConnectorCircleRadius,vecCenterToP1.GetX(),vecCenterToP1.GetY(),vecCenterToP2.GetX(),vecCenterToP2.GetY());}
+
+		  AdobeGraphics::Point vecP1ToP2=vecCenterToP2-vecCenterToP1;
+
+		  AdobeGraphics::Point p2MinusArc=p2-vecP1ToP2;
+		  if (d) { printf("vecP1ToP2=(%lg,%lg),vecP1ToP2=(%lg,%lg)\n",vecP1ToP2.GetX(),vecP1ToP2.GetY(),vecP1ToP2.GetX(),vecP1ToP2.GetY()); }
+
+		  // find intersection of lines from p1 with direction v1 and line at p2MinusArc with v2
+		  bool linesAreParallel;
+		  AdobeGraphics::Point intersection;
+		  double t1,t2; // lengths along direction vectors v1,v2
+		  IntersectTwoParametricLines(linesAreParallel,intersection,t1,t2,p1,v1,p2MinusArc,v2);
+
+		  if (d) { printf("linesAreParallel=%s, intersection=(%lg,%lg) , t1=%lg, t2=%lg\n",linesAreParallel?"true":"false",intersection.GetX(),intersection.GetY(),t1,t2); }
+
+		  if (linesAreParallel) {
+		    // give up
+		    if (d) { printf("give up: lines are parallel\n");}
+		    path.AppendLine(p1,p2);
+		    return;
+		  }
+
+		  if (t1<0 || t2>0) { // should go forward from p1 (t1>=0) and backup from p2 (t2<=0), otherwise the strategy doesn't work
+		    // give up -- wrong side of lines
+		    if (d) { printf("give up: wrong side of at least one of the lines -- need to do something more sophisticated\n");}
+		    path.AppendLine(p1,p2);
+		    return;
+		  }
+
+		  // otherwise we can do it
+		  AdobeGraphics::Point p1SideOfArc=intersection;
+		  AdobeGraphics::Point p2SideOfArc=intersection + vecP1ToP2;
+
+		  if (d) { printf("p1=(%lg,%lg) , p1SideOfArc=(%lg,%lg) , p2SideOfArc=(%lg,%lg), p2=(%lg,%lg)\n",p1.GetX(),p1.GetY(),p1SideOfArc.GetX(),p1SideOfArc.GetY(),p2SideOfArc.GetX(),p2SideOfArc.GetY(),p2.GetX(),p2.GetY()); }
+		  		  
+		  myLines.AppendLine(p1,p1SideOfArc);
+		  
+		  AdobeGraphics::Arc arc;
+		  arc.center=p1SideOfArc-vecCenterToP1; // would be more logical to add +vecP1ToCenter, but we never scaled that to the actual radius
+		  arc.radius=drawingParams.backboneConnectorCircleRadius;
+		  arc.startAngle=vecCenterToP1.GetDirInDegrees();
+		  arc.endAngle=vecCenterToP2.GetDirInDegrees();
+		  arc.increasingAngle=dir2>dir1;
+		  if (arc.increasingAngle && arc.startAngle>arc.endAngle) {
+		    arc.endAngle += 360;
+		  }
+		  if (!arc.increasingAngle && arc.startAngle<arc.endAngle) {
+		    arc.endAngle -= 360;
+		  }
+		  if (d) { printf("arc.center=(%lg,%lg), arc.radius=%lg, arc.startAngle=%lg, arc.endAngle=%lg, from=(%lg,%lg), p1SideOfArc=(%lg,%lg)\n",arc.center.GetX(),arc.center.GetY(),arc.radius,arc.startAngle,arc.endAngle,arc.GetFrom().GetX(),arc.GetFrom().GetY(),p1SideOfArc.GetX(),p1SideOfArc.GetY()); }
+		  myLines.Append(arc);
+
+		  if (false) { // I think we're never supposed to output this line.  at least not for the 5' label
+		    myLines.AppendLine(p2SideOfArc,p2);
+		  }
+
+		  if (threePrime) {
+		    myLines.ReverseDirection();
+		  }
 		}
-		if (endQuadrant<0) {
-			endQuadrant += 4;
-		}
-		bool increasingAngle=false;
-		if (endQuadrant==3 && startQuadrant==0) {
+		else {
+
+		  double centerX=fabs(v1.GetX())*p1.GetX() + fabs(v2.GetX())*p2.GetX(); // project p1 onto v1 and p2 onto v2, and add.
+		  double centerY=fabs(v1.GetY())*p1.GetY() + fabs(v2.GetY())*p2.GetY();
+		  AdobeGraphics::Point center(centerX,centerY);
+		  double startAngle=(p1-center).GetDirInDegrees();
+		  double endAngle=(p2-center).GetDirInDegrees();
+
+		  AdobeGraphics::Point c2=p2-center;
+		  double endRadius=c2.Magnitude();
+		  AdobeGraphics::Point c1=p1-center;
+		  double startRadius=c1.Magnitude();
+
+		  int startQuadrant=(int)floor(startAngle/90.0+0.5)%4; // +0.5 for rounding, %4 to normalize it to the range (-4,4)
+		  int endQuadrant=(int)floor(endAngle/90.0+0.5)%4;
+		  if (startQuadrant<0) {
+		    startQuadrant += 4;
+		  }
+		  if (endQuadrant<0) {
+		    endQuadrant += 4;
+		  }
+		  bool increasingAngle=false;
+		  if (endQuadrant==3 && startQuadrant==0) {
+		    std::swap(startQuadrant,endQuadrant);
+		    std::swap(startRadius,endRadius);
+		    increasingAngle=true;
+		  }
+		  else {
+		    if (startQuadrant==3 && endQuadrant==0) {
+		      // already good
+		    }
+		    else {
+		      if (startQuadrant>endQuadrant) {
 			std::swap(startQuadrant,endQuadrant);
 			std::swap(startRadius,endRadius);
 			increasingAngle=true;
-		}
-		else {
-			if (startQuadrant==3 && endQuadrant==0) {
-				// already good
-			}
-			else {
-				if (startQuadrant>endQuadrant) {
-					std::swap(startQuadrant,endQuadrant);
-					std::swap(startRadius,endRadius);
-					increasingAngle=true;
-				}
-			}
-		}
+		      }
+		    }
+		  }
 
-		double scaleArcBy=1.0/3.0;
-		startRadius *= scaleArcBy;
-		endRadius *= scaleArcBy;
-		AdobeGraphics::Point miniArcCenter=center + (p1+p2-center*2.0)*(1.0-scaleArcBy);
+		  double scaleArcBy=1.0/3.0;
+		  startRadius *= scaleArcBy;
+		  endRadius *= scaleArcBy;
+		  AdobeGraphics::Point miniArcCenter=center + (p1+p2-center*2.0)*(1.0-scaleArcBy);
 
-		AdobeGraphics::LineOrArcList myLines;
 
-		AdobeGraphics::LineOrArc arc;
-		arc.type=AdobeGraphics::LineType_QuarterEllipseArc;
-		arc.qearc.center=miniArcCenter;
-		arc.qearc.increasingAngle=increasingAngle;
-		arc.qearc.startRadius=startRadius;
-		arc.qearc.endRadius=endRadius;
-		NormalizeDegrees(startAngle);
-		arc.qearc.quadrant=startQuadrant;
-		arc.qearc.center=miniArcCenter;
-		if (threePrime) {
-			arc.ReverseDirection();
-		}
-		else {
-			myLines.Append(arc);
-		}
+		  AdobeGraphics::LineOrArc arc;
+		  arc.type=AdobeGraphics::LineType_QuarterEllipseArc;
+		  arc.qearc.center=miniArcCenter;
+		  arc.qearc.increasingAngle=increasingAngle;
+		  arc.qearc.startRadius=startRadius;
+		  arc.qearc.endRadius=endRadius;
+		  NormalizeDegrees(startAngle);
+		  arc.qearc.quadrant=startQuadrant;
+		  arc.qearc.center=miniArcCenter;
+		  if (threePrime) {
+		    arc.ReverseDirection();
+		  }
+		  else {
+		    myLines.Append(arc);
+		  }
 
-		AdobeGraphics::Point from=p1+(p2-center)*(1.0-scaleArcBy),to=p1;
-		if (threePrime) {
-			myLines.AppendLine(to,from);
-			myLines.Append(arc);
-		}
-		else {
-			myLines.AppendLine(from,to);
+		  AdobeGraphics::Point from=p1+(p2-center)*(1.0-scaleArcBy),to=p1;
+		  if (threePrime) {
+		    myLines.AppendLine(to,from);
+		    myLines.Append(arc);
+		  }
+		  else {
+		    myLines.AppendLine(from,to);
+		  }
 		}
 
 		path.Append(myLines);
@@ -330,7 +435,7 @@ void OutlineNucInCircularLayout (const AdobeGraphics& pdf,OtherDrawingStuff& oth
 	if (posInfoVector[pos].varBackbone) {
 		// for circular layout nucs, this is where we add the backbone label text
 		AddTickLabelMoreGeneric(pdf,otherDrawingStuff,posInfoVector,pos,drawingParams,nucDir,center+AdobeGraphics::Point::UnitDirectionVector(nucDir)*radius,
-			false,drawingParams.font,posInfoVector[pos].varBackboneText);
+			false,drawingParams.varBackbone_font,posInfoVector[pos].varBackboneText);
 	}
 }
 double NumVirtualNucs (ManagedPosInfoVector& posInfoVector,int pos)
@@ -374,6 +479,7 @@ void GenericCircularPositioning(const DrawingParams& drawingParams,ManagedPosInf
 								bool endPointsAreNotOnBulge)
 {
 	//{OtherDrawingStuff::Line line; line.p1=centerOfCircle; line.p2=centerOfCircle+firstPointVector; line.penWidth=AdobeGraphics::PointsToInches(0.5); otherDrawingStuff.lineList.push_back(line);}
+  //  if (endPointsAreNotOnBulge) {    printf("not on bulge %d,%d,%d\n",firstNuc,lastNuc,incNuc);  }
 
 	double dir=firstPointVector.GetDirInDegrees();
 
@@ -399,6 +505,61 @@ void GenericCircularPositioning(const DrawingParams& drawingParams,ManagedPosInf
 		posInfoVector.SetValid(lastNuc);
 		OutlineNucInCircularLayout_InfoOnly(pdf,otherDrawingStuff,posInfoVector,lastNuc,drawingParams,dir,degreesIncrement,centerOfCircle,radius,incNuc,circleDoesNotIntersectNextPoint);
 	}
+}
+bool AreEndpointsActuallyNicelyOnBulge(ManagedPosInfoVector& posInfoVector,AdobeGraphics::Point centerOfCircle,AdobeGraphics::Point firstPointVector,double radius,double degreesIncrement,int firstNuc,int lastNuc,int incNuc)
+{
+  AdobeGraphics::Point p1=posInfoVector[firstNuc].pos;
+  AdobeGraphics::Point p2=posInfoVector[lastNuc].pos;
+  AdobeGraphics::Point p1vec=p1-centerOfCircle;
+  AdobeGraphics::Point p2vec=p2-centerOfCircle;
+  //printf("(%lg,%lg),(%lg,%lg),(%lg,%lg)\n",p1vec.GetX(),p1vec.GetY(),p2vec.GetX(),p2vec.GetY(),firstPointVector.GetX(),firstPointVector.GetY());
+  double r1=p1vec.Magnitude();
+  double r2=p2vec.Magnitude();
+  if (fabs(r1-radius)>1e-6 || fabs(r2-radius)>1e-6) {
+    // not on circle, so it's not good
+    return false;
+  }
+
+  // hmm, now I think it is sufficient that the two points are on the circle (i.e., radii are correct).  it's possible that the angles are wrong, but then the arc lengths can just be changed.
+  return true;
+#if 0
+  // BTW, the following code didn't work -- err2 was always non-zero, and I'm not clear why.
+  // actually, it's nice that the radii are the same, but we really need to check that the points are the same
+  double err1=(p1vec-firstPointVector).Magnitude(); // deviation between actually firstNuc position and the expected one, according to the bulge
+  AdobeGraphics::Point dirVec=AdobeGraphics::Point::UnitDirectionVector(degreesIncrement*fabs(lastNuc-firstNuc)); // the total angle of the bulge, expected
+  AdobeGraphics::Point p2vecExpected=firstPointVector*dirVec;
+  double err2=(p2vecExpected-p2vec).Magnitude();
+  if (err1>=1e-6 || err2>=1e-6 ){
+    printf("%lg,%lg,%lg,%lg\n",err1,err2,degreesIncrement,fabs(lastNuc-firstNuc));
+    return false;
+  }
+  return true;
+#endif
+}
+bool ArePointsActuallyNicelyOnBulge(ManagedPosInfoVector& posInfoVector,AdobeGraphics::Point centerOfCircle,double radius,double degreesIncrement,int firstNuc,int incNuc)
+{
+  int otherNuc=firstNuc+incNuc;
+  AdobeGraphics::Point p1=posInfoVector[firstNuc].pos;
+  AdobeGraphics::Point p2=posInfoVector[otherNuc].pos;
+  //printf("(%lg,%lg),(%lg,%lg)\n",p1.GetX(),p1.GetY(),p2.GetX(),p2.GetY());
+  AdobeGraphics::Point p1vec=p1-centerOfCircle;
+  AdobeGraphics::Point p2vec=p2-centerOfCircle;
+  double r1=p1vec.Magnitude();
+  double r2=p2vec.Magnitude();
+  if (fabs(r1-radius)>1e-6 && fabs(r2-radius)>1e-6) {
+    // not on circle, so it's not good
+    return false;
+  }
+
+  AdobeGraphics::Point dirVec=AdobeGraphics::Point::UnitDirectionVector(degreesIncrement);
+  AdobeGraphics::Point p2vecExpected=p1vec*dirVec;
+  printf("p1,p2,expected: (%lg,%lg),(%lg,%lg),(%lg,%lg),deg=%lg. %d,%d,%d\n",p1vec.GetX(),p1vec.GetY(),p2vec.GetX(),p2vec.GetY(),p2vecExpected.GetX(),p2vecExpected.GetY(),degreesIncrement,firstNuc,otherNuc,incNuc);
+  if ((p2vecExpected-p2vec).Magnitude()>1e-6) {
+    // violates direction
+    return false;
+  }
+  // passed all tests
+  return true;
 }
 // layout internal loop keeping distance between pairs the same, by bulging out a circle
 void PositionInternalLoopBulgey(TwoPassInfo& twoPassInfo,const SsContext& ssContext,const DrawingParams& drawingParams,
@@ -440,6 +601,17 @@ void PositionInternalLoopBulgey(TwoPassInfo& twoPassInfo,const SsContext& ssCont
 
 	double dirBeforeBulge=firstPointVector.GetDirInDegrees();
 	AdobeGraphics::Point checkBeforeBulge=centerOfCircle+AdobeGraphics::Point::UnitDirectionVector(dirBeforeBulge)*radius;
+
+    if (endPointsAreNotOnBulge) {
+      // check if the end points are, by coincidence, on the circle
+      //if (ArePointsActuallyNicelyOnBulge(posInfoVector,centerOfCircle,radius,degreesIncrement,firstNuc,incNuc) && ArePointsActuallyNicelyOnBulge(posInfoVector,centerOfCircle,radius,degreesIncrement,lastNuc-incNuc,lastNuc)) {
+
+      // NOTE: looks like the internal points have not yet had their positions determined
+      // NOTE: there's no way to say that one point is on the circle, but the other isn't.  oh well.
+      if (AreEndpointsActuallyNicelyOnBulge(posInfoVector,centerOfCircle,firstPointVector,radius,degreesIncrement,firstNuc,lastNuc,incNuc)) {
+        endPointsAreNotOnBulge=false; // false alarm
+      }
+    }
 
 	GenericCircularPositioning(drawingParams,posInfoVector,pdf,otherDrawingStuff,firstNuc,lastNuc,incNuc,centerOfCircle,firstPointVector,radius,degreesIncrement,endPointsAreNotOnBulge);
 }
@@ -1491,6 +1663,25 @@ void HackForPknots_SplitInternalLoopsThatComeAfterStems(SsContextList& ssContext
 	ssContextList.insert(ssContextList.end(),tempList.begin(),tempList.end());
 }
 
+std::string InfoOnOverlappingPlaceExplicitToString (PosInfoVector& posInfoVector,SsContext& ss)
+{
+  std::string s;
+  for (int pos=ss.LeftExtreme(); pos<=ss.RightExtreme(); pos++) {
+    if (ss.Within(pos)) {
+      const PosInfo::PlaceExplicit& pe=posInfoVector[pos].placeExplicit;
+      if (pe.enable) {
+        if (!s.empty()) {
+          s += " , ";
+        }
+        bool defaultRule=false;
+        s += stringprintf("rawpos=%d/%d,%s,%s:%d",
+                          pos,pe.relativeToPos,defaultRule?"defaultRule":"explicitRule",pe.fileName.c_str(),pe.lineNum);
+      }
+    }
+  }
+  return s;
+}
+
 
 void AddPlaceExplicitLinks(vector<SsContextWithPlaceExplicitLinks *>& posToSsContext,SsContextWithPlaceExplicitLinksList& ssContextPeList,SsContextList& ssContextList,PosInfoVector& posInfoVector,const OtherDrawingStuff& otherDrawingStuff)
 {
@@ -1516,9 +1707,11 @@ void AddPlaceExplicitLinks(vector<SsContextWithPlaceExplicitLinks *>& posToSsCon
 		for (int pos=leftExtreme; pos<=rightExtreme; pos++) {
 			if (ssi->Within(pos)) {
 				if (posToSsContext[pos]!=NULL) {
-					throw SimpleStringException("internal error: position %d (raw %d) is within two distinct ssContexts: %s and %s",
+                    std::string placeExplicitInfoStr1=InfoOnOverlappingPlaceExplicitToString(posInfoVector,*ssi);
+                    std::string placeExplicitInfoStr2=InfoOnOverlappingPlaceExplicitToString(posInfoVector,*(posToSsContext[pos]));
+					throw SimpleStringException("internal error: position %d (raw %d) is within two distinct ssContexts: %s {placeexplicitinfo=%s} and %s {placeexplicitinfo=%s}.  NOTE: you might be able to avoid this error by changing which stems go in the main #=GC SS_cons line, and which are considered pseudoknots (e.g. #=GC SS_cons_1)",
 						FindTextColOfPos(otherDrawingStuff,pos),pos,
-						ssi->ToStringOfCoords(otherDrawingStuff).c_str(),posToSsContext[pos]->ToStringOfCoords(otherDrawingStuff).c_str());
+                                                ssi->ToStringOfCoords(otherDrawingStuff).c_str(),placeExplicitInfoStr1.c_str(),posToSsContext[pos]->ToStringOfCoords(otherDrawingStuff).c_str(),placeExplicitInfoStr2.c_str());
 				}
 				assertr(posToSsContext[pos]==NULL); // else we have positions that belong to more than one SsContext
 				posToSsContext[pos]=&(*ssi);
@@ -2164,9 +2357,16 @@ void PositionBackbone (
 		const PosInfo& firstNuc=posInfoVector[0];
 		AdobeGraphics::Point pos0v=AdobeGraphics::Point::UnitDirectionVector(firstNuc.dir);
 
+		// the direction that the 5' line starts out with.  the code only handles the case 0 and -180 degrees, but could be extended to handle arbitrary angles that the user could specific (maybe with SetDrawingParam for something)
+		// to support this, we have to generalize the issue of where the top,left of the text box is relative to the proximal backbone line.  currently, we just say (see below) "double leaveLen=fivePrimeDir==-180 ? 0 : textLen;", but this only handles the cases fivePrimeDir=0 or -180.  to generalize, I think we'd have to work out the rectangle containing the text "5'" (which always flows horizontally), and find where the line in the direction fivePrimeDir intersects the rectangle from the center.  then we can find where that is relative to the top,left, and I think solve it.  however, I don't think there's much need for this feature, so I haven't implemented the full generality
 		double fivePrimeDir=0;
+#if 0
 		if ((pos0v-AdobeGraphics::Point(-1,0)).Magnitude()<1e-6) {
 			fivePrimeDir=-90; // the code below won't draw a 180-degree bend.
+		}
+#endif
+		if (pos0v.GetX()<0) {
+		  fivePrimeDir=-180; // do it backwards, to avoid weird bends
 		}
 		AdobeGraphics::Point fivePrimeV=AdobeGraphics::Point::UnitDirectionVector(fivePrimeDir);
 
@@ -2181,21 +2381,21 @@ void PositionBackbone (
 		}
 		avgDirV.MakeUnitVector();
 		befPos=firstNuc.pos-avgDirV*drawingParams.internucleotideLen;
-		
+
 		OtherDrawingStuff::Line fivePrimeBackbone;
 		fivePrimeBackbone.p1=befPos;
 		fivePrimeBackbone.p2=fivePrimeBackbone.p1
 			- fivePrimeV*drawingParams.fivePrimeBackboneLen;
 		fivePrimeBackbone.penWidth=drawingParams.backboneWidth;
 		if (drawingParams.fivePrimeBackboneLen>0) {
-			otherDrawingStuff.lineList.push_back(fivePrimeBackbone);
+		  otherDrawingStuff.lineList.push_back(fivePrimeBackbone);
 		}
 
 		bool addExtraLigature=false;
 		OtherDrawingStuff::Text fivePrime;
 		fivePrime.text="5'";
 		double textLen=pdf.EstimateUpperBoundTextWidth(drawingParams.font,fivePrime.text.c_str());
-		double leaveLen=textLen;
+		double leaveLen=fivePrimeDir==-180 ? 0 : textLen; // space between text and start of line
 		if (addExtraLigature) {
 			leaveLen += drawingParams.internucleotideLen;
 		}

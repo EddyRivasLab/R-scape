@@ -1,5 +1,6 @@
 class SvgGraphics : public AdobeGraphicsPdfLike {
 protected:
+  static std::string inkscapeHelveticaFontName;
 	FILE *out;
 	void Init (const char *fileName);
 
@@ -21,6 +22,8 @@ public:
 	SvgGraphics (const char *fileName,double _width,double _height);
 	SvgGraphics (const char *fileName,double _width,double _height,const FontFaceSet& fontFaceSet);
 	~SvgGraphics ();
+
+	static void SetInkscapeHelveticaFontName (std::string fontName);
 
 	// WARNING.  careful with this.  default constructor doesn't open any file, but just
 	// allows you to call the 'Estimate...' functions

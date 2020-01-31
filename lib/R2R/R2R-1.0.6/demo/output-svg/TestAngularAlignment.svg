@@ -174,15 +174,15 @@
 </text>
 <path
  fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 38.1116 256.806 A 2.07438,1.43086 270 0,0 36.6807,254.731L 33.819 254.731 "/>
+ d="M 38.1116 258.093 A 2.07438,1.43086 180 0,1 40.186,256.662L 44.3347 256.662 "/>
 <text x="7.5" y="218.325" id="text1050">
   <tspan x="7.5" y="218.325" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1051">2 nt</tspan>
 </text>
 <text x="78.3692" y="252.806" id="text1052">
   <tspan x="78.3692" y="252.806" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1053">3 nt</tspan>
 </text>
-<text x="26.7165" y="257.424" id="text1054">
-  <tspan x="26.7165" y="257.424" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1055">5&apos;</tspan>
+<text x="45.8347" y="259.354" id="text1054">
+  <tspan x="45.8347" y="259.354" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1055">5&apos;</tspan>
 </text>
 <text x="229.104" y="196.154" id="text1056">
   <tspan x="229.104" y="196.154" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1057">TestAngularAlignment.cons alignangle=-32</tspan>
@@ -306,7 +306,7 @@
 </text>
 <path
  fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 248.053 273.818 A 2.15998,1.29803 270 0,0 246.755,271.658L 244.159 271.658 "/>
+ d="M 248.053 275.542 A 2.15998,1.29803 180 0,1 250.213,274.244L 254.533 274.244 "/>
 <path
  fill="none" stroke="#000000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"
  d="M 254.173 278.138 L 254.173 206.138 "/>
@@ -316,8 +316,8 @@
 <text x="269.701" y="285.426" id="text1080">
   <tspan x="269.701" y="285.426" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1081">3 nt</tspan>
 </text>
-<text x="237.057" y="274.35" id="text1082">
-  <tspan x="237.057" y="274.35" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1083">5&apos;</tspan>
+<text x="256.033" y="276.936" id="text1082">
+  <tspan x="256.033" y="276.936" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1083">5&apos;</tspan>
 </text>
 <text x="0" y="302.292" id="text1084">
   <tspan x="0" y="302.292" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1085">TestAngularAlignment.cons alignangle=-45</tspan>
@@ -441,7 +441,7 @@
 </text>
 <path
  fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 34.2953 380.38 A 1.9479,1.59878 270 0,0 32.6966,378.432L 29.499 378.432 "/>
+ d="M 34.2953 381.078 A 1.9479,1.59878 180 0,1 36.2432,379.479L 40.139 379.479 "/>
 <path
  fill="none" stroke="#000000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"
  d="M 40.4153 384.276 L 40.4153 312.276 "/>
@@ -451,8 +451,8 @@
 <text x="61.4577" y="384.305" id="text1108">
   <tspan x="61.4577" y="384.305" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1109">3 nt</tspan>
 </text>
-<text x="22.3965" y="381.125" id="text1110">
-  <tspan x="22.3965" y="381.125" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1111">5&apos;</tspan>
+<text x="41.639" y="382.172" id="text1110">
+  <tspan x="41.639" y="382.172" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1111">5&apos;</tspan>
 </text>
 <text x="229.104" y="302.292" id="text1112">
   <tspan x="229.104" y="302.292" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1113">TestAngularAlignment.cons alignangle=45</tspan>
@@ -576,7 +576,7 @@
 </text>
 <path
  fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"
- d="M 263.318 379.999 A 2.13837,1.33334 270 0,0 261.985,377.861L 259.318 377.861 "/>
+ d="M 263.318 381.609 A 2.13837,1.33334 180 0,1 265.456,380.276L 269.733 380.276 "/>
 <path
  fill="none" stroke="#000000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"
  d="M 269.438 384.276 L 269.438 312.276 "/>
@@ -586,8 +586,8 @@
 <text x="282.743" y="338.453" id="text1136">
   <tspan x="282.743" y="338.453" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1137">3 nt</tspan>
 </text>
-<text x="252.215" y="380.553" id="text1138">
-  <tspan x="252.215" y="380.553" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1139">5&apos;</tspan>
+<text x="271.233" y="382.968" id="text1138">
+  <tspan x="271.233" y="382.968" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="7.5" id="tspan1139">5&apos;</tspan>
 </text>
 <text x="0" y="408.43" id="text1140">
   <tspan x="0" y="408.43" fill="#000000"  font-variant="normal" font-weight="normal" font-style="normal" font-family="Bitstream Vera Sans" font-size="12" id="tspan1141">TestAngularAlignment.cons rots0=-15</tspan>

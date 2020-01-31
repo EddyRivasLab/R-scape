@@ -201,10 +201,22 @@ std::string SsContext::ToStringOfCoords (const OtherDrawingStuff& otherDrawingSt
 	else {
 		userlastcol=stringprintf("%d,%d",FindTextColOfPos(otherDrawingStuff,innerLast),FindTextColOfPos(otherDrawingStuff,outerLast-1));
 	}
-	return stringprintf("[%s;%s] {raw [%d,%d;%d,%d) }",userfirstcol.c_str(),userlastcol.c_str(),
+	return stringprintf("[%s;%s] %s {raw [%d,%d;%d,%d) }",userfirstcol.c_str(),userlastcol.c_str(),TypeName(),
 		outerFirst,innerFirst,innerLast,outerLast);
 }
 
+std::string GetExtraPlaceExplicitInfoForDebug(const SsContextWithPlaceExplicitLinks& ss)
+{
+  std::string s;
+  for (PlaceExplicitList::const_iterator i=ss.links.begin(); i!=ss.links.end(); i++) {
+    if (!s.empty()) {
+      s += " , ";
+    }
+    s += stringprintf("rawpos=%d/%d,%s,%s:%d",
+                      i->pos,i->relativeToPos,i->defaultRule?"defaultRule":"explicitRule",i->fileName.c_str(),i->lineNum);
+  }
+  return s;
+}
 
 
 AdobeGraphics::Color ParseColor(const DrawingParams& drawingParams,std::string colorStr)

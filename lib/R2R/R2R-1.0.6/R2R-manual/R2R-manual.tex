@@ -45,7 +45,7 @@
 \example{{\tt #1}}
 }
 \begin{document}
-\newcommand{\myversion}[0]{1.0.6}
+\newcommand{\myversion}[0]{1.0.6.1-49-g7bb81fb}
 %\lhead{}\chead{}\rhead{}\lfoot{R2R version \myversion{} user manual}\cfoot{}\rfoot{\thepage}\renewcommand{\headrulewidth}{0pt}\pagestyle{fancy}
 \floatstyle{ruled}
 \restylefloat{figure}
@@ -127,6 +127,7 @@ So, if you just want to draw one RNA, it might be most efficient to go straight 
 \item R2R is not designed to produce drawings that illustrate many elements of tertiary structure, or whose layouts are based on atomic-resolution 3-D structures.
 R2R is only intended to create more abstract layouts of secondary structure that reflect Watson-Crick base pairing.
 \item R2R is not a fully general drawing program, or even a fully general RNA-drawing program.  R2R should be used in combination with general-purpose drawing programs like Adobe Illustrator or Inkscape.
+  \item R2R does not quite respect the Stockholm file format.  See section~\ref{sec:notstockholm} for details.
 \end{itemize}
 
 \section{Credit}
@@ -138,7 +139,7 @@ If you distribute R2R or derivatives of it, please continue to credit Infernal, 
 \section{Licensing}
 
 The files in the main directory (documentation), the {\tt src} and the {\tt demo}
-subdirectories are copyright 2009-2010 by 
+subdirectories are copyright 2009-\the\year{} by 
 Zasha Weinberg, except as noted.  The entire package is distributed freely but without any warranty whatsoever
 under the GNU General Public License.
 For details, see \url{http://www.gnu.org/licenses}.
@@ -146,7 +147,30 @@ For details, see \url{http://www.gnu.org/licenses}.
 \section{Changes from previous versions}
 
 \begin{itemize}
-%\item Version 1.0.7 (voraussichtlich)
+\item Version 1.0.7 (anticipated)
+  \begin{itemize}
+  \item Added the ability to change the names of the individual drawings that R2R outputs into PDF of SVG files.  This is for use by R-scape.  See Section~\ref{sec:displayName}.
+  \item Added ability to change the name of the font that R2R puts in SVG files, so that Inkscape is happier.  This has no effect on generated PDF files.  See Section~\ref{sec:runRtoR} and Section~\ref{sec:Makefile:perloptions}.
+  \item When ignoring secondary structures line (usually for pseudoknots), you can now get R2R to draw an outline around the paired nucleotides, without drawing colored rectangles (for covariation) that relate to that secondary structure line.  See the {\tt outline-no-bpannot} option in section~\ref{sec:ignoressexceptforpairs}.
+  \item Added ability to use different sequence-weighting algorithm with the Makefile functionality.  See Section~\ref{makefileseqweighting}.
+  \item With the the Makefile functionality, added ability to set a global set of drawing parameter values (See Section~\ref{SetDrawingParam} for information on drawing parameters) that apply to all drawings, effectively setting new default values for parameters, in case you don't like the default values I selected.  (See Section~\ref{sec:Makefile:perloptions}.)
+  \item R2R will now attempt to draw the text marking the $5^\prime$ end, as well as a line connecting to the first nucleotide, even if the first nucleotide runs at a weird angle (i.e., not a multiple of 90).  It seems to mostly look reasonable.  This is influenced by the new {\tt backboneConnectorCircleRadius} drawing param (See Section~\ref{SetDrawingParam}.), but the default value seems to work pretty reasonably.
+    \item Added an ability to control what R2R calls the various pseudoknots in callout-style drawings of pseudoknots.  See the {\tt prefixSsWithPkInDrawings} parameter in Section~\ref{SetDrawingParam}.  This feature is for R-scape.
+  \item Added various drawing parameters (See Section~\ref{SetDrawingParam}.):
+    \begin{itemize}
+    \item {\tt nucTickLabel\_tickColor}, which determines the color of all lines that are part of tick labels.  There is no way to set the color of individual tick lines.
+    \item {\tt varBackboneFontSize} : font size for text with {\tt var\_backbone} and related commands.
+    \item {\tt varTermLoopFontSize} : font size for text with {\tt var\_term\_loop} command.
+    \item {\tt backboneAnnotTextOffset} : is now, by default, set based on {\tt varBackboneFontSize}.  (And it's now documented.)
+    \item {\tt backboneConnectorCircleRadius} :the radius of the arc that R2R uses to bend the backbone, esp. when drawing the $5^\prime$ end of the molecule.
+    \end{itemize}
+  \item The script {\tt SelectSubFamilyFromStockholm.pl} is now installed into the {\tt bin} directory in {\tt make install}.
+  \item added {\tt -{}-cutEmptyLines} flag for {\tt r2r}, to supress blank lines added in some circumstances by the {\tt -{}-GSC-weighted-consensus} flag. These blank lines are intended to preserve line numbers, so that error messages make sense with the original file, but they violate Stockholm format, which is a hassle in some cases. (See Section~\ref{sec:gscgeneral}.)
+  \item Fixed a bug where an input file without a {\tt \#=GC SS\_cons} line caused a segmentation fault.
+  \item Documented incompatibilities between R2R and the Stockholm format.  See section~\ref{sec:notstockholm}.
+  \item Documented other flags for {\tt r2r} with the {\tt -{}-GSC-weighted-consensus} flag.  See Section~\ref{sec:gscgeneral}.
+  \item Added ability to explicitly set the covariation shading of base pairs.  See Section~\ref{sec:setcovaryshade}.  
+  \end{itemize} 
 \item Version 1.0.6
   \begin{itemize}
   \item Integrated NLOPT optimization library as an alternative to CFSQP.  NLOPT does not seem to work quite as well as CFSQP for some problems posed by R2R.  But, it mostly works comparably and is free software, whereas CFSQP is annoying to obtain.  Note: NLOPT has a lot of solvers and parameters I didn't try out, so it's possible that it could work better if set up differently.
@@ -359,6 +383,8 @@ Although these files can be edited in any text editor, some programs
 are customized for them.
 One example is RALEE \cite{RALEE}, which is a set of macros for
 the Emacs text editor.
+Please see section~\ref{sec:notstockholm} for a full discussion of how R2R does not fully implement the Stockholm file format.
+You can convert Stockholm-format alignments into the Pfam format using the {\tt esl-reformat} command that comes with the HMMER and Infernal software packages in the {\tt easel/miniapps} directory.
 
 \chapter{Tutorial: a guide to R2R with examples}
 \label{GettingStarted}
@@ -485,6 +511,8 @@ file used to draw the consensus.
 }
 Figure~\ref{fig:demo1} shows a simple alignment, and R2R's drawing of the consensus of the alignment.  
 Elements of the Stockholm-format alignment file are illustrated.  Note that R2R cannot process ``interleaved'' Stockholm files, in which sequences can span multiple lines; this restricted form of the Stockholm format is called the Pfam format.
+Please see section~\ref{sec:notstockholm} for a complete discussion on how R2R does not fully conform to the Stockholm file format.
+You can convert Stockholm-format alignments into the Pfam format using the {\tt esl-reformat} command that comes with the HMMER and Infernal software packages in the {\tt easel/miniapps} directory.
 \index{Stockholm file format}
 
 The drawing was made by running the following commands within the {\tt demo} directory.  (Actually,
@@ -1329,11 +1357,7 @@ markup summarizing what is conserved.
 In the {\it output-sto} file, the line {\tt \#=GC cons} will contain a dash ({\tt -}) for columns that are classified as gaps, and a nucleotide for non-gap columns.
 Gap columns are, by default, removed from the consensus when R2R draws it.  See Section~\ref{sec:gscmarkup} for details on the added contents of the {\it output-sto} file.
 
-Available flags are:
-\begin{itemize}
-\item {\tt -{}-disable-usage-warning} : do not show the warning about not using R2R to predict covariation in the output drawing
-\item {\tt -{}-maxNonCanonInNoVariationObserved} {\it fraction} : by default {\it fraction}=1. This means that R2R will tolerate up to 10\% non-canonical base pairs, while depicting base pairs that do not vary (among canonical pairs).  A fraction of {\it fraction}=0 will prevent non-canonical base pairs, and is probably a better idea.
-\end{itemize}
+Available flags that alter the behavior of this process are described in Section~\ref{sec:gscmarkup}.
 
 \section{``Fragmentary'' alignments}
 
@@ -1406,10 +1430,18 @@ the {\tt \#=GF USE\_THIS\_WEIGHT\_MAP} tag is present.
 
 This section gives additional detail on the command that will likely not be relevant to most readers' needs.
 
-{\tt r2r -{}-GSC-weighted-consensus} {\it input-sto} {\it output-sto} {\it identity-levels} [...] {\it present-levels} [...] {\it max-non-canon}
+{\tt r2r} {\it{} [other flags]} {\tt -{}-GSC-weighted-consensus} {\it input-sto} {\it output-sto} {\it identity-levels} [...] {\it present-levels} [...] {\it max-non-canon}
 
 where
 \begin{itemize}
+\item optional {\it{} [other flags]} are:
+  \begin{itemize}
+  \item {\tt -{}-maxNonCanonInNoVariationObserved} {\it fraction} : by default {\it fraction}=1. This means that R2R will tolerate up to 10\% non-canonical base pairs, while depicting base pairs that do not vary (among canonical pairs).  A fraction of {\it fraction}=0 will prevent non-canonical base pairs, and is probably a better idea.
+  \item {\tt -{}-cutEmptyLines} : in some circumstances, {\tt r2r} must eliminate lines from the input file.  This occurs when the input file has lines such as {\tt \#=GC cons} that {\tt r2r} wants to output.  Instead of deleting the lines, {\tt r2r} will substitute these lines with empty lines, in order to keep the line numbers consistent, so that any error messages will make sense with the line numbers of the original file.  You can suppress these empty lines with the {\tt -{}-cutEmptyLines} flag.
+  \item {\tt -{}-topNMostConserved} {\it N} : indicate which of the columns are among the {\it N} most conserved.  The output is in the form of an extra label line ``{\tt \#=GC R2R\_XLABEL\_mostcommon}''.  The conserved columns are indicated with an `{\tt x}', while the other columns have a dot.
+  \item {\tt -{}-position-based-weights} : do not weight sequences with the GSC Algorithm, but instead use a position-weight-based algorithm (which is also implemented by the Squid library of the older version of Infernal that is included as part of the R2R code).  This algorithm is significantly faster with many sequences, but might not work as well as the GSC algorithm.
+  \item {\tt -{}-verbose} : print out a bit of extra info to {\tt stderr}.  The extra information is very limited, so ``verbose'' is kind of an exaggeration.
+  \end{itemize}
 \item {\it identity-levels} is an integer $N$ followed by $N$ real numbers.  $N$ defines the number of different levels for classifying the degree of conservation of a nucleotide identity.  The real numbers define a minimum frequency (from 0 to 1) for each level, and must be in decreasing order.
 \item {\it present-levels} is also an integer $N$ followed by $N$ real numbers.  In this case, $N$ defines the number of different levels for classifying how frequently the nucleotide is present.  The real numbers define minimum frequencies (0 to 1) for each level, and must be in decreasing order.
 \item {\it max-non-canon} is a real number specifying the maximum frequency (0 to 1) of non-canonical base pairs.  Non-canonical base pairs are nucleotide pairs that are not A-U, C-G, G-C, U-A, G-U or U-G.  If the number of non-canonical base pairs in paired-columns exceeds {\it max-non-canon}, then R2R will never declare covarying, compatible, or non-mutating pairs.  In other words, it will always declare code {\tt ?}, which corresponds to base pairs that are not shaded in consensus diagrams.
@@ -1482,9 +1514,13 @@ for shading of base pairs.
 \chapter{Reference: drawing}
 
 \section{Running R2R}
+\label{sec:runRtoR}
 
 R2R processes Stockholm-format ({\tt .sto}) files with special markup.
-(Note that interleaved lines are not permitted, so technically R2R can only process Pfam format.)  The files must have information on the consensus, which is also made by running R2R
+Note that interleaved lines are not permitted, so technically R2R can only process Pfam format.  R2R has some other incompatibilities with Stockholm format, as explained in section~\ref{sec:notstockholm} for details.
+You can convert Stockholm-format alignments into the Pfam format using the {\tt esl-reformat} command that comes with the HMMER and Infernal software packages in the {\tt easel/miniapps} directory.
+
+The files must have information on the consensus, which is also made by running R2R
 (see Chapter~\ref{consensus}).
 
 There are two command lines you can use to process Stockholm-format alignments:
@@ -1516,14 +1552,15 @@ Therefore, you should use a font that is related to Helvetica: Helvetica, Arial,
 The following flag can be added after {\tt r2r}:
 \begin{itemize}
 \item {\tt -{}-disable-usage-warning} : do not output the warning at the top of the PDF or SVG file.  By default, R2R warns about appropriate usage.
+\item {\tt -{}-inkscape-helvetica-font-name} {\it fontName} : use this font name in output SVG files.  Inkscape is sometimes happier if this name matches a font that it has.  The default is ``{\tt Bitstream Vera Sans}''.
 \end{itemize}
 
-\section{About the Stockholm file format}
+\section{About the Stockholm file format, and how R2R uses it}
 
 R2R uses the generalizable format of Stockholm files to specify markup that defines how a motif is drawn.
 Stockholm format is explained on Wikipedia (\url{http://en.wikipedia.org/wiki/Stockholm_format}).
 
-Note that R2R cannot process interleaved lines, and thus it truly only processes ``Pfam format''.  With interleaved lines, the sequence for a given ``hit'' within an alignment can span multiple lines of text, and this is used to reduce the width of files.  In Pfam format, sequences and column annotation (for \#=GC and \#=GR lines) must be written in one line.
+R2R's deviations from the Stockholm format are explained in section~\ref{sec:notstockholm}.
 
 The key ideas is that R2R uses the following types of annotation:
 \begin{itemize}
@@ -1569,6 +1606,21 @@ when the exact structure is unknown.
 R2R does not work with consensus structures in Rfam format.
 Supporting such a format automatically would require some rethinking of structure-related commands such
 as {\tt ignore\_ss\_except\_for\_pairs}.
+
+\subsection{R2R does not conform to the Stockholm file format}
+\label{sec:notstockholm}
+
+R2R is not fully compatible with the Stockholm file format.  Thanks to Elena Rivas for helping with this information.
+
+\begin{itemize}
+\item R2R cannot process interleaved lines, and thus it truly only processes ``Pfam format'', which is a subset of Stockholm format.  With interleaved lines, the sequence for a given ``hit'' within an alignment can span multiple lines of text, and this is used to reduce the width of files.  In Pfam format, sequences and column annotation (for \#=GC and \#=GR lines) must be written in one line.
+
+You can convert Stockholm-format alignments into the Pfam format using the {\tt esl-reformat} command that comes with both the HMMER and Infernal software packages in the {\tt easel/miniapps} directory (in both software packages).
+\item R2R and the Stockholm format differ in their usage of whitespace, which is defined as one or more consecutive non-printable characters, like spaces, tabs or newlines.  R2R requires that most whitespace consist of exactly one space or tab character.  Whitespace separates components of the Stockholm format.  For example, the line
+  \examplett{\#=GC MAGIC\_COLUMNS  ......*......**}
+  has the components {\tt\#=GC}, {\tt MAGIC\_COLUMNS} and {\tt ......*......**}.  Each of these components are separated by whitespace.  For R2R, there must be exactly one space or tab character between {\tt\#=GC} and {\tt MAGIC\_COLUMNS}, but the Stockholm format allows multiple spaces.  Some programs use multiple spaces to line things up to make it easier for humans to read, or for other reasons.  Such alignments would need to have the extra spaces removed in order for R2R to be able to parse them.  Multiple spaces are allowed by R2R between {\tt MAGIC\_COLUMNS} and {\tt ......*......**}.
+  \item As noted in the previous section, R2R's definition of conserved secondary structure differs from the mechanism used by the Rfam Database.  However, this definition does not belong to the Stockholm format definition.
+\end{itemize}
 
 \section{R2R ``drawing units''}
 \label{drawingunits}
@@ -1633,7 +1685,7 @@ as
 \label{metafile}
 You specify what files R2R should process in a file with extension
 {\tt .r2r\_meta}.
-The file is tab delimited.  If the first (tab-delimited) field is empty,
+The file is tab delimited---all fields must be separated by tab characters.  If the first (tab-delimited) field is empty,
 the line is ignored (i.e., this is a comment).
 
 If a line has only one field, that field is the path to a Stockholm-format
@@ -1644,6 +1696,19 @@ can change the default settings of certain drawing parameters (see below).
 
 You can also specify that a single RNA molecule should be drawn (rather than a consensus),
 as described below.
+
+\subsection{Display name}
+\label{sec:displayName}
+
+R2R will output multiple drawings into its output PDF or SVG file.  There is one drawing per line in the {\tt .r2r\_meta} file.  By default, R2R creates names for these drawings that are based on the file name and any other parameters you specify (such as `defines' or `oneseq' mode, as explained in the following subsections).  You can override the name for any line (in the {\tt .r2r\_meta} file) by adding
+
+\examplett{
+  {\tt displayname} {\it name}
+}
+
+to the line (as tab-delimited fields, like normal).
+
+This functionality is for R-scape, and any other software that automatically generates R2R input.
 
 \subsection{Defines}
 
@@ -1682,6 +1747,7 @@ Valid \textit{name} codes are:
 	\begin{itemize}
 	\item {\tt nucTickLabel\_distFromNuc} : the distance from the nucleotide at which the tick line starts. (Default: {\tt 3.75pt}.)
 	\item {\tt nucTickLabel\_tickLen} : the length of the tick line. (Default: {\tt 4pt}.)
+	\item {\tt nucTickLabel\_tickColor} : the color of the tick line. (Default: {\tt rgb:0,0,0} , i.e., black.)
 	\item {\tt nucTickLabel\_tickPenWidth} : the width of the tick line. (Default: {\tt 0.5pt}.)
 	\item {\tt nucTickLabel\_extraSpaceToText} : extra distance between the end of the tick line and the start of text (might be a bit off because R2R still does not use absolutely exact font metrics). (Default: {\tt 1.5pt}.)
 	\item {\tt nucTickLabel\_fontSize} : the font size used to draw the label. (Default: {\tt 6pt}.)
@@ -1694,6 +1760,7 @@ Valid \textit{name} codes are:
 	\item {\tt outlineNucColor} : color used. (Default: {\tt rgb:92,92,92}.)
 	\item {\tt circleRadiusToSmoothDirectionChange} : when two straight lines in the outline meet, the direction change is smoothed using a circular arc.  This parameter is the radius of the arc.  (Default: {\tt 0.025in}.)
 	\item {\tt outlineAutoJoin} : if true, R2R will attempt to join lines and arcs that are part of the outline, for both outlines generated implicitly by pseudoknots and by outlines generated explicitly with the commands {\tt outline\_nuc} or {\tt inline\_nuc}.  Sometimes R2R's heuristics for drawing outlines fail, and so it is better to doing the joining yourself.  (Default: {\tt true}.)
+        \item {\tt prefixSsWithPkInDrawings} : When you configure an {\tt SS\_cons} line to be a callout-style pseudoknot by using the {\tt ignore-ss-except-for-pairs} command, R2R will indicate the two sides of each stem with the text {\tt pk\_}...  For example, with {\tt SS\_cons\_1}, the added text would be ``{\tt pk\_1}''.  This behavior corresponds to {\tt prefixSsWithPkInDrawings} being {\tt true}.  If {\tt prefixSsWithPkInDrawings} is set to {\tt false}, R2R will not use the prefix {\tt pk\_}, but will just use the label past {\tt SS\_cons\_}, so in our example the label would be ``{\tt 1}''.  (Default: {\tt true}.)
 	\end{itemize}
 \item Circling nucleotide (also used for cleavage diagrams in {\tt oneseq} mode)
 	\begin{itemize}
@@ -1712,11 +1779,15 @@ Valid \textit{name} codes are:
 	\begin{itemize}
 	\item {\tt anyNucCircleWidth} : the width of the circle's line. (Default: {\tt 0.01in}.)
 	\end{itemize}
-\item Variable-length stems or loops
+\item Variable-length stems, loops or linkers
 	\begin{itemize}
 	\item {\tt varHairpinNumFakePairs} : for the {\tt var\_hairpin} command, the number
 	of fake base pairs to draw. (Integer. Default: 3.)
-	\item {\tt varTerminalLoopRadius} : for the {\tt var\_hairpin} or {\tt var\_term\_loop} commands, the radius of the arc used to represent the terminal loop. (Default: {\tt 0.17in}.)
+      \item {\tt varTerminalLoopRadius} : for the {\tt var\_hairpin} or {\tt var\_term\_loop} commands, the radius of the arc used to represent the terminal loop. (Default: {\tt 0.17in}.)
+        \item {\tt backboneConnectorCircleRadius} :the radius of the arc that R2R uses to bend the backbone, esp. when drawing the $5^\prime$ end of the molecule.  This can be more important when the $5^\prime$ end of the molecule is at a weird angle.  However, because R2R sets the position of the text that says ``$5^\prime$'' in an inflexible way, there's a very small range of values for {\tt backboneConnectorCircleRadius} that will work okay.  If the value is too big, R2R will draw the connecting line directly, rather than using an arc.  (Default: {\tt 0.035}.)
+        \item {\tt backboneAnnotTextOffset} : the distance between the text annotation and the backbone line for {\tt var\_backbone...} commands.  If this value is negative, then it is set as 4/7.5 the value of {\tt varBackboneFontSize}. The reason for this weird ratio is that originally it was set to 4 points, and the font size was 7.5, so with this default, the default drawings will be like before (Default: {\tt -1} , i.e. set based on the ratio).
+      \item {\tt varBackboneFontSize} : the font size used for the annotation in the various forms of the {\tt var\_backbone...} command.  (Default: {\tt 7.5pt})
+        \item {\tt varTermLoopFontSize} : the font size used for the annotation in the {\tt var\_term\_loop} command.  (Default: {\tt 7.5pt})
 	\end{itemize}
 \item Shading along backbone or drawing in {\tt skeleton} mode
 	\begin{itemize}
@@ -1783,7 +1854,7 @@ Colors are specified using standard R2R codes.  Good colors for slides
 are 
 
 \begin{quote}
-{\tt SetDrawingParam pairShadingColors rgb:156,199,153 rgb:152,199,222 rgb:235,138,126}
+\hspace*{-24pt}{\tt SetDrawingParam pairShadingColors rgb:156,199,153 rgb:152,199,222 rgb:235,138,126}
 \end{quote}
 (thanks to Kirsten F. Block for these values).
 \item {\tt solverMaxIters} {\it \#} : sets the maximum number of iterations of the solver (i.e., CFSQP) for 
@@ -1804,6 +1875,7 @@ separate base pairs where one of them should be deleted and the other should not
 This is suitable for quick drawings where you don't want to think about how to resolve these issues.
 If this variable has the value {\tt false}, R2R will report an error. (Default: {\tt false}.)
 \item {\tt DNA} : if this variable has the value {\tt true}, R2R will treat the input under the assumption that it is a single-stranded DNA molecule.  In this mode, and {\tt U} nucleotide in the input will be changed into a {\tt T}.  (Default: {\tt false}.)
+\item {\tt disableSubfamWeightText} : when you use the modular structure functionality, which is based on the {\tt SelectSubFamilyFromStockholm.pl} script, this script will output a field {\tt \#=GF SUBFAM\_WEIGHT} into the output {\tt .sto} file.  This weight indicates the fraction of sequences that exhibit the modular structure.  {\tt r2r} will then output a message at the top of the relevant drawing that states this fraction (e.g. ``subfam\_weight=1'').  To disable this, set {\tt disableSubfamWeightText} to {\tt true}.  If you set {\tt disableSubfamWeightText} to {\tt false}, R2R will print the subfam\_weight if it is there.  (Default: {\tt false}.)
 \end{itemize}
 
 \textit{name }and \textit{value }pairs may be repeated multiple times. 
@@ -1951,7 +2023,7 @@ I have attempted to make the {\tt .solver-cache} files platform independent, so 
 ``Labels'' allow you to identify a column or columns in the alignment by a name.
 Defining column(s) by names is somewhat more convenient that using the column number,
 and also means that the R2R markup remains valid even if you add or remove columns.
-Therefore, R2R only supports referencing columns by name.
+Therefore, R2R only supports referencing columns by name.  (Okay, actually it supports referencing columns by number -- but only do this if you're a computer.)
 
 Tip: to see what labels are available, add an R2R command that refers to an invalid label, e.g.
 
@@ -2890,6 +2962,7 @@ Emacs/RALEE gets upset with lines that end in whitespace.  Thus,
 will ignore the pairings in the line {\tt \#=GC SS\_cons}.
 
 \subsubsection{Ignoring pseudoknots for the purposes of layout}
+\label{sec:ignoressexceptforpairs}
 \example{
 {\tt ignore\_ss\_except\_for\_pairs}
  \textit{ssname  detail}
@@ -2900,15 +2973,19 @@ consensus line.
 The secondary structure line is specified in the same way
 as with the {\tt ignore\_ss} command (see immediately above).
 
-If \textit{detail }is {\tt outline}, then outline the nucleotides involved in
-base-pairing.  This is useful for ``callout'' layouts of pseudoknots.
+\textit{detail} can have the following values:
+\begin{itemize}
+\item {\tt outline} :  outline the nucleotides involved in
+  base-pairing.  This is useful for ``callout'' layouts of pseudoknots.
+\item {\tt outline-no-bpannot} : same as {\tt outline}, but ignore the {\it ssname} for the purposes of drawing covariation.
 
-If \textit{detail }is {\tt outline\_only\_bp}, this is similar to {\tt outline}, but
+  With {\tt outline}, if {\it ssname} has covariation at a given nucleotide position, the nucleotide will be shaded green, even if the non-ignored {\tt SS\_cons} lines have no covariation.  With {\tt outline-no-bpannot}, the ignored {\it ssname} will not contribute to covariation shading.  Thus, with {\tt outline-no-bpannot}, the base pairs will be reflected only in the fact that they'll be outlined and there'll be an indication like 'pk\_1' next to them.
+\item {\tt outline\_only\_bp}, this is similar to {\tt outline}, but
 it only outlines the nucleotides that are really involved in a
 basepair. By contrast, outline will attempt to also outline bulges.
-
-If \textit{detail }is {\tt ignore}, then don{\textquoteright}t do anything
+\item {\tt ignore}, then don{\textquoteright}t do anything
 with the base pairs.
+\end{itemize}
 
 \subsubsection{subst\_ss}
 \example{{\tt subst\_ss}  \textit{replace-ss  into-ss}}
@@ -3265,6 +3342,30 @@ Converts the columns matching any of the given {\it label}(s) to single-stranded
 
 For example, this command removes all base pairs in the {\tt \#=GC SS\_cons\_1} line:
 \example{{\tt depair \_1:{\textless} \_1:{\textgreater}}}
+
+\subsubsection{Explicitly setting/overriding the covariation shading}
+\label{sec:setcovaryshade}
+
+This command allows you to explicitly set the covariation shading of base pairs.  The setting will override whatever value is set in the input Stockholm-format file that was determined by a covariation analysis.
+
+You can already modify covariation shades by modifying {\tt \#=GC} lines in the Stockholm file, but in some cases it's convenient to do this in the original .sto file.
+
+\example{
+{\tt set\_covary\_shade} {\it ssName} {\it label} {\it shade}
+}
+
+where
+\begin{itemize}
+\item {\it ssName} : identifies the {\tt \#=GC SS\_cons} line to modify.  The text ``{\tt primary}'' identifies the {\tt \#=GC SS\_cons} line.  To identify a line {\tt \#=GC SS\_cons}{\it something}, use ``{\it something}'' (without the quotes) as the value of {\it ssName}.
+\item {\it label} : a valid label identifying positions to modify.  These positions must be the left ($5^\prime$) nucleotide of a base pair.  Modifying the right nucleotide has no effect.
+\item {\it shade} :
+  \begin{itemize}
+  \item {\tt ?} : nothing.  This is typically not shaded.
+\item {\tt 0} : no mutations.  This is typically shaded red.
+\item {\tt 1} : compatible mutations.  Or R2R covariation, if R-scape is being used.  This is typically shaded blue.
+\item {\tt 2} : covariation.  This is typically shaded green.
+  \end{itemize}
+\end{itemize}
 
 \subsubsection{Deleting columns using an explicit command}
 \example{
@@ -3751,6 +3852,7 @@ It will create a new file in the current directory that by default is called  {\
 It will also create an appropriate {\tt .r2r\_meta} file corresponding to each {\tt .sto} file it sees.
 
 \subsection{Script options}
+\label{sec:Makefile:perloptions}
 
 The script accepts the following command-line options, which are not normally used:
 \begin{itemize}
@@ -3771,6 +3873,13 @@ the Makefile generated by {\tt MetamakeDemos.pl} into some larger Makefile.
 \item {\tt -doStoOutput} : experimental feature.
 \item {\tt -pubsto} {\it perl-file} : experimental feature.
 \item {\tt -cleansto} {\it perl-file} : experimental feature.
+\item {\tt -covaryWithRscape} : experimental feature.
+\item {\tt -covaryUseSsConsWithRscape} : experimental feature, pass {\tt -s} to R-scape to get it to restrict the base pair analysis to the base pairs in {\tt \#=GC SS\_cons}.
+\item {\tt -setDrawingParam "{\it params}" } : set drawing parameters (see Section~\ref{SetDrawingParam}) to different values for all files that the script is aware of.  This effectively changes the default values from those that are hardcoded in the R2R source code.  The parameter names and values should be separated by space characters.  You'll usually need to put this value in quotes because of the spaces.  For example:
+
+  \examplett{-setDrawingParam "varHairpinNumFakePairs 2 varTerminalLoopRadius 0.14"}
+\item {\tt -setDrawingParamFile} {\it file-name} : similar to {\tt -setDrawingParam}, but get the parameters from a file.  The parameter names and values should be separated by tab characters (this is different from the case with the {\tt -setDrawingParam} flag).  The file must consist of one line (but additional, blank lines are permitted).
+\item {\tt -inkscapeHelveticaFontName} {\it fontName} : use this font name in output SVG files.  Inkscape is sometimes happier if this name matches a font that it has.  The default is ``{\tt Bitstream Vera Sans}''.  This flag arranges for the commands to run {\tt r2r} to add ``{\tt -{}-inkscape-helvetica-font-name} {\it fontName}''.
 \end{itemize}
 
 \subsection{Makefile targets}
@@ -3860,6 +3969,23 @@ Directs the script to draw a subfamily defined by the predicate {\it predname}
 in {\tt oneseq} mode for the sequence named {\it hit}.  Optionally, {\tt define}
 directives can appear after {\it predname}.
 The predicate {\it predname} must be defined earlier in the file.
+
+\subsubsection{Using a different sequence-weighting algorithm}
+\label{makefileseqweighting}
+
+{\bf WARNING:} In general, the GSC algorithm seems to be the best available sequence-weighting method.  Please read section \ref{whyweights}, which explains the importance of sequence weighting.
+
+By default, R2R will weight sequences using the GSC algorithm.  However, with very large alignments, this algorithm can be slow.  (In computer science terms, it its time complexity is $O(n^3)$, for $n$ sequences in the alignment.)
+
+To make this faster, especially if precise weighting is not important, you can change this algorithm, by causing the Makefile script to give R2R other flags.
+
+If you add the following to the {\tt .sto} file:
+\example{\tt
+  \#=GF Makefile\_Weight\_Flag -{}-position-based-weights
+}
+then R2R will use a much faster weighting algorithm.
+
+You can pass arbitrary flags (in place of {\tt -{}-position-based-weights}), which will be added between {\tt r2r} and {\tt -{}-GSC-weighted-consensus} on the command line.
 
 \subsubsection{Weighting sequences using your own algorithms with MetamakeDemos}
 \label{makefilemanualweighting}

@@ -709,7 +709,7 @@ void GSCWeightedConsensus_SS(int& numPairsWithCovariation,SsCovaryLines& ssCovar
 			     double maxNonCanonInNoVariationObserved)
 {
 	if (ssRaw==NULL) {
-		ThrowSimpleStringException("no #=GC SS_cons line was found in the input alignment");
+		ThrowSimpleStringException("no #=GC SS_cons line was found in the input alignment.  Please add this line.  The line doesn't require any base pairs (i.e., could consist entirely of dots), but it must exist.");
 	}
 
 	std::string newTag=stringprintf("cov_%s",ssTag.c_str());

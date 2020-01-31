@@ -788,8 +788,16 @@ void PdfGraphics::PathifyArc(Point center,double radius,double startAngleInDegre
 	double x=center.x;
 	double y=center.y;
 
+	// defensive programming (a.k.a. hacking).  just try to normalize the angles.  Elena Rivas got an assertion failure on these conditions.  See her e-mail on October 25, 2019.
+	while (ang2<ang1) {
+	  ang2 += 360.0;
+	}
+	while ((ang2-ang1)>360.0) {
+	  ang2 -= 360.0;
+	}
 	if ((ang1 >= ang2 || (ang2 - ang1) > 360.0)) {
-	  //assertr(false);                               // ER: commented
+	  ::fprintf(stderr,"ang1=%lg,ang2=%lg\n",ang1,ang2);
+		assertr(false);
 		std::swap(ang1,ang2); // just to see...
 	}
 	while (ang1 < 0 || ang2 < 0) {

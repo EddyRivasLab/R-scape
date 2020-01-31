@@ -30,6 +30,7 @@ void SetDrawingParam(DrawingParams& drawingParams,OtherDrawingStuff& otherDrawin
 	};
 	struct {const char *first;double *second;bool defaultInches;} // !defaultInches --> points
 	measurementArray[]={
+   	        {"backboneAnnotTextOffset",&drawingParams.backboneAnnotTextOffset,false},
 		{"varTerminalLoopRadius",&drawingParams.varTerminalLoopRadius,true},
 		{"pairBondWidth",&drawingParams.pairBondWidth,true},
 		{"pairLinkDist",&drawingParams.pairLinkDist,true},
@@ -38,8 +39,11 @@ void SetDrawingParam(DrawingParams& drawingParams,OtherDrawingStuff& otherDrawin
 		{"nucFontSize",&drawingParams.nucFontSize,false},
 		{"internucleotideLen",&drawingParams.internucleotideLen,true},
 		{"backboneWidth",&drawingParams.backboneWidth,true},
+		{"varBackboneFontSize",&drawingParams.varBackboneFontSize,false},
+		{"varTermLoopFontSize",&drawingParams.varTermLoopFontSize,false},
 		{"shadeAlongBackboneWidth",&drawingParams.shadeAlongBackboneWidth,true},
 		{"alongBackboneMidpointGapLength",&drawingParams.alongBackboneMidpointGapLength,true},
+		{"backboneConnectorCircleRadius",&drawingParams.backboneConnectorCircleRadius,false},
 		{"pairBondLen",&drawingParams.pairBondLen,true},
 		{"pairBondGURadius",&drawingParams.pairBondGURadius,true},
 		{"pairBondNonCanonRadius",&drawingParams.pairBondNonCanonRadius,true},
@@ -77,15 +81,19 @@ void SetDrawingParam(DrawingParams& drawingParams,OtherDrawingStuff& otherDrawin
 		{"indicateOneseqWobblesAndNonCanonicals",&drawingParams.indicateOneseqWobblesAndNonCanonicals},
 		{"DNA",&drawingParams.isDNA},
 		{"makeRedNucsRedInOneseq",&drawingParams.makeRedNucsRedInOneseq},
-		{"makeNonDegenRedNucsRedInOneseq",&drawingParams.makeNonDegenRedNucsRedInOneseq}
+		{"makeNonDegenRedNucsRedInOneseq",&drawingParams.makeNonDegenRedNucsRedInOneseq},
+		{"disableSubfamWeightText",&drawingParams.disableSubfamWeightText},
+		{"prefixSsWithPkInDrawings",&drawingParams.prefixSsWithPkInDrawings},
+
 	};
 	struct {const char *first; AdobeGraphics::Color *second;} colorArray[]={
+		{"nucTickLabel_tickColor",&drawingParams.nucTickLabel_tickColor},
 		{"outlineNucColor",&drawingParams.outlineNucColor},
 	};
 
 	// not implemented in SetDrawingParam: font faces, cleavageIndicatorColorMap, strengthColorMap, shadeColor, 
 	// shadeBackgroundForBonds, lineSpacing, fivePrimeBackboneLen,fivePrimeExtraLenAfterText, 
-	// backboneAnnotTextOffset, boxNucExtraMarginWidth,boxNucExtraMarginHeight, outlineAlongBackboneWidth, 
+	// boxNucExtraMarginWidth,boxNucExtraMarginHeight, outlineAlongBackboneWidth, 
 	// optionalBoxLineWidth, optionalBoxColor, entropyMinColor,entropyMaxColor
 
 	while (a<f.GetNumFields()) {
@@ -222,6 +230,8 @@ void SetDrawingParam(DrawingParams& drawingParams,OtherDrawingStuff& otherDrawin
 	drawingParams.font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.nucFontSize));
 	drawingParams.nucTickLabel_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.nucTickLabel_fontSize));
 	drawingParams.modular_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.modular_fontSize));
+	drawingParams.varBackbone_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.varBackboneFontSize));
+	drawingParams.varTermLoop_font.SetSizeInPoints(AdobeGraphics::InchesToPoints(drawingParams.varTermLoopFontSize));
 }
 std::string ReadText(CommaSepAbstractFile& f,int& a)
 {
@@ -916,6 +926,15 @@ void OneStockholm_try_Pass1(CommaSepCacher& f,ParseInputStruct& data,IndividualS
 		consSeq=oneSeqSeq;
 	}
 
+    if (ssList.empty()) {
+      throw SimpleStringException("no #=GC SS_cons line was given.  Please add this line.  The line doesn't require any base pairs (i.e., could consist entirely of dots), but it must exist.");
+    }
+    else {
+      if (ssList.begin()->first!="") {
+        printf("NOTE: no #=GC SS_cons line was given, even though other SS_cons lines were given.  That's weird, but theoretically legal.  (But it might expose bugs in R2R.)\n");
+      }
+    }
+
 	if (labelLine[""].empty()) {
 		printf("NOTE: no #=GC R2R_LABEL line.  But that's okay.\n");
 		labelLine[""].resize(consSeq.size());
@@ -952,7 +971,9 @@ void OneStockholm_try_Pass1(CommaSepCacher& f,ParseInputStruct& data,IndividualS
 	}
 
 	// process Ss stuff
-	assertr(ssList.begin()->first==""); // main SS should be first, and I think the map should guarantee this
+    if (!ssList.empty()) {
+      assertr(ssList.begin()->first==""); // main SS should be first, and I think the map should guarantee this.  however, this is tested earlier, right after we parse the input file.
+    }
 	for (SsList::iterator ssi=ssList.begin(); ssi!=ssList.end(); ssi++) {
 		if (ssi->second.ss!="" && ssi->second.ss_cov=="" && doOneSeq) {
 			// allow this silently in 'doOneSeq==true' mode
@@ -1072,6 +1093,32 @@ void FindAllMultiStemJunctionPosList_And_SetupDefaultMultistemJunctionLayout
 	}
 }
 
+void AddSsNameToPknotInDrawing(std::string& nucTickLabel,const std::string& ssName,const DrawingParams& drawingParams)
+{
+  std::string toAdd;
+  if (drawingParams.prefixSsWithPkInDrawings) {
+    toAdd=stringprintf("pk%s",ssName.c_str());
+  }
+  else {
+    if (ssName.empty()) {
+      toAdd="primary";
+    }
+    else {
+      if (ssName[0]=='_') { // this should be the case most of the time, because of how R2R uses the Stockholm format
+	toAdd=ssName.substr(1); // skip the underscore
+      }
+      else {
+	toAdd=ssName; // weird that there's no underscore in the beginning, but whatever. just set it equal.
+      }
+    }
+  }
+  if (!nucTickLabel.empty()) {
+    nucTickLabel += " , ";
+  }
+  nucTickLabel += toAdd;
+}
+
+
 void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff& input_otherDrawingStuff,std::string name,const char *stoFileName,const DrawingParams& drawingParams_,std::string oneSeqName,bool entropyMode,bool skeletonMode,const DefinesMap& initialDefinesMap)
 {
 	ParseInputStruct data;
@@ -1141,12 +1188,6 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 	data.drawingParams=drawingParams_;
 	DrawingParams& drawingParams=data.drawingParams;
 
-	if (skeletonMode) {
-		drawingParams.pairBondWidth=drawingParams.skeleton_pairBondWidth;
-		drawingParams.backboneWidth=drawingParams.skeleton_backboneWidth;
-		drawingParams.scaleMeasurementsBy=drawingParams.skeleton_scaleMeasurementsBy;
-	}
-
 	CommaSepFileReader actualFile(stoFileName," \t");
 	CommaSepCacher f(actualFile);
 
@@ -1162,7 +1203,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 		}
 	}
 
-	//printf("After Pass1, valid labels are: %s\n",DumpLabelLine(labelLine).c_str());
+	//printf("After Pass1, %s\n",GenerateValidLabelsForError(labelLine).c_str());
 
 	// intermission: setup data
 	PosInfo posInfoDummy;
@@ -1224,7 +1265,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 				std::string f1=f.GetField(1);
 				int a=2;
 				if (f0=="#=GF") {
-					if (f1=="SUBFAM_WEIGHT") {
+					if (f1=="SUBFAM_WEIGHT" && !drawingParams.disableSubfamWeightText) {
 						double subfamWeight=f.GetFieldAsDouble(f.GetNumFields()-1);
 						otherDrawingStuff.subfamWeight=subfamWeight;
 						otherDrawingStuff.subfamWeightValid=true;
@@ -1716,6 +1757,12 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 								std::string dots=std::string(l,'.'); // erase pairings, to avoid being confused
 								ssList[ssName].ss=dots;
 							}
+							if (cmd=="outline-no-bpannot") {
+							  // erase covary info, so it doesn't affect the drawing
+							  std::string::size_type l=ssList[ssName].ss.size();
+							  std::string dots=std::string(l,'.');
+							  ssList[ssName].ss_cov=dots;
+							}
 							// otherwise defer
 						}
 						if (f2=="ignore_ss") {
@@ -1727,7 +1774,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 								ssName="";
 							}
 							if (!IsSsNameValid(ssList,ssName)) {
-								throw SimpleStringException("ignore_ss_except_for_pairs command (line %d): SS_cons%s does not exist",f.GetLineNum(),ssName.c_str());
+								throw SimpleStringException("ignore_ss (line %d): SS_cons%s does not exist",f.GetLineNum(),ssName.c_str());
 							}
 							std::string::size_type l=ssList[ssName].ss.size();
 							std::string dots=std::string(l,'.'); // erase pairings, to avoid being confused
@@ -1777,13 +1824,31 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 								std::string label=f.GetField(a++);
 								PosList posList=FindLabelList(labelLine,label,otherDrawingStuff);
 								if (posList.empty()) {
-									throw SimpleStringException("command in line %d refers to non-existant label \"%s\".  Valid labels are: %s",f.GetLineNum(),label.c_str(),DumpLabelLine(labelLine).c_str());
+									throw SimpleStringException("command in line %d refers to non-existant label \"%s\".  %s",f.GetLineNum(),label.c_str(),GenerateValidLabelsForError(labelLine).c_str());
 								}
 								for (PosList::iterator i=posList.begin(); i!=posList.end(); i++) {
 									labelLine["extraDeletants"][*i]="-";
 								}
 							}
 						}
+                        if (f2=="set_covary_shade") {
+                          okay=true;
+                          a++;
+                          std::string ssName=f.GetField(a++);
+                          std::string label=f.GetField(a++);
+                          std::string strength=f.GetField(a++);
+                          if (ssName=="primary") {
+                            ssName="";
+                          }
+                          if (!IsSsNameValid(ssList,ssName)) {
+                            throw SimpleStringException("set_covary_shade (line %d): SS_cons%s does not exist",f.GetLineNum(),ssName.c_str());
+                          }
+                          PosList posList=FindLabelList(labelLine,label,otherDrawingStuff);
+                          for (PosList::iterator i=posList.begin(); i!=posList.end(); i++) {
+                            int left=*i;
+                            ssList[ssName].ss_cov[left]=strength[0];
+                          }
+                        }
 						if (f2=="depair") {
 							okay=true;
 							a++;
@@ -2171,7 +2236,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 
 							PosList posList=FindLabelList(labelLine,label,otherDrawingStuff);
 							if (posList.empty()) {
-								throw SimpleStringException("tick_label with label \"%s\" (line %d): there are no columns that match this label. valid labels are %s",label.c_str(),f.GetLineNum(),DumpLabelLine(labelLine).c_str());
+								throw SimpleStringException("tick_label with label \"%s\" (line %d): there are no columns that match this label. %s",label.c_str(),f.GetLineNum(),GenerateValidLabelsForError(labelLine).c_str());
 							}
 							for (PosList::iterator i=posList.begin(); i!=posList.end(); i++) {
 								std::string::size_type pos=*i;
@@ -2384,6 +2449,9 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 								}
 								if (code=="all-stems-anyangle" || code=="allstems-any-angle") {
 									codeOkay=true;
+                                    if (solver) {
+                                      throw SimpleStringException("the directive all-stems-anyangle can only be used with the multistem_junction_circular command, and not with any of the _solver versions of the command; for these, it would be pointless.  (line %d)",f.GetLineNum());
+                                    }
 									for (int stem=0; stem<layout.numStemsToSet; stem++) {
 										layout.stemInMultiStemInfoVector[stem].pedanticAboutInternucleotideLen=true;
 										layout.stemInMultiStemInfoVector[stem].stemLayoutPolicy=StemInMultiStemInfo::SLP_AnyAngle;
@@ -2975,7 +3043,7 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 							if (a<f.GetNumFields()) {
 								std::string cmd=f.GetField(a++);
 								bool tokay=false;
-								if (cmd=="outline") { // assumes that there's two contiguous stem-halfs -- not good if there's a significant break
+								if (cmd=="outline" || cmd=="outline-no-bpannot") { // assumes that there's two contiguous stem-halfs -- not good if there's a significant break
 									tokay=true;
 									if (skeletonMode && !drawingParams.skeleton_outlinePseudoknots) {
 										// skip outline
@@ -2996,11 +3064,11 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 										}
 										if (!(firstLeft==std::string::npos || lastLeft==std::string::npos)) {
                                                                                     std::string::size_type midLeft=(firstLeft+lastLeft)/2;
-                                                                                    posInfoVector[midLeft].nucTickLabel += stringprintf("pk%s",ssName.c_str());
+										    AddSsNameToPknotInDrawing(posInfoVector[midLeft].nucTickLabel,ssName,drawingParams);
                                                                                 }
 										if (!(firstRight==std::string::npos || lastRight==std::string::npos)) {
                                                                                     std::string::size_type midRight=(firstRight+lastRight)/2;
-                                                                                    posInfoVector[midRight].nucTickLabel += stringprintf("pk%s",ssName.c_str());
+										    AddSsNameToPknotInDrawing(posInfoVector[midRight].nucTickLabel,ssName,drawingParams);
                                                                                 }
 									}
 								}
@@ -3059,6 +3127,12 @@ void OneStockholm_try (IndividualStructList& structList,const OtherDrawingStuff&
 		for (SsList::const_iterator ssi=ssList.begin(); ssi!=ssList.end(); ssi++) {
 			printf("%s\n",ssi->second.ss.c_str());
 		}
+	}
+
+	if (skeletonMode) {
+		drawingParams.pairBondWidth=drawingParams.skeleton_pairBondWidth;
+		drawingParams.backboneWidth=drawingParams.skeleton_backboneWidth;
+		drawingParams.scaleMeasurementsBy=drawingParams.skeleton_scaleMeasurementsBy;
 	}
 
 	if (doOneSeq) {
@@ -3185,3 +3259,4 @@ void OneStockholm (IndividualStructList& structList,const OtherDrawingStuff& inp
 	}
 	printf("DONE PARSING: %s\n",name.c_str());
 }
+

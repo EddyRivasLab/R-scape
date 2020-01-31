@@ -6,13 +6,6 @@ for slightly extra convenience.
 #ifndef __COMMASEPFILEREADER_H
 #define __COMMASEPFILEREADER_H
 
-#ifndef _WIN32
-#ifndef DEFINED_INT64
-#define DEFINED_INT64
-typedef long long __int64;
-#endif
-#endif
-
 // a nice class for SGD files, which have internal fields that are pipe-delimited
 // this class is also used by the actual CommaSepFileReader
 // This class will split up given strings (in a vector<char>) by the delimiter, and
@@ -57,7 +50,7 @@ public:
 
 	// convenience: getting field as other data types
 	int GetFieldAsInt (int fieldNum) const; // note: it's an error for field to be blank, or contain any non-int characters
-	__int64 GetFieldAsInt64 (int fieldNum) const;
+	int64_t GetFieldAsInt64 (int fieldNum) const;
 	double GetFieldAsDouble (int fieldNum) const; // note: it's an error for field to be blank, or contain any non-double characters
 	float GetFieldAsFloat (int fieldNum) const;
 	bool GetFieldAsBool (int fieldNum) const;
@@ -158,6 +151,6 @@ public:
 	const char *GetFileName () const;
 };
 
-std::string Int64ToString (__int64 n); // convenient place to put this function
+std::string Int64ToString (int64_t n); // convenient place to put this function
 
 #endif // __COMMASEPFILEREADER_H

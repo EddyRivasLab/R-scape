@@ -2,7 +2,6 @@
 #include "YaaleRNAInclude.h"
 #else
 #include "stdafx.h"
-#ifndef HAS_MALLOC_OR_DIE
 void *MallocOrDie (size_t size) {
 	void *p=malloc(size);
 	if (p==NULL) {
@@ -10,7 +9,6 @@ void *MallocOrDie (size_t size) {
 	}
 	return p;
 }
-#endif
 #endif
 
 #include "MiscExceptions.h"
@@ -63,6 +61,7 @@ std::string stringprintf(const char *format,...)
 		free(buf);  buf=NULL;
 	}
 	std::string result=buf;
+	free(buf);
 
 	return result;
 }
