@@ -29,6 +29,7 @@
 #include "correlators.h"
 #include "cacofold.h"
 #include "covgrammars.h"
+#include "e2_profilesq.h"
 #include "maxcov.h"
 #include "ribosum_matrix.h"
 #include "r2rdepict.h"
@@ -1093,24 +1094,34 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
 {
   char    *rfline = NULL;
   char    *newss  = NULL;
-  ESL_SQ  *sq     = NULL;
+  ESL_SQ  *rfsq   = NULL;
+  PSQ     *psq    = NULL;
+  void    *sq;
   double   idthresh = 0.0;      // threshold for defining consensus columns
   SCVAL    sc;
   int      L = msa->alen;
   int      status;
-      
+
+#if PROFILESEQ
+  // create a profile sequence
+  psq = psq_CreateFromMSA(msa, verbose);
+  sq = (void *) psq;
+#else
   // create an RF sequence 
   ESL_ALLOC(rfline, sizeof(char) * (msa->alen+1));
   esl_msa_ReasonableRF(msa, idthresh, TRUE, rfline);
   if (verbose) printf("\nrfline:\n%s\nss_cons\n%s\n", rfline, msa->ss_cons);
   
-  sq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
-  if (sq == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to create RF sequence");
-  status = esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, sq);
+  rfsq = esl_sq_CreateFrom(msa->name, rfline, msa->desc, msa->acc, msa->ss_cons); 
+  if (rfsq == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to create RF sequence");
+  status = esl_sq_Digitize((const ESL_ALPHABET *)msa->abc, rfsq);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to digitize RF sequence");
-
+  
   // removes covariations that correspond to gap-gap in the RF sequence
-  ct_remove_inconsistencies(sq, covct, verbose);
+  ct_remove_inconsistencies(rfsq, covct, verbose);
+  
+  sq = (void *) rfsq;
+#endif
   if (verbose) ct_dump(msa->alen, covct);
 
   // calculate the cascade power/covariation constrained structure using a probabilistic grammar
@@ -1126,21 +1137,23 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
     break;
   }
 
-  if (verbose) {
+  if (1||verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
     esl_ct2wuss(ct, msa->alen, newss);
     printf("caco-fold score = %f\n%s\n", sc, newss);
   }
-
+ 
   *ret_sc = sc;
     
   if (rfline) free(rfline);
   if (newss) free(newss);
-  esl_sq_Destroy(sq);
+  if (rfsq) esl_sq_Destroy(rfsq);
+  if (psq) psq_Destroy(psq);
   return eslOK;
 
  ERROR:
-  if (sq) esl_sq_Destroy(sq);
+  if (rfsq) esl_sq_Destroy(rfsq);
+  if (psq) psq_Destroy(psq);
   if (rfline) free(rfline);
   if (newss) free(newss);
   return status;

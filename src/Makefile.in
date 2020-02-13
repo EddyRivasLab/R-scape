@@ -119,6 +119,7 @@ OBJS     = e1_bg.o\
 	   e1_emit.o\
 	   e1_goodness.o\
 	   e1_simulate.o\
+	   e2_profilesq.o\
 	   allbranchmsa.o\
 	   contactmap.o\
 	   cacofold.o\

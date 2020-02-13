@@ -195,6 +195,135 @@ psq_CreateFrom(const char *name, const char *desc, const char *acc, const ESL_AL
 }
 
 
+/* Function:  psq_CreateFromMSA()
+ * Synopsis:  Create a new <ESL_SQ> from text information.
+ * Incept:    
+ *
+ * Purpose:   Create a new <ESL_SQ> object in text mode from elemental data.
+ *            This provides an interface between non-Easel code
+ *            and Easel's object.
+ *            
+           
+ * Args:      name    -  name of the sequence (NUL-terminated)
+ *            seq     -  the sequence (alphabetic; NUL-terminated)
+ *            desc    -  optional: description line (or NULL)
+ *            acc     -  optional: accession (or NULL)
+ *            ss      -  optional: secondary structure annotation (or NULL)
+ *
+ * Returns:   a pointer to the new object.
+ *
+ * Throws:    <NULL> on allocation failure.
+ */
+PSQ *
+psq_CreateFromMSA(ESL_MSA *msa, int verbose)
+{
+  PSQ     *psq = NULL;
+  ESL_DSQ *dsq;
+  int64_t  n;
+  int      ns;
+  int      k;
+  int      i;
+  int      status;
+
+  ESL_ALLOC(psq, sizeof(PSQ));
+  psq->name   = NULL;
+  psq->acc    = NULL;
+  psq->desc   = NULL;
+  psq->prof   = NULL;
+  psq->expp   = NULL;
+  psq->abc    = msa->abc;
+  
+  psq->nalloc   = eslSQ_NAMECHUNK;	
+  psq->aalloc   = eslSQ_ACCCHUNK;
+  psq->dalloc   = eslSQ_DESCCHUNK;
+  psq->palloc   = msa->alen+1; 
+  psq->srcalloc = eslSQ_NAMECHUNK; 
+
+    if (msa->name != NULL)
+    {
+      n = strlen(msa->name)+1;
+      ESL_ALLOC(psq->name, sizeof(char) * n);
+      strcpy(psq->name, msa->name);
+      psq->nalloc = n;
+    }
+  else 
+    {
+      psq->nalloc = eslSQ_NAMECHUNK;
+      ESL_ALLOC(psq->name, sizeof(char) * psq->nalloc);
+      psq->name[0] = '\0';
+    }
+  
+  if (msa->desc != NULL) 
+    {
+      n = strlen(msa->desc)+1;
+      ESL_ALLOC(psq->desc, sizeof(char) * n);
+      strcpy(psq->desc, msa->desc);
+      psq->dalloc = n;
+    } 
+  else 
+    {
+      psq->dalloc   = eslSQ_DESCCHUNK;
+      ESL_ALLOC(psq->desc, sizeof(char) * psq->dalloc);    
+      psq->desc[0] = '\0';
+    }
+
+  if (msa->acc != NULL) 
+    {
+      n = strlen(msa->acc)+1;
+      ESL_ALLOC(psq->acc, sizeof(char) * n);
+      strcpy(psq->acc, msa->acc);
+      psq->aalloc = n;
+    } 
+  else 
+    {
+      psq->aalloc   = eslSQ_ACCCHUNK;
+      ESL_ALLOC(psq->acc,  sizeof(char) * psq->aalloc);
+      psq->acc[0] = '\0';
+    }
+
+  /* no source name */
+  psq->srcalloc = eslSQ_NAMECHUNK;
+  ESL_ALLOC(psq->source, sizeof(char) * psq->srcalloc);
+  psq->source[0] = '\0';
+
+  ESL_ALLOC(psq->prof,     sizeof(float *) * psq->palloc);
+  ESL_ALLOC(psq->prof[0],  sizeof(float)   * psq->palloc * (psq->abc->K+1));
+  for (i = 1; i < psq->palloc; i ++)
+    psq->prof[i] = psq->prof[i-1] + psq->abc->K+1;
+
+  /*  keep profile in logp */
+  for (i = 0; i < psq->palloc; i ++)
+    esl_vec_FSet(psq->prof[i], psq->abc->K+1, 0.0);
+
+  for (i = 1; i <= msa->alen; i ++) {
+    
+    for (ns = 0; ns < msa->nseq; ns ++) {
+      dsq = msa->ax[ns];
+      
+      if (esl_abc_XIsResidue(psq->abc, dsq[i]) || esl_abc_XIsDegenerate(psq->abc, dsq[i]))  /* a residue */
+      {
+	for (k = 0; k < psq->abc->K; k ++)
+	  if (psq->abc->degen[dsq[i]][k]) psq->prof[i][k] += 1.0; 
+      }
+      else /* a gap or missing data */
+	psq->prof[i][psq->abc->K] += 1.0;
+    }
+
+    esl_vec_FNorm(psq->prof[i], psq->abc->K+1);
+    esl_vec_FLog (psq->prof[i], psq->abc->K+1);
+   }
+  
+  psq->n      = msa->alen;
+  psq->palloc = msa->alen + 1;
+
+  return psq;
+
+ ERROR:
+  if (psq) psq_Destroy(psq);
+  return NULL;
+}
+
+
 /* Function:  psq_Grow()
  * Synopsis:  Assure that a <PSQ> has space to add more residues.
  * Incept:    ER, Thu Dec  8 11:14:23 EST 2011 [Janelia]

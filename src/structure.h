@@ -17,6 +17,9 @@
 
 // folding parameters
 //
+// TRUE to use a profile sequence instead of a consensus sequence 
+#define PROFILESEQ  1
+
 // TRUE if we do one last fold without covariations
 #define  LASTFOLD    0
 

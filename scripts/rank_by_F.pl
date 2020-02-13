@@ -8,12 +8,12 @@ use Class::Struct;
 use POSIX;
     
 use constant GNUPLOT => '/usr/local/bin/gnuplot';
-use lib '/Users/erivas/src/src/mysource/scripts';
+use lib '/Users/erivas/src/Mysrc/R-scape/scripts';
 use FUNCS;
 
-use vars qw ($opt_v $opt_f $opt_F);  # required if strict used
+use vars qw ($opt_b $opt_p $opt_v $opt_f $opt_F);  # required if strict used
 use Getopt::Std;
-getopts ('vf:F:');
+getopts ('b:p:vf:F:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -622,8 +622,15 @@ sub parse_rscapeout {
     my $true_fold_tot  = 0;
     my $found_fold_tot = 0;
     my $nf_used = 0;
+
+    # power/nbps thresholds
     my $min_power = 0.1;
+    if ($opt_p) { $min_power = $opt_p; }
+    
     my $min_nbps  = 10;
+    if ($opt_b >= 0) { $min_nbps = $opt_b; }
+    printf("min nbp $min_nbps min_power $min_power\n");
+    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $allfam[$f];
 
@@ -769,23 +776,25 @@ sub parse_rscapeout {
     }
     printf("HELICES\n");
     printf("Totals for %d/%d families\n", $nf_used, $nf);
-    printf("            n_helices n_helices_covary n_covs\n");   
-    printf("main            %d  %d (%.2f) %d\n",   $main_nh_tot,       $main_nhc_tot,       $main_nhc_tot/ $main_nh_tot,       $main_nc_tot);
-    printf("main fold       %d  %d (%.2f) %d\n\n", $main_nh_fold_tot,  $main_nhc_fold_tot,  $main_nhc_fold_tot/$main_nh_fold_tot,   $main_nc_fold_tot);
-    printf("main       1bp  %d  %d (%.2f) %d\n",   $main1_nh_tot,      $main1_nhc_tot,      $main1_nhc_tot/$main1_nh_tot,      $main1_nc_tot);
-    printf("main fold  1bp  %d  %d (%.2f) %d\n\n", $main1_nh_fold_tot, $main1_nhc_fold_tot, $main1_nhc_fold_tot/$main1_nh_fold_tot, $main1_nc_fold_tot);
-    printf("main       2bp  %d  %d (%.2f) %d\n",   $main2_nh_tot,      $main2_nhc_tot,      $main2_nhc_tot/$main2_nh_tot,      $main2_nc_tot);
-    printf("main fold  2bp  %d  %d (%.2f) %d\n\n", $main2_nh_fold_tot, $main2_nhc_fold_tot, $main2_nhc_fold_tot/$main2_nh_fold_tot, $main2_nc_fold_tot);
-    printf("main      >2bp  %d  %d (%.2f) %d\n",   $main3_nh_tot,      $main3_nhc_tot,      $main3_nhc_tot/$main3_nh_tot,      $main3_nc_tot);
-    printf("main fold >2bp  %d  %d (%.2f) %d\n\n", $main3_nh_fold_tot, $main3_nhc_fold_tot, $main3_nhc_fold_tot/$main3_nh_fold_tot, $main3_nc_fold_tot);
-    printf("alt             %d  %d (%.2f) %d\n",   $alt_nh_tot,        $alt_nhc_tot,        $alt_nhc_tot/$alt_nh_tot,         $alt_nc_tot);
-    printf("alt fold        %d  %d (%.2f) %d\n\n", $alt_nh_fold_tot,   $alt_nhc_fold_tot,   $alt_nhc_fold_tot/$alt_nh_fold_tot,    $alt_nc_fold_tot);
-    printf("alt        1bp  %d  %d (%.2f) %d\n",   $alt1_nh_tot,       $alt1_nhc_tot,       $alt1_nhc_tot/$alt1_nh_tot,       $alt1_nc_tot);
-    printf("alt fold   1bp  %d  %d (%.2f) %d\n\n", $alt1_nh_fold_tot,  $alt1_nhc_fold_tot,  $alt1_nhc_fold_tot/$alt1_nh_fold_tot,  $alt1_nc_fold_tot);
-    printf("alt        2bp  %d  %d (%.2f) %d\n",   $alt2_nh_tot,       $alt2_nhc_tot,       $alt2_nhc_tot/$alt2_nh_tot,       $alt2_nc_tot);
-    printf("alt fold   2bp  %d  %d (%.2f) %d\n\n", $alt2_nh_fold_tot,  $alt2_nhc_fold_tot,  $alt2_nhc_fold_tot/$alt2_nh_fold_tot,  $alt2_nc_fold_tot);
-    printf("alt       >2bp  %d  %d (%.2f) %d\n",   $alt3_nh_tot,       $alt3_nhc_tot,       $alt3_nhc_tot/$alt3_nh_tot,       $alt3_nc_tot);
-    printf("alt fold  >2bp  %d  %d (%.2f) %d\n\n", $alt3_nh_fold_tot,  $alt3_nhc_fold_tot,  $alt3_nhc_fold_tot/$alt3_nh_fold_tot,  $alt3_nc_fold_tot);
+    if ($main_nh_tot > 0) {
+	printf("            n_helices n_helices_covary n_covs\n");   
+	printf("main            %d  %d (%.2f) %d\n",   $main_nh_tot,       $main_nhc_tot,       $main_nhc_tot/ $main_nh_tot,       $main_nc_tot);
+	printf("main fold       %d  %d (%.2f) %d\n\n", $main_nh_fold_tot,  $main_nhc_fold_tot,  $main_nhc_fold_tot/$main_nh_fold_tot,   $main_nc_fold_tot);
+	printf("main       1bp  %d  %d (%.2f) %d\n",   $main1_nh_tot,      $main1_nhc_tot,      $main1_nhc_tot/$main1_nh_tot,      $main1_nc_tot);
+	printf("main fold  1bp  %d  %d (%.2f) %d\n\n", $main1_nh_fold_tot, $main1_nhc_fold_tot, $main1_nhc_fold_tot/$main1_nh_fold_tot, $main1_nc_fold_tot);
+	printf("main       2bp  %d  %d (%.2f) %d\n",   $main2_nh_tot,      $main2_nhc_tot,      $main2_nhc_tot/$main2_nh_tot,      $main2_nc_tot);
+	printf("main fold  2bp  %d  %d (%.2f) %d\n\n", $main2_nh_fold_tot, $main2_nhc_fold_tot, $main2_nhc_fold_tot/$main2_nh_fold_tot, $main2_nc_fold_tot);
+	printf("main      >2bp  %d  %d (%.2f) %d\n",   $main3_nh_tot,      $main3_nhc_tot,      $main3_nhc_tot/$main3_nh_tot,      $main3_nc_tot);
+	printf("main fold >2bp  %d  %d (%.2f) %d\n\n", $main3_nh_fold_tot, $main3_nhc_fold_tot, $main3_nhc_fold_tot/$main3_nh_fold_tot, $main3_nc_fold_tot);
+	printf("alt             %d  %d (%.2f) %d\n",   $alt_nh_tot,        $alt_nhc_tot,        $alt_nhc_tot/$alt_nh_tot,         $alt_nc_tot);
+	printf("alt fold        %d  %d (%.2f) %d\n\n", $alt_nh_fold_tot,   $alt_nhc_fold_tot,   $alt_nhc_fold_tot/$alt_nh_fold_tot,    $alt_nc_fold_tot);
+	printf("alt        1bp  %d  %d (%.2f) %d\n",   $alt1_nh_tot,       $alt1_nhc_tot,       $alt1_nhc_tot/$alt1_nh_tot,       $alt1_nc_tot);
+	printf("alt fold   1bp  %d  %d (%.2f) %d\n\n", $alt1_nh_fold_tot,  $alt1_nhc_fold_tot,  $alt1_nhc_fold_tot/$alt1_nh_fold_tot,  $alt1_nc_fold_tot);
+	printf("alt        2bp  %d  %d (%.2f) %d\n",   $alt2_nh_tot,       $alt2_nhc_tot,       $alt2_nhc_tot/$alt2_nh_tot,       $alt2_nc_tot);
+	printf("alt fold   2bp  %d  %d (%.2f) %d\n\n", $alt2_nh_fold_tot,  $alt2_nhc_fold_tot,  $alt2_nhc_fold_tot/$alt2_nh_fold_tot,  $alt2_nc_fold_tot);
+	printf("alt       >2bp  %d  %d (%.2f) %d\n",   $alt3_nh_tot,       $alt3_nhc_tot,       $alt3_nhc_tot/$alt3_nh_tot,       $alt3_nc_tot);
+	printf("alt fold  >2bp  %d  %d (%.2f) %d\n\n", $alt3_nh_fold_tot,  $alt3_nhc_fold_tot,  $alt3_nhc_fold_tot/$alt3_nh_fold_tot,  $alt3_nc_fold_tot);
+    }
 
 	
     for (my $f = 0; $f < $nf; $f ++) {
@@ -1523,6 +1532,7 @@ sub filter_families_by3d {
     my ($file, $usefam_ref) = @_;
     my $nf = 0;
 
+    print "by3d file: $file\n";
     open (FILE, "$file") || die;
     while(<FILE>) {
 	# MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)

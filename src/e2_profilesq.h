@@ -46,6 +46,7 @@ typedef struct PSQ_s {
 
 extern PSQ *psq_Create(const ESL_ALPHABET *abc);
 extern PSQ *psq_CreateFrom(const char *name, const char *desc, const char *acc, const ESL_ALPHABET *abc, const ESL_DSQ *dsq, int64_t L);
+extern PSQ *psq_CreateFromMSA(ESL_MSA *msa, int verbose);
 extern int  psq_Grow  (PSQ *psq, int64_t *ret_nsafe);
 extern int  psq_GrowTo(PSQ *psq, int64_t  n);
 extern int  psq_Copy(const PSQ *src, PSQ *dst);
