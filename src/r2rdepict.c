@@ -170,13 +170,10 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
       if (verbose) printf("SS_cons\n%s\n", ss);
       break;
     case CTTYPE_PK:
-      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
-      r2r_esl_msa_AppendGC(msa, tag, ss);
-      break;
+    case CTTYPE_NONWC:
+    case CTTYPE_TRI:
+    case CTTYPE_SCOV:
     case CTTYPE_XCOV:
-      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
-      r2r_esl_msa_AppendGC(msa, tag, ss);
-      break;
     case CTTYPE_NONE:
      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
@@ -249,7 +246,7 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
 	    ih = hitlist->hit[h].i+1;
 	    jh = hitlist->hit[h].j+1;
 	    
-	    if ((i == ih || i == jh) && hitlist->hit[h].bptype == WWc && ctlist->ct[s][ih] == jh) { 
+	    if ((i == ih || i == jh) && ctlist->ct[s][ih] == jh) { 
 	      esl_sprintf(&tok, "2"); 
 	      found = TRUE; 
 	    }
@@ -282,6 +279,9 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
       esl_sprintf(&covtag1, "%s",    covtag);
       break;
     case CTTYPE_PK:
+    case CTTYPE_NONWC:
+    case CTTYPE_TRI:
+    case CTTYPE_SCOV:
     case CTTYPE_XCOV:
     case CTTYPE_NONE:
       esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);

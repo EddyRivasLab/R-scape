@@ -303,10 +303,10 @@ psq_CreateFromMSA(ESL_MSA *msa, int verbose)
       if (esl_abc_XIsResidue(psq->abc, dsq[i]) || esl_abc_XIsDegenerate(psq->abc, dsq[i]))  /* a residue */
       {
 	for (k = 0; k < psq->abc->K; k ++)
-	  if (psq->abc->degen[dsq[i]][k]) psq->prof[i][k] += 1.0; 
+	  if (psq->abc->degen[dsq[i]][k]) psq->prof[i][k] += msa->wgt[ns]; 
       }
       else /* a gap or missing data */
-	psq->prof[i][psq->abc->K] += 1.0;
+	psq->prof[i][psq->abc->K] += msa->wgt[ns];
     }
 
     esl_vec_FNorm(psq->prof[i], psq->abc->K+1);

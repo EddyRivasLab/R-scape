@@ -116,6 +116,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   char                *pottsfile;
   char                *pdbfile;
+  char                *pdbchain;
   double               cntmaxD;            // max distance in pdb structure to call a contact
   double               pottsigma;
   POTTSPARAM           pottsparam;
@@ -138,9 +139,10 @@ static ESL_OPTIONS options[] = {
   { "--rnass",         eslARG_NONE,     FALSE,   NULL,       NULL,SIMOPTS,    NULL,  NULL,               "simulation according to a RNA secondary structure",                                         1 }, 
   { "--potts",         eslARG_NONE,     FALSE,   NULL,       NULL,SIMOPTS,    NULL,  NULL,               "Metropolis-Hastins for a potts model",                                                      1 }, 
   /* potts simulation */ 
-  { "--pottsfile",   eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pdbfile",       "read potts params from file <f>",                                                           1 },
-  { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
-  { "--pdbfile",     eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pottsfile",     "read contacts from pdbfile <f>",                                                            1 },
+  { "--pottsfile",   eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pdb",            "read potts params from file <f>",                                                           1 },
+  { "--cntmaxD",       eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       0 },
+  { "--pdb",         eslARG_INFILE,      NULL,   NULL,       NULL,   NULL,  "--potts","--pottsfile",     "read contacts from pdbfile <f>",                                                            1 },
+  { "--pdbchain",    eslARG_STRING,      NULL,    NULL,       NULL,   NULL,"-s,--pdb",NULL,               "read a particular chain form pdbfile",                                                      1 },
   { "--pottsigma",     eslARG_REAL,     "0.1",   NULL,     "x>=0",   NULL,  "--potts",NULL,              "if sampling param from a N(0,sigma)",                                                       1 },
   { "--ptpgauss",      eslARG_NONE,    "TRUE",   NULL,       NULL,POTTSOPTS,"--potts",NULL,              "potts param sampled from a Gaussian distribution",                                          1 }, 
   { "--ptpfile",       eslARG_NONE,     FALSE,   NULL,       NULL,POTTSOPTS,"--potts",NULL,              "potts param from file pottsfile",                                                           1 }, 
@@ -322,7 +324,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* If POTTS */
   cfg.pottsfile = NULL;
-  cfg.pdbfile = NULL;
+  cfg.pdbfile   = NULL;
+  cfg.pdbchain  = NULL;
   if      (esl_opt_GetBoolean(go, "--ptpgauss"))   cfg.pottsparam = PTP_GAUSS;
   else if (esl_opt_GetBoolean(go, "--ptpfile"))    cfg.pottsparam = PTP_FILE;
   else if (esl_opt_GetBoolean(go, "--ptpcontact")) cfg.pottsparam = PTP_CONTACT; 
@@ -338,9 +341,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.pottsfile = esl_opt_GetString(go, "--pottsfile");
     if (!esl_FileExists(cfg.pottsfile))  esl_fatal("pottsfile %s does not seem to exist\n", cfg.pottsfile);    
   }
-  if ( esl_opt_IsOn(go, "--pdbfile") ) {
+  if ( esl_opt_IsOn(go, "--pdb") ) {
     cfg.pottsparam = PTP_CONTACT;
-    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
+    cfg.pdbfile  = esl_opt_GetString(go, "--pdb");
+    cfg.pdbchain = esl_opt_GetString(go, "--pdbchain");
     if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);    
   }
    
@@ -488,6 +492,7 @@ main(int argc, char **argv)
   if (cfg.filename) free(cfg.filename);
   if (cfg.pottsfile) free(cfg.pottsfile);
   if (cfg.pdbfile) free(cfg.pdbfile);
+  if (cfg.pdbchain) free(cfg.pdbchain);
   if (cfg.simsafp) fclose(cfg.simsafp);
   esl_stopwatch_Destroy(cfg.watch);
   esl_alphabet_Destroy(cfg.abc);
@@ -782,7 +787,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   case SAMPLE_POTTS:
     if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull,
 				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->abcisRNA, cfg->cntmaxD, cfg->gnuplot,
-				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->noindels, FALSE, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->pdbchain, cfg->noindels, FALSE, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nFailed to generate the simulated potts alignment", cfg->errbuf);
     break;
   }

@@ -36,7 +36,7 @@ static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int
 static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf);
 
 int
-ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
+ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
 	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb, double cntmaxD, int cntmind, int onlypdb,
 	   char *errbuf, int verbose)
 {
@@ -65,6 +65,9 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
   
   // Look at the structural annotation
+  // clist includes all basepairs and contact
+  // ct includes only the WC bp that are compatible with each other
+  //
   if (onlypdb == FALSE) {
     status = ContacMap_FromCT(clist, L, ct, cntmind, msa2omsa, msa2pdb);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from stockholm file", errbuf);
@@ -73,16 +76,11 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
     if (onlypdb) {
       esl_vec_ISet(ct, L+1, 0); // if onlypdb ignore the ss in the alignment
     }
-    status = ContactMap_FromPDB(pdbfile, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
+    status = ContactMap_FromPDB(pdbfile, pdbchain, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
   }
-
-#if 0
-   for (h = 0; h < ncnt; h++) clist->srtcnt[h] = clist->cnt + h;
-   if (ncnt > 1) qsort(clist->srtcnt, clist->ncnt, sizeof(CCNT *), cnt_sorted_by_sc);
-#endif
-   
-   if (abcisRNA) {
+  
+  if (abcisRNA) {
      /* Impose the new ct on the msa GC line 'cons_ss' */
      ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
      esl_ct2wuss(ct, msa->alen, ss);
@@ -90,7 +88,6 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
      if (msa->ss_cons) strcpy(msa->ss_cons, ss);
      else esl_strdup(ss, -1, &(msa->ss_cons));
    }
-   
    *ret_nbpairs = clist->nbps;
 
    if (cmapfile) {
@@ -99,9 +96,9 @@ ContactMap(char *cmapfile, char *pdbfile, char *msafile, char *gnuplot, ESL_MSA 
      fclose(cmapfp);
    }
    
-   if (pdbfile||verbose) {
+   if (pdbfile || verbose) {
      CMAP_Dump(stdout, clist, FALSE);
-     if (abcisRNA) printf("%s\n", ss);
+     if (abcisRNA) printf("# The WC basepairs:\n# %s\n", ss);
    }
 
    if (ret_ct)      *ret_ct      = ct;      else free(ct);
@@ -173,7 +170,7 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
 }
 
 int
-ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
+ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
 		   double cntmaxD, int cntmind, char *errbuf, int verbose)
 {
   char     tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
@@ -183,7 +180,7 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   char    *args = NULL;
   int      L = msa->alen;
   int      status;
-  
+
   esl_sprintf(&clist->pdbname, pdbfile);
 
   if ((status = esl_tmpfile_named(tmpmapfile, &tmpfp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create pdbmapfile");
@@ -196,15 +193,19 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
   else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
   
   if (abcisRNA)  {// run rnaview as well
-    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
-		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    if (pdbchain)
+      esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		  cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    else
+      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   else {
     esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
 		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
-  if (verbose) printf("%s\n", args);
+  if (1||verbose) printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
 
@@ -230,7 +231,7 @@ ContactMap_FromPDB(char *pdbfile, char *msafile, ESL_MSA *msa, int *omsa2msa, in
 static int
 read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf)
 {
-  ESL_FILEPARSER  *efp   = NULL;
+  ESL_FILEPARSER  *efp = NULL;
   char            *tok;
   int              nchain = 0;
   char           **mapfile = NULL;
@@ -245,21 +246,24 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
   // Read the names of the .cor files to use
   if (esl_fileparser_Open(pdbmapfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
   esl_fileparser_SetCommentChar(efp, '#');
-  ESL_ALLOC(mapfile, sizeof(char *));
+  
   while (esl_fileparser_NextLine(efp) == eslOK)
     {
       if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", pdbmapfile);
-       esl_sprintf(&mapfile[nchain], tok);
- 
+      if (!mapfile) ESL_ALLOC  (mapfile, sizeof(char *) * (nchain+1));
+      else          ESL_REALLOC(mapfile, sizeof(char *) * (nchain+1));
+      mapfile[nchain] = NULL;
+      esl_sprintf(&mapfile[nchain], tok);
+      
       nchain ++;
-      ESL_REALLOC(mapfile, sizeof(char *)*(nchain+1));
     }
-  esl_fileparser_Close(efp);
-  
+  esl_fileparser_Close(efp); efp = NULL;
+   
   // Add from all chains if unique
   for (c = 0; c < nchain; c ++) {
+    if (!mapfile[c]) continue;
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-    esl_fileparser_SetCommentChar(efp, '#');
+     esl_fileparser_SetCommentChar(efp, '#');
     while (esl_fileparser_NextLine(efp) == eslOK)
       {
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
@@ -274,14 +278,15 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 	  if (i > 0) msa2pdb[i-1] = pdbi-1;
 	}
       }
-      esl_fileparser_Close(efp);
-      free(mapfile[c]);
-      remove(mapfile[c]);
+       
+    if (efp) esl_fileparser_Close(efp); efp = NULL;
+    if (mapfile[c]) free(mapfile[c]);
+    remove(mapfile[c]);
   }
-
+ 
   *ret_pdblen = pdb_max - pdb_min + 1;
   
-  free(mapfile);
+  if (mapfile) free(mapfile);
   return eslOK;
 
  ERROR:
@@ -290,6 +295,9 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
   return status;
 }
 
+// ct    has the WC basepairs including pseudoknots
+// clist is the whole list of contact that includes WC
+//
 static int
 read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf)
 {

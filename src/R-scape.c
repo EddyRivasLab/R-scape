@@ -167,6 +167,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   
   char            *pdbfile;            // pdfb file
   char            *pdbname;
+  char            *pdbchain;
   double           cntmaxD;            // max distance in pdb structure to call a contact
   int              cntmind;            // mindis in pdb sequence allowed
   int              onlypdb;            // annotate only the structure in the pdb file, discard annoation in msa if any
@@ -225,7 +226,7 @@ static ESL_OPTIONS options[] = {
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                       1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
-  { "--fold",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--pdbfile",          "obtain the structure with maximum covariation",                                             1 },
+  { "--fold",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--outname",    eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a filename for all outputs",                                                        1 },
@@ -255,9 +256,10 @@ static ESL_OPTIONS options[] = {
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
-  { "--pdbfile",      eslARG_INFILE,    NULL,    NULL,       NULL,   NULL,    NULL,"--fold",              "read pdb file from file <f>",                                                              1 },
+  { "--pdb",        eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    "-s",  NULL,               "read pdb structure from file <f>",                                                          1 },
+  { "--pdbchain",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,"-s,--pdb",NULL,               "read a particular chain form pdbfile",                                                      1 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
-  { "--onlypdb",     eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdbfile",NULL,              "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
+  { "--onlypdb",      eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdb",  NULL,               "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
   /* msa format */
   { "--informat",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "specify format",                                                                            1 },
   /* null hypothesis */
@@ -341,11 +343,16 @@ static ESL_OPTIONS options[] = {
   /* folding options */
   { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
-  { "--grammar",    eslARG_STRING,      "RBG",   NULL,       NULL,   NULL,"--fold",  NULL,               "grammar used for fold calculation options are [RBG,G6XS,G6X]",                             0 },   
   { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                        0 },   
-  { "--allownegatives", eslARG_NONE,    FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "no pairs are forbidden for having power but no covariation",                              0 },
-  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
-  /* other options */  
+  { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE: CaCoFold uses a RF sequence. Default it creates a profileseq from the alignment",   0 },
+  { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "no pairs are forbidden for having power but no covariation",                              0 },
+  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
+  { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,  NULL,                "min distance between covarying pairs to report the pair. Default 1 (contiguous)",         0 },   
+  { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to leave the overlap of alt helices with other helices",                             0 },
+  { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to run the CaCoFold recursion one last time",                                        0 },
+  { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to draw annotated non WC basepairs",                                                 0 },
+  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--fold",  NULL,                "Evalue threshols for negative pairs. Negative pairs require eval > <x>",                  0},
+/* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                            1 },
   { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                               0 },
@@ -378,7 +385,8 @@ static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *ns
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
 static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
 static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
-static int  write_omsafold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
+static int  write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
+static int  write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -507,6 +515,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
+  
+  ESL_ALLOC(cfg.thresh, sizeof(THRESH));
+  if (esl_opt_IsOn(go, "-E")) {
+    cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
+  }
 
   if (esl_opt_IsOn(go, "--structured") && esl_opt_IsOn(go, "-s"))
     esl_fatal("option --structure cannot be used with a proposed structure");  
@@ -519,24 +532,30 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // helix_stats = TRUE to give stats on helices (in given structure or calculated with CaCoFold)
   cfg.helix_stats = esl_opt_IsOn(go, "--helixstats")? TRUE : FALSE;
 
+  // The grammars used
   cfg.foldparam->G0 = RBG;
-  if ( esl_opt_IsOn(go, "--grammar") ) {
-    if      (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6X")  == 0) cfg.foldparam->G0 = G6X;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "G6XS") == 0) cfg.foldparam->G0 = G6XS;
-    else if (esl_strcmp(esl_opt_GetString(go, "--grammar"), "RBG")  == 0) cfg.foldparam->G0 = RBG;
-    else esl_fatal("Grammar %s has not been implemented", esl_opt_GetString(go, "--grammar"));
-  }
-  cfg.foldparam->GP = G6X;
+  cfg.foldparam->GP = G6XS;
+  
   if ( esl_opt_IsOn(go, "--foldmethod") ) {
     if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.foldparam->F = CYK;
     else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.foldparam->F = DECODING;
     else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
   }
+
+  // sequence used to fold
+  cfg.foldparam->profileseq = (esl_opt_IsOn(go, "--refseq"))? FALSE : TRUE;
   
   // power threshold. default 0.95
-  cfg.foldparam->power_thresh       = POWER_THRESH;
+  cfg.foldparam->power_thresh = POWER_THRESH;
   if (esl_opt_IsOn(go, "--allownegatives")) cfg.foldparam->power_thresh = 1.1; // all powers [0,1] allowed
-  
+
+  // negative pairs eval threshold. default 1.0
+  cfg.foldparam->neg_eval_thresh = 1.0;
+  if (esl_opt_IsOn(go, "--E_neg")) {
+    cfg.foldparam->neg_eval_thresh = esl_opt_GetReal(go, "--E_neg");
+    if (cfg.foldparam->neg_eval_thresh < cfg.thresh->val) cfg.foldparam->neg_eval_thresh = cfg.thresh->val;
+  }
+
   // parameters for the main nested structure
   // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j, minhloop = j-i-1 = 2
   // unless there are covariations forcing a smaller hairpin loop.
@@ -550,17 +569,23 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.foldparam->minhelix           = MINHELIX;           // min length to be reported
   
   // special parameter for selecting helices with covariations
-  cfg.foldparam->helix_overlap_trim = HELIX_OVERLAP_TRIM; // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure. default FALSE
-  cfg.foldparam->cov_min_dist       = COV_MIN_DIST;       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs).    default 1
+  //    helix_overlap_trim; TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure. default FALSE
+  cfg.foldparam->helix_overlap_trim = (esl_opt_IsOn(go, "--show_hoverlap"))? FALSE : HELIX_OVERLAP_TRIM;
+  //    cov_min_dist;  min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs).
+  cfg.foldparam->cov_min_dist       = (esl_opt_IsOn(go, "--covmin"))? esl_opt_GetInteger(go, "--covmin") : COV_MIN_DIST;      
+
+  // TRUE if we do one last fold without covariations. Default FALSE
+  cfg.foldparam->lastfold = (esl_opt_IsOn(go, "--lastfold"))? TRUE : FALSE;
+  
+  // parameters for drawing the structure
+  // default: only the WC basepairs
+  //
+  cfg.foldparam->draw_nonWC = (esl_opt_IsOn(go, "--draw_nonWC"))? TRUE : FALSE;
     
   if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   cfg.YSeffect = FALSE;
   if (esl_opt_GetBoolean(go, "--YS"))  cfg.YSeffect = TRUE;
-
-  ESL_ALLOC(cfg.thresh, sizeof(THRESH));
-  if (esl_opt_IsOn(go, "-E")) { cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
-  }
 
   cfg.mi = NULL;
   
@@ -698,17 +723,20 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.ofoldct = NULL;
 
   /* the pdb contacts */
-  cfg.pdbfile = NULL;
-  cfg.pdbname = NULL;
-  cfg.onlypdb = FALSE;
-  if ( esl_opt_IsOn(go, "--pdbfile") ) {
-    cfg.onlypdb = esl_opt_GetBoolean(go, "--onlypdb");
-    cfg.pdbfile = esl_opt_GetString(go, "--pdbfile");
+  cfg.pdbfile  = NULL;
+  cfg.pdbchain = NULL;
+  cfg.pdbname  = NULL;
+  cfg.onlypdb  = FALSE;
+  if ( esl_opt_IsOn(go, "--pdb") ) {
+    cfg.onlypdb  = esl_opt_GetBoolean(go, "--onlypdb");
+    cfg.pdbfile  = esl_opt_GetString(go, "--pdb");
+    cfg.pdbchain = esl_opt_GetString(go, "--pdbchain");
     if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
 
     // add the pdbname to the outheader
     esl_FileTail(cfg.pdbfile, TRUE, &cfg.pdbname);
-    esl_sprintf(&outname, "%s.%s", cfg.outheader, cfg.pdbname);
+    if (cfg.pdbchain) esl_sprintf(&outname, "%s.%s.%s", cfg.outheader, cfg.pdbname, cfg.pdbchain);
+    else              esl_sprintf(&outname, "%s.%s",    cfg.outheader, cfg.pdbname);
     free(cfg.outheader); cfg.outheader = NULL;
     esl_sprintf(&cfg.outheader, "%s", outname);
   }
@@ -866,9 +894,9 @@ main(int argc, char **argv)
     // option -s introduces a two-set statistical test. One tests is for basepairs, the other is for not basepairs
     if (esl_opt_GetBoolean(go, "-s")) {
       
-      // if msa does not include a ss_cons structure (or a pdffile is not provided), we cannot apply this option
+      // if msa does not include a ss_cons structure (or a pdbfile is not provided), we cannot apply this option
       if (cfg.abcisRNA) {
-	if (cfg.omsa->nseq > 1 && !cfg.omsa->ss_cons && cfg.pdbfile == NULL)
+	if (!cfg.omsa->ss_cons && cfg.pdbfile == NULL)
 	  esl_fatal("Nucleotide alignment does not include a structure.\nCannot use two-set test option -s.");
       }
       else if (cfg.pdbfile == NULL)
@@ -929,6 +957,7 @@ main(int argc, char **argv)
 
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
+ 
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -1344,7 +1373,6 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     //esl_histogram_Plot(stdout, cumranklist->ha);
     esl_histogram_PlotSurvival(stdout, cumranklist->ha);
   }
-  
   if (cfg->verbose) cov_DumpRankList(stdout, cumranklist);
   
   *ret_cumranklist = cumranklist;
@@ -1582,6 +1610,7 @@ outfile_null(struct outfiles_s *ofile)
   ofile->covqqfile  = NULL;
 
   // structure files
+  ofile->omsapdbfile  = NULL;        
   ofile->omsafoldfile = NULL;        
   ofile->cmapfile     = NULL;        
 
@@ -1603,7 +1632,6 @@ outfile_null(struct outfiles_s *ofile)
 static void
 outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
 {
-
   // first nullify
   outfile_null(ofile);
 
@@ -1619,7 +1647,10 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     esl_sprintf(&ofile->alipowerfile, "%s/%s.power", cfg->outdir, outname);
     if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s/%s.fold.power", cfg->outdir, outname);
 
-    // original msa annotated with CaCoFold structure
+    // original msa annotated with a PDB structure
+    if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s/%s.PDB.sto", cfg->outdir, outname);
+    
+    // original msa annotated with the  CaCoFold structure
     if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.fold.sto", cfg->outdir, outname);
     
     // contact map file 
@@ -1673,9 +1704,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     esl_sprintf(&ofile->alipowerfile, "%s.power", outname);
     if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s.fold.power", outname);
     
-    // original msa annotated with CaCoFold structure
-    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.fold.sto", outname);
+    // original msa annotated with a PDB structure
+    if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s.PDB.sto", outname);
     
+     // original msa annotated with the CaCoFold structure
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.fold.sto", outname);
     
     // contact map file 
     if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s.cmap", outname);
@@ -1737,6 +1770,7 @@ outfile_destroy(struct outfiles_s *ofile)
   if (ofile->folddplotfile) free(ofile->folddplotfile);
 
   if (ofile->cmapfile)     free(ofile->cmapfile);        
+  if (ofile->omsapdbfile)  free(ofile->omsapdbfile);        
   if (ofile->omsafoldfile) free(ofile->omsafoldfile);        
   
   if (ofile->rocfile)       free(ofile->rocfile);            
@@ -1888,7 +1922,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   }
   
   /* add the name of the pdbfile used to extract the structure (if any) */
-  if (cfg->pdbname) esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
+  if (cfg->pdbname) (cfg->pdbchain)? esl_sprintf(&outname, "%s.%s.%s", cfg->msaname, cfg->pdbname, cfg->pdbchain) : esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else              esl_sprintf(&outname, "%s",    cfg->msaname);
 
   // the output files
@@ -1902,13 +1936,19 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   }
 
  /* the structure/contact map */
-  status = ContactMap(cfg->ofile.cmapfile, cfg->pdbfile, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
+  status = ContactMap(cfg->ofile.cmapfile, cfg->pdbfile, cfg->pdbchain, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      &cfg->ct, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
 
   if (cfg->abcisRNA) {
-    status = struct_SplitCT(cfg->foldparam->helix_unpaired, cfg->ct, msa->alen, &cfg->ctlist, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nstruct_SplitCT() failed.", cfg->errbuf);
+    cfg->ctlist = struct_Contacts2CTList(cfg->foldparam->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
+    if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
+     
+    // write the original alignment with a PDB structure 
+    if (cfg->pdbfile) {
+      status = write_omsa_PDB(cfg, msa->alen, cfg->ctlist, FALSE);
+      if (status != eslOK) goto ERROR;
+    }
   }
 
   /* produce a tree
@@ -1978,7 +2018,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   free(outname);
   if (cfg->ct) free(cfg->ct); cfg->ct = NULL;
-  struct_ctlist_Destroy(cfg->ctlist);
+  if(cfg->ctlist) struct_ctlist_Destroy(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
   if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
@@ -2131,12 +2171,12 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     if (status != eslOK) goto ERROR;
     if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
  
-    status = write_omsafold(cfg, msa->alen, foldctlist, FALSE);
+    status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);  
-  struct_ctlist_Destroy(foldctlist);
+  if (foldctlist) struct_ctlist_Destroy(foldctlist);
   if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
   if (title) free(title);
   if (cfg->pt == NULL) potts_Destroy(ptlocal);    
@@ -2319,9 +2359,9 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
   return status;
 }
 
-
+// write the original alignment annotated with the CaCoFOld structure
 static int
-write_omsafold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
+write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
 {
   FILE     *omsafoldfp = NULL;
   ESL_MSA  *omsa = cfg->omsa;
@@ -2376,6 +2416,67 @@ write_omsafold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
  ERROR:
   if (octlist) struct_ctlist_Destroy(octlist);
   for (s = 0; s < foldctlist->nct; s ++) if (osslist[s]) free(osslist[s]);
+  if (osslist) free(osslist);
+  return status;
+}
+
+// write original alignmen annotated with a PDB structure
+static int
+write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
+{
+  FILE     *omsapdbfp = NULL;
+  ESL_MSA  *omsa = cfg->omsa;
+  CTLIST   *octlist = NULL;
+  char    **osslist = NULL;
+  char     *tag;
+  int       OL = omsa->alen;
+  int       s;
+  int       i;
+  int       status;
+
+  // initialize
+  if (omsa->ss_cons == NULL) 
+    ESL_ALLOC(omsa->ss_cons, sizeof(char)*(OL+1));
+  omsa->ss_cons[0] = '\0';
+
+  // the main nested structure (s=0) is annotated as SS_cons
+  // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
+  //
+  // SS_cons_xx is not orthodox stockholm format.
+  status = struct_CTMAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
+  for (s = 1; s < ctlist->nct; s ++) {
+
+    // these are the extra GC lines.
+    // I keep it in case there is overlap
+    esl_sprintf(&tag, "SS_cons_%d", s);
+    esl_msa_AppendGC(omsa, tag, osslist[s]);
+    free(tag); tag = NULL;
+    
+    for (i = 1; i <= OL; i ++) {
+      if (no_overlap(i, octlist->ct[s][i], OL, octlist->ct[0]))  {
+	octlist->ct[0][i]                 = octlist->ct[s][i];
+	octlist->ct[0][octlist->ct[s][i]] = i;
+      }
+    }
+  }
+  if (ctlist->nct > 0) esl_ct2wuss(octlist->ct[0], OL, omsa->ss_cons);
+  
+  // write alignment with the cov structure to file
+  if ((omsapdbfp = fopen(cfg->ofile.omsapdbfile, "w")) == NULL) esl_fatal("Failed to open omsafile %s", cfg->ofile.omsapdbfile);
+  esl_msafile_Write(omsapdbfp, omsa, eslMSAFILE_STOCKHOLM);
+  fclose(omsapdbfp);
+
+  struct_ctlist_Destroy(octlist);
+  for (s = 0; s < ctlist->nct; s ++) free(osslist[s]);
+  free(osslist);
+  return eslOK;
+
+ ERROR:
+  if (octlist) struct_ctlist_Destroy(octlist);
+  for (s = 0; s < ctlist->nct; s ++) if (osslist[s]) free(osslist[s]);
   if (osslist) free(osslist);
   return status;
 }

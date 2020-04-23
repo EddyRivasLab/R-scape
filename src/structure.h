@@ -17,12 +17,6 @@
 
 // folding parameters
 //
-// TRUE to use a profile sequence instead of a consensus sequence 
-#define PROFILESEQ  1
-
-// TRUE if we do one last fold without covariations
-#define  LASTFOLD    0
-
 // power threshold
 #define POWER_THRESH 0.95
 
@@ -43,8 +37,8 @@
 // COV_MIN_DIST       1
 // HELIX_OVERLAP_TRIM 0
 //
-#define COV_MIN_DIST       1       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
-#define HELIX_OVERLAP_TRIM 0       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
+#define COV_MIN_DIST       2       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
+#define HELIX_OVERLAP_TRIM 1       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
 
 
 typedef struct cov_s {
@@ -85,7 +79,20 @@ typedef struct fold_s {
   enum grammar_e    GP; // extra folds grammar
   enum foldmethod_e F;
 
+  // if true use a profile sequence. default RF sequence
+  int               profileseq;
+
+  // negative pairs definition:
+  //
+  //  power > power_thresh && Eval > neg_eval_thresh (usually larger that eval_thresh of sigbnificance)
+  //
+  // power threshold
   double            power_thresh;
+  // neg Eval theshold
+  double            neg_eval_thresh;
+
+  // TRUE if we do one last fold without covariations
+  int               lastfold;
   
   // parameters for the main nested structure
   int               hloop_min;
@@ -104,6 +111,9 @@ typedef struct fold_s {
   // HELIX_OVERLAP_TRIM 0
   int               cov_min_dist;
   int               helix_overlap_trim;
+
+  // parameters for draing
+  int draw_nonWC;        // TRUE to draw all annotated non WC basepairs
   
 } FOLDPARAM;
 
@@ -111,7 +121,9 @@ extern int       struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret
 	 	  	         RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh);
 extern int       struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, struct mutual_s *mi, int *msamap, int firstpos,
 	   		        SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, char *errbuf, int verbose);
-extern int       struct_SplitCT(int helix_unpaired, int *ct, int L, CTLIST **ret_ctlist, char *errbuf, int verbose);
+extern CTLIST   *struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose);
+extern int       struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
+extern CTLIST   *struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose);
 extern int       struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose);
 extern COVLIST  *struct_covlist_Create(int n);
 extern void      struct_covlist_Destroy(COVLIST *covlist);

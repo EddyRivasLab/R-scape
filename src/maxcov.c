@@ -100,7 +100,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, CTLIST
   explained = struct_covlist_Create(0);
   if (explained == NULL) ESL_XFAIL(eslFAIL, errbuf, "MAXCOV_Structures() allocation error");
   
-  if (be_verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
+  if (1||be_verbose) ESL_ALLOC(ss, sizeof(char) * (L+1));
 
   // list with all covarying pairs
   if ((status = covariations_total(mi, clist, thresh, &totalcov, verbose)) != eslOK) goto ERROR;

@@ -26,24 +26,39 @@ typedef enum {
   WHt       = 3,
   WSc       = 4,
   WSt       = 5,
+  Wxc       = 6,
+  Wxt       = 7,
+  xWc       = 8,
+  xWt       = 9,
   
-  HWc       = 6,
-  HWt       = 7,
-  HHc       = 8,
-  HHt       = 9,
-  HSc       = 10,
-  HSt       = 11,
-  
-  SWc       = 12,
-  SWt       = 13,
-  SHc       = 14,
-  SHt       = 15,
-  SSc       = 16,
-  SSt       = 17,
-  
-  STACKED   = 18, // two bases in proximity that are involved in other basepairs
-  CONTACT   = 19, // just in proximity in the 3D structure
-  BPNONE    = 20,
+  HWc       = 10,
+  HWt       = 11,
+  HHc       = 12,
+  HHt       = 13,
+  HSc       = 14,
+  HSt       = 15,
+  Hxc       = 16,
+  Hxt       = 17,
+  xHc       = 18,
+  xHt       = 19,
+
+  SWc       = 20,
+  SWt       = 21,
+  SHc       = 22,
+  SHt       = 23,
+  SSc       = 24,
+  SSt       = 25,     
+  Sxc       = 26,
+  Sxt       = 27,
+  xSc       = 28,
+  xSt       = 29,
+
+  xxc       = 30,
+  xxt       = 31,
+
+  STACKED   = 32, // two bases in proximity that are involved in other basepairs
+  CONTACT   = 33, // just in proximity in the 3D structure
+  BPNONE    = 34,
 } BPTYPE;
 
 

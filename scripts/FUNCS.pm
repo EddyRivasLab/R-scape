@@ -384,7 +384,7 @@ sub gnuplot_ave_histo_with_dots {
 sub gnuplot_define_styles {
     my ($gp) = @_;
     print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 2   lt 1 lc rgb 'brown'   pt 1 ps 0.6 lw 6\n";
+    print $gp "set style line 2   lt 1 lc rgb 'green'   pt 1 ps 0.5 lw 6\n";
     print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 6\n";
     print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 6\n";
     print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 6\n";
@@ -1956,7 +1956,7 @@ sub parse_stofile {
 		$nsq ++;
 	    }
 	}
-	elsif ($nsq > 0 && /^(\S+)\s+(\S+)\s*$/) {
+	elsif ($nsq > 0 && /^([^#]\S+)\s+(\S+)\s*$/) {
 	    if ($nali == $which) { 
 		my $name  = $1;
 		my $sq    = $2;
@@ -1970,12 +1970,13 @@ sub parse_stofile {
 	}
     }
     close(FILE);
+    if ($b > 1 && $nsq != $nsq_prv) { print "parse_stofile error in block $b: nsq $nsq nsq_prv $nsq_prv\n"; die; }
     
     ss2ct($ss, $ct_ref);
 
     $$ret_ss   = $ss;
     $$ret_rfsq = $rfsq;
-    $$ret_nsq  = $nsq_prv;
+    $$ret_nsq  = $nsq;
  
     return length($sq_ref->[0]);
 }

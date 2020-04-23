@@ -141,11 +141,39 @@ from the alignment using the program FastTree~\citep{Price10}).  \rscape\ checks
 of the taxa matches for all alignments analyzed.
 
 
+\subsection{Options for producing a CaCoFold structure}
+
+When using the option \prog{--fold}, R-scape engages the CaCoFold
+algorithm to produce a predicted structure. The CaCoFold algorithm
+incorporates all positive (significantly covarying) basepairs, and
+prevents any negative pair (pairs that have power of covariation but
+not covariation) from happening. The CaCoFold algorithm uses a
+recursive cascade of constrained foldings.
+
+\noindent
+Several additional options can be used in combination with   \prog{--fold},
+
+\subsubsection{\prog{--refseq}}   By default the CaCoFold algorithm folds a profile sequence built from the alignment. Using this option, the sequence to fold is a consensus reference sequence.
+
+\subsubsection{\prog{--E\_neg <x>}}   Pairs with E-value larger than the E-value cutoff but smaller than <x> will not be called negatives regardeless of their covariation power. Default for E\_neg is 1.0.
+
+\subsubsection{\prog{--lastfold}} This option forces one last alternative fold (using grammar G6X) after all covarying basepairs have already been
+integrated into the structure. By default this last fold is not
+performed. In the absence of any covarying basepair, one fold is
+performed using grammar RBG.
+
+\subsubsection{\prog{--show\_hoverlap}} This option leaves the alternative helices unmodified. By default, alternative structures are trimmed down to show no overlap with helices from the previous layers.
+
+\subsubsection{\prog{--covmin <n>}} Minimum distance between position to report significant covariations. Default is 1, which means that significant covariations between
+contiguous positions are reported.
+
+\subsubsection{\prog{--allow\_negatives}} This option (just for developers) allows all basepairs to form regardless of their power.
 
 \subsection{Options for importing a structure}
 
 \rscape\ does not require to input a structure (either a RNA structure
-or a protein contact map). By default \rscape\ analyzes all possible pairs in the alignment.
+or a protein contact map). By default \rscape\ analyzes all possible
+pairs in the alignment.
 \vspace{1mm}
 
 \noindent
@@ -162,7 +190,7 @@ structure for the alignment. (For RNA alignments only.)
 \noindent
 These two methods can be combined together. For a nucleotide
 alignment, if both a consensus structure is present in the alignment,
-and a PDB file is provided (using option \prog{--pdbfile}), the
+and a PDB file is provided (using option \prog{--pdb}), the
 consensus structure will be extended by the information provided by
 the pdbfile.  To ignore the consensus structure use
 option \prog{--onlypdb}.\\
@@ -199,24 +227,28 @@ The RNA basepair annotation takes precedent over the annotation as ``contact''.
 \noindent
 The options that control the input of a structure or contact map are:
 
-\subsubsection{\prog{--pdbfile <s>}} Reads a pdbfile associated to the alignment, and extracts the contacts
+\subsubsection{\prog{--pdb <s>}} Reads a pdbfile associated to the alignment, and extracts the contacts
 from it.
 
 A ``.cmap'' file is produced reporting the structure obtained from the PDB file.
 
-Option \prog{--pdbfile} is incompatible with \prog{--fold}.
+Option \prog{--pdb} is incompatible with \prog{--fold}.
 
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
 
 \subsubsection{\prog{--cntmind <n>}} Minimum distance (in residue positions) in the backbone between two residues required to define a ``contact'' is $\langle n\rangle$.
 \vspace{5mm}
 
-\subsubsection{\prog{--onlypdb}} Reads the structure from the pdbfile and ignores the alignment consensus structure (if provided).\\\\
+\subsubsection{\prog{--onlypdb}} Reads the structure from the pdbfile and ignores the alignment consensus structure (if provided).
+
+\subsubsection{\prog{--draw\_nonWC}} Adds the non-canonical basepairs into the structure graphical output. For clarity, the default is to draw only the Watson-Crick basepairs.
+This option affects only the drawing of the structure. All basepairs (canonical or not) are used as part of the structure to perform the two-set statistical test.
+\\\\
 
 \noindent
 Example of reading a structure from a PDB file for the FMN riboswitch:
 
-\user{bin/R-scape --cntmaxD 4 --cntmind 3 --pdbfile tutorial/3f2q.pdb -s --onlypdb tutorial/RF00050.sto}\\
+\user{bin/R-scape --cntmaxD 4 --cntmind 3 --pdb tutorial/3f2q.pdb -s --onlypdb tutorial/RF00050.sto}\\
 
 \noindent
 This command line extracts contacts from the pdb file that are at a

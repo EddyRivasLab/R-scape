@@ -286,6 +286,10 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   case WHt:       esl_sprintf(ret_bptype, "WHt");       break;
   case WSc:       esl_sprintf(ret_bptype, "WSc");       break;
   case WSt:       esl_sprintf(ret_bptype, "WSt");       break;
+  case Wxc:       esl_sprintf(ret_bptype, "W.c");       break;
+  case Wxt:       esl_sprintf(ret_bptype, "W.t");       break;
+  case xWc:       esl_sprintf(ret_bptype, ".Wc");       break;
+  case xWt:       esl_sprintf(ret_bptype, ".Wt");       break;
 
   case HWc:       esl_sprintf(ret_bptype, "HWc");       break;
   case HWt:       esl_sprintf(ret_bptype, "HWt");       break;
@@ -293,6 +297,10 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   case HHt:       esl_sprintf(ret_bptype, "HHt");       break;
   case HSc:       esl_sprintf(ret_bptype, "HSc");       break;
   case HSt:       esl_sprintf(ret_bptype, "HSt");       break;
+  case Hxc:       esl_sprintf(ret_bptype, "H.c");       break;
+  case Hxt:       esl_sprintf(ret_bptype, "H.t");       break;
+  case xHc:       esl_sprintf(ret_bptype, ".Hc");       break;
+  case xHt:       esl_sprintf(ret_bptype, ".Ht");       break;
 
   case SWc:       esl_sprintf(ret_bptype, "SWc");       break;
   case SWt:       esl_sprintf(ret_bptype, "SWt");       break;
@@ -300,6 +308,13 @@ CMAP_BPTYPEString(char **ret_bptype, BPTYPE type, char *errbuf)
   case SHt:       esl_sprintf(ret_bptype, "SHt");       break;
   case SSc:       esl_sprintf(ret_bptype, "SSc");       break;
   case SSt:       esl_sprintf(ret_bptype, "SSt");       break;
+  case Sxc:       esl_sprintf(ret_bptype, "S.c");       break;
+  case Sxt:       esl_sprintf(ret_bptype, "S.t");       break;
+  case xSc:       esl_sprintf(ret_bptype, ".Sc");       break;
+  case xSt:       esl_sprintf(ret_bptype, ".St");       break;
+
+  case xxc:       esl_sprintf(ret_bptype, "..c");       break;
+  case xxt:       esl_sprintf(ret_bptype, "..t");       break;
     
   case STACKED:   esl_sprintf(ret_bptype, "STACKED");   break;
   case CONTACT:   esl_sprintf(ret_bptype, "CONTACT");   break;
@@ -636,6 +651,10 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(bptype, "WHt"))       type = WHt;
   else if (!esl_strcmp(bptype, "WSc"))       type = WSc;
   else if (!esl_strcmp(bptype, "WSt"))       type = WSt;
+  else if (!esl_strcmp(bptype, "W.c"))       type = Wxc;
+  else if (!esl_strcmp(bptype, "W.t"))       type = Wxt;
+  else if (!esl_strcmp(bptype, ".Wc"))       type = xWc;
+  else if (!esl_strcmp(bptype, ".Wt"))       type = xWt;
   
   else if (!esl_strcmp(bptype, "HWc"))       type = HWc;
   else if (!esl_strcmp(bptype, "HWt"))       type = HWt;
@@ -643,6 +662,10 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(bptype, "HHt"))       type = HHt;
   else if (!esl_strcmp(bptype, "HSc"))       type = HSc;
   else if (!esl_strcmp(bptype, "HSt"))       type = HSt;
+  else if (!esl_strcmp(bptype, "H.c"))       type = Hxc;
+  else if (!esl_strcmp(bptype, "H.t"))       type = Hxt;
+  else if (!esl_strcmp(bptype, ".Hc"))       type = xHc;
+  else if (!esl_strcmp(bptype, ".Ht"))       type = xHt;
   
   else if (!esl_strcmp(bptype, "SWc"))       type = SWc;
   else if (!esl_strcmp(bptype, "SWt"))       type = SWt;
@@ -650,7 +673,14 @@ CMAP_String2BPTYPE(char *bptype, BPTYPE *ret_type, char *errbuf)
   else if (!esl_strcmp(bptype, "SHt"))       type = SHt;
   else if (!esl_strcmp(bptype, "SSc"))       type = SSc;
   else if (!esl_strcmp(bptype, "SSt"))       type = SSt;
+  else if (!esl_strcmp(bptype, "S.c"))       type = Sxc;
+  else if (!esl_strcmp(bptype, "S.t"))       type = Sxt;
+  else if (!esl_strcmp(bptype, ".Sc"))       type = xSc;
+  else if (!esl_strcmp(bptype, ".St"))       type = xSt;
   
+  else if (!esl_strcmp(bptype, "..c"))       type = xxc;
+  else if (!esl_strcmp(bptype, "..t"))       type = xxt;
+
   else if (!esl_strcmp(bptype, "STACKED"))   type = STACKED;
   else if (!esl_strcmp(bptype, "CONTACT"))   type = CONTACT;
   else if (!esl_strcmp(bptype, "BPNONE"))    type = BPNONE;

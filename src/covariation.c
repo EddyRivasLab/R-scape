@@ -41,6 +41,7 @@
 
 static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *surv);
 static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit);
+static int    cov_add_pair2covct(int ih, int jh, CTLIST *ctlist, int verbose);
 static int    cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
@@ -789,10 +790,12 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	h ++;
 
 	data->spair[n].covary = TRUE;
-	data->spair[n].sc     = cov;
- 	data->spair[n].Eval   = eval;
       }
- 
+
+      // complete rest of data for this pair
+      data->spair[n].sc   = cov;
+      data->spair[n].Eval = eval;
+      
       n ++;
     }
   nhit = h;
@@ -856,9 +859,12 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   fprintf(stdout, "\n# The given structure\n");
   status = struct_CTMAP(data->mi->alen, data->ctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
   if (status != eslOK) goto ERROR;
-
+  
   // add the significant covariations to the covct in ctlist
   cov_add_hitlist2covct(hitlist, data->ctlist, data->verbose);
+  
+  if (data->verbose) struct_ctlist_Dump(data->ctlist);
+  fprintf(stdout, "\n# The given structure\n");
   
   // write the power file output
   power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
@@ -2061,38 +2067,44 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
 }
 
 static int
-cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose)
+cov_add_pair2covct(int ih, int jh, CTLIST *ctlist, int verbose)
 {
   int *ct;
   int *cov;
   int  nct = ctlist->nct;
-  int  L = ctlist->L;
+  int  L   = ctlist->L;
   int  s;
-  int  h;
-  int  i;
-  int  ih, jh;
+  int  i, j;
 
-      
   for (s = 0; s < nct; s ++) {
     ct  = ctlist->ct[s];
     cov = ctlist->covct[s];
     
     for (i = 1; i <= L; i ++) {
       
-      if (ct[i] > i) {
-	for (h = 0; h < hitlist->nhit; h ++) {
-	  ih = hitlist->hit[h].i+1;
-	  jh = hitlist->hit[h].j+1;
-	  
-	  if (i == ih) {
-	    cov[i]  = jh;
-	    cov[jh] = i;
-	  }
-	}
+      j = ct[i];      
+      if (j > i && i == ih && j == jh) {
+	cov[i] = j;
+	cov[j] = i;	
       }
-    }
-    
+      
+    }    
   }
+  
+  return eslOK;
+}
+
+static int
+cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose)
+{
+  int h;
+  int ih, jh;
+  
+  for (h = 0; h < hitlist->nhit; h ++) {
+    ih = hitlist->hit[h].i+1;
+    jh = hitlist->hit[h].j+1;
+    cov_add_pair2covct(ih, jh, ctlist, verbose);
+  }   
   
   return eslOK;
 }

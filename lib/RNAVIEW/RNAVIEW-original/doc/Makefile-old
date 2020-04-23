@@ -1,0 +1,49 @@
+CFLAGS        = -O
+CC            = cc
+
+# ++++++++++++++++++++++++++++ Program RNADRAW
+RNAVIEW = rnaview
+OBJS_RNAVIEW = rnaview.o analyze.o fpair.o fpair_sub.o  pair_type.o  \
+               multiple.o nrutil.o ps-xy.o  ps-xy-sub.o pattern.o  \
+	       rnaxml-new.o statistics.o vrml.o xml2ps.o 
+
+$(RNAVIEW):   $(OBJS_RNAVIEW)
+	$(CC) -o $(RNAVIEW) $(OBJS_RNAVIEW) -lm
+
+rnaview.o : src/rnaview.c
+	cc -c  src/rnaview.c
+fpair.o : src/fpair.c
+	cc -c src/fpair.c
+fpair_sub.o : src/fpair_sub.c
+	cc -c src/fpair_sub.c
+pair_type.o : src/pair_type.c
+	cc -c src/pair_type.c
+nrutil.o : src/nrutil.c 
+	cc -c  src/nrutil.c
+ps-xy.o  : src/ps-xy.c
+	cc -c src/ps-xy.c
+ps-xy-sub.o  : src/ps-xy-sub.c
+	cc -c src/ps-xy-sub.c
+vrml.o : src/vrml.c
+	cc -c  src/vrml.c
+
+rnaxml-new.o : src/rnaxml-new.c
+	cc -c  src/rnaxml-new.c
+analyze.o :  src/analyze.c
+	cc -c  src/analyze.c
+pattern.o :  src/pattern.c
+	cc -c  src/pattern.c
+
+xml2ps.o :  src/xml2ps.c
+	cc -c  src/xml2ps.c
+
+multiple.o :  src/multiple.c
+	cc -c  src/multiple.c
+
+statistics.o :  src/statistics.c
+	cc -c  src/statistics.c
+
+
+.PHONY : clean
+clean:
+	rm *.o

@@ -10,11 +10,11 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_C  $opt_D $opt_L $opt_M $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
+use vars qw ($opt_c $opt_C  $opt_D $opt_L $opt_M $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
 use Getopt::Std;
 use Cwd qw(cwd);
- 
-getopts ('C:D:L:M:PRSvW:');
+
+getopts ('c:C:D:L:M:PRSvW:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -53,6 +53,8 @@ my $pdblen;
 
 my $byali = 0; # minL relative to pdb sequence
 my $usechain = "";  # define if want to use a specific chain
+if ($opt_c) { $usechain = "$opt_c"; }
+
 my @map;
 my @revmap;
 my $mapfile_t = "";

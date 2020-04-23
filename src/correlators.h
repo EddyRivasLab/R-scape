@@ -214,7 +214,8 @@ struct outfiles_s {
   char            *folddplotfile;       // dotplot of CaCoFold structure
 
   char            *cmapfile;            // cmapfile has the contacts (including bpairs) mapped to the input alignment coordinates
-  char            *omsafoldfile;        // ouput msa with CaCoFold structure
+  char            *omsapdbfile;         // ouput msa with a PDB structure
+  char            *omsafoldfile;        // ouput msa with the CaCoFold structure
   
   char            *rocfile;             // roc plot (optional)
   char            *outmsafile;          // output msa only with consensus columns used (optional)
@@ -227,6 +228,9 @@ struct outfiles_s {
 enum cttype_e {
   CTTYPE_NESTED,
   CTTYPE_PK,
+  CTTYPE_NONWC,
+  CTTYPE_TRI,
+  CTTYPE_SCOV,
   CTTYPE_XCOV,
   CTTYPE_NONE,
 };

@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 1.4.1, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 1.5.0, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the usexr is overriding CFLAGS
@@ -89,16 +89,18 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="Feb 2020"
+RSCAPE_DATE="April 2020"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
-RSCAPE_URL="http://selab.org/"
+RSCAPE_URL="http://rivaslab.org/"
 
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/R2R-current"
+RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
 RSCAPE_HMMERDIR="lib/hmmer/src"
 RSCAPE_ESLDIR="lib/hmmer/easel"
+RSCAPE_INFERNALDIR="lib/infernal/infernal-current"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
 
 RVIEW_NAME="R-view"
@@ -106,7 +108,7 @@ RVIEW_DATE="May 2018"
 RVIEW_COPYRIGHT="Copyright (C) 2018 Howard Hughes Medical Institute."
 RVIEW_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RVIEW_VERSION="0.1"
-RVIEW_URL="http://selab.org/"
+RVIEW_URL="http://rivaslab.org/"
 RVIEW_DIR="lib/R-view/src"
 
 
@@ -135,6 +137,15 @@ else
 fi
 
 
+RNAVIEW_HOME="`pwd`"        #magic to get full path to current directory
+AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
+
+if  test "$prefix" = NONE ; then 
+  RNAVIEW_HOME="`pwd`/lib/RNAVIEW"
+else
+  RNAVIEW_HOME=${prefix}/lib/RNAVIEW
+fi
+
 RVIEW_HOME="`pwd`"        #magic to get full path to current directory
 AC_PREFIX_DEFAULT("`pwd`") #changes the prefix default from /usr/bin to E2MSA_HOME
 
@@ -162,8 +173,10 @@ AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
 AC_SUBST(RSCAPE_FASTTREEDIR)
 AC_SUBST(RSCAPE_R2RDIR)
+AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
+AC_SUBST(RSCAPE_INFERNALDIR)
 AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
@@ -205,6 +218,8 @@ AC_DEFINE_UNQUOTED(RVIEW_VERSION,   "$RVIEW_VERSION")
 AC_DEFINE_UNQUOTED(RVIEW_URL,       "$RVIEW_URL")
 AC_DEFINE_UNQUOTED(RVIEW_HOME,      "$RVIEW_HOME")
 AC_DEFINE_UNQUOTED(RVIEW_BIN,       "$RVIEW_BIN")
+
+AC_DEFINE_UNQUOTED(RNAVIEW_HOME,     "$RNAVIEW_HOME")
 
 # Figure out what host we're compiling on.
 # Three GNU scripts must be included in the distro: 
@@ -622,10 +637,12 @@ AC_CONFIG_HEADERS([
 src/e2_config.h
 src/rscape_config.h
 lib/R-view/src/rview_config.h
+lib/RNAVIEW/src/rnaview_config.h
 ])
 
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/R2R/R2R-current)
+AC_CONFIG_SUBDIRS(lib/infernal/infernal-current)
 
 AC_CONFIG_FILES([
 Makefile
@@ -640,6 +657,7 @@ lib/hmmer/libdivsufsort/Makefile
 lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
 lib/R-view/src/Makefile
+lib/RNAVIEW/src/Makefile
 ])
 
 #################################################################
