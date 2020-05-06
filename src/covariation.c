@@ -247,10 +247,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       status = struct_DotPlot(data->gnuplot, data->ofile->dplotfile, msa, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
 			      TRUE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
+      
       status = struct_DotPlot(data->gnuplot, data->ofile->dplotfile, msa, data->ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, hitlist,
 			      FALSE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
-      status = r2r_Depict(data->ofile->R2Rfile, data->R2Rall, msa, data->ctlist, (data->statsmethod != NAIVE)? hitlist:NULL, TRUE, TRUE, data->errbuf, data->verbose);
+
+      status = r2r_Depict(data->ofile->R2Rfile, data->R2Rall, msa, data->ctlist, (data->statsmethod != NAIVE)? hitlist:NULL,
+			  TRUE, TRUE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
     }
   }

@@ -223,6 +223,7 @@ CMAP_AddClist(int cl, CLIST *clist, CLIST *tmp, char *errbuf)
   new->ncnt = tmp->ncnt;
   new->nbps = tmp->nbps;
   new->nwwc = tmp->nwwc;
+  new->npks = tmp->npks;
 
   new->L      = tmp->L;
   new->alen   = tmp->nbps;
@@ -260,6 +261,7 @@ CMAP_AddContact(RES *res1, RES *res2, double distance, BPTYPE bptype, CLIST *cli
   
   new->bptype = bptype;
   new->isbp   = FALSE;
+  new->ispk   = FALSE;
   
   new->dist = distance;
 
@@ -345,6 +347,7 @@ CMAP_CopyContact(CNT *new, CNT *cnt)
   
   new->bptype = cnt->bptype;
   new->isbp   = cnt->isbp;
+  new->ispk   = cnt->ispk;
   
   new->dist = cnt->dist;
   return eslOK;
@@ -392,6 +395,7 @@ CMAP_CreateCList(int alloc_ncnt, char *pdbname, struct chain_s *chain1, struct c
   clist->ncnt   = 0;
   clist->nbps   = 0;
   clist->nwwc   = 0;
+  clist->npks   = 0;
   clist->L      = -1;  // this information requires comparing to an alignment
   clist->alen   = -1;
   clist->pdblen = -1;
@@ -408,6 +412,7 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
   int   h;
   int   nbp = 0;
   int   nwc = 0;
+  int   npk = 0;
   char *bptype = NULL;
   int   status = eslOK;
 
@@ -417,6 +422,7 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
   else         fprintf(fp, "# ij in alignment | ij in pdbsequence | basepair type\n");
   for (h = 0; h < clist->ncnt; h ++) {
     if (clist->cnt[h].isbp) nbp ++;
+    if (clist->cnt[h].ispk) npk ++;
     if (clist->cnt[h].bptype == WWc) { nwc ++; }
     CMAP_BPTYPEString(&bptype, clist->cnt[h].bptype, NULL);
 
@@ -432,6 +438,7 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
   }
   if (nbp != clist->nbps) status = eslFAIL;
   if (nwc != clist->nwwc) status = eslFAIL;
+  if (npk != clist->npks) status = eslFAIL;
 
   CMAP_DumpShort(fp, clist);
 
@@ -443,7 +450,7 @@ int
 CMAP_DumpShort(FILE *fp, CLIST *clist)
 {
   if (clist->pdbname == NULL) {
-    fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
+    fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs (%d pk))\n", clist->ncnt, clist->nbps, clist->nwwc, clist->npks);
     return eslOK;
   }
   
@@ -461,7 +468,7 @@ CMAP_DumpShort(FILE *fp, CLIST *clist)
     fprintf(fp, "# seq2:     (%ld)\n",  clist->len2);
     //fprintf(fp, "# %s\n",                clist->ch2seq);
   }
-  fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
+  fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs (%d pk))\n", clist->ncnt, clist->nbps, clist->nwwc, clist->npks);
   if (clist->maxD   > 0)           fprintf(fp, "# maxD      %.2f\n", clist->maxD);
   if (clist->mind   > 0)           fprintf(fp, "# mind      %.d\n",  clist->mind);
   if (clist->disttype == DIST_MIN) fprintf(fp, "# distance  MIN\n");
@@ -595,6 +602,7 @@ CMAP_ReuseCList(CLIST *clist)
   clist->ncnt   = 0;
   clist->nbps   = 0;
   clist->nwwc   = 0;
+  clist->npks   = 0;
   clist->L      = -1;
   clist->alen   = -1;
   clist->pdblen = -1;
@@ -606,10 +614,12 @@ CMAP_RemoveFromCLIST(int c, CLIST *clist)
 {
   BPTYPE bptype;
   int    isbp;
+  int    ispk;
   int    h;
 
   bptype = clist->cnt[c].bptype;
   isbp   = clist->cnt[c].isbp;
+  ispk   = clist->cnt[c].ispk;
   
   for (h = c+1; h < clist->ncnt; h ++) {
     clist->cnt[h-1].pdbi = clist->cnt[h].pdbi;
@@ -621,9 +631,10 @@ CMAP_RemoveFromCLIST(int c, CLIST *clist)
     
     clist->cnt[h-1].bptype = clist->cnt[h].bptype;
     clist->cnt[h-1].isbp   = clist->cnt[h].isbp;
+    clist->cnt[h-1].ispk   = clist->cnt[h].ispk;
 
     clist->cnt[h-1].dist = clist->cnt[h].dist;
-    clist->cnt[h-1].sc = clist->cnt[h].sc;
+    clist->cnt[h-1].sc   = clist->cnt[h].sc;
   }
   clist->cnt[h].pdbi = -1;
   clist->cnt[h].pdbj = -1;
@@ -634,6 +645,7 @@ CMAP_RemoveFromCLIST(int c, CLIST *clist)
   
   if (bptype == WWc) clist->nwwc --;
   if (isbp)          clist->nbps --;
+  if (ispk)          clist->npks --;
   clist->ncnt --;
   
   return eslOK;

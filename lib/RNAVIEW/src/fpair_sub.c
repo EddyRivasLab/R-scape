@@ -2083,8 +2083,8 @@ void bp_network(long num_residue, long *RY, long **seidx, char **AtomName,
 	     bseq[i], 1, b1);
     
     /* list of direct pairing 
-       fprintf(fp, "%5ld %s: [%2ld]", i, b1, pair_info[i][NP]);
-       for (j = 1; j <= pair_info[i][NP]; j++)
+       fprintf(fp, "%5ld %s: [%2ld]", i, b1, pair_info[i][NPT]);
+       for (j = 1; j <= pair_info[i][NPT]; j++)
        fprintf(fp, "%5ld", pair_info[i][j]);
        fprintf(fp, "\n");*/
     
@@ -2097,7 +2097,7 @@ void bp_network(long num_residue, long *RY, long **seidx, char **AtomName,
     m = 1;
     while (ivec[m] && m <= tnum_base) {
       ir = ivec[m++];
-      for (j = 1; j <= pair_info[ir][NP]; j++) {
+      for (j = 1; j <= pair_info[ir][NPT]; j++) {
 	for (k = 1; k <= inum_base; k++)
 	  if (pair_info[ir][j] == ivec[k])
 	    break;
@@ -2143,23 +2143,23 @@ void bp_network(long num_residue, long *RY, long **seidx, char **AtomName,
     k = 0;
     for (j = 2; j <= inum_base; j++)
       if (ivec[j] > 0) {
-	if (++k >= NP) {
+	if (++k >= NPT) {
 	  printf( "residue %s has over %ld pairs\n", b1,
-		  NP - 1);
+		  NPT - 1);
 	  --k;
 	  break;
 	} else
 	  pair_info[i][k] = ivec[j];
       }
-    pair_info[i][NP] = k;        /* total number of pairs for residue i */
+    pair_info[i][NPT] = k;        /* total number of pairs for residue i */
     if (k++ > 1) {
       num_ple++;
       if (k > max_ple)
 	max_ple = k;
     }
     /*
-      fprintf(fp, "                      [%2ld]", pair_info[i][NP]);
-      for (j = 1; j <= pair_info[i][NP]; j++)
+      fprintf(fp, "                      [%2ld]", pair_info[i][NPT]);
+      for (j = 1; j <= pair_info[i][NPT]; j++)
       fprintf(fp, "%5ld", pair_info[i][j]);
       fprintf(fp, "\n");
     */
@@ -2198,10 +2198,10 @@ void multiplets(long num_ple, long max_ple, long num_residue,
   xyz_residue = dmatrix(1, NUM_RESIDUE_ATOMS, 1, 3);
   
   for (i = 1; i <= num_residue; i++) {
-    if (pair_info[i][NP] > 1) {
-      inum_base = pair_info[i][NP] + 1;
+    if (pair_info[i][NPT] > 1) {
+      inum_base = pair_info[i][NPT] + 1;
       ivec[1] = i;
-      for (j = 1; j <= pair_info[i][NP]; j++)
+      for (j = 1; j <= pair_info[i][NPT]; j++)
 	ivec[j + 1] = pair_info[i][j];
       lsort(inum_base, ivec, idx1);        /* sort into order */
       is_exist = 0;        /* check if already counted */

@@ -17,6 +17,7 @@
 #include "covgrammars.h"
 #include "cacofold.h"
 #include "correlators.h"
+#include "contactmap.h"
 #include "e2_profilesq.h"
 #include "logsum.h"
 #include "structure.h"

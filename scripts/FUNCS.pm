@@ -1970,7 +1970,7 @@ sub parse_stofile {
 	}
     }
     close(FILE);
-    if ($b > 1 && $nsq != $nsq_prv) { print "parse_stofile error in block $b: nsq $nsq nsq_prv $nsq_prv\n"; die; }
+    if ($b > 1 && $nsq != $nsq_prv && $nsq_prv > 0) { print "parse_stofile error in block $b: nsq $nsq nsq_prv $nsq_prv\n"; die; }
     
     ss2ct($ss, $ct_ref);
 

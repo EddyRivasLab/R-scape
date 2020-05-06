@@ -28,8 +28,17 @@ if (!@ARGV) {
 my $msafile = shift;
 my $newfile = "$msafile.new";
 
-my $is_pk = 0;
-if ($msafile =~ /pk/) { $is_pk = 1; }
+my $is_callout = 0;
+if ($msafile =~ /pk/ ||  # pk            = does not overlap with  nested ss
+    $msafile =~ /tr/ ||  # triplet       = overlaps with  nested ss
+    $msafile =~ /nc/ ||  # non-canonical = nonWWC in pdbfile
+    $msafile =~ /sc/ ||  # side-covariation
+    $msafile =~ /xc/     # cross-covariation
+    ) 
+{ $is_callout = 1; }
+
+my $msaname  = $msafile;
+if ($msaname =~ /\.(\S+)\.sto/) { $msaname = $1; }
 
 my $field;
 my $tag;
@@ -43,7 +52,7 @@ while (<FILE>) {
 	$tag   = $2;
 	$val   = $3;
 	
-	if ($is_pk && $tag =~ /R2R_LABEL/) {
+	if ($is_callout && $tag =~ /R2R_LABEL/) {
 	    $val =~ s/\./p/g;
 	}
 	
@@ -59,7 +68,7 @@ while (<FILE>) {
     elsif (/^#=GS/) { # R2R script src/SelectSubFamilyFromStockholm.plchokes one some of these, remove
     }
     elsif (/\/\//){
-	if ($is_pk) { print OUT "#=GF R2R keep p\n"; }
+	if ($is_callout) { print OUT "#=GF R2R keep p\n"; }
 	print OUT $_;
     }
     else {

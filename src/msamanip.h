@@ -14,6 +14,8 @@
 #include "esl_msafile.h"
 #include "esl_tree.h"
 
+#include "correlators.h"
+
 typedef struct msa_stat_s {
   int     nseq;
   int64_t alen;
@@ -37,6 +39,7 @@ typedef struct msa_stat_s {
 
 } MSA_STAT;
 
+extern int msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, char *errbuf, int verbose);
 extern int msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnowc, char *errbuf);
 extern int msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, double **ret_fnbp, char *errbuf);
 extern int msamanip_SeqNames_CheckParenthesis(const ESL_MSA *msa, char *errbuf);

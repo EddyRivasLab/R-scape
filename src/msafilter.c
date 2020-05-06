@@ -516,7 +516,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
-  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, -1., cfg->errbuf);
+  msamanip_CalculateCTList(msa, NULL, &cfg->onbpairs, cfg->errbuf, cfg->verbose);
   /* print some info */
   if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");

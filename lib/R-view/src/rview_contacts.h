@@ -74,6 +74,7 @@ typedef struct cnt_s {
   
   BPTYPE  bptype;   // type of contact
   int     isbp;     // TRUE if an  RNA basepair (wwc or non canonical)
+  int     ispk;     // annotated as Aa, Bb, .. in a ss
   
   double  dist;     // the euclidian distance
 
@@ -94,6 +95,7 @@ typedef struct clist_s {
   int      ncnt;     // total number of contacts (includes nbps which include nwwc)
   int      nbps;     // total number of basepairs (all 12 types) (RNA only) nbps \in(subset of) ncnt
   int      nwwc;     // total number of WWc basepairs            (RNA only) nwwc \in(subset of)  nbps
+  int      npks;     // total number of WWc basepairs in pks      (RNA only) npk  \in(subset of)  nwwc
 
                      // conditions to annotate a pair as "contact"
   double   maxD;     // maximum Eucledian distance 

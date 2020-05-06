@@ -51,14 +51,14 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hit
   if (r2rfile == NULL) return eslOK;
 
   esl_msa_AddGF(msa, "R2R SetDrawingParam prefixSsWithPkInDrawings false", -1, "", -1);
-    
+
   status = r2r_Overwrite_SS_cons(msa, ctlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
   // run R2R 
   status = r2r_run_consensus_from_msa(msa, &r2rmsa, errbuf);
   if (status != eslOK) goto ERROR;
-  
+
   // replace the r2r 'cov_SS_cons' GC line(s) with our own
   status = r2r_Overwrite_cov_SS_cons(r2rmsa, ctlist, hitlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -144,7 +144,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   int   s;
   int   status;
 
-  // remove the SS_cons_ annotations from r2r
+   // remove the SS_cons_ annotations from r2r
   // remove the SS_cons2 annotations from Rfam
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {    
     if (strncmp(msa->gc_tag[tagidx], sstag, 7) == 0) {
@@ -160,14 +160,14 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   // allocate string 
   ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
   for (s = 0; s < nct; s ++) {
+
     // first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
     esl_ct2simplewuss(ctlist->ct[s], msa->alen, ss);
 
     // replace the 'SS_cons' GC line with the new ss
     switch(ctlist->cttype[s]) {
     case CTTYPE_NESTED:
-      strcpy(msa->ss_cons, ss);
-      if (verbose) printf("SS_cons\n%s\n", ss);
+      esl_strdup(ss, -1, &(msa->ss_cons));
       break;
     case CTTYPE_PK:
     case CTTYPE_NONWC:

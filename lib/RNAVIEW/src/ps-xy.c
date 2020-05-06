@@ -520,7 +520,7 @@ void xy4ps(long n, double **oxy, long num, double **nxy)
     /* draw a box around the figure 
        if (frame_box) {
        
-       fprintf(psfile, "NP ");
+       fprintf(psfile, "NPT ");
        fprintf(psfile, format, -boundary_offset, -boundary_offset);
        fprintf(psfile, format, urxy[1] + boundary_offset, -boundary_offset);
        fprintf(psfile, format, urxy[1] + boundary_offset, urxy[2] +

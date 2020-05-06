@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 use FindBin qw($Bin);
 use lib $Bin;
 use R2R_Stockholm;

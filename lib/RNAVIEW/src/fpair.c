@@ -55,11 +55,11 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   
   hb_crt_alt(HB_UPPER, HB_ATOM, b1);
   
-  pair_info = lmatrix(0, num_residue, 0, NP); /* detailed base-pair network*/
+  pair_info = lmatrix(0, num_residue, 0, NPT); /* detailed base-pair network*/
   prot_rna = lvector(0, num_residue); 
   
   for (i = 0; i <= num_residue; i++)
-    for (j = 0; j <= NP; j++)
+    for (j = 0; j <= NPT; j++)
       pair_info[i][j]=0;
   
   for (i = 0; i < BUF512; i++){
@@ -314,20 +314,20 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
 	}
         
         
-	if (++pair_info[i][NP] >= NP) {
+	if (++pair_info[i][NPT] >= NPT) {
 	  printf( "residue %s has over %ld pairs\n", b1,
-		  NP - 1);
-	  --pair_info[i][NP];
+		  NPT - 1);
+	  --pair_info[i][NPT];
 	  break;
 	} else
-	  pair_info[i][pair_info[i][NP]] = j;
-	if (++pair_info[j][NP] >= NP) {
+	  pair_info[i][pair_info[i][NPT]] = j;
+	if (++pair_info[j][NPT] >= NPT) {
 	  printf( "residue %s has over %ld pairs\n", b2,
-		  NP - 1);
-	  --pair_info[j][NP];
+		  NPT - 1);
+	  --pair_info[j][NPT];
 	  break;
 	} else
-	  pair_info[j][pair_info[j][NP]] = i;
+	  pair_info[j][pair_info[j][NPT]] = i;
 	
       }
       else if( bpid_lu ==0){ /* not a H bond for base -  base */
@@ -505,7 +505,7 @@ int all_pairs(char *pdbfile, FILE *fout, long num_residue, long *RY,
   free_cmatrix(hb_atom1, 0, BUF512, 0, 4);
   free_cmatrix(hb_atom2, 0, BUF512, 0, 4);
   free_dvector(hb_dist, 0, BUF512);
-  free_lmatrix(pair_info, 0, num_residue, 0, NP);
+  free_lmatrix(pair_info, 0, num_residue, 0, NPT);
   free_lvector(prot_rna, 0, num_residue);
 
   er_ListDump(stdout, list);

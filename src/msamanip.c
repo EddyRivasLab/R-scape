@@ -27,6 +27,7 @@
 
 
 #include "msamanip.h"
+#include "structure.h"
 
 
 static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen,
@@ -37,6 +38,42 @@ static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
 static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *shallmsa, int *usecol, char *errbuf, int verbose);
 static int shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, ESL_DSQ *new, int *usecol, char *errbuf);
 static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *new, int *usecol, char *errbuf);
+
+int 
+msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, char *errbuf, int verbose)
+{
+  CTLIST *ctlist = NULL;
+  int     L = msa->alen;
+  int     nbpairs = 0;
+  int     c;
+  int     i, j;
+  int     status;
+
+  if (msa == NULL) return eslOK;
+
+  if (msa->ss_cons) {
+    ctlist = struct_wuss2CTList(msa->ss_cons, msa->alen, errbuf, verbose);
+  }
+  else {
+    ctlist = struct_ctlist_Create(1, L);
+    esl_vec_ISet(ctlist->ct[0], msa->alen+1, 0);
+  }
+
+  for  (c = 0; c < ctlist->nct; c ++) {
+    for (i = 0; i < msa->alen-1; i ++)
+      for (j = i+1; j < msa->alen; j ++)
+	if (ctlist->ct[c][i+1] == j+1) nbpairs ++;
+  }
+  
+  if (ret_ctlist)  *ret_ctlist  = ctlist;  else struct_ctlist_Destroy(ctlist);
+  if (ret_nbpairs) *ret_nbpairs = nbpairs;
+  
+  return eslOK;
+
+ ERROR:
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  return status;
+}
 
 int 
 msamanip_CalculateCT(ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnowc, char *errbuf)
@@ -451,9 +488,9 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
       else                                  useme[apos-1] = FALSE;
     }
     
-    if (msa->abc->type == eslRNA && (status = esl_msa_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
+    if (msa->abc->type == eslRNA && (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
        ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
-    if ((status = esl_msa_ColumnSubset         (msa, errbuf, useme)) != eslOK)
+    if ((status = struct_ColumnSubset(msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
   }  
 
@@ -461,7 +498,8 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
   ESL_ALLOC(map, sizeof(int) * msa->alen);
   for (apos = 0; apos < alen; apos++) 
     if (useme[apos]) map[newpos++] = apos + startpos;
-  if (newpos != msa->alen) ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): truncation error tstart %d tend %d; is %d should be %d", startpos, endpos, newpos, msa->alen);
+  if (newpos != msa->alen)
+    ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): truncation error tstart %d tend %d; is %d should be %d", startpos, endpos, newpos, msa->alen);
 
   if (ret_revmap) {
     newpos = 0;

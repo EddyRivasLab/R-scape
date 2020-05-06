@@ -328,12 +328,17 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, T
   SCVAL  bestsc = -eslINFINITY;
   SCVAL  sc;
   double eval, evalsc;
+  double off;
   int    d1;
   int    r;
   int    i, k;
   
   if (alts) esl_stack_Reuse(alts);
-   
+
+  // off
+  // such that -log(eval) + off > 0
+  off = log(thresh->val) + 0.1;
+  
   i = j - d + 1;
   /* rule1: a S */
   r  = 0;
@@ -351,7 +356,7 @@ dp_recursion(struct mutual_s *mi, CLIST *clist, COVLIST *explained,  GMX *cyk, T
   for (d1 = 1; d1 <= d; d1++) {
     k = i + d1 - 1;
     eval   = mi->Eval->mx[i-1][k-1];
-    evalsc = (eval < 1.)? -log(eval) : eval;
+    evalsc = -log(eval) + off;
 
     if (eval > 0) 
       sc = (accept_pair(i, k, mi, clist, explained, thresh))? cyk->dp[k-1][d1-2] + cyk->dp[j][d-d1] + evalsc : -eslINFINITY;

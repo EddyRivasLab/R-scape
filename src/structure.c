@@ -103,10 +103,8 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RANKLIST
   
   // create a new contact list from the ct
   CMAP_ReuseCList(data->clist);
-  for (s = 0; s < ctlist->nct; s ++) {
-    status = ContacMap_FromCT(data->clist, msa->alen, ctlist->ct[s], data->clist->mind, data->msamap, NULL);
+  status = ContactMap_FromCTList(data->clist, ctlist, data->clist->mind, data->msamap, NULL);
     if (status != eslOK) goto ERROR;
-  }
 
   /* redo the hitlist since the ct has now changed */
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
@@ -608,6 +606,289 @@ struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CT
   return status;
 }
 
+// Convert a ss to a ctlist
+//
+// similar to esl_wuss2ct()  but distinguishing <>{}.... form Aa Bb ...
+//
+// the goal is to respect the assignment of pseudoknots (Aa,...) and keep them in the ct[n] with n>0
+//
+CTLIST *
+struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
+{
+  CTLIST    *ctlist = NULL;
+  ESL_STACK *pda[27];     /* 1 secondary structure + up to 26 levels of pk's */
+  int       *ctmain;
+  int        i;
+  int        pos, pair;
+  int        nct = 1;
+  int        status;
+
+  if (!ss)    return NULL;
+  if (L <= 0) return NULL;
+
+  ctlist = struct_ctlist_Create(nct, L);
+  
+  /* Initialization: always initialize the main pda (0);
+  * we'll init the pk pda's on demand.
+  */
+  for (i = 1; i <= 26; i++) pda[i] = NULL;
+  if ((pda[0] = esl_stack_ICreate()) == NULL) goto FINISH;
+  ctmain = ctlist->ct[0];
+
+  for (pos = 1; pos <= L; pos++)
+    {
+      if (!isprint((int) ss[pos-1]))  /* armor against garbage */
+	{ status = eslESYNTAX; goto FINISH; }
+
+      /* left side of a pair: push position onto stack 0 (pos = 1..L) */
+      else if (ss[pos-1] == '<' ||
+	       ss[pos-1] == '(' ||
+	       ss[pos-1] == '[' ||
+	       ss[pos-1] == '{')
+	{
+	  if ((status = esl_stack_IPush(pda[0], pos)) != eslOK) goto FINISH;
+	}
+      
+      /* right side of a pair; resolve pair; check for agreement */
+      else if (ss[pos-1] == '>' || 
+	       ss[pos-1] == ')' ||
+	       ss[pos-1] == ']' ||
+	       ss[pos-1] == '}')
+        {
+          if (esl_stack_IPop(pda[0], &pair) == eslEOD)
+            { status = eslESYNTAX; goto FINISH;} /* no closing bracket */
+          else if ((ss[pair-1] == '<' && ss[pos-1] != '>') ||
+		   (ss[pair-1] == '(' && ss[pos-1] != ')') ||
+		   (ss[pair-1] == '[' && ss[pos-1] != ']') ||
+		   (ss[pair-1] == '{' && ss[pos-1] != '}'))
+	    { status = eslESYNTAX; goto FINISH; }  /* brackets don't match */
+	  else
+	    {
+              ctmain[pos]  = pair;
+              ctmain[pair] = pos;
+            }
+        }
+                                /* same stuff for pseudoknots */
+      else if (isupper((int) ss[pos-1])) 
+	{
+	  /* Create the PK stacks on demand.
+	   */
+	  i = ss[pos-1] - 'A' + 1;
+	  if (pda[i] == NULL) { 
+	    if ((pda[i] = esl_stack_ICreate()) == NULL) 
+	      { status = eslEMEM; goto FINISH; }
+	    nct ++;
+	    struct_ctlist_Realloc(ctlist, nct);
+	  }
+
+	  if ((status = esl_stack_IPush(pda[i], pos)) != eslOK) goto FINISH;
+	}
+      else if (islower((int) ss[pos-1])) 
+	{
+	  i = ss[pos-1] - 'a' + 1;
+	  if (pda[i] == NULL || 
+	      esl_stack_IPop(pda[i], &pair) == eslEOD)
+            {
+	      if (esl_stack_IPop(pda[i], &pair) == eslEOD) { status = eslESYNTAX; goto FINISH; }
+	    }
+          else
+            {
+              ctlist->ct[i][pos]  = pair;
+              ctlist->ct[i][pair] = pos;
+            }
+	}
+      else if (strchr(":,_-.~", ss[pos-1]) == NULL)
+	{ status = eslESYNTAX; goto FINISH; } /* bogus character */
+    }
+  status = eslOK;
+  return ctlist;
+
+ ERROR:
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  return NULL;
+ FINISH:
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  for (i = 0; i <= 26; i++)
+    if (pda[i] != NULL) 
+      { /* nothing should be left on stacks */
+	if (esl_stack_ObjectCount(pda[i]) != 0)
+	  status = eslESYNTAX;
+	esl_stack_Destroy(pda[i]);
+      }
+  return NULL;
+
+}
+
+int
+struct_CTList2wuss(CTLIST *ctlist, char *ss)
+{
+  char **aux = NULL;
+  char   val;
+  int    L   = ctlist->L;
+  int    nct = ctlist->nct;
+  int    ival;
+  int    nu = 0;
+  int    nl = 0;
+  int    unpaired;
+  int    c;
+  int    j;
+  int    status;
+
+  if (nct == 0) return eslOK;
+
+  ESL_ALLOC(aux, sizeof(char *) * nct);
+  for (c = 0; c < nct; c ++) {
+    ESL_ALLOC(aux[c], sizeof(char) * (L+1));
+    esl_ct2wuss(ctlist->ct[c], L, aux[c]);
+  }
+
+  for (j = 0; j < L; j ++) {
+    val   = aux[0][j];
+    ival  = (int) val;
+    ss[j] = val;
+    
+    if (isupper(ival) && ival > nu) nu = ival;
+    if (islower(ival) && ival > nl) nl = ival;
+  }
+  
+  for (c = 1; c < nct; c ++) {
+    for (j = 0; j < L; j ++) {
+      unpaired = FALSE;
+      if (ss[j] == ':' || ss[j] == '.' || ss[j] == '-' ||ss[j] == '_' || ss[j] == ',') unpaired = TRUE;
+      
+      val  = aux[c][j];
+      
+      if      (val == '<') { if (unpaired) ss[j] = nu + 'A' + c - 1; }
+      else if (val == '(') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 1; }
+      else if (val == '{') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 2; }
+      else if (val == '[') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 3; }
+      
+      if      (val == '>') { if (unpaired) ss[j] = nl + 'a' + c - 1; }
+      else if (val == ')') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 1; }
+      else if (val == '}') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 2; }
+      else if (val == ']') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 3; }
+      
+    }	
+  }
+  
+  for (c = 0; c < nct; c ++) free(aux[c]);
+  free(aux);
+  return eslOK;
+
+ ERROR:
+  for (c = 0; c < nct; c ++) if (ss[c]) free(aux[c]);
+  if (aux) free(aux);
+  return status;
+}
+
+int
+struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)
+{
+  int64_t  apos;                 /* alignment position */
+  CTLIST  *ctlist = NULL;	 /* 0..alen-1 base pair partners array for current sequence */
+  int     *ct;
+  int      c;
+  int      status;
+
+  ctlist = struct_wuss2CTList(ss, len, errbuf, FALSE); 
+  if (!ctlist) ESL_FAIL(status, errbuf, "Consensus structure string is inconsistent.");
+
+  for (c = 0; c < ctlist->nct; c ++) {
+    ct = ctlist->ct[c];
+    for (apos = 1; apos <= len; apos++) { 
+      if (!(useme[apos-1])) { 
+	if (ct[apos] != 0) ct[ct[apos]] = 0;
+	ct[apos] = 0;
+      }
+    }
+  }
+  
+  /* All broken bps removed from ct, convert to WUSS SS string and overwrite SS */
+  if ((status = struct_CTList2wuss(ctlist, ss)) != eslOK) 
+    ESL_FAIL(status, errbuf, "Error converting de-knotted bp ct array to WUSS notation.");
+  
+  struct_ctlist_Destroy(ctlist);
+  return eslOK;
+
+ ERROR: 
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  return status; 
+}  
+int
+struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
+{
+  int status;
+  int  i;
+
+  if (msa->ss_cons) {
+    if((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status; 
+  }
+  /* per-seq SS annotation */
+  if (msa->ss) {
+    for(i = 0; i < msa->nseq; i++) { 
+      if (msa->ss[i]) {
+	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss[i], errbuf, msa->alen, useme)) != eslOK) return status; 
+      }
+    }
+  }
+  return eslOK;
+}  
+int
+struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme)
+{
+  int     status;
+  int64_t opos;			/* position in original alignment */
+  int64_t npos;			/* position in new alignment      */
+  int     idx;			/* sequence index */
+  int     i;			/* markup index */
+
+  /* For RNA/DNA digital alignments only:
+   * Remove any basepairs from SS_cons and individual sequence SS
+   * for aln columns i,j for which useme[i-1] or useme[j-1] are FALSE 
+   */
+  if ( msa->abc && (msa->abc->type == eslRNA || msa->abc->type == eslDNA) &&
+       (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) return status;
+
+  /* Since we're minimizing, we can overwrite in place, within the msa
+   * we've already got. 
+   * opos runs all the way to msa->alen to include (and move) the \0
+   * string terminators (or sentinel bytes, in the case of digital mode)
+   */
+  for (opos = 0, npos = 0; opos <= msa->alen; opos++)
+    {
+      if (opos < msa->alen && useme[opos] == FALSE) continue;
+
+      if (npos != opos)	/* small optimization */
+	{
+	  /* The alignment, and per-residue annotations */
+	  for (idx = 0; idx < msa->nseq; idx++)
+	    {
+	      if (msa->flags & eslMSA_DIGITAL) /* watch off-by-one in dsq indexing */
+		msa->ax[idx][npos+1] = msa->ax[idx][opos+1];
+	      else
+		msa->aseq[idx][npos] = msa->aseq[idx][opos];
+	      if (msa->ss != NULL && msa->ss[idx] != NULL) msa->ss[idx][npos] = msa->ss[idx][opos];
+	      if (msa->sa != NULL && msa->sa[idx] != NULL) msa->sa[idx][npos] = msa->sa[idx][opos];
+	      if (msa->pp != NULL && msa->pp[idx] != NULL) msa->pp[idx][npos] = msa->pp[idx][opos];
+	      for (i = 0; i < msa->ngr; i++)
+		if (msa->gr[i][idx] != NULL)
+		  msa->gr[i][idx][npos] = msa->gr[i][idx][opos];
+	    }	  
+	  /* The per-column annotations */
+	  if (msa->ss_cons != NULL) msa->ss_cons[npos] = msa->ss_cons[opos];
+	  if (msa->sa_cons != NULL) msa->sa_cons[npos] = msa->sa_cons[opos];
+	  if (msa->pp_cons != NULL) msa->pp_cons[npos] = msa->pp_cons[opos];
+	  if (msa->rf      != NULL) msa->rf[npos]      = msa->rf[opos];
+	  if (msa->mm      != NULL) msa->mm[npos]      = msa->mm[opos];
+	  for (i = 0; i < msa->ngc; i++)
+	    msa->gc[i][npos] = msa->gc[i][opos];
+	}
+      npos++;
+    }
+  msa->alen = npos-1;	/* -1 because npos includes NUL terminators */
+  return eslOK;
+}
+
 CTLIST *
 struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose)
 {
@@ -616,8 +897,10 @@ struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *e
   int    *useme  = NULL;
   int    *ct     = NULL;
   int     L      = clist->L;
+  int     n_pks  = clist->npks;
   int     n_bps  = clist->nbps;
   int     n_wwc  = clist->nwwc;
+  int     n_nest = n_wwc - n_pks;
   int     n_oth  = n_bps - n_wwc;
   int     nbp;
   int     n;
@@ -626,7 +909,7 @@ struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *e
   int     status;
 
   if (L <= 0) return NULL;
-  
+
   // allocate a ct array
   ESL_ALLOC(ct, sizeof(int) * (L+1));
   esl_vec_ISet(ct, L+1,  0);
@@ -636,10 +919,12 @@ struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *e
   //
   // allocate a useme array
   if (n_wwc > 0) {
-    ESL_ALLOC(useme, sizeof(int) * n_wwc);
-    esl_vec_ISet(useme, n_wwc, TRUE);
+    if (n_nest == 0) return NULL;
     
-    while (esl_vec_IMax(useme, n_wwc)) {
+    ESL_ALLOC(useme, sizeof(int) * n_nest);
+    esl_vec_ISet(useme, n_nest, TRUE);
+    
+    while (esl_vec_IMax(useme, n_nest)) {
       
       // initialize
       nbp = 0;
@@ -648,7 +933,7 @@ struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *e
       for (n = 0; n < clist->ncnt; n ++) {
 	cnt = &(clist->cnt[n]);
 	
-	if (cnt->bptype == WWc) {
+	if (cnt->bptype == WWc && !cnt->ispk) {
 	  i = cnt->i;
 	  j = cnt->j;
 	  
@@ -666,6 +951,38 @@ struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *e
       // add to the ctlist
       if (!ctlist) ctlist = struct_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
       else         struct_AddCT2CTList(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+    }
+
+    // now the possible pks
+    if (n_pks > 0) {
+      ESL_REALLOC(useme, sizeof(int) * n_pks);
+      esl_vec_ISet(useme, n_pks, TRUE);
+
+      while (esl_vec_IMax(useme, n_pks)) {
+	
+	// initialize
+	nbp = 0;
+	esl_vec_ISet(ct, L+1, 0);
+	
+	for (n = 0; n < clist->ncnt; n ++) {
+	  cnt = &(clist->cnt[n]);
+	  
+	  if (cnt->bptype == WWc  && cnt->ispk) {
+	    i = cnt->i;
+	    j = cnt->j;
+	    
+	    // nothing waranties that the WC are non-overlapping
+	    if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
+	      useme[nbp] = FALSE;
+	      ct[i] = j; 
+	      ct[j] = i;	    
+	    }	
+	    nbp ++;
+	  }
+	}
+	// add to the ctlist
+	struct_AddCT2CTList(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+      }
     }
   }
   else { // no basepairs annotated

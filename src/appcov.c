@@ -17,6 +17,7 @@
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
+#include "correlators.h"
 #include "msamanip.h"
 #include "msatree.h"
 
@@ -124,7 +125,7 @@ typedef enum {
 } PAIRSUBTYPE;
 
 typedef enum {
-  NONE   = 0, // not in helix
+  HNONE  = 0, // not in helix
   PAIR   = 1, // pair (not necessarily in a helix)
   START  = 2, // start if a helix
   MID    = 3, // middle of a helix
@@ -713,7 +714,7 @@ msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
-  msamanip_CalculateCT(msa, NULL, &cfg->onbpairs, -1., cfg->errbuf);
+  msamanip_CalculateCTList(msa, NULL, &cfg->onbpairs, cfg->errbuf, cfg->verbose);
   /* print some info */
   if (cfg->verbose) {
     fprintf(stdout, "Given alignment\n");
@@ -849,7 +850,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int               status;
   
   /* the ct vector  */
-  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, -1., cfg->errbuf);
+  status = msamanip_CalculateCT(msa, &ct, &cfg->nbpairs, -1, cfg->errbuf);
 
   /* Print some alignment information */
   MSA_banner(stdout, cfg->msaname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs);
@@ -888,7 +889,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     ESL_ALLOC(appwc,     sizeof(HELIXTYPE  *) * s->ncol);
     ESL_ALLOC(appwc[0],  sizeof(HELIXTYPE )   * s->ncol*(s->ncol+1)/2);
     for (j = 1; j < s->ncol; j ++) appwc[j] = appwc[0] + j*(j+1)/2;
-     for (j = 0; j < s->ncol; j ++) appwc[j][0] = NONE;
+     for (j = 0; j < s->ncol; j ++) appwc[j][0] = HNONE;
   }
   s->maxgap  = ceil(s->N * cfg->gapthresh);
   s->minvar  = ceil(s->N * cfg->app_varthresh);
@@ -924,7 +925,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     for (j = i+1; j <= s->ncol; j ++) {
       s->np ++;
       is_bp = FALSE;
-      if (cfg->app_helix) appwc[j-1][j-i] = NONE;
+      if (cfg->app_helix) appwc[j-1][j-i] = HNONE;
       if (msa->ss_cons) {
 	if (ct[i] == j && ct[j] == i) { is_bp = TRUE; s->nbp ++; }
       }
@@ -956,7 +957,7 @@ appcov(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 	  paircov[s->napp_cov].iabs  = cfg->msamap[i-1]+1; // msamap uses [0,..,alen-1]
 	  paircov[s->napp_cov].jabs  = cfg->msamap[j-1]+1;
 	  paircov[s->napp_cov].is_bp = is_bp;
-	  paircov[s->napp_cov].htype = NONE;
+	  paircov[s->napp_cov].htype = HNONE;
 	  
 	  ESL_ALLOC(paircov[s->napp_cov].sqi,  sizeof(int)    * s->N);
 	  ESL_ALLOC(paircov[s->napp_cov].sqj,  sizeof(int)    * s->N);
@@ -1284,7 +1285,7 @@ pair_subtype(ESL_ALPHABET *a, int *frqi, int *frqj, int maxnots)
 int
 pairs_in_helix(struct summary_s *s, HELIXTYPE **appwc, struct pair_s *pair, int minhelix)
 {
-  HELIXTYPE  htype;     // NONE  =0 no helix
+  HELIXTYPE  htype;     // HNONE  =0 no helix
                         // START =1 helix starts
                         // MID   =2 helix continues
                         // END   =3 helix ends
@@ -1300,7 +1301,7 @@ pairs_in_helix(struct summary_s *s, HELIXTYPE **appwc, struct pair_s *pair, int 
     
   for (j = 0; j < s->ncol; j ++) 
     for (d = 0; d <= j; d ++) {
-      if (appwc[j][d] != NONE) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
+      if (appwc[j][d] != HNONE) S[j][d] = (j > 0 && d > 1)? 1 + S[j-1][d-2] : 1;
       else                     S[j][d] = (j > 0 && d > 1)?     S[j-1][d-2] : 0;
     }
   
@@ -1347,12 +1348,12 @@ pairs_in_helix_status(int i, int j, HELIXTYPE **appwc, int **S, int ncol, HELIXT
   
   d = j - i;
   val = S[j][d];
-  if (appwc[j][d] == NONE) { *ret_htype = NONE; return 0; }
+  if (appwc[j][d] == HNONE) { *ret_htype = HNONE; return 0; }
 
   up = 0;
-  while (j+up   < ncol && j-d-up   >= 0 && d+2*up   >= 0) if (appwc[j+up][d+2*up]     != NONE) { val_u = S[j+up][d+2*up];     up ++;   } else break;
+  while (j+up   < ncol && j-d-up   >= 0 && d+2*up   >= 0) if (appwc[j+up][d+2*up]     != HNONE) { val_u = S[j+up][d+2*up];     up ++;   } else break;
   down = 0;
-  while (j+down < ncol && j-d-down >= 0 && d+2*down >= 0) if (appwc[j+down][d+2*down] != NONE) { val_d = S[j+down][d+2*down]; down --; } else break;
+  while (j+down < ncol && j-d-down >= 0 && d+2*down >= 0) if (appwc[j+down][d+2*down] != HNONE) { val_d = S[j+down][d+2*down]; down --; } else break;
 
   if      (val == val_d) htype = START;  // helix starts 
   else if (val == val_u) htype = END;    // helix ends 
@@ -1487,7 +1488,7 @@ pairs_write_plotfile(char *gnuplot, char *plotfile, int *map, int *revmap, struc
       if ((fp7  = fopen(file7, "w")) == NULL) esl_fatal("Failed to open appwc_bp file %s", file7);
       for (i = 1; i < s->ncol; i ++) {
 	for (j = i+1; j <= s->ncol; j ++) {
-	  if (appwc[j-1][j-i] != NONE && ct[i] == j && ct[j] == i) fprintf(fp7, "%d %d\n", map[j-1]+1, map[i-1]+1);
+	  if (appwc[j-1][j-i] != HNONE && ct[i] == j && ct[j] == i) fprintf(fp7, "%d %d\n", map[j-1]+1, map[i-1]+1);
 	}
       }
       fclose(fp7);

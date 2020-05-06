@@ -31,18 +31,19 @@
 
 #include "contactmap.h"
 #include "msamanip.h"
+#include "structure.h"
 
 static int read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdblen, char *errbuf);
-static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf);
+static int read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, CTLIST *ctlist, CLIST *clist, char *errbuf);
 
 int
 ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *gnuplot, ESL_MSA *msa, int alen, int *msa2omsa, int *omsa2msa, int abcisRNA,
-	   int **ret_ct, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb, double cntmaxD, int cntmind, int onlypdb,
+	   CTLIST **ret_ctlist, int *ret_nbpairs, CLIST **ret_clist, int **ret_msa2pdb, double cntmaxD, int cntmind, int onlypdb,
 	   char *errbuf, int verbose)
 {
-  CLIST   *clist   = NULL;
   FILE    *cmapfp  = NULL;
-  int     *ct      = NULL;
+  CLIST   *clist   = NULL;
+  CTLIST  *ctlist  = NULL;
   int     *msa2pdb = NULL;
   char    *ss      = NULL;
   int      L       = msa->alen;
@@ -61,7 +62,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
   clist->alen = alen;    // length of the original alignment
 
   // the ss_cons in the alignment
-  status = msamanip_CalculateCT(msa, &ct, &ct_nbpairs, -1.0, errbuf);
+  status = msamanip_CalculateCTList(msa, &ctlist, &ct_nbpairs, errbuf, verbose);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
   
   // Look at the structural annotation
@@ -69,55 +70,75 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
   // ct includes only the WC bp that are compatible with each other
   //
   if (onlypdb == FALSE) {
-    status = ContacMap_FromCT(clist, L, ct, cntmind, msa2omsa, msa2pdb);
+    status = ContactMap_FromCTList(clist, ctlist, cntmind, msa2omsa, msa2pdb);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from stockholm file", errbuf);
    }
   if (pdbfile != NULL) {
     if (onlypdb) {
-      esl_vec_ISet(ct, L+1, 0); // if onlypdb ignore the ss in the alignment
+      ctlist->nct = 1;
+      esl_vec_ISet(ctlist->ct[0], L+1, 0); // if onlypdb ignore the ss in the alignment
     }
-    status = ContactMap_FromPDB(pdbfile, pdbchain, msafile, msa, omsa2msa, abcisRNA, ct, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
+    status = ContactMap_FromPDB(pdbfile, pdbchain, msafile, msa, omsa2msa, abcisRNA, ctlist, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
+  
+    if (abcisRNA) {
+      /* Impose the new ct on the msa GC line 'cons_ss' */
+      ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
+      struct_CTList2wuss(ctlist, ss);
+      /* Replace the 'SS_cons' GC line with the new ss */
+      if (msa->ss_cons) strcpy(msa->ss_cons, ss);
+      else esl_strdup(ss, -1, &(msa->ss_cons));
+    }
+  }
+  *ret_nbpairs = clist->nbps;
+  
+  if (cmapfile) {
+    if ((cmapfp = fopen(cmapfile, "w")) == NULL) ESL_XFAIL(eslFAIL, "failed to open cmapfile", errbuf);
+    CMAP_Dump(cmapfp, clist, TRUE);
+    fclose(cmapfp);
   }
   
-  if (abcisRNA) {
-     /* Impose the new ct on the msa GC line 'cons_ss' */
-     ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
-     esl_ct2wuss(ct, msa->alen, ss);
-     /* Replace the 'SS_cons' GC line with the new ss */
-     if (msa->ss_cons) strcpy(msa->ss_cons, ss);
-     else esl_strdup(ss, -1, &(msa->ss_cons));
-   }
-   *ret_nbpairs = clist->nbps;
-
-   if (cmapfile) {
-     if ((cmapfp = fopen(cmapfile, "w")) == NULL) ESL_XFAIL(eslFAIL, "failed to open cmapfile", errbuf);
-     CMAP_Dump(cmapfp, clist, TRUE);
-     fclose(cmapfp);
-   }
-   
-   if (pdbfile || verbose) {
-     CMAP_Dump(stdout, clist, FALSE);
-     if (abcisRNA) printf("# The WC basepairs:\n# %s\n", ss);
-   }
-
-   if (ret_ct)      *ret_ct      = ct;      else free(ct);
-   if (ret_clist)   *ret_clist   = clist;   else free(clist);
-   if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
-   
-   if (ss) free(ss);   
-   return eslOK;
-   
+  if (pdbfile || verbose) {
+    CMAP_Dump(stdout, clist, FALSE);
+    if (abcisRNA) printf("# The WC basepairs:\n# %s\n", ss);
+  }
+  
+  if (ret_ctlist)  *ret_ctlist  = ctlist;  else struct_ctlist_Destroy(ctlist);
+  if (ret_clist)   *ret_clist   = clist;   else free(clist);
+  if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
+  
+  if (ss) free(ss);   
+  return eslOK;
+  
  ERROR:
-   if (ss) free(ss);
-   if (msa2pdb) free(msa2pdb);
-   if (ct) free(ct);
-   if (clist) CMAP_FreeCList(clist);
-   return status;
+  if (ss) free(ss);
+  if (msa2pdb) free(msa2pdb);
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  if (clist) CMAP_FreeCList(clist);
+  return status;
 }
 
 int
-ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb)
+ContactMap_FromCTList(CLIST *clist, CTLIST *ctlist, int cntmind, int *msa2omsa, int *msa2pdb)
+{
+  int nct = ctlist->nct;
+  int L = ctlist->L;
+  int c;
+  int status;
+
+  for (c = 0; c < nct; c ++) {
+    status = ContactMap_FromCT(clist, L, ctlist->ct[c], cntmind, msa2omsa, msa2pdb, (c==0)?FALSE:TRUE);
+    if (status != eslOK) goto ERROR;
+  }
+  
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
+int
+ContactMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb, int ispk)
 {
   int    ncnt = clist->ncnt;
   int    i;
@@ -153,11 +174,13 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
       clist->cnt[ncnt].pdbi   = -1;
       clist->cnt[ncnt].pdbj   = -1;
       clist->cnt[ncnt].isbp   = TRUE;
+      clist->cnt[ncnt].ispk   = ispk;
       clist->cnt[ncnt].bptype = bptype;
       clist->cnt[ncnt].dist   = +eslINFINITY;
       clist->cnt[ncnt].sc     = -eslINFINITY;
       clist->nbps ++;
       clist->nwwc ++;
+      clist->npks += ispk;
       ncnt ++;
     }
   }
@@ -170,8 +193,8 @@ ContacMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *
 }
 
 int
-ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA, int *ct, CLIST *clist, int *msa2pdb,
-		   double cntmaxD, int cntmind, char *errbuf, int verbose)
+ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA,
+		   CTLIST *ctlist, CLIST *clist, int *msa2pdb, double cntmaxD, int cntmind, char *errbuf, int verbose)
 {
   char     tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
   char     tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
@@ -213,7 +236,7 @@ ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, i
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
   remove(tmpmapfile);
   
-  status = read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ct, clist, errbuf);
+  status = read_pdbcontacts(tmpcfile, msa2pdb, omsa2msa, ctlist, clist, errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading contacts", errbuf);
   remove(tmpcfile);
 
@@ -222,7 +245,6 @@ ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, i
   return eslOK;
   
  ERROR:
-  if (ct)   free(ct);
   if (cmd)  free(cmd);
   if (args) free(args);
   return status;
@@ -299,7 +321,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 // clist is the whole list of contact that includes WC
 //
 static int
-read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *clist, char *errbuf)
+read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, CTLIST *ctlist, CLIST *clist, char *errbuf)
 {
   ESL_FILEPARSER  *efp   = NULL;
   char            *tok;
@@ -349,14 +371,15 @@ read_pdbcontacts(char *pdbcfile, int *msa2pdb, int *omsa2msa, int *ct, CLIST *cl
 	clist->cnt[ncnt].bptype = bptype;
 	clist->ncnt             = ncnt;
 	clist->cnt[ncnt].isbp   = (bptype < STACKED)? TRUE : FALSE;
+	clist->cnt[ncnt].ispk   = FALSE;
 	if (bptype <  STACKED) clist->nbps ++;
 	if (bptype == WWc)     clist->nwwc ++;
 	
 	// ct = 0 not paired, ct[i]=j a base pair
 	if (bptype == WWc) {
-	  if (ct[i] == 0 && ct[j] == 0) {
-	    ct[i] = j; 
-	    ct[j] = i;
+	  if (ctlist->ct[0][i] == 0 && ctlist->ct[0][j] == 0) {
+	    ctlist->ct[0][i] = j; 
+	    ctlist->ct[0][j] = i;
 	  }
 	}
 	

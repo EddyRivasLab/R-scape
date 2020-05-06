@@ -1952,8 +1952,8 @@ sub pdb_contact_map {
     printf COR  "# type  $which\n";
 
     # make the hmm and cm models from the alignment
-    my $hmm =           sto2hmm($rscapebin, $currdir, $pdbfile, $stofile, $isrna);
-    my $cm  = ($isrna)? sto2cm ($rscapebin, $currdir, $pdbfile, $stofile) : "";
+    my $hmm =           sto2hmm($rscapebin, $currdir, $pdbname, $stofile, $isrna);
+    my $cm  = ($isrna)? sto2cm ($rscapebin, $currdir, $pdbname, $stofile) : "";
  
     my $alen = pdbseq_map($rscapebin, $currdir, $hmm, $cm, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
     if ($alen == 0) { return $alen; }

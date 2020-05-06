@@ -13,7 +13,7 @@
 #define PAR_FILE "misc_rna.par"        /* miscellaneous parameters */
 #define REF_FILE "ref_frames.dat"        /* reference frames */
 #define BASE_FILE "baselist.dat"        /* 3-letter to 1-letter base residue */
-#define NP 101L                        /* maximum number of pairs per base */
+#define NPT 101L                        /* maximum number of pairs per base */
 #define BOND_UPPER_LIMIT 2.5        /* for function torsion */
 #define HTWIST0 0.05                /* minimum helical twist */
 #define BOND_FACTOR 1.15        /* bond distance criterion */

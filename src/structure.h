@@ -13,7 +13,6 @@
 #include "esl_msa.h"
 
 #include "covgrammars.h"
-#include "correlators.h"
 
 // folding parameters
 //
@@ -123,6 +122,11 @@ extern int       struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CT
 	   		        SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, char *errbuf, int verbose);
 extern CTLIST   *struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose);
 extern int       struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
+extern CTLIST   *struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose);
+extern int       struct_CTList2wuss(CTLIST *ctlist, char *ss);
+extern int       struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme);
+extern int       struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme);
+extern int       struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme);
 extern CTLIST   *struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose);
 extern int       struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose);
 extern COVLIST  *struct_covlist_Create(int n);

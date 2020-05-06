@@ -15,8 +15,9 @@
 #include "esl_tree.h"
 #include "ribosum_matrix.h"
 
+#include "rview_contacts.h"
+
 #include "covgrammars.h"
-#include "contactmap.h"
 #include "pottsbuild.h"
 
 #define NCOVTYPE = 5;
