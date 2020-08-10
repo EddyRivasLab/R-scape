@@ -38,6 +38,7 @@ static int     tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc
 static int     tree_fitch_check(int dim, int *S);
 static int     tree_fitch_downwards(int dim, int xa, int *Sd);
 static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S);
+static ESL_DSQ tree_fitch_choose_residue(ESL_RANDOMNESS *r, int dim, float *frq, int *S);
 
 /*****************************************************************
  * 1. Miscellaneous functions for msatree
@@ -46,7 +47,6 @@ static ESL_DSQ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
 int
 Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose)
 {
-
   char     *treefile = NULL;
   FILE     *treefp   = NULL;
   ESL_TREE *T        = NULL;
@@ -64,7 +64,7 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
   //          danger of this option, one it not waranteed that the names are unique
   msamanip_SeqNames_DoctorParenthesis(msa, errbuf);
 
-  if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to crete external tree");
+  if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to create external tree");
   if ((treefp = fopen(treefile, "r"))                                == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for reading", treefile);
   if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))             != eslOK) goto ERROR;
   if ((status = esl_tree_Validate(T, NULL))                          != eslOK) ESL_XFAIL(status,  errbuf, "Failed to validate external tree");
@@ -151,7 +151,7 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
   int      i;
   int      c;
   int      status;
-
+  
   // if T = NULL we assume a start topology
   if (T == NULL) nnodes = 1;
   else           nnodes = (T->N > 1)? T->N-1 : T->N;
@@ -807,8 +807,8 @@ Tree_ReorderTaxaAccordingMSA(const ESL_MSA *msa, ESL_TREE *T, char *errbuf, int 
        map[i] = n;
      }
    }
-   if (foundmatch == 0) ESL_XFAIL(eslFAIL, errbuf, "Tree_ReorderTaxaAccordingMSA(): failed to find a match for taxonlabel %s", T->taxonlabel[i]); 
-   if (foundmatch >  1) ESL_XFAIL(eslFAIL, errbuf, "Tree_ReorderTaxaAccordingMSA(): find more than one match (%d) for taxonlabel %s", foundmatch, T->taxonlabel[i]); 
+   if (foundmatch == 0) ESL_XFAIL(eslFAIL, errbuf, "Tree_ReorderTaxaAccordingMSA(): failed to find a match for taxonlabel[%d] %s", i, T->taxonlabel[i]); 
+   if (foundmatch >  1) ESL_XFAIL(eslFAIL, errbuf, "Tree_ReorderTaxaAccordingMSA(): find more than one match (%d) for taxonlabel[%d] %s", foundmatch, i, T->taxonlabel[i]); 
  }
 
  /* Construct the guts of correctly numbered new T2.
@@ -1384,7 +1384,7 @@ Tree_MyCluster(ESL_DMATRIX *D, ESL_TREE **ret_T)
 }
 
 int
-Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, char *errbuf, int verbose)
+Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, int includegaps, char *errbuf, int verbose)
 {
   ESL_MSA    *allmsa  = NULL;
   int        *nsubs   = NULL;
@@ -1397,8 +1397,9 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
   int         idx;
   int         i, j;
   int         status;
-  
+
   if (T == NULL) {
+    printf("\n^^^ no tree!\n");
      if (ret_nsubs) {
        ESL_ALLOC(nsubs, sizeof(int) * msa->alen);
        esl_vec_ISet(nsubs, msa->alen, 0);
@@ -1417,21 +1418,24 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 
   // single position substitutions
   if (ret_nsubs) {
+
     ESL_ALLOC(nsubs, sizeof(int) * msa->alen);
     esl_vec_ISet(nsubs, msa->alen, 0);  
     for (i = 0; i < msa->alen; i ++) {
       for (v = 0; v < T->N-1; v++)
 	{
 	  ax  = allmsa->ax[T->N+v];
-	  axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
-	  axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
+	  axl = (T->left[v]  > 0)? allmsa->ax[T->N + T->left[v]]  : allmsa->ax[-T->left[v] ];
+	  axr = (T->right[v] > 0)? allmsa->ax[T->N + T->right[v]] : allmsa->ax[-T->right[v]];
 
-	  if (ax[i+1] < msa->abc->K) {
-	    if (axl[i+1] < msa->abc->K && axl[i+1] != ax[i+1]) { // a single substitution
-	      nsubs[i] ++;
-	    }
-	    if (axr[i+1] < msa->abc->K && axr[i+1] != ax[i+1]) { // a single substitution
-	      nsubs[i] ++;
+	  if (includegaps) {
+	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+	    if (axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+	  }
+	  else {
+	    if (ax[i+1] < msa->abc->K) {
+	      if (axl[i+1] < msa->abc->K && axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+	      if (axr[i+1] < msa->abc->K && axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
 	    }
 	  }
 	}
@@ -1450,15 +1454,17 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	for (v = 0; v < T->N-1; v++)
 	  {
 	    ax  = allmsa->ax[T->N+v];
-	    axl = (T->left[v]  >= 0)? allmsa->ax[T->N+T->left[v]]  : allmsa->ax[-T->left[v] -1];
-	    axr = (T->right[v] >= 0)? allmsa->ax[T->N+T->right[v]] : allmsa->ax[-T->right[v]-1];
-	    
-	    if (ax[i+1] < msa->abc->K && ax[j+1] < msa->abc->K) {
-	      if (axr[i+1] < msa->abc->K && axr[j+1] < msa->abc->K && axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { // a double substitution
-		ndouble[idx] ++;
-	      }
-	      if (axl[i+1] < msa->abc->K && axl[j+1] < msa->abc->K && axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { // a double substitution
-		ndouble[idx] ++;
+	    axl = (T->left[v]  > 0)? allmsa->ax[T->N + T->left[v]]  : allmsa->ax[-T->left[v] ];
+	    axr = (T->right[v] > 0)? allmsa->ax[T->N + T->right[v]] : allmsa->ax[-T->right[v]];
+
+	    if (includegaps) {
+	      if (axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { ndouble[idx] ++; } // a double substitution
+	      if (axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { ndouble[idx] ++; } // a double substitution
+	    }
+	    else {
+	      if (ax[i+1] < msa->abc->K && ax[j+1] < msa->abc->K) {
+		if (axl[i+1] < msa->abc->K && axl[j+1] < msa->abc->K && axl[i+1] != ax[i+1] && axl[j+1] != ax[j+1]) { ndouble[idx] ++; } // a double substitution
+		if (axr[i+1] < msa->abc->K && axr[j+1] < msa->abc->K && axr[i+1] != ax[i+1] && axr[j+1] != ax[j+1]) { ndouble[idx] ++; } // a double substitution
 	      }
 	    }
 	  }
@@ -1652,7 +1658,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
   for (n = 1; n < allmsa->nseq; n++) S[n] = S[0] + n * dim;
   for (n = 0; n < allmsa->nseq; n++) esl_vec_ISet(S[n], dim, FALSE);
 
- /* Set S for the leaves */
+  /* Set S for the leaves */
   for (n = 0; n < N; n++) {
     ax = allmsa->ax[n][c];
 
@@ -1689,7 +1695,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 	
 	if (S[idxl][dim-1] == FALSE) { esl_stack_IPush(vs, T->left[v]);  continue; }
 	if (S[idxr][dim-1] == FALSE) { esl_stack_IPush(vs, T->right[v]); continue; }
-	
+
 	idx  = T->N + v;
 	if (verbose) printf("v %d idx %d Sl[%d] %d %d %d %d %d %d Sr[%d] %d %d %d %d %d %d ", 
 			    v, idx, 
@@ -1697,7 +1703,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 			    idxr, S[idxr][0], S[idxr][1], S[idxr][2], S[idxr][3], S[idxr][4], S[idxr][5]);
 	status = tree_fitch_upwards(dim, S[idxl], S[idxr], S[idx], &sc, errbuf); 
 	if (verbose) printf("S[%d] %d %d %d %d %d %d | sc %d\n", idx, S[idx][0], S[idx][1], S[idx][2], S[idx][3], S[idx][4], S[idx][5], sc);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Fitch Algorithm upwards failed at c=%d v=%d", errbuf, c, v);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Fitchm Algorithm upwards failed at c=%d v=%d", errbuf, c, v);
 	
 	if (v > 0) esl_stack_IPush(vs, T->parent[v]);
       }
@@ -1706,42 +1712,24 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
   }
   if (verbose) printf("column %d score %d\n", c, sc);
   
-  #if 0
-  // to select the tree of Figure 1
-  if (c == 5)  allmsa->ax[N][c] = 0;
-  if (c == 10) allmsa->ax[N][c] = 3;
-  #endif
-  
   /* go down the tree */
   if (T == NULL) { // A star topology, nothing to do here
   }
   else {
     if (esl_stack_IPush(vs, 0) != eslOK) { status = eslEMEM; goto ERROR; };
     while (esl_stack_IPop(vs, &v) == eslOK) 
-      { 
+      {
 	idx = T->N + v;
 	ax = allmsa->ax[idx][c];
 	
 	if (T->left[v] > 0) {
+
 	  idxl = T->N + T->left[v];
 	  status = tree_fitch_downwards(dim, (int)ax, S[idxl]); 
 	  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Fitch Algorithm downwards failed");
 	  
 	  /* now Sl is just a character, assign to the msa sequence */
 	  allmsa->ax[idxl][c] = tree_fitch_choose(r, dim, frq, S[idxl]);
-          #if 0
-	  // to select the tree of Figure 1
-	  if (c == 5) {
-	    if (T->left[v] == 1) { allmsa->ax[idxl][c] = 0; }
-	    if (T->left[v] == 2) { allmsa->ax[idxl][c] = 2; }
-	    if (T->left[v] == 3) { allmsa->ax[idxl][c] = 1; }
-	    if (T->left[v] == 6) { allmsa->ax[idxl][c] = 2; }
-	  }
-	  if (c == 10) {
-	    if (T->left[v] == 2) { allmsa->ax[idxl][c] = 1; }
-	    if (T->left[v] == 3) { allmsa->ax[idxl][c] = 2; }
-	  }
-         #endif
 	}
       
 	if (T->right[v] > 0) {
@@ -1751,17 +1739,8 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 	  
 	  /* now Sr is just a character, assign to the msa sequence */
 	  allmsa->ax[idxr][c] = tree_fitch_choose(r, dim, frq, S[idxr]);
-          #if 0
-	  // to select the tree of Figure 1
-	  if (c == 5) {
-	    if (T->right[v] == 5) { allmsa->ax[idxr][c] = 0; }
-	  }
-	  if (c == 10) {
-	    if (T->right[v] == 0) { allmsa->ax[idxr][c] = 0; }
-	    if (T->right[v] == 5) { allmsa->ax[idxr][c] = 3; }
-	  }
-         #endif
 	}
+	
  
 	if (T->left[v]  > 0) esl_stack_IPush(vs, T->left[v]);
 	if (T->right[v] > 0) esl_stack_IPush(vs, T->right[v]); 
@@ -1801,6 +1780,23 @@ tree_fitch_choose(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
   return (ESL_DSQ)ichoose;
 }
 
+static ESL_DSQ
+tree_fitch_choose_residue(ESL_RANDOMNESS *r, int dim, float *frq, int *S)
+{
+  int ichoose = -1;
+
+  if (frq == NULL) { // pick an available residue randomly
+    ichoose = (int)(esl_random(r) * (dim-2));
+    while (S[ichoose] == FALSE) ichoose = (int)(esl_random(r) * (dim-2));
+  }
+  else { // instead of selecting randomly, do it according to the MSA's base composition
+    ichoose = esl_rnd_FChoose(r, frq, dim);
+    while(ichoose > dim-2) { ichoose = esl_rnd_FChoose(r, frq, dim); }
+  }
+
+  return (ESL_DSQ)ichoose;
+}
+
 static int
 tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc, char *errbuf)
 {
@@ -1821,7 +1817,12 @@ tree_fitch_upwards(int dim, int *Sl, int *Sr, int *S, int *ret_sc, char *errbuf)
 
   if (i == dim-1) { // no intersection, report the union
     sc ++;
-    for (i = 0; i < dim-1; i ++)  if (Sl[i] == TRUE || Sr[i] == TRUE) S[i] = TRUE;
+    // if both residues, report the union
+    for (i = 0; i < dim-2; i ++)  if (Sl[i] == TRUE || Sr[i] == TRUE) S[i] = TRUE;
+
+    // if gap/residue, propagate only the residue
+    if (Sl[dim-2] == TRUE) for (i = 0; i < dim-2; i ++)  if (Sr[i] == TRUE) S[i] = TRUE;
+    if (Sr[dim-2] == TRUE) for (i = 0; i < dim-2; i ++)  if (Sl[i] == TRUE) S[i] = TRUE;
   }
   S[dim-1] = TRUE; // array done
 

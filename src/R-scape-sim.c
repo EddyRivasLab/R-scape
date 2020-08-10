@@ -34,7 +34,7 @@
 #include "pottsim.h"
 
 #define ALPHOPTS   "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
-#define TREEOPTS   "--star,--given,--sim"                                          
+#define TREEOPTS   "--star,--given,--external,--sim"                                          
 #define ALPHOPTS   "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define SIMOPTS    "--naive,--rnass,--potts"                                          
 #define POTTSOPTS  "--gauss,--pottsfile,--pdbfile"                                          
@@ -82,7 +82,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double               target_atbl;            // average total branch length (in number of changes per site)
   double               abl;                    // average branch length (in number of changes per site)
   double               atbl;                   // average total branch length (in number of changes per site)
-  TREETYPE             treetype;               // star, given or simulated tree topology
+  TREETYPE             treetype;               // star, given, external or simulated tree topology
   ESL_TREE            *T;
 
   SIMTYPE              simtype;
@@ -117,11 +117,12 @@ struct cfg_s { /* Shared configuration in masters & workers */
   char                *pottsfile;
   char                *pdbfile;
   char                *pdbchain;
-  double               cntmaxD;            // max distance in pdb structure to call a contact
+  double               cntmaxD;                 // max distance in pdb structure to call a contact
   double               pottsigma;
   POTTSPARAM           pottsparam;
   int                  L;                       // lenght of the alignment if not controlled by pottsfile of pdbfile
 
+  char                *treefile;                // for an externally provided tree
   float                tol;
   int                  verbose;
 };
@@ -149,18 +150,20 @@ static ESL_OPTIONS options[] = {
   { "--potts",         eslARG_NONE,     FALSE,   NULL,       NULL,POTTSOPTS,"--potts",NULL,              "potts param from pdb contact file",                                                         1 }, 
   { "-L",              eslARG_INT,       "50",   NULL,      "n>=0",  NULL,"--ptgauss",NULL,              "length of the alignment",                                                                   1 }, 
   /* parameters to control the phylogenetic component of t he simulation */
-  { "-N",              eslARG_INT,       "40",   NULL,      "n>=0",  NULL,    NULL,  NULL,               "number of sequences in the simulated msa, N=0 for use all",                                 0 }, 
+  { "-N",              eslARG_INT,        "0",   NULL,      "n>=0",  NULL,    NULL,  NULL,               "number of sequences in the simulated msa, N=0 for use all",                                 0 }, 
   { "--abl",           eslARG_REAL,     NULL,    NULL,      "x>0",   NULL,    NULL,"--atbl",             "tree average branch length in number of changes per site",                                  0 }, 
   { "--atbl",          eslARG_REAL,      NULL,   NULL,      "x>0",   NULL,    NULL,"--abl",              "tree average total branch length in number of changes per site",                            0 }, 
   { "--noindels",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "produces ungapped alignments",                                                              0 }, 
   { "--eqbranch",      eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make all branch lengths equal size",                                                        0 }, 
   { "--star",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "star topology",                                                                             0 },
   { "--rand",          eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "independent sequences",                                                                     0 },
-  { "--given",         eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology",                                                                        0 },
-  { "--sim",           eslARG_NONE,    "TRUE",   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
+  { "--given",         eslARG_NONE,    "TRUE",   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "given msa topology, calculated internally",                                                 0 },
+  { "--external",    eslARG_STRING,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "external tree",                                                                             0 },
+  { "--sim",           eslARG_NONE,     FALSE,   NULL,       NULL,  TREEOPTS, NULL,  NULL,               "simulated topology",                                                                        0 },
   { "--usesq",          eslARG_INT,      NULL,   NULL,      "n>=1",  NULL,    NULL,  NULL,               "sq from the origional msa used as root (default random)",                                   0 }, 
   /* Control of scoring system - indels */ 
   { "--evomodel",    eslARG_STRING,    "AIF",   NULL,       NULL,   NULL,    NULL,  NULL,                "evolutionary model used",                                                                   0 },
+  { "--evofile",     eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "read evomodel parameters from file <f>",                                                    0 },
   /* Control of scoring system  */
   { "--ribofile",    eslARG_INFILE,     NULL,   NULL,       NULL,   NULL,    NULL,  NULL,                "read ribosum structure from file <f>",                                                      0 },
   { "--mx",          eslARG_STRING,"BLOSUM62",  NULL,       NULL,   NULL,    NULL,"--ribosum",           "substitution rate matrix choice (of some built-in matrices)",                               0 },
@@ -190,11 +193,13 @@ static char banner[] = "R-scape-sim - synthetic alignments to test R-scape";
 
 static int MSA_banner(FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs);
 static int create_subsmodel(ESL_GETOPTS *go, struct cfg_s *cfg);
+static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa);
-static int simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simmsa);
-static int create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
+static int original_msa_doctor_names(ESL_MSA **omsa);
+static int original_tree_doctor_names(ESL_TREE **oT);
 static int pottsim_banner(FILE *fp, char *progname, char *banner);
+static int simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **simmsa);
 
 
 /* process_commandline()
@@ -311,10 +316,13 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.N        = esl_opt_GetInteger(go, "-N");
   cfg.noindels = esl_opt_GetBoolean(go, "--noindels");
   cfg.eqbranch = esl_opt_GetBoolean(go, "--eqbranch");
-  if      (esl_opt_GetBoolean  (go, "--star"))  cfg.treetype = STAR;
-  else if (esl_opt_GetBoolean  (go, "--given")) cfg.treetype = GIVEN;
-  else if (esl_opt_GetBoolean  (go, "--sim"))   cfg.treetype = SIM; 
-  else if (esl_opt_GetBoolean  (go, "--rand"))  cfg.treetype = RAND; 
+
+  cfg.treefile = NULL;
+  if      (esl_opt_GetBoolean  (go, "--star"))       cfg.treetype = STAR;
+  else if (esl_opt_GetBoolean  (go, "--given"))      cfg.treetype = GIVEN;
+  else if (esl_opt_IsOn        (go, "--external")) { cfg.treetype = EXTERNAL; esl_sprintf( &cfg.treefile, "%s", esl_opt_GetString(go, "--external")); }
+  else if (esl_opt_GetBoolean  (go, "--sim"))        cfg.treetype = SIM; 
+  else if (esl_opt_GetBoolean  (go, "--rand"))       cfg.treetype = RAND; 
 
   cfg.usesq       = esl_opt_IsOn(go, "--usesq")? esl_opt_GetInteger(go, "--usesq") : -1.0;
   cfg.target_atbl = esl_opt_IsOn(go, "--atbl")?  esl_opt_GetReal(go, "--atbl")     : -1.0;
@@ -362,14 +370,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* the evolutionary model */
   cfg.evomodel = e1_rate_Evomodel(esl_opt_GetString(go, "--evomodel"));
-  
-  /* the paramfile  */
+
+  /* the evo paramfile  */
   cfg.paramfile = NULL;
-  if (cfg.evomodel == AIF)
-    esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AIF.param", RSCAPE_SHARE);
-  else if (cfg.evomodel == AFG)
-    esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AFG.param", RSCAPE_SHARE);
-  else esl_fatal("could not identify evomodel");
+  if ( esl_opt_IsOn(go, "--evofile") ) { cfg.paramfile = esl_opt_GetString(go, "--evofile"); }
+  else if (RSCAPE_SHARE) {
+    if (cfg.evomodel == AIF)
+      esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AIF.param", RSCAPE_SHARE);
+    else if (cfg.evomodel == AFG)
+      esl_sprintf(&cfg.paramfile, "%s/doc/Pfam.seed.S1000.trainGD.AFG.param", RSCAPE_SHARE);
+    else esl_fatal("could not identify evomodel");
+  }
+  else ESL_XFAIL(status, cfg.errbuf, "Failed to find evo parameters\n");
   status = e1_rate_ReadParamfile(cfg.paramfile, &cfg.rateparam, &cfg.evomodel, cfg.errbuf, cfg.verbose);
   if (status != eslOK) esl_fatal("Failed to read paramfile %s\n%s", cfg.paramfile, cfg.errbuf);
 
@@ -404,20 +416,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (tok1) free(tok1);
   if (go) esl_getopts_Destroy(go);
   exit(status);
-}
-
-static int
-MSA_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs)
-{
-  if (mstat) 
-    fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
-	    msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
-	    mstat->avgid, omstat->avgid, nbpairs, onbpairs);
-  else 
-    fprintf(fp, "# givenMSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
-	    msaname, omstat->nseq, omstat->alen, omstat->avgid, onbpairs);
-
-  return eslOK;
 }
 
 int
@@ -462,7 +460,7 @@ main(int argc, char **argv)
     
     status = simulate_msa(go, &cfg, msa, &simsa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to simulate msa"); }
-    if (simsa == NULL)    { printf("%s\n", cfg.errbuf); esl_fatal("Failed to create msa"); }
+    if (simsa == NULL)    { printf("%s\n", cfg.errbuf); esl_fatal("Failed to simulate msa"); }
     
     /* stats of the simulated alignment */
     msamanip_XStats(simsa, &cfg.simstat);
@@ -488,7 +486,7 @@ main(int argc, char **argv)
   }
 
   /* cleanup */
-  if (cfg.paramfile) free(cfg.paramfile);
+  //if (cfg.paramfile) free(cfg.paramfile);
   if (cfg.filename) free(cfg.filename);
   if (cfg.pottsfile) free(cfg.pottsfile);
   if (cfg.pdbfile) free(cfg.pdbfile);
@@ -508,9 +506,24 @@ main(int argc, char **argv)
   if (cfg.ribosum) Ribosum_matrix_Destroy(cfg.ribosum);
   if (cfg.simsafile) free(cfg.simsafile);
   if (cfg.mstat) free(cfg.mstat); 
-  if (cfg.simstat) free(cfg.simstat); 
-  
+  if (cfg.simstat) free(cfg.simstat);
+  if (cfg.treefile) free(cfg.treefile);
+
   return 0;
+}
+
+static int
+MSA_banner (FILE *fp, char *msaname, MSA_STAT *mstat, MSA_STAT *omstat, int nbpairs, int onbpairs)
+{
+  if (mstat) 
+    fprintf(fp, "# MSA %s nseq %d (%d) alen %" PRId64 " (%" PRId64 ") avgid %.2f (%.2f) nbpairs %d (%d)\n", 
+	    msaname, mstat->nseq, omstat->nseq, mstat->alen, omstat->alen, 
+	    mstat->avgid, omstat->avgid, nbpairs, onbpairs);
+  else 
+    fprintf(fp, "# givenMSA %s nseq %d alen %" PRId64 " avgid %.2f nbpairs %d\n", 
+	    msaname, omstat->nseq, omstat->alen, omstat->avgid, onbpairs);
+
+  return eslOK;
 }
 
 static int
@@ -577,6 +590,83 @@ create_subsmodel(ESL_GETOPTS *go, struct cfg_s *cfg)
 
  ERROR:
   return status;
+}
+
+static int
+create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
+{
+  FILE   *treefp = NULL;
+  char   *msg = "bad tree";
+  double  atbl;
+  double  abl;
+  int     status;
+  
+   /* the TREE */
+  if (cfg->treetype == RAND) { // sequences are independent
+    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
+    else { 
+      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+      esl_tree_Destroy(cfg->T); cfg->T = NULL;
+    }
+  }
+  else if (cfg->treetype == STAR) { // sequences are independent but derived form a common ancestor
+    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
+    else { 
+       status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+     
+      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+      esl_tree_Destroy(cfg->T); cfg->T = NULL;
+    }
+  }
+  else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
+     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+     if (status != eslOK) esl_fatal(cfg->errbuf); 
+  }
+  else if (cfg->treetype == EXTERNAL) {   // use an external tree
+    if ((treefp = fopen(cfg->treefile, "r")) == NULL) esl_fatal("Failed to open treefile %s", cfg->treefile);
+    status = esl_tree_ReadNewick(treefp, cfg->errbuf, &cfg->T);
+   if (status != eslOK) esl_fatal(cfg->errbuf); 
+    fclose(treefp);
+
+    status = original_tree_doctor_names(&cfg->T);
+    if (status != eslOK) esl_fatal("Failed to doctor names of tree %s", cfg->treefile);
+
+    /* match the tree leaves to the msa names */
+    status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
+  }
+  else if (cfg->treetype == SIM) {  // generate random ultrametric tree T
+    if (esl_tree_Simulate(cfg->r, cfg->N, &cfg->T) != eslOK) esl_fatal(msg);
+    if (esl_tree_SetTaxaParents(cfg->T)            != eslOK) esl_fatal(msg);
+    if (esl_tree_Validate(cfg->T, NULL)            != eslOK) esl_fatal(msg);
+  }
+
+
+  /* scale the tree */
+  if (cfg->T) {
+    Tree_GetNodeTime(0, cfg->T, &atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+    abl = esl_tree_er_AverageBL(cfg->T);
+
+    if (cfg->eqbranch) { if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg); }
+
+    if (cfg->target_abl > 0) {
+      if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
+    }
+    else if (cfg->target_atbl > 0) {
+      if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
+    }
+    
+    cfg->abl = esl_tree_er_AverageBL(cfg->T);
+    Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
+    if (cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
+  }
+  
+  if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
+  
+  return eslOK;
 }
 
 static int
@@ -655,7 +745,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)    != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
 
-  if (cfg->N > 0 && cfg->treetype == GIVEN) {
+  if (cfg->N > 0 && cfg->treetype != EXTERNAL) {
     if (msamanip_SelectSubset(cfg->r, cfg->N, omsa, NULL, cfg->errbuf, cfg->verbose)                       != eslOK) {
       printf("%s\n", cfg->errbuf); esl_fatal(msg); }
   }
@@ -727,6 +817,86 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   return eslOK;
 }
 
+static int
+original_msa_doctor_names(ESL_MSA **omsa)
+{
+  ESL_MSA *msa = *omsa;
+  char    *sqname;
+  char    *p;
+  int      s;
+
+  // the msaname (ID) has to be free of '/', '|", abd ':' symbols
+  if (msa->name) {
+    for (p = msa->name; (p = strchr(p, '/')); ++p) 
+     *p = '_';
+    for (p = msa->name; (p = strchr(p, '|')); ++p) 
+     *p = '_';
+    for (p = msa->name; (p = strchr(p, ':')); ++p) 
+     *p = '_';
+  }
+  
+  // several characters in names interfere with FastTree
+  // : /
+  for (s = 0; s < msa->nseq; s++) {
+    sqname = msa->sqname[s];
+    for (p = sqname; (p = strchr(p, '|')); ++p) 
+      *p = '_';
+    for (p = sqname; (p = strchr(p, ':')); ++p) 
+      *p = '_';
+    for (p = sqname; (p = strchr(p, '/')); ++p) 
+      *p = '_';
+  }
+  
+  return eslOK;
+}
+
+static int
+original_tree_doctor_names(ESL_TREE **oT)
+{
+  ESL_TREE *T = *oT;
+  char     *taxonlabel;
+  char     *p;
+  int       i;
+
+  // the taxalabel have to be free of '/', '|", abd ':' symbols
+  
+  // several characters in names interfere with FastTree
+  // it would appear that if  you are given the tree, this is not necesary.
+  // however, because the msa names change, the 
+  // : /
+  for (i = 0; i < T->N; i++) {
+    taxonlabel = T->taxonlabel[i];
+    for (p = taxonlabel; (p = strchr(p, ':')); ++p) 
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '|')); ++p) 
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '/')); ++p) 
+      *p = '_';
+  }
+  
+  return eslOK;
+}
+
+
+
+static int
+pottsim_banner(FILE *fp, char *progname, char *banner)
+{
+  char *appname = NULL;
+  int   status;
+
+  if ((status = esl_FileTail(progname, FALSE, &appname)) != eslOK) return status;
+
+  if (fprintf(fp, "# %s :: %s\n", appname, banner)                                               < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(fp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
+
+  if (appname) free(appname);
+  return eslOK;
+
+ ERROR:
+  if (appname) free(appname);
+  return status;
+}
 
 static int
 simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_simsa)
@@ -741,10 +911,18 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   int      usesq;
   int      noss;
   int      i;
+  int      status;
   
   if (msa == NULL) return eslOK;
-  if (cfg->treetype == GIVEN) cfg->N = msa->nseq;
+  if (cfg->treetype == GIVEN || cfg->treetype == EXTERNAL) cfg->N = msa->nseq;
   if (cfg->N  <= 1) return eslOK;
+
+  /* doctor the msa names. 
+   * FastTree truncates seq names at semicolons.
+   * replace semicolons with |
+   */
+  status = original_msa_doctor_names(&msa);
+  if (status != eslOK) return eslFAIL;
 
   // create the tree with target abl
   create_tree(go, cfg, msa);
@@ -787,7 +965,8 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   case SAMPLE_POTTS:
     if (potts_GenerateAlignment(cfg->r, cfg->abc, cfg->treetype, cfg->N, cfg->L, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, &msafull,
 				cfg->msafile, msa, cfg->msamap, cfg->msarevmap, cfg->abcisRNA, cfg->cntmaxD, cfg->gnuplot,
-				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->pdbchain, cfg->noindels, FALSE, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+				cfg->pottsparam, cfg->pottsigma, cfg->pottsfile, cfg->pdbfile, cfg->pdbchain, cfg->noindels, FALSE,
+				cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nFailed to generate the simulated potts alignment", cfg->errbuf);
     break;
   }
@@ -815,86 +994,4 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   esl_msa_Destroy(root);
   if (msafull) esl_msa_Destroy(msafull);
   return eslOK;
-}
-
-static int
-create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
-{
-  char   *msg = "bad tree";
-  double  atbl;
-  double  abl;
-  int     status;
-  
-  /* the TREE */
-  if (cfg->treetype == RAND) { // sequences are independent
-    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
-    else { 
-      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
-      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-      esl_tree_Destroy(cfg->T); cfg->T = NULL;
-    }
-  }
-  if (cfg->treetype == STAR) { // sequences are independent but derived form a common ancestor
-    if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
-    else { 
-      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
-      if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-      Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-      esl_tree_Destroy(cfg->T); cfg->T = NULL;
-    }
-  }
-  else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
-    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
-    if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
-  }
-  else if (cfg->treetype == SIM) {  // generate random ultrametric tree T
-    if (esl_tree_Simulate(cfg->r, cfg->N, &cfg->T) != eslOK) esl_fatal(msg);
-    if (esl_tree_SetTaxaParents(cfg->T)            != eslOK) esl_fatal(msg);
-    if (esl_tree_Validate(cfg->T, NULL)            != eslOK) esl_fatal(msg);
-  }
-
-  /* scale the tree */
-  if (cfg->T) {
-
-    Tree_GetNodeTime(0, cfg->T, &atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    abl = esl_tree_er_AverageBL(cfg->T);
-
-    if (cfg->eqbranch) { if (esl_tree_er_EqualBL(cfg->T) != eslOK) esl_fatal(msg); }
-
-    if (cfg->target_abl > 0) {
-      if (esl_tree_er_RescaleAverageBL(cfg->target_abl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
-    }
-    else if (cfg->target_atbl > 0) {
-      if (esl_tree_er_RescaleAverageTotalBL(cfg->target_atbl, cfg->T, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK) esl_fatal(msg);
-    }
-    
-    cfg->abl = esl_tree_er_AverageBL(cfg->T);
-    Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
-    if (1||cfg->verbose) Tree_Dump(stdout, cfg->T, "Tree");
-  }
-  
-    if (1||cfg->verbose) printf("# average leave-to-root length: %f average branch length: %f\n", cfg->atbl, cfg->abl);
-  
-  return eslOK;
-}
-
-
-static int
-pottsim_banner(FILE *fp, char *progname, char *banner)
-{
-  char *appname = NULL;
-  int   status;
-
-  if ((status = esl_FileTail(progname, FALSE, &appname)) != eslOK) return status;
-
-  if (fprintf(fp, "# %s :: %s\n", appname, banner)                                               < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(fp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
-
-  if (appname) free(appname);
-  return eslOK;
-
- ERROR:
-  if (appname) free(appname);
-  return status;
 }

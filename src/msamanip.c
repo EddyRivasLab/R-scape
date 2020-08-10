@@ -42,9 +42,12 @@ static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ 
 int 
 msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, char *errbuf, int verbose)
 {
+  char   *tag = NULL;
   CTLIST *ctlist = NULL;
   int     L = msa->alen;
   int     nbpairs = 0;
+  int     nct = 0;
+  int     gc;
   int     c;
   int     i, j;
   int     status;
@@ -53,12 +56,28 @@ msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, ch
 
   if (msa->ss_cons) {
     ctlist = struct_wuss2CTList(msa->ss_cons, msa->alen, errbuf, verbose);
+    if (!ctlist)  ESL_FAIL(eslFAIL, errbuf, "bas SS_cons");
+    nct    = ctlist->nct;
   }
-  else {
-    ctlist = struct_ctlist_Create(1, L);
-    esl_vec_ISet(ctlist->ct[0], msa->alen+1, 0);
+ 
+  // create a ct for each GC SS_cons_x
+  esl_sprintf(&tag, "SS_cons_");
+  for (gc = 0; gc < msa->ngc; gc ++) {  
+
+    if (!strncmp(msa->gc_tag[gc], tag, 8)) {
+      if (ctlist) struct_ctlist_Realloc(ctlist, nct+1);
+      else        ctlist = struct_ctlist_Create(nct+1, L);
+
+      esl_wuss2ct(msa->gc[gc], L, ctlist->ct[nct]);
+      nct ++;
+    }
   }
 
+  if (!ctlist) {
+    ctlist = struct_ctlist_Create(nct+1, L);
+    esl_vec_ISet(ctlist->ct[nct], msa->alen+1, 0);
+  }
+  
   for  (c = 0; c < ctlist->nct; c ++) {
     for (i = 0; i < msa->alen-1; i ++)
       for (j = i+1; j < msa->alen; j ++)
@@ -67,11 +86,13 @@ msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, ch
   
   if (ret_ctlist)  *ret_ctlist  = ctlist;  else struct_ctlist_Destroy(ctlist);
   if (ret_nbpairs) *ret_nbpairs = nbpairs;
-  
+
+  free(tag); 
   return eslOK;
 
  ERROR:
   if (ctlist) struct_ctlist_Destroy(ctlist);
+  if (tag) free(tag);
   return status;
 }
 
@@ -487,12 +508,17 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
       if (r > 0. && r / totwgt >= idthresh) useme[apos-1] = TRUE;
       else                                  useme[apos-1] = FALSE;
     }
+    printf("\n^^ before broken pairs\n");
     
     if (msa->abc->type == eslRNA && (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
        ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
+    printf("\n^^ after broken pairs\n");
+    
     if ((status = struct_ColumnSubset(msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
+    printf("\n^^ after colum subet\n");
   }  
+    printf("\n^^ after dofilter\n");
 
   if (msa->alen == 0) ESL_XFAIL(eslFAIL, errbuf, "no positions left after gap trimming");
   ESL_ALLOC(map, sizeof(int) * msa->alen);

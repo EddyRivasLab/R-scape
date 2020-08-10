@@ -19,10 +19,11 @@
 #include "ratematrix.h"
 
 typedef enum {
-  STAR  = 0,         // independent sequences, star topology
-  GIVEN = 1,         // use the tree determined by the input msa
-  SIM   = 2,         // simulated tree
-  RAND  = 3,         // random sequences
+  STAR     = 0,         // independent sequences, star topology
+  GIVEN    = 1,         // use the tree determined by the input msa
+  EXTERNAL = 2,         // use a external tree
+  SIM      = 3,         // simulated tree
+  RAND     = 4,         // random sequences
 } TREETYPE;
 
 typedef enum {

@@ -17,6 +17,13 @@ sub afa2sto {
     return $stof;
 }
 
+sub sto2fa {
+    my ($root, $file) = @_;
+    my $fastaf = "$root.fa";
+    system("$esl_reformat fasta $file > $fastaf\n");
+    return $fastaf;
+}
+
 sub are_disjoint {
     my ($asq1, $asq2) = @_;
     my $disjoint = 1;
@@ -91,7 +98,8 @@ sub calculate_averages {
         $mean /= $number;
 
         $std -= $mean*$mean*$number;
-        $std /= ($number-1);
+        #$std /= ($number-1);
+        $std /= ($number);
         if ($std < 0. && $std> -0.00001) { $std = 0.0; }
         $std  = sqrt($std);
     }

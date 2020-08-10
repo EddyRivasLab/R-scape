@@ -431,7 +431,7 @@ sub contacts_from_pdb {
 	
     my ($currdir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, 
 	$ret_msalen, $ret_pdblen, $map_ref, $revmap_ref, $ret_ncnt_t, $cnt_t_ref, $usechain,
-	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $seeplots) = @_;
+	$maxD, $minL, $byali, $which, $dornaview, $coorfile, $mapallfile, $smallout, $noss, $seeplots) = @_;
 
     my $ncnt_t = 0;
 
@@ -514,7 +514,7 @@ sub contacts_from_pdb {
 	
 	$len = length($chsq[$n]);
 	$alen = pdb_contact_map($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, \$ncnt_t, $cnt_t_ref, 
-				$stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $smallout);
+				$stofile, $chname[$n], $chsq[$n], $which, $maxD, $minL, $byali, $isrna, $noss, $smallout);
 	close(COR);
 	print "\n DONE with contact map chain $chname[$n]\n";
 
@@ -715,15 +715,21 @@ sub sto2hmm {
 }
 
 sub sto2cm {
-    my ($rscapebin, $currdir, $pdbname, $stofile) = @_;
+    my ($rscapebin, $currdir, $pdbname, $stofile, $noss) = @_;
     
     my $infernal    = "$rscapebin/../lib/infernal/infernal-current";
     my $cmbuild     = "$infernal/src/cmbuild";
-    
+  
     my $cm          = "$currdir/$pdbname.cm";
 
-    system("          $cmbuild -F      $cm  $stofile   >  /dev/null\n");
-    system("/bin/echo $cmbuild -F      $cm  $stofile      \n");
+    if ($noss) {
+	system("          $cmbuild --noss -F      $cm  $stofile   >  /dev/null\n");
+	system("/bin/echo $cmbuild --noss -F      $cm  $stofile      \n");
+     }
+    else {
+	system("          $cmbuild -F      $cm  $stofile   >  /dev/null\n");
+	system("/bin/echo $cmbuild -F      $cm  $stofile      \n");
+    }
 
     return $cm;
 }
@@ -738,6 +744,7 @@ sub find_pdbsq_in_ali {
     if ($stoname =~ /(\S+).sto/) { $stoname = $1; }
     if ($stoname =~ /(\S+).stk/) { $stoname = $1; }
     $stoname =~ s/\//\_/g;
+
 
     my $pdbsqfile = "$currdir/$pdbname.fa";
 
@@ -1457,7 +1464,8 @@ sub pdbseq_map {
     my $ss;
     my @ct;
     my $refsq_msa;
-    my $msalen = FUNCS::parse_stofile($stofile, \$nsq, \@asqname_msa, \@asq_msa, \$ss, \@ct, \$refsq_msa, 1);
+
+   my $msalen = FUNCS::parse_stofile($stofile, \$nsq, \@asqname_msa, \@asq_msa, \$ss, \@ct, \$refsq_msa, 1);
     
     my $nsqt;
     my @asq;
@@ -1475,6 +1483,7 @@ sub pdbseq_map {
     my $from_fam = 1;
     my $pdb_asq  = $asq[$nsq]; # the pdbsq was the last sequence aligned
     mapsq2msa($pdb_asq, $nsq, \@asq, $refsq, \@asq_msa, $refsq_msa, $from_pdb, $from_fam, $map_ref, $revmap_ref, 0);
+
 	    
     return $alen;
 }
@@ -1526,7 +1535,7 @@ sub mapsq2msa {
     for (my $x = 0; $x < $pdblen; $x ++) { $map_ref->[$x] = -1; }
 
     for (my $s = 0; $s < $nsq; $s ++) {
-	
+
 	my $ali_asq = $ali_asq_ref->[$s];
 	my $msa_asq = $msa_asq_ref->[$s];
 	
@@ -1629,7 +1638,8 @@ sub mapsq2msa {
 	
 	if ($pos != $alen || $y != $msalen) { print "bad mapsq2msa() at sequence $s. pos $pos should be $alen. msapos $y should be $msalen\n"; die; }
 	
-	if (0&&$verbose) {	    
+	if ($verbose) { for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }  }
+ 	if (0&&$verbose) {	    
 	    printf "\n>SQ[$s]      len =$pdblen\n$pdbsq\n";
 	    printf "$pdb_asq\n";
 	    printf "$ali_refsq\n";
@@ -1942,7 +1952,7 @@ sub cif_seqres {
 
 sub pdb_contact_map {
     my ($rscapebin, $currdir, $pdbfile, $pdbname, $famname, $map_ref, $revmap_ref, 
-	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $smallout) = @_;
+	$ret_ncnt_t, $cnt_t_ref, $stofile, $chain, $chsq, $which, $maxD, $minL, $byali, $isrna, $noss, $smallout) = @_;
 
     my $len  = length($chsq);
     my @chsq = split(//,$chsq);
@@ -1951,11 +1961,17 @@ sub pdb_contact_map {
     printf COR  "# minL  $minL\n";
     printf COR  "# type  $which\n";
 
+    my $easel    = "$rscapebin/../lib/hmmer/easel";
+    my $reformat = "$easel/miniapps/esl-reformat";
+
+    my $thissto = "$stofile.sto"; # the msa may not be stockholm formatted
+    system("$reformat stockholm $stofile > $thissto\n");
+    
     # make the hmm and cm models from the alignment
-    my $hmm =           sto2hmm($rscapebin, $currdir, $pdbname, $stofile, $isrna);
-    my $cm  = ($isrna)? sto2cm ($rscapebin, $currdir, $pdbname, $stofile) : "";
+    my $hmm =           sto2hmm($rscapebin, $currdir, $pdbname, $thissto, $isrna);
+    my $cm  = ($isrna)? sto2cm ($rscapebin, $currdir, $pdbname, $thissto, $noss) : "";
  
-    my $alen = pdbseq_map($rscapebin, $currdir, $hmm, $cm, $stofile, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
+    my $alen = pdbseq_map($rscapebin, $currdir, $hmm, $cm, $thissto, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
     if ($alen == 0) { return $alen; }
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
@@ -2054,7 +2070,7 @@ sub pdb_contact_map {
     }
 
     ## If RNA, run rnaview to extract the bptypes
-    if ($isrna) { run_rnaview($rscapebin, $currdir, $hmm, $cm, $pdbfile, $stofile, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
+    if ($isrna) { run_rnaview($rscapebin, $currdir, $hmm, $cm, $pdbfile, $thissto, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
     contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
    
     # add all contacts from this chain to the list of total contacts if new
@@ -2067,6 +2083,7 @@ sub pdb_contact_map {
 	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
     }
 
+    system("/bin/rm $thissto\n");
     system("/bin/rm $hmm\n");
     if ($isrna) { system("/bin/rm $cm\n"); }
     

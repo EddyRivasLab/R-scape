@@ -123,7 +123,6 @@ extern int       struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CT
 extern CTLIST   *struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose);
 extern int       struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
 extern CTLIST   *struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose);
-extern int       struct_CTList2wuss(CTLIST *ctlist, char *ss);
 extern int       struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme);
 extern int       struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme);
 extern int       struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme);

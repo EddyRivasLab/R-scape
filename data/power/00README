@@ -87,3 +87,58 @@ new method
 same python script produces new power figure:
 
 open Rfam.14.0.seed.3D.power.subs.pdf
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+21 July 2020
+update
+             recalculating after fixing bug in function Tree_Substitutions() in msatree.c
+
+also added option --powergaps to either count res->gap as changes or not
+----------------------------------------------------------------------------------------------------------------------------------------------
+cd ~/src/Mysrc/R-scape/data/power
+~/src/Mysrc/R-scape/bin/R-scape -s --power             Rfam.14.0.seed.3D              --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power             Rfam.14.0.seed.3D --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power --powergaps Rfam.14.0.seed.3D              --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power --powergaps Rfam.14.0.seed.3D --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.rscape
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+FIT
+R-scape.power.csv used by R-scape 
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs          > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.bin
+~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps.bin
+
+----------------------------------------------------------------------------
+FIT
+R-scape.power.csv used by R-scape 
+----------------------------------------------------------------------------
+python script:                ~/src/Mysrc/R-scape/R-scape_power.ipynb
+
+fits:                         data/power/Rfam.14.0.seed.3D.power.subs
+                              data/power/Rfam.14.0.seed.3D.power.double
+			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps
+                              data/power/Rfam.14.0.seed.3D.power.double.withgaps
+			      
+to a polynomial to create:    data/power/Rfam.14.0.seed.3D.power.subs.csv
+			      data/power/Rfam.14.0.seed.3D.power.double.csv
+			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps.csv
+                              data/power/Rfam.14.0.seed.3D.power.double.withgaps.csb
+			      
+			      
+# set the power file for R-scape default
+#
+cd ~/src/src/mysource/data/power
+
+rm R-scape.power.double.csv
+ln -s Rfam.14.0.seed.3D.power.double.csv          R-scape.power.double.csv
+
+rm R-scape.power.double.withgaps.csv
+ln -s Rfam.14.0.seed.3D.power.double.withgaps.csv R-scape.power.double.withgaps.csv
+
+rm R-scape.power.subs.csv
+ln -s Rfam.14.0.seed.3D.power.subs.csv            R-scape.power.subs.csv
+
+rm R-scape.power.subs.withgaps.csv
+ln -s Rfam.14.0.seed.3D.power.subs.withgaps.csv   R-scape.power.subs.withgaps.csv

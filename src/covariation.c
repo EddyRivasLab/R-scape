@@ -50,6 +50,7 @@ static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h,
 					   int linespoints, int style1, int style2);
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2);
+static int    cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
 
 				    
@@ -331,6 +332,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "one sequence, no covariation analysis\n");
     }
+    data->thresh->sc_bp  = eslINFINITY;
+    data->thresh->sc_nbp = eslINFINITY;
 
     free(threshtype); 
     free(covtype);
@@ -413,9 +416,12 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   // assign the covthresh corresponding to the evalue threshold
   if (data->mode == GIVSS) {
     data->thresh->sc_bp =
-      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->hb->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+      (data->ranklist_null)?
+      evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->hb->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
     data->thresh->sc_nbp =
-      (data->ranklist_null)? evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->ht->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+      (data->ranklist_null)?
+      evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->ht->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -735,25 +741,15 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
   for (i = 0; i < mi->alen-1; i++) 
     for (j = i+1; j < mi->alen; j++) {
-      
-      // if found in the pdb structure, make sure
-      // they are at least mind appart
-      if (msa2pdb[i] >= 0 &&
-	  msa2pdb[j] >= 0 &&
-	  msa2pdb[j]-msa2pdb[i] < data->clist->mind) continue;
-
-      is_compatible = FALSE;
+            
+      is_compatible = cov_iscompatible(i+1, j+1, data->ctlist, data->abcisRNA);
       bptype        = CMAP_GetBPTYPE(i+1, j+1, data->clist);
-     
-      if (data->abcisRNA && data->ct[i+1] == 0 && data->ct[j+1] == 0) {
-	is_compatible = TRUE;
-      }
 
       switch(data->samplesize) {
       case SAMPLE_CONTACTS: isbp = (bptype < BPNONE)?  TRUE : FALSE; break;
       case SAMPLE_BP:       isbp = (bptype < STACKED)? TRUE : FALSE; break;
       case SAMPLE_WC:       isbp = (bptype == WWc)?    TRUE : FALSE; break;
-      case SAMPLE_ALL:      isbp = FALSE; break;	
+      case SAMPLE_ALL:      isbp = FALSE;                            break;	
       }
       
       cov  = mi->COV->mx[i][j];
@@ -791,7 +787,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	hitlist->hit[h].bptype        = bptype;
 	hitlist->hit[h].is_compatible = is_compatible;
 	h ++;
-
+	
 	data->spair[n].covary = TRUE;
       }
 
@@ -859,19 +855,22 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     }
   }
   
-  fprintf(stdout, "\n# The given structure\n");
-  status = struct_CTMAP(data->mi->alen, data->ctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
-  if (status != eslOK) goto ERROR;
+  if (data->ctlist) {
+    fprintf(stdout, "\n# The given structure\n");
+    status = struct_CTMAP(data->mi->alen, data->ctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
+    if (status != eslOK) goto ERROR;
+  }
   
   // add the significant covariations to the covct in ctlist
   cov_add_hitlist2covct(hitlist, data->ctlist, data->verbose);
   
   if (data->verbose) struct_ctlist_Dump(data->ctlist);
-  fprintf(stdout, "\n# The given structure\n");
   
   // write the power file output
-  power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
-  power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
+  if (data->abcisRNA) {
+    power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
+    power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
+  }
   
   fclose(covfp);
   fclose(covsrtfp);
@@ -884,7 +883,6 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   if (hitlist) cov_FreeHitList(hitlist);
   return status;
 }
-
 
 int 
 cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
@@ -931,9 +929,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
       foldhitlist->hit[h].power         = hitlist->hit[h].power;
       foldhitlist->hit[h].bptype        = CMAP_GetBPTYPE(hitlist->hit[h].i+1, hitlist->hit[h].j+1, data->clist);
       foldhitlist->hit[h].is_compatible = FALSE;
-      if (data->abcisRNA && data->ct[hitlist->hit[h].i+1] == 0 && data->ct[hitlist->hit[h].j+1] == 0) {
-	foldhitlist->hit[h].is_compatible  = TRUE;
-      }
+      foldhitlist->hit[h].is_compatible = cov_iscompatible(hitlist->hit[h].i+1, hitlist->hit[h].j+1, data->ctlist, data->abcisRNA);
     }
   }
   
@@ -1523,6 +1519,21 @@ cov_histogram_SetSurvFitTail(ESL_HISTOGRAM *h, double **ret_survfit, double pmas
   return status;
 }
 
+int
+cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA)
+{
+  int iscompatible = TRUE;
+  int n;
+
+  if (!abcisRNA) return FALSE;
+  
+  for (n = 0; n < ctlist->nct; n ++) {
+    if (ctlist->ct[n][i] > 0 || ctlist->ct[n][i] > 0) return FALSE;
+  }
+
+  return iscompatible;
+}
+
 int 
 cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, SAMPLESIZE samplesize, RANKLIST *ranklist, char *title)
 {
@@ -1765,7 +1776,9 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   incx = (xmax-xmin)/10.;
   incy = fabs(log(ymax)-log(ymin))/15.;
   xmax += incx;
-  
+
+  ymin = 1e-8;
+ 
   y2min = ymin * ranklist->ht->Nc;
   y2max = ymax * ranklist->ht->Nc;
   fprintf(pipe, "set xrange   [%f:%f]\n", xmin, xmax);
@@ -1966,10 +1979,6 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
 }
 
 
-
-
-
-
 int
 cov_ranklist_Bin2Bin(int b, ESL_HISTOGRAM *h, ESL_HISTOGRAM *new, int *ret_newb)
 {
@@ -2102,6 +2111,8 @@ cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose)
 {
   int h;
   int ih, jh;
+
+  if (!ctlist) return eslOK;
   
   for (h = 0; h < hitlist->nhit; h ++) {
     ih = hitlist->hit[h].i+1;

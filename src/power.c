@@ -147,7 +147,8 @@ void
 power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 {
   double     expect    = 0.;
-  double     avgsub    = 0;
+  double     exp_std   = 0.;
+  double     avgsub    = 0.;
   int64_t    nbp       = 0;
   int64_t    ncv       = 0;
   int64_t    n;
@@ -163,15 +164,17 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 	 (!in_given && spair[n].bptype_caco  == WWc)) {
       nbp ++;
       expect    += spair[n].power;
+      exp_std   += spair[n].power * (1.0-spair[n].power);
       avgsub    += spair[n].nsubs;
       if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power); ncv ++; }
       else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
+  if (exp_std > 0) exp_std = sqrt(exp_std);
   
   fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
   fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
-  fprintf(fp, "# BPAIRS expected to covary %.1f\n", expect);
+  fprintf(fp, "# BPAIRS expected to covary %.1f +/- %.1f\n", expect, exp_std);
   fprintf(fp, "# BPAIRS observed to covary %lld\n#\n", ncv);
 }
 
@@ -185,7 +188,7 @@ power_Destroy(POWER *power)
 }
 
 int
-power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int verbose)
+power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, char *errbuf, int verbose)
 {
   ESL_BUFFER      *bf    = NULL;
   char            *subs  = NULL;
@@ -207,6 +210,7 @@ power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int
 
   ESL_ALLOC(power, sizeof(POWER));
   power->ns   = 0;
+  power->includegaps = includegaps;
   power->type = (doublesubs)? DOUB : SUBS;
   power->subs = NULL;
   power->prob = NULL;

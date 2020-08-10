@@ -191,6 +191,7 @@ typedef enum {
 
 typedef struct power_s {
   int64_t    ns;
+  int        includegaps;
   POWERTYPE  type;
   double    *subs;
   double    *prob;

@@ -48,6 +48,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
   char    *ss      = NULL;
   int      L       = msa->alen;
   int      ct_nbpairs;
+  int      noss = FALSE;
   int      alloc_ncnt = 5;
   int      status;
  
@@ -64,6 +65,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
   // the ss_cons in the alignment
   status = msamanip_CalculateCTList(msa, &ctlist, &ct_nbpairs, errbuf, verbose);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed to calculate ct vector", errbuf);
+  if (ct_nbpairs == 0) noss = TRUE;
   
   // Look at the structural annotation
   // clist includes all basepairs and contact
@@ -78,13 +80,14 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
       ctlist->nct = 1;
       esl_vec_ISet(ctlist->ct[0], L+1, 0); // if onlypdb ignore the ss in the alignment
     }
-    status = ContactMap_FromPDB(pdbfile, pdbchain, msafile, msa, omsa2msa, abcisRNA, ctlist, clist, msa2pdb, cntmaxD, cntmind, errbuf, verbose);
+    status = ContactMap_FromPDB(pdbfile, pdbchain, msafile, msa, omsa2msa, abcisRNA, ctlist, clist, msa2pdb, cntmaxD, cntmind, noss, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, "bad contact map from PDB file", errbuf);
   
     if (abcisRNA) {
       /* Impose the new ct on the msa GC line 'cons_ss' */
       ESL_ALLOC(ss, sizeof(char) * (msa->alen+1));
-      struct_CTList2wuss(ctlist, ss);
+      esl_ct2wuss(ctlist->ct[0], L, ss);
+
       /* Replace the 'SS_cons' GC line with the new ss */
       if (msa->ss_cons) strcpy(msa->ss_cons, ss);
       else esl_strdup(ss, -1, &(msa->ss_cons));
@@ -194,7 +197,7 @@ ContactMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int 
 
 int
 ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA,
-		   CTLIST *ctlist, CLIST *clist, int *msa2pdb, double cntmaxD, int cntmind, char *errbuf, int verbose)
+		   CTLIST *ctlist, CLIST *clist, int *msa2pdb, double cntmaxD, int cntmind, int noss, char *errbuf, int verbose)
 {
   char     tmpcfile[16]   = "esltmpXXXXXX"; /* template for contacts*/
   char     tmpmapfile[16] = "esltmpXXXXXX"; /* template for msa2pdb map */
@@ -216,16 +219,30 @@ ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, i
   else            ESL_XFAIL(status, errbuf, "Failed to find program pdb_parse.pl\n");
   
   if (abcisRNA)  {// run rnaview as well
-    if (pdbchain)
-      esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
-		  cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
-    else
-      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
-		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    if (pdbchain) {
+      if (noss)
+	esl_sprintf(&args, "%s -N -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+       else 
+	esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    }
+    else {
+      if (noss)
+	esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+      else
+	esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    }
   }
   else {
-    esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
-		cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    if (noss)
+      esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
+		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
+    else 
+      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
+		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
   if (1||verbose) printf("%s\n", args);
@@ -283,6 +300,7 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
    
   // Add from all chains if unique
   for (c = 0; c < nchain; c ++) {
+
     if (!mapfile[c]) continue;
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
      esl_fileparser_SetCommentChar(efp, '#');

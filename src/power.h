@@ -24,7 +24,7 @@ extern int       power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, in
 extern int       power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbose);
 extern void      power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given);
 extern void      power_Destroy(POWER *power);
-extern int       power_Read(char *powerfile, int doublesubs, POWER **ret_power, char *errbuf, int verbose);
+extern int       power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, char *errbuf, int verbose);
 extern void      power_Write(FILE *fp, POWER *power, int verbose);
 extern void      power_WriteFromHistograms(FILE *fp,  POWERHIS *powerhis, int verbose);
 extern void      power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERHIS *powerhis, char *powerfile, int powerdouble, char *errbuf, int verbose);

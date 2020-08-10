@@ -10,11 +10,11 @@ use lib $FindBin::Bin;
 use PDBFUNCS;
 use FUNCS;
 
-use vars qw ($opt_c $opt_C  $opt_D $opt_L $opt_M $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
+use vars qw ($opt_c $opt_C  $opt_D $opt_L $opt_M $opt_N $opt_P $opt_R $opt_S $opt_v $opt_W );  # required if strict used
 use Getopt::Std;
 use Cwd qw(cwd);
 
-getopts ('c:C:D:L:M:PRSvW:');
+getopts ('c:C:D:L:M:NPRSvW:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
@@ -41,6 +41,8 @@ my $minL = 1; if ($opt_L) { $minL = $opt_L; }
 
 my $dornaview = 0; if ($opt_R) { $dornaview = 1; }
 
+my $noss = 0; if ($opt_N) { $noss = 1; }
+
 #options: CA CB C MIN AVG NOH / C1' (for RNA suggested by Westhof)
 my $which = "MIN"; if ($opt_W) { $which = "$opt_W"; }
 
@@ -60,4 +62,4 @@ my @revmap;
 my $mapfile_t = "";
 PDBFUNCS::contacts_from_pdb($dir, $gnuplot, $rscapebin, $pdbfile, $stofile, $mapfile_t, \$msalen, \$pdblen, \@map, \@revmap, 
 			    \$ncnt_t, \@cnt_t, $usechain, $maxD, $minL, $byali, $which, $dornaview, 
-			    $coorfile, $mapallfile, $smallout, $seeplots);
+			    $coorfile, $mapallfile, $smallout, $noss, $seeplots);

@@ -76,7 +76,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RANKLIST
   int            h;
   int            found;
   int            status;
-            
+
   /* calculate the maxcov ct vector.
    *
    * I run a nussinov-type algorithm that incorporates as many of the significant pairs as possible.
@@ -423,17 +423,13 @@ struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, c
   if (octlist == NULL) ESL_XFAIL(eslFAIL, errbuf, "struct_CTMAP() allocation error. nct %d\n", nct);
   
   ESL_ALLOC(sslist,  sizeof(char *) * nct);
-  for (s = 0; s < nct; s ++) sslist[s]  = NULL;
+  for (s = 0; s < nct; s ++) sslist[s] = NULL;
 
   // the main nested structure (s=0) is annotated as SS_cons
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-  // I may end up changing this later.
-  // It is used by R2R, and I keep it here because some of my
-  // secondary/pseudoknot structure may overlap with the main nested structure.
-  // That is not wrong, it is just showing our uncertainty about the structure due to lack
-  // of more covariations.
+  //
   for (s = 0; s < nct; s ++) {
 
     if (s == 0) octlist->cttype[s] = CTTYPE_NESTED;
@@ -656,17 +652,21 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 	       ss[pos-1] == '}')
         {
           if (esl_stack_IPop(pda[0], &pair) == eslEOD)
-            { status = eslESYNTAX; goto FINISH;} /* no closing bracket */
-          else if ((ss[pair-1] == '<' && ss[pos-1] != '>') ||
-		   (ss[pair-1] == '(' && ss[pos-1] != ')') ||
-		   (ss[pair-1] == '[' && ss[pos-1] != ']') ||
-		   (ss[pair-1] == '{' && ss[pos-1] != '}'))
-	    { status = eslESYNTAX; goto FINISH; }  /* brackets don't match */
-	  else
-	    {
-              ctmain[pos]  = pair;
-              ctmain[pair] = pos;
-            }
+            { status = eslESYNTAX; goto FINISH; } /* no closing bracket */
+          else {
+	    if (pair < 1 || pair > L) { status = eslESYNTAX; goto FINISH;
+	    }
+	    else if ((ss[pair-1] == '<' && ss[pos-1] != '>') ||
+		(ss[pair-1] == '(' && ss[pos-1] != ')') ||
+		(ss[pair-1] == '[' && ss[pos-1] != ']') ||
+		(ss[pair-1] == '{' && ss[pos-1] != '}'))
+	      { status = eslESYNTAX; goto FINISH; }  /* brackets don't match */
+	    else
+	      {
+		ctmain[pos]  = pair;
+		ctmain[pair] = pos;
+	      }
+	  }
         }
                                 /* same stuff for pseudoknots */
       else if (isupper((int) ss[pos-1])) 
@@ -719,67 +719,6 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 
 }
 
-int
-struct_CTList2wuss(CTLIST *ctlist, char *ss)
-{
-  char **aux = NULL;
-  char   val;
-  int    L   = ctlist->L;
-  int    nct = ctlist->nct;
-  int    ival;
-  int    nu = 0;
-  int    nl = 0;
-  int    unpaired;
-  int    c;
-  int    j;
-  int    status;
-
-  if (nct == 0) return eslOK;
-
-  ESL_ALLOC(aux, sizeof(char *) * nct);
-  for (c = 0; c < nct; c ++) {
-    ESL_ALLOC(aux[c], sizeof(char) * (L+1));
-    esl_ct2wuss(ctlist->ct[c], L, aux[c]);
-  }
-
-  for (j = 0; j < L; j ++) {
-    val   = aux[0][j];
-    ival  = (int) val;
-    ss[j] = val;
-    
-    if (isupper(ival) && ival > nu) nu = ival;
-    if (islower(ival) && ival > nl) nl = ival;
-  }
-  
-  for (c = 1; c < nct; c ++) {
-    for (j = 0; j < L; j ++) {
-      unpaired = FALSE;
-      if (ss[j] == ':' || ss[j] == '.' || ss[j] == '-' ||ss[j] == '_' || ss[j] == ',') unpaired = TRUE;
-      
-      val  = aux[c][j];
-      
-      if      (val == '<') { if (unpaired) ss[j] = nu + 'A' + c - 1; }
-      else if (val == '(') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 1; }
-      else if (val == '{') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 2; }
-      else if (val == '[') { if (unpaired) ss[j] = nu + 'A' + c - 1 + 3; }
-      
-      if      (val == '>') { if (unpaired) ss[j] = nl + 'a' + c - 1; }
-      else if (val == ')') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 1; }
-      else if (val == '}') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 2; }
-      else if (val == ']') { if (unpaired) ss[j] = nl + 'a' + c - 1 + 3; }
-      
-    }	
-  }
-  
-  for (c = 0; c < nct; c ++) free(aux[c]);
-  free(aux);
-  return eslOK;
-
- ERROR:
-  for (c = 0; c < nct; c ++) if (ss[c]) free(aux[c]);
-  if (aux) free(aux);
-  return status;
-}
 
 int
 struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)
@@ -792,7 +731,8 @@ struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *u
 
   ctlist = struct_wuss2CTList(ss, len, errbuf, FALSE); 
   if (!ctlist) ESL_FAIL(status, errbuf, "Consensus structure string is inconsistent.");
-
+  if (ctlist->nct > 1) ESL_FAIL(status, errbuf, "struct_RemoveBrokenBasepairsFromSS() should have only one ct");
+    
   for (c = 0; c < ctlist->nct; c ++) {
     ct = ctlist->ct[c];
     for (apos = 1; apos <= len; apos++) { 
@@ -802,11 +742,10 @@ struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *u
       }
     }
   }
-  
+
   /* All broken bps removed from ct, convert to WUSS SS string and overwrite SS */
-  if ((status = struct_CTList2wuss(ctlist, ss)) != eslOK) 
-    ESL_FAIL(status, errbuf, "Error converting de-knotted bp ct array to WUSS notation.");
-  
+  esl_ct2wuss(ctlist->ct[0], len, ss);
+
   struct_ctlist_Destroy(ctlist);
   return eslOK;
 
@@ -817,12 +756,23 @@ struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *u
 int
 struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
 {
-  int status;
-  int  i;
+  char *tag = NULL;
+  int   gc;
+  int   i;
+  int   status;
 
   if (msa->ss_cons) {
-    if((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status; 
+    if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status;
+
+    // remove broken pairs also from the additional SS_cons_1,... annotations if any
+    esl_sprintf(&tag, "SS_cons_");
+    for (gc = 0; gc < msa->ngc; gc ++) {
+      if (!strncmp(msa->gc_tag[gc], tag, 8)) {
+	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->gc[gc], errbuf, msa->alen, useme)) != eslOK) return status;
+      }
+    }
   }
+  
   /* per-seq SS annotation */
   if (msa->ss) {
     for(i = 0; i < msa->nseq; i++) { 
@@ -831,8 +781,16 @@ struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
       }
     }
   }
+
+  if (tag) free(tag);
   return eslOK;
-}  
+
+ ERROR:
+  if (tag) free(tag);
+  return status;
+}
+
+
 int
 struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme)
 {
@@ -1471,17 +1429,18 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   ESL_ALLOC(ss, sizeof(char)   * (L+1));
   ESL_ALLOC(sc, sizeof(double) * ((nct>0)?nct:1));
 
+
   // the main fold uses the RBG grammar. For the rest, we don't look for a 2D, so no
   // no need to look for hairpin loops, bulges, internal loops. The G6X grammar is a better choice
   for (s = 0; s < nct; s ++) {
     if (s == 0) G = foldparam->G0;
     else        G = foldparam->GP;
 
-   // cascade variation/covariance constrained FOLD using a probabilistic grammar
+    // cascade variation/covariance constrained FOLD using a probabilistic grammar
     status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;     
   }
-
+  
   // Two special cases:
   //
   // nct      == 0:      No covarying pairs, do one unconstrained fold
@@ -1501,16 +1460,15 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   
   if (foldparam->lastfold) {
     struct_ctlist_Realloc(ctlist, nct+1);
-    if (nct == 1) exclude[nct] = struct_covlist_Create(0);
    
-    ESL_REALLOC(sc, sizeof(double) * (nct+1));
+    ESL_REALLOC(sc, sizeof(double) * ctlist->nct);
     G = foldparam->GP;
-    
+    exclude[nct] = struct_covlist_Create(0);
+     
     // nothing is forced to basepair in this last/unique fold
     // and covarying basepairs cannot be present
     status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-    nct  ++;
   }
   
   if (verbose) {
@@ -1645,9 +1603,10 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
     psq = psq_CreateFrom(msa->name, msa->desc, msa->acc, msa->abc, rfsq->dsq, rfsq->n);
   }
   if (verbose) ct_dump(msa->alen, covct);
-
+ 
   // calculate the cascade power/covariation constrained structure using a probabilistic grammar
   esl_vec_ICopy(covct, L+1, ct);
+  
   switch(foldparam->F) {
   case CYK:
     status = CACO_CYK(r, G, foldparam, psq, spair, covct, ct, &sc, exclude, errbuf, verbose);
@@ -1981,7 +1940,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
  ERROR:
  FINISH:
   if (npairs != npairs_reached) 		  
-    ESL_EXCEPTION(eslFAIL, "found %d out of %d pairs.", npairs_reached, npairs);
+    ESL_EXCEPTION(eslFAIL, "Error: found %d out of %d base pairs.", npairs_reached, npairs);
   if (pda) esl_stack_Destroy(pda);
   return status;
 }

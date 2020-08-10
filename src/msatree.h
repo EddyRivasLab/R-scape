@@ -26,7 +26,7 @@ extern int       Tree_FindLowerCommonAncestor(int n, int m, ESL_TREE *T, int *re
 extern ESL_TREE *Tree_Collapse(ESL_TREE *T, ESL_MSA *msa, int *useme, char *errbuf, int verbose);
 extern int       Tree_Dump(FILE *fp, ESL_TREE *T, char *label);
 extern int       Tree_MyCluster(ESL_DMATRIX *D, ESL_TREE **ret_T);
-extern int       Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, char *errbuf, int verbose);
+extern int       Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, int includegaps, char *errbuf, int verbose);
 extern int       esl_tree_er_Copy(ESL_TREE *T, ESL_TREE *Tdst);
 extern int       esl_tree_er_RandomBranch(ESL_RANDOMNESS *r, ESL_TREE *T);
 extern double    esl_tree_er_AverageBL(ESL_TREE *T);

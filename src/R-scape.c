@@ -10,6 +10,7 @@
 #include "esl_fileparser.h"
 #include "esl_msa.h"
 #include "esl_msacluster.h"
+
 #include "esl_msafile.h"
 #include "esl_msaweight.h"
 #include "esl_stats.h"
@@ -200,6 +201,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *powerhisfp;
   POWER           *power;
   int              powerdouble;
+  int              power_includegaps;
 
   // flags for optional files
   int               outmsafile;
@@ -255,8 +257,8 @@ static ESL_OPTIONS options[] = {
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
-  { "--pdb",        eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    "-s",  NULL,               "read pdb structure from file <f>",                                                          1 },
-  { "--pdbchain",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,"-s,--pdb",NULL,               "read a particular chain form pdbfile",                                                      1 },
+  { "--pdb",        eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb structure from file <f>",                                                          1 },
+  { "--pdbchain",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,  "--pdb", NULL,               "read a particular chain form pdbfile",                                                      1 },
   { "--cntmind",      eslARG_INT,        "1",    NULL,      "n>0",   NULL,    NULL,  NULL,               "min (j-i+1) for contact definition",                                                        1 },
   { "--onlypdb",      eslARG_NONE,      FALSE,   NULL,       NULL,    NULL,"--pdb",  NULL,               "use only structural info in pdbfile, ignore msa annotation if any",                         1 },
   /* msa format */
@@ -339,6 +341,7 @@ static ESL_OPTIONS options[] = {
   /* subsitution power analysis */  
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
+  { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes, default is ignore gaps",                      1 },
   /* folding options */
   { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
@@ -371,10 +374,10 @@ static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_M
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
 static int  original_msa_doctor_names(ESL_MSA **omsa);
+static int  original_tree_doctor_names(ESL_TREE **oT);
 static void outfile_null(struct outfiles_s *ofile);
 static void outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile);
 static void outfile_destroy(struct outfiles_s *ofile);
-static int  read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa);
 static int  no_overlap(int i, int j, int L, int *ct);
 static void rafs_disclaimer(FILE *fp);
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
@@ -582,7 +585,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   //
   cfg.foldparam->draw_nonWC = (esl_opt_IsOn(go, "--draw_nonWC"))? TRUE : FALSE;
     
-  if (cfg.minidthresh > cfg. idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
+  if (cfg.minidthresh > cfg.idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   cfg.YSeffect = FALSE;
   if (esl_opt_GetBoolean(go, "--YS"))  cfg.YSeffect = TRUE;
@@ -797,31 +800,51 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.powerhisfp   = NULL;
   cfg.power        = NULL;
   cfg.powerhis     = NULL;
-  cfg.powerdouble  = esl_opt_IsOn(go, "--doublesubs");
+  cfg.powerdouble        = esl_opt_IsOn(go, "--doublesubs");
+  cfg.power_includegaps  = esl_opt_IsOn(go, "--powergaps");
 
   if (esl_opt_IsOn(go, "--power")) { // create the power file 
     cfg.power_train = TRUE;
 
     if (cfg.powerdouble) { // create the power file using double substitutions
-      esl_sprintf(&cfg.powerfile,    "%s.power.double",    esl_opt_GetString(go, "--power"));
-      esl_sprintf(&cfg.powerhisfile, "%s.powerhis.double", esl_opt_GetString(go, "--power"));
+      if (cfg.power_includegaps) {
+	esl_sprintf(&cfg.powerfile,    "%s.power.double.withgaps",    esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.double.withgaps", esl_opt_GetString(go, "--power"));
+      }
+      else {
+	esl_sprintf(&cfg.powerfile,    "%s.power.double",    esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.double", esl_opt_GetString(go, "--power"));
+      }
       if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.double   file %s", cfg.powerfile);
       if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.double file %s", cfg.powerhisfile);
     }
     else { // create the power file using single substitutions
-      esl_sprintf(&cfg.powerfile,    "%s.power.subs",    esl_opt_GetString(go, "--power"));
-      esl_sprintf(&cfg.powerhisfile, "%s.powerhis.subs", esl_opt_GetString(go, "--power"));
+      if (cfg.power_includegaps) {
+	esl_sprintf(&cfg.powerfile,    "%s.power.subs.withgaps",    esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.subs.withgaps", esl_opt_GetString(go, "--power"));
+      }
+      else {
+	esl_sprintf(&cfg.powerfile,    "%s.power.subs",             esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.subs",          esl_opt_GetString(go, "--power"));
+      }
+      
       if ((cfg.powerfp    = fopen(cfg.powerfile,     "w")) == NULL) esl_fatal("Failed to open power.subs    file %s", cfg.powerfile);
       if ((cfg.powerhisfp = fopen(cfg.powerhisfile,  "w")) == NULL) esl_fatal("Failed to open powerhis.subs file %s", cfg.powerhisfile);
     }
-    
+
     // histograms for substitutions in basepairs and significantly covarying basepairs
     cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
-   }
+  }
   else { // read the power file
-    if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.double.csv", RSCAPE_SHARE);
-    else                 esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.subs.csv",   RSCAPE_SHARE);
-    power_Read(cfg.powerfile, cfg.powerdouble, &cfg.power, cfg.errbuf, cfg.verbose);
+    if (cfg.power_includegaps) {
+      if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.withgaps.csv", RSCAPE_HOME);
+      else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.withgaps.csv",   RSCAPE_HOME);
+    }
+    else {
+      if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
+      else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
+    }
+    power_Read(cfg.powerfile, cfg.powerdouble, cfg.power_includegaps, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   
   *ret_go  = go;
@@ -878,8 +901,6 @@ main(int argc, char **argv)
     cfg.nmsa ++;
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
-   read_msa_sscons_r2rformat(&cfg, msa);
-   
     cfg.omsa = esl_msa_Clone(msa); // save original msa to output the fold structure with it
      
     /* the msaname */
@@ -913,7 +934,7 @@ main(int argc, char **argv)
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
-    if (!cfg.abcisRNA) cfg.covclass = C16; 
+    if (!cfg.abcisRNA) cfg.covclass = C16;
 
     if (cfg.window > 0) {
  
@@ -954,10 +975,10 @@ main(int argc, char **argv)
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;
       if (msa->alen == 0) continue;
-
+ 
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
-   
+  
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
     }
 
@@ -980,7 +1001,7 @@ main(int argc, char **argv)
     
     power_PlotHistograms(cfg.gnuplot, cfg.powerhisfile, cfg.powerhisfp, cfg.powerhis, cfg.powerfile, cfg.powerdouble, cfg.errbuf, cfg.verbose); 
   }
-  
+
   /* cleanup */
   free(cfg.filename);
   esl_stopwatch_Destroy(cfg.watch);
@@ -989,7 +1010,6 @@ main(int argc, char **argv)
   esl_randomness_Destroy(cfg.r);
   esl_msafile_Close(afp);
   if (cfg.ctlist) struct_ctlist_Destroy(cfg.ctlist);
-  if (cfg.treefile) free(cfg.treefile);
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
   if (cfg.ofoldct) free(cfg.ofoldct);
   if (cfg.ribofile) free(cfg.ribofile);
@@ -1097,12 +1117,19 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
+  FILE *treefp    = NULL;
   FILE *outtreefp = NULL;
   int   status; 
 
-  if (cfg->ofile.outtreefile)
-    if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
+  if (cfg->treefile) {
+    if ((treefp = fopen(cfg->treefile, "r")) == NULL) esl_fatal("Failed to open treefile %s", cfg->treefile);
+    if ((status = esl_tree_ReadNewick(treefp, cfg->errbuf, &cfg->T)) != eslOK) esl_fatal("Failed reading treefile %s", cfg->treefile);
+    fclose(treefp);
     
+    status = original_tree_doctor_names(&cfg->T);
+    if (status != eslOK) esl_fatal("Failed to doctor names of tree %s", cfg->treefile);
+  }
+  
   /* create tree from MSA */
   if (cfg->T == NULL) {
     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
@@ -1113,16 +1140,20 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     /* match the tree leaves to the msa names */
     status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
     if (status != eslOK) esl_fatal(cfg->errbuf); 
-
+ 
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
     if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
     
     /* outtree file if requested */
-    if (outtreefp) esl_tree_WriteNewick(outtreefp, cfg->T);
+    if (cfg->ofile.outtreefile) {
+      if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
+      esl_tree_WriteNewick(outtreefp, cfg->T);
+    }
+    
     if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
   }
 
-  // only case in which T=NULL
+  // only case in which T = NULL
   if (!cfg->T && msa->nseq > 1) { printf("You need a tree for this msa. nseq = %d\n", msa->nseq); esl_fatal(cfg->errbuf); }
 
   if (outtreefp) fclose(outtreefp);
@@ -1308,7 +1339,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   if (status != eslOK) goto ERROR;
    
   if (cfg->T == NULL) {
-    if (msa->nseq == 1) { cfg->statsmethod = NAIVE; cfg->thresh->val = 1e+12; return eslOK; }
+    if (msa->nseq == 1) return eslOK;
     else                return eslFAIL;
   }
 
@@ -1316,6 +1347,11 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   ESL_ALLOC(usecol, sizeof(int) * (msa->alen+1));
   esl_vec_ISet(usecol, msa->alen+1, TRUE);
 
+  /* output null msas to file if requested */
+  if (cfg->ofile.outnullfile) {
+    if ((outnullfp = fopen(cfg->ofile.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnullfile %s", cfg->ofile.outnullfile);
+  }
+  
   for (s = 0; s < nshuffle; s ++) {
  
     status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
@@ -1336,14 +1372,12 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
     
     /* output null msas to file if requested */
-    if (cfg->ofile.outnullfile) {
-      if ((outnullfp = fopen(cfg->ofile.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnullfile %s", cfg->ofile.outnullfile);
+    if (outnullfp) {
       esl_msafile_Write(outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-      fclose(outnullfp);
     }
     
     if (cfg->verbose) {
-      //esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
       msamanip_XStats(shmsa, &shmstat);
       msamanip_DumpStats(stdout, shmsa, shmstat);
     }
@@ -1364,7 +1398,8 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     esl_msa_Destroy(shmsa); shmsa = NULL;
     cov_FreeRankList(ranklist); ranklist = NULL;
   }
-  
+  if (cfg->ofile.outnullfile) fclose(outnullfp);
+ 
   if (cfg->verbose) {
     printf("null distribution - cumulative\n");
     printf("imin %d imax %d xmax %f xmin %f\n", 
@@ -1411,6 +1446,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
   msamanip_CalculateCTList(msa, NULL, &cfg->onbpairs, cfg->errbuf, cfg->verbose);
+ 
   if (cfg->pdbfile && cfg->onlypdb) cfg->onbpairs = 0; // do not read the bpairs from the alignment but the pdbfile
   
   /* print some info */
@@ -1420,6 +1456,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
+  printf("\n^^before doctor\n");
 
   /* doctor the msa names. 
    * FastTree truncates seq names at semicolons.
@@ -1427,6 +1464,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
    */
   status = original_msa_doctor_names(omsa);
   if (status != eslOK) return eslFAIL;
+ printf("\n^^after doctor\n");
 
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
@@ -1439,10 +1477,11 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
+  printf("\n^^after filters %lld %d\n", msa->alen, alen);
   
   msa = *omsa;
   if (msa->alen != alen) {
-    printf("filtering altered the length of the alignemnt!\n");
+    printf("filtering altered the length of the alignment!\n");
     esl_fatal(msg);
   }
     
@@ -1461,16 +1500,19 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
+  printf("\n^^next\n");
 
   /* define [tstart,tend]  */
   if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
   else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
   else if (cfg->tstart == 0 && cfg->tend >  0) { tstart = 1;           tend = cfg->tend; }
   else                                         { tstart = cfg->tstart; tend = cfg->tend; }
+  printf("\n^^next next\n");
   
   /* add tstat..tend information */
   if (tstart > 1 || tend < msa->alen) 
     esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, tstart, tend);
+ printf("\n^^1next next\n");
   
   /* Now apply [tstart,tend] restriction if given */
   cfg->omstat->alen = tend - tstart + 1;
@@ -1479,6 +1521,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   // check if empty sequences can be removed after the truncation
   if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
+ printf("\n^^2-next next\n");
 
    msa = *omsa;   
   /* remove columns with gaps.
@@ -1489,16 +1532,20 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
+ printf("\n^^3-next next\n");
 
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap,
 				(cfg->pdbfile)?&cfg->msarevmap:NULL,
 				&useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
+   printf("\n^^4-next next\n");
+
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
   if (cfg->covmethod == POTTS) msamanip_ConvertDegen2Gap(msa); // what gremlin does
   else                         msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
+  printf("\n^^next next hoop\n");
 
   // if a single sequence, remove gaps if any
   if (msa->nseq == 1  && msamanip_SingleSequenceRemoveGaps(msa, cfg->errbuf, cfg->verbose) != eslOK) {
@@ -1575,9 +1622,13 @@ original_msa_doctor_names(ESL_MSA **omsa)
   char    *p;
   int      s;
 
-  // the msaneme (ID) has to be free of '/' symbols
+  // the msaname (ID) has to be free of '/', '|", abd ':' symbols
   if (msa->name) {
     for (p = msa->name; (p = strchr(p, '/')); ++p) 
+     *p = '_';
+    for (p = msa->name; (p = strchr(p, '|')); ++p) 
+     *p = '_';
+    for (p = msa->name; (p = strchr(p, ':')); ++p) 
      *p = '_';
   }
   
@@ -1585,9 +1636,38 @@ original_msa_doctor_names(ESL_MSA **omsa)
   // : /
   for (s = 0; s < msa->nseq; s++) {
     sqname = msa->sqname[s];
+    for (p = sqname; (p = strchr(p, '|')); ++p) 
+      *p = '_';
     for (p = sqname; (p = strchr(p, ':')); ++p) 
-      *p = '|';
+      *p = '_';
     for (p = sqname; (p = strchr(p, '/')); ++p) 
+      *p = '_';
+  }
+  
+  return eslOK;
+}
+
+static int
+original_tree_doctor_names(ESL_TREE **oT)
+{
+  ESL_TREE *T = *oT;
+  char     *taxonlabel;
+  char     *p;
+  int       i;
+
+  // the taxalabel have to be free of '/', '|", abd ':' symbols
+  
+  // several characters in names interfere with FastTree
+  // it would appear that if  you are given the tree, this is not necesary.
+  // however, because the msa names change, the 
+  // : /
+  for (i = 0; i < T->N; i++) {
+    taxonlabel = T->taxonlabel[i];
+    for (p = taxonlabel; (p = strchr(p, ':')); ++p) 
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '|')); ++p) 
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '/')); ++p) 
       *p = '_';
   }
   
@@ -1663,10 +1743,10 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s/%s.cons.sto", cfg->outdir, outname);
 
     // output the phylogenetic tree
-    if (cfg->outtreefile) esl_sprintf(&ofile->outmsafile, "%s/%s.tree", cfg->outdir, outname);
+    if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s/%s.tree", cfg->outdir, outname);
  
     // output with the null alignments 
-    if (cfg->outnullfile) esl_sprintf(&ofile->outmsafile, "%s/%s.null.sto", cfg->outdir, outname);
+    if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s/%s.null.sto", cfg->outdir, outname);
 
     // output with msa with all branches
     if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s/%s.allbranch.sto", cfg->outdir, outname);
@@ -1720,13 +1800,13 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s.cons.sto", outname);
 
     // output the phylogenetic tree
-    if (cfg->outtreefile) esl_sprintf(&ofile->outmsafile, "%s/%s.tree", cfg->outdir, outname);
+    if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s.tree", outname);
     
     // output with the null alignments 
-    if (cfg->outnullfile) esl_sprintf(&ofile->outmsafile, "%s.null.sto", outname);
+    if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s.null.sto", outname);
     
     // output with msa with all branches
-    if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s/%s.allbranch.sto", cfg->outdir, outname);
+    if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s.allbranch.sto", outname);
     
     // output file with potts parameter values */
     if (cfg->outpottsfile) esl_sprintf(&ofile->outpottsfile, "%s.param.potts", outname);
@@ -1782,64 +1862,6 @@ outfile_destroy(struct outfiles_s *ofile)
 
 }
 
-static int
-read_msa_sscons_r2rformat(struct cfg_s *cfg, ESL_MSA *msa)
-{
-  char  *tag = NULL;
-  int  **ct  = NULL;
-  int    L = msa->alen;
-  int    nct = 1;
-  int    c;
-  int    gc;
-  int    i;
-  int    status;
-  
-  if (msa->ngc == 0) return eslOK;
-  
-  ESL_ALLOC(ct,        sizeof(int *) * nct);
-  ESL_ALLOC(ct[nct-1], sizeof(int)   * (L+1));
-  esl_wuss2ct(msa->ss_cons, L, ct[nct-1]);
-  
-  // create a ct for each GC SS_cons_x
-  for (gc = 0; gc < msa->ngc; gc ++) {  
-    esl_sprintf(&tag, "SS_cons_%d", gc+1);
-
-    if (!strcmp(msa->gc_tag[gc], tag)) {
-      nct ++;
-      ESL_REALLOC(ct,      sizeof(int *) * nct);
-      ESL_ALLOC(ct[nct-1], sizeof(int)   * (L+1));
-
-      esl_wuss2ct(msa->gc[gc], L, ct[nct-1]);
-    }
-    free(tag); tag = NULL;
-  }
-  
-  // add to ct[0] all other non-overlapping pairs
-  for (c = 1; c < nct; c ++) {
-    for (i = 1; i <= L; i ++) {
-      if (no_overlap(i, ct[c][i], L, ct[0]))  {
-	ct[0][i]        = ct[c][i];
-	ct[0][ct[c][i]] = i;
-      }
-    }
-  }
-  
-  // modify the ss_cons 
-  esl_ct2wuss(ct[0], L, msa->ss_cons);
-  if (cfg->verbose) printf("all structure (nct = %d)\n%s\n", nct, msa->ss_cons);
-
-  for (c = 0; c < nct; c ++) free(ct[c]);
-  free(ct);
-  if (tag) free(tag);
-
-  return eslOK;
-
- ERROR:
-  for (c = 0; c < nct; c ++) if (ct[c]) free(ct[c]);
-  if (ct)  free(ct);
-  if (tag) free(tag);
-  return status;
-}
 
 static int
 no_overlap(int i, int j, int L, int *ct)
@@ -1908,13 +1930,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (msa == NULL)   return eslOK;
   if (msa->nseq < 1) return eslOK; 
 
+  printf("\n^^0--msaweight\n");
   /* weight the sequences */
   msaweight(go, cfg, msa);
-      
+  printf("\n^^msaweight\n");
+  
   // reset the dofold flag in case it changed with the previous alignment
   cfg->dofold = esl_opt_IsOn(go, "--fold")? TRUE : FALSE;
   if (cfg->dofold == TRUE && cfg->abcisRNA == FALSE)
-    esl_fatal("Peptide alignment, cannot calculate a RNA structure");
+    esl_fatal("Peptide alignment, cannot calculate an RNA structure");
+  printf("\n^^2msaweight\n");
   
   if (cfg->dofold && msa->alen > cfg->foldLmax) { //length restriction
     printf("Alignment is too long to calculate a structure\n");
@@ -1942,7 +1967,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = ContactMap(cfg->ofile.cmapfile, cfg->pdbfile, cfg->pdbchain, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      NULL, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
-
+  
   if (cfg->abcisRNA) {
     cfg->ctlist = struct_Contacts2CTList(cfg->foldparam->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
@@ -1975,7 +2000,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* create the MI structure */
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
   if (cfg->mi == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to create mutual_s", cfg->errbuf);
-
+  
   // If testing the Yule-Simpson effect, shuffle the alignment by rows,
   // while maintaing the gap structure
   if (cfg->YSeffect) {
@@ -1998,7 +2023,16 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     cfg->mode = RANSS;
     status = null_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null_rscape", cfg->errbuf);
-  }  
+  }
+  else { // still create a tree in the naive case, we use it to calculate substitutions
+    status = create_tree(go, cfg, msa);
+    if (status != eslOK) goto ERROR;
+    
+    if (cfg->T == NULL) {
+      if (msa->nseq == 1) return eslOK;
+      else                return eslFAIL;
+    }
+  }
   
   if (cfg->ofile.allbranchfile) {
     status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
@@ -2013,13 +2047,14 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   if (cfg->powerdouble) 
     status = doublesubs   (cfg, msa, cfg->power, cfg->clist, &ndouble, &spair, cfg->verbose);
-  else
-    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);   
+  else {
+    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);
+  }
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
    
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
+  
   free(outname);
   if (cfg->ctlist) struct_ctlist_Destroy(cfg->ctlist); cfg->ctlist = NULL;
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
@@ -2141,11 +2176,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);
   if (status != eslOK) goto ERROR;
-  
+
   if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS && ranklist) {
-
+ 
     if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
 
     if (cfg->verbose) {
@@ -2162,7 +2197,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     if (cfg->power_train) 
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
-
+ 
   // find the CaCoFold structure 
   if (cfg->dofold && cfg->mode != RANSS) {
 
@@ -2238,9 +2273,9 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
   int      p;
   int      status;
 
-  status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->errbuf, cfg->verbose);
+  status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
+ 
   for (i = 0; i < msa->alen; i ++) avgsubs += nsubs[i];
   avgsubs /= msa->alen;
  
@@ -2303,7 +2338,7 @@ doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **re
 
   if (cfg->T == NULL) return eslOK;
   
-  status = Tree_Substitutions(cfg->r, msa, cfg->T, NULL, &ndouble, cfg->errbuf, cfg->verbose);
+  status = Tree_Substitutions(cfg->r, msa, cfg->T, NULL, &ndouble, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
   
   for (i = 0; i < msa->alen-1; i ++) 
@@ -2382,9 +2417,11 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
+  //
   status = struct_CTMAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
-
+  strcpy(osslist[0], omsa->ss_cons);
+  
   // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
   for (s = 1; s < foldctlist->nct; s ++) {
 
@@ -2401,7 +2438,6 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
       }
     }
   }
-  if (foldctlist->nct > 0) struct_CTList2wuss(octlist, omsa->ss_cons);
   
   // write alignment with the foldcov structure to file
   if ((omsafoldfp = fopen(cfg->ofile.omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omsafoldfile %s", cfg->ofile.omsafoldfile);
@@ -2420,7 +2456,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   return status;
 }
 
-// write original alignmen annotated with a PDB structure
+// write the original alignment annotated with a PDB structure
 static int
 write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
 {
@@ -2445,8 +2481,9 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
   // SS_cons_xx is not orthodox stockholm format.
   status = struct_CTMAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
+  strcpy(osslist[0], omsa->ss_cons);
 
-  // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
+  // Add the SS_cons_1,... additional tags to annotate ovelaps with SS_cons
   for (s = 1; s < ctlist->nct; s ++) {
 
     // these are the extra GC lines.
@@ -2462,7 +2499,6 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
       }
     }
   }
-  if (ctlist->nct > 0) struct_CTList2wuss(octlist, omsa->ss_cons);
   
   // write alignment with the cov structure to file
   if ((omsapdbfp = fopen(cfg->ofile.omsapdbfile, "w")) == NULL) esl_fatal("Failed to open omsafile %s", cfg->ofile.omsapdbfile);

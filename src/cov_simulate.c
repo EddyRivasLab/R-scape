@@ -112,10 +112,11 @@ cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, doubl
   tnode = inode + N;
   msa = esl_msa_CreateDigital(root->abc, tnode, root->alen);
 
-  if      (treetype == STAR)  esl_sprintf(&ttype, "star");
-  else if (treetype == SIM)   esl_sprintf(&ttype, "sim");
-  else if (treetype == GIVEN) esl_sprintf(&ttype, "given");
-  else if (treetype == RAND)  esl_sprintf(&ttype, "rand");
+  if      (treetype == STAR)     esl_sprintf(&ttype, "star");
+  else if (treetype == SIM)      esl_sprintf(&ttype, "sim");
+  else if (treetype == GIVEN)    esl_sprintf(&ttype, "given");
+  else if (treetype == EXTERNAL) esl_sprintf(&ttype, "external");
+  else if (treetype == RAND)     esl_sprintf(&ttype, "rand");
   else { status = eslFAIL; goto ERROR; }
 
   esl_sprintf(&name, "%s_synthetic_N%d_%s", root->name, N, ttype);

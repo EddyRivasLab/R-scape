@@ -23,7 +23,7 @@ extern int ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafi
 extern int ContactMap_FromCTList(CLIST *clist, CTLIST *ctlist, int cntmind, int *msa2omsa, int *msa2pdb);
 extern int ContactMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb, int ispk);
 extern int ContactMap_FromPDB(char *pdbfile, char *pdfchain, char *msafile, ESL_MSA *msa, int *omsa2msa, int abcisRNA,
-			      CTLIST *ctlist, CLIST *clist, int *msa2pdb, double cntmaxD, int cntmind, char *errbuf, int verbose);
+			      CTLIST *ctlist, CLIST *clist, int *msa2pdb, double cntmaxD, int cntmind, int noss, char *errbuf, int verbose);
 #endif /*CONTACTMAP_INCLUDED*/
 
 /************************************************************
