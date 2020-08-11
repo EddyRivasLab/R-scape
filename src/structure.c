@@ -613,23 +613,24 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 {
   CTLIST    *ctlist = NULL;
   ESL_STACK *pda[27];     /* 1 secondary structure + up to 26 levels of pk's */
-  int       *ctmain;
+  int       *ct[27];
   int        i;
   int        pos, pair;
-  int        nct = 1;
+  int        nct;
   int        status;
 
   if (!ss)    return NULL;
   if (L <= 0) return NULL;
 
-  ctlist = struct_ctlist_Create(nct, L);
-  
   /* Initialization: always initialize the main pda (0);
   * we'll init the pk pda's on demand.
   */
   for (i = 1; i <= 26; i++) pda[i] = NULL;
   if ((pda[0] = esl_stack_ICreate()) == NULL) goto FINISH;
-  ctmain = ctlist->ct[0];
+  
+  for (i = 1; i <= 26; i++) ct[i] = NULL;
+  ESL_ALLOC(ct[0], sizeof(int) * (L+1));
+  esl_vec_ISet(ct[0], L+1, 0);
 
   for (pos = 1; pos <= L; pos++)
     {
@@ -663,8 +664,8 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 	      { status = eslESYNTAX; goto FINISH; }  /* brackets don't match */
 	    else
 	      {
-		ctmain[pos]  = pair;
-		ctmain[pair] = pos;
+		ct[0][pos]  = pair;
+		ct[0][pair] = pos;
 	      }
 	  }
         }
@@ -677,8 +678,9 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 	  if (pda[i] == NULL) { 
 	    if ((pda[i] = esl_stack_ICreate()) == NULL) 
 	      { status = eslEMEM; goto FINISH; }
-	    nct ++;
-	    struct_ctlist_Realloc(ctlist, nct);
+	    
+	    ESL_ALLOC(ct[i], sizeof(int) * (L+1));
+	    esl_vec_ISet(ct[i], L+1, 0);
 	  }
 
 	  if ((status = esl_stack_IPush(pda[i], pos)) != eslOK) goto FINISH;
@@ -693,30 +695,46 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 	    }
           else
             {
-              ctlist->ct[i][pos]  = pair;
-              ctlist->ct[i][pair] = pos;
+              ct[i][pos]  = pair;
+              ct[i][pair] = pos;
             }
 	}
       else if (strchr(":,_-.~", ss[pos-1]) == NULL)
 	{ status = eslESYNTAX; goto FINISH; } /* bogus character */
     }
   status = eslOK;
-  return ctlist;
 
+  // add the ct's to ctlist
+  nct = 1;
+  ctlist = struct_ctlist_Create(nct, L);
+  for (pos = 1; pos <= L; pos++) ctlist->ct[0][pos] = ct[0][pos];
+    
+  for (i = 1; i <= 26; i++) {
+    if (ct[i]) {
+
+      nct ++;
+      struct_ctlist_Realloc(ctlist, nct);
+      for (pos = 0; pos <= L; pos++) ctlist->ct[nct-1][pos] = ct[i][pos];
+      free(ct[i]);
+    }
+  }
+  
+  return ctlist;
+  
  ERROR:
   if (ctlist) struct_ctlist_Destroy(ctlist);
   return NULL;
  FINISH:
   if (ctlist) struct_ctlist_Destroy(ctlist);
-  for (i = 0; i <= 26; i++)
+  for (i = 0; i <= 26; i++)  {
     if (pda[i] != NULL) 
       { /* nothing should be left on stacks */
 	if (esl_stack_ObjectCount(pda[i]) != 0)
 	  status = eslESYNTAX;
 	esl_stack_Destroy(pda[i]);
       }
+  }
   return NULL;
-
 }
 
 

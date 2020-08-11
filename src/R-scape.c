@@ -1456,7 +1456,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
-  printf("\n^^before doctor\n");
 
   /* doctor the msa names. 
    * FastTree truncates seq names at semicolons.
@@ -1464,7 +1463,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
    */
   status = original_msa_doctor_names(omsa);
   if (status != eslOK) return eslFAIL;
- printf("\n^^after doctor\n");
 
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
@@ -1477,7 +1475,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
   if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-  printf("\n^^after filters %lld %d\n", msa->alen, alen);
   
   msa = *omsa;
   if (msa->alen != alen) {
@@ -1500,19 +1497,16 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(cfg->msaname); cfg->msaname = NULL;
     return eslOK;
   }
-  printf("\n^^next\n");
 
   /* define [tstart,tend]  */
   if      (cfg->tstart == 0 && cfg->tend == 0) { tstart = 1;           tend = msa->alen; }
   else if (cfg->tstart >  0 && cfg->tend == 0) { tstart = cfg->tstart; tend = msa->alen; }
   else if (cfg->tstart == 0 && cfg->tend >  0) { tstart = 1;           tend = cfg->tend; }
   else                                         { tstart = cfg->tstart; tend = cfg->tend; }
-  printf("\n^^next next\n");
   
   /* add tstat..tend information */
   if (tstart > 1 || tend < msa->alen) 
     esl_sprintf(&cfg->msaname, "%s_%d-%d", cfg->msaname, tstart, tend);
- printf("\n^^1next next\n");
   
   /* Now apply [tstart,tend] restriction if given */
   cfg->omstat->alen = tend - tstart + 1;
@@ -1521,7 +1515,6 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   // check if empty sequences can be removed after the truncation
   if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
- printf("\n^^2-next next\n");
 
    msa = *omsa;   
   /* remove columns with gaps.
@@ -1532,20 +1525,17 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
       printf("%s\nconsensus selection fails\n", cfg->errbuf); esl_fatal(msg);
     }
   }
- printf("\n^^3-next next\n");
 
   if (msamanip_RemoveGapColumns(cfg->gapthresh, msa, startpos, endpos, alen, &cfg->msamap,
 				(cfg->pdbfile)?&cfg->msarevmap:NULL,
 				&useme, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf); esl_fatal(msg);
   }
-   printf("\n^^4-next next\n");
 
   /* convert degenerates to N, and Missing/Nonresidues to Gap */
   if (cfg->covmethod == POTTS) msamanip_ConvertDegen2Gap(msa); // what gremlin does
   else                         msamanip_ConvertDegen2N(msa);
   msamanip_ConvertMissingNonresidue2Gap(msa);
-  printf("\n^^next next hoop\n");
 
   // if a single sequence, remove gaps if any
   if (msa->nseq == 1  && msamanip_SingleSequenceRemoveGaps(msa, cfg->errbuf, cfg->verbose) != eslOK) {
@@ -1930,16 +1920,13 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (msa == NULL)   return eslOK;
   if (msa->nseq < 1) return eslOK; 
 
-  printf("\n^^0--msaweight\n");
   /* weight the sequences */
   msaweight(go, cfg, msa);
-  printf("\n^^msaweight\n");
   
   // reset the dofold flag in case it changed with the previous alignment
   cfg->dofold = esl_opt_IsOn(go, "--fold")? TRUE : FALSE;
   if (cfg->dofold == TRUE && cfg->abcisRNA == FALSE)
     esl_fatal("Peptide alignment, cannot calculate an RNA structure");
-  printf("\n^^2msaweight\n");
   
   if (cfg->dofold && msa->alen > cfg->foldLmax) { //length restriction
     printf("Alignment is too long to calculate a structure\n");

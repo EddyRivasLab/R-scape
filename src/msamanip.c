@@ -56,9 +56,9 @@ msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, ch
 
   if (msa->ss_cons) {
     ctlist = struct_wuss2CTList(msa->ss_cons, msa->alen, errbuf, verbose);
-    if (!ctlist)  ESL_FAIL(eslFAIL, errbuf, "bas SS_cons");
+    if (!ctlist)  ESL_FAIL(eslFAIL, errbuf, "bad SS_cons");
     nct    = ctlist->nct;
-  }
+   }
  
   // create a ct for each GC SS_cons_x
   esl_sprintf(&tag, "SS_cons_");
@@ -508,17 +508,13 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
       if (r > 0. && r / totwgt >= idthresh) useme[apos-1] = TRUE;
       else                                  useme[apos-1] = FALSE;
     }
-    printf("\n^^ before broken pairs\n");
     
     if (msa->abc->type == eslRNA && (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK)
        ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error removing broken pairs");
-    printf("\n^^ after broken pairs\n");
     
     if ((status = struct_ColumnSubset(msa, errbuf, useme)) != eslOK)
       ESL_XFAIL(eslFAIL, errbuf, "RemoveGapColumns(): error in esl_msa_ColumnSubset");
-    printf("\n^^ after colum subet\n");
   }  
-    printf("\n^^ after dofilter\n");
 
   if (msa->alen == 0) ESL_XFAIL(eslFAIL, errbuf, "no positions left after gap trimming");
   ESL_ALLOC(map, sizeof(int) * msa->alen);
