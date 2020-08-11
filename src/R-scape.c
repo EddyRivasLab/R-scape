@@ -2420,7 +2420,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   //
   status = struct_CTMAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  strcpy(osslist[0], omsa->ss_cons);
+  strcpy(omsa->ss_cons, osslist[0]);
   
   // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
   for (s = 1; s < foldctlist->nct; s ++) {
@@ -2481,7 +2481,7 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
   // SS_cons_xx is not orthodox stockholm format.
   status = struct_CTMAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  strcpy(osslist[0], omsa->ss_cons);
+  strcpy(omsa->ss_cons, osslist[0]);
 
   // Add the SS_cons_1,... additional tags to annotate ovelaps with SS_cons
   for (s = 1; s < ctlist->nct; s ++) {
