@@ -711,21 +711,21 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
     
   for (i = 1; i <= 26; i++) {
     if (ct[i]) {
-
       nct ++;
       struct_ctlist_Realloc(ctlist, nct);
       for (pos = 0; pos <= L; pos++) ctlist->ct[nct-1][pos] = ct[i][pos];
-      free(ct[i]);
     }
   }
   
   for (i = 0; i <= 26; i++)  {
-    if (pda[i] != NULL) 
+    if (pda[i]) 
       { /* nothing should be left on stacks */
 	if (esl_stack_ObjectCount(pda[i]) != 0)
 	  status = eslESYNTAX;
 	esl_stack_Destroy(pda[i]);
       }
+    
+    if (ct[i]) free(ct[i]);
   }
   return ctlist;
   
@@ -735,7 +735,7 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
  FINISH:
   if (ctlist) struct_ctlist_Destroy(ctlist);
   for (i = 0; i <= 26; i++)  {
-    if (pda[i] != NULL) 
+    if (pda[i]) 
       { /* nothing should be left on stacks */
 	if (esl_stack_ObjectCount(pda[i]) != 0)
 	  status = eslESYNTAX;
@@ -1070,6 +1070,12 @@ struct_ctlist_Destroy(CTLIST *ctlist)
   
   if (!ctlist) return;
 
+  if (ctlist->cttype) free(ctlist->cttype);
+  if (ctlist->ctname) {
+    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ctname[n]) free(ctlist->ctname[n]);
+    free(ctlist->ctname);
+  }
+
   if (ctlist->ct) {
     for (n = 0; n < ctlist->nct; n ++) if (ctlist->ct[n]) free(ctlist->ct[n]);
     free(ctlist->ct);
@@ -1077,11 +1083,6 @@ struct_ctlist_Destroy(CTLIST *ctlist)
   if (ctlist->covct) {
     for (n = 0; n < ctlist->nct; n ++) if (ctlist->covct[n]) free(ctlist->covct[n]);
     free(ctlist->covct);
-  }
-  if (ctlist->cttype) free(ctlist->cttype);
-  if (ctlist->ctname) {
-    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ctname[n]) free(ctlist->ctname[n]);
-    free(ctlist->ctname);
   }
   
   free(ctlist);
