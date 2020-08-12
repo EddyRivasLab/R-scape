@@ -1399,7 +1399,6 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
   int         status;
 
   if (T == NULL) {
-    printf("\n^^^ no tree!\n");
      if (ret_nsubs) {
        ESL_ALLOC(nsubs, sizeof(int) * msa->alen);
        esl_vec_ISet(nsubs, msa->alen, 0);
