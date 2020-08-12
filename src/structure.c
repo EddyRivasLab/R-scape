@@ -719,6 +719,14 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
     }
   }
   
+  for (i = 0; i <= 26; i++)  {
+    if (pda[i] != NULL) 
+      { /* nothing should be left on stacks */
+	if (esl_stack_ObjectCount(pda[i]) != 0)
+	  status = eslESYNTAX;
+	esl_stack_Destroy(pda[i]);
+      }
+  }
   return ctlist;
   
  ERROR:
