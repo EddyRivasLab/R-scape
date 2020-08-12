@@ -105,9 +105,9 @@ all:
 	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}src                   ${QUIET_SUBDIR1} all
-	${QUIET_SUBDIR0}documentation/e2msa   ${QUIET_SUBDIR1} pdf
 	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}documentation         ${QUIET_SUBDIR1} pdf
+	${QUIET_SUBDIR0}documentation/e2msa   ${QUIET_SUBDIR1} pdf
 
 # install: installs the binaries in ${bindir}/
 #          When man pages are done, will install man pages in MANDIR/man1/  (e.g. if MANSUFFIX is 1)
