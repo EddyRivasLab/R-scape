@@ -750,33 +750,28 @@ int
 struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)
 {
   int64_t  apos;                 /* alignment position */
-  CTLIST  *ctlist = NULL;	 /* 0..alen-1 base pair partners array for current sequence */
-  int     *ct;
+  int     *ct = NULL;
   int      c;
   int      status;
 
-  ctlist = struct_wuss2CTList(ss, len, errbuf, FALSE); 
-  if (!ctlist) ESL_FAIL(status, errbuf, "Consensus structure string is inconsistent.");
-  if (ctlist->nct > 1) ESL_FAIL(status, errbuf, "struct_RemoveBrokenBasepairsFromSS() should have only one ct");
-    
-  for (c = 0; c < ctlist->nct; c ++) {
-    ct = ctlist->ct[c];
-    for (apos = 1; apos <= len; apos++) { 
-      if (!(useme[apos-1])) { 
-	if (ct[apos] != 0) ct[ct[apos]] = 0;
-	ct[apos] = 0;
-      }
+  ESL_ALLOC(ct, sizeof(int) * (len+1));
+  esl_wuss2ct(ss, len, ct);
+
+  for (apos = 1; apos <= len; apos++) { 
+    if (!(useme[apos-1])) { 
+      if (ct[apos] != 0) ct[ct[apos]] = 0;
+      ct[apos] = 0;
     }
   }
 
   /* All broken bps removed from ct, convert to WUSS SS string and overwrite SS */
-  esl_ct2wuss(ctlist->ct[0], len, ss);
+  esl_ct2wuss(ct, len, ss);
 
-  struct_ctlist_Destroy(ctlist);
+  free(ct);
   return eslOK;
 
  ERROR: 
-  if (ctlist) struct_ctlist_Destroy(ctlist);
+  if (ct) free(ct);
   return status; 
 }  
 int
