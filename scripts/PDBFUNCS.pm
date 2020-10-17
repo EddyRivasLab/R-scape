@@ -1533,9 +1533,17 @@ sub mapsq2msa {
     my @pdb_asq = split(//,$pdb_asq);
 
     for (my $x = 0; $x < $pdblen; $x ++) { $map_ref->[$x] = -1; }
-
+    # assignments may be inconsistent, we will do it by weights.
+    my @map_weights;
+    for (my $x = 0; $x < $pdblen; $x ++) { 
+	for (my $y = 0; $y < $msalen; $y ++) { 
+	    $map_weights[$x][$y] = 0;
+	}
+    }
+ 
     for (my $s = 0; $s < $nsq; $s ++) {
 
+  
 	my $ali_asq = $ali_asq_ref->[$s];
 	my $msa_asq = $msa_asq_ref->[$s];
 	
@@ -1613,7 +1621,7 @@ sub mapsq2msa {
 		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; }
 		    $y ++; 
 		}
-		if ($map_ref->[$x] < 0) { $map_ref->[$x] = $y; }
+		$map_weights[$x][$y] ++; 
 		if ($verbose) { printf "#apos $pos msapos $y | match $x $pos_asq2 | %d $pos_asq1\n", $y; }
 		$x ++; $y ++; 
 	    }
@@ -1622,7 +1630,7 @@ sub mapsq2msa {
 		    if ($verbose) { printf "#apos $pos msapos $y | skip msa gap %s \n", $msa_asq[$y]; } 
 		    $y ++; 
 		}
-		if ($map_ref->[$x] < 0) { $map_ref->[$x] = $y; }
+		$map_weights[$x][$y] ++; 
 		if ($verbose) { printf "#apos $pos msapos $y | mismach $x $pos_asq2 | %d $pos_asq1\n", $y; }
 		$x ++; $y ++;
 	    }
@@ -1637,21 +1645,20 @@ sub mapsq2msa {
 	}
 	
 	if ($pos != $alen || $y != $msalen) { print "bad mapsq2msa() at sequence $s. pos $pos should be $alen. msapos $y should be $msalen\n"; die; }
-	
-	if ($verbose) { for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }  }
- 	if (0&&$verbose) {	    
-	    printf "\n>SQ[$s]      len =$pdblen\n$pdbsq\n";
-	    printf "$pdb_asq\n";
-	    printf "$ali_refsq\n";
-	    
-	    revmap($msalen, $pdblen, $map_ref, $revmap_ref);
-	    $pdb_alifrag = align_sq2msa($pdbsq, $msalen, $revmap_ref);
-	    print "$msa_refsq\n";
-	    
-	    for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }
-	}
     }
-    
+
+    # from map_weights to map
+    my $y_prv = -1;
+    for (my $x = 0; $x < $pdblen; $x ++) {
+	
+	my $max = 0;
+	my $y_max = -1;
+	for (my $y = 0; $y < $msalen; $y ++) { 
+	    if ($map_weights[$x][$y] > $max && $y > $y_prv) { $max = $map_weights[$x][$y]; $y_max = $y; }
+	}
+	$map_ref->[$x] = $y_max;
+	$y_prv = $y_max;
+    }
     if ($verbose) { for (my $l = 0; $l < $pdblen; $l ++) { printf "map[%d] = %d\n", $l,  $map_ref->[$l]; }  }
     
     # the reverse map

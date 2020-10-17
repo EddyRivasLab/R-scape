@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 1.5.14, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 1.5.16, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the usexr is overriding CFLAGS
