@@ -1,5 +1,4 @@
-package FUNCS;
-
+package FUNCS; 
 use strict;
 use warnings;
 use Class::Struct;
@@ -391,15 +390,23 @@ sub gnuplot_ave_histo_with_dots {
 
 sub gnuplot_define_styles {
     my ($gp) = @_;
-    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 2   lt 1 lc rgb 'green'   pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 1 ps 0.5 lw 6\n";
-    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 1 ps 0.6 lw 6\n";
-    print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 1 ps 0.5 lw 6\n";
+    print $gp "set style line 8888  lt 1 lc rgb 'black'   pt 1 ps 0.5 lw 1\n";
+    print $gp "set style line 222   lt 1 lc rgb 'green'   pt 1 ps 0.5 lw 4\n";
+    print $gp "set style line 333   lt 1 lc rgb '#5D5C74'    pt 1 ps 0.5 lw 4\n";
+    print $gp "set style line 444   lt 1 lc rgb '#0CA74A'    pt 1 ps 0.5 lw 4\n";
+    print $gp "set style line 555   lt 1 lc rgb '#8CCFB4'    pt 1 ps 0.5 lw 4\n";
+    print $gp "set style line 666   lt 1 lc rgb '#C15742'    pt 1 ps 0.5 lw 4\n";
+    print $gp "set style line 777   lt 1 lc rgb '#FAA51A'    pt 1 ps 0.5 lw 4\n";
+   
+    print $gp "set style line 1   lt 1 lc rgb 'black'   pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 2   lt 1 lc rgb 'green'   pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 3   lt 1 lc rgb 'grey'    pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 4   lt 1 lc rgb 'cyan'    pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 7   lt 1 lc rgb 'red'     pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 5   lt 1 lc rgb 'purple'  pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 6   lt 1 lc rgb 'orange'  pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 8   lt 1 lc rgb 'blue'    pt 7 ps 0.5 lw 6\n";
+    print $gp "set style line 9   lt 2 lc rgb 'magenta' pt 7 ps 0.5 lw 6\n";
    
     print $gp "set style line 88   lt 1 lc rgb 'cyan'   pt 7 pi -1  ps 1.0 lw 2\nset pointintervalbox 1\n";
 
@@ -2831,7 +2838,7 @@ sub write_histogram {
     
     for (my $i=0; $i<=$dim; $i++) { 
 	my $len = ($i)/$k - $shift;
-	if ($histo_ref->[$i] >= 0) { 
+	if ($histo_ref->[$i] > 0) { 
 	    if ($expo) { printf HIS "%g\t%f\n", exp($len), $histo_ref->[$i]*$scale; }
 	    else       { printf HIS "%f\t%f\n", $len, $histo_ref->[$i]*$scale; }
 	}
