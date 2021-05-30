@@ -56,7 +56,7 @@
 #define NULLOPTS     "--null"
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
-#define FOLDOPTS     "--CYK,--DECODING"                                          
+#define FOLDOPTS     "--cyk,--decoding"                                          
 
 /* Exclusive options for evolutionary model choice */
 
@@ -345,7 +345,8 @@ static ESL_OPTIONS options[] = {
   /* folding options */
   { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
-  { "--foldmethod", eslARG_STRING,      "CYK",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [CYK,DECODING]",                                        0 },   
+  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [cyk,decoding]",                                        0 },   
+  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [cyk,decoding]",                                        0 },   
   { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE: CaCoFold uses a RF sequence. Default it creates a profileseq from the alignment",   1 },
   { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "no pairs are forbidden for having power but no covariation",                              1 },
   { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
@@ -537,13 +538,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   // The grammars used
   cfg.foldparam->G0 = RBG;
-  cfg.foldparam->GP = G6XS;
-  
-  if ( esl_opt_IsOn(go, "--foldmethod") ) {
-    if      (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "CYK")      == 0) cfg.foldparam->F = CYK;
-    else if (esl_strcmp(esl_opt_GetString(go, "--foldmethod"), "DECODING") == 0) cfg.foldparam->F = DECODING;
-    else esl_fatal("Folding algorithm %s has not been implemented", esl_opt_GetString(go, "--foldmethod"));
-  }
+  cfg.foldparam->GP = G6X;
+
+  if      (esl_opt_GetBoolean(go, "--cyk"))      cfg.foldparam->F = CYK;
+  else if (esl_opt_GetBoolean(go, "--decoding")) cfg.foldparam->F = DECODING;
+  cfg.foldparam->gamma = 2.0;
 
   // sequence used to fold
   cfg.foldparam->profileseq = (esl_opt_IsOn(go, "--refseq"))? FALSE : TRUE;
@@ -929,6 +928,9 @@ main(int argc, char **argv)
       if      (esl_opt_GetBoolean(go, "--samplecontacts")) { cfg.samplesize = SAMPLE_CONTACTS; }
       else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
       else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
+    }
+    else { // increase the neg_eval_thresh
+      cfg.foldparam->neg_eval_thresh *= cfg.omsa->alen;
     }
 
     /* C16/C2 applies only for RNA covariations; 

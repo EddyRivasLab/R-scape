@@ -208,6 +208,21 @@ RBGMX_Create(int L)
   return NULL;
 }
 
+MEA_MX *
+MEAMX_Create(int L)
+{
+  MEA_MX *meamx = NULL;
+  int     status;
+
+  ESL_ALLOC(meamx, sizeof(MEA_MX));
+
+  meamx->MEA = GMX_Create(L);
+
+  return meamx;
+ ERROR:
+  return NULL;
+}
+
 void 
 GMX_Destroy(GMX *gmx)
 {
@@ -239,6 +254,13 @@ RBGMX_Destroy(RBG_MX *gmx)
   if (gmx->M1) GMX_Destroy(gmx->M1);
   free(gmx);
 }
+void 
+MEAMX_Destroy(MEA_MX *gmx)
+{
+  if (gmx == NULL) return;
+  if (gmx->MEA) GMX_Destroy(gmx->MEA);
+  free(gmx);
+}
 
 
 void
@@ -255,4 +277,42 @@ GMX_Dump(FILE *fp, GMX *gmx)
   fputc('\n', fp);
 }
 
+POST *
+POST_Create(int L)
+{
+  POST *post = NULL;
+  int  i, j;
+  int  status;
 
+  ESL_ALLOC(post, sizeof(POST));
+  post->L = L;
+  
+  ESL_ALLOC(post->ps,    sizeof(SCVAL  ) * (L+1));
+  ESL_ALLOC(post->pp,    sizeof(SCVAL *) * (L+1));
+  ESL_ALLOC(post->pp[0], sizeof(SCVAL  ) * (L+1)*(L+1));
+
+  for (i = 1; i <= post->L; i++)
+      post->pp[i] = post->pp[0] + i*(L+1);
+  
+  /* initialize */
+  for (i = 0; i <= post->L; i++) {
+    post->ps[i] = -eslINFINITY;
+    
+    for (j = 0; j <= post->L; j++) 
+      post->pp[i][j] = -eslINFINITY;
+  }
+ 
+  return post;
+ ERROR:
+  return NULL;
+}
+
+void 
+POST_Destroy(POST *post)
+{
+  if (post == NULL) return;
+  if (post->ps)    free(post->ps);
+  if (post->pp[0]) free(post->pp[0]);
+  if (post->pp)    free(post->pp);
+  free(post);
+}

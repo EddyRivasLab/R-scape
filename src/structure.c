@@ -1631,11 +1631,11 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
   
   switch(foldparam->F) {
   case CYK:
-    status = CACO_CYK(r, G, foldparam, psq, spair, covct, ct, &sc, exclude, errbuf, verbose);
+    status = CACO_CYK     (r, G, foldparam, psq, spair, covct, exclude, ct, &sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case DECODING:
-    status = CACO_DECODING(r, G, foldparam, psq, spair, covct, ct, &sc, exclude, errbuf, verbose);
+    status = CACO_DECODING(r, G, foldparam, psq, spair, covct, exclude, ct, &sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }

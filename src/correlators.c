@@ -1368,8 +1368,8 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
   if (verbose) {
     for (i = 0; i < mi->alen-1; i ++) {
       for (j = i+1; j < mi->alen; j ++) {
-	if ((i==5&&j==118)||verbose) {
-	  printf("pp[%d][%d] = ", i, j);
+	if (verbose) {
+	  printf("\npp[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 
 	    for (y = 0; y < K; y ++) {
 	      printf(" %f ", mi->pp[i][j][IDX(x,y,K)]);
@@ -1386,7 +1386,6 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
 	    for (y = 0; y < K; y ++) {
 	      printf(" %f ",  mi->nseff[i][j]*mi->pp[i][j][IDX(x,y,K)]);
 	    }
-	  printf("\n");
 	  printf("\n");
 	  printf("Ex[%d][%d] = ", i, j);
 	  for (x = 0; x < K; x ++) 

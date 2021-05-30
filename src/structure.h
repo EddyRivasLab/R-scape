@@ -111,6 +111,9 @@ typedef struct fold_s {
   int               cov_min_dist;
   int               helix_overlap_trim;
 
+  // MEA
+  double gamma;
+  
   // parameters for draing
   int draw_nonWC;        // TRUE to draw all annotated non WC basepairs
   

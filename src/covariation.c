@@ -63,7 +63,11 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist  = NULL;
   COVCLASS       covclass = data->mi->class;
+  double         sum;
   int            shiftnonneg = FALSE;
+  int            K = msa->abc->K;
+  int            i, j;
+  int            x, y;
   int            status;
 
   /* Calculate the covariation matrix */
@@ -74,6 +78,24 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     if ( !(data->covtype == RAF  || data->covtype == RAFp  || data->covtype == RAFa ||
 	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
       status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->covmethod, data->tol, data->verbose, data->errbuf);
+      if (data->verbose) {
+	for (i = 0; i < data->mi->alen-1; i ++) {
+	  for (j = i+1; j < data->mi->alen; j ++) {
+	    if ((data->msamap[i]+data->firstpos==45&&data->msamap[j]+data->firstpos==118)||
+		(data->msamap[i]+data->firstpos==46&&data->msamap[j]+data->firstpos==47) ||
+		(data->msamap[i]+data->firstpos==46&&data->msamap[j]+data->firstpos==48) ||
+		(data->msamap[i]+data->firstpos==41&&data->msamap[j]+data->firstpos==48)) {
+	      for (x = 0; x < K; x ++) {
+		sum = 0.0;
+		for (y = 0; y < K; y ++) sum += data->mi->pp[i][j][IDX(x,y,K)];
+		for (y = 0; y < K; y ++) printf(" %f ", data->mi->pp[i][j][IDX(x,y,K)]/sum);
+		printf("| marg %f coli %f colj %f\n", sum, data->mi->pm[i][x], data->mi->pm[j][x]);
+	      }
+	    }
+	  }
+	}
+      }
+      
       if (status != eslOK) goto ERROR;
     }
     break;

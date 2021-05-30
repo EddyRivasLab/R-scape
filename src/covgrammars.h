@@ -126,8 +126,12 @@ typedef struct {
 
 typedef struct {
   int       L;    /* msa length */
-  SCVAL  **dp;   /* L * L triangular DP matrix */
+  SCVAL  **dp;    /* L * L triangular DP matrix */
 } GMX;
+
+typedef struct {
+  GMX *MEA;
+} MEA_MX;
 
 typedef struct {
   GMX *S;
@@ -146,6 +150,12 @@ typedef struct {
 
 } RBG_MX;
 
+typedef struct {
+  int       L;    /* msa length */
+  SCVAL   *ps;    /* single residue posterior probabilities */
+  SCVAL  **pp;    /* basepair posterior probabilities */
+} POST;
+
 extern const G6Xparam  G6X_PRELOADS_TrATrBTrB;
 extern const G6XSparam G6XS_PRELOADS_TrATrBTrB;
 extern const RBGparam  RBG_PRELOADS_TrATrBTrB;
@@ -153,10 +163,15 @@ extern const RBGparam  RBG_PRELOADS_TrATrBTrB;
 extern GMX     *GMX_Create   (int L);
 extern G6X_MX  *G6XMX_Create (int L);
 extern RBG_MX  *RBGMX_Create (int L);
+extern MEA_MX  *MEAMX_Create (int L);
 extern void     GMX_Destroy  (GMX *gmx);
 extern void     G6XMX_Destroy(G6X_MX *g6xmx);
 extern void     RBGMX_Destroy(RBG_MX *rbgmx);
+extern void     MEAMX_Destroy(MEA_MX *meamx);
 extern void     GMX_Dump     (FILE *fp, GMX *gmx);
+extern POST    *POST_Create  (int L);
+extern void     POST_Destroy (POST *post);
+
 
 
 #endif
