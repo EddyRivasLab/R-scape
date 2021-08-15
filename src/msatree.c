@@ -116,8 +116,8 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
     esl_sprintf(&args, "%s -quiet -nt %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);
   else ESL_XFAIL(eslFAIL, errbuf, "cannot deal with this alphabet");
 
-  if (verbose) printf("%s\n", args);  
   status = system(args);
+  if (verbose) printf("%s\nstatus %d", args, status);  
   if (status == -1) ESL_XFAIL(eslFAIL, errbuf, "failed to run FastTree");
   
   if (verbose) {

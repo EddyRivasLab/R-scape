@@ -232,15 +232,18 @@ msamanip_SeqNames_DoctorParenthesis(const ESL_MSA *msa, char *errbuf)
 {
   char *name;
   int   n;
-  int   i = 0;
+  int   found = FALSE;
+  int   i;
   
   for (n = 0; n < msa->nseq; n ++) {
     if (strchr(msa->sqname[n], ')') || strchr(msa->sqname[n], '(') ||
 	strchr(msa->sqname[n], ']') || strchr(msa->sqname[n], '[')   )
       {
-	printf("Sequence names include parenthesis '(' | '[' | ')' | ']'.\nThey are incompatible with the program FastTree. Replaced by '{' | '}'.\n");
-
+	
 	name = msa->sqname[n];
+
+	i = 0;
+	found = TRUE;
 	while (name[i] != '\0')
 	  {
 	    if (name[i] == '(' || name[i] == '[') name[i] = '{';
@@ -250,6 +253,8 @@ msamanip_SeqNames_DoctorParenthesis(const ESL_MSA *msa, char *errbuf)
 	  }
       }
   }
+
+  if (found) printf("Warning: sequence names include parenthesis '(' | '[' | ')' | ']'. incompatible with the program FastTree. Replaced with '{' | '}'.\n\n");
 
   return eslOK;
 }

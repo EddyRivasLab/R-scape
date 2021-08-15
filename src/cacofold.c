@@ -1119,11 +1119,12 @@ CACO_RBG_Posterior(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, in
 	  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG F5 pp posterior failed");
 
 	  post->pp[i][j] -= imx->S->dp[L][L];
+	  if (verbose) printf("RBG posterior pp = %f | i=%d j=%d d=%d | ct %d %d | %f\n", post->pp[i][j], i, j, d, covct[i], covct[j], imx->S->dp[L][L]);
+		  
 	  if (post->pp[i][j] > tol) ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] = %f | ct %d %d\n", i, j, exp(post->pp[i][j]), covct[i], covct[j]);
 
 	  post->pp[j][i]  = post->pp[i][j];
- 	  if (verbose) printf("RBG posterior pp = %f | i=%d j=%d d=%d | ct %d %d\n", post->pp[i][j], i, j, d, covct[i], covct[j]);
-	}
+ 	}
     }
   
   // obtain the ps probabilities from the pp
@@ -1776,7 +1777,8 @@ CACO_MEA_Fill_CYK(FOLDPARAM *foldparam, G6Xparam *meap, POST *post, SPAIR *spair
 }
 
 int
-CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6Xparam *meap, POST *post, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *gmx, int *ct, char *errbuf, int verbose)
+CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6Xparam *meap, POST *post, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *gmx, int *ct,
+		       char *errbuf, int verbose)
 {
   ESL_STACK      *ns = NULL;             /* integer pushdown stack for traceback */
   ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
@@ -4235,7 +4237,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F0
     //
-    if (i > 1 && j < L) {
+    if (i > 1 && j < L && d > 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F0->dp[jp][d+2] + p->tF0[0] + emitsc_pair1; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4249,7 +4251,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F5
     //
-    if (i > 1 && j < L) {
+    if (i > 1 && j < L && d > 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F5->dp[jp][d+2] + p->tF5[0] + emitsc_stck1; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4266,7 +4268,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F0
     //
-    if (i > 1 && j < L) {
+    if (i > 1 && j < L && d > 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F0->dp[jp][d+2] + p->tF0[1] + emitsc_pair2; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4280,7 +4282,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F5
     //
-    if (i > 1 && j < L) {
+    if (i > 1 && j < L && d > 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F5->dp[jp][d+2] + p->tF5[1] + emitsc_stck2; 
 	sumsc = e2_FLogsum(sumsc, sc);
