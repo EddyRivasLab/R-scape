@@ -93,6 +93,7 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
 int
 Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int verbose)
 {
+  char  tmptreefile[32] = "esltmpXXXXXX"; /* tmpfile template */
   char  tmpmsafile[32] = "esltmpXXXXXX"; /* tmpfile template */
   char *treefile = NULL;
   char *cmd      = NULL;
@@ -109,7 +110,10 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   else
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
-  esl_sprintf(&treefile, "%s.tree", msa->name);
+  // make the treefile name unique
+  if ((status = esl_FileConcat(NULL, tmptreefile, &treefile)) != eslOK) goto ERROR;
+    esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
+    
   if (msa->abc->type == eslAMINO)
     esl_sprintf(&args, "%s -quiet %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);
   else if (msa->abc->type == eslDNA || msa->abc->type == eslRNA)
@@ -140,6 +144,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   if (args)     free(args);
   return status;  
 }
+
 
 int
 Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, char *errbuf, int verbose)

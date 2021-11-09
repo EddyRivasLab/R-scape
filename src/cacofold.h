@@ -17,6 +17,8 @@
 #include "correlators.h"
 #include "structure.h"
 
+#define TOLVAL  0.01
+
 extern int CACO_CYK          (ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ  *psq,  SPAIR *spair, int *covct, COVLIST *exclude, int *ct, SCVAL *ret_sc,  char *errbuf, int verbose);
 extern int CACO_DECODING     (ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ  *psq,  SPAIR *spair, int *covct, COVLIST *exclude, int *ct, SCVAL *ret_sc, char *errbuf, int verbose);
 extern int CACO_MEA          (ESL_RANDOMNESS *r,                   FOLDPARAM *foldparam, POST *post, SPAIR *spair, int *covct, COVLIST *exclude, int *ct, SCVAL *ret_sc, char *errbuf, int verbose);

@@ -143,19 +143,30 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Options for producing a CaCoFold structure}
 
+\subsubsection{\prog{--fold}}  
 When using the option \prog{--fold}, R-scape engages the CaCoFold
 algorithm to produce a predicted structure. The CaCoFold algorithm
 incorporates all positive (significantly covarying) basepairs, and
 prevents any negative pair (pairs that have power of covariation but
 not covariation) from happening. The CaCoFold algorithm uses a
-recursive cascade of constrained foldings.
+recursive cascade of constrained foldings. The first fold uses the RBG probabilistic grammar, the rest use the G6X probabilistic grammar.
+
+\noindent
+Regarding the predicted structure, CaCoFold can use one two algorithms:
+
+\subsubsection{\prog{--cyk}}        Default option. Each folding reports the structure with the best probability using the CYK algorithm.
+
+\subsubsection{\prog{--decoding}}   This options returns the structure obtained by posterior decoding.
+
+\noindent
+Posterior decoding usually performs better than CYK. Both algorithm has the same algorithmic complexity. CYK is faster.
 
 \noindent
 Several additional options can be used in combination with   \prog{--fold},
 
 \subsubsection{\prog{--refseq}}   By default the CaCoFold algorithm folds a profile sequence built from the alignment. Using this option, the sequence to fold is a consensus reference sequence.
 
-\subsubsection{\prog{--E\_neg <x>}}   Pairs with E-value larger than the E-value cutoff but smaller than <x> will not be called negatives regardeless of their covariation power. Default for E\_neg is 1.0.
+\subsubsection{\prog{--E\_neg <x>}}   Pairs with E-value larger than the E-value cutoff but smaller than <x> will not be called negatives regardless of their covariation power. Default for E\_neg is 1.0.
 
 \subsubsection{\prog{--lastfold}} This option forces one last alternative fold (using grammar G6X) after all covarying basepairs have already been
 integrated into the structure. By default this last fold is not

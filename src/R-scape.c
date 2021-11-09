@@ -345,8 +345,8 @@ static ESL_OPTIONS options[] = {
   /* folding options */
   { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
-  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [cyk,decoding]",                                        0 },   
-  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm used options are [cyk,decoding]",                                        0 },   
+  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm options are [cyk,decoding]",                                        1 },   
+  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm options are [cyk,decoding]",                                        1 },   
   { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE: CaCoFold uses a RF sequence. Default it creates a profileseq from the alignment",   1 },
   { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "no pairs are forbidden for having power but no covariation",                              1 },
   { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
