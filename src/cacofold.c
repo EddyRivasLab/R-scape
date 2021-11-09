@@ -132,19 +132,19 @@ CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ *psq, SP
     /* Transfer scores from static built-in storage */
     status = CACO_G6X_GetParam(&g6p, errbuf, verbose);
     if (status != eslOK) goto ERROR;    
-    status = CACO_G6X_CYK(r, foldparam, g6p, psq, spair, covct,  exclude, ct, ret_sc,errbuf, verbose);
+    status = CACO_G6X_CYK(r, foldparam, g6p, psq, spair, covct,  exclude, ct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case G6XS:
     status = CACO_G6XS_GetParam(&g6sp, errbuf, verbose);
     if (status != eslOK) goto ERROR; 
-    status = CACO_G6XS_CYK(r, foldparam, g6sp, psq, spair, covct, exclude, ct, ret_sc,errbuf, verbose);
+    status = CACO_G6XS_CYK(r, foldparam, g6sp, psq, spair, covct, exclude, ct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case RBG:
     status = CACO_RBG_GetParam(&rbgp, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-    status = CACO_RBG_CYK(r, foldparam, rbgp, psq, spair, covct, exclude, ct, ret_sc,errbuf, verbose);
+    status = CACO_RBG_CYK(r, foldparam, rbgp, psq, spair, covct, exclude, ct, ret_sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -699,7 +699,7 @@ CACO_G6X_Posterior(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spair, in
 {
   SCVAL  sc = -eslINFINITY;
   SCVAL  sum;
-  double tol = 0.01;
+  double tol = TOLVAL;
   int    nneg = 0;
   int    L;
   int    j, d;
@@ -883,7 +883,7 @@ CACO_G6XS_Posterior(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *spair, 
 {
   SCVAL  sc = -eslINFINITY;
   SCVAL  sum;
-  double tol = 0.001;
+  double tol = TOLVAL;
   int    nneg = 0;
   int    L;
   int    j, d;
@@ -1097,7 +1097,7 @@ CACO_RBG_Posterior(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, in
 {
   SCVAL  sc = -eslINFINITY;
   SCVAL  sum;
-  double tol = 0.001;
+  double tol = TOLVAL;
   int    nneg = 0;
   int    L;
   int    j, d;
@@ -1157,7 +1157,7 @@ CACO_G6X_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6Xparam *p, P
   int             r;                     /* index of a rule */
   int             d, d1;                 /* optimum values of d1 iterator */
   int             i,j,k;                 /* seq coords */
-  float           tol = 0.001;
+  float           tol = TOLVAL;
   int             status;
 
   L = psq->n;
@@ -1321,7 +1321,7 @@ CACO_G6XS_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6XSparam *p,
   int             r;                     /* index of a rule */
   int             d, d1;                 /* optimum values of d1 iterator */
   int             i,j,k;                 /* seq coords */
-  float           tol = 0.001;
+  float           tol = TOLVAL;
   int             status;
 
   L = psq->n;
@@ -1483,7 +1483,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, P
   int             r;                     /* index of a rule */
   int             d, d1, d2;             /* optimum values of d1 iterator */
   int             i,j,k,l;               /* seq coords */
-  float           tol = 0.001;
+  float           tol = TOLVAL;
   int             status;
 
   L = psq->n;
@@ -1791,7 +1791,7 @@ CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6Xparam *meap
   int             r;                     /* index of a rule */
   int             d, d1;                 /* optimum values of d1 iterator */
   int             i,j,k;                 /* seq coords */
-  float           tol = 0.001;
+  float           tol = TOLVAL;
   int             status;
 
   L = post->L;
@@ -3539,8 +3539,6 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
     d1 = d2 = 0;
     if (d >= MAXLOOP_H) {
       sc = -eslINFINITY;
-
-      if (allow_hp) sc = p->tP[0] + p->l1[MAXLOOP_H-1] + score_loop_hairpin_prof(i, j, p, psq);
     }
     else {
       d_ng = segment_remove_gaps_prof(i,j,psq); if (d_ng == 0) d_ng = d;
@@ -3929,10 +3927,7 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spai
 
   case RBG_P:
     /* rule9: P -> m..m */
-    if (d >= MAXLOOP_H) {
-      sc = (allow_hp)? p->tP[0] + p->l1[MAXLOOP_H-1] + score_loop_hairpin_prof(i, j, p, psq) : -eslINFINITY;
-    }
-    else {
+    if (d < MAXLOOP_H) {
       d_ng = segment_remove_gaps_prof(i,j,psq); if (d_ng == 0) d_ng = d;
       sc = (allow_hp)? p->tP[0] + p->l1[d_ng-1] + score_loop_hairpin_prof(i, j, p, psq) : -eslINFINITY;
     }
@@ -4014,7 +4009,7 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spai
   case RBG_M:
     d2 = 0;
     /* rule14: M -> M1 M */
-        //
+    //
     //     M1         M
     //  i_____k k+1______j
     //  i________________j
