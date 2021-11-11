@@ -110,7 +110,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   else
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
-  // make the treefile name unique
+  // make the treefile name unique as well
   if ((status = esl_FileConcat(NULL, tmptreefile, &treefile)) != eslOK) goto ERROR;
     esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
     
