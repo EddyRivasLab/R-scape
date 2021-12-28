@@ -37,10 +37,10 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
-#define STATSOPTS    "--nullphylo,--naive"              
+#define STATSOPTS    "--nullphylo,--givennull,--naive"              
 #define COVTYPEOPTS  "\
 --CHI,--CHIa,--CHIp,\
---GT,--GTa,--GTp,\
+d --GT,--GTa,--GTp,\
 --MI,--MIa,--MIp,\
 --MIr,--MIra,--MIrp,\
 --MIg,--MIga,--MIgp,\
@@ -56,7 +56,8 @@
 #define NULLOPTS     "--null"
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
-#define FOLDOPTS     "--cyk,--decoding"                                          
+#define FOLDOPTS     "--cyk,--decoding"
+#define AGGMETHOD    "--fisher,--lancaster,--sidak,--noagg"
 
 /* Exclusive options for evolutionary model choice */
 
@@ -114,6 +115,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   FOLDPARAM       *foldparam;
   int              helix_stats;        // TRUE to  provide stats on helices (given or calculated with CaCoFold)
+  int              helix_unpaired;     // number of unpaired res allowed in a helix
+  enum agg_e       agg_method;
   
   int              nshuffle;
 
@@ -164,6 +167,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   PT              *pt;
   double           potts_reweight_thresh;
   int              isgremlin;
+
+  int              savenullhis;        // if TRUE save null histogram
+  char            *nullhisfile;        // an input null histogram file (optional)
   
   char            *pdbfile;            // pdfb file
   char            *pdbname;
@@ -306,7 +312,10 @@ static ESL_OPTIONS options[] = {
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
    /* significance method */
   { "--naive",        eslARG_NONE,      FALSE,   NULL,       NULL,STATSOPTS, NULL,  NULL,                "sort results by cov score, no null model involved",                                         1 },
+  { "--givennull",    eslARG_INFILE,    FALSE,   NULL,       NULL,STATSOPTS, NULL,  "--savenull",        "use a given null distriburtion",                                                            1 },
   { "--nullphylo",    eslARG_NONE,     "TRUE",   NULL,       NULL,STATSOPTS, NULL,  NULL,                "nullphylo  statistics",                                                                     1 },
+  { "--savenull",     eslARG_NONE,      FALSE,   NULL,       NULL,     NULL, NULL,  "--givennull",       "write null histogram",
+           1 },
    /* covariation method */
   { "--nonparam",     eslARG_NONE,     "TRUE",   NULL,       NULL,METHODOPTS, NULL,  NULL,               "non parameteric correlate",                                                                 1 },
   { "--potts",        eslARG_NONE,      FALSE,   NULL,       NULL,METHODOPTS, NULL,  NULL,               "potts couplings",                                                                           1 },
@@ -342,6 +351,11 @@ static ESL_OPTIONS options[] = {
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
   { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes, default is ignore gaps",                      1 },
+  /* pvalue methd */
+  { "--fisher",       eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
+  { "--lancaster",    eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
+  { "--sidak",        eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
+  { "--noagg",        eslARG_NONE,     "TRUE",   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
   /* folding options */
   { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
@@ -349,7 +363,7 @@ static ESL_OPTIONS options[] = {
   { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm options are [cyk,decoding]",                                        1 },   
   { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE: CaCoFold uses a RF sequence. Default it creates a profileseq from the alignment",   1 },
   { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "no pairs are forbidden for having power but no covariation",                              1 },
-  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
+  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
   { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,  NULL,                "min distance between covarying pairs to report the pair. Default 1 (contiguous)",         1 },   
   { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to leave the overlap of alt helices with other helices",                             1 },
   { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to run the CaCoFold recursion one last time",                                        0 },
@@ -536,6 +550,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // helix_stats = TRUE to give stats on helices (in given structure or calculated with CaCoFold)
   cfg.helix_stats = esl_opt_IsOn(go, "--helixstats")? TRUE : FALSE;
 
+  // parameters to break non-nested structures in helices
+  cfg.helix_unpaired  = HELIX_UNPAIRED;     // max number of unpaired residues in a non-nested helix. default 2
+
+  // aggregation method
+  if      (esl_opt_GetBoolean(go, "--fisher"))    cfg.agg_method = AGG_FISHER;
+  else if (esl_opt_GetBoolean(go, "--lancaster")) cfg.agg_method = AGG_LANCASTER;
+  else if (esl_opt_GetBoolean(go, "--sidak"))     cfg.agg_method = AGG_SIDAK;
+  else if (esl_opt_GetBoolean(go, "--noagg"))     cfg.agg_method = AGG_NONE;
+ 
   // The grammars used
   cfg.foldparam->G0 = RBG;
   cfg.foldparam->GP = G6X;
@@ -562,9 +585,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j, minhloop = j-i-1 = 2
   // unless there are covariations forcing a smaller hairpin loop.
   cfg.foldparam->hloop_min          = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
-  
-  // parameters to break non-nested structures in helices
-  cfg.foldparam->helix_unpaired     = HELIX_UNPAIRED;     // max number of unpaired residues in a non-nested helix. default 2
   
   // parameters for selecting non-nested helices without covariations
   cfg.foldparam->helix_overlapfrac  = OVERLAPFRAC;        // max fraction of paired residues that overlap with another existing helix in order to be removed
@@ -599,9 +619,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     {
       rafs_disclaimer(stdout);
     }
-  
-  if      (esl_opt_GetBoolean(go, "--naive"))     cfg.statsmethod = NAIVE;
-  else if (esl_opt_GetBoolean(go, "--nullphylo")) cfg.statsmethod = NULLPHYLO;
+
+  // save the null file
+  cfg.savenullhis = FALSE; if (esl_opt_IsOn(go, "--savenull"))   cfg.savenullhis = TRUE;     // save the null histogram as .null
+
+  // the null hypothesis method
+  cfg.nullhisfile  = NULL; // in case there is an input null histogram file
+  if      (esl_opt_GetBoolean(go, "--naive"))       cfg.statsmethod = NAIVE;
+  else if (esl_opt_GetBoolean(go, "--nullphylo"))   cfg.statsmethod = NULLPHYLO;
+  else if (esl_opt_IsOn      (go, "--givennull")) { cfg.statsmethod = GIVENNULL;
+    cfg.nullhisfile  = esl_opt_GetString(go, "--givennull");
+    if (!esl_FileExists(cfg.nullhisfile))  esl_fatal("nullhis file %s does not seem to exist\n", cfg.nullhisfile);
+  }
   if (cfg.statsmethod == NAIVE) { cfg.thresh->val = 1e+12; }
 
   if      (esl_opt_GetBoolean(go, "--nonparam"))  cfg.covmethod = NONPARAM;
@@ -757,7 +786,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile = TRUE;         // rocplot file
   cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile = TRUE;      // the actual msa used just with the consensus columns
   cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile = TRUE;     // the phylogenetic tree used
-  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile = TRUE;     // the null alignmenst
+  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile = TRUE;     // the null alignments
   cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
 
   // the output files nullify
@@ -972,12 +1001,12 @@ main(int argc, char **argv)
 	if (last >= msa->alen) break;
       }
     }
-    else {      
+    else {
       status = original_msa_manipulate(go, &cfg, &msa);
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;
       if (msa->alen == 0) continue;
- 
+
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
   
@@ -1015,6 +1044,8 @@ main(int argc, char **argv)
   if (cfg.omsa) esl_msa_Destroy(cfg.omsa);
   if (cfg.ofoldct) free(cfg.ofoldct);
   if (cfg.ribofile) free(cfg.ribofile);
+  if (cfg.pdbfile) free(cfg.pdbfile);
+  if (cfg.treefile) free(cfg.treefile);
   if (cfg.outdir) free(cfg.outdir);
   free(cfg.outheader);
   if (cfg.pdbname) free(cfg.pdbname);
@@ -1081,6 +1112,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.nbpairs_fold     = cfg->nbpairs_fold;
   data.spair            = NULL;
   data.power            = NULL;
+  data.helix_unpaired   = cfg->helix_unpaired;
+  data.agg_method       = cfg->agg_method;
   data.T                = cfg->T;
   data.ribosum          = cfg->ribosum;
   data.clist            = cfg->clist;
@@ -1097,7 +1130,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
 
-  status = cov_Calculate(&data, msa, NULL, NULL, FALSE);   
+  status = cov_Calculate(&data, msa, NULL, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
   if (mi->maxCOV <= cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
 
@@ -1207,16 +1240,16 @@ get_msaname(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else if (msa->acc)              esl_sprintf(&cfg->msaname, "%s",    msa->acc);
   else if (cfg->onemsa)           esl_sprintf(&cfg->msaname, "%s",    cfg->filename);
   else                            esl_sprintf(&cfg->msaname, "%s_%d", cfg->filename, cfg->nmsa);
-  
+
   // remove possible parenthesis in the name
   n = strlen(cfg->msaname);
   for (i = 0; i < n; i ++)
     if (cfg->msaname[i] == '(') cfg->msaname[i] = '_';
   for (i = 0; i < n; i ++)
     if (cfg->msaname[i] == ')') cfg->msaname[i] = '_';
-  // remove possible / in name
+  // remove possible / of | in name
   for (i = 0; i < n; i ++)
-    if (cfg->msaname[i] == '/') cfg->msaname[i] = '_';
+    if (cfg->msaname[i] == '/' || cfg->msaname[i] == '|') cfg->msaname[i] = '_';
   
   if (esl_opt_IsOn(go, "--submsa")) {					       
     esl_sprintf(&submsaname, "%s.select%d", cfg->msaname, esl_opt_GetInteger(go, "--submsa"));
@@ -1458,14 +1491,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     if (esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM) != eslOK) esl_fatal("Failed to write msa"); 
     msamanip_DumpStats(stdout, msa, cfg->omstat); 
   }
-
+  
   /* doctor the msa names. 
    * FastTree truncates seq names at semicolons.
    * replace semicolons with |
    */
   status = original_msa_doctor_names(omsa);
   if (status != eslOK) return eslFAIL;
-
+  
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
    */
@@ -1558,7 +1591,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     free(useme); useme = NULL;
     msa = *omsa;
   }
-
+  
   /* given msa aveid and avematch */
   msamanip_XStats(msa, &cfg->mstat);
   
@@ -1572,7 +1605,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     return eslOK;  
   }
 
-  /* add the name */
+   /* add the name */
   esl_msa_SetName(msa, cfg->msaname, -1);
 
   // The structure is not given, but we are assuming the RNA does have a structure
@@ -1614,7 +1647,9 @@ original_msa_doctor_names(ESL_MSA **omsa)
   char    *p;
   int      s;
 
-  // the msaname (ID) has to be free of '/', '|", abd ':' symbols
+  // check the msa name does not include a pipe '|'
+  
+  // the msaname (ID) has to be free of '/', '|", and ':' symbols
   if (msa->name) {
     for (p = msa->name; (p = strchr(p, '/')); ++p) 
      *p = '_';
@@ -1622,6 +1657,8 @@ original_msa_doctor_names(ESL_MSA **omsa)
      *p = '_';
     for (p = msa->name; (p = strchr(p, ':')); ++p) 
      *p = '_';
+    
+    (*omsa)->name = msa->name;
   }
   
   // several characters in names interfere with FastTree
@@ -1634,6 +1671,8 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = sqname; (p = strchr(p, '/')); ++p) 
       *p = '_';
+    
+    (*omsa)->sqname[s] = sqname;
   }
   
   return eslOK;
@@ -1695,8 +1734,9 @@ outfile_null(struct outfiles_s *ofile)
   // optional files
   ofile->rocfile       = NULL;            
   ofile->outmsafile    = NULL;          
-  ofile->outtreefile   = NULL;         
-  ofile->outnullfile   = NULL;         
+  ofile->outtreefile   = NULL;
+  ofile->nullhisfile   = NULL;
+  ofile->outnullfile   = NULL;
   ofile->allbranchfile = NULL;       
   ofile->outpottsfile  = NULL;
 
@@ -1736,6 +1776,9 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
 
     // output the phylogenetic tree
     if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s/%s.tree", cfg->outdir, outname);
+ 
+    // output the null histogram
+    if (cfg->savenullhis) esl_sprintf(&ofile->nullhisfile, "%s/%s.null", cfg->outdir, outname);
  
     // output with the null alignments 
     if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s/%s.null.sto", cfg->outdir, outname);
@@ -1793,7 +1836,10 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
 
     // output the phylogenetic tree
     if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s.tree", outname);
-    
+
+        // output the null histogram
+    if (cfg->savenullhis) esl_sprintf(&ofile->nullhisfile, "%s.null", outname);
+ 
     // output with the null alignments 
     if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s.null.sto", outname);
     
@@ -1848,6 +1894,7 @@ outfile_destroy(struct outfiles_s *ofile)
   if (ofile->rocfile)       free(ofile->rocfile);            
   if (ofile->outmsafile)    free(ofile->outmsafile);          
   if (ofile->outtreefile)   free(ofile->outtreefile);         
+  if (ofile->nullhisfile)   free(ofile->nullhisfile);         
   if (ofile->outnullfile)   free(ofile->outnullfile);         
   if (ofile->allbranchfile) free(ofile->allbranchfile);       
   if (ofile->outpottsfile)  free(ofile->outpottsfile);
@@ -1958,7 +2005,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
   
   if (cfg->abcisRNA) {
-    cfg->ctlist = struct_Contacts2CTList(cfg->foldparam->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
+    cfg->ctlist = struct_Contacts2CTList(cfg->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
     
      
@@ -2001,7 +2048,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   }
   
   /* the null model first */
-  if (cfg->statsmethod != NAIVE) {
+  if (cfg->statsmethod == NULLPHYLO) {
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) {
       nshuffle = 20;
@@ -2012,14 +2059,25 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     cfg->mode = RANSS;
     status = null_rscape(go, cfg, nshuffle, msa, &ranklist_null);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run null_rscape", cfg->errbuf);
+    if (cfg->verbose) esl_histogram_Write(stdout, ranklist_null->ha);
+
+    if (cfg->savenullhis) cov_WriteNullHistogram(cfg->ofile.nullhisfile, ranklist_null, cfg->errbuf, cfg->verbose);
   }
-  else { // still create a tree in the naive case, we use it to calculate substitutions
+  else { // otherwise just create the tree
     status = create_tree(go, cfg, msa);
     if (status != eslOK) goto ERROR;
     
     if (cfg->T == NULL) {
       if (msa->nseq == 1) return eslOK;
       else                return eslFAIL;
+    }
+
+    // use a given null
+    if (cfg->statsmethod == GIVENNULL) {
+      cfg->mode = RANSS;
+      status = cov_ReadNullHistogram(cfg->nullhisfile, &ranklist_null, cfg->errbuf, cfg->verbose);
+      if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to read NULL distribution", cfg->errbuf);
+      if (cfg->verbose) esl_histogram_Write(stdout, ranklist_null->ha);
     }
   }
   
@@ -2092,9 +2150,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   struct mutual_s *mi = cfg->mi;
   struct data_s    data;
   PT              *ptlocal    = NULL;
-  CTLIST          *foldctlist = NULL;
   RANKLIST        *ranklist   = NULL;
   HITLIST         *hitlist    = NULL;
+  RMLIST          *rmlist     = NULL;
+  CTLIST          *foldctlist = NULL;
+  RMLIST          *foldrmlist = NULL;
   int              status;
 
   esl_stopwatch_Start(cfg->watch);
@@ -2144,6 +2204,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.nsubs            = nsubs;
   data.ndouble          = ndouble;
   data.power            = cfg->power;
+  data.helix_unpaired   = cfg->helix_unpaired;
+  data.agg_method       = cfg->agg_method;
   data.T                = cfg->T;
   data.ribosum          = cfg->ribosum;
   data.OL               = cfg->omsa->alen;
@@ -2163,14 +2225,17 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
 
-  status = cov_Calculate(&data, msa, &ranklist, &hitlist, analyze);
+  status = cov_Calculate(&data, msa, &ranklist, &hitlist, &rmlist, analyze);
   if (status != eslOK) goto ERROR;
 
   if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS && ranklist) {
  
-    if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) {
+      struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+      struct_rmlist_Dump(rmlist); 
+    }
 
     if (cfg->verbose) {
       printf("score total distribution\n");
@@ -2183,6 +2248,10 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->ofile.covhisfile, cfg->ofile.covqqfile, cfg->samplesize, ranklist, title);
     if (status != eslOK) goto ERROR;
 
+    if (1||cfg->verbose) {
+      printf("# Number of covarying pairs = %d\n", hitlist->nhit);
+    }
+
     if (cfg->power_train) 
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
@@ -2192,27 +2261,34 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
     data.mode = FOLDSS;
     // notice: data->clist is reused here for the cacofold structure
-    status = struct_CACOFOLD(&data, msa, &foldctlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
+    status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-    if (cfg->helix_stats) struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) {
+      struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+      struct_rmlist_Dump(foldrmlist);
+    }
  
     status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);  
-  if (foldctlist) struct_ctlist_Destroy(foldctlist);
-  if (hitlist) cov_FreeHitList(hitlist); hitlist = NULL;
-  if (title) free(title);
-  if (cfg->pt == NULL) potts_Destroy(ptlocal);    
+  if (foldctlist)    struct_ctlist_Destroy(foldctlist);
+  if (foldrmlist)    struct_rmlist_Destroy(foldrmlist);
+  if (hitlist)       cov_FreeHitList(hitlist); hitlist = NULL;
+  if (rmlist)        struct_rmlist_Destroy(rmlist); rmlist = NULL;
+  if (title)         free(title);
+  if (!cfg->pt)      potts_Destroy(ptlocal);    
   return eslOK;
   
  ERROR:
   if (foldctlist) struct_ctlist_Destroy(foldctlist);
-  if (ranklist) cov_FreeRankList(ranklist);
-  if (hitlist) cov_FreeHitList(hitlist);
-  if (title) free(title);
-  if (ptlocal) potts_Destroy(ptlocal);
+  if (foldrmlist) struct_rmlist_Destroy(foldrmlist);
+  if (ranklist)   cov_FreeRankList(ranklist);
+  if (hitlist)    cov_FreeHitList(hitlist);
+  if (rmlist)     struct_rmlist_Destroy(rmlist);
+  if (title)      free(title);
+  if (ptlocal)    potts_Destroy(ptlocal);
   return status;
 }
 

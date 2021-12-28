@@ -56,13 +56,8 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
 
   // check that the sequence names do not include a parenthesis.
   // FastTree truncates the names at the first encounter
-
-  // option1: end
-  // if (msamanip_SeqNames_CheckParenthesis(msa, errbuf) != eslOK) ESL_XFAIL(status,  errbuf, "%s\nFailed to create external tree", errbuf);
-
-  // option2: replace parenthesis with curly brackets.
-  //          danger of this option, one it not waranteed that the names are unique
-  msamanip_SeqNames_DoctorParenthesis(msa, errbuf);
+  // replace parenthesis with curly brackets.
+  msamanip_DoctorSeqNames(msa, errbuf);
 
   if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to create external tree");
   if ((treefp = fopen(treefile, "r"))                                == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for reading", treefile);
@@ -99,6 +94,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   char *cmd      = NULL;
   char *args     = NULL;
   FILE *msafp    = NULL;
+  FILE *treefp   = NULL;
   int   status;
 
   if ((status = esl_tmpfile_named(tmpmsafile,  &msafp))                   != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
@@ -111,8 +107,9 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
   // make the treefile name unique as well
+  if ((status = esl_tmpfile_named(tmptreefile,  &treefp))     != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
   if ((status = esl_FileConcat(NULL, tmptreefile, &treefile)) != eslOK) goto ERROR;
-    esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
+  esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
     
   if (msa->abc->type == eslAMINO)
     esl_sprintf(&args, "%s -quiet %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);
@@ -125,14 +122,16 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   if (status == -1) ESL_XFAIL(eslFAIL, errbuf, "failed to run FastTree");
   
   if (verbose) {
+    printf("tree file %s\n", treefile);
     esl_sprintf(&args, "/usr/bin/more %s\n", treefile);
     system(args);
   }
     
   remove(tmpmsafile);
+  remove(tmptreefile);
 
   *ret_treefile = treefile;
-  
+
   if (cmd)  free(cmd);
   if (args) free(args);
   return eslOK;

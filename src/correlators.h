@@ -93,6 +93,7 @@ typedef enum{
 typedef enum{
   NAIVE      = 0,
   NULLPHYLO  = 1,
+  GIVENNULL  = 2,
 } STATSMETHOD;
 
 typedef enum {
@@ -169,15 +170,19 @@ typedef struct thresh_s {
 } THRESH;
 
 typedef struct spair_s {
-  int64_t i;
+  int64_t iabs;   // coordenates relative to the input alignment    [1...alen]
+  int64_t jabs;
+  
+  int64_t i;      // coordenates relative to the analyzed alignment [0..L-1]
   int64_t j;
   
   int64_t nsubs;
   double  power;
 
+  double  sc;     // The covariation score
+  double  Pval;   // The P-value
+  double  Eval;   // The E-value
   int     covary; // TRUE if pair covaries
-  double  sc;
-  double  Eval;
   
   BPTYPE  bptype_given; // in given structure
   BPTYPE  bptype_caco;  // in cacofold structure
@@ -222,6 +227,7 @@ struct outfiles_s {
   char            *rocfile;             // roc plot (optional)
   char            *outmsafile;          // output msa only with consensus columns used (optional)
   char            *outtreefile;         // output tree (optional)
+  char            *nullhisfile;         // output of null histogram (optional)
   char            *outnullfile;         // output of null alignments (optional)
   char            *allbranchfile;       // (optional)
   char            *outpottsfile;        // (optional)
@@ -237,15 +243,54 @@ enum cttype_e {
   CTTYPE_NONE,
 };
 
+enum RMtype_e {
+  RMTYPE_HELIX,
+  RMTYPE_GNRA,
+  RMTYPE_KINK,
+  RMTYPE_UNKNOWN,
+};
+
+
+
 // structure to keep all the ct's with the complete structure
+// you need more than one CT to define a structure when a given residue is involved in more than one pair
 typedef struct ctlist_s {
   int             nct;     // number of ct's to describe the complete structure
   int             L;
-  int           **ct;      // all the basepairs
+  int           **ct;      // all the base pairs
   int           **covct;   // just the covarying pairs
   enum cttype_e  *cttype;
   char          **ctname;
 } CTLIST;
+
+
+// the different aggregation methods
+enum agg_e {
+  AGG_FISHER,
+  AGG_LANCASTER,
+  AGG_SIDAK,
+  AGG_NONE,
+};
+
+// structure to keep all the helices/motifs
+typedef struct RM_s {
+  enum RMtype_e   type;         // RNAmotif type
+  int             nbp;          // Total number of pairs
+  int             i, j, k, l;   // The RNAmotif extends from 5'-i..k-3' ^ 5'-l..j-3'  (i < k < l < j)
+  CTLIST         *ctlist;       // ctlist per RNAmotif. A WC helix requires only one ct, a NOWC motif may require several.
+
+  double          Pval;         // the aggreated Pvalue of the RNA motif
+  double          Eval;         // the aggreated Evalue of the RNA motif
+  int             covary;       // TRUE if the helix covaries
+} RM;
+
+typedef struct RMlist_s {
+  int            nrm;         // number of motifs
+  int            L;           // total length of the sequence
+  RM           **rm;          // the RM structures
+
+  enum agg_e     agg_method;  // aggregation method
+} RMLIST;
 
 
 struct data_s {
@@ -278,6 +323,9 @@ struct data_s {
   int                 *ndouble;
   SPAIR               *spair;
   POWER               *power;
+
+  int                  helix_unpaired;
+  enum agg_e           agg_method;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;

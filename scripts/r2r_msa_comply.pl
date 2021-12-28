@@ -39,6 +39,7 @@ if ($msafile =~ /pk/ ||  # pk            = does not overlap with  nested ss
 
 my $msaname  = $msafile;
 if ($msaname =~ /\.(\S+)\.sto/) { $msaname = $1; }
+$msaname =~ s/|/_/g; # remove | characters from the msa name
 
 my $field;
 my $tag;

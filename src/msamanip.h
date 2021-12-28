@@ -42,13 +42,12 @@ typedef struct msa_stat_s {
 extern int msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, char *errbuf, int verbose);
 extern int msamanip_CalculateCT( ESL_MSA *msa, int **ret_ct, int *ret_nbpairs, double maxnowc, char *errbuf);
 extern int msamanip_CalculateBC(ESL_MSA *msa, int *ct, double **ret_ft, double **ret_fbp, double **ret_fnbp, char *errbuf);
-extern int msamanip_SeqNames_CheckParenthesis(const ESL_MSA *msa, char *errbuf);
-extern int msamanip_SeqNames_DoctorParenthesis(const ESL_MSA *msa, char *errbuf);
 extern int msamanip_CompareBasecomp(ESL_MSA *msa1, ESL_MSA *msa2, char *errbuf);
 extern int msamanip_ConvertDegen2RandomCanonical(ESL_RANDOMNESS *r, ESL_MSA *msa);
 extern int msamanip_ConvertDegen2N(ESL_MSA *msa);
 extern int msamanip_ConvertDegen2Gap(ESL_MSA *msa);
 extern int msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa);
+extern int msamanip_DoctorSeqNames(const ESL_MSA *msa, char *errbuf);
 extern int msamanip_Getsqlen(ESL_MSA *msa);
 extern int msamanip_NonHomologous(ESL_ALPHABET *abc, ESL_MSA *msar, ESL_MSA *msae, int *ret_nhr, int *ret_nhe, int *ret_hr, int *ret_he, int *ret_hre, char *errbuf);
 extern int msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int64_t endpos, int64_t oalen, 

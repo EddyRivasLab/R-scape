@@ -77,13 +77,16 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
     for (j = i+1; j < alen; j ++) {
       
       subs            = (nsubs)? nsubs[i] + nsubs[j] : ndouble[i*alen+j];                    
-      spair[n].i      = msamap[i]+1;
-      spair[n].j      = msamap[j]+1;
+      spair[n].iabs   = msamap[i]+1;
+      spair[n].jabs   = msamap[j]+1;
+      spair[n].i      = i;
+      spair[n].j      = j;
       spair[n].nsubs  = subs;
       spair[n].power  = 0.;
       spair[n].covary = FALSE;
-      spair[n].sc     = -1;
-      spair[n].Eval   = -1;
+      spair[n].sc     = -1.;
+      spair[n].Pval   = -1.;
+      spair[n].Eval   = -1.;
       
       spair[n].bptype_given = BPNONE;  // bptype in given structure
       spair[n].bptype_caco  = BPNONE;  // bptype in cacofold structure
@@ -99,7 +102,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
        
       if (clist) {
 	for (c = 0; c < clist->ncnt; c++) {
-	  if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
+	  if (spair[n].iabs == clist->cnt[c].posi && spair[n].jabs == clist->cnt[c].posj) {
 	    spair[n].bptype_given = clist->cnt[c].bptype;
 	    break;
 	  }
@@ -107,7 +110,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
       }
       
       if (spair[n].bptype_given == WWc) 
-	if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+	if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
       
       n ++;
     }
@@ -129,14 +132,14 @@ power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbo
 
   for (n = 0; n < dim; n ++) {
     for (c = 0; c < clist->ncnt; c++) {
-      if (spair[n].i == clist->cnt[c].posi && spair[n].j == clist->cnt[c].posj) {
+      if (spair[n].iabs == clist->cnt[c].posi && spair[n].jabs == clist->cnt[c].posj) {
 	spair[n].bptype_caco = clist->cnt[c].bptype;
 	break;
       }
     }
 
     if (spair[n].bptype_given == WWc) 
-      if (verbose) printf("CaCo WWc: %lld-%lld \n", spair[n].i, spair[n].j);
+      if (verbose) printf("CaCo WWc: %lld-%lld \n", spair[n].iabs, spair[n].jabs);
 
   }
 
@@ -166,8 +169,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
       expect    += spair[n].power;
       exp_std   += spair[n].power * (1.0-spair[n].power);
       avgsub    += spair[n].nsubs;
-      if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power); ncv ++; }
-      else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].i, spair[n].j, spair[n].nsubs, spair[n].power);
+      if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power); ncv ++; }
+      else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
     }
   avgsub /= (nbp > 0)? nbp : 1;
   if (exp_std > 0) exp_std = sqrt(exp_std);

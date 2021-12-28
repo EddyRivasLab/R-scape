@@ -23,18 +23,20 @@
 #define W     0.05      // default histogram width
 
 
-extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, int analize);
+extern int              cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST  **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, int analize);
 extern int              cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf);
-extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist);
+extern int              cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist);
 extern RANKLIST        *cov_CreateRankList(double bmax, double bmin, double w);
 extern int              cov_Add2SubsHistogram(ESL_HISTOGRAM *hsubs, HITLIST *hitlist, int verbose);
 extern int              cov_GrowRankList(RANKLIST **oranklist, double bmax, double  bmin);
 extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
-extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist,
+extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, 
 					  char *covtype, char *threshtype);
-extern int              cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist,
+extern int              cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, RMLIST **ret_foldrmlist, 
 					     char *covtype, char *threshtype);
+extern int              cov_ReadNullHistogram(char *nullhisfile, RANKLIST **ret_ranklist, char *errbuf, int verbose);
+extern int              cov_WriteNullHistogram(char *nullhisfile, RANKLIST *ranklist, char *errbuf, int verbose);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
 extern int              cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos);
 extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);

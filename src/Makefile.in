@@ -120,6 +120,7 @@ OBJS     = e1_bg.o\
 	   e1_goodness.o\
 	   e1_simulate.o\
 	   e2_profilesq.o\
+	   aggregate.o\
 	   allbranchmsa.o\
 	   contactmap.o\
 	   cacofold.o\
@@ -182,7 +183,7 @@ R2R     = \
 	R2R_Stockholm.pm  \
 	SelectSubFamilyFromStockholm.pl  \
 
-all: libsrc.a ${PROGS} 
+all: librscape.a ${PROGS} 
 
 
 ${PROGS}: %: %.o ${OBJS} $
@@ -192,9 +193,9 @@ ${PROGS}: %: %.o ${OBJS} $
 .c.o:   
 	${QUIET_CC}${CC} ${IFLAGS} ${CFLAGS} -o $@ -c $<
 
-libsrc.a:  ${OBJS}
-	${QUIET_AR}${AR} -r libsrc.a $(OBJS) > /dev/null 2>&1
-	@${RANLIB} libsrc.a
+librscape.a:  ${OBJS}
+	${QUIET_AR}${AR} -r librscape.a $(OBJS) > /dev/null 2>&1
+	@${RANLIB} librscape.a
 
 install:
 	${QUIET}if [ ! -z "${PROGS}" ]; then \
@@ -246,14 +247,14 @@ uninstall:
 	done
 
 clean:
-	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f ${PROGS} ${OBJS} librscape.a *.tab.c *.output *.o programs/*.o
 	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
 
 distclean:
-	-rm -f ${PROGS} ${OBJS} libsrc.a *.tab.c *.output *.o programs/*.o
+	-rm -f ${PROGS} ${OBJS} librscape.a *.tab.c *.output *.o programs/*.o
 	-rm -f *~ TAGS
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*

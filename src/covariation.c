@@ -13,6 +13,7 @@
 #include "esl_alphabet.h"
 #include "esl_dmatrix.h"
 #include "esl_exponential.h"
+#include "esl_fileparser.h"
 #include "esl_gamma.h"
 #include "esl_histogram.h"
 #include "esl_msa.h"
@@ -24,6 +25,7 @@
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
+#include "aggregate.h"
 #include "contactmap.h"
 #include "covariation.h"
 #include "correlators.h"
@@ -58,10 +60,11 @@ static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double exps
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
 
 int                 
-cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, int analyze)
+cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, int analyze)
 {
   RANKLIST      *ranklist = NULL;
   HITLIST       *hitlist  = NULL;
+  RMLIST        *rmlist   = NULL;
   COVCLASS       covclass = data->mi->class;
   double         sum;
   int            shiftnonneg = FALSE;
@@ -81,16 +84,11 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
       if (data->verbose) {
 	for (i = 0; i < data->mi->alen-1; i ++) {
 	  for (j = i+1; j < data->mi->alen; j ++) {
-	    if ((data->msamap[i]+data->firstpos==45&&data->msamap[j]+data->firstpos==118)||
-		(data->msamap[i]+data->firstpos==46&&data->msamap[j]+data->firstpos==47) ||
-		(data->msamap[i]+data->firstpos==46&&data->msamap[j]+data->firstpos==48) ||
-		(data->msamap[i]+data->firstpos==41&&data->msamap[j]+data->firstpos==48)) {
-	      for (x = 0; x < K; x ++) {
-		sum = 0.0;
-		for (y = 0; y < K; y ++) sum += data->mi->pp[i][j][IDX(x,y,K)];
-		for (y = 0; y < K; y ++) printf(" %f ", data->mi->pp[i][j][IDX(x,y,K)]/sum);
+	    for (x = 0; x < K; x ++) {
+	      sum = 0.0;
+	      for (y = 0; y < K; y ++) sum += data->mi->pp[i][j][IDX(x,y,K)];
+	      for (y = 0; y < K; y ++) printf(" %f ", data->mi->pp[i][j][IDX(x,y,K)]/sum);
 		printf("| marg %f coli %f colj %f\n", sum, data->mi->pm[i][x], data->mi->pm[j][x]);
-	      }
 	    }
 	  }
 	}
@@ -261,7 +259,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
 
   if (analyze) {
-    status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist);
+    status = cov_SignificantPairs_Ranking(data, &ranklist, &hitlist, &rmlist);
     if (status != eslOK) goto ERROR;
   }
  
@@ -282,12 +280,14 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
-  if (ret_hitlist)  *ret_hitlist = hitlist;   else if (hitlist)  cov_FreeHitList(hitlist);
+  if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
+  if (ret_rmlist)   *ret_rmlist   = rmlist;   else if (rmlist)   struct_rmlist_Destroy(rmlist);
   return eslOK;
   
  ERROR:
   if (ranklist) cov_FreeRankList(ranklist);
   if (hitlist)  cov_FreeHitList(hitlist);
+  if (rmlist)   struct_rmlist_Destroy(rmlist);
   return status;
 }
 
@@ -309,7 +309,7 @@ cov_THRESHTYPEString(char **ret_threshtype, THRESHTYPE type, char *errbuf)
 }
 
 int
-cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist)
+cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist)
 {
   struct mutual_s *mi  = data->mi;
   ESL_DMATRIX     *mtx = mi->COV;
@@ -317,6 +317,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   char            *covtype    = NULL;
   RANKLIST        *ranklist   = NULL;
   HITLIST         *hitlist    = NULL;
+  RMLIST          *rmlist     = NULL;
   double           pmass, newmass;
   double           bmax;
   double           add;
@@ -408,7 +409,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     }
 
   /* Histogram and Fit */
-  if (data->ranklist_null && data->mode == GIVSS ) {
+  if (data->ranklist_null && data->mode == GIVSS) {
     if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
       ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
       for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
@@ -417,6 +418,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     
     /* censor the histogram and do an exponential fit to the tail */
     pmass = cov_histogram_pmass(data->ranklist_null->ha, data->pmass, data->fracfit);
+    if (isnan(pmass)) ESL_XFAIL(eslFAIL, data->errbuf, "bad Null histogram fit, pmass is nan.");
+
     if (data->doexpfit) {
       status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				      &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);
@@ -430,7 +433,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 				&newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
       if (data->verbose) 
-	fprintf(stdout, "# GammaFIT: pmass %f mu %f lambda %f tau %f\n", newmass, data->mu, data->lambda, data->tau);
+	fprintf(stdout, "# GammaFIT: pmass %f mu %f lambda %f tau %f | pmass %f\n", newmass, data->mu, data->lambda, data->tau, pmass);
       
     }
   }
@@ -443,19 +446,19 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     data->thresh->sc_nbp =
       (data->ranklist_null)?
       evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->ht->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
-
   }
 
   status = cov_ROC(data, covtype, ranklist);
   if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad ROCfile.");
 
   if (data->mode == GIVSS) {
-    status = cov_CreateHitList(data, mi, ranklist, &hitlist, covtype, threshtype);
+    status = cov_CreateHitList(data, mi, ranklist, &hitlist, &rmlist, covtype, threshtype);
     if (status != eslOK) goto ERROR;
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);
   if (ret_hitlist)  *ret_hitlist  = hitlist;  else if (hitlist)  cov_FreeHitList(hitlist);
+  if (ret_rmlist)   *ret_rmlist   = rmlist;   else if (rmlist)   struct_rmlist_Destroy(rmlist);
 
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
@@ -465,6 +468,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
  ERROR:
   if (ranklist)   cov_FreeRankList(ranklist);
   if (hitlist)    cov_FreeHitList(hitlist);
+  if (rmlist)     struct_rmlist_Destroy(rmlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
   if (data->ranklist_null && (data->mode == GIVSS || data->mode == FOLDSS)) free(data->ranklist_null->survfit);
@@ -718,17 +722,19 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, char *covtype, char *threshtype)
+cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, char *covtype, char *threshtype)
 {
   FILE     *covfp    = NULL;
   FILE     *covsrtfp = NULL;
   FILE     *powerfp  = NULL;
   HITLIST  *hitlist  = NULL;
+  RMLIST   *rmlist   = NULL;
   int      *msa2pdb  = data->msa2pdb;
   double    expBP    = data->expBP;
   double    sen, ppv, F;
   double    cov;
   double    eval;
+  double    pval;
   BPTYPE    bptype;
   int       dim = mi->alen * (mi->alen - 1.) / 2;
   int       isbp;
@@ -776,19 +782,26 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       
       cov  = mi->COV->mx[i][j];
 
-      if (data->ranklist_null == NULL) eval = 0; // naive method: eval does not inform of statistical significance
+      if (data->ranklist_null == NULL) { // naive method: eval does not inform of statistical significance
+	pval = 0.; 
+ 	eval = 0.; 
+      }
       else {
 	if (isbp) {
-	  mi->Eval->mx[i][j]   = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->hb->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	  pval = cov2evalue(cov, 1, data->ranklist_null->ha, data->ranklist_null->survfit);
+	  eval = pval * ranklist->hb->Nc;
 	}
 	else {
-	  if (h < expBP)
-	    mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, expBP,            data->ranklist_null->ha, data->ranklist_null->survfit);
-	  else
-	    mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = cov2evalue(cov, ranklist->ht->Nc, data->ranklist_null->ha, data->ranklist_null->survfit);
+	  if (h < expBP) {
+	    pval = cov2evalue(cov, 1, data->ranklist_null->ha, data->ranklist_null->survfit);
+	    eval = pval * expBP;
+	  }
+	  else {
+	    pval = cov2evalue(cov, 1, data->ranklist_null->ha, data->ranklist_null->survfit);
+	    eval = pval * ranklist->ht->Nc;
+	  }
 	}
-	
-	eval = mi->Eval->mx[i][j];
+	mi->Eval->mx[i][j] = mi->Eval->mx[j][i] = eval;
       }
 
       if (eval < data->thresh->val) {	
@@ -816,6 +829,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       // complete rest of data for this pair
       data->spair[n].sc   = cov;
       data->spair[n].Eval = eval;
+      data->spair[n].Pval = pval;
       
       n ++;
     }
@@ -893,26 +907,35 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
     power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
   }
+
+  // calculate aggregated p-values for the RNA motifs (rmlist)
+  if (data->nseq > 1) {
+    status = agg_CalculatePvalues(data->spair, data->ctlist, &rmlist, data->helix_unpaired, data->agg_method, data->errbuf, data->verbose);
+    if (status != eslOK) goto ERROR;
+  }
   
   fclose(covfp);
   fclose(covsrtfp);
   fclose(powerfp);
   
   if (ret_hitlist) *ret_hitlist = hitlist; else cov_FreeHitList(hitlist);
+  if (ret_rmlist)  *ret_rmlist  = rmlist;  else struct_rmlist_Destroy(rmlist);
   return eslOK;
   
  ERROR:
   if (hitlist) cov_FreeHitList(hitlist);
+  if (rmlist) struct_rmlist_Destroy(rmlist);
   return status;
 }
 
 int 
-cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, char *covtype, char *threshtype)
+cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, RMLIST **ret_foldrmlist, char *covtype, char *threshtype)
 {
   FILE     *covfp       = NULL;
   FILE     *covsrtfp    = NULL;
   FILE     *powerfp     = NULL;
   HITLIST  *foldhitlist = NULL;
+  RMLIST   *foldrmlist  = NULL;
   double    sen, ppv, F;
   int       dim  = data->mi->alen * (data->mi->alen - 1.) / 2;
   int       nhit = (hitlist)? hitlist->nhit : 0;
@@ -1010,15 +1033,23 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   power_SPAIR_Write(stdout,  dim, data->spair, FALSE);
   power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
 
+  // calculate aggregated p-values  for the RNA motifs (rmlist)
+  if (data->nseq > 1) {
+    status = agg_CalculatePvalues(data->spair, foldctlist, &foldrmlist, data->helix_unpaired, data->agg_method, data->errbuf, data->verbose);
+    if (status != eslOK) goto ERROR;
+  }
+  
   fclose(covfp);
   fclose(covsrtfp);
   fclose(powerfp);
 
   if (ret_foldhitlist) *ret_foldhitlist = foldhitlist; else cov_FreeHitList(foldhitlist);
+  if (ret_foldrmlist)  *ret_foldrmlist  = foldrmlist;  else  struct_rmlist_Destroy(foldrmlist);
   return eslOK;
   
  ERROR:
   if (foldhitlist) cov_FreeHitList(foldhitlist);
+  if (foldrmlist)  struct_rmlist_Destroy(foldrmlist);
   return status;
 }
 
@@ -1245,7 +1276,7 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
     }
     else { 
       fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\t%lld\t\t%.2f\n",
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
     }  
   }
 
@@ -1556,6 +1587,159 @@ cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA)
   return iscompatible;
 }
 
+
+int 
+cov_ReadNullHistogram(char *nullhisfile, RANKLIST **ret_ranklist, char *errbuf, int verbose)
+{
+  ESL_FILEPARSER  *efp      = NULL;
+  RANKLIST        *ranklist = NULL;
+  double           tol      = 1e-2;
+  double           w = eslINFINITY;
+  double           bmin;
+  double           bmax;
+  double           sc = -eslINFINITY;
+  double           sc_prv;
+  double           max_sc = -eslINFINITY;
+  double           min_sc =  eslINFINITY;
+  char            *tok;
+  uint64_t         counts; 
+  int              t;
+  void            *tmp;
+  int              b;			/* what bin we're in                       */
+  int              nnew;		/* # of new bins created by a reallocation */
+  int              bi;  int              status;
+
+  // one pass to get max/min sc and set the window of the histogram
+  if (esl_fileparser_Open(nullhisfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  while (esl_fileparser_NextLine(efp) == eslOK) { 
+    t = 0;
+    
+    while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+      if (t == 0) { sc_prv = sc; sc     = atof(tok); } // score
+      else        {              counts = atoi(tok); } // counts
+
+      if (t == 0) {
+	w = ESL_MIN(w, fabs(sc - sc_prv));
+	if (sc > max_sc) max_sc = sc;
+	if (sc < min_sc) min_sc = sc;
+      }
+      
+      t  ++;     
+    }
+  }
+  esl_fileparser_Close(efp);
+
+  // create the histogram
+  bmax = max_sc;
+  bmin = min_sc;
+  	
+  while (fabs(bmax-bmin) < tol) bmax += w;
+  ranklist = cov_CreateRankList(bmax, bmin, w);
+ 
+  // parse again to get all values
+  if (esl_fileparser_Open(nullhisfile, NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  while (esl_fileparser_NextLine(efp) == eslOK) {
+    t = 0;
+    
+    while (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) == eslOK) {
+      if (t == 0) { sc     = atof(tok); } // score
+      else        { counts = atoi(tok); } // counts           
+      t  ++;
+    }
+      
+    if (t == 2) {
+	
+      if ((status = esl_histogram_Score2Bin(ranklist->ha, sc, &b)) != eslOK) return status;
+      // the null histogram in survival form
+      /* Make sure we have that bin. Realloc as needed.
+       * If that reallocation succeeds, we can no longer fail;
+       * so we can change the state of h.
+       */
+      if (b < 0)    /* Reallocate below? */
+	{				
+	  nnew = -b*2;	/* overallocate by 2x */
+	  if (nnew > INT_MAX - ranklist->ha->nb)
+	    ESL_EXCEPTION(eslERANGE, "value %f requires unreasonable histogram bin number", sc);
+	  ESL_RALLOC(ranklist->ha->obs, tmp, sizeof(uint64_t) * (nnew + ranklist->ha->nb));
+	  
+	  memmove(ranklist->ha->obs+nnew, ranklist->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
+	  ranklist->ha->nb    += nnew;
+	  b                   += nnew;
+	  ranklist->ha->bmin  -= nnew*ranklist->ha->w;
+	  ranklist->ha->imin  += nnew;
+	  ranklist->ha->cmin  += nnew;
+	  if (ranklist->ha->imax > -1) ranklist->ha->imax += nnew;
+	  for (bi = 0; bi < nnew; bi++) ranklist->ha->obs[bi] = 0;
+	}
+      else if (b >= ranklist->ha->nb)  /* Reallocate above? */
+	{
+	  nnew = (b-ranklist->ha->nb+1) * 2; /* 2x overalloc */
+	  if (nnew > INT_MAX - ranklist->ha->nb) 
+	    ESL_EXCEPTION(eslERANGE, "value %f requires unreasonable histogram bin number", sc);
+	  
+	  ESL_RALLOC(ranklist->ha->obs, tmp, sizeof(uint64_t) * (nnew+ ranklist->ha->nb));
+	  
+	  for (bi = ranklist->ha->nb; bi < ranklist->ha->nb+nnew; bi++) ranklist->ha->obs[bi] = 0;
+	  if (ranklist->ha->imin == ranklist->ha->nb) { /* boundary condition of no data yet*/
+	    ranklist->ha->imin+=nnew; 
+	    ranklist->ha->cmin+=nnew;
+	  }
+	  ranklist->ha->bmax  += nnew*ranklist->ha->w;
+	  ranklist->ha->nb    += nnew;
+	}
+      
+      // add the pdf to histogram
+      if (b  < ranklist->ha->imin) { ranklist->ha->imin = b; ranklist->ha->cmin = b; }
+      if (b  > ranklist->ha->imax) { ranklist->ha->imax = b;  }
+      if (sc < ranklist->ha->xmin) { ranklist->ha->xmin = sc; }
+      if (sc > ranklist->ha->xmax) { ranklist->ha->xmax = sc; }
+
+      ranklist->ha->obs[b]  = counts;
+      ranklist->ha->n      += counts;
+      ranklist->ha->Nc     += counts;
+      ranklist->ha->No     += counts;
+    }
+  }
+
+  esl_fileparser_Close(efp);
+
+  *ret_ranklist = ranklist;
+  
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+int 
+cov_WriteNullHistogram(char *nullhisfile, RANKLIST *ranklist, char *errbuf, int verbose)
+{
+  FILE     *fp = NULL;
+  int       i;
+  double    x;
+  int       status;
+  
+  if (ranklist == NULL) return eslOK;
+
+  if ((fp = fopen(nullhisfile, "w")) == NULL) ESL_XFAIL(eslFAIL, errbuf, "could not open nullhisfile %s\n", nullhisfile);
+
+  for (i = 0; i < ranklist->ha->nb; i++) {
+    x = ranklist->ha->bmin + i * ranklist->ha->w;
+    fprintf(fp, "%f %llu\n", x, ranklist->ha->obs[i]);
+  }
+  
+  fclose(fp);
+
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 int 
 cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *covqqfile, SAMPLESIZE samplesize, RANKLIST *ranklist, char *title)
 {
@@ -1599,7 +1783,6 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
 
  ERROR:
   return status;
-
 }
 
 int 
@@ -2051,6 +2234,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   if      (survfit && icov >= 2*h->nb-1)  eval = survfit[2*h->nb-1] * (double)Nc;
   else if (survfit &&  cov >= h->phi)     eval = survfit[icov+1]    * (double)Nc;
   else { /* otherwise, the sampled distribution  */
+
     if (cov >= h->xmax) { return (double)Nc / (double)h->Nc; }
 
     if (icov <= h->imax) {      
@@ -2078,7 +2262,7 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
   int    c = 0;
   int    i;
   int    b = h->cmin-1; 
-  
+
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {
     for (b = 2*h->nb-1; b >= h->cmin; b--) {

@@ -94,15 +94,15 @@ typedef struct fold_s {
   int               lastfold;
   
   // parameters for the main nested structure
-  int               hloop_min;
+  int               hloop_min; // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is hloop_min = 2. Default HLOOP_MIN
+                               // unless there are covariations forcing a smaller hairpin loop.
   
   // parameters for selecting non-nested helices without covariations
   double            helix_overlapfrac; // max fraction of paired residues that overlap with another existing helix in order to be removed
   int               minhelix;          // min length to be reported
 
-  // parameters to break non-nested structures in helices
-  int               helix_unpaired; // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = 2
-                                    // unless there are covariations forcing a smaller hairpin loop.
+  // parameters to break structure in helices
+  int               helix_unpaired;  // max number of unpaired residues in a non-nested helix. default HELIX_UNPAIRED
   
   // special parameter for selecting helices with covariations
   // use these setting for maximal display of basepairing even if overlaping or contiguous
@@ -119,8 +119,7 @@ typedef struct fold_s {
   
 } FOLDPARAM;
 
-extern int       struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_cykctlist, 
-	 	  	         RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh);
+extern int       struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST **ret_rmlist, RANKLIST *ranklist, HITLIST *hitlist, FOLDPARAM *foldparam, THRESH *thresh);
 extern int       struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, struct mutual_s *mi, int *msamap, int firstpos,
 	   		        SAMPLESIZE samplesize,  HITLIST *hitlist, int dosvg, char *errbuf, int verbose);
 extern CTLIST   *struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose);
@@ -140,6 +139,15 @@ extern void      struct_ctlist_Destroy(CTLIST *ctlist);
 extern int       struct_ctlist_Dump(CTLIST *ctlist);
 extern int       struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, char *errbuf, int verbose);
 extern int       struct_ctlist_Realloc(CTLIST *ctlist, int nct);
+extern RM       *struct_rm_Create(int nct, int L);
+extern void      struct_rm_Destroy(RM *rm);
+extern void      struct_rm_Dump(RM *rm);
+extern int       struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose);
+extern RMLIST   *struct_rmlist_Create(int nrm, int L);
+extern void      struct_rmlist_Destroy(RMLIST *rmlist);
+extern void      struct_rmlist_Dump(RMLIST *rmlist);
+extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, CTLIST *ctlist, char *errbuf, int verbose);
+extern int       struct_rmlist_Stats(RMLIST *rmlist);
 extern PAIRLIST *struct_pairlist_Create(int n);
 extern void      struct_pairlist_Destroy(PAIRLIST *pairlist);
 extern void      struct_pairlist_Dump(PAIRLIST *pairlist);
