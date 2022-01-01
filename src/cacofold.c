@@ -3342,7 +3342,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
   emitsc_pair2  = emitsc_pair_prof(i, j,    psq, p->e_pair2);
   emitsc_stck1  = emitsc_stck_prof(i, j, L, psq, p->e_pair1, p->e_stck1);
   emitsc_stck2  = emitsc_stck_prof(i, j, L, psq, p->e_pair2, p->e_stck2);
-  
+
   // Follow the grammar
   // order: S F0 F5 P M1 R M
   switch(w) {
@@ -4503,7 +4503,7 @@ allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, i
   // check if pair is in the excluded list
   for (n = 0; n < exclude->n; n ++) {
     if ((exclude->cov[n].i == i && exclude->cov[n].j == j) ||
-	(exclude->cov[n].i == j && exclude->cov[n].j == i)   ) return FALSE;
+	(exclude->cov[n].i == j && exclude->cov[n].j == i)   ) { return FALSE; }
   }
 
   // check that the pair can form and does not have too much power or an Evalue in the grey zone
@@ -4515,11 +4515,10 @@ allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, i
     if      (power < power_thresh)    allow = TRUE;   // no power,  allow to pair
     else if (eval  < neg_eval_thresh) allow = TRUE;   // has power, but it is in the gray zone for significantly covarying, allow to pair
     else {                                            // power and unlikely to be covarying, a negative pair
-      //printf("^^ negative: I %d J %d\n", i, j);
       if (ret_nneg) (*ret_nneg) ++;
     }
    }
-
+  
   return allow;
 }
 

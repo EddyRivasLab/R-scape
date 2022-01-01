@@ -110,6 +110,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   if ((status = esl_tmpfile_named(tmptreefile,  &treefp))     != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
   if ((status = esl_FileConcat(NULL, tmptreefile, &treefile)) != eslOK) goto ERROR;
   esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
+  fclose(treefp);
     
   if (msa->abc->type == eslAMINO)
     esl_sprintf(&args, "%s -quiet %s > %s 2> /dev/null ", cmd, tmpmsafile, treefile);

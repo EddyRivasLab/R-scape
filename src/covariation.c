@@ -41,8 +41,8 @@
 #include "ribosum_matrix.h"
 #include "structure.h"
 
-static double cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *surv);
-static double evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit);
+static double cov2evalue(double cov,        int Nc, ESL_HISTOGRAM *h, double *surv);
+static double evalue2cov(double eval_thres, int Nc, ESL_HISTOGRAM *h, double *survfit);
 static int    cov_add_pair2covct(int ih, int jh, CTLIST *ctlist, int verbose);
 static int    cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
@@ -321,7 +321,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           pmass, newmass;
   double           bmax;
   double           add;
-  double           tol = 1e-2;
+  double           tol = data->tol;
   int              select;
   int              i, j;
   int              status;
@@ -353,7 +353,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
-      fprintf(stdout, "one sequence, no covariation analysis\n");
+      fprintf(stdout, "one sequence, no covariation analysis.\n");
     }
     data->thresh->sc_bp  = eslINFINITY;
     data->thresh->sc_nbp = eslINFINITY;
@@ -446,6 +446,8 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
     data->thresh->sc_nbp =
       (data->ranklist_null)?
       evalue2cov(data->thresh->val, (ranklist->hb->Nc>0)? ranklist->ht->Nc:ranklist->ha->Nc, data->ranklist_null->ha, data->ranklist_null->survfit) : eslINFINITY;
+
+    if (data->verbose) printf("Eval thesh %f score thresh %f (bps) %f (no bps)\n", data->thresh->val, data->thresh->sc_bp, data->thresh->sc_nbp);
   }
 
   status = cov_ROC(data, covtype, ranklist);
@@ -2254,10 +2256,11 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
 }
 
 static double
-evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
+evalue2cov(double eval_thresh, int Nc, ESL_HISTOGRAM *h, double *survfit)
 {
   double cov = -eslINFINITY;
   double exp = 0.0;
+  double eval;
   int    min_nobs = 10;
   int    c = 0;
   int    i;
@@ -2266,19 +2269,21 @@ evalue2cov(double eval, int Nc, ESL_HISTOGRAM *h, double *survfit)
   /* use the fit if possible */
   if (h->No >= min_nobs && survfit) {
     for (b = 2*h->nb-1; b >= h->cmin; b--) {
-      exp = survfit[b];
-      if (exp * (double)Nc >= eval) break;
+      exp  = survfit[b];
+      eval = exp * (double)Nc;
+      if (eval >= eval_thresh) break;
     }
     cov = esl_histogram_Bin2LBound(h, b);
   }
 
-  /* otherwise, use the sampled distribution */
+  /* the fit did not reach eval_thresh, use the sampled distribution */
   if (b == h->cmin-1) {
     for (i = h->imax; i >= h->imin; i--) {
       c += h->obs[i];
-      if ((double)c * (double)Nc / (double)h->Nc > eval) break;
+      eval = (double)c * (double)Nc / (double)h->Nc;
+      if (eval >= eval_thresh) break;
     }    
-    cov = esl_histogram_Bin2LBound(h, i);
+    cov = esl_histogram_Bin2UBound(h, i);
   }
   
   return cov;

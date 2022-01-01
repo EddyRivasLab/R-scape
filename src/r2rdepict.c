@@ -687,7 +687,7 @@ r2r_run_consensus_from_msa(ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf)
   afp->format = eslMSAFILE_PFAM;
   if (esl_msafile_Read(afp, ret_r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
   esl_msafile_Close(afp);
-
+  
   remove(tmpinfile);
   remove(tmpoutfile);
   

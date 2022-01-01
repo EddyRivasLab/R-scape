@@ -1031,6 +1031,7 @@ main(int argc, char **argv)
     fclose(cfg.powerfp);
     
     power_PlotHistograms(cfg.gnuplot, cfg.powerhisfile, cfg.powerhisfp, cfg.powerhis, cfg.powerfile, cfg.powerdouble, cfg.errbuf, cfg.verbose); 
+    fclose(cfg.powerhisfp);
   }
 
   /* cleanup */
@@ -1138,7 +1139,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
  if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
-  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV);
+ if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f tol %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV, cfg->tol);
   
   if (cfg->pt == NULL) potts_Destroy(ptlocal);
   

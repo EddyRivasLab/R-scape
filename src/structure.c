@@ -1113,13 +1113,13 @@ struct_ctlist_Dump(CTLIST *ctlist)
   for (s = 0; s < nct; s ++) {
     esl_ct2wuss(ctlist->ct[s],    L, ss);
     esl_ct2wuss(ctlist->covct[s], L, covss);
-    if      (ctlist->cttype[s] == CTTYPE_NESTED) printf("\nNESTED  %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_NONWC)  printf("\nNONWC   %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_TRI)    printf("\nTRIPLET %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_SCOV)   printf("\nSCOV    %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_XCOV)   printf("\nXCOV    %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_PK)     printf("\nPK      %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_NONE)   printf("\n        %s\n        %s\n", ss, covss);
+    if      (ctlist->cttype[s] == CTTYPE_NESTED) printf("NESTED  %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_NONWC)  printf("NONWC   %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_TRI)    printf("TRIPLET %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_SCOV)   printf("SCOV    %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_XCOV)   printf("XCOV    %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_PK)     printf("PK      %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_NONE)   printf("        %s\n        %s\n", ss, covss);
   }
     
   free(ss); 
@@ -1440,9 +1440,11 @@ struct_rm_Destroy(RM *rm)
 void
 struct_rm_Dump(RM *rm)
 {
-  printf("# helix %d-%d %d-%d, nbp = %d\n", rm->i, rm->k, rm->l, rm->j, rm->nbp);
-  if (rm->covary) printf("# * E-value %g P-value %g\n", rm->Eval, rm->Pval);
-  else            printf("#   E-value %g P-value %g\n", rm->Eval, rm->Pval);
+  printf("\n# helix %d-%d %d-%d, nbp = %d\n", rm->i, rm->k, rm->l, rm->j, rm->nbp);
+  if (rm->Pval > 0) {
+    if (rm->covary) printf("# * E-value %g P-value %g\n", rm->Eval, rm->Pval);
+    else            printf("#   E-value %g P-value %g\n", rm->Eval, rm->Pval);
+  }
   struct_ctlist_Dump(rm->ctlist);
 }
 
@@ -1726,7 +1728,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   //
   status = ctlist_assign_cttype(ctlist, foldparam->helix_unpaired, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  
+
   if (verbose) {
     printf("\nCTTYPEs assigned nct = %d\n", ctlist->nct);
     struct_ctlist_Dump(ctlist);

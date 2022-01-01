@@ -429,6 +429,7 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
   COVLIST *totalcov = NULL;
   COV     *cov;
   double   covscore;
+  double   evalue;
   int      L = mi->alen;
   int      i, j;
   int      isbp;
@@ -444,9 +445,9 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
       for (c = 0; c < clist->ncnt; c++) 
 	if (i == clist->cnt[c].i && j == clist->cnt[c].j) { isbp = clist->cnt[c].isbp; break; }
       covscore = mi->COV->mx[i-1][j-1];
-      
-      if ( ( isbp && covscore >= thresh->sc_bp) ||
-	   (!isbp && covscore >= thresh->sc_nbp)   )
+      evalue   = mi->Eval->mx[i-1][j-1];
+
+      if (evalue <= thresh->val)
 	{
 	  struct_covlist_Realloc(totalcov, totalcov->n+1);
 	  cov        = &totalcov->cov[totalcov->n-1];
@@ -459,7 +460,7 @@ covariations_total(struct mutual_s *mi, CLIST *clist, THRESH *thresh, COVLIST **
     }
 
   if (verbose) {
-    printf("total covs %lld\n", totalcov->n);
+    printf("total covs %lld thresh_sc bp %f nbp %f\n", totalcov->n, thresh->sc_bp, thresh->sc_nbp);
     for (n = 0; n < totalcov->n; n ++) {
       cov = &totalcov->cov[n];
       printf("%lld %lld isbp %d score %f\n", cov->i, cov->j, cov->isbp, cov->score);
