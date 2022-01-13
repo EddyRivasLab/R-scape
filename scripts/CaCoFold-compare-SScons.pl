@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # 
-#  Rank a R-scape output by the F measure
+#  Compare the CaCoFold structure to the consensus structure provided with the alignment
 #
 use strict;
 use Class::Struct;
@@ -10,20 +10,26 @@ use constant GNUPLOT => '/usr/local/bin/gnuplot';
 use lib '/Users/erivas/src/Mysrc/R-scape/scripts';
 use FUNCS;
 
-use vars qw ($opt_b $opt_p $opt_v $opt_f $opt_F);  # required if strict used
+use vars qw ($opt_b $opt_p $opt_v $opt_f);  # required if strict used
 use Getopt::Std;
-getopts ('b:p:vf:F:');
+getopts ('b:p:vf:');
 
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
-    print "usage:  rank_by_F.pl [options] <R-scape.out> \n\n";
+    print "usage:  CaCoFold-compare-SS_cons.pl [options] <R-scape.out> \n\n";
     print "options:\n";
     print "-v    :  be verbose\n";
     exit;
 }
 my $file    = shift;
-my $outname = "$file";
-if ($outname =~ /^(\S+).rscape/) { $outname = "$1"; }
+my $filename;
+my $outdir;
+my $outdirname = "compare";
+if    ($file =~ /^(\S+)\/([^\/]+).rscape/) { $outdir = "$1/$outdirname"; $filename = "$2"; }
+elsif ($file =~ /^([^\/]+).rscape/)        { $outdir = "$outdirname";    $filename = "$1"; }
+system("mkdir $outdir\n");
+my $outname = "$outdir/$filename";
+print "outdir $outdir\noutname $outname\n";
 
 my $outfile_rank         = "$outname.rank";        # file with all families ranked by Sensitivity/power 
 my $outfile_allfam       = "$outname.allfam";      # file with all families ranked by Sensitivity to plot
@@ -46,21 +52,6 @@ my $outfile_muchbettss   = "$outname.muchbetterss";
 my $outfile_worsess      = "$outname.worsess";
 my $outfile_equalss      = "$outname.equalss";
 
-my $file3d;
-my $n3d = 0;
-my @fam3d;
-my @name3d;
-
-my $nofilter = 1;
-if ($opt_F) { 
-    $file3d = "$opt_F"; 
-    parse_3dfile($file3d, \$n3d, \@fam3d, \@name3d);
-    print "3D fam $n3d\n";
-    for (my $f = 0; $f < $n3d; $f ++) {
-	printf "%d |$fam3d[$f]| |$name3d[$f]|\n", $f+1;
-    }
-    $nofilter = 0;
-}
 
 my @allfam;
 my %allfam_idx;
@@ -89,6 +80,7 @@ my %allfam_S_fold;
 my %allfam_P_fold;
 my %allfam_F_fold;
 my %allfam_Spower_fold;
+
 my %allfam_all;
 my %allfam_table;
 my %allfam_tabless;
@@ -120,7 +112,7 @@ my %allfam_main3_nc;
 my %allfam_main3_nh_fold;
 my %allfam_main3_nhc_fold;
 my %allfam_main3_nc_fold;
-
+ 
 my %allfam_alt_nh;
 my %allfam_alt_nhc;
 my %allfam_alt_nc;
@@ -149,8 +141,6 @@ my %allfam_alt3_nh_fold;
 my %allfam_alt3_nhc_fold;
 my %allfam_alt3_nc_fold;
 
-my %usefam3d;
-filter_families_by3d($file, \%usefam3d);
 
 # fields:
 #
@@ -201,7 +191,7 @@ my $iavgid      = 21;
 my $ialen       = 22;
 my $inseq       = 23;
 
-my $nfall = parse_rscapeout($file, \%usefam3d);
+my $nfall = parse_rscapeout($file);
 print "NALLFAM $nfall\n";
 
 my @fam;
@@ -235,8 +225,8 @@ my %fam_all;
 my %fam_table;
 my %fam_tabless;
 
+my $nofilter = 1;
 my $nf = filter_fam($nofilter);
-print "filtered NFAM $nf\n";
 
 outfile_rank       ($outfile_rank, $outfile_allfam, $outfile_allfam_l1, $outfile_allfam_l2, $outfile_allfam_l3);
 outfile_nopower    ($outfile_nopower);
@@ -276,7 +266,7 @@ plot_ss($plotssfile);
 
 
 sub parse_rscapeout {
-    my  ($file, $usefam3d_ref) = @_;
+    my  ($file) = @_;
 
     my $usefam;
     my $isfold;
@@ -412,13 +402,13 @@ sub parse_rscapeout {
 	    
 	    if ($usefam) {	    
 		if ($nmode == 2) {
-		    printf "%d FAM FOLD $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
+		    printf "%d FAM CaCoFold $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
 		    $allfam_tp_fold{$fam}    = $tp;
 		    $allfam_true_fold{$fam}  = $true;
 		    $allfam_found_fold{$fam} = $found;
 		}
 		else {
-		    printf "%d FAM $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
+		    printf "%d FAM SScons   $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
 		    $allfam_tp{$fam}    = $tp;
 		    $allfam_true{$fam}  = $true;
 		    $allfam_found{$fam} = $found;
@@ -645,11 +635,10 @@ sub parse_rscapeout {
 	    $nf_used ++;
 	}
     }
-    printf("Totals for %d/$nf families\n       given    CaCoFOld\n", $nf_used, $nf);
+    printf("Totals for %d/$nf families\n             SScons    CaCoFOld\n", $nf_used, $nf);
     printf("cov_bps        %f  %f\n", $tp_tot,    $tp_fold_tot);
     printf("all_bps        %f  %f\n", $true_tot,  $true_fold_tot);
-    printf("found cov_bps  %f  %f\n", $found_tot, $found_fold_tot);
-
+    
     # helices cummulatives
     my $main_nh_tot  = 0;
     my $main_nhc_tot = 0;
@@ -816,7 +805,6 @@ sub parse_rscapeout {
 	$allfam_id{$fam}      = sprintf("%.1f", $allfam_id{$fam});
 	    
 	my $name = $fam;
-	if ($n3d > 0 && $usefam3d_ref->{$fam}) { $name .= "**"; }
 	$name =~ s/\_/ /g;
 	
 	my $longname = $fam; $longname =~ s/\_/-/g;
@@ -1197,7 +1185,7 @@ sub outfile_rank {
 	}
 	
 	$fam_table{$fam} = "$n & $fam_table{$fam}";
-	printf  "$fam_table{$fam}\n";
+	#printf  "$fam_table{$fam}\n";
 	$fam_tabless{$fam} = "$n & $fam_tabless{$fam}";
     }
     
@@ -1234,7 +1222,7 @@ sub outfile_withpower{
 	my $fam   = $fam[$f];
 	my $power = $fam_Spower{$fam};
 	my $sen   = $fam_S{$fam};
-	if ($power > 0 && $sen ==0) {
+	if ($power > 0 && $sen == 0) {
 	    $m ++;
 	    print     "withpower $m $fam power $power\n";
 	    print OUT "$fam_all{$fam}\n";
@@ -1490,7 +1478,7 @@ sub outfile_equalss{
 	my $power = $fam_Spower{$fam};
 	if ($ppv_fold == $ppv) {
 	    $m ++;
-	    print "equal_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
+	    #print "equal_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -1499,64 +1487,4 @@ sub outfile_equalss{
  
 
 
-sub parse_3dfile {
-    my ($file3d, $ret_n3d, $fam3d_ref, $name3d_ref) = @_;
-
-    my $n3d = 0;
-
-    open(FILE, "$file3d");
-    while (<FILE>) {
-	if (/^(.+)(RF\d+)\s*\n/) {
-	    $name3d_ref->[$n3d] = $1;
-	    $fam3d_ref->[$n3d]  = $2;
-	    $n3d ++;
-	}
-    }
-    close(FILE);
-    
-    $$ret_n3d = $n3d;
-}
-
-sub is_3dfam {
-    my ($acc, $n3d, $fam3d_ref) = @_;
-
-    for (my $f = 0; $f < $n3d; $f ++) {
-	if ($acc =~ /^$fam3d_ref->[$f]$/) { return 1; }
-    }
-
-    return 0;
-}
-
-sub filter_families_by3d {
-    my ($file, $usefam_ref) = @_;
-    my $nf = 0;
-
-    print "by3d file: $file\n";
-    open (FILE, "$file") || die;
-    while(<FILE>) {
-	# MSA RF00001_5S_rRNA nseq 712 (712) alen 119 (230) avgid 56.09 (55.86) nbpairs 34 (34)
-	if (/^# MSA\s+(\S+)\s+nseq\s+(\S+)\s+\(.+alen\s+(\S+)\s+\(.+avgid\s+(\S+)\s+/) {
-	    my $fam   = $1;
-	    my $nseq  = $2;
-	    my $alen  = $3;
-	    my $avgid = $4;
-	    my $acc = $fam;
-	    if ($acc =~ /^(RF\d\d\d\d\d)/) { $acc = $1; }
-	   
-	    
-	    if ($n3d > 0) {
-		$usefam_ref->{$fam} = 0;
-		if (is_3dfam($acc, $n3d, \@fam3d) ) { $usefam_ref->{$fam} = 1; }
-	    }
-	    else { $usefam_ref->{$fam} = 1; }
-	    $nf ++;
-	
-	}
-    }
-    close(FILE);
-    
-    if ($n3d > 0) { print "After 3D filtering $nf families\n"; }
-   
-    return $nf;
-}
 

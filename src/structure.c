@@ -1412,11 +1412,12 @@ struct_rm_Create(int nct, int L)
   rm->type = RMTYPE_UNKNOWN;
   
   rm->ctlist = struct_ctlist_Create(nct, L);
-  rm->nbp = 0;
-  rm->i   = L+1;
-  rm->j   = -1;
-  rm->k   = -1;
-  rm->l   = L+1;
+  rm->nbp     = 0;
+  rm->nbp_cov = 0;
+  rm->i = L+1;
+  rm->j = -1;
+  rm->k = -1;
+  rm->l = L+1;
     
   rm->covary = FALSE;
   rm->Pval   = -1.;
@@ -1440,7 +1441,7 @@ struct_rm_Destroy(RM *rm)
 void
 struct_rm_Dump(RM *rm)
 {
-  printf("\n# helix %d-%d %d-%d, nbp = %d\n", rm->i, rm->k, rm->l, rm->j, rm->nbp);
+  printf("\n# RM %d-%d %d-%d, nbp = %d npb_cov = %d\n", rm->i, rm->k, rm->l, rm->j, rm->nbp, rm->nbp_cov);
   if (rm->Pval > 0) {
     if (rm->covary) printf("# * E-value %g P-value %g\n", rm->Eval, rm->Pval);
     else            printf("#   E-value %g P-value %g\n", rm->Eval, rm->Pval);
@@ -1520,7 +1521,7 @@ struct_rmlist_Dump(RMLIST *rmlist)
 {
   int h;
   
-  printf("# helices = %d L = %d\n", rmlist->nrm, rmlist->L);
+  printf("# RMs = %d L = %d\n", rmlist->nrm, rmlist->L);
   for (h = 0; h < rmlist->nrm; h ++)
     struct_rm_Dump(rmlist->rm[h]);
 }
@@ -1634,7 +1635,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
     status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
-    if (status != eslOK) goto ERROR;     
+    if (status != eslOK) goto ERROR;
   }
   
   // Two special cases:
@@ -1651,7 +1652,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
       // and covarying basepairs cannot be present
       status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
       if (status != eslOK) goto ERROR;
-      nct  ++;
+      nct ++;
   }
   
   if (foldparam->lastfold) {
@@ -1798,7 +1799,10 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
     // convert the RF sequence to a trivial profile sequence
     psq = psq_CreateFrom(msa->name, msa->desc, msa->acc, msa->abc, rfsq->dsq, rfsq->n);
   }
-  if (verbose) ct_dump(msa->alen, covct);
+  if (verbose) {
+    printf("covarying pairs in this layer\n");
+    ct_dump(msa->alen, covct);
+  }
  
   // calculate the cascade power/covariation constrained structure using a probabilistic grammar
   esl_vec_ICopy(covct, L+1, ct);
@@ -2018,6 +2022,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
   int         minface;                      // max depth of faces in a structure 
   int         npairs = 0;                   // total number of basepairs 
   int         npairs_rm = 0;                // total number of basepairs in a motif
+  int         npairs_cov_rm = 0;            // total number of covarying basepairs in a motif
   int         npairs_reached = 0;           // number of basepairs found so far 
   int         found_partner;                // true if we've found left partner of a given base in stack pda */
   int         i, j;
@@ -2094,7 +2099,8 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
 		    {
 		      // a new RNA motif
 		      if (verbose) printf("new RNA motif %d idx %d\n", nfaces, idx);
-		      npairs_rm = 0;
+		      npairs_rm     = 0;
+		      npairs_cov_rm = 0;
 		      struct_rmlist_AddRM(rmlist, errbuf, verbose);
 		      rm  = rmlist->rm[idx];
 		      ctlist = rm->ctlist;
@@ -2118,6 +2124,8 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
 		      {
 			ctlist->covct[0][i] = j;
 			ctlist->covct[0][j] = i;
+			npairs_cov_rm ++;
+			rm->nbp_cov = npairs_cov_rm;
 		      }
 		  }
 		  break;

@@ -276,6 +276,7 @@ enum agg_e {
 typedef struct RM_s {
   enum RMtype_e   type;         // RNAmotif type
   int             nbp;          // Total number of pairs
+  int             nbp_cov;      // Covarying pairs
   int             i, j, k, l;   // The RNAmotif extends from 5'-i..k-3' ^ 5'-l..j-3'  (i < k < l < j)
   CTLIST         *ctlist;       // ctlist per RNAmotif. A WC helix requires only one ct, a NOWC motif may require several.
 

@@ -2232,7 +2232,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
   if (cfg->mode == GIVSS && ranklist) {
- 
+
     if (cfg->helix_stats) {
       struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
       struct_rmlist_Dump(rmlist); 

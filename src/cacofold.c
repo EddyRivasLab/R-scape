@@ -1962,7 +1962,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
   i = j - d + 1;
 
   if (d < 1 && w == G6X_L)  { *ret_sc = -eslINFINITY; return eslOK; }  // L  has at least 1 residues
-  if (d < 2 && w == G6X_F)  { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 2 residues
+  if (d < 1 && w == G6X_F)  { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 1 residues
 
   // decide on constraints
   force_bp = force_bpair(i, j, covct);
@@ -2174,7 +2174,7 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spair, 
   i = j - d + 1;
 
   if (d < 1 && w == G6X_L)  { *ret_sc = -eslINFINITY; return eslOK; }  // L  has at least 1 residues
-  if (d < 2 && w == G6X_F)  { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 2 residues
+  if (d < 1 && w == G6X_F)  { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 1 residues
 
   // decide on constraints
   force_bp = force_bpair(i, j, covct);
