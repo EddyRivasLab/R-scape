@@ -1,3 +1,4 @@
+
 /* structure.c */
 
 #include "rscape_config.h"

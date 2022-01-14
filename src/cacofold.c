@@ -3453,7 +3453,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
 	sc = p->tF0[2] + emitsc_pair2;     
       else 
 	sc = (allow_bp)? p->tF0[2] + emitsc_pair2 : -eslINFINITY;
-      
+  
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -3509,7 +3509,6 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
 	esl_stack_IPush(alts, d2);
       }
     }
-    break;
     
     /* rule8: F5 -> a a' */
     d1 = d2 = 0;
