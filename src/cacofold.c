@@ -1594,7 +1594,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, P
 	break;
       case RBG_S_3: // S -> epsilon
 	break;
-
+	
       case RBG_F0_1: // F0 -> a F5 a'
 	esl_stack_IPush(ns, RBG_F5);
 	esl_stack_IPush(ns, i+1);
@@ -1613,7 +1613,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, P
 	ct[i] = j;
 	ct[j] = i;
 	break;
- 
+	
       case RBG_F5_1: // F5 -> a F5 a'
 	esl_stack_IPush(ns, RBG_F5);
 	esl_stack_IPush(ns, i+1);
@@ -1632,7 +1632,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, P
 	ct[i] = j;
 	ct[j] = i;
 	break;
-
+	
       case RBG_P_1: // P -> m..m
 	break;
       case RBG_P_2: // P -> m..m F0
@@ -2143,6 +2143,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
       }
     }
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2355,6 +2356,7 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spair, 
       }
     }
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2479,6 +2481,7 @@ dp_recursion_g6x_inside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spai
       sumsc = e2_FLogsum(sumsc, sc);
     }
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2567,7 +2570,6 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spa
       sc    = omx->F->dp[k][d1+d] + imx->S->dp[k][d1] + p->t3[2];
       sumsc = e2_FLogsum(sumsc, sc);
     }
-    
     break;
     
   case G6X_F:
@@ -2582,8 +2584,8 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spa
       sc    = omx->F->dp[jp][d+2] + p->t3[0] + emitsc_pairij;
       sumsc = e2_FLogsum(sumsc, sc);
     }
-    
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2628,6 +2630,7 @@ dp_recursion_g6x_posterior_single(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, S
     
   case G6X_F:
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2708,8 +2711,8 @@ dp_recursion_g6x_posterior_pair(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPA
 	  omx->F->dp[j][d] + p->t3[1] + emitsc_pairij : -eslINFINITY;
       pp = e2_FLogsum(pp, thispp);
     }
-    
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -2807,7 +2810,6 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *spair
 	}
       }
     }
-    
     break;
     
   case G6X_L:
@@ -2924,6 +2926,7 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *spair
       }
     }
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
  
@@ -3050,6 +3053,7 @@ dp_recursion_g6xs_inside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *sp
       sumsc = e2_FLogsum(sumsc, sc);
     }
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -3140,7 +3144,6 @@ dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *s
       sc    = omx->F->dp[k][d1+d] + imx->S->dp[k][d1] + p->t3[2];
       sumsc = e2_FLogsum(sumsc, sc);
     }
-    
     break;
     
   case G6X_F:
@@ -3155,8 +3158,8 @@ dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *s
       sc    = omx->F->dp[jp][d+2] + p->t3[0] + emitsc_stckij;
       sumsc = e2_FLogsum(sumsc, sc);
     }
-    
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -3201,6 +3204,7 @@ dp_recursion_g6xs_posterior_single(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq,
     
   case G6X_F:
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -3283,8 +3287,8 @@ dp_recursion_g6xs_posterior_pair(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, S
 	  omx->F->dp[j][d] + p->t3[1] + emitsc_pairij : -eslINFINITY;
       pp = e2_FLogsum(pp, thispp);
     }
-    
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize G6X nt %d\n", w);
   }
 
@@ -3466,7 +3470,6 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
 	}
       }
     }
-  
     break;
 
   case RBG_F5:
@@ -3718,7 +3721,6 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
 	esl_stack_IPush(alts, d2);
       }
     }
-
     break;
     
   case RBG_M1:
@@ -3754,8 +3756,8 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, 
 	esl_stack_IPush(alts, d2);
       }
     }
-  
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG nt %d\n", w);
     
   }
@@ -3882,7 +3884,6 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spai
 	sumsc = e2_FLogsum(sumsc, sc);
       }
     }
-    
     break;
     
   case RBG_F5:
@@ -3913,7 +3914,6 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spai
 	sumsc = e2_FLogsum(sumsc, sc);
       }
     }
-   break;
     
     /* rule8: F5 -> a a' */
     if (d == 2) {
@@ -4060,8 +4060,8 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spai
     /* rule19: M1 -> F0 */
     sc    = imx->F0->dp[j][d] + p->tM1[1];
     sumsc = e2_FLogsum(sumsc, sc);                 	        
-  
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG nt %d\n", w);
     
   }
@@ -4146,7 +4146,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
       sc    = omx->S->dp[j][d1+d] + imx->F0->dp[im][d1] + p->tS[1];
       sumsc = e2_FLogsum(sumsc, sc);
     }
-   
     break;
     
   case RBG_F0:
@@ -4220,7 +4219,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //
     sc    = omx->M1->dp[j][d] + p->tM1[1];
     sumsc = e2_FLogsum(sumsc, sc);
- 
     break;
     
   case RBG_F5:
@@ -4251,7 +4249,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
 	sumsc = e2_FLogsum(sumsc, sc);
       }
     }
- 
     break;
     
   case RBG_P:
@@ -4282,7 +4279,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
 	sumsc = e2_FLogsum(sumsc, sc);
       }
     }
-    
     break;
     
   case RBG_M:
@@ -4313,7 +4309,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
       sc    = omx->M->dp[j][d1+d] + imx->M1->dp[im][d1] + p->tM[0];
       sumsc = e2_FLogsum(sumsc, sc);
     }
-  
     break;
     
   case RBG_R:
@@ -4377,7 +4372,6 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
       sc    = omx->M1->dp[j][d+1] + emitsc_singi + p->tM1[0];
       sumsc = e2_FLogsum(sumsc, sc);
     }
-  
     break;
     
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG nt %d\n", w);
@@ -4472,8 +4466,8 @@ dp_recursion_rbg_posterior_pair(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPA
         pp = e2_FLogsum(pp, thispp);
       }
     }
-    
     break;
+    
   default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG nt %d\n", w);
   }
 
