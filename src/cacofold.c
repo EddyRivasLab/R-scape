@@ -1722,15 +1722,15 @@ CACO_G6X_MEA_GetParam(G6Xparam **ret_p, double gamma, char *errbuf, int verbose)
 
  ESL_ALLOC(p, sizeof(G6Xparam));
 
-  p->t1[0] = 0;
-  p->t1[1] = 0;
-  p->t1[2] = 0;
+  p->t1[0] = 0.;
+  p->t1[1] = 0.;
+  p->t1[2] = 0.;
   p->t2[0] = lg;
   p->t2[1] = lg;
-  p->t2[2] = 0;
+  p->t2[2] = 0.;
   p->t3[0] = lg;
   p->t3[1] = lg;
-  p->t3[2] = 0;
+  p->t3[2] = 0.;
 
   *ret_p = p;
   return eslOK;
@@ -1754,7 +1754,7 @@ CACO_MEA_Fill_CYK(FOLDPARAM *foldparam, G6Xparam *meap, POST *post, SPAIR *spair
   /* G6X grammar
   */
   for (j = 0; j <= L; j++)
-    for (d = 1; d <= j; d++)
+    for (d = 0; d <= j; d++)
       {  // order is: L, F, S
 	status = dp_recursion_mea_cyk(foldparam, meap, post, spair, covct, exclude, gmx, G6X_L, j, d, &(gmx->L->dp[j][d]), &nneg, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "G6X L caco failed");
@@ -1968,10 +1968,10 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
   force_bp = force_bpair(i, j, covct);
   allow_bp = allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i, j, L, covct, exclude, spair, ret_nneg);
   allow_si = allow_single(i, covct);
-  
+
   // emission scores
-  emitsc_singi  = post->ps[i];
-  emitsc_pairij = post->pp[i][j];
+  emitsc_singi  = (d > 0)? post->ps[i]    : -eslINFINITY;
+  emitsc_pairij = (d > 0)? post->pp[i][j] : -eslINFINITY;
   
   // Follow the grammar
   switch(w) {
@@ -1998,6 +1998,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
     /* rule1: S -> L */
     d1 = 0;
     sc = cyk->L->dp[j][d] + p->t1[1];
+ 
     if (sc >= bestsc) {
       if (sc > bestsc) {   /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -2071,6 +2072,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
     d1 = 0;
     if (d == 1) {
       sc = (allow_si)? p->t2[2] + emitsc_singi : -eslINFINITY;
+  
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -2130,7 +2132,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
       k = i + d1 - 1;
 
       sc = cyk->L->dp[k][d1] + cyk->S->dp[j][d-d1] + p->t3[2];
-
+ 
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -2259,7 +2261,8 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spair, 
 	esl_stack_IPush(alts, d1);
       }
     }
-     /* rule4: L -> a a' */
+    
+    /* rule4: L -> a a' */
     d1 = 0;
     if (d == 2) {
       if (force_bp) 
