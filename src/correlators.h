@@ -226,6 +226,7 @@ struct outfiles_s {
   
   char            *rocfile;             // roc plot (optional)
   char            *outmsafile;          // output msa only with consensus columns used (optional)
+  char            *outsubsfile;         // output # of substitutions per alignment position (optional)
   char            *outtreefile;         // output tree (optional)
   char            *nullhisfile;         // output of null histogram (optional)
   char            *outnullfile;         // output of null alignments (optional)

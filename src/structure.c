@@ -48,6 +48,7 @@ static void  ct_dump(int L, int *ct);
 static int   ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int   ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, RMLIST **ret_rmlist, char *errbuf, int verbose);
 static int   ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose);
+
 static int   ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int   ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int   ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose);
@@ -141,8 +142,8 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   *ret_rmlist = rmlist;
 
   if (exclude) {
-    for (s = 0; s < maxcov_nct; s ++)
-      struct_covlist_Destroy(exclude[s]);
+    for (s = 0; s <= maxcov_nct; s ++)
+      if (exclude[s]) struct_covlist_Destroy(exclude[s]);
     free(exclude);
   }
   cov_FreeHitList(foldhitlist);
@@ -154,7 +155,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   
  ERROR:
   if (exclude) {
-    for (s = 0; s < maxcov_nct; s ++)
+    for (s = 0; s <= maxcov_nct; s ++)
       if (exclude[s]) struct_covlist_Destroy(exclude[s]);
     free(exclude);
   }
@@ -1075,6 +1076,7 @@ struct_ctlist_Destroy(CTLIST *ctlist)
   if (!ctlist) return;
 
   if (ctlist->cttype) free(ctlist->cttype);
+  
   if (ctlist->ctname) {
     for (n = 0; n < ctlist->nct; n ++) if (ctlist->ctname[n]) free(ctlist->ctname[n]);
     free(ctlist->ctname);
@@ -1627,17 +1629,16 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   ESL_ALLOC(ss, sizeof(char)   * (L+1));
   ESL_ALLOC(sc, sizeof(double) * ((nct>0)?nct:1));
 
-
   // the main fold uses the RBG grammar. For the rest, we don't look for a 2D, so no
   // no need to look for hairpin loops, bulges, internal loops. The G6X grammar is a better choice
   for (s = 0; s < nct; s ++) {
     if (s == 0) G = foldparam->G0;
     else        G = foldparam->GP;
-
+ 
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
     status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-  }
+   }
   
   // Two special cases:
   //
@@ -2018,7 +2019,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
   CTLIST     *ctlist;
   int         idx;
   int         nsingle_max = helix_unpaired; // break stems when there is more than nsigle_max unpaired residues
-  int         nsingle;
+  int         nsingle = 0;
   int         nfaces;                       // number of faces in a structure 
   int         minface;                      // max depth of faces in a structure 
   int         npairs = 0;                   // total number of basepairs 
@@ -2170,7 +2171,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
   int         idx;
   int         nsingle_max = helix_unpaired; // break stems when there is more than nsigle_max unpaired residues
   int         nsingle;
-  int         nfaces;                       // number of faces in a structure 
+  int         nfaces = 0;                   // number of faces in a structure 
   int         minface;                      // max depth of faces in a structure 
   int         npairs = 0;                   // total number of basepairs 
   int         npairs_reached = 0;           // number of basepairs found so far 
@@ -2183,7 +2184,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
     if (ctlist == NULL) ESL_XFAIL(eslFAIL, errbuf, "ct_split_helices() allocation error");
     idx = 0;
   }
-  else idx = ctlist->nct; 
+  else idx = ctlist->nct;
   
   /* total number of basepairs */
   for (j = 1; j <= L; j ++) { if (ct[j] > 0 && j < ct[j]) npairs ++; }
@@ -2240,7 +2241,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
 		   */
 		  if (nfaces > 1) minface--;
 		  if (esl_stack_IPush(pda, minface) != eslOK) goto FINISH;
-		  if (verbose) printf("found pair %d %d %d %d %d\n", i, j, nfaces, minface, nsingle);
+		  if (verbose) printf("found pair %d %d nfaces %d minface %d nsingle %d max %d idx %d nct %d\n", i, j, nfaces, minface, nsingle, nsingle_max, idx, ctlist->nct);
 		  
 		  // a new substructure
 		  if ( (nfaces == 0)               ||            // a hairpin loop 
@@ -2248,12 +2249,11 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
 		       (nfaces == 1 && nsingle > nsingle_max)  ) // break long stems if they have more than > nsingle_max single stranded residudes
 		    {	       
 		      idx ++;
-		      struct_ctlist_Realloc(ctlist,  idx);
+		      struct_ctlist_Realloc(ctlist, idx);
 		      esl_vec_ISet(ctlist->ct[idx-1],    L+1, 0);
 		      esl_vec_ISet(ctlist->covct[idx-1], L+1, 0);
 		      ctlist->cttype[idx-1] = cttype;
 		      if (verbose) printf("new substructure %d idx %d\n", nfaces, idx);
-
 		    }
 		    
 		  ctlist->ct[idx-1][i] = j;
@@ -2836,6 +2836,7 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
   int status;
   
   for (s = 0; s < nct; s ++)  {
+    if (ctlist->ctname[s]) continue;
     switch(ctlist->cttype[s]) {
     case(CTTYPE_NESTED):
       esl_sprintf(&ctlist->ctname[s], "nested_%d", ++nnested);

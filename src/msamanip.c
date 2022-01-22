@@ -602,7 +602,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   *ret_nfrags = omsa->nseq - esl_vec_ISum(useme, omsa->nseq);
 
   /* replace msa */
-  esl_msa_Destroy(omsa);
+  esl_msa_Destroy(*msa);
   *msa = new;
   
   if (dsq) free(dsq);

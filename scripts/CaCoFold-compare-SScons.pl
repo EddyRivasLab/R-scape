@@ -13,7 +13,6 @@ use FUNCS;
 use vars qw ($opt_b $opt_p $opt_v $opt_f);  # required if strict used
 use Getopt::Std;
 getopts ('b:p:vf:');
-
 # Print a helpful message if the user provides no input file.
 if (!@ARGV) {
     print "usage:  CaCoFold-compare-SS_cons.pl [options] <R-scape.out> \n\n";
@@ -31,11 +30,19 @@ system("mkdir $outdir\n");
 my $outname = "$outdir/$filename";
 print "outdir $outdir\noutname $outname\n";
 
+# treshholds
+my $nopower      = 0;  # (%)
+my $cov_plus     = 2;  # $tp_fold > $tp+$cov_plus
+my $thresh_tpexp = 4;  # greyzone: no cov <= $thresh_cov and tpexp > $thresh_tpexp
+my $thresh_cov   = 0;  # greyzone: no cov <= $thresh_cov and tpexp > $thresh_tpexp
+
+# nbps thresholds for reporting total # families
+my $min_nbps  = 1;
+if ($opt_b) { $min_nbps = $opt_b; }
+
+
 my $outfile_rank         = "$outname.rank";        # file with all families ranked by Sensitivity/power 
 my $outfile_allfam       = "$outname.allfam";      # file with all families ranked by Sensitivity to plot
-my $outfile_allfam_l1    = "$outname.allfam.l1";   # file with all families ranked by Sensitivity to plot
-my $outfile_allfam_l2    = "$outname.allfam.l2";   # file with all families ranked by Sensitivity to plot
-my $outfile_allfam_l3    = "$outname.allfam.l3";   # file with all families ranked by Sensitivity to plot
 my $outfile_nopower      = "$outname.nopower";     # families with no power (power = 0) 
 my $outfile_withpower    = "$outname.withpower";   # families with power   (power > 0)
 my $outfile_nocov        = "$outname.nocov";       # families with no significant covariations   (sen = 0)
@@ -84,62 +91,6 @@ my %allfam_Spower_fold;
 my %allfam_all;
 my %allfam_table;
 my %allfam_tabless;
-
-my %allfam_main_nh;
-my %allfam_main_nhc;
-my %allfam_main_nc;
-my %allfam_main_nh_fold;
-my %allfam_main_nhc_fold;
-my %allfam_main_nc_fold;
-
-my %allfam_main1_nh;
-my %allfam_main1_nhc;
-my %allfam_main1_nc;
-my %allfam_main1_nh_fold;
-my %allfam_main1_nhc_fold;
-my %allfam_main1_nc_fold;
-
-my %allfam_main2_nh;
-my %allfam_main2_nhc;
-my %allfam_main2_nc;
-my %allfam_main2_nh_fold;
-my %allfam_main2_nhc_fold;
-my %allfam_main2_nc_fold;
-
-my %allfam_main3_nh;
-my %allfam_main3_nhc;
-my %allfam_main3_nc;
-my %allfam_main3_nh_fold;
-my %allfam_main3_nhc_fold;
-my %allfam_main3_nc_fold;
- 
-my %allfam_alt_nh;
-my %allfam_alt_nhc;
-my %allfam_alt_nc;
-my %allfam_alt_nh_fold;
-my %allfam_alt_nhc_fold;
-my %allfam_alt_nc_fold;
-
-my %allfam_alt1_nh;
-my %allfam_alt1_nhc;
-my %allfam_alt1_nc;
-my %allfam_alt1_nh_fold;
-my %allfam_alt1_nhc_fold;
-my %allfam_alt1_nc_fold;
-
-my %allfam_alt2_nh;
-my %allfam_alt2_nhc;
-my %allfam_alt2_nc;
-my %allfam_alt2_nh_fold;
-my %allfam_alt2_nhc_fold;
-my %allfam_alt2_nc_fold;
-
-my %allfam_alt3_nh;
-my %allfam_alt3_nhc;
-my %allfam_alt3_nc;
-my %allfam_alt3_nh_fold;
-my %allfam_alt3_nhc_fold;
-my %allfam_alt3_nc_fold;
 
 
 # fields:
@@ -228,41 +179,26 @@ my %fam_tabless;
 my $nofilter = 1;
 my $nf = filter_fam($nofilter);
 
-outfile_rank       ($outfile_rank, $outfile_allfam, $outfile_allfam_l1, $outfile_allfam_l2, $outfile_allfam_l3);
-outfile_nopower    ($outfile_nopower);
-outfile_withpower  ($outfile_withpower);
+outfile_rank       ($outfile_rank, $outfile_allfam);
+outfile_nopower    ($nopower, $outfile_nopower);
+outfile_withpower  ($nopower, $outfile_withpower);
 outfile_nocov      ($outfile_nocov);
 outfile_withcov    ($outfile_withcov);
-outfile_outlierp   ($outfile_outlierp);
-outfile_outlierc   ($outfile_outlierc);
+outfile_outlierp   ($thresh_tpexp, $outfile_outlierp);
+outfile_outlierc   ($thresh_cov, $thresh_tpexp, $outfile_outlierc);
 outfile_nopnoc     ($outfile_nopnoc);
 outfile_nopc       ($outfile_nopc);
 outfile_pnoc       ($outfile_pnoc);
-outfile_greyzone   ($outfile_greyzone);
+outfile_greyzone   ($thresh_tpexp, $outfile_greyzone);
 outfile_betterss   ($outfile_betterss);
-outfile_muchbettss ($outfile_muchbettss);
+outfile_muchbettss ($cov_plus, $outfile_muchbettss);
 outfile_worsess    ($outfile_worsess);
 outfile_equalss    ($outfile_equalss);
 
 
-my $plotallfamfile = "$outname.plot.allfam";
-plot_allfam($plotallfamfile);
- 
 my $plotallvsallfile = "$outname.plot.allvsall";
 plot_allvsall($plotallvsallfile);
 
-my $lncRNAsfile = "";
-my $plotlncRNAsfile = "$outname.plot.allvsall.lncRNAs";
-if ($opt_f) {
-    $lncRNAsfile = "$opt_f";
-    plot_allvsall_lncRNAs($plotlncRNAsfile, $lncRNAsfile);
-}
-
-my $plotallvsid = "$outname.plot.allvsid";
-plot_allvsid($plotallvsid);
-
-my $plotssfile = "$outname.plot.ss";
-plot_ss($plotssfile); 
 
 
 sub parse_rscapeout {
@@ -271,6 +207,14 @@ sub parse_rscapeout {
     my $usefam;
     my $isfold;
     my $fam;
+
+    my $tp      = $1;
+    my $true    = $2;
+    my $found   = $3;
+    
+    my $sen     = $4;
+    my $ppv     = $5;
+    my $F       = $6;
 
     my $nmode;
     my $nf  = 0;
@@ -325,64 +269,6 @@ sub parse_rscapeout {
 		
 		$allfam_Spower_fold{$fam} = 0.0;
 
-		$allfam_main_nh{$fam}       = 0;  
-		$allfam_main_nhc{$fam}      = 0;  
-		$allfam_main_nc{$fam}       = 0;  
-		$allfam_main_nh_fold{$fam}  = 0;  
-		$allfam_main_nhc_fold{$fam} = 0;  
-		$allfam_main_nc_fold{$fam}  = 0;
-		
-		$allfam_main1_nh{$fam}       = 0;  
-		$allfam_main1_nhc{$fam}      = 0;  
-		$allfam_main1_nc{$fam}       = 0;  
-		$allfam_main1_nh_fold{$fam}  = 0;  
-		$allfam_main1_nhc_fold{$fam} = 0;  
-		$allfam_main1_nc_fold{$fam}  = 0;  
-		
-		$allfam_main2_nh{$fam}       = 0;  
-		$allfam_main2_nhc{$fam}      = 0;  
-		$allfam_main2_nc{$fam}       = 0;  
-		$allfam_main2_nh_fold{$fam}  = 0;  
-		$allfam_main2_nhc_fold{$fam} = 0;  
-		$allfam_main2_nc_fold{$fam}  = 0;  
-
-		$allfam_main3_nh{$fam}       = 0;  
-		$allfam_main3_nhc{$fam}      = 0;  
-		$allfam_main3_nc{$fam}       = 0;  
-		$allfam_main3_nh_fold{$fam}  = 0;  
-		$allfam_main3_nhc_fold{$fam} = 0;  
-		$allfam_main3_nc_fold{$fam}  = 0;  
-
-		
-		$allfam_alt_nh{$fam}       = 0;  
-		$allfam_alt_nhc{$fam}      = 0;  
-		$allfam_alt_nc{$fam}       = 0;  
-		$allfam_alt_nh_fold{$fam}  = 0;  
-		$allfam_alt_nhc_fold{$fam} = 0;  
-		$allfam_alt_nc_fold{$fam}  = 0;
-		
-		$allfam_alt1_nh{$fam}       = 0;  
-		$allfam_alt1_nhc{$fam}      = 0;  
-		$allfam_alt1_nc{$fam}       = 0;  
-		$allfam_alt1_nh_fold{$fam}  = 0;  
-		$allfam_alt1_nhc_fold{$fam} = 0;  
-		$allfam_alt1_nc_fold{$fam}  = 0;  
-		
-		$allfam_alt2_nh{$fam}       = 0;  
-		$allfam_alt2_nhc{$fam}      = 0;  
-		$allfam_alt2_nc{$fam}       = 0;  
-		$allfam_alt2_nh_fold{$fam}  = 0;  
-		$allfam_alt2_nhc_fold{$fam} = 0;  
-		$allfam_alt2_nc_fold{$fam}  = 0;  
-
-		$allfam_alt3_nh{$fam}       = 0;  
-		$allfam_alt3_nhc{$fam}      = 0;  
-		$allfam_alt3_nc{$fam}       = 0;  
-		$allfam_alt3_nh_fold{$fam}  = 0;  
-		$allfam_alt3_nhc_fold{$fam} = 0;  
-		$allfam_alt3_nc_fold{$fam}  = 0;  
-
-
 	    }
 	}
 	# Method Target_E-val [cov_min,conv_max] [FP | TP True Found | Sen PPV F]
@@ -392,29 +278,13 @@ sub parse_rscapeout {
 	}
 	# GTp    0.05         [-9.35,1389.53]     [8 | 22 34 30 | 64.71 73.33 68.75] 
 	elsif (/^#\s+\S+\s+\S+\s+\[\S+\]\s+\[\d+\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\S+)\s+(\S+)\s+(\S+)\]/) {
-	    my $tp      = $1;
-	    my $true    = $2;
-	    my $found   = $3;
+	    $tp      = $1;
+	    $true    = $2;
+	    $found   = $3;
 	    
-	    my $sen     = $4;
-	    my $ppv     = $5;
-	    my $F       = $6;
-	    
-	    if ($usefam) {	    
-		if ($nmode == 2) {
-		    printf "%d FAM CaCoFold $allfam[$nf-1] sen $sen ppv $ppv F $F\n", $nf;
-		    $allfam_tp_fold{$fam}    = $tp;
-		    $allfam_true_fold{$fam}  = $true;
-		    $allfam_found_fold{$fam} = $found;
-		}
-		else {
-		    printf "%d FAM SScons   $allfam[$nf] sen $sen ppv $ppv F $F\n", $nf+1;
-		    $allfam_tp{$fam}    = $tp;
-		    $allfam_true{$fam}  = $true;
-		    $allfam_found{$fam} = $found;
-		    $nf ++;
-		}
-	    }
+	    $sen     = $4;
+	    $ppv     = $5;
+	    $F       = $6;
 	}
 	# BPAIRS 20
 	# avg substitutions per BP 15.8
@@ -432,164 +302,23 @@ sub parse_rscapeout {
 		if ($isfold) { $allfam_tpexp_fold{$fam} = $tpexp; }
 		else         { $allfam_tpexp{$fam}      = $tpexp; }
 	    }
-	}
-	
-	# add compatible pairs in the fold structure
-	#~	               320	     321	194.17596	0.0153764	127	0.87
-	#~	 *	        98	       106	121.80433	3.80688e-10	12	0.35
-	elsif (/^~\s+.+\d+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+)$/) {
-	    my $pp = $1;
-	    if ($isfold) {
-		$allfam_tp_fold{$fam}    ++; 
-		$allfam_true_fold{$fam}  ++; 
-		$allfam_tpexp_fold{$fam} += $pp; 
-	    }
-	}
-	elsif (/^# Main\s+Helices\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_main_nh_fold{$fam}  = $nh;  
-		    $allfam_main_nhc_fold{$fam} = $nhc;  
-		    $allfam_main_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_main_nh{$fam}  = $nh;  
-		    $allfam_main_nhc{$fam} = $nhc;  
-		    $allfam_main_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Main\s+Helices\s+1 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_main1_nh_fold{$fam}  = $nh;  
-		    $allfam_main1_nhc_fold{$fam} = $nhc;  
-		    $allfam_main1_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_main1_nh{$fam}  = $nh;  
-		    $allfam_main1_nhc{$fam} = $nhc;  
-		    $allfam_main1_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Main\s+Helices\s+2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_main2_nh_fold{$fam}  = $nh;  
-		    $allfam_main2_nhc_fold{$fam} = $nhc;  
-		    $allfam_main2_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_main2_nh{$fam}  = $nh;  
-		    $allfam_main2_nhc{$fam} = $nhc;  
-		    $allfam_main2_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Main\s+Helices\s+\>2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_main3_nh_fold{$fam}  = $nh;  
-		    $allfam_main3_nhc_fold{$fam} = $nhc;  
-		    $allfam_main3_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_main3_nh{$fam}  = $nh;  
-		    $allfam_main3_nhc{$fam} = $nhc;  
-		    $allfam_main3_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Alt\s+Helices\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_alt_nh_fold{$fam}  = $nh;  
-		    $allfam_alt_nhc_fold{$fam} = $nhc;  
-		    $allfam_alt_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_alt_nh{$fam}  = $nh;  
-		    $allfam_alt_nhc{$fam} = $nhc;  
-		    $allfam_alt_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Alt\s+Helices\s+1 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_alt1_nh_fold{$fam}  = $nh;  
-		    $allfam_alt1_nhc_fold{$fam} = $nhc;  
-		    $allfam_alt1_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_alt1_nh{$fam}  = $nh;  
-		    $allfam_alt1_nhc{$fam} = $nhc;  
-		    $allfam_alt1_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Alt\s+Helices\s+2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_alt2_nh_fold{$fam}  = $nh;  
-		    $allfam_alt2_nhc_fold{$fam} = $nhc;  
-		    $allfam_alt2_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_alt2_nh{$fam}  = $nh;  
-		    $allfam_alt2_nhc{$fam} = $nhc;  
-		    $allfam_alt2_nc{$fam}  = $nc;  
-		}
-	    }
-	}
-	elsif (/^# Alt\s+Helices\s+\>2 bp\s+(\d+)\s+covary\s+(\d+)\s+ncovs\s+(\d+)\s*/) {
-	    my $nh  = $1;
-	    my $nhc = $2;
-	    my $nc  = $3;
-	    
-	    if ($usefam) { 
-		if ($isfold) { 
-		    $allfam_alt3_nh_fold{$fam}  = $nh;  
-		    $allfam_alt3_nhc_fold{$fam} = $nhc;  
-		    $allfam_alt3_nc_fold{$fam}  = $nc;  
-		}
-		else { 
-		    $allfam_alt3_nh{$fam}  = $nh;  
-		    $allfam_alt3_nhc{$fam} = $nhc;  
-		    $allfam_alt3_nc{$fam}  = $nc;  
-		}
-	    }
-	}
 
+	    if ($usefam) {	    
+		if ($nmode == 2) {
+		    printf "%d FAM CaCoFold $allfam[$nf-1] bp $true bp&cov $tp cov $found exp_cov $tpexp\n", $nf;
+		    $allfam_tp_fold{$fam}    = $tp;
+		    $allfam_true_fold{$fam}  = $true;
+		    $allfam_found_fold{$fam} = $found;
+		}
+		else {
+		    printf "\n%d FAM SScons   $allfam[$nf] bp $true bp&cov $tp cov $found exp_cov $tpexp\n", $nf+1;
+		    $allfam_tp{$fam}    = $tp;
+		    $allfam_true{$fam}  = $true;
+		    $allfam_found{$fam} = $found;
+		    $nf ++;
+		}
+	    }
+	}
     }
     close (FILE);
     print "NFAMILIES parsed $nf\n";
@@ -611,20 +340,11 @@ sub parse_rscapeout {
     my $true_fold_tot  = 0;
     my $found_fold_tot = 0;
     my $nf_used = 0;
-
-    # power/nbps thresholds
-    my $min_power = 0.1;
-    if ($opt_p) { $min_power = $opt_p; }
-    
-    my $min_nbps  = 10;
-    if ($opt_b) { $min_nbps = $opt_b; }
-    printf("min nbp $min_nbps min_power $min_power\n");
-    
+   
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $allfam[$f];
 
-	if ($allfam_tpexp{$fam} >= $min_power &&
-	    $allfam_true{$fam}  >= $min_nbps) 
+	if ($allfam_true{$fam}  >= $min_nbps) 
 	{
 	    $tp_tot         += $allfam_tp{$fam};
 	    $true_tot       += $allfam_true{$fam};
@@ -635,155 +355,11 @@ sub parse_rscapeout {
 	    $nf_used ++;
 	}
     }
-    printf("Totals for %d/$nf families\n             SScons    CaCoFOld\n", $nf_used, $nf);
-    printf("cov_bps        %f  %f\n", $tp_tot,    $tp_fold_tot);
-    printf("all_bps        %f  %f\n", $true_tot,  $true_fold_tot);
+    printf("Totals for %d/$nf families (min_bp = $min_nbps)\n               SScons    CaCoFOld\n", $nf_used, $nf);
+    printf("cov_bps        %d %d\n", $tp_tot,    $tp_fold_tot);
+    printf("all_bps        %d %d\n", $true_tot,  $true_fold_tot);
     
-    # helices cummulatives
-    my $main_nh_tot  = 0;
-    my $main_nhc_tot = 0;
-    my $main_nc_tot  = 0;
-    my $main_nh_fold_tot  = 0;
-    my $main_nhc_fold_tot = 0;
-    my $main_nc_fold_tot  = 0;
-    
-    my $main1_nh_tot  = 0;
-    my $main1_nhc_tot = 0;
-    my $main1_nc_tot  = 0;
-    my $main1_nh_fold_tot  = 0;
-    my $main1_nhc_fold_tot = 0;
-    my $main1_nc_fold_tot  = 0;
-    
-    my $main2_nh_tot  = 0;
-    my $main2_nhc_tot = 0;
-    my $main2_nc_tot  = 0;
-    my $main2_nh_fold_tot  = 0;
-    my $main2_nhc_fold_tot = 0;
-    my $main2_nc_fold_tot  = 0;
-    
-    my $main3_nh_tot  = 0;
-    my $main3_nhc_tot = 0;
-    my $main3_nc_tot  = 0;
-    my $main3_nh_fold_tot  = 0;
-    my $main3_nhc_fold_tot = 0;
-    my $main3_nc_fold_tot  = 0;
-    
-    my $alt_nh_tot  = 0;
-    my $alt_nhc_tot = 0;
-    my $alt_nc_tot  = 0;
-    my $alt_nh_fold_tot  = 0;
-    my $alt_nhc_fold_tot = 0;
-    my $alt_nc_fold_tot  = 0;
-    
-    my $alt1_nh_tot  = 0;
-    my $alt1_nhc_tot = 0;
-    my $alt1_nc_tot  = 0;
-    my $alt1_nh_fold_tot  = 0;
-    my $alt1_nhc_fold_tot = 0;
-    my $alt1_nc_fold_tot  = 0;
-    
-    my $alt2_nh_tot  = 0;
-    my $alt2_nhc_tot = 0;
-    my $alt2_nc_tot  = 0;
-    my $alt2_nh_fold_tot  = 0;
-    my $alt2_nhc_fold_tot = 0;
-    my $alt2_nc_fold_tot  = 0;
-    
-    my $alt3_nh_tot  = 0;
-    my $alt3_nhc_tot = 0;
-    my $alt3_nc_tot  = 0;
-    my $alt3_nh_fold_tot  = 0;
-    my $alt3_nhc_fold_tot = 0;
-    my $alt3_nc_fold_tot  = 0;
-
-    $nf_used = 0;
-    for (my $f = 0; $f < $nf; $f ++) {
-	my $fam = $allfam[$f];
-	
-	if ($allfam_tpexp{$fam} >= $min_power &&
-	    $allfam_true{$fam}  >= $min_nbps) 
-	{
-	    $main_nh_tot       += $allfam_main_nh{$fam};
-	    $main_nhc_tot      += $allfam_main_nhc{$fam};
-	    $main_nc_tot       += $allfam_main_nc{$fam};    
-	    $main_nh_fold_tot  += $allfam_main_nh_fold{$fam};
-	    $main_nhc_fold_tot += $allfam_main_nhc_fold{$fam};
-	    $main_nc_fold_tot  += $allfam_main_nc_fold{$fam};
-	    
-	    $main1_nh_tot       += $allfam_main1_nh{$fam};
-	    $main1_nhc_tot      += $allfam_main1_nhc{$fam};
-	    $main1_nc_tot       += $allfam_main1_nc{$fam};    
-	    $main1_nh_fold_tot  += $allfam_main1_nh_fold{$fam};
-	    $main1_nhc_fold_tot += $allfam_main1_nhc_fold{$fam};
-	    $main1_nc_fold_tot  += $allfam_main1_nc_fold{$fam};
-	    
-	    $main2_nh_tot       += $allfam_main2_nh{$fam};
-	    $main2_nhc_tot      += $allfam_main2_nhc{$fam};
-	    $main2_nc_tot       += $allfam_main2_nc{$fam};    
-	    $main2_nh_fold_tot  += $allfam_main2_nh_fold{$fam};
-	    $main2_nhc_fold_tot += $allfam_main2_nhc_fold{$fam};
-	    $main2_nc_fold_tot  += $allfam_main2_nc_fold{$fam};
-	    
-	    $main3_nh_tot       += $allfam_main3_nh{$fam};
-	    $main3_nhc_tot      += $allfam_main3_nhc{$fam};
-	    $main3_nc_tot       += $allfam_main3_nc{$fam};    
-	    $main3_nh_fold_tot  += $allfam_main3_nh_fold{$fam};
-	    $main3_nhc_fold_tot += $allfam_main3_nhc_fold{$fam};
-	    $main3_nc_fold_tot  += $allfam_main3_nc_fold{$fam};
-	    
-	    $alt_nh_tot       += $allfam_alt_nh{$fam};
-	    $alt_nhc_tot      += $allfam_alt_nhc{$fam};
-	    $alt_nc_tot       += $allfam_alt_nc{$fam};    
-	    $alt_nh_fold_tot  += $allfam_alt_nh_fold{$fam};
-	    $alt_nhc_fold_tot += $allfam_alt_nhc_fold{$fam};
-	    $alt_nc_fold_tot  += $allfam_alt_nc_fold{$fam};
-	    
-	    $alt1_nh_tot       += $allfam_alt1_nh{$fam};
-	    $alt1_nhc_tot      += $allfam_alt1_nhc{$fam};
-	    $alt1_nc_tot       += $allfam_alt1_nc{$fam};    
-	    $alt1_nh_fold_tot  += $allfam_alt1_nh_fold{$fam};
-	    $alt1_nhc_fold_tot += $allfam_alt1_nhc_fold{$fam};
-	    $alt1_nc_fold_tot  += $allfam_alt1_nc_fold{$fam};
-	    
-	    $alt2_nh_tot       += $allfam_alt2_nh{$fam};
-	    $alt2_nhc_tot      += $allfam_alt2_nhc{$fam};
-	    $alt2_nc_tot       += $allfam_alt2_nc{$fam};    
-	    $alt2_nh_fold_tot  += $allfam_alt2_nh_fold{$fam};
-	    $alt2_nhc_fold_tot += $allfam_alt2_nhc_fold{$fam};
-	    $alt2_nc_fold_tot  += $allfam_alt2_nc_fold{$fam};
-	    
-	    $alt3_nh_tot       += $allfam_alt3_nh{$fam};
-	    $alt3_nhc_tot      += $allfam_alt3_nhc{$fam};
-	    $alt3_nc_tot       += $allfam_alt3_nc{$fam};    
-	    $alt3_nh_fold_tot  += $allfam_alt3_nh_fold{$fam};
-	    $alt3_nhc_fold_tot += $allfam_alt3_nhc_fold{$fam};
-	    $alt3_nc_fold_tot  += $allfam_alt3_nc_fold{$fam};
-	    
-	    $nf_used ++;
-	}
-    }
-    printf("HELICES\n");
-    printf("Totals for %d/%d families\n", $nf_used, $nf);
-    if ($main_nh_tot > 0) {
-	printf("            n_helices n_helices_covary n_covs\n");   
-	printf("main            %d  %d (%.2f) %d\n",   $main_nh_tot,       $main_nhc_tot,       $main_nhc_tot/ $main_nh_tot,       $main_nc_tot);
-	printf("main fold       %d  %d (%.2f) %d\n\n", $main_nh_fold_tot,  $main_nhc_fold_tot,  $main_nhc_fold_tot/$main_nh_fold_tot,   $main_nc_fold_tot);
-	printf("main       1bp  %d  %d (%.2f) %d\n",   $main1_nh_tot,      $main1_nhc_tot,      $main1_nhc_tot/$main1_nh_tot,      $main1_nc_tot);
-	printf("main fold  1bp  %d  %d (%.2f) %d\n\n", $main1_nh_fold_tot, $main1_nhc_fold_tot, $main1_nhc_fold_tot/$main1_nh_fold_tot, $main1_nc_fold_tot);
-	printf("main       2bp  %d  %d (%.2f) %d\n",   $main2_nh_tot,      $main2_nhc_tot,      $main2_nhc_tot/$main2_nh_tot,      $main2_nc_tot);
-	printf("main fold  2bp  %d  %d (%.2f) %d\n\n", $main2_nh_fold_tot, $main2_nhc_fold_tot, $main2_nhc_fold_tot/$main2_nh_fold_tot, $main2_nc_fold_tot);
-	printf("main      >2bp  %d  %d (%.2f) %d\n",   $main3_nh_tot,      $main3_nhc_tot,      $main3_nhc_tot/$main3_nh_tot,      $main3_nc_tot);
-	printf("main fold >2bp  %d  %d (%.2f) %d\n\n", $main3_nh_fold_tot, $main3_nhc_fold_tot, $main3_nhc_fold_tot/$main3_nh_fold_tot, $main3_nc_fold_tot);
-	printf("alt             %d  %d (%.2f) %d\n",   $alt_nh_tot,        $alt_nhc_tot,        $alt_nhc_tot/$alt_nh_tot,         $alt_nc_tot);
-	printf("alt fold        %d  %d (%.2f) %d\n\n", $alt_nh_fold_tot,   $alt_nhc_fold_tot,   $alt_nhc_fold_tot/$alt_nh_fold_tot,    $alt_nc_fold_tot);
-	printf("alt        1bp  %d  %d (%.2f) %d\n",   $alt1_nh_tot,       $alt1_nhc_tot,       $alt1_nhc_tot/$alt1_nh_tot,       $alt1_nc_tot);
-	printf("alt fold   1bp  %d  %d (%.2f) %d\n\n", $alt1_nh_fold_tot,  $alt1_nhc_fold_tot,  $alt1_nhc_fold_tot/$alt1_nh_fold_tot,  $alt1_nc_fold_tot);
-	printf("alt        2bp  %d  %d (%.2f) %d\n",   $alt2_nh_tot,       $alt2_nhc_tot,       $alt2_nhc_tot/$alt2_nh_tot,       $alt2_nc_tot);
-	printf("alt fold   2bp  %d  %d (%.2f) %d\n\n", $alt2_nh_fold_tot,  $alt2_nhc_fold_tot,  $alt2_nhc_fold_tot/$alt2_nh_fold_tot,  $alt2_nc_fold_tot);
-	printf("alt       >2bp  %d  %d (%.2f) %d\n",   $alt3_nh_tot,       $alt3_nhc_tot,       $alt3_nhc_tot/$alt3_nh_tot,       $alt3_nc_tot);
-	printf("alt fold  >2bp  %d  %d (%.2f) %d\n\n", $alt3_nh_fold_tot,  $alt3_nhc_fold_tot,  $alt3_nhc_fold_tot/$alt3_nh_fold_tot,  $alt3_nc_fold_tot);
-    }
-
+ 
 	
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $allfam[$f];
@@ -956,56 +532,13 @@ sub plot_allfam {
     system("open $pdf\n");
     
 }
-sub plot_ss {
-    my ($file) = @_;
-    
-    my $pdf    = "$file.ps";
-    my $xlabel = "RNA familiy";
-    my $ylabel;
-    my $cmd;
-    
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
-    print GP "set terminal postscript color 14\n";
-    FUNCS::gnuplot_define_styles (*GP);
- 
-    print GP "set output '$pdf'\n";
-    print GP "set key right top\n";
-    print GP "set nokey\n";
-    print GP "set xlabel '$xlabel'\n";
-    print GP "set xrange [1:$nf]\n";
-
-    $ylabel = "fraction of covarying pairs in the structure (%)";
-    print GP "set ylabel '$ylabel'\n";
-    $cmd  = "";
-    $cmd .= "'$outfile_allfam'     using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    #$cmd .= "'$outfile_worsess'    using $idx:$iP            with points title '' ls 1116, "; 
-    #$cmd .= "'$outfile_betterss'   using $idx:$iP            with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_worsess'    using $idx:$iP_c          with points title '' ls 1113, "; 
-    $cmd .= "'$outfile_betterss'   using $idx:$iP_c          with points title '' ls 1115 "; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-    
-    $ylabel = "fraction of basepairs that covary (%)";
-    print GP "set ylabel '$ylabel'\n";
-    $cmd  = "";
-    $cmd .= "'$outfile_allfam'     using $idx:$iSpower:(0.7) with boxes  title '' ls 1114, "; 
-    #$cmd .= "'$outfile_worsess'    using $idx:$iS            with points title '' ls 1116, "; 
-    #$cmd .= "'$outfile_betterss'   using $idx:$iS            with points title '' ls 1116, "; 
-    $cmd .= "'$outfile_worsess'    using $idx:$iS_c          with points title '' ls 1113, "; 
-    $cmd .= "'$outfile_betterss'   using $idx:$iS_c          with points title '' ls 1115 "; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-   
-    system("open $pdf\n");
-
-}
 
 sub plot_allvsall {
     my ($file) = @_;
 
     my $pdf    = "$file.ps";
-    my $xlabel = "Expected Covaring  (% basepairs)";
-    my $ylabel = "Significantly Covaring (% basepairs)";
+    my $xlabel = "base pairs expected to covary";
+    my $ylabel = "base pairs observed to covary";
     my $cmd;
     
     open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
@@ -1014,30 +547,45 @@ sub plot_allvsall {
  
     print GP "set output '$pdf'\n";
     print GP "set key right top\n";
-    print GP "set nokey\n";
+    #print GP "set nokey\n";
     print GP "set size square\n";
     print GP "set xlabel '$xlabel'\n";
     print GP "set ylabel '$ylabel'\n";
     
-    print GP "set xrange [-0.5:100]\n";
-    print GP "set yrange [-0.5:100]\n";
+    print GP "set xrange [-0.5:*]\n";
+    print GP "set yrange [-0.5:*]\n";
     $cmd  = "";
-    $cmd .= "'$outfile_allfam' using $iSpower:$iS:$ifam  title '' with labels ls 1112, "; 
-    $cmd .= "'$outfile_allfam' using $iSpower:$iS        title '' with points ls 1112"; 
+    $cmd .= "'$outfile_allfam' using $itpexp:$itp    title 'SScons' with points ls 1114"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
-    print GP "set xrange [-0.5:100]\n";
-    print GP "set yrange [-0.5:100]\n";
+    print GP "set xrange [-0.5:*]\n";
+    print GP "set yrange [-0.5:*]\n";
     $cmd  = "";
-    $cmd .= "'$outfile_allfam' using $iSpower:$iS      title '' with points ls 1112"; 
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c    title 'CaCoFold' with points ls 1112"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
+    print GP "set xrange [-0.5:*]\n";
+    print GP "set yrange [-0.5:*]\n";
     $cmd  = "";
-    $cmd .= "'$outfile_allfam_l1' using $iSpower:$iS      title '' with points ls 1112, "; 
-    $cmd .= "'$outfile_allfam_l2' using $iSpower:$iS      title '' with points ls 1114, "; 
-    $cmd .= "'$outfile_allfam_l3' using $iSpower:$iS      title '' with points ls 1113 "; 
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c:$ifam      title ''         with labels ls 1112, "; 
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c            title 'CaCoFold' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+
+    print GP "set xrange [-0.5:50]\n";
+    print GP "set yrange [-0.5:50]\n";
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c      title 'CaCoFold' with points ls 1112"; 
+    $cmd .= "\n";
+    print GP "plot $cmd\n";
+    
+    print GP "set xrange [-0.5:50]\n";
+    print GP "set yrange [-0.5:50]\n";
+    $cmd  = "";
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c:$ifam      title ''         with labels ls 1112, "; 
+    $cmd .= "'$outfile_allfam' using $itpexp_c:$itp_c            title 'CaCoFold' with points ls 1112"; 
     $cmd .= "\n";
     print GP "plot $cmd\n";
     
@@ -1045,115 +593,17 @@ sub plot_allvsall {
     system("open $pdf\n");
 }
 
-sub plot_allvsall_lncRNAs {
-    my ($file, $lncRNAsfile) = @_;
 
-    my $pdf    = "$file.ps";
-    my $xlabel = "Expected Covaring  (% basepairs)";
-    my $ylabel = "Significantly Covaring (% basepairs)";
-    my $cmd;
-
-    my $lncRNAsf = "$lncRNAsfile.p";
-    open(OUT,  ">$lncRNAsf")   || die;
-    open(FILE, "$lncRNAsfile") || die;
-    while(<FILE>) {
-	if (/^\s*([^\&]+)\s+\&\s+.+\s+(\d+)\s+\&\s+(\d+)\s+\&\s+(\d+)\s*\\\\s*$/) {
-	    my $name  = $1;
-	    my $bp    = $2;
-	    my $pred  = $3;
-	    my $found = $4;
-
-	    printf     "$name %f %f\n", $pred/$bp, $found/$bp;
-	    printf OUT "%f %f %s\n", 100*$pred/$bp, 100*$found/$bp, $name;
-	}
-    }
-    close(FILE);
-    close(OUT);
-
-    
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
-    print GP "set terminal postscript color 14\n";
-    FUNCS::gnuplot_define_styles (*GP);
- 
-    print GP "set output '$pdf'\n";
-    print GP "set key right top\n";
-    print GP "set nokey\n";
-    print GP "set size square\n";
-    print GP "set xlabel '$xlabel'\n";
-    print GP "set ylabel '$ylabel'\n";
-    
-    print GP "set xrange [-0.5:100]\n";
-    print GP "set yrange [-0.5:100]\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iSpower:$iS       title '' with points ls 1116, "; 
-    $cmd     .= "'$lncRNAsf' using 1:2                      title '' with points ls 1117"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-    
-    system("open $pdf\n");
-}
-
-sub plot_allvsid {
-    my ($file) = @_;
-
-    my $pdf    = "$file.ps";
-    my $xlabel;
-    my $ylabel = "Significantly Covaring (% basepairs)";
-    my $cmd;
-    
-    open(GP,'|'.GNUPLOT) || die "Gnuplot: $!";
-    print GP "set terminal postscript color 14\n";
-    FUNCS::gnuplot_define_styles (*GP);
- 
-    print GP "set output '$pdf'\n";
-    print GP "set key right top\n";
-    print GP "set nokey\n";
-    print GP "set ylabel '$ylabel'\n";
-    
-    $xlabel = "Alignment lenght";
-    print GP "set xlabel '$xlabel'\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $ialen:$iS      title '' with points ls 1112"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-    
-    $xlabel = "Alignment number of sequences";
-    print GP "set xlabel '$xlabel'\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $inseq:$iS      title '' with points ls 1112"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-
-    $xlabel = "Alignment average percentage id";
-    print GP "set size square\n";
-    print GP "set xlabel '$xlabel'\n";
-    print GP "set xrange [-0.5:100]\n";
-    print GP "set yrange [-0.5:100]\n";
-    $cmd = "";
-    $cmd     .= "'$outfile_allfam' using $iavgid:$iS      title '' with points ls 1112"; 
-    $cmd .= "\n";
-    print GP "plot $cmd\n";
-
-    
-    system("open $pdf\n");
-}
 
 sub outfile_rank {
-    my ($outfile_rank, $outfile_allfam, $outfile_allfam_l1, $outfile_allfam_l2, $outfile_allfam_l3) = @_;
+    my ($outfile_rank, $outfile_allfam) = @_;
     
     #my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} } keys(%fam_S);
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
    
     open (OUT1,  ">$outfile_rank")      || die;
     open (OUT2,  ">$outfile_allfam")    || die;
-    open (OUT21, ">$outfile_allfam_l1") || die;
-    open (OUT22, ">$outfile_allfam_l2") || die;
-    open (OUT23, ">$outfile_allfam_l3") || die;
-
-    # ppv levels for display
-    my $l1 = 95;
-    my $l2 = 50;
-	
+ 
     my $cmd = "";
     $cmd .= "# family\t\t\t\t";
     $cmd .= "\tSEN\tPPV\tF";
@@ -1172,41 +622,27 @@ sub outfile_rank {
 	printf OUT1 "$fam_all{$fam}\n";
 	$fam_all{$fam} = $n." ".$fam_all{$fam};
 	printf OUT2 "$fam_all{$fam}\n";
-	
-	# separate by ppv value
-	if ($fam_P{$fam} > $l1) {
-	    printf OUT21 "$fam_all{$fam}\n";
-	}
-	elsif ($fam_P{$fam} > $l2) {
-	    printf OUT22 "$fam_all{$fam}\n";
-	}
-	else {
-	    printf OUT23 "$fam_all{$fam}\n";
-	}
-	
-	$fam_table{$fam} = "$n & $fam_table{$fam}";
-	#printf  "$fam_table{$fam}\n";
-	$fam_tabless{$fam} = "$n & $fam_tabless{$fam}";
-    }
+	    }
     
     close(OUT1);  
     close(OUT2);      
-    close(OUT21);      
-    close(OUT22);      
-    close(OUT23);      
 }
 
 sub outfile_nopower{
-    my ($outfile_nopower) = @_;
+    my ($nopower, $outfile_nopower) = @_;
 
-    open (OUT, ">$outfile_nopower") || die;    
+    open (OUT, ">$outfile_nopower") || die;
+    printf OUT "\nFamilies with power <= $nopower\n";
+    printf     "\nFamilies with power <= $nopower\n";
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $fam[$f];
 	my $power = $fam_Spower{$fam};
-	if ($power == 0) {
+	my $tp_fold  = $fam_tp_fold{$fam};
+
+	if ($power <= $nopower) {
 	    $m ++;
-	    #printf     "nopower $m $fam power $power\n";
+	    printf     "nopower $m $fam power $power cov pairs $tp_fold\n";
 	    printf OUT "$fam_all{$fam}\n";
 	}
     }
@@ -1214,15 +650,17 @@ sub outfile_nopower{
 }
 
 sub outfile_withpower{
-    my ($outfile_withpower) = @_;
+    my ($nopower, $outfile_withpower) = @_;
 
     open (OUT, ">$outfile_withpower") || die;    
+    printf OUT "\nFamilies with power > $nopower\n";
+    printf     "\nFamilies with power > $nopower\n";
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $fam[$f];
 	my $power = $fam_Spower{$fam};
 	my $sen   = $fam_S{$fam};
-	if ($power > 0 && $sen == 0) {
+	if ($power > $nopower) {
 	    $m ++;
 	    print     "withpower $m $fam power $power\n";
 	    print OUT "$fam_all{$fam}\n";
@@ -1234,14 +672,17 @@ sub outfile_withpower{
 sub outfile_nocov{
     my ($outfile_nocov) = @_;
 
-    open (OUT, ">$outfile_nocov") || die;    
+    open (OUT, ">$outfile_nocov") || die;   
+    printf OUT "\nFamilies without covariation\n";
+    printf     "\nFamilies without covariation\n";
+ 
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam = $fam[$f];
 	my $sen = $fam_S{$fam};
 	if ($sen == 0) {
 	    $m ++;
-	    #print     "nocov $m $fam sen $sen\n";
+	    print     "nocov $m $fam sen $sen\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -1251,7 +692,10 @@ sub outfile_nocov{
 sub outfile_withcov{
     my ($outfile_withcov) = @_;
 
-    open (OUT, ">$outfile_withcov") || die;    
+    open (OUT, ">$outfile_withcov") || die;  
+    printf OUT "\nFamilies with covariation\n";
+    printf     "\nFamilies with covariation\n";
+  
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $fam[$f];
@@ -1264,19 +708,22 @@ sub outfile_withcov{
     }
     close(OUT);
 }
-
+ 
 sub outfile_greyzone{
-    my ($outfile_greyzone) = @_;
+    my ($thresh_tpexp, $outfile_greyzone) = @_;
 
-    open (OUT, ">$outfile_greyzone") || die;    
+    open (OUT, ">$outfile_greyzone") || die; 
+    printf     "greyzone no cov and tpexp <= %d\n", $thresh_tpexp;
+    printf OUT "greyzone no cov and tpexp <= %d\n", $thresh_tpexp;
+   
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $fam[$f];
 	my $sen   = $fam_S{$fam};
-	my $power = $fam_Spower{$fam};
-	if ($sen == 0 && $power > 0 && $power < 4) {
+	my $tpexp = $fam_tpexp{$fam};
+	if ($sen == 0 && $tpexp <= $thresh_tpexp) {
 	    $m ++;
-	    #print     "greyzone $m $fam sen $sen power $power\n";
+	    print     "greyzone $m $fam sen $sen tpexp $tpexp\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -1284,19 +731,23 @@ sub outfile_greyzone{
 }
 
 sub outfile_outlierp{
-    my ($outfile_outlierp) = @_;
+    my ($thresh_tpexp, $outfile_outlierp) = @_;
 
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
  
     open (OUT, ">$outfile_outlierp") || die;
+    printf OUT "\nFamilies without cov but with tpexp > %d\n", $thresh_tpexp;
+    printf     "\nFamilies without cov but with tpexp > %d\n", $thresh_tpexp;
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $S_order[$f];
 	my $sen   = $fam_S{$fam};
-	my $power = $fam_Spower{$fam}; 
-	if ($sen == 0  && $power > 10) {
+	my $power = $fam_Spower{$fam};
+	my $tpexp = $fam_tpexp{$fam};
+	if ($sen == 0  && $tpexp > $thresh_tpexp) {
 	    $m ++;
-	    print     "outlierp $m $fam sen $sen power $power\n";
+	    print     "outlierp $m $fam sen $sen tpexp $tpexp\n";
 	    printf OUT "$fam_table{$fam} %f\n", $power*$fam_true{$fam}/100;
 	}
     }
@@ -1304,19 +755,24 @@ sub outfile_outlierp{
 }
 
 sub outfile_outlierc{
-    my ($outfile_outlierc) = @_;
+    my ($thresh_cov, $thresh_tpexp, $outfile_outlierc) = @_;
 
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
     open (OUT, ">$outfile_outlierc") || die;
+    printf OUT "\nFamilies with cov > %d but tpexp <= %d\n", $thresh_cov, $thresh_tpexp;
+    printf     "\nFamilies with cov > %d but tpexp <= %d\n", $thresh_cov, $thresh_tpexp;
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $S_order[$f];
 	my $sen   = $fam_S{$fam};
 	my $power = $fam_Spower{$fam};
-	if ($sen > 10 && $power < 2) {
+	my $tpexp = $fam_tpexp{$fam};
+	
+	if ($sen > $thresh_cov && $tpexp <= $thresh_tpexp) {
 	    $m ++;
-	    print     "outlierc $m $fam sen $sen power $power\n";
+	    print     "outlierc $m $fam sen $sen tpexp $tpexp\n";
 	    print OUT "$fam_all{$fam}\n";
 	}
     }
@@ -1328,6 +784,9 @@ sub outfile_nopnoc{
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
     open (OUT, ">$outfile_nopnoc") || die;
+    printf OUT "\nFamilies without cov and power\n";
+    printf     "\nFamilies without cov and power \n";
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $S_order[$f];
@@ -1347,6 +806,9 @@ sub outfile_nopc{
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
     open (OUT, ">$outfile_nopc") || die;
+    printf OUT "\nFamilies with cov > 0 but power = 0\n";
+    printf     "\nFamilies with cov > 0 but power = 0\n";
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $S_order[$f];
@@ -1367,6 +829,9 @@ sub outfile_pnoc{
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
     open (OUT, ">$outfile_pnoc") || die;
+    printf OUT "\nFamilies with cov = 0 but power > 0\n";
+    printf     "\nFamilies with cov = 0 but power > 0\n";
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam   = $S_order[$f];
@@ -1387,7 +852,10 @@ sub outfile_betterss{
     
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
-    open (OUT, ">$outfile_betterss") || die;    
+    open (OUT, ">$outfile_betterss") || die;
+    printf OUT "\nFamilies with better ss: CaCoFold ss has more covarying pairs than Rfam SScons\n";
+    printf     "\nFamilies with better ss: CaCoFold ss has more covarying pairs than Rfam SScons\n";
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam      = $S_order[$f];
@@ -1399,10 +867,9 @@ sub outfile_betterss{
 	my $tp       = $fam_tp{$fam};
 	my $tp_fold  = $fam_tp_fold{$fam};
 	my $power    = $fam_Spower{$fam};
-	if ($ppv_fold > $ppv) {
+	if ($tp_fold > $tp) {
 	    $m ++;
 	    print     "better_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
-	    #print     "better_ss $fam_tabless{$fam}\n";
 	    print OUT "$fam_tabless{$fam}\n";
 	}
     }
@@ -1410,11 +877,14 @@ sub outfile_betterss{
 }
  
 sub outfile_muchbettss{
-    my ($outfile_muchbettss) = @_;
+    my ($cov_plus, $outfile_muchbettss) = @_;
 
     my @S_order = sort { $fam_S{$b} <=> $fam_S{$a} or $fam_Spower{$b} <=> $fam_Spower{$a} } keys(%fam_S);
 
-    open (OUT, ">$outfile_muchbettss") || die;    
+    open (OUT, ">$outfile_muchbettss") || die;
+    printf OUT "\nFamilies with much_better ss: CaCoFold ss has at least %d covarying pairs than Rfam SScons\n", $cov_plus;
+    printf     "\nFamilies with much_better ss: CaCoFold ss has at least %d covarying pairs than Rfam SScons\n", $cov_plus;
+
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam     = $S_order[$f];
@@ -1426,7 +896,7 @@ sub outfile_muchbettss{
 	my $tp      = $fam_tp{$fam};
 	my $tp_fold  = $fam_tp_fold{$fam};
 	my $power   = $fam_Spower{$fam};
-	if ($tp_fold > $tp+2) {
+	if ($tp_fold > $tp+$cov_plus) {
 	    $m ++;
 	    print     "much_better_ss $m $which $fam sen $sen sen_fold $sen_fold ppv $ppv ppv_fold $ppv_fold tp $tp tp_fold $tp_fold\n";
 	    print OUT "$fam_tabless{$fam}\n";
@@ -1464,7 +934,10 @@ sub outfile_worsess{
 sub outfile_equalss{
     my ($outfile_equalss) = @_;
     
-    open (OUT, ">$outfile_equalss") || die;    
+    open (OUT, ">$outfile_equalss") || die;  
+    printf OUT "\nFamilies with equal ss: CaCoFold ss has same covarying pairs than Rfam SScons\n";
+    #printf     "\nFamilies with equal ss: CaCoFold ss has same covarying pairs than Rfam SScons\n";
+  
     my $m = 0;    
     for (my $f = 0; $f < $nf; $f ++) {
 	my $fam      = $fam[$f];

@@ -201,8 +201,10 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              power_train;    // TRUE to train the create the power plot
   POWERHIS        *powerhis;       // histograms for substitutions in paired/unpaired/covarying residues
+  char            *subsfile;
   char            *powerfile;
   char            *powerhisfile;
+  FILE            *subsfp;
   FILE            *powerfp;
   FILE            *powerhisfp;
   POWER           *power;
@@ -212,6 +214,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   // flags for optional files
   int               outmsafile;
   int               rocfile;
+  int               outsubsfile;
   int               outtreefile;
   int               outnullfile;
   int               outpottsfile;
@@ -343,6 +346,8 @@ static ESL_OPTIONS options[] = {
   { "--outmsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used",
            1 },
   { "--outtree",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write phylogenetic tree used",
+           1 },
+  { "--outsubs",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "--doublesubs",     "write # of substitutions per alignment position",
            1 },
   { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                    1 },
   { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                              1 },
@@ -551,7 +556,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.helix_stats = esl_opt_IsOn(go, "--helixstats")? TRUE : FALSE;
 
   // parameters to break non-nested structures in helices
-  cfg.helix_unpaired  = HELIX_UNPAIRED;     // max number of unpaired residues in a non-nested helix. default 2
+  // max number of unpaired residues in a non-nested helix. default 2
+  cfg.helix_unpaired             = HELIX_UNPAIRED;     
+  cfg.foldparam->helix_unpaired  = cfg.helix_unpaired;   
 
   // aggregation method
   if      (esl_opt_GetBoolean(go, "--fisher"))    cfg.agg_method = AGG_FISHER;
@@ -785,6 +792,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // optional output files flags
   cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile = TRUE;         // rocplot file
   cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile = TRUE;      // the actual msa used just with the consensus columns
+  cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go, "--outsubs"))   cfg.outsubsfile = TRUE;     // the # of substitutions per position
   cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile = TRUE;     // the phylogenetic tree used
   cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile = TRUE;     // the null alignments
   cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
@@ -822,8 +830,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* histograms for number of substitutions in basepairs and significantly covarying basepairs */
   cfg.power_train  = FALSE;
+  cfg.subsfile     = NULL;
   cfg.powerfile    = NULL;
   cfg.powerhisfile = NULL;
+  cfg.subsfp       = NULL;
   cfg.powerfp      = NULL;
   cfg.powerhisfp   = NULL;
   cfg.power        = NULL;
@@ -1058,6 +1068,7 @@ main(int argc, char **argv)
   if (cfg.thresh) free(cfg.thresh);
   if (cfg.allowpair) esl_dmatrix_Destroy(cfg.allowpair);
   if (cfg.powerhis) power_Histogram_Destroy(cfg.powerhis);
+  if (cfg.subsfile) free(cfg.subsfile);
   if (cfg.powerfile) free(cfg.powerfile);
   if (cfg.powerhisfile) free(cfg.powerhisfile);
   if (cfg.power) power_Destroy(cfg.power);
@@ -1735,6 +1746,7 @@ outfile_null(struct outfiles_s *ofile)
   // optional files
   ofile->rocfile       = NULL;            
   ofile->outmsafile    = NULL;          
+  ofile->outsubsfile   = NULL;
   ofile->outtreefile   = NULL;
   ofile->nullhisfile   = NULL;
   ofile->outnullfile   = NULL;
@@ -1776,6 +1788,9 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s/%s.cons.sto", cfg->outdir, outname);
 
     // output the phylogenetic tree
+    if (cfg->outsubsfile) esl_sprintf(&ofile->outsubsfile, "%s/%s.subs", cfg->outdir, outname);
+    
+    // output the # of substitutions per position in alignment
     if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s/%s.tree", cfg->outdir, outname);
  
     // output the null histogram
@@ -1835,10 +1850,13 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     // outmsa with consensus columns
     if (cfg->outmsafile) esl_sprintf(&ofile->outmsafile, "%s.cons.sto", outname);
 
+    // output the # of substitutions per alignment position
+    if (cfg->outsubsfile) esl_sprintf(&ofile->outsubsfile, "%s.subs", outname);
+
     // output the phylogenetic tree
     if (cfg->outtreefile) esl_sprintf(&ofile->outtreefile, "%s.tree", outname);
 
-        // output the null histogram
+    // output the null histogram
     if (cfg->savenullhis) esl_sprintf(&ofile->nullhisfile, "%s.null", outname);
  
     // output with the null alignments 
@@ -1894,6 +1912,7 @@ outfile_destroy(struct outfiles_s *ofile)
   
   if (ofile->rocfile)       free(ofile->rocfile);            
   if (ofile->outmsafile)    free(ofile->outmsafile);          
+  if (ofile->outsubsfile)   free(ofile->outsubsfile);         
   if (ofile->outtreefile)   free(ofile->outtreefile);         
   if (ofile->nullhisfile)   free(ofile->nullhisfile);         
   if (ofile->outnullfile)   free(ofile->outnullfile);         
@@ -2329,6 +2348,7 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
 static int
 substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
 {
+  FILE    *outsubsfp = NULL;
   int     *nsubs = NULL;
   SPAIR   *spair;
   double   avgsubs = 0.;
@@ -2344,7 +2364,17 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
  
   for (i = 0; i < msa->alen; i ++) avgsubs += nsubs[i];
   avgsubs /= msa->alen;
- 
+
+  /* outtree file if requested */
+  if (cfg->ofile.outsubsfile) {
+    if ((outsubsfp = fopen(cfg->ofile.outsubsfile, "w")) == NULL) esl_fatal("Failed to open outsubsfile %s", cfg->ofile.outsubsfile);
+    fprintf(outsubsfp, "# avgsubs %f\n", avgsubs);
+    fprintf(outsubsfp, "# position nsubs\n");
+    for (i = 0; i < msa->alen; i ++) 
+      fprintf(outsubsfp, "%d\t%d\n", cfg->msamap[i]+1, nsubs[i]);
+    fclose(outsubsfp);
+  }
+
  if (cfg->verbose) {
     printf("avgsubs %f\n", avgsubs);
     for (i = 0; i < msa->alen; i ++) 

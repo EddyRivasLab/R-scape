@@ -144,7 +144,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   int   s;
   int   status;
 
-   // remove the SS_cons_ annotations from r2r
+  // remove the SS_cons_ annotations from r2r
   // remove the SS_cons2 annotations from Rfam
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {    
     if (strncmp(msa->gc_tag[tagidx], sstag, 7) == 0) {
@@ -152,6 +152,9 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   	msa->gc_tag[idx-1] = msa->gc_tag[idx];
   	msa->gc[idx-1]     = msa->gc[idx];
        }
+      free(msa->gc[msa->ngc-1]);
+      free(msa->gc_tag[msa->ngc-1]);
+ 
       tagidx   --;
       msa->ngc --;
     }
@@ -167,6 +170,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     // replace the 'SS_cons' GC line with the new ss
     switch(ctlist->cttype[s]) {
     case CTTYPE_NESTED:
+      free(msa->ss_cons);
       esl_strdup(ss, -1, &(msa->ss_cons));
       break;
     case CTTYPE_PK:
@@ -175,7 +179,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_SCOV:
     case CTTYPE_XCOV:
     case CTTYPE_NONE:
-     esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
+      esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
       break;
     default:
@@ -357,8 +361,8 @@ r2r_esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
       if (status != eslOK && status != eslEDUP) return status;
       ESL_DASSERT1((tagidx == 0));
 
-      ESL_ALLOC(msa->gc_tag, sizeof(char *));
-      ESL_ALLOC(msa->gc,     sizeof(char *));
+      ESL_ALLOC(msa->gc_tag, sizeof(char **));
+      ESL_ALLOC(msa->gc,     sizeof(char **));
       msa->gc[0]     = NULL;
       msa->gc_tag[0] = NULL;
     }

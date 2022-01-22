@@ -1,4 +1,4 @@
-# VPATH and shell configuration
+#VPATH and shell configuration
 #
 top_srcdir     = @top_srcdir@
 srcdir         = @srcdir@
@@ -68,7 +68,7 @@ ifndef V
 	QUIET_AR      = @echo '    ' AR $@;
 	QUIET_SUBDIR0 = +@subdir=
 	QUIET_SUBDIR1 = ; echo '    ' SUBDIR  $$subdir; \
-		        ${MAKE} -C $$subdir
+	${MAKE} -C $$subdir
 endif
 
 
@@ -91,9 +91,9 @@ PROGS    = scorematrix2rate\
 	   msafilter\
 	   appcov\
 	   msaq\
-           #Phcar\
-	   e2msa\
-	   e2sim\
+	   #Phcar\
+	   #e2msa\
+	   #e2sim\
 	   #gappenalties\
 	   #programs/ehmmalign\
 	   #programs/ehmmemit\
@@ -105,12 +105,12 @@ PROGS    = scorematrix2rate\
 	   #e2DickersonSynthetic\
 	   #tkfsim\
 	   #ptransmark\
-	   e2train\
-	   pfamsets\
-	   pfamtrio\
-	   triomsa\
-	   shorthomset\
-	   pevomark\
+	   #e2train\
+	   #pfamsets\
+	   #pfamtrio\
+	   #triomsa\
+	   #shorthomset\
+	   #pevomark\
 
 
 OBJS     = e1_bg.o\
@@ -128,38 +128,38 @@ OBJS     = e1_bg.o\
 	   covgrammars.o\
 	   covariation.o\
 	   maxcov.o\
-           fastsp.o\
-           fetchpfamdb.o\
-           homology.o\
-           logsum.o\
-           minimize.o\
-           miscellaneous.o\
-           msatree.o\
-           mya.o\
-           msaprobs.o\
-           msamanip.o\
-           muscle.o\
+	   fastsp.o\
+	   fetchpfamdb.o\
+	   homology.o\
+	   logsum.o\
+	   minimize.o\
+	   miscellaneous.o\
+	   msatree.o\
+	   mya.o\
+	   msaprobs.o\
+	   msamanip.o\
+	   muscle.o\
 	   modelconfig.o\
-           ncbiblast.o\
-           orthologs.o\
-           plot.o\
+	   ncbiblast.o\
+	   orthologs.o\
+	   plot.o\
 	   power.o\
-           pottsbuild.o\
-           pottsscore.o\
+	   pottsbuild.o\
+	   pottsscore.o\
 	   pottsim.o\
-           r2rdepict.o\
-           ratematrix.o\
-           ratebuilder.o\
-           fasta.o\
-           ssifile.o\
+	   r2rdepict.o\
+	   ratematrix.o\
+	   ratebuilder.o\
+	   fasta.o\
+	   ssifile.o\
 	   ribosum_matrix.o\
 	   structure.o\
 	   cov_simulate.o\
 
 
 EASEL     = \
-        esl-afetch \
-        esl-reformat \
+	esl-afetch \
+	esl-reformat \
 
 SCRIPTS   = \
 	FUNCS.pm \
@@ -186,7 +186,7 @@ R2R     = \
 all: librscape.a ${PROGS} 
 
 
-${PROGS}: %: %.o ${OBJS} $
+${PROGS}: %: %.o ${OBJS} 
 	${QUIET_CC}${CC} ${CFLAGS} ${IFLAGS} ${LFLAGS} -o $@ $@.o ${OBJS} ${LIBS} 
 
 
@@ -199,7 +199,7 @@ librscape.a:  ${OBJS}
 
 install:
 	${QUIET}if [ ! -z "${PROGS}" ]; then \
-	   for file in ${PROGS}  ; do \
+	for file in ${PROGS}  ; do \
 	      echo '    ' INSTALL $$file ;\
 	      ${INSTALL} -m 0755 $$file ${DESTDIR}${bindir}/ ;\
 	   done ;\

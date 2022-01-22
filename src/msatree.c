@@ -91,6 +91,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
   char  tmptreefile[32] = "esltmpXXXXXX"; /* tmpfile template */
   char  tmpmsafile[32] = "esltmpXXXXXX"; /* tmpfile template */
   char *treefile = NULL;
+  char *tmpname  = NULL;
   char *cmd      = NULL;
   char *args     = NULL;
   FILE *msafp    = NULL;
@@ -107,9 +108,9 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
     ESL_XFAIL(status, errbuf, "Failed to find FASTTREE executable\n");
 
   // make the treefile name unique as well
-  if ((status = esl_tmpfile_named(tmptreefile,  &treefp))     != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
-  if ((status = esl_FileConcat(NULL, tmptreefile, &treefile)) != eslOK) goto ERROR;
-  esl_sprintf(&treefile, "%s-%s.tree", treefile, msa->name);
+  if ((status = esl_tmpfile_named(tmptreefile,  &treefp))    != eslOK) ESL_XFAIL(status, errbuf, "failed to create msafile");
+  if ((status = esl_FileConcat(NULL, tmptreefile, &tmpname)) != eslOK) goto ERROR;
+  esl_sprintf(&treefile, "%s-%s.tree", tmpname, msa->name);
   fclose(treefp);
     
   if (msa->abc->type == eslAMINO)
@@ -133,12 +134,14 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
 
   *ret_treefile = treefile;
 
+  free(tmpname);
   if (cmd)  free(cmd);
   if (args) free(args);
   return eslOK;
   
  ERROR:
   remove(tmpmsafile);
+  if (tmpname)  free(tmpname);
   if (treefile) free(treefile);
   if (cmd)      free(cmd);
   if (args)     free(args);
