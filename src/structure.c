@@ -142,8 +142,9 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   *ret_rmlist = rmlist;
 
   if (exclude) {
-    for (s = 0; s <= maxcov_nct; s ++)
+    for (s = 0; s <= maxcov_nct; s ++) {
       if (exclude[s]) struct_covlist_Destroy(exclude[s]);
+   }
     free(exclude);
   }
   cov_FreeHitList(foldhitlist);

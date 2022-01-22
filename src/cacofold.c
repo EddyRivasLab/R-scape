@@ -1986,7 +1986,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
   // emission scores
   emitsc_singi  = (d > 0)? post->ps[i]    : -eslINFINITY;
   emitsc_pairij = (d > 0)? post->pp[i][j] : -eslINFINITY;
-  
+
   // Follow the grammar
   switch(w) {
   case G6X_S:
@@ -2114,18 +2114,18 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
     /* rule7: F -> a a' */
     d1 = 0;
     if (d == 2 && (force_bp || allow_bp)) {
- 	sc = p->t3[1] + emitsc_pairij;
-
-	if (sc >= bestsc) {
-	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
-	    if (alts) esl_stack_Reuse(alts);
-	    bestsc = sc;
-	  }     
-	  if (alts) {
-	    esl_stack_IPush(alts, G6X_F_2);
-	    esl_stack_IPush(alts, d1);
-	  }
+      sc = p->t3[1] + emitsc_pairij;
+     
+      if (sc >= bestsc) {
+	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	  if (alts) esl_stack_Reuse(alts);
+	  bestsc = sc;
+	}     
+	if (alts) {
+	  esl_stack_IPush(alts, G6X_F_2);
+	  esl_stack_IPush(alts, d1);
 	}
+      }
     }
     
     /* rule8: F -> LS */
@@ -2533,7 +2533,7 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spa
     //  k______________j
     //          S
     //
-    for (d1 = 0; d1 <= i; d1++) {
+    for (d1 = 1; d1 < i; d1++) {
       k = i - d1;
       
       sc    = omx->S->dp[j][d1+d] + imx->L->dp[im][d1] + p->t1[0];
@@ -2541,7 +2541,7 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, SPAIR *spa
     }
 
     // rule8: F -> LS 
-    for (d1 = 0; d1 <= i; d1++) {
+    for (d1 = 1; d1 < i; d1++) {
       k = i - d1;
       
       sc    = omx->F->dp[j][d1+d] + imx->L->dp[im][d1] + p->t3[2];
@@ -3097,7 +3097,7 @@ dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *s
     //  k______________j
     //          S
     //
-    for (d1 = 0; d1 <= i; d1++) {
+    for (d1 = 1; d1 < i; d1++) {
       k = i - d1;
       
       sc    = omx->S->dp[j][d1+d] + imx->L->dp[im][d1] + p->t1[0];
@@ -3105,7 +3105,7 @@ dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, SPAIR *s
     }
 
     // rule8: F -> LS 
-    for (d1 = 0; d1 <= i; d1++) {
+    for (d1 = 1; d1 < i; d1++) {
       k = i - d1;
       
       sc    = omx->F->dp[j][d1+d] + imx->L->dp[im][d1] + p->t3[2];
@@ -4251,7 +4251,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F0
     //
-    if (i > 1 && j < L && d > 2) {
+    if (i > 1 && j < L && d >= 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F0->dp[jp][d+2] + p->tF0[0] + emitsc_pair1; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4265,7 +4265,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F5
     //
-    if (i > 1 && j < L && d > 2) {
+    if (i > 1 && j < L && d >= 2) {
       if (force_bp || allow_bp) {
 	sc = omx->F5->dp[jp][d+2] + p->tF5[0] + emitsc_stck1; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4281,7 +4281,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F0
     //
-    if (i > 1 && j < L && d > 2) {
+    if (i > 1 && j < L && d >= 1) {
       if (force_bp || allow_bp) {
 	sc = omx->F0->dp[jp][d+2] + p->tF0[1] + emitsc_pair2; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4295,7 +4295,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //      i-1__________j+1
     //             F5
     //
-    if (i > 1 && j < L && d > 2) {
+    if (i > 1 && j < L && d >= 1) {
       if (force_bp || allow_bp) {
 	sc = omx->F5->dp[jp][d+2] + p->tF5[1] + emitsc_stck2; 
 	sumsc = e2_FLogsum(sumsc, sc);
@@ -4435,7 +4435,7 @@ dp_recursion_rbg_posterior_pair(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPA
   allow_bp = allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i, j, L, covct, exclude, spair, ret_nneg);
   force_bp_prv = (i > 1 && j < L)? force_bpair(im, jp, L, covct) : FALSE;
   allow_bp_prv = (i > 1 && j < L)? allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, im, jp, L, covct, exclude, spair, ret_nneg) : FALSE;
-  
+
   // emission scores
   emitsc_pair1  = emitsc_pair_prof(i, j,    psq, p->e_pair1);
   emitsc_pair2  = emitsc_pair_prof(i, j,    psq, p->e_pair2);

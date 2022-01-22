@@ -152,8 +152,6 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   	msa->gc_tag[idx-1] = msa->gc_tag[idx];
   	msa->gc[idx-1]     = msa->gc[idx];
        }
-      free(msa->gc[msa->ngc-1]);
-      free(msa->gc_tag[msa->ngc-1]);
  
       tagidx   --;
       msa->ngc --;
@@ -181,18 +179,17 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_NONE:
       esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
+      free(tag); tag = NULL;
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "no cttype");
       break;
     }
     
-    if (verbose) printf("%s\n%s\n", tag, ss);
-    if (tag) free(tag); tag = NULL; 
+    if (verbose) printf("%s\n%s\n", tag, ss); 
   }
     
   free(ss);
-  if (tag) free(tag);
   return eslOK;
 
  ERROR:
@@ -375,9 +372,11 @@ r2r_esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
    }
   
   // store the new tag
+  if (msa->gc_tag[tagidx]) free(msa->gc_tag[tagidx]); msa->gc_tag[tagidx] = NULL;
   if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
   msa->ngc++;
     
+  if (msa->gc[tagidx]) free(msa->gc[tagidx]); msa->gc[tagidx] = NULL;
   return (esl_strcat(&(msa->gc[tagidx]), -1, value, -1));
 
  ERROR:
@@ -670,6 +669,7 @@ static int
 r2r_run_consensus_from_msa(ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf)
 {
   ESL_MSAFILE *afp    = NULL;
+  ESL_MSA     *r2rmsa = NULL;
   FILE        *fp     = NULL;
   char         tmpinfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
   char         tmpoutfile[16] = "esltmpXXXXXX"; /* tmpfile template */
@@ -689,17 +689,20 @@ r2r_run_consensus_from_msa(ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf)
   /* convert output to r2rmsa */
   if (esl_msafile_Open(NULL, tmpoutfile, NULL, eslMSAFILE_PFAM, NULL, &afp) != eslOK) esl_msafile_OpenFailure(afp, status);
   afp->format = eslMSAFILE_PFAM;
-  if (esl_msafile_Read(afp, ret_r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
+  if (esl_msafile_Read(afp, &r2rmsa) != eslOK) esl_msafile_ReadFailure(afp, status);
   esl_msafile_Close(afp);
   
   remove(tmpinfile);
   remove(tmpoutfile);
+
+  *ret_r2rmsa = r2rmsa;
   
   return eslOK;
 
  ERROR:
   remove(tmpinfile);
   remove(tmpoutfile);
+  if (r2rmsa) esl_msa_Destroy(r2rmsa);
   return status;
 }
 

@@ -50,8 +50,9 @@ MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, CTLIST **ret_ctlist
   int status;
 
   if (ESL_MIN(thresh->sc_bp, thresh->sc_nbp) > mi->maxCOV) {
-    ESL_ALLOC(*ret_exclude, sizeof(COVLIST *));
+    ESL_ALLOC(*ret_exclude, sizeof(COVLIST *) * 2);
     (*ret_exclude)[0] = struct_covlist_Create(0);
+    (*ret_exclude)[1] = struct_covlist_Create(0);
     *ret_ctlist = struct_ctlist_Create(1, mi->alen); // if there are no covariations, we still calculate one CaCoFold structure
     return eslOK;
   }
@@ -151,7 +152,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, CTLIST
 
  ERROR:
   if (exclude) {
-    for (s = 0; s < nct; s ++) struct_covlist_Destroy(exclude[s]);
+    for (s = 0; s <= ctlist->nct; s ++) struct_covlist_Destroy(exclude[s]);
     free(exclude);
   }
   if (totalcov)  struct_covlist_Destroy(totalcov);
