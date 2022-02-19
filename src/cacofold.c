@@ -1125,7 +1125,8 @@ CACO_RBG_Posterior(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spair, in
 	  post->pp[i][j] -= imx->S->dp[L][L];
 	  if (isnan(post->pp[i][j]))  ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] = %f | ct %d %d\n", i, j, exp(post->pp[i][j]), covct[i], covct[j]);
 	  
-	  if (verbose) printf("RBG posterior pp = %f | i=%d j=%d d=%d | ct %d %d | %f\n", post->pp[i][j], i, j, d, covct[i], covct[j], imx->S->dp[L][L]);
+	  if (verbose)
+	    printf("RBG posterior pp = %f | i=%d j=%d d=%d | ct %d %d | %f\n", post->pp[i][j], i, j, d, covct[i], covct[j], imx->S->dp[L][L]);
 		  
 	  if (post->pp[i][j] > 0.) {
 	    if (post->pp[i][j] < tol) post->pp[i][j] = 0.0;
@@ -4137,7 +4138,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
   // Follow the grammar
   switch(w) { // order: 
   case RBG_S:
-    // rule0: S -> aS 
+    // rule0: S -> a S 
     //
     //   a    S
     //  i-1 i____j
@@ -4170,7 +4171,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, SPAIR *spa
     //  i_____j j+1____l
     //  i______________l
     //          S
-    for (d2 = 1; d2 <= L-j; d2++) {
+    for (d2 = 0; d2 <= L-j; d2++) {
       l = j + d2;
       sc    = omx->S->dp[l][d2+d] + imx->S->dp[l][d2] + p->tS[1];
       sumsc = e2_FLogsum(sumsc, sc);

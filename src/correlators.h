@@ -288,7 +288,7 @@ typedef struct RM_s {
 
 typedef struct RMlist_s {
   int            nrm;         // number of motifs
-  int            L;           // total length of the sequence
+  int            L;           // total length of the alignment
   RM           **rm;          // the RM structures
 
   enum agg_e     agg_method;  // aggregation method

@@ -1,12 +1,12 @@
 Brief installation instructions.
 
-R-scape v2.0.0.b	   January 2022
+R-scape v2.0.0.c	   February 2022
 http://eddylab.org/R-scape
 
 ----------------------------------------------------------------------------
-Starting from a source distribution, R-scape_v2.0.0.b/:
+Starting from a source distribution, R-scape_v2.0.0.c/:
 
- move into new directory:   cd R-scape_v2.0.0.b
+ move into new directory:   cd R-scape_v2.0.0.c
  configure:                 ./configure
  build:                     make
  install:		    make install
@@ -15,9 +15,9 @@ The newly compiled binary "R-scape" is in the R-scape_v2.0.0.b/bin directory.
 You can run it from there.
 
 For complete documentation, see the R-scape User's Guide 
-(R-scape_v2.0.0.b/documentation/R-scape_userguide.pdf).
+(R-scape_v2.0.0.c/documentation/R-scape_userguide.pdf).
 
-The default installation produces executable: R-scape_v2.0.0.b/bin/R-scape
+The default installation produces executable: R-scape_v2.0.0.c/bin/R-scape
 
 ----------------------------------------------------------------------------
 Starting from a Git Repo: 

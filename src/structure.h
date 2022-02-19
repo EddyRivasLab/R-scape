@@ -141,11 +141,11 @@ extern int       struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, 
 extern int       struct_ctlist_Realloc(CTLIST *ctlist, int nct);
 extern RM       *struct_rm_Create(int nct, int L);
 extern void      struct_rm_Destroy(RM *rm);
-extern void      struct_rm_Dump(RM *rm);
+extern void      struct_rm_Dump(RM *rm, int *msamap, int firstpos);
 extern int       struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose);
 extern RMLIST   *struct_rmlist_Create(int nrm, int L);
 extern void      struct_rmlist_Destroy(RMLIST *rmlist);
-extern void      struct_rmlist_Dump(RMLIST *rmlist);
+extern void      struct_rmlist_Dump(RMLIST *rmlistt, int *msamap, int firstpos);
 extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, CTLIST *ctlist, char *errbuf, int verbose);
 extern int       struct_rmlist_Stats(RMLIST *rmlist);
 extern PAIRLIST *struct_pairlist_Create(int n);

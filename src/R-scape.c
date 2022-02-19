@@ -355,7 +355,7 @@ static ESL_OPTIONS options[] = {
   /* subsitution power analysis */  
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
-  { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes, default is ignore gaps",                      1 },
+  { "--powergaps",    eslARG_NONE,     "TRUE",   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes by default. The alternative is to ignore gaps", 1 },
   /* pvalue methd */
   { "--fisher",       eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
   { "--lancaster",    eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
@@ -2252,9 +2252,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
   if (cfg->mode == GIVSS && ranklist) {
 
-    if (cfg->helix_stats) {
-      struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump(rmlist); 
+    if (1||cfg->helix_stats) {
+      //struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+      struct_rmlist_Dump(rmlist, cfg->msamap, cfg->firstpos); 
     }
 
     if (cfg->verbose) {
@@ -2283,9 +2283,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-    if (cfg->helix_stats) {
-      struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump(foldrmlist);
+    if (1||cfg->helix_stats) {
+      //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+      struct_rmlist_Dump(foldrmlist, cfg->msamap, cfg->firstpos);
     }
  
     status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);

@@ -1443,9 +1443,16 @@ struct_rm_Destroy(RM *rm)
 }
 
 void
-struct_rm_Dump(RM *rm)
+struct_rm_Dump(RM *rm, int *msamap, int firstpos)
 {
-  printf("\n# RM %d-%d %d-%d, nbp = %d npb_cov = %d\n", rm->i, rm->k, rm->l, rm->j, rm->nbp, rm->nbp_cov);
+  int i, k, l, j;
+
+  i = (msamap)? msamap[rm->i-1] + firstpos : rm->i;
+  k = (msamap)? msamap[rm->k-1] + firstpos : rm->k;
+  l = (msamap)? msamap[rm->l-1] + firstpos : rm->l;
+  j = (msamap)? msamap[rm->j-1] + firstpos : rm->j;
+  
+  printf("\n# RM %d-%d %d-%d, nbp = %d npb_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
   if (rm->Pval > 0) {
     if (rm->covary) printf("# * E-value %g P-value %g\n", rm->Eval, rm->Pval);
     else            printf("#   E-value %g P-value %g\n", rm->Eval, rm->Pval);
@@ -1521,13 +1528,13 @@ struct_rmlist_Destroy(RMLIST *rmlist)
 }
 
 void
-struct_rmlist_Dump(RMLIST *rmlist)
+struct_rmlist_Dump(RMLIST *rmlist, int *msamap, int firstpos)
 {
   int h;
   
-  printf("# RMs = %d L = %d\n", rmlist->nrm, rmlist->L);
+  printf("# RMs = %d L = %d\n", rmlist->nrm, (msamap)? msamap[rmlist->L-1] + firstpos : rmlist->L);
   for (h = 0; h < rmlist->nrm; h ++)
-    struct_rm_Dump(rmlist->rm[h]);
+    struct_rm_Dump(rmlist->rm[h], msamap, firstpos);
 }
 
 int
