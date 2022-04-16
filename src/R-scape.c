@@ -5,6 +5,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
+
 #include "esl_getopts.h"
 #include "esl_distance.h"
 #include "esl_fileparser.h"
@@ -40,7 +42,7 @@
 #define STATSOPTS    "--nullphylo,--givennull,--naive"              
 #define COVTYPEOPTS  "\
 --CHI,--CHIa,--CHIp,\
-d --GT,--GTa,--GTp,\
+--GT,--GTa,--GTp,\
 --MI,--MIa,--MIp,\
 --MIr,--MIra,--MIrp,\
 --MIg,--MIga,--MIgp,\
@@ -236,7 +238,8 @@ static ESL_OPTIONS options[] = {
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                       1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
-  { "--fold",         eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "obtain the structure with maximum covariation",                                             1 },
+  { "--cacofold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "The CaCoFold structure including all covariation",                                          1 },
+   { "--Rfam",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold",NULL,             "The CaCoFold structure w/o triplets/side/cross modules, overlaping or contiguou pairs",     1 },
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--outname",    eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a filename for all outputs",                                                        1 },
@@ -362,24 +365,25 @@ static ESL_OPTIONS options[] = {
   { "--sidak",        eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
   { "--noagg",        eslARG_NONE,     "TRUE",   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
   /* folding options */
-  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--fold",  NULL,               "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
-  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--fold",  NULL,               "max length to do foldcov calculation",                                                     0 },   
-  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm options are [cyk,decoding]",                                        1 },   
-  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--fold", NULL,               "folding algorithm options are [cyk,decoding]",                                        1 },   
-  { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE: CaCoFold uses a RF sequence. Default it creates a profileseq from the alignment",   1 },
-  { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "no pairs are forbidden for having power but no covariation",                              1 },
-  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
-  { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,  NULL,                "min distance between covarying pairs to report the pair. Default 1 (contiguous)",         1 },   
-  { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to leave the overlap of alt helices with other helices",                             1 },
-  { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--fold",  NULL,                "TRUE to run the CaCoFold recursion one last time",                                        0 },
-  { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "TRUE to draw annotated non WC basepairs",                                                 1 },
-  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--fold",  NULL,                "Evalue threshols for negative pairs. Negative pairs require eval > <x>",                  1},
+  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--cacofold", NULL,             "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0", 1 },
+  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--cacofold", NULL,             "max length to do CaCoFold calculation",                                                   0 },   
+  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
+  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
+  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                               1 },
+  { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: CaCoFold uses a RF sequence. Default creates a profileseq from the alignment",      1 },
+  { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "no pairs are forbidden for having power but no covariation",                              1 },
+  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
+  { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,     NULL,             "min distance between covarying pairs to report the pair. Default 1 (contiguous)",         1 },   
+  { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to leave the overlap of alt helices with other helices",                             1 },
+  { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to run the CaCoFold recursion one last time",                                        0 },
+  { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to draw annotated non WC basepairs",                                                 1 },
+  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                 1},
 /* other options */  
-  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                1 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>. Use 0 for a random seed.",                                            1 },
-  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                               0 },
-  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,  NULL,               "pmass for censored histogram of cov scores",                                               1 },
-  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "minimum score value considered",                                                           0 },
+  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                               1 },
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,     NULL,             "set RNG seed to <n>. Use 0 for a random seed.",                                           1 },
+  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                              0 },
+  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                              1 },
+  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,     NULL,              "minimum score value considered",                                                         0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -418,12 +422,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 {
   ESL_GETOPTS  *go = esl_getopts_Create(options);
   struct cfg_s  cfg;
+  struct stat   info;
+  DIR          *outdirp   = NULL;
+  char         *outname   = NULL;
+  char         *extension = NULL;
   char         *path;
   char         *s;
   char         *tok;
   char         *tok1 = NULL;
-  struct stat  info;
-  char         *outname = NULL;
+  esl_pos_t     m;
   int           status;
 
   if (esl_opt_ProcessEnvironment(go)         != eslOK) { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
@@ -483,9 +490,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       (cfg.infmt = esl_msafile_EncodeFormat(esl_opt_GetString(go, "--informat"))) == eslMSAFILE_UNKNOWN)
     esl_fatal("%s is not a valid MSA file format for --informat", esl_opt_GetString(go, "--informat"));
   cfg.nmsa = 0;
-  cfg.msafrq = NULL;
-  cfg.msaname = NULL;
-  cfg.msamap = NULL;
+  cfg.msafrq    = NULL;
+  cfg.msaname   = NULL;
+  cfg.msamap    = NULL;
   cfg.msarevmap = NULL;
 
   /* alphabet */
@@ -496,11 +503,24 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--amino")) { cfg.abc = esl_alphabet_Create(eslAMINO);                       }
   
   cfg.watch = esl_stopwatch_Create(); 
-  
+
+  // the outdir if one assigned. Check that it exists.
   cfg.outdir = NULL;
-  if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
- 
-  esl_FileTail(cfg.msafile, TRUE, &cfg.filename);
+  if (esl_opt_IsOn(go, "--outdir")) {
+    esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
+    if ((outdirp = opendir(cfg.outdir)) == NULL) esl_fatal("\nOutdir %s does not seem to exist\n", cfg.outdir);
+    else closedir(outdirp);
+  }
+
+  // remove tail of msafile name only if it is .sto or .stk
+  esl_FileTail(cfg.msafile, FALSE, &cfg.filename);
+
+  esl_file_Extension(cfg.filename, 0, &extension, &m);  
+  if (esl_strcmp(extension, ".sto") == 0 ||
+      esl_strcmp(extension, ".stk") == 0    ) {
+      esl_FileTail(cfg.filename, TRUE,  &cfg.filename);
+  }
+  
   if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
   
   if (esl_opt_IsOn(go, "--submsa")) { 
@@ -529,7 +549,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.tol         = esl_opt_GetReal   (go, "--tol");
   cfg.verbose     = esl_opt_GetBoolean(go, "-v");
   cfg.voutput     = esl_opt_GetBoolean(go, "--voutput");
-  cfg.dofold      = esl_opt_IsOn(go, "--fold")?                                        TRUE : FALSE;
+  cfg.dofold      = esl_opt_IsOn(go, "--cacofold")?                                    TRUE : FALSE;
   cfg.foldLmax    = esl_opt_GetInteger(go, "--foldLmax");
   cfg.window      = esl_opt_IsOn(go, "--window")?     esl_opt_GetInteger(go, "--window")    : -1;
   cfg.slide       = esl_opt_IsOn(go, "--slide")?      esl_opt_GetInteger(go, "--slide")     : -1;
@@ -567,7 +587,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--noagg"))     cfg.agg_method = AGG_NONE;
  
   // The grammars used
-  cfg.foldparam->G0 = RBG;
+  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : RBG;
   cfg.foldparam->GP = G6X;
 
   if      (esl_opt_GetBoolean(go, "--cyk"))      cfg.foldparam->F = CYK;
@@ -588,10 +608,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if (cfg.foldparam->neg_eval_thresh < cfg.thresh->val) cfg.foldparam->neg_eval_thresh = cfg.thresh->val;
   }
 
+  // parameters for drawing the structure
+  // default: only the WC basepairs
+  //
+  cfg.foldparam->draw_nonWC = (esl_opt_IsOn(go, "--draw_nonWC"))? TRUE : FALSE;
+  // CaCoFoldForRfam
+  cfg.foldparam->Rfam = (esl_opt_IsOn(go, "--Rfam"))?  TRUE : FALSE;
+
   // parameters for the main nested structure
-  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j, minhloop = j-i-1 = 2
+  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-x-j, minhloop = j-i-1 = 3
   // unless there are covariations forcing a smaller hairpin loop.
-  cfg.foldparam->hloop_min          = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
+  cfg.foldparam->hloop_min  = (esl_opt_IsOn(go, "--minhloop"))? esl_opt_GetInteger(go, "--minhloop") : HLOOP_MIN;
+  if (cfg.foldparam->Rfam) cfg.foldparam->hloop_min = 3;
   
   // parameters for selecting non-nested helices without covariations
   cfg.foldparam->helix_overlapfrac  = OVERLAPFRAC;        // max fraction of paired residues that overlap with another existing helix in order to be removed
@@ -606,11 +634,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // TRUE if we do one last fold without covariations. Default FALSE
   cfg.foldparam->lastfold = (esl_opt_IsOn(go, "--lastfold"))? TRUE : FALSE;
   
-  // parameters for drawing the structure
-  // default: only the WC basepairs
-  //
-  cfg.foldparam->draw_nonWC = (esl_opt_IsOn(go, "--draw_nonWC"))? TRUE : FALSE;
-    
+   
   if (cfg.minidthresh > cfg.idthresh) esl_fatal("minidthesh has to be smaller than idthresh");
 
   cfg.YSeffect = FALSE;
@@ -790,11 +814,11 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) cfg.outpottsfile = TRUE;
 
   // optional output files flags
-  cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile = TRUE;         // rocplot file
-  cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile = TRUE;      // the actual msa used just with the consensus columns
-  cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go, "--outsubs"))   cfg.outsubsfile = TRUE;     // the # of substitutions per position
-  cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile = TRUE;     // the phylogenetic tree used
-  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile = TRUE;     // the null alignments
+  cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile       = TRUE;   // rocplot file
+  cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile    = TRUE;   // the actual msa used just with the consensus columns
+  cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go, "--outsubs"))   cfg.outsubsfile   = TRUE;   // the # of substitutions per position
+  cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile   = TRUE;   // the phylogenetic tree used
+  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile   = TRUE;   // the null alignments
   cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
 
   // the output files nullify
@@ -888,8 +912,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   *ret_go  = go;
   *ret_cfg = cfg;
 
-  if (outname) free(outname);
-  if (tok1) free(tok1);
+  if (outname)   free(outname);
+  if (tok1)      free(tok1);
   return eslOK;
   
  FAILURE:  /* all errors handled here are user errors, so be polite.  */
@@ -897,14 +921,14 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (puts("\nwhere options are:") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   esl_opt_DisplayHelp(stdout, go, 1, 2, 120); /* 1= group; 2 = indentation; 120=textwidth*/
   esl_getopts_Destroy(go);
-  if (outname) free(outname);
-  if (tok1) free(tok1);
+  if (outname)   free(outname);
+  if (tok1)      free(tok1);
   exit(1);  
 
  ERROR:
   if (go) esl_getopts_Destroy(go);
-  if (outname) free(outname);
-  if (tok1) free(tok1);
+  if (outname)   free(outname);
+  if (tok1)      free(tok1);
   exit(status);
 }
 
@@ -1763,20 +1787,20 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
   if (cfg->outdir) {
     // covariations file 
     esl_sprintf(&ofile->covfile, "%s/%s.cov", cfg->outdir, outname);
-    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s/%s.fold.cov", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s/%s.cacofold.cov", cfg->outdir, outname);
     
     esl_sprintf(&ofile->covsrtfile, "%s/%s.sorted.cov", cfg->outdir, outname);
-    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s/%s.sorted.fold.cov", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s/%s.sorted.cacofold.cov", cfg->outdir, outname);
     
     // alignment power file 
     esl_sprintf(&ofile->alipowerfile, "%s/%s.power", cfg->outdir, outname);
-    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s/%s.fold.power", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s/%s.cacofold.power", cfg->outdir, outname);
 
     // original msa annotated with a PDB structure
     if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s/%s.PDB.sto", cfg->outdir, outname);
     
     // original msa annotated with the  CaCoFold structure
-    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.fold.sto", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.cacofold.sto", cfg->outdir, outname);
     
     // contact map file 
     if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s/%s.cmap", cfg->outdir, outname);
@@ -1815,11 +1839,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       
       // R2R annotated sto file 
       esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
-      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.fold.R2R.sto", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
       
       // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s/%s.dplot", cfg->outdir, outname);
-      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s/%s.fold.dplot", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s/%s.cacofold.dplot", cfg->outdir, outname);
     }
   }
 
@@ -1827,19 +1851,19 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
   else {
     // covariations file 
     esl_sprintf(&ofile->covfile, "%s.cov", outname);
-    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s.fold.cov", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s.cacofold.cov", outname);
     esl_sprintf(&ofile->covsrtfile, "%s.sorted.cov", outname);
-    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s.sorted.fold.cov",outname);
+    if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s.sorted.cacofold.cov",outname);
     
     // alignment power file 
     esl_sprintf(&ofile->alipowerfile, "%s.power", outname);
-    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s.fold.power", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s.cacofold.power", outname);
     
     // original msa annotated with a PDB structure
     if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s.PDB.sto", outname);
     
      // original msa annotated with the CaCoFold structure
-    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.fold.sto", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.cacofold.sto", outname);
     
     // contact map file 
     if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s.cmap", outname);
@@ -1878,11 +1902,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       
      // R2R annotated sto file 
       esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
-      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.fold.R2R.sto", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
       
        // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s.dplot", outname);
-      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.fold.dplot", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.cacofold.dplot", outname);
     }
   }
   
@@ -1993,7 +2017,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   msaweight(go, cfg, msa);
   
   // reset the dofold flag in case it changed with the previous alignment
-  cfg->dofold = esl_opt_IsOn(go, "--fold")? TRUE : FALSE;
+  cfg->dofold = esl_opt_IsOn(go, "--cacofold")? TRUE : FALSE;
+  
   if (cfg->dofold == TRUE && cfg->abcisRNA == FALSE)
     esl_fatal("Peptide alignment, cannot calculate an RNA structure");
   
@@ -2283,6 +2308,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
+    
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
       struct_rmlist_Dump(foldrmlist, cfg->msamap, cfg->firstpos);
@@ -2499,6 +2525,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   CTLIST   *octlist = NULL;
   char    **osslist = NULL;
   char     *tag;
+  int       remove_overlap = FALSE;
   int       OL = omsa->alen;
   int       s;
   int       i;
@@ -2522,16 +2549,22 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   for (s = 1; s < foldctlist->nct; s ++) {
 
     // these are the extra GC lines.
-    // I keep it in case there is overlap
+    //
     esl_sprintf(&tag, "SS_cons_%d", s);
     esl_msa_AppendGC(omsa, tag, osslist[s]);
     free(tag); tag = NULL;
-    
-    for (i = 1; i <= OL; i ++) {
-      if (no_overlap(i, octlist->ct[s][i], OL, octlist->ct[0]))  {
-	octlist->ct[0][i]                 = octlist->ct[s][i];
-	octlist->ct[0][octlist->ct[s][i]] = i;
+  
+    for (i = 1; i <= OL; i ++) {      
+      if (remove_overlap) {
+	if (no_overlap(i, octlist->ct[s][i], OL, octlist->ct[0]))  {
+	  octlist->ct[0][i]                 = octlist->ct[s][i];
+	  octlist->ct[0][octlist->ct[s][i]] = i;
+	}
       }
+      else {
+ 	octlist->ct[0][i]                 = octlist->ct[s][i];
+	octlist->ct[0][octlist->ct[s][i]] = i;
+      } 
     }
   }
   

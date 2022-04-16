@@ -147,6 +147,7 @@ OBJS     = e1_bg.o\
 	   pottsbuild.o\
 	   pottsscore.o\
 	   pottsim.o\
+	   r3d.o\
 	   r2rdepict.o\
 	   ratematrix.o\
 	   ratebuilder.o\

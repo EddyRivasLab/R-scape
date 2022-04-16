@@ -35,7 +35,8 @@ static int calculate_Cstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, in
 static int calculate_Xstats(ESL_MSA *msa, int *ret_maxilen, int *ret_totilen, int *ret_totinum, double *ret_avginum, double *ret_stdinum, double *ret_avgilen, 
 			    double *ret_stdilen, double *ret_avgsqlen, double *ret_stdsqlen, int *ret_anclen);
 static int reorder_msa(ESL_MSA *msa, int *order, char *errbuf);
-static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *shallmsa, int *usecol, char *errbuf, int verbose);
+static int shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, ESL_DSQ *axd, ESL_MSA *shallmsa, int *usecol,
+				      char *errbuf, int verbose);
 static int shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ *ax, ESL_DSQ *new, int *usecol, char *errbuf);
 static int shuffle_tree_substitute_one(ESL_RANDOMNESS *r, ESL_DSQ oldc, ESL_DSQ newc, int L, ESL_DSQ *new, int *usecol, char *errbuf);
 
@@ -1436,7 +1437,8 @@ msamanip_ShuffleWithinRow(ESL_RANDOMNESS  *r, ESL_MSA *msa, ESL_MSA **ret_shmsa,
 }
 
 int 
-msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, int *usecol, ESL_MSA **ret_shmsa, char *errbuf, int verbose)
+msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA *allmsa, int *usecol, ESL_MSA **ret_shmsa,
+				  char *errbuf, int verbose)
 {
   ESL_MSA    *shallmsa = NULL;
   ESL_MSA    *shmsa = NULL;
@@ -1582,16 +1584,24 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
 {
   ESL_DSQ      *axash = shallmsa->ax[aidx];
   ESL_DSQ      *dxash = shallmsa->ax[didx];
-  ESL_ALPHABET *abc = shallmsa->abc;
-  int           K = shallmsa->abc->K+1;
-  int           K2 = K*K;
-  int           L = shallmsa->alen;
+  ESL_ALPHABET *abc   = shallmsa->abc;
+  int          *nsub  = NULL;
+  int           L     = shallmsa->alen;
+  int           K     = shallmsa->abc->K+1;
+  int           K2    = K*K;
   int           n;
   int           nsubs = 0;
-  int          *nsub = NULL;
   int           status;
  
 #if 0
+  printf("\n");
+  for (n = 1; n <= L; n++) {
+    printf("%d",  axa[n]); 
+  }
+  printf("\n");
+  for (n = 1; n <= L; n++) {
+    printf("%d",  axd[n]); 
+  }
   printf("\n");
   for (n = 1; n <= L; n++) {
     printf("%d",  axash[n]); 
@@ -1608,20 +1618,22 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   esl_vec_ISet(nsub, K2, 0);
   
   for (n = 1; n <= L; n++) {
-    if (usecol[n] &&
-	( esl_abc_XIsCanonical(abc, axa[n]) || esl_abc_XIsGap(abc, axa[n])) && 
-	( esl_abc_XIsCanonical(abc, axd[n]) || esl_abc_XIsGap(abc, axd[n])) &&
-	axa[n] != axd[n])
-      {
-	nsub[axa[n]*K+axd[n]] ++;
-	nsubs ++;
-      }
-    dxash[n] = axash[n];
+    if (usecol[n]                         &&
+	axa[n] != axd[n]                  &&
+	esl_abc_XIsCanonical(abc, axa[n]) && 
+	esl_abc_XIsCanonical(abc, axd[n])    )
+	{
+	  nsub[axa[n]*K+axd[n]] ++;
+	  nsubs ++;
+	}
+
+    // assign shdescendant as the sh-ascendent, except for gaps that we keep the original ones.
+    dxash[n] = (esl_abc_XIsGap(abc, axd[n]))? axd[n] : axash[n];
   }
   
 #if 0
   int x;
-  if (1||verbose) {
+  if (verbose) {
     printf("nsub %d\n", nsubs);
     for (x = 0; x < K; x ++)
       printf("%d %d %d %d %d\n", nsub[x*K+0], nsub[x*K+1], nsub[x*K+2], nsub[x*K+3], nsub[x*K+4]);
@@ -1735,12 +1747,12 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
     printf("\n");
 #endif
 
-    free(perm); perm = NULL;
+    free(perm);   perm   = NULL;
     free(colidx); colidx = NULL;
   }
 
   free(useme);
-  if (perm) free(perm);
+  if (perm)   free(perm);
   if (colidx) free(colidx);
   return eslOK;
 

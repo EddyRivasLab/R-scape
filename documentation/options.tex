@@ -98,11 +98,11 @@ The default is a ``one-set test'' in which all possible pairs in the
 alignment are tested equivalently.
 
 
-\subsubsection{\prog{--fold}} A CaCoFold structure is computed that includes all significant base pairs. All files related to this 
-CaCoFold structure include the suffix \prog{.fold.}
+\subsubsection{\prog{--cacofold}} A CaCoFold structure is computed that includes all significant base pairs. All files related to this 
+CaCoFold structure include the suffix \prog{.cacofold.}
 
-When option \prog{--fold} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
-This alignment has the suffix \prog{.fold.sto}.
+When option \prog{--cacofold} is used, a file with the original alignment  annotated with the R-scape structure in Stockholm format is produced.
+This alignment has the suffix \prog{.cacofold.sto}.
 
 \subsubsection{\prog{--naive}} Reports the laundry list of all covariation scores, without any statistical significance (E-value)
 associated to them. No null alignments are created.
@@ -145,10 +145,10 @@ of the taxa matches for all alignments analyzed.
 
 \subsection{Options for producing a CaCoFold structure}
 
-\subsubsection{\prog{--fold}}  
-When using the option \prog{--fold}, R-scape engages the CaCoFold
+\subsubsection{\prog{--cacofold}}  
+When using the option \prog{--cacofold}, R-scape engages the CaCoFold
 algorithm to produce a predicted structure. The CaCoFold algorithm
-incorporates all positive (significantly covarying) basepairs, and
+incorporates all positive (significantly covarying) base pairs, and
 prevents any negative pair (pairs that have power of covariation but
 not covariation) from happening. The CaCoFold algorithm uses a
 recursive cascade of constrained foldings. The first fold uses the RBG probabilistic grammar, the rest use the G6X probabilistic grammar.
@@ -164,23 +164,34 @@ Regarding the predicted structure, CaCoFold can use one two algorithms:
 Posterior decoding usually performs better than CYK. Both algorithm has the same algorithmic complexity. CYK is faster.
 
 \noindent
-Several additional options can be used in combination with   \prog{--fold},
+Several additional options can be used in combination with   \prog{--cacofold},
 
 \subsubsection{\prog{--refseq}}   By default the CaCoFold algorithm folds a profile sequence built from the alignment. Using this option, the sequence to fold is a consensus reference sequence.
 
 \subsubsection{\prog{--E\_neg <x>}}   Pairs with E-value larger than the E-value cutoff but smaller than <x> will not be called negatives regardless of their covariation power. Default for E\_neg is 1.0.
 
-\subsubsection{\prog{--lastfold}} This option forces one last alternative fold (using grammar G6X) after all covarying basepairs have already been
+\subsubsection{\prog{--lastfold}} This option forces one last alternative fold (using grammar G6X) after all covarying base pairs have already been
 integrated into the structure. By default this last fold is not
-performed. In the absence of any covarying basepair, one fold is
+performed. In the absence of any covarying base pair, one fold is
 performed using grammar RBG.
 
 \subsubsection{\prog{--show\_hoverlap}} This option leaves the alternative helices unmodified. By default, alternative structures are trimmed down to show no overlap with helices from the previous layers.
 
-\subsubsection{\prog{--covmin <n>}} Minimum distance between position to report significant covariations. Default is 1, which means that significant covariations between
+\subsubsection{\prog{--covmin <n>}} Minimum distance between position to report significant covariation. Default is 1, which means that significant covariation between
 contiguous positions are reported.
 
-\subsubsection{\prog{--allow\_negatives}} This option (just for developers) allows all basepairs to form regardless of their power.
+\subsubsection{\prog{--allow\_negatives}} This option (just for developers) allows all base pairs to form regardless of their power.
+
+\subsubsection{\prog{--Rfam}} This option is meant to be used by the Rfam curators when using CaCoFold to propose improved consensus structures for an Rfam family. It removes covariations that cannot be taking into account by the Rfam models. Thus, maybe missing important covariation information that is not compatible with RNA secondary structure.
+
+\noindent
+Using options \prog{--cacofold --Rfam}, the CaCoFold structure is trimmed such that:
+\begin{itemize}
+\item Base pairs have to have at least 3 nucleotides of separation (covarying pairs removed if they don't).
+\item Overlaps between helices are trimmed down if possible without removing any covarying pair.
+\item Pseudoknots (pk) are kept, but alternative motifs identified as: triplets (tr), cross (xcov), or side (scov) covariations are removed.
+\item Base pairs which appear to be non WC (defined by the observed frequency in the alignment of the pair being  A:U, U:A, C:G, G:C, G:U or U:G being less than 0.3) are removed, even if they covary.
+\end{itemize}
 
 \subsection{Options for importing a structure}
 
@@ -214,8 +225,8 @@ From the PDB file we obtain three types of structural pairs:
 
 \begin{itemize}
 \item \textbf{Contacts:} defined as those two residues at a close spatial distance (specified by the user with option \prog{--cntmaxD}).
-\item \textbf{Basepair:} RNA basepairs. \\
-RNA basepairs are calculated using the program \prog{rnaview}~\citep{YangWesthof03}.
+\item \textbf{Basepair:} RNA base pairs. \\
+RNA Basepair are calculated using the program \prog{rnaview}~\citep{YangWesthof03}.
 
 These RNA basepairs can be further classified in two types:
 \begin{itemize}
@@ -245,7 +256,7 @@ from it.
 
 A ``.cmap'' file is produced reporting the structure obtained from the PDB file.
 
-Option \prog{--pdb} is incompatible with \prog{--fold}.
+Option \prog{--pdb} is incompatible with \prog{--cacofold}.
 
 \subsubsection{\prog{--cntmaxD <x>}} Maximum distance (in Angstroms) allowed between two residues to define a ``contact'' is $\langle x\rangle$.
 

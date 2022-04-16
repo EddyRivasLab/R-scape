@@ -22,7 +22,8 @@
 enum grammar_e {
   G6X,
   G6XS,
-  RBG
+  RBG,
+  RBG_R3D,
 };
 
 /* G6X nonterminals */

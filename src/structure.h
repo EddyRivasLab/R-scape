@@ -111,10 +111,19 @@ typedef struct fold_s {
   int               cov_min_dist;
   int               helix_overlap_trim;
 
+  // special parameter to make CaCoRfam structures
+  //
+  // (1) Hairpin loops have at least 3 nts (even if that requires ignoring covarying pairs)
+  // (2) no tr, xc, sc modules
+  // (3) no helix overlaps
+  // (4) remove noWCs
+  //
+  int Rfam;      
+
   // MEA
   double gamma;
   
-  // parameters for draing
+  // parameters for drawing
   int draw_nonWC;        // TRUE to draw all annotated non WC basepairs
   
 } FOLDPARAM;

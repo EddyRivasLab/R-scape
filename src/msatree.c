@@ -1438,6 +1438,12 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	  if (includegaps) {
 	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
 	    if (axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+
+	    // gap to gap counts too as a substitution (a N to N)
+	    if (ax[i+1] == msa->abc->K) {
+	      if (axl[i+1] == ax[i+1]) { nsubs[i] ++; } 
+	      if (axr[i+1] == ax[i+1]) { nsubs[i] ++; }
+	    }
 	  }
 	  else {
 	    if (ax[i+1] < msa->abc->K) {

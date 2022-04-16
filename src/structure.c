@@ -36,9 +36,9 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
-static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, CTLIST **ret_ctlist, COVLIST **exclude,
+static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
 			     FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
-static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
+static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
 				      enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int   ct_add_if_nested(int *ct, int *ctmain, int L);
@@ -58,7 +58,11 @@ static int   ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, char *errb
 static int   ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose);
 static int   ctlist_sxcov(enum cttype_e *cttype, int *covct, CTLIST *ctlist, int verbose);
 static int   ctlist_tricov(CTLIST *ctlist, int verbose);
+static int   ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int  *sorted_order(const int *vec, int n);
+static int   nonWC(int i, int j, int L, double *pp, double thresh);
+static int   islone(int i, int j, int L, int *ct, int *covct);
+static int   trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose);
 
 // cascade covariation/variation constrain folding algorithm (CaCoFold)
 //
@@ -101,7 +105,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   maxcov_nct = ctlist->nct; // save the number of cts after maxcov
 
   // the constrained folding algorithm
-  status = struct_cacofold(data->ofile->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, &ctlist, exclude, foldparam, data->gapthresh,
+  status = struct_cacofold(data->ofile->R2Rfoldfile, data->R2Rall, data->r, msa, data->spair, data->mi, &ctlist, exclude, foldparam, data->gapthresh,
 			   data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
   
@@ -124,19 +128,17 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
       if (ct[i] > 0 && i < ct[i]) data->nbpairs_fold ++;
   }
 
-  if (data->nbpairs_fold > 0) {
-    /* R2R */
-    status = r2r_Depict(data->ofile->R2Rfoldfile, data->R2Rall, msa, ctlist, foldhitlist, TRUE, TRUE, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-    
-    /* DotPlots (pdf,svg) */
-    status = struct_DotPlot(data->gnuplot, data->ofile->folddplotfile, msa, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
-			    TRUE, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-    status = struct_DotPlot(data->gnuplot, data->ofile->folddplotfile, msa, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
-			    FALSE, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-  }
+  /* R2R */
+  status = r2r_Depict(data->ofile->R2Rfoldfile, data->R2Rall, msa, ctlist, foldhitlist, TRUE, TRUE, data->errbuf, data->verbose);
+  if (status != eslOK) goto ERROR;
+  
+  /* DotPlots (pdf,svg) */
+  status = struct_DotPlot(data->gnuplot, data->ofile->folddplotfile, msa, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
+			  TRUE, data->errbuf, data->verbose);
+  if (status != eslOK) goto ERROR;
+  status = struct_DotPlot(data->gnuplot, data->ofile->folddplotfile, msa, ctlist, data->mi, data->msamap, data->firstpos, data->samplesize, foldhitlist,
+			  FALSE, data->errbuf, data->verbose);
+  if (status != eslOK) goto ERROR;
 
   *ret_ctlist = ctlist;
   *ret_rmlist = rmlist;
@@ -1531,6 +1533,8 @@ void
 struct_rmlist_Dump(RMLIST *rmlist, int *msamap, int firstpos)
 {
   int h;
+
+  if (!rmlist) return;
   
   printf("# RMs = %d L = %d\n", rmlist->nrm, (msamap)? msamap[rmlist->L-1] + firstpos : rmlist->L);
   for (h = 0; h < rmlist->nrm; h ++)
@@ -1621,7 +1625,7 @@ struct_pairlist_Realloc(PAIRLIST *pairlist, int n)
 /*------------------------------ internal functions -----------------------------*/
 
 static int
-struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, CTLIST **ret_ctlist, COVLIST **exclude,
+struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
 		FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
 {
   enum grammar_e    G;
@@ -1644,7 +1648,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     else        G = foldparam->GP;
  
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
-    status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
+    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
    }
   
@@ -1660,7 +1664,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
       
       // nothing is forced to basepair in this last/unique fold
       // and covarying basepairs cannot be present
-      status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
+      status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
       if (status != eslOK) goto ERROR;
       nct ++;
   }
@@ -1674,7 +1678,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
      
     // nothing is forced to basepair in this last/unique fold
     // and covarying basepairs cannot be present
-    status = struct_cacofold_expandct(r, msa, spair, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
+    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
   }
   
@@ -1740,6 +1744,11 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   status = ctlist_assign_cttype(ctlist, foldparam->helix_unpaired, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
+  if (foldparam->Rfam) {
+    status = ctlist_Rfam(foldparam, mi->pp, &ctlist, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+  }
+  
   if (verbose) {
     printf("\nCTTYPEs assigned nct = %d\n", ctlist->nct);
     struct_ctlist_Dump(ctlist);
@@ -1776,7 +1785,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 // uses covct[] to fill ct[]
 //
 static int
-struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *covct, int *ct, double *ret_sc, COVLIST *exclude,
+struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct, int *ct, double *ret_sc, COVLIST *exclude,
 			 enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
 {
   char    *rfline = NULL;
@@ -1819,11 +1828,11 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, int *cov
   
   switch(foldparam->F) {
   case CYK:
-    status = CACO_CYK     (r, G, foldparam, psq, spair, covct, exclude, ct, &sc, errbuf, verbose);
+    status = CACO_CYK     (r, G, foldparam, psq, mi, spair, covct, exclude, ct, &sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case DECODING:
-    status = CACO_DECODING(r, G, foldparam, psq, spair, covct, exclude, ct, &sc, errbuf, verbose);
+    status = CACO_DECODING(r, G, foldparam, psq, mi,  spair, covct, exclude, ct, &sc, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   }
@@ -2437,10 +2446,12 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
   int       *cov;                            // the covs for the current structdure
   int        nct;
   int        L;
-  double     overlapfrac = foldparam->helix_overlapfrac;
-  int        minhelix    = foldparam->minhelix;
+  double     overlapfrac        = foldparam->helix_overlapfrac;
+  int        minhelix_alt       = foldparam->minhelix;
+  int        cov_min_dist       = foldparam->cov_min_dist;
+  int        helix_overlap_trim = foldparam->helix_overlap_trim;
   int        new = 1;
-  int        hascov;       // TRUE if helix has at least covariation
+  int        hascov;       // TRUE if helix has at least one covariation
   int        isallowed;    // TRUE if helix overlaps less the overlapfraq with main structure and has at least min
   int        isunique;     // TRUE if the helix is not already included
   int        n_tot;        // total number of paired residues
@@ -2449,23 +2460,36 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
   int        idx;
   int        s;
   int        i, j;
-  int        mincov_i, mincov_j;
-  int        maxcov_i, maxcov_j;
   int        n;
   int        status;
 
   if (!ctlist) return eslOK;
 
+  // To define Rfam consensus structures:
+  //
+  // (1) remove overlaps (overlapfrac = 0 and helix_overlap_trim = TRUE)
+  // (2) covarying pairs i-j with fewer of 3 nts in between are not displayed (cov_min_dist = j-i = 5)
+  // (3) helices in main structure at least have 2 basepairs
+  //
+  if (foldparam->Rfam) {
+    helix_overlap_trim = TRUE;
+    overlapfrac        = 0.0;
+    cov_min_dist       = 5;
+  }
+  
+  // The main structure
   ctmain = ctlist->ct[0];
   nct    = ctlist->nct;
   L      = ctlist->L;
   if (nct == 0) return eslOK;
 
-  if (foldparam->cov_min_dist > 1) {
+  // in main structure:
+  //    use cov_min_dist to remove covarying pairs closer than cov_min_dist
+  if (cov_min_dist > 1) {
     for (i = 1; i <= L; i ++) {
       j = ctmain[i];
       
-      if (j > i && j < i+foldparam->cov_min_dist) {
+      if (j > i && j < i + cov_min_dist) {
 	ctmain[i] = 0;
 	ctmain[j] = 0;
       }
@@ -2488,6 +2512,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
     esl_ct2wuss(ctmain, L, ssmain);
   }
 
+  // For all alternative structures:
   for (s = 1; s < nct; s ++) {
     hascov    = FALSE;
     isallowed = TRUE;
@@ -2497,10 +2522,10 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
     cov = ctlist->covct[s];
 
     // remove covariations in the extra structures that are next to each other
-    if (foldparam->cov_min_dist > 1) {
+    if (cov_min_dist > 1) {
       for (i = 1; i <= L; i ++) {
 	j = cov[i];
-	if (j > i && j < i+foldparam->cov_min_dist) {
+	if (j > i && j < i + cov_min_dist) {
 	  cov[i] = 0;
 	  cov[j] = 0;
 	}
@@ -2520,7 +2545,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
       if (ct[i] > 0)                  n_tot     ++;
       if (ct[i] > 0 && ctmain[i] > 0) n_overlap ++;
     }
-    if (n_overlap > overlapfrac * n_tot || n_tot < 2*minhelix ) isallowed = FALSE;
+    if (n_overlap > overlapfrac * n_tot || n_tot < 2*minhelix_alt) isallowed = FALSE;
 
    // is the helix already included in any of the preview ct's?
     n_dup = 0;
@@ -2532,29 +2557,11 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
     if (n_dup == n_tot)               isunique = FALSE;
  
     // if the helix has covariations, but it isallowed = FALSE,
-    // remove from the helix the non-overlap/no-covariation part
-    //          but only at the ends of the helix, passed the covarying basepairs
-    if (foldparam->helix_overlap_trim && hascov && !isallowed) {
-
-      mincov_i = L+1;
-      maxcov_i = -1;
-      mincov_j = -1;
-      maxcov_j = -1;
-      for (i = 1; i <= L; i ++) {
-	j = ct[i];
-	if (j > 0 && j > i && cov[i] > 0) {
-	  if (i < mincov_i) { mincov_i = i; mincov_j = j; }
-	  if (i > maxcov_i) { maxcov_i = i; maxcov_j = j; }
-	}
-      }
-      
-      for (i = 1; i <= L; i ++) {
-	j = ct[i];
-	if (j > 0 && cov[i] == 0 && ctmain[i] > 0)
-	  {
-	    if ((i < mincov_i && j > mincov_j) || (i > maxcov_i && j < maxcov_j)) { ct[j] = 0; ct[i] = 0; }
-	  }
-      }
+    // remove from overlap/no-covariation part from both
+    //    
+    if (helix_overlap_trim && hascov && !isallowed) {
+      status = trim_ovelap(L, ct, cov, ctmain, ctlist->covct[0], foldparam->Rfam, errbuf, verbose);
+      if (status != eslOK) goto ERROR;
     }
 
     if (verbose) {
@@ -2587,6 +2594,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
     if (useme[s]) {
       esl_vec_ICopy(ctlist->ct[s],    L+1, ctnew->ct[idx]);
       esl_vec_ICopy(ctlist->covct[s], L+1, ctnew->covct[idx]);
+      esl_sprintf(&ctnew->ctname[idx], ctlist->ctname[s]);
       ctnew->cttype[idx] = ctlist->cttype[s];
       idx ++;
     }
@@ -2612,6 +2620,97 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
   return status;
 }
 
+// Clean up the CaCoFold structure
+// rules:
+//
+// (1) hairpin looks include at least 3 nts (hloop_min = 3)
+// (2) remove tr, xc, sc
+// (3) no nonWc 
+//
+static int
+ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose)
+{
+  CTLIST    *ctlist = *ret_ctlist;
+  CTLIST    *ctnew  = NULL;
+  double     nonWC_thresh = 0.3;
+  int       *ct_main;
+  int       *covct_main;
+  int       *useme  = NULL;
+  int        nct;
+  int        L;
+  int        hloop_min = 3;                 // hairpin loop has at least 3 nts     
+  int        new = 1;
+  int        idx;
+  int        s;
+  int        i, j;
+  int        status;
+
+  if (!ctlist) return eslOK;
+
+  nct = ctlist->nct;
+  L   = ctlist->L;
+  if (nct == 0) return eslOK;
+  
+  // allocate
+  ESL_ALLOC(useme, sizeof(int) * nct);
+  // initialize
+  esl_vec_ISet(useme, nct, TRUE);                  // if TRUE structure will be selected
+
+  // nested structure
+  // (1) remove nonWC even if they covarying
+  ct_main    = ctlist->ct[0];
+  covct_main = ctlist->covct[0];
+		     
+  for (i = 1; i <= L; i ++) {
+    j = ct_main[i];
+    if (nonWC(i, j, L, pp[i-1][j-1], nonWC_thresh)) { ct_main[i] = 0; ct_main[j] = 0; covct_main[i] = 0; covct_main[j] = 0; }
+  }
+  
+  // nested structure
+  // (2) remove lone pairs if they don't covary
+  for (i = 1; i <= L; i ++) {
+    j = ct_main[i];
+    if (islone(i, j, L, ct_main, covct_main)) { ct_main[i] = 0; ct_main[j] = 0; }
+  }
+
+  // go through the non nested ct's and remove tr, xc, sc helixes
+  new = nct;
+  for (s = 1; s < nct; s ++) {
+    if (ctlist->cttype[s] == CTTYPE_NONWC  ||
+	ctlist->cttype[s] == CTTYPE_TRI    ||
+	ctlist->cttype[s] == CTTYPE_SCOV   ||
+	ctlist->cttype[s] == CTTYPE_XCOV     )
+      {
+	useme[s] = FALSE; new --;
+      }
+  }
+  
+  // Write the final set of structures to ctnew
+  ctnew = struct_ctlist_Create(new, L);
+  if (ctnew == NULL) ESL_XFAIL(eslFAIL, errbuf, "ctlist_Rfam() allocation error");
+
+  idx = 0;
+  for (s = 0; s < nct; s ++) {
+    if (useme[s]) {
+      esl_vec_ICopy(ctlist->ct[s],    L+1, ctnew->ct[idx]);
+      esl_vec_ICopy(ctlist->covct[s], L+1, ctnew->covct[idx]);
+      ctnew->cttype[idx] = ctlist->cttype[s];
+      esl_sprintf(&ctnew->ctname[idx], ctlist->ctname[s]);
+      idx ++;
+    }
+  }
+  *ret_ctlist = ctnew;
+
+  struct_ctlist_Destroy(ctlist);
+  free(useme);
+  return eslOK;
+  
+ ERROR:
+  if (ctnew)  struct_ctlist_Destroy(ctnew);
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  if (useme)  free(useme);
+  return status;
+}
 
 
 // finds helices that are nested relative to the main structure (s=0) and
@@ -3009,4 +3108,104 @@ sorted_order(const int *vec, int n)
   if (idx) free(idx);
   return NULL;
   
+}
+
+static
+int nonWC(int i, int j, int L, double *pp, double thresh)
+{
+  double cum = 0.;
+  int    is_nonWC = FALSE;
+  int    a, b;
+  int    idx;
+
+  if (j == 0) return FALSE;
+  
+  for (a = 0; a < NB; a ++) 
+    for (b = 0; b < NB; b ++) {
+      if (a+b == 3 || a+b == 5) {
+	idx = IDX(a, b, NB);
+	cum += pp[idx];
+      }
+    }
+ 
+  if (cum < thresh) is_nonWC = TRUE;
+
+  return is_nonWC;
+}
+
+// is alone and not covarying
+static
+int islone(int i, int j, int L, int *ct, int *covct)
+{
+  int islone = FALSE;
+  int ip, im;
+  int jp, jm;
+
+  if (j == 0) return FALSE;
+  if (i >= j) return FALSE;
+  if (!(ct[i]    == j)) return FALSE;  // not a basepair, nothing to do
+  if (  covct[i] == j ) return FALSE;  // it's a covarying pair. Do not remove regardless
+
+  ip = i + 1;
+  im = i - 1;
+  jp = j + 1;
+  jm = j - 1;
+
+  if      (i > 1 && j < L) { if (ct[im] == 0 && ct[jp] == 0 && ct[ip] == 0 && ct[jm] == 0) islone = TRUE; }
+  else if (i > 1)          { if (ct[im] == 0                && ct[ip] == 0 && ct[jm] == 0) islone = TRUE; }
+  else if (         j < L) { if (               ct[jp] == 0 && ct[ip] == 0 && ct[jm] == 0) islone = TRUE; }
+  else                     { if (                              ct[ip] == 0 && ct[jm] == 0) islone = TRUE; }
+
+  if (islone) {
+	ct[i] = 0;
+	ct[j] = 0;
+  }
+  
+  return islone;
+}
+
+// if the helix has covariations, but it isallowed = FALSE,
+// remove from overlap/no-covariation part 
+//          but only at the ends of the helix, passed the covarying basepairs
+static int
+trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose)
+{
+  int mincov_i, mincov_j;
+  int maxcov_i, maxcov_j;
+  int i, j;
+  int status = eslOK;
+  
+  mincov_i = L+1;
+  maxcov_i = -1;
+  mincov_j = -1;
+  maxcov_j = -1;
+  for (i = 1; i <= L; i ++) {
+    j = ct[i];
+    if (j > 0 && j > i && cov[i] > 0) {
+      if (i < mincov_i) { mincov_i = i; mincov_j = j; }
+      if (i > maxcov_i) { maxcov_i = i; maxcov_j = j; }
+    }
+  }
+  
+  for (i = 1; i <= L; i ++) {
+    j = ct[i];
+    if (j > 0 && cov[i] == 0 && ctmain[i] > 0)
+      {
+	if ((i < mincov_i && j > mincov_j) || (i > maxcov_i && j < maxcov_j)) { ct[j] = 0; ct[i] = 0; }
+      }
+  }
+
+  // if the common pair covaries in the alt ct but not in the main, remove from the main
+  // modify the ctman only in Rfam mode
+  if (Rfammode) {
+    for (i = 1; i <= L; i ++) {
+      j = ct[i];
+      if (j > 0 && cov[i] == j && ctmain[i] > 0 && covmain[i] == 0)
+	{
+	  ctmain[ctmain[i]] = 0; ctmain[i] = 0; 
+	}
+    }
+  }
+  
+  return status;
 }

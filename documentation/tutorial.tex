@@ -253,7 +253,7 @@ The scores of the pairs are identical to those in the one-set
 test. The E-values have changed relative to those of the one-set test.
 
 
-\subsection{The --fold option}
+\subsection{The --cacofold option}
 
 After performing one of the two statistical tests, this option implements the CaCoFold algorithm:\\
 
@@ -268,7 +268,7 @@ After performing one of the two statistical tests, this option implements the Ca
  & \\ 
 \end{tabular}
 
-\user{bin/R-scape --fold tutorial/updated\_Arisong.sto}\\
+\user{bin/R-scape --cacofold tutorial/updated\_Arisong.sto}\\
 
 \noindent
 The output includes first the same output as default \rscape\ alone,
@@ -321,7 +321,7 @@ alternative structures or triplets.
 \noindent
 Similarly using
 
-\user{bin/R-scape -s --fold tutorial/updated\_Arisong.sto}\\
+\user{bin/R-scape -s --cacofold tutorial/updated\_Arisong.sto}\\
 
 \noindent
 The output includes first the same output as \emprog{option -s} of
@@ -460,7 +460,7 @@ Consider the manA RNA motif. Both the proposed structure for manA RNA
 and the predicted CaCoFold structure have 2 pseudoknots with
 covariation support:
 
-\user{bin/R-scape -s --fold tutorial/manA.sto}\\
+\user{bin/R-scape -s --cacofold tutorial/manA.sto}\\
 
 \begin{sreoutput}
 # The given structure
@@ -679,7 +679,7 @@ covariation support:
 \rscape\, uses R2R to produce figures of the consensus structures
 where pseudoknots are also annotated.  \rscape] option -s produces the
   file \emprog{tutorial/manA.R2R.sto.\{pdf,svg\}} with the structure
-  annotated in the input alignment. \rscape] option --fold produces the
+  annotated in the input alignment. \rscape] option --cacofold produces the
     file \emprog{tutorial/manA.fold.R2R.sto.\{pdf,svg\}} with the
     structure produced by \rscape. See Figure~\ref{fig:manA_r2r}.
 
@@ -692,7 +692,7 @@ where pseudoknots are also annotated.  \rscape] option -s produces the
     secondary structure given in the input alignment, depicted by
     \rscape, using the program R2R.  \textbf{Right:}
     \emprog{tutorial/manA.fold.R2R.sto.\{pdf,svg\}}, The consensus
-    structure produced by \rscape\ (option --fold).  Base pairs with
+    structure produced by \rscape\ (option --cacofold).  Base pairs with
     covariation scores equal or below the target E-value (0.05 as
     default) are depicted in green.  }
  \label{fig:manA_r2r}
@@ -704,7 +704,7 @@ where pseudoknots are also annotated.  \rscape] option -s produces the
  If the alignment includes only one sequence, no statistical test is performed. \\
 
  \noindent
- \user{bin/R-scape --fold tutorial/manA-oneseq.sto}\\
+ \user{bin/R-scape --cacofold tutorial/manA-oneseq.sto}\\
 %
  reports the best structure given the sequence. No covariation support
  is possible for any of the basepairs reported from this

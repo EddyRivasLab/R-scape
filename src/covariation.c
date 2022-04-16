@@ -1036,10 +1036,8 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
 
   // calculate aggregated p-values  for the RNA motifs (rmlist)
-  if (data->nseq > 1) {
-    status = agg_CalculatePvalues(data->spair, foldctlist, &foldrmlist, data->helix_unpaired, data->agg_method, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-  }
+  status = agg_CalculatePvalues(data->spair, foldctlist, &foldrmlist, data->helix_unpaired, data->agg_method, data->errbuf, data->verbose);
+  if (status != eslOK) goto ERROR;
   
   fclose(covfp);
   fclose(covsrtfp);
