@@ -22,3 +22,28 @@
 #include "logsum.h"
 #include "r3d.h"
 #include "structure.h"
+
+
+extern int
+R3D_GetParam (R3Dparam  **ret_r3dp, char *errbuf, int verbose)
+{
+  R3Dparam  *r3dp;
+  int        status;
+
+   ESL_ALLOC(r3dp,      sizeof(R3Dparam));
+   ESL_ALLOC(r3dp->HLp, sizeof(R3D_HLparam));
+   ESL_ALLOC(r3dp->BLp, sizeof(R3D_BLparam));
+   ESL_ALLOC(r3dp->ILp, sizeof(R3D_ILparam));
+
+   *ret_r3dp = r3dp;
+   return eslOK;
+
+ ERROR:
+   if (r3dp) {
+     if (r3dp->HLp) free(r3dp->HLp);
+     if (r3dp->BLp) free(r3dp->BLp);
+     if (r3dp->ILp) free(r3dp->ILp);
+     free(r3dp);
+   }
+  return status;
+}

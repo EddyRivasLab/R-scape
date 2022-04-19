@@ -1710,7 +1710,8 @@ shuffle_tree_substitute_all(ESL_RANDOMNESS *r, int K, int *nsub, int L, ESL_DSQ 
 	ncol ++;
       }
     }
-    
+    if (ncol == 0) return eslOK;
+
     ESL_ALLOC(colidx, sizeof(int) * ncol);
     ESL_ALLOC(perm,   sizeof(int) * ncol);
     c = 0;

@@ -1435,20 +1435,16 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	  axl = (T->left[v]  > 0)? allmsa->ax[T->N + T->left[v]]  : allmsa->ax[-T->left[v] ];
 	  axr = (T->right[v] > 0)? allmsa->ax[T->N + T->right[v]] : allmsa->ax[-T->right[v]];
 
-	  if (includegaps) {
+	  if (ax[i+1] < msa->abc->K) {
 	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
 	    if (axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+	  }
 
+	  if (includegaps) {
 	    // gap to gap counts too as a substitution (a N to N)
 	    if (ax[i+1] == msa->abc->K) {
 	      if (axl[i+1] == ax[i+1]) { nsubs[i] ++; } 
 	      if (axr[i+1] == ax[i+1]) { nsubs[i] ++; }
-	    }
-	  }
-	  else {
-	    if (ax[i+1] < msa->abc->K) {
-	      if (axl[i+1] < msa->abc->K && axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
-	      if (axr[i+1] < msa->abc->K && axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
 	    }
 	  }
 	}

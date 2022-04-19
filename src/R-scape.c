@@ -358,7 +358,7 @@ static ESL_OPTIONS options[] = {
   /* subsitution power analysis */  
   { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
   { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
-  { "--powergaps",    eslARG_NONE,     "TRUE",   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes by default. The alternative is to ignore gaps", 1 },
+  { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes by default. The alternative is to ignore gaps", 1 },
   /* pvalue methd */
   { "--fisher",       eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
   { "--lancaster",    eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
