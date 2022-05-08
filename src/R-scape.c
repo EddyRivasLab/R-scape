@@ -33,6 +33,7 @@
 #include "covgrammars.h"
 #include "pottsbuild.h"
 #include "plot.h"
+#include "r3d.h"
 #include "power.h"
 #include "ribosum_matrix.h"
 #include "structure.h"
@@ -48,7 +49,7 @@
 --MIg,--MIga,--MIgp,\
 --OMES,--OMESa,--OMESp,\
 --RAF,--RAFa,--RAFp,\
---RAFS,--RAFSa,--RAFSp,\
+ --RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa"
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
@@ -138,6 +139,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
  
   char                *ribofile;
   struct ribomatrix_s *ribosum;
+
+  char                *r3dfile;
+  R3D                 *r3d;
 
   char            *gnuplot;
   
@@ -369,7 +373,6 @@ static ESL_OPTIONS options[] = {
   { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--cacofold", NULL,             "max length to do CaCoFold calculation",                                                   0 },   
   { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
   { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
-  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                               1 },
   { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: CaCoFold uses a RF sequence. Default creates a profileseq from the alignment",      1 },
   { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "no pairs are forbidden for having power but no covariation",                              1 },
   { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
@@ -377,7 +380,10 @@ static ESL_OPTIONS options[] = {
   { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to leave the overlap of alt helices with other helices",                             1 },
   { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to run the CaCoFold recursion one last time",                                        0 },
   { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to draw annotated non WC basepairs",                                                 1 },
-  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                 1},
+  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                 1 },
+  /* R3D */
+  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                               1 },
+  { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                          1 },
 /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                               1 },
   { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,     NULL,             "set RNG seed to <n>. Use 0 for a random seed.",                                           1 },
@@ -518,7 +524,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   esl_file_Extension(cfg.filename, 0, &extension, &m);  
   if (esl_strcmp(extension, ".sto") == 0 ||
       esl_strcmp(extension, ".stk") == 0    ) {
-      esl_FileTail(cfg.filename, TRUE,  &cfg.filename);
+    free(cfg.filename);
+    esl_FileTail(cfg.msafile, TRUE,  &cfg.filename);
   }
   
   if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
@@ -594,6 +601,23 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   else if (esl_opt_GetBoolean(go, "--decoding")) cfg.foldparam->F = DECODING;
   cfg.foldparam->gamma = 2.0;
 
+  // R3D
+  cfg.foldparam->r3d = NULL;
+  cfg.r3dfile        = NULL;
+  if (esl_opt_IsOn(go, "--r3d")) {
+    if ( esl_opt_IsOn(go, "--r3dfile") ) 
+      esl_sprintf(&cfg.r3dfile, "%s", esl_opt_GetString(go, "--r3dfile"));	  
+    else 
+      esl_sprintf(&cfg.r3dfile, "data/r3d/R3D.grm");
+
+    if (cfg.abc == NULL) { cfg.abc = esl_alphabet_Create(eslRNA); cfg.abcisRNA = TRUE; }
+    else if (cfg.abcisRNA == FALSE) esl_fatal("alphabet type should be RNA or DNA\n");
+    
+    cfg.foldparam->r3d = R3D_Read(cfg.r3dfile, cfg.abc, cfg.errbuf, cfg.verbose);
+    if (cfg.foldparam->r3d == NULL) esl_fatal("%s\nfailed to create R3D grammar from file %s\n", cfg.errbuf, cfg.r3dfile);
+    if (1||cfg.verbose) R3D_Write(stdout, cfg.foldparam->r3d);
+  }
+  
   // sequence used to fold
   cfg.foldparam->profileseq = (esl_opt_IsOn(go, "--refseq"))? FALSE : TRUE;
   
@@ -659,7 +683,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if      (esl_opt_GetBoolean(go, "--naive"))       cfg.statsmethod = NAIVE;
   else if (esl_opt_GetBoolean(go, "--nullphylo"))   cfg.statsmethod = NULLPHYLO;
   else if (esl_opt_IsOn      (go, "--givennull")) { cfg.statsmethod = GIVENNULL;
-    cfg.nullhisfile  = esl_opt_GetString(go, "--givennull");
+    esl_sprintf( &cfg.nullhisfile, "%s", esl_opt_GetString(go, "--givennull"));	  
     if (!esl_FileExists(cfg.nullhisfile))  esl_fatal("nullhis file %s does not seem to exist\n", cfg.nullhisfile);
   }
   if (cfg.statsmethod == NAIVE) { cfg.thresh->val = 1e+12; }
@@ -791,7 +815,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.onlypdb  = FALSE;
   if ( esl_opt_IsOn(go, "--pdb") ) {
     cfg.onlypdb  = esl_opt_GetBoolean(go, "--onlypdb");
-    cfg.pdbfile  = esl_opt_GetString(go, "--pdb");
+    esl_sprintf( &cfg.pdbfile, "%s", esl_opt_GetString(go, "--pdb"));	   
     cfg.pdbchain = esl_opt_GetString(go, "--pdbchain");
     if (!esl_FileExists(cfg.pdbfile))  esl_fatal("pdbfile %s does not seem to exist\n", cfg.pdbfile);
 
@@ -834,15 +858,19 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.fnbp = NULL;
 
   /*  check if a tree is given */
-  cfg.treefile = esl_opt_GetString(go, "--treefile");     // input a phylogenetic tree
-  cfg.treefp   = NULL;
+  cfg.treefile = NULL;
+  if (esl_opt_IsOn(go, "--treefile"))
+    esl_sprintf(&cfg.treefile, "%s", esl_opt_GetString(go, "--treefile")); // input a phylogenetic tree
+  cfg.treefp  = NULL;
   
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
   if (cfg.covmethod == AKMAEV) {
-    if ( esl_opt_IsOn(go, "--ribofile") ) { cfg.ribofile = esl_opt_GetString(go, "--ribofile"); }
-    else esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
+    if ( esl_opt_IsOn(go, "--ribofile") ) 
+      esl_sprintf(&cfg.ribofile, "%s", esl_opt_GetString(go, "--ribofile"));
+    else
+      esl_sprintf(&cfg.ribofile, "lib/ribosum/ssu-lsu.final.er.ribosum");
 
     if (cfg.abc == NULL) { cfg.abc = esl_alphabet_Create(eslRNA); cfg.abcisRNA = TRUE; }
     else if (cfg.abcisRNA == FALSE) esl_fatal("alphabet type should be RNA or DNA\n");
@@ -1029,7 +1057,7 @@ main(int argc, char **argv)
 	cfg.firstpos = first;
 
 	status = rscape_for_msa(go, &cfg, &wmsa);
-	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
+	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run R-scape"); }
  
 	esl_msa_Destroy(wmsa); wmsa = NULL;
 	if (last >= msa->alen) break;
@@ -1044,7 +1072,7 @@ main(int argc, char **argv)
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
   
-      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run rscape"); }
+      if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run R-scape"); }
     }
 
     if (omsaname) free(omsaname); 
@@ -1096,7 +1124,9 @@ main(int argc, char **argv)
   if (cfg.powerfile) free(cfg.powerfile);
   if (cfg.powerhisfile) free(cfg.powerhisfile);
   if (cfg.power) power_Destroy(cfg.power);
+  if (cfg.foldparam->r3d) R3D_Destroy(cfg.foldparam->r3d);
   if (cfg.foldparam) free(cfg.foldparam);
+  if (cfg.r3dfile) free(cfg.r3dfile);
   return 0;
 }
 
@@ -1434,7 +1464,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     }
     
     status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
      
     /* Weigth the sequences.
      * Null sequences don't need to be weigted as they have the same phylogeny
@@ -1459,7 +1489,7 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
     }
 
     status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null rscape", cfg->errbuf);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
     if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
     
     status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
@@ -2145,8 +2175,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
    
   status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
+  if (status != eslOK) goto ERROR;
+ 
   free(outname);
   if (cfg->ctlist) struct_ctlist_Destroy(cfg->ctlist); cfg->ctlist = NULL;
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;

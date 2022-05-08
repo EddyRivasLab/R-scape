@@ -55,27 +55,31 @@ enum grammar_e {
 #define RBG_NT 7
 
 /* RBG rules */
-#define RBG_S_1  0
-#define RBG_S_2  1
-#define RBG_S_3  2
-#define RBG_F0_1 3
-#define RBG_F0_2 4
-#define RBG_F0_3 5
-#define RBG_F5_1 6
-#define RBG_F5_2 7
-#define RBG_F5_3 8
-#define RBG_P_1  9
-#define RBG_P_2  10
-#define RBG_P_3  11
-#define RBG_P_4  12
-#define RBG_P_5  13
-#define RBG_M_1  14
-#define RBG_M_2  15
-#define RBG_R_1  16
-#define RBG_R_2  17
-#define RBG_M1_1 18
-#define RBG_M1_2 19
-#define RBG_NR   20
+#define RBG_S_1     0
+#define RBG_S_2     1
+#define RBG_S_3     2
+#define RBG_F0_1    3
+#define RBG_F0_2    4
+#define RBG_F0_3    5
+#define RBG_F5_1    6
+#define RBG_F5_2    7
+#define RBG_F5_3    8
+#define RBG_P_1     9
+#define RBG_P_1_HL  10
+#define RBG_P_2     11
+#define RBG_P_2_BL  12
+#define RBG_P_3     13
+#define RBG_P_3_BL  14
+#define RBG_P_4     15
+#define RBG_P_4_IL  16
+#define RBG_P_5     17
+#define RBG_M_1     18
+#define RBG_M_2     19
+#define RBG_R_1     20
+#define RBG_R_2     21
+#define RBG_M1_1    22
+#define RBG_M1_2    23
+#define RBG_NR      24
 
 typedef float SCVAL;
 
@@ -148,7 +152,6 @@ typedef struct {
   GMX *M;
   GMX *R;
   GMX *M1;
-
 } RBG_MX;
 
 typedef struct {

@@ -157,6 +157,7 @@ MAXCOV_Structures(ESL_RANDOMNESS *rng, struct mutual_s *mi, CLIST *clist, CTLIST
   }
   if (totalcov)  struct_covlist_Destroy(totalcov);
   if (explained) struct_covlist_Destroy(explained);
+  if (ctlist)    struct_ctlist_Destroy(ctlist);
   if (ss) free(ss); 
   return status;
 }

@@ -13,6 +13,7 @@
 #include "esl_msa.h"
 
 #include "covgrammars.h"
+#include "r3d.h"
 
 // folding parameters
 //
@@ -78,6 +79,8 @@ typedef struct fold_s {
   enum grammar_e    GP; // extra folds grammar
   enum foldmethod_e F;
 
+  R3D              *r3d; // R3D grammar (optional)
+  
   // if true use a profile sequence. default RF sequence
   int               profileseq;
 
