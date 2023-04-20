@@ -66,7 +66,7 @@ while (<FILE>) {
 
 	print OUT "$field $tag $val\n";
     }
-    elsif (/^#=GS/) { # R2R script src/SelectSubFamilyFromStockholm.plchokes one some of these, remove
+    elsif (/^#=GS/) { # R2R script src/SelectSubFamilyFromStockholm.pl chokes on some of these, remove
     }
     elsif (/\/\//){
 	if ($is_callout) { print OUT "#=GF R2R keep p\n"; }

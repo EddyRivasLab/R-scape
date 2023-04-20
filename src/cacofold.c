@@ -24,7 +24,6 @@
 #include "r3d_hmm.h"
 #include "structure.h"
 
-
 // Index for (i,j,L)
 //     for i=0 < L-1; j=i+1 < L
 //
@@ -38,86 +37,96 @@
 //
 #define INDEX(i, j, L) ( ((L) - 1)*(i) - (i)*((i)-1)/2 + (j) - (i) - 1 )
 
-static int   dp_recursion_mea_cyk                    (FOLDPARAM *foldparam, G6Xparam *p,  POST *post, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_g6x_cyk                    (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_g6x_inside                 (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6x_outside                (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6x_posterior_single       (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
-						      int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6x_posterior_pair         (FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
-						      int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6xs_cyk                   (FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX  *cyk,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_g6xs_inside                (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6xs_outside               (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6xs_posterior_single      (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
-						      int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_g6xs_posterior_pair        (FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
-						      int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_rbg_cyk                    (FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair,
-					              int *covct, COVLIST *exclude, RBG_MX *cyk, R3D_MX *cyk_r3d,
-					              int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_rbg_inside                 (FOLDPARAM *foldparam, RBGparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      RBG_MX *imx, int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_rbg_outside                (FOLDPARAM *foldparam, RBGparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      RBG_MX *omx, RBG_MX *imx,
-						      int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_rbg_posterior_pair         (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      RBG_MX *imx, RBG_MX *omx, int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_HL_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, 
-						      int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_HL_R3D         (FOLDPARAM *foldparam, R3D_HL *HL, RBGparam *p, R3D_HLparam *HLp, PSQ *psq, struct mutual_s *mi, int *covct,
-						      R3D_HLMX *HLmx, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_B5_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
-						      int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_B5_R3D         (FOLDPARAM *foldparam, R3D_BL *BL, RBGparam *p, R3D_BLparam *BLp, PSQ *psq, struct mutual_s *mi, int *covct,
-						      RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_B3_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
-						      int j, int d, int d2, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_B3_R3D         (FOLDPARAM *foldparam, R3D_BL *BL, RBGparam *p, R3D_BLparam *BLp, PSQ *psq, struct mutual_s *mi, int *covct,
-						      RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_IL_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
-						      int j, int d, int d1, int d2, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_rbg_score_P_IL_R3D         (FOLDPARAM *foldparam, R3D_IL *IL, RBGparam *p, R3D_ILparam *ILp, PSQ *psq, struct mutual_s *mi, int *covct,
-						      RBG_MX *rbgmx, R3D_ILMX *ILmx, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose);
-static int   dp_recursion_r3d_cyk                    (FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_r3d_cyk_HL                 (R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      R3D_HLMX *HLmx, R3D_HMX  *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_r3d_cyk_BL                 (R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      R3D_BLMX *BLmx, R3D_HMX  *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_r3d_cyk_ILi                (R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-				     RBG_MX *rbg_cyk, R3D_ILMX *ILmx, R3D_HMX  *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
-static int   dp_recursion_r3d_cyk_ILo                (R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-						      R3D_ILMX *ILmx, R3D_HMX  *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_mea_cyk                    (FOLDPARAM *foldparam, G6Xparam *p,  POST *post, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_g6x_cyk                    (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_g6x_inside                 (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6x_outside                (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *omx, G6X_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6x_posterior_single       (FOLDPARAM *foldparam, G6Xparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *imx, G6X_MX *omx,
+							     int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6x_posterior_pair         (FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *imx, G6X_MX *omx,
+							     int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6xs_cyk                   (FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX  *cyk,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_g6xs_inside                (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6xs_outside               (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *omx, G6X_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6xs_posterior_single      (FOLDPARAM *foldparam, G6XSparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *imx, G6X_MX *omx,
+							     int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_g6xs_posterior_pair        (FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     G6X_MX *imx, G6X_MX *omx,
+							     int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_cyk                    (FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair,
+							     int *covct, COVLIST *exclude, RBG_MX *cyk, R3D_MX *cyk_r3d,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_inside                 (FOLDPARAM *foldparam, RBGparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, RBG_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_outside                (FOLDPARAM *foldparam, RBGparam *p,  PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *omx, RBG_MX *imx,
+							     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_posterior_pair         (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *imx, RBG_MX *omx,
+							     int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_HL_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, 
+							     int j, int d, SCVAL *ret_sc, int *ret_hl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_HL_R3D         (R3D_HLparam *HLp, R3D_HLMX *HLmx, int j, int d, int L, 
+							     SCVAL *ret_sc, int hl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_B5_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+							     int j, int d, int d1, SCVAL *ret_sc, int *ret_bl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_B5_R3D         (R3D_BLparam *BLp, RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, int L,
+							     SCVAL *ret_sc, int bl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_B3_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+							     int j, int d, int d2, SCVAL *ret_sc, int *ret_bl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_B3_R3D         (R3D_BLparam *BLp, RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, int L,
+							     SCVAL *ret_sc, int bl_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_IL_plain       (FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+							     int j, int d, int d1, int d2, SCVAL *ret_sc, int *ret_il_allow, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_P_IL_R3D         (FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude,
+							     int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk                    (FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_HL                 (R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     R3D_HLMX *HLmx, R3D_HMX  *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_BL                 (R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     R3D_BLMX *BLmx, R3D_HMX  *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_ILi                (R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *rbg_cyk, R3D_ILMX *ILmx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_ILo                (R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     R3D_ILMX *ILmx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
 
 
-static int   allow_bpair(double power_thresh,  double neg_eval_thresh, int hloop_min, int i, int j, int L, int *covct,
+static inline int   allow_bpair(double power_thresh,  double neg_eval_thresh, int hloop_min, int i, int j, int L, int *covct,
 			 COVLIST *exclude, SPAIR *spair, int *ret_nneg);
-static int   force_bpair(int i, int j, int L, int *covct);
-static int   allow_hairpin(int hloop_min, int i, int j, int L, int *covct);
-static int   allow_loop(int i, int j, int L, int *covct);
-static int   allow_single(int i, int L, int *covct);
-static SCVAL emitsc_stck     (int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
-static SCVAL emitsc_stck_prof(int i, int j, int L, double ***pp, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
-static SCVAL emitsc_pair     (int i, int j,        ESL_DSQ *dsq, SCVAL e_pair[NP]);
-static SCVAL emitsc_pair_prof(int i, int j,        double ***pp, SCVAL e_pair[NP]);
-static SCVAL emitsc_sing     (int i,               ESL_DSQ *dsq, SCVAL e_sing[NB]);
-static SCVAL emitsc_sing_prof(int i,        int L, double  **pm, SCVAL e_sing[NB]);
-static SCVAL score_loop_hairpin      (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
-static SCVAL score_loop_hairpin_prof (int i, int j, int L, RBGparam *p, double **pm);
-static SCVAL score_loop_bulge        (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
-static SCVAL score_loop_bulge_prof   (int i, int j, int L, RBGparam *p, double **pm);
-static SCVAL score_loop_intloop      (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
-static SCVAL score_loop_intloop_prof (int i, int j, int L, RBGparam *p, double **pm);
-static int   segment_remove_gaps     (int i, int j, ESL_DSQ *dsq);
-static int   segment_remove_gaps_prof(int i, int j, PSQ *psq);
+static inline int   force_bpair(int i, int j, int L, int *covct);
+static inline int   allow_hairpin(int hloop_min, int i, int j, int L, int *covct);
+static inline int   allow_loop(int i, int j, int L, int *covct);
+static inline int   allow_HMM(int i, int j, int L, int *covct);
+static inline int   allow_single(int i, int L, int *covct);
+static inline SCVAL emitsc_stck     (int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
+static inline SCVAL emitsc_stck_prof(int i, int j, int L, double ***pp, SCVAL e_pair[NP], SCVAL e_stck[NP][NP]);
+static inline SCVAL emitsc_pair     (int i, int j,        ESL_DSQ *dsq, SCVAL e_pair[NP]);
+static inline SCVAL emitsc_pair_prof(int i, int j,        double ***pp, SCVAL e_pair[NP]);
+static inline SCVAL emitsc_sing     (int i,               ESL_DSQ *dsq, SCVAL e_sing[NB]);
+static inline SCVAL emitsc_sing_prof(int i,        int L, double  **pm, SCVAL e_sing[NB]);
+static inline SCVAL score_loop_hairpin      (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
+static inline SCVAL score_loop_hairpin_prof (int i, int j, int L, RBGparam *p, double **pm);
+static inline SCVAL score_loop_bulge        (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
+static inline SCVAL score_loop_bulge_prof   (int i, int j, int L, RBGparam *p, double **pm);
+static inline SCVAL score_loop_intloop      (int i, int j,        RBGparam *p, ESL_DSQ *dsq);
+static inline SCVAL score_loop_intloop_prof (int i, int j, int L, RBGparam *p, double **pm);
+static inline int   segment_remove_gaps     (int i, int j, ESL_DSQ *dsq);
+static inline int   segment_remove_gaps_prof(int i, int j, PSQ *psq);
 
 /* G6X/G6XS
  *----------------------------------------------------------
@@ -150,7 +159,7 @@ static int   segment_remove_gaps_prof(int i, int j, PSQ *psq);
  */
 int
 CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, int *ct, SCVAL *ret_sc,
-	 char *errbuf, int verbose) 
+	 CTLIST **ret_r3dlist, char *errbuf, int verbose) 
 {
   G6Xparam  *g6p  = NULL;
   G6XSparam *g6sp = NULL;
@@ -177,13 +186,13 @@ CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ *psq, st
   case RBG:
     status = CACO_RBG_GetParam(&rbgp, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-     status = CACO_RBG_CYK(r, foldparam, rbgp, NULL, psq, mi, spair, covct, exclude, ct, ret_sc, errbuf, verbose);
+    status = CACO_RBG_CYK(r, foldparam, rbgp, NULL, psq, mi, spair, covct, exclude, ct, ret_sc, NULL, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case RBG_R3D:
     status = CACO_RBG_R3D_GetParam(r3d, &rbgp, &r3dp, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-    status = CACO_RBG_CYK(r, foldparam, rbgp, r3dp, psq, mi, spair, covct, exclude, ct, ret_sc, errbuf, verbose);
+    status = CACO_RBG_CYK(r, foldparam, rbgp, r3dp, psq, mi, spair, covct, exclude, ct, ret_sc, ret_r3dlist, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   default:
@@ -290,242 +299,6 @@ CACO_MEA(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, POST *post, SPAIR *spair, int 
   return status;
 }
 
-
-int
-CACO_G6X_GetParam(G6Xparam **ret_p, char *errbuf, int verbose)
-{
-  G6Xparam *p = NULL;
-  int       x;
-  int       status;
-
- ESL_ALLOC(p, sizeof(G6Xparam));
-
-  p->t1[0] = G6X_PRELOADS_TrATrBTrB.t1[0];
-  p->t1[1] = G6X_PRELOADS_TrATrBTrB.t1[1];
-  p->t1[2] = G6X_PRELOADS_TrATrBTrB.t1[2];
-  p->t2[0] = G6X_PRELOADS_TrATrBTrB.t2[0];
-  p->t2[1] = G6X_PRELOADS_TrATrBTrB.t2[1];
-  p->t2[2] = G6X_PRELOADS_TrATrBTrB.t2[2];
-  p->t3[0] = G6X_PRELOADS_TrATrBTrB.t3[0];
-  p->t3[1] = G6X_PRELOADS_TrATrBTrB.t3[1];
-  p->t3[2] = G6X_PRELOADS_TrATrBTrB.t3[2];
-
-  for (x = 0; x < NB; x ++) p->e_sing[x] = G6X_PRELOADS_TrATrBTrB.e_sing[x];
-  for (x = 0; x < NP; x ++) p->e_pair[x] = G6X_PRELOADS_TrATrBTrB.e_pair[x];
-
-  // renormalize, just in case
-  vec_SCVAL_LogNorm(p->t1, 3);
-  vec_SCVAL_LogNorm(p->t2, 3);
-  vec_SCVAL_LogNorm(p->t3, 3);
-  vec_SCVAL_LogNorm(p->e_sing, NB);
-  vec_SCVAL_LogNorm(p->e_pair, NP);
-
-  *ret_p = p;
-  return eslOK;
-
- ERROR:
-  if (p) free(p);
-  return status;
-}
-
-
-int
-CACO_G6XS_GetParam(G6XSparam **ret_p, char *errbuf, int verbose)
-{
- G6XSparam *p = NULL;
- int        x, y;
- int        status;
-
- ESL_ALLOC(p, sizeof(G6XSparam));
-
-  p->t1[0] = G6XS_PRELOADS_TrATrBTrB.t1[0];
-  p->t1[1] = G6XS_PRELOADS_TrATrBTrB.t1[1];
-  p->t1[2] = G6XS_PRELOADS_TrATrBTrB.t1[2];
-  p->t2[0] = G6XS_PRELOADS_TrATrBTrB.t2[0];
-  p->t2[1] = G6XS_PRELOADS_TrATrBTrB.t2[1];
-  p->t2[2] = G6XS_PRELOADS_TrATrBTrB.t2[2];
-  p->t3[0] = G6XS_PRELOADS_TrATrBTrB.t3[0];
-  p->t3[1] = G6XS_PRELOADS_TrATrBTrB.t3[1];
-  p->t3[2] = G6XS_PRELOADS_TrATrBTrB.t3[2];
-
-  for (x = 0; x < NB; x ++)   p->e_sing[x]    = G6XS_PRELOADS_TrATrBTrB.e_sing[x];
-  for (x = 0; x < NP; x ++)   p->e_pair[x]    = G6XS_PRELOADS_TrATrBTrB.e_pair[x];
-  for (x = 0; x < NP; x ++) 
-    for (y = 0; y < NP; y ++) p->e_stck[x][y] = G6XS_PRELOADS_TrATrBTrB.e_stck[x][y];
-
-  // renormalize, just in case
-  vec_SCVAL_LogNorm(p->t1, 3);
-  vec_SCVAL_LogNorm(p->t2, 3);
-  vec_SCVAL_LogNorm(p->t3, 3);
-  vec_SCVAL_LogNorm(p->e_sing, NB);
-  vec_SCVAL_LogNorm(p->e_pair, NP);
-  for (x = 0; x < NP; x ++)
-    vec_SCVAL_LogNorm(p->e_stck[x], NP);
-
-  *ret_p = p;
-  return eslOK;
-
- ERROR:
-  if (p) free(p);
-  return status;
-
-  return eslOK;
-}
-
-int
-CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
-{
-  RBGparam *p = NULL;
-  int       x, y;
-  int       l, l1, l2;
-  int       status;
-  
-  ESL_ALLOC(p, sizeof(RBGparam));
-
-  p->tS[0] = RBG_PRELOADS_TrATrBTrB.tS[0];
-  p->tS[1] = RBG_PRELOADS_TrATrBTrB.tS[1];
-  p->tS[2] = RBG_PRELOADS_TrATrBTrB.tS[2];
-  
-  p->tF0[0] = RBG_PRELOADS_TrATrBTrB.tF0[0];
-  p->tF0[1] = RBG_PRELOADS_TrATrBTrB.tF0[1];
-  p->tF0[2] = RBG_PRELOADS_TrATrBTrB.tF0[2];
-  
-  p->tF5[0] = RBG_PRELOADS_TrATrBTrB.tF5[0];
-  p->tF5[1] = RBG_PRELOADS_TrATrBTrB.tF5[1];
-  p->tF5[2] = RBG_PRELOADS_TrATrBTrB.tF5[2];
-  
-  p->tP[0] = RBG_PRELOADS_TrATrBTrB.tP[0];
-  p->tP[1] = RBG_PRELOADS_TrATrBTrB.tP[1];
-  p->tP[2] = RBG_PRELOADS_TrATrBTrB.tP[2];
-  p->tP[3] = RBG_PRELOADS_TrATrBTrB.tP[3];
-  p->tP[4] = RBG_PRELOADS_TrATrBTrB.tP[4];
-  
-  p->tM[0]  = RBG_PRELOADS_TrATrBTrB.tM[0];
-  p->tM[1]  = RBG_PRELOADS_TrATrBTrB.tM[1];
-
-  p->tR[0]  = RBG_PRELOADS_TrATrBTrB.tR[0];
-  p->tR[1]  = RBG_PRELOADS_TrATrBTrB.tR[1];
-
-  p->tM1[0] = RBG_PRELOADS_TrATrBTrB.tM1[0];
-  p->tM1[1] = RBG_PRELOADS_TrATrBTrB.tM1[1];
-  
-  for (x = 0; x < NB;  x ++) {
-    p->e_sing[x]    = RBG_PRELOADS_TrATrBTrB.e_sing[x];
-    p->e_sing_l1[x] = RBG_PRELOADS_TrATrBTrB.e_sing_l1[x];
-    p->e_sing_l2[x] = RBG_PRELOADS_TrATrBTrB.e_sing_l2[x];
-    p->e_sing_l3[x] = RBG_PRELOADS_TrATrBTrB.e_sing_l3[x];
-  }
-  
-  for (x = 0; x < NP; x ++) {
-    p->e_pair1[x] = RBG_PRELOADS_TrATrBTrB.e_pair1[x];
-    p->e_pair2[x] = RBG_PRELOADS_TrATrBTrB.e_pair2[x];
-    
-    for (y = 0; y < NP; y ++) {
-      p->e_stck1[x][y] = RBG_PRELOADS_TrATrBTrB.e_stck1[x][y];
-      p->e_stck2[x][y] = RBG_PRELOADS_TrATrBTrB.e_stck2[x][y];
-    }
-  }
-
-  for (l    = 0; l  < MAXLOOP_H; l ++) p->l1[l] = RBG_PRELOADS_TrATrBTrB.l1[l];
-  for (l    = 0; l  < MAXLOOP_B; l ++) p->l2[l] = RBG_PRELOADS_TrATrBTrB.l2[l];
-  for (l1   = 0; l1 < MAXLOOP_I; l1 ++) 
-    for (l2 = 0; l2 < MAXLOOP_I; l2 ++) 
-      p->l3[l1][l2] = RBG_PRELOADS_TrATrBTrB.l3[l1][l2];
-
-  // renormalize, just in case
-  vec_SCVAL_LogNorm(p->tS,  3);
-  vec_SCVAL_LogNorm(p->tF0, 3);
-
-  vec_SCVAL_LogNorm(p->tF5, 3);
-  vec_SCVAL_LogNorm(p->tP,  5);
-  vec_SCVAL_LogNorm(p->tM,  2);
-  vec_SCVAL_LogNorm(p->tR,  2);
-  vec_SCVAL_LogNorm(p->tM1, 2);
-  vec_SCVAL_LogNorm(p->e_sing,    NB);
-  vec_SCVAL_LogNorm(p->e_sing_l1, NB);
-  vec_SCVAL_LogNorm(p->e_sing_l2, NB);
-  vec_SCVAL_LogNorm(p->e_sing_l3, NB);
-  vec_SCVAL_LogNorm(p->e_pair1,   NP);
-  vec_SCVAL_LogNorm(p->e_pair2,   NP);
-  for (x = 0; x < NP; x ++)  {
-    vec_SCVAL_LogNorm(p->e_stck1[x], NP);
-    vec_SCVAL_LogNorm(p->e_stck2[x], NP);
-  }
-  vec_SCVAL_LogNorm(p->l1, MAXLOOP_H);
-  vec_SCVAL_LogNorm(p->l2, MAXLOOP_B);
-  dvec_SCVAL_LogNorm(MAXLOOP_I, MAXLOOP_I, p->l3);
-  
-  *ret_p = p;
-  return eslOK;
-
- ERROR:
-  if (p) free(p);
-  return status;
-
-  return eslOK;
-}
-
-int
-CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *errbuf, int verbose)
-{
-  RBGparam *rbgp = NULL;
-  R3Dparam *r3dp = NULL;
-  SCVAL     tP0;
-  SCVAL     tP1;
-  SCVAL     tP2;
-  SCVAL     tP3;
-  int       status;
-  
-  status = CACO_RBG_GetParam(&rbgp, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
-  
-  status = R3D_GetParam(&r3dp, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
-
-  // modify the  P -> t[0] m...m | t[1] m..., F0 | t[2] F0 m...m | t[3] m...m F0 m...m
-  //  to
-  //             P -> t[0]*(1-pHL)  HL_0  | t[0]*pHL/nHL  HL_1  | ... | t[0]*pHL/nHL  HL_{nHL}  
-  //             P -> t[1]*(1-pBL5) BL_0  | t[1]*pBL5/nBL BL_1  | ... | t[1]*pBL5/nBL BL_{nBL}  
-  //             P -> t[2]*(1-pBL3) BL_0  | t[2]*pBL3/nBL BL_1  | ... | t[2]*pBL3/nBL BL_{nBL}  
-  //             P -> t[3]*(1-pIL)  IL_0  | t[3]*pHL/nIL  IL_1  | ... | t[3]*pHL/nIL  IL_{nIL}  
-
-  if (r3d->nHL > 0) {
-    tP0 = rbgp->tP[0];
-    rbgp->tP[0]     = tP0 + log(1.0 - exp(r3dp->HLp->pHL));
-    r3dp->HLp->pHL += tP0 - log(r3d->nHL);
-  }
-  if (r3d->nBL > 0) {
-    tP1 = rbgp->tP[1];
-    tP2 = rbgp->tP[2];
-    rbgp->tP[1]      = tP1 + log(1.0 - exp(r3dp->BLp->pBL5));
-    rbgp->tP[2]      = tP2 + log(1.0 - exp(r3dp->BLp->pBL3));
-    r3dp->BLp->pBL5 += tP1 - log(r3d->nBL);
-    r3dp->BLp->pBL3 += tP2 - log(r3d->nBL);
-  }
-  if (r3d->nIL) {
-    tP3 = rbgp->tP[3];
-    rbgp->tP[3]     = tP3 + log(1.0 - exp(r3dp->ILp->pIL));
-    r3dp->ILp->pIL += tP3 - log(r3d->nIL);
-  }
-
-  if (1||verbose) {
-    printf("RBG_R3D Param\n");
-    printf("P0 %f to %f rest %f\n", tP0, rbgp->tP[0], r3dp->HLp->pHL);
-    printf("P1 %f to %f rest %f\n", tP1, rbgp->tP[1], r3dp->BLp->pBL5);
-    printf("P2 %f to %f rest %f\n", tP2, rbgp->tP[2], r3dp->BLp->pBL3);
-    printf("P3 %f to %f rest %f\n", tP3, rbgp->tP[3], r3dp->ILp->pIL);
-  }
-  
-  *ret_rbgp = rbgp;
-  *ret_r3dp = r3dp;
-  return status;
-
- ERROR:
-  if (rbgp) free(rbgp);
-  if (r3dp) R3D_Param_Destroy(r3dp);
-
-  return status;
-}
 
 int
 CACO_G6X_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, G6Xparam  *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, int *ct, SCVAL *ret_sc,
@@ -636,7 +409,7 @@ CACO_G6XS_DECODING(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, G6XSparam *p, PSQ *p
 
 int
 CACO_RBG_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3dp, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, int *ct,
-	     SCVAL *ret_sc, char *errbuf, int verbose)
+	     SCVAL *ret_sc, CTLIST **ret_r3dlist, char *errbuf, int verbose)
 {
   R3D    *r3d = foldparam->r3d;
   RBG_MX *cyk     = NULL;
@@ -652,9 +425,9 @@ CACO_RBG_CYK(ESL_RANDOMNESS *r, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
  }
 
   /* Fill the cyk matrix */
-  if ((status = CACO_RBG_Fill_CYK        (foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ret_sc, errbuf, verbose)) != eslOK) goto ERROR;
+  if ((status = CACO_RBG_Fill_CYK        (foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ret_sc,              errbuf, verbose)) != eslOK) goto ERROR;
   /* Report a traceback */
-  if ((status = CACO_RBG_Traceback_CYK(r, foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ct,     errbuf, verbose)) != eslOK) goto ERROR;
+  if ((status = CACO_RBG_Traceback_CYK(r, foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ct,     ret_r3dlist, errbuf, verbose)) != eslOK) goto ERROR;
 
   RBGMX_Destroy(cyk);
   if (cyk_r3d) R3D_MX_Destroy(cyk_r3d);
@@ -967,7 +740,8 @@ CACO_G6XS_Inside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *
 }
 
 int
-CACO_G6XS_Outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx, SCVAL *ret_sc, char *errbuf, int verbose)
+CACO_G6XS_Outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx, SCVAL *ret_sc,
+		  char *errbuf, int verbose)
 {
   SCVAL sc = -eslINFINITY;
   int   nneg = 0;
@@ -1087,52 +861,80 @@ CACO_RBG_Fill_CYK(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *psq, 
 
   L = mi->alen;
 
-  /* RBG grammar
-  * order: (F0 before M1) AND (M1 before R) AND (S last)
-  */
+  // RBG grammar  order:
+  //
+  //  F0  before ILi
+  //
+  //  Ili before ILo
+  //
+  //  F0  before M1 
+  //      
+  //  M1  before R
+  //
+  //  P  before ILo
+  //
+  //  HL, BL, ILo before P
+  //      
+  //   S last
+  //
   for (j = 0; j <= L; j++)
     for (d = 0; d <= j; d++)
       {
-	if (r3d) {
-	  for (m = 0; m < r3d->nHL; m ++) {
-	    for (n = r3d->HL[m]->nB-1; n >= 0; n --) {
-	      gmx = cyk_r3d->HLmx[m]->mx->mx[n];
-	      
-	      status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_HL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
-	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D HL caco failed");
-	    }
-	  }
-	  
-	  for (m = 0; m < r3d->nBL; m ++) {
-	    for (n = r3d->BL[m]->nB-1; n >= 0; n --) {
-	      gmx = cyk_r3d->BLmx[m]->mx->mx[n];
+	// F0 before Ili
+	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_F0, j, d, &(cyk->F0->dp[j][d]), NULL, NULL, errbuf, verbose);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG F0 caco failed");
 
-	      status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_BL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
-	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D BL caco failed");
+	// HL, BL, Ili and ILo (all the R3D NTs)
+	if (r3d) {
+	  if (d <= MAXLOOP_H) { 
+	    for (m = 0; m < r3d->nHL; m ++) {
+	      for (n = r3d->HL[m]->nB-1; n >= 0; n --) {
+		gmx = cyk_r3d->HLmx[m]->mx->mx[n];
+		
+		status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_HL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+		if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D HL caco failed");
+		if (verbose) 
+		  printf("R3D CYK m=%d HL[n=%d] %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->HLmx[m]->mx->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	      }
 	    }
 	  }
 	  
-	  for (m = 0; m < r3d->nIL; m ++) {
+	  if (d <= MAXLOOP_B) { 
+	    for (m = 0; m < r3d->nBL; m ++) {
+	      for (n = r3d->BL[m]->nB-1; n >= 0; n --) {
+		gmx = cyk_r3d->BLmx[m]->mx->mx[n];
+		
+		status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_BL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+		if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D BL caco failed");
+	      }
+	    }
+	  }
+	  
+	  for (m = 0; m < r3d->nIL_total; m ++) {
 	    for (ni = r3d->IL[m]->nBi-1; ni >= 0; ni --) {
 	      gmx = cyk_r3d->ILmx[m]->mxi->mx[ni];
-
+	      
 	      status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_ILi, m, ni, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D ILi caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d ni=%d ILi %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, ni, cyk_r3d->ILmx[m]->mxi->mx[ni]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	    }
+
 	    for (no = r3d->IL[m]->nBo; no >= 0; no --) {
 	      gmx = cyk_r3d->ILmx[m]->mxo->mx[no];
 	      status = dp_recursion_r3d_cyk(foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_ILo, m, no, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D ILo caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d no=%d ILo %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, no, cyk_r3d->ILmx[m]->mxo->mx[no]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	    }
 	  } 
 	}
-	
+
+	// P, F5, M1, R, M, S (rest of RBG NTs)
 	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_P,  j, d, &(cyk->P->dp[j][d]), &nneg, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG P caco failed");
 	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_F5, j, d, &(cyk->F5->dp[j][d]), NULL, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG F5 caco failed");
-	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_F0, j, d, &(cyk->F0->dp[j][d]), NULL, NULL, errbuf, verbose);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG F0 caco failed");
 	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_M1, j, d, &(cyk->M1->dp[j][d]), NULL, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG M1 caco failed");
 	status = dp_recursion_rbg_cyk(foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_R,  j, d, &(cyk->R->dp[j][d]),  NULL, NULL, errbuf, verbose);
@@ -1162,7 +964,8 @@ CACO_RBG_Fill_CYK(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *psq, 
 }
 
 int
-CACO_RBG_Inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, RBG_MX *imx, SCVAL *ret_sc, char *errbuf, int verbose)
+CACO_RBG_Inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, RBG_MX *imx, SCVAL *ret_sc,
+		char *errbuf, int verbose)
 {
   SCVAL sc = -eslINFINITY;
   int   nneg = 0;
@@ -1188,11 +991,11 @@ CACO_RBG_Inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG Inside failed at F0");
 	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_M1, j, d, &(imx->M1->dp[j][d]), &nneg, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG Inside failed at M1");
-	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_R,   j, d, &(imx->R->dp[j][d]), &nneg, errbuf, verbose);
+	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_R,  j, d, &(imx->R->dp[j][d]), &nneg, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG Inside failed at R");
-	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_M,   j, d, &(imx->M->dp[j][d]), &nneg, errbuf, verbose);
+	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_M,  j, d, &(imx->M->dp[j][d]), &nneg, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG Inside failed at M");
-	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_S,   j, d, &(imx->S->dp[j][d]), &nneg, errbuf, verbose);
+	status = dp_recursion_rbg_inside(foldparam, p, psq, mi, spair, covct, exclude, imx, RBG_S,  j, d, &(imx->S->dp[j][d]), &nneg, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG Inside failed at S");
 	
 	if (verbose)
@@ -1294,14 +1097,14 @@ CACO_RBG_Posterior(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s 
 	  if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG F5 pp posterior failed");
 
 	  post->pp[i][j] -= imx->S->dp[L][L];
-	  if (isnan(post->pp[i][j]))  ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] = %f | ct %d %d\n", i, j, exp(post->pp[i][j]), covct[i], covct[j]);
+	  if (isnan(post->pp[i][j]))  ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] is nan | ct %d %d\n", i, j, covct[i], covct[j]);
 	  
 	  if (verbose)
 	    printf("RBG posterior pp = %f | i=%d j=%d d=%d | ct %d %d | %f\n", post->pp[i][j], i, j, d, covct[i], covct[j], imx->S->dp[L][L]);
 		  
 	  if (post->pp[i][j] > 0.) {
 	    if (post->pp[i][j] < tol) post->pp[i][j] = 0.0;
-	    else ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] = %f | ct %d %d\n", i, j, post->pp[i][j], covct[i], covct[j]);
+	    else ESL_XFAIL(eslFAIL, errbuf, "RBG posterior failed pp[%d][%d] = %f > 1 | ct %d %d\n", i, j, exp(post->pp[i][j]), covct[i], covct[j]);
 	  }
 
 	  post->pp[j][i] = post->pp[i][j];
@@ -1584,7 +1387,7 @@ CACO_G6XS_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6XSparam *p,
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d\n", j-d+1, j, d, d1);
 	printf("tracing %f\n", bestsc);
-        printf("   rule(%d)\n", r);
+        printf("   rule (%d)\n", r);
       }
       
       i = j - d  + 1;
@@ -1656,21 +1459,24 @@ CACO_G6XS_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6XSparam *p,
 
 int
 CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3dp, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-		       RBG_MX *cyk, R3D_MX *cyk_r3d, int *ct, char *errbuf, int verbose) 
+		       RBG_MX *cyk, R3D_MX *cyk_r3d, int *ct, CTLIST **ret_r3dlist, char *errbuf, int verbose) 
 {
-  R3D            *r3d = foldparam->r3d;
-  ESL_STACK      *ns   = NULL;           /* integer pushdown stack for traceback */
-  ESL_STACK      *alts = NULL;           /* stack of alternate equal-scoring tracebacks */
-  float           tol = TOLVAL;
+  R3D            *r3d     = foldparam->r3d;
+  CTLIST         *r3dlist = NULL;
+  int            *r3dct;
+  ESL_STACK      *ns      = NULL;           /* integer pushdown stack for traceback */
+  ESL_STACK      *alts    = NULL;           /* stack of alternate equal-scoring tracebacks */
+  float           tol     = TOLVAL;
   SCVAL           bestsc;                /* max score over possible rules */
   SCVAL           fillsc;                /* max score in fill */
   int             L;
   int             nequiv;                /* number of equivalent alternatives for a traceback */
   int             x;                     /* a random choice from nequiv */
   int             w;                     /* index of a non terminal S (w=0) L (w=1) F (w=2) */
-  int             r;                     /* index of a rule */
   int             m;                     /* index for RMs */
   int             n;                     /* index for blocs in a RM */
+  int             r, rm, rn;             /* index of a rule */
+  int             nalt;
   int             d, d1, d2;             /* optimum values of d1 iterator */
   int             i,j,k,l;               /* seq coords */
   int             q;
@@ -1714,14 +1520,20 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
     {
       esl_stack_IPop(ns, &j);
       esl_stack_IPop(ns, &i);
-      esl_stack_IPop(ns, &w);
+      esl_stack_IPop(ns, &w);    // which non terminal NT, RBG_NT or R3D_NT
+      if (w >= RBG_NT) {         // if R3D_NT, (we only need to traceback the IL ternimal to see where they end in the inner basepair F0)
+	esl_stack_IPop(ns, &n);  //   which of the IL modules (nIL_total)
+	esl_stack_IPop(ns, &m);  //   which of the segments of the IL module (nBo, nBi)
+      }
+ 
       d = j-i+1;
-      if (w == R3D_NT_ILo || w == R3D_NT_ILi) esl_stack_IPop(alts, &m);
-
-     if (w < RBG_NT) {
+      if (d > j) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback(): that can't happen d <= j but for w = %d i=%d j=%d d=%d\n", w, j-d+1, j, d); 
+ 
+      if (w < RBG_NT) {
        status = dp_recursion_rbg_cyk(foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, w, j, d, &bestsc, NULL, alts, errbuf, verbose);
        if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG CYK failed");
-       
+       if (bestsc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "RBG CYK sc is -inf.\n");
+ 
        /* Some assertions.
 	*/
        switch(w) {
@@ -1733,10 +1545,30 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
        case RBG_R:  fillsc = cyk->R->dp[j][d];   break;
        case RBG_M1: fillsc = cyk->M1->dp[j][d];  break;
        }
+       if (fabs(bestsc - fillsc) > tol) 
+	 ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback(): that can't happen either. w = %d i=%d j=%d d=%d bestsc %f cyk %f\n", 
+		   w, j-d+1, j, d, bestsc, fillsc); 
+       
+       /* Now we know one or more equiv solutions, and they're in
+	* the stack <alts>, which keeps 
+	* 4 numbers (r, m,    d1, d2) for each RBG solution
+	* 5 numbers (r, m, n, d1, d1) for each R3D solution
+	* solution. Choose one of them at random.
+	*/
+       nalt = 4;
+       nequiv = esl_stack_ObjectCount(alts) / nalt; /* how many solutions? */
+       x = esl_rnd_Roll(rng, nequiv);               /* uniformly, 0.nequiv-1 */
+       esl_stack_DiscardTopN(alts, x*nalt);         /* dig down to choice */
+       esl_stack_IPop(alts, &d2);
+       esl_stack_IPop(alts, &d1);
+       esl_stack_IPop(alts, &rm); // for rules RBG_P_1_HL, RBG_P_2_BL, RBG_P3_BL, RBG_P_4_IL, which of the modules (nHL, nBL, nBL, nHL)
+       esl_stack_IPop(alts, &r);  // which RBG rule: RBG_S_1 .... RBG_M1_2 (RBG_NR)
+   
      }
      else {
        status = dp_recursion_r3d_cyk(foldparam, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, w, m, n, j, d, &bestsc, alts, errbuf, verbose);
-       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D CYK failed");
+       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D CYK failed\n");
+       if (bestsc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "R3D CYK sc is -inf.\n");
        
        /* Some assertions.
 	*/
@@ -1744,24 +1576,26 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
        case R3D_NT_ILo: fillsc = cyk_r3d->ILmx[m]->mxo->mx[n]->dp[j][d]; break;
        case R3D_NT_ILi: fillsc = cyk_r3d->ILmx[m]->mxi->mx[n]->dp[j][d]; break;
        }
-     }
-     
-     if (fabs(bestsc - fillsc) > tol) 
-       ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback(): that can't happen either. i=%d j=%d d=%d bestsc %f cyk %f", 
-		 j-d+1, j, d, bestsc, fillsc); 
-     
-      /* Now we know one or more equiv solutions, and they're in
-       * the stack <alts>, which keeps 3 numbers (r, d1, d2) for each
+       if (fabs(bestsc - fillsc) > tol) 
+	 ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback(): that can't happen either. R3D: w = %d m = %d n = %d i=%d j=%d d=%d bestsc %f cyk %f\n", 
+		   w, m, n, j-d+1, j, d, bestsc, fillsc); 
+
+       /* Now we know one or more equiv solutions, and they're in
+       * the stack <alts>, which keeps 
+       * 5 numbers (r, m, n, d1, d1) for each R3D solution
        * solution. Choose one of them at random.
        */
-      nequiv = esl_stack_ObjectCount(alts) / 3; /* how many solutions? */
-      x = esl_rnd_Roll(rng, nequiv);            /* uniformly, 0.nequiv-1 */
-      esl_stack_DiscardTopN(alts, x*3);         /* dig down to choice */
+      nalt = 5;
+      nequiv = esl_stack_ObjectCount(alts) / nalt; /* how many solutions? */
+      x = esl_rnd_Roll(rng, nequiv);               /* uniformly, 0.nequiv-1 */
+      esl_stack_DiscardTopN(alts, x*nalt);         /* dig down to choice */
       esl_stack_IPop(alts, &d2);
       esl_stack_IPop(alts, &d1);
-      esl_stack_IPop(alts, &r);
-      if (r == RBG_P_1_HL || r == RBG_P_2_BL || r == RBG_P_3_BL || r == RBG_P_4_IL) esl_stack_IPop(alts, &m);
-      
+      esl_stack_IPop(alts, &rn); // which of the segments of the IL module (nBo, nBi)
+      esl_stack_IPop(alts, &rm); // which of the IL modules (nIL_total)
+      esl_stack_IPop(alts, &r);  // which R3D rule: R3D_ILo_M ... R3D_ILi_E (we only need to traceback IL modules)
+     }
+                
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
        */
@@ -1770,16 +1604,20 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
       k = i + d1 - 1;
       l = j - d2 + 1;
       
-      if (1||verbose) {
+      if (verbose) {
         printf("-----------------------------------\n"); 
         printf("i=%d j=%d d=%d d1=%d d2=%d\n", j-d+1, j, d, d1, d2);
 	printf("tracing %f\n", bestsc);
-	if (w < RBG_NT)
-	  printf("RBG w=%d rule(%d)\n", w, r);
-	else
-	  printf("R3D w=%d rule(%d) m = %d\n", w, r, m);
-
+	if (w < RBG_NT) {
+	  if (r == RBG_P_1_HL || r == RBG_P_2_BL || r == RBG_P_3_BL || r == RBG_P_4_IL)
+	    printf("RBG-R3D w=%d rule(%d) m = %d\n", w, r, rm);
+	  else printf("RBG w=%d rule(%d)\n", w, r);
+	}
+	else printf("R3D w=%d rule(%d) m = %d n = %d\n", w, r, rm, rn);
       }
+     
+      if (w >= RBG_NT + R3D_NT) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): NT   has to be smaller than %d but it is %d", RBG_NT+R3D_NT, w);
+      if (r >= RBG_NR + R3D_NR) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule has to be smaller than %d but it is %d", RBG_NR+R3D_NR, r);
 
       if (w == RBG_S  && r != RBG_S_1  && r != RBG_S_2  && r != RBG_S_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with S",  r);
       if (w == RBG_F0 && r != RBG_F0_1 && r != RBG_F0_2 && r != RBG_F0_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with F0", r);
@@ -1800,7 +1638,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	  r != R3D_ILo_M && r != R3D_ILo_L && r != R3D_ILo_R && r != R3D_ILo_E) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with ILo", r);
       if (w == R3D_NT_ILi &&
 	  r != R3D_ILi_M && r != R3D_ILi_L && r != R3D_ILi_R && r != R3D_ILi_E) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with ILo", r);
-   
+      
       switch(r) {
       case RBG_S_1: // S -> a S
 	esl_stack_IPush(ns, RBG_S);
@@ -1859,9 +1697,15 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
       case RBG_P_1:    // P -> m..m
 	break;
       case RBG_P_1_HL: // P -> HL(m)
-	R3D_RMtoCT(r3d, R3D_TP_HL, m, &idx, errbuf);
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_HL;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->HL[rm]->name);
+	
+	R3D_RMtoCTidx(r3d, R3D_TP_HL, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= j; q ++) 
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case RBG_P_2: // P -> m..m F0
 	esl_stack_IPush(ns, RBG_F0);
@@ -1872,8 +1716,16 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	esl_stack_IPush(ns, RBG_F0);
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
+	
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_BL;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->BL[rm]->name);
+
+	R3D_RMtoCTidx(r3d, R3D_TP_BL, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
-	  ct[q] = -(r3d->nHL + m);
+	  r3dct[q] = idx;
 	break;
       case RBG_P_3: // P -> F0 m..m
 	esl_stack_IPush(ns, RBG_F0);
@@ -1884,9 +1736,16 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	esl_stack_IPush(ns, RBG_F0);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, l-1);
-	R3D_RMtoCT(r3d, R3D_TP_BL, m, &idx, errbuf);
+
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_BL;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->BL[rm]->name);
+
+	R3D_RMtoCTidx(r3d, R3D_TP_BL, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = l; q <= j; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case RBG_P_4: // P -> m..m F0 m..m
 	esl_stack_IPush(ns, RBG_F0);
@@ -1894,10 +1753,16 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	esl_stack_IPush(ns, l-1);
 	break;
       case RBG_P_4_IL: // P -> IL[m]
-	esl_stack_IPush(ns, m);
+	esl_stack_IPush(ns, rm);
+	esl_stack_IPush(ns, 0);
 	esl_stack_IPush(ns, R3D_NT_ILo);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
+
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_IL;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->IL[rm]->name);
 	break;
       case RBG_P_5: // P -> M1 M
 	esl_stack_IPush(ns, RBG_M1);
@@ -1933,7 +1798,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	esl_stack_IPush(ns, j);
 	break;
  
-     case RBG_M1_1: // M1 -> a M1
+      case RBG_M1_1: // M1 -> a M1
 	esl_stack_IPush(ns, RBG_M1);
 	esl_stack_IPush(ns, i+1);
 	esl_stack_IPush(ns, j);
@@ -1945,65 +1810,75 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	break;
 
       case R3D_ILo_M: // ILo[m]^{n} -> Lo^{n} ILo[m]^{n+1} Ro^{n} for n < nBo || ILo[m]^{nBo} -> Loop_L ILi[m]^{0} Loop_R
- 	nBo = r3d->IL[m]->nBo;
-	if (n < nBo) {
-	  esl_stack_IPush(ns, n+1);
+ 	nBo = r3d->IL[rm]->nBo;
+	esl_stack_IPush(ns, rm);
+	if (rn < nBo) {
+	  esl_stack_IPush(ns, rn+1);
 	  esl_stack_IPush(ns, R3D_NT_ILo);
 	}
-	else if (n == nBo) {
+	else if (rn == nBo) {
 	  esl_stack_IPush(ns, 0);
 	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, l-1);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILo, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILo, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	for (q = l; q <= j; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case R3D_ILo_L: // ILo[m]^{n} -> Lo^{n} ILo[m]^{n+1}        for n < nBo || ILo[m]^{nBo} -> Loop_L ILi[m]^{0} 
- 	nBo = r3d->IL[m]->nBo;
-	if (n < nBo) {
-	  esl_stack_IPush(ns, n+1);
+ 	nBo = r3d->IL[rm]->nBo;
+	esl_stack_IPush(ns, rm);
+	if (rn < nBo) {
+	  esl_stack_IPush(ns, rn+1);
 	  esl_stack_IPush(ns, R3D_NT_ILo);
 	}
-	else if (n == nBo) {
+	else if (rn == nBo) {
 	  esl_stack_IPush(ns, 0);
 	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILo, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILo, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case R3D_ILo_R: // ILo[m]^{n} ->        ILo[m]^{n+1} Ro^{n} for n < nBo || ILo[m]^{nBo} ->        ILi[m]^{0} Loop_R
- 	nBo = r3d->IL[m]->nBo;
-	if (n < nBo) {
-	  esl_stack_IPush(ns, n+1);
+ 	nBo = r3d->IL[rm]->nBo;
+	esl_stack_IPush(ns, rm);
+	if (rn < nBo) {
+	  esl_stack_IPush(ns, rn+1);
 	  esl_stack_IPush(ns, R3D_NT_ILo);
 	}
-	else if (n == nBo) {
+	else if (rn == nBo) {
 	  esl_stack_IPush(ns, 0);
 	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, l-1);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILo, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILo, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = l; q <= j; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case R3D_ILo_E: // ILo[m]^{n} ->        ILo[m]^{n+1}        for n < nBo || ILo[m]^{nBo} ->        ILi[m]^{0}
 	nBo = r3d->IL[m]->nBo;
-	if (n < nBo) {
-	  esl_stack_IPush(ns, n+1);
+	esl_stack_IPush(ns, rm);
+	if (rn < nBo) {
+	  esl_stack_IPush(ns, rn+1);
 	  esl_stack_IPush(ns, R3D_NT_ILo);
 	}
-	else if (n == nBo) {
+	else if (rn == nBo) {
 	  esl_stack_IPush(ns, 0);
 	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
@@ -2012,61 +1887,72 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
 	break;
 	
       case R3D_ILi_M: // ILi[m]^{n} -> Li^{n} ILi[m]^{n+1} Ri^{n} for n < nBi-1 || ILi[m]^{nBi-1} -> Loop_L F0 Loop_R
-	nBi = r3d->IL[m]->nBi;
-	if (n < nBi-1) {
-	  esl_stack_IPush(ns, n+1);
-	  esl_stack_IPush(ns, R3D_NT_ILo);
+	nBi = r3d->IL[rm]->nBi;
+	if (rn < nBi-1) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
-	else if (n == nBi -1) {
+	else if (rn == nBi-1) {
 	  esl_stack_IPush(ns, RBG_F0);
 	}
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, l-1);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILi, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILi, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	for (q = l; q <= j; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case R3D_ILi_L: // ILi[m]^{n} -> Li^{n} ILi[m]^{n+1}        for n < nBi-1 || ILi[m]^{nBi-1} -> Loop_L F0 
-	nBi = r3d->IL[m]->nBi;
-	if (n < nBi-1) {
-	  esl_stack_IPush(ns, n+1);
-	  esl_stack_IPush(ns, R3D_NT_ILo);
+	nBi = r3d->IL[rm]->nBi;
+	if (rn < nBi-1) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
-	else if (n == nBi -1) {
+	else if (rn == nBi-1) {
 	  esl_stack_IPush(ns, RBG_F0);
 	}
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILi, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILi, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
-	  ct[q] = idx;
+	  r3dct[q] = idx;
 	break;
       case R3D_ILi_R: // ILi[m]^{n} ->        ILi[m]^{n+1} Ri^{n} for n < nBi-1 || ILi[m]^{nBi-1} ->        F0 Loop_R
-	nBi = r3d->IL[m]->nBi;
-	if (n < nBi-1) {
-	  esl_stack_IPush(ns, n+1);
-	  esl_stack_IPush(ns, R3D_NT_ILo);
+	nBi = r3d->IL[rm]->nBi;
+	if (rn < nBi-1) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
-	else if (n == nBi -1) {
+	else if (rn == nBi-1) {
 	  esl_stack_IPush(ns, RBG_F0);
 	}
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, l-1);
+	
 	//annotate the CT
-	R3D_RMtoCT(r3d, R3D_TP_ILi, m, &idx, errbuf);
+	R3D_RMtoCTidx(r3d, R3D_TP_ILi, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = l; q <= j; q ++)
+	  r3dct[q] = idx;
 	break;	
       case R3D_ILi_E: // ILi[m]^{n} ->        ILi[m]^{n+1}        for n < nBi-1 || ILi[m]^{nBi-1} ->        F0
-	nBi = r3d->IL[m]->nBi;
-	if (n < nBi-1) {
-	  esl_stack_IPush(ns, n+1);
-	  esl_stack_IPush(ns, R3D_NT_ILo);
+	nBi = r3d->IL[rm]->nBi;
+	if (rn < nBi-1) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_ILi);
 	}
-	else if (n == nBi -1) {
+	else if (rn == nBi-1) {
 	  esl_stack_IPush(ns, RBG_F0);
 	}
 	esl_stack_IPush(ns, i);
@@ -2080,6 +1966,8 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
       }
     }
 
+  if (ret_r3dlist) *ret_r3dlist = r3dlist;
+  
   esl_stack_Destroy(ns);
   esl_stack_Destroy(alts);
   return eslOK;
@@ -2087,6 +1975,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, RBGparam *p, R
  ERROR:
   if (ns)   esl_stack_Destroy(ns); ns = NULL;
   if (alts) esl_stack_Destroy(alts); alts = NULL;
+  if (r3dlist) struct_ctlist_Destroy(r3dlist);
   return status;
 }
 
@@ -2320,7 +2209,7 @@ CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, FOLDPARAM *foldparam, G6Xparam *meap
 
 /*----------------------------------- internal functions --------------------------------------------------*/
 
-static int
+static inline int
 dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk,
 		     int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose)
 {
@@ -2522,7 +2411,7 @@ dp_recursion_mea_cyk(FOLDPARAM *foldparam, G6Xparam *p, POST *post, SPAIR *spair
 }
 
 
-static int 
+static inline int 
 dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *cyk, int w, int j, int d,
 		     SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose)
 {
@@ -2738,7 +2627,7 @@ dp_recursion_g6x_cyk(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6x_inside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, int w, int j, int d,
 			SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -2755,8 +2644,8 @@ dp_recursion_g6x_inside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutu
 
   i = j - d + 1;
 
-  if (d < 1 && w == G6X_L)  { *ret_sc = -eslINFINITY; return eslOK; }  // L  has at least 1 residues
-  if (d < 1 && w == G6X_F)  { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 1 residues
+  if (d < 1 && w == G6X_L) { *ret_sc = -eslINFINITY; return eslOK; }  // L  has at least 1 residues
+  if (d < 1 && w == G6X_F) { *ret_sc = -eslINFINITY; return eslOK; }  // F  has at least 1 residues
 
   // decide on constraints
   force_bp = force_bpair(i, j, L, covct);
@@ -2866,7 +2755,7 @@ dp_recursion_g6x_inside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutu
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx, int w, int j, int d,
 			 SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -2952,7 +2841,7 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mut
       sc    = omx->L->dp[jp][d+2] + p->t2[0] + emitsc_pairij;
       sumsc = e2_FLogsum(sumsc, sc);
     }
-   
+    
     // rule6: F -> a F a'       
     if (d > 2 && (force_bp || allow_bp)) {
       sc    = omx->F->dp[jp][d+2] + p->t3[0] + emitsc_pairij;
@@ -2970,7 +2859,7 @@ dp_recursion_g6x_outside(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mut
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6x_posterior_single(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
 				  int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3016,7 +2905,7 @@ dp_recursion_g6x_posterior_single(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, s
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6x_posterior_pair(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
 				int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3089,7 +2978,7 @@ dp_recursion_g6x_posterior_pair(FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, str
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX  *cyk, int w, int j, int d,
 		      SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose)
 {
@@ -3304,7 +3193,7 @@ dp_recursion_g6xs_cyk(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutua
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6xs_inside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, int w, int j, int d,
 			 SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3434,7 +3323,7 @@ dp_recursion_g6xs_inside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mu
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *omx, G6X_MX *imx, int w, int j, int d,
 			  SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3540,7 +3429,7 @@ dp_recursion_g6xs_outside(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct m
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6xs_posterior_single(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx, int w, int j, 
 				   POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3586,7 +3475,7 @@ dp_recursion_g6xs_posterior_single(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq,
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_g6xs_posterior_pair(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx,
 				 int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -3664,16 +3553,17 @@ dp_recursion_g6xs_posterior_pair(FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, s
 }
 
 
-static int 
+static inline int 
 dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 		     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, ESL_STACK *alts, char *errbuf, int verbose)
 {
-  R3D     *r3d = foldparam->r3d;
+  R3D     *r3d    = foldparam->r3d;
   SCVAL    bestsc = -eslINFINITY;
   SCVAL    sc;
   double   emitsc_singi, emitsc_singj;
   double   emitsc_pair1, emitsc_pair2;
   double   emitsc_stck1, emitsc_stck2;
+  int      hl_allow, bl_allow, il_allow;
   int      allow_si, allow_sj;
   int      allow_bp, force_bp;
   int      L = mi->alen;
@@ -3683,7 +3573,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
   int      status;
 
   if (alts) esl_stack_Reuse(alts);
-   
+  
   i = j - d + 1;
 
   if (d < 2 && w == RBG_M)  { *ret_sc = -eslINFINITY; return eslOK; }  // M  has at least 2 residues
@@ -3697,7 +3587,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
   allow_bp = allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i, j, L, covct, exclude, spair, ret_nneg);
   allow_si = allow_single(i, L, covct);
   allow_sj = allow_single(j, L, covct);
-  
+
   // special case
   if (force_bp && w == RBG_P) { *ret_sc = -eslINFINITY; return eslOK; }  // P does not allow i-j pairing
 
@@ -3719,7 +3609,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
     
     if (d > 0) {
       sc = (allow_si)? cyk->S->dp[j][d-1] + p->tS[0] + emitsc_singi : -eslINFINITY;
-	
+
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -3727,6 +3617,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_S_1);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -3735,7 +3626,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
     
     /* rule1: S -> F0 S */
     d2 = 0;
-    for (d1 = 0; d1 <= d; d1++) {
+    for (d1 = 1; d1 <= d; d1++) {
       
       k = i + d1 - 1;
       
@@ -3747,6 +3638,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_S_2);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -3764,6 +3656,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_S_3);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -3787,6 +3680,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     	
       if (alts) {
 	esl_stack_IPush(alts, RBG_F0_1);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -3798,8 +3692,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       sc = cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair2;     
      else 
        sc = (allow_bp)?
-	 cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair2 : -eslINFINITY;
-    
+	 cyk->P->dp[j-1][d-2] + p->tF0[1] + emitsc_pair2 : -eslINFINITY; 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -3807,6 +3700,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     	
       if (alts) {
 	esl_stack_IPush(alts, RBG_F0_2);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -3827,6 +3721,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     	
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_F0_3);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -3850,6 +3745,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     	
       if (alts) {
 	esl_stack_IPush(alts, RBG_F5_1);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -3870,6 +3766,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     	
       if (alts) {
 	esl_stack_IPush(alts, RBG_F5_2);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -3891,6 +3788,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     	
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_F5_3);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -3900,7 +3798,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 
   case RBG_P:
     /* rule9 (plain): P -> m..m */
-    status = dp_recursion_rbg_score_P_HL_plain(foldparam, p, psq, mi, covct, j, d, &sc, errbuf, verbose);
+    status = dp_recursion_rbg_score_P_HL_plain(foldparam, p, psq, mi, covct, j, d, &sc, &hl_allow, errbuf, verbose);
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -3910,21 +3808,23 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	esl_stack_IPush(alts, RBG_P_1);
 	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, 0);
+	esl_stack_IPush(alts, 0);
       }
     }
     
     /* rule9-R3D: P -> HL[m] */
-    if (r3d) {
+    if (r3d && hl_allow) {
       for (m = 0; m < r3d->nHL; m ++) {
-	status = dp_recursion_rbg_score_P_HL_R3D(foldparam, r3d->HL[m], p, r3d_p->HLp, psq, mi, covct, cyk_r3d->HLmx[m], j, d, &sc, errbuf, verbose);
+	status = dp_recursion_rbg_score_P_HL_R3D(r3d_p->HLp, cyk_r3d->HLmx[m], j, d, mi->alen, &sc, hl_allow, errbuf, verbose);
+	    
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	    if (alts) esl_stack_Reuse(alts);
 	    bestsc = sc;
-	  }     
+	  }
 	  if (alts) {
-	    esl_stack_IPush(alts, m);
 	    esl_stack_IPush(alts, RBG_P_1_HL);
+	    esl_stack_IPush(alts, m);
 	    esl_stack_IPush(alts, 0);
 	    esl_stack_IPush(alts, 0);
 	  }
@@ -3934,7 +3834,9 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
     
     /* rule10: P -> m..m F0 */
     for (d1 = 1; d1 <= d; d1++) {
-      status = dp_recursion_rbg_score_P_B5_plain(foldparam, p, psq, mi, covct, cyk, j, d, d1, &sc, errbuf, verbose);
+      status = dp_recursion_rbg_score_P_B5_plain(foldparam, p, psq, mi, covct, cyk, j, d, d1, &sc, &bl_allow, errbuf, verbose);
+      if (!bl_allow) break;
+      
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -3942,35 +3844,37 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_P_2);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, 0);
 	}	
       }
 
       /* rule10_r3d: P -> BL[m] F0 */
-      if (r3d) {
+      if (r3d && bl_allow) {
 	for (m = 0; m < r3d->nBL; m ++) {
-	  status = dp_recursion_rbg_score_P_B5_R3D(foldparam, r3d->BL[m], p, r3d_p->BLp, psq, mi, covct, cyk, cyk_r3d->BLmx[m], j, d, d1, &sc, errbuf, verbose);
+	  status = dp_recursion_rbg_score_P_B5_R3D(r3d_p->BLp, cyk, cyk_r3d->BLmx[m], j, d, d1, mi->alen, &sc, bl_allow, errbuf, verbose);
 	  if (sc >= bestsc) {
 	    if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	      if (alts) esl_stack_Reuse(alts);
 	      bestsc = sc;
 	    }     
 	    if (alts) {
-	      esl_stack_IPush(alts, m);
 	      esl_stack_IPush(alts, RBG_P_2_BL);
+	      esl_stack_IPush(alts, m);
 	      esl_stack_IPush(alts, d1);
 	      esl_stack_IPush(alts, 0);
 	    }	
 	  }
 	}
       }
-      
-    }
+    } // for each d1
     
     /* rule11: P -> F0 m..m */
     for (d2 = 1; d2 <= d; d2++) {
-      status = dp_recursion_rbg_score_P_B3_plain(foldparam, p, psq, mi, covct, cyk, j, d, d2, &sc, errbuf, verbose);
+      status = dp_recursion_rbg_score_P_B3_plain(foldparam, p, psq, mi, covct, cyk, j, d, d2, &sc, &bl_allow, errbuf, verbose);
+      if (!bl_allow) break;
+
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -3979,35 +3883,38 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_P_3);
 	  esl_stack_IPush(alts, 0);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d2);
 	}
       }
       
       /* rule11_r3d: P -> F0 BL[m]*/
-      if (r3d) {
+      if (r3d && bl_allow) {
 	for (m = 0; m < r3d->nBL; m ++) {
-	  status = dp_recursion_rbg_score_P_B3_R3D(foldparam, r3d->BL[m], p, r3d_p->BLp, psq, mi, covct, cyk, cyk_r3d->BLmx[m], j, d, d1, &sc, errbuf, verbose);
+	  status = dp_recursion_rbg_score_P_B3_R3D(r3d_p->BLp, cyk, cyk_r3d->BLmx[m], j, d, d2, mi->alen, &sc, bl_allow, errbuf, verbose);
+
 	  if (sc >= bestsc) {
 	    if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	      if (alts) esl_stack_Reuse(alts);
 	      bestsc = sc;
 	    }     
 	    if (alts) {
-	      esl_stack_IPush(alts, m);
 	      esl_stack_IPush(alts, RBG_P_3_BL);
+	      esl_stack_IPush(alts, m);
 	      esl_stack_IPush(alts, 0);
 	      esl_stack_IPush(alts, d2);
 	    }	
 	  }
 	}
-      }
-           
-    }
+      }   
+    } // for each d2
     
     /* rule12: P -> m..m F0 m..m */
     for (d1 = 1; d1 <= d; d1++) {
       for (d2 = 1; d2 <= d-d1; d2++) {
-	status = dp_recursion_rbg_score_P_IL_plain(foldparam, p, psq, mi, covct, cyk, j, d, d1, d2, &sc, errbuf, verbose);
+	status = dp_recursion_rbg_score_P_IL_plain(foldparam, p, psq, mi, covct, cyk, j, d, d1, d2, &sc, &il_allow, errbuf, verbose);
+	if (!il_allow) break;
+	    
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	    if (alts) esl_stack_Reuse(alts);
@@ -4015,37 +3922,42 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	  }     
 	  if (alts) {
 	    esl_stack_IPush(alts, RBG_P_4);
+	    esl_stack_IPush(alts, 0);
 	    esl_stack_IPush(alts, d1);
 	    esl_stack_IPush(alts, d2);
 	  }
 	}
-      }
-    }
+      } // for each d2
+    } // for each d1
+ 
     /* rule12-r3e: P -> IL[m] */
+    //
+    // this rule is different, we don't know d1, d2 until we parse IL->mxi->mx[nBi-1]
+    //
     if (r3d) {
-      for (m = 0; m < r3d->nIL; m ++) {
-	status = dp_recursion_rbg_score_P_IL_R3D(foldparam, r3d->IL[m], p, r3d_p->ILp, psq, mi, covct, cyk, cyk_r3d->ILmx[m], j, d, &sc, errbuf, verbose);
+      for (m = 0; m < r3d->nIL_total; m ++) {
+	status = dp_recursion_rbg_score_P_IL_R3D(foldparam, r3d_p->ILp, cyk_r3d->ILmx[m], spair, covct, exclude, j, d, mi->alen, &sc, errbuf, verbose);
+
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	    if (alts) esl_stack_Reuse(alts);
 	    bestsc = sc;
 	  }     
 	  if (alts) {
-	    esl_stack_IPush(alts, m);
 	    esl_stack_IPush(alts, RBG_P_4_IL);
+	    esl_stack_IPush(alts, m);
 	    esl_stack_IPush(alts, 0);
 	    esl_stack_IPush(alts, 0);
 	  }	
-	}
- 	
+	}  
       }
     }
-
+     
     /* rule13: P -> M1 M */
     d2 = 0;
-    for (d1 = 0; d1 <= d; d1++) {
+    for (d1 = 1; d1 <= d; d1++) {
       k = i + d1 - 1;
-      
+
       sc = cyk->M1->dp[k][d1] + cyk->M->dp[j][d-d1] + p->tP[4];
       
       if (sc >= bestsc) {
@@ -4055,6 +3967,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_P_5);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -4065,7 +3978,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
   case RBG_M:
     d2 = 0;
     /* rule14: M -> M1 M */
-    for (d1 = 0; d1 <= d; d1++) {
+    for (d1 = 1; d1 <= d; d1++) {
       k = i + d1 - 1;
       
       sc = cyk->M1->dp[k][d1] + cyk->M->dp[j][d-d1] + p->tM[0];
@@ -4077,6 +3990,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_M_1);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -4093,6 +4007,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     
       if (alts) {
 	esl_stack_IPush(alts, RBG_M_2);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -4112,6 +4027,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_R_1);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -4128,6 +4044,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     
       if (alts) {
 	esl_stack_IPush(alts, RBG_R_2);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -4147,6 +4064,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
 	}     
 	if (alts) {
 	  esl_stack_IPush(alts, RBG_M1_1);
+	  esl_stack_IPush(alts, 0);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -4163,6 +4081,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
       }     
       if (alts) {
 	esl_stack_IPush(alts, RBG_M1_2);
+	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, d2);
       }
@@ -4183,8 +4102,7 @@ dp_recursion_rbg_cyk(FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d_p, PSQ *ps
   return status;
 }
 
-
-static int 
+static inline int 
 dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, RBG_MX *imx, int w, int j, int d,
 			 SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -4194,10 +4112,13 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
   double   emitsc_pair1, emitsc_pair2;
   double   emitsc_stck1, emitsc_stck2;
   int      allow_bp, force_bp;
+  int      allow_hp;
   int      allow_si, allow_sj;
   int      L = mi->alen;
   int      d1, d2;
-  int      i, k;
+  int      i, k, l;
+  int      d_ng, d1_ng, d2_ng;
+  int      len, len1, len2;
   int      status;
 
   i = j - d + 1;
@@ -4211,6 +4132,7 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
   // decide on constraints
   force_bp = force_bpair(i, j, L, covct);
   allow_bp = allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i, j, L, covct, exclude, spair, ret_nneg);
+  allow_hp = allow_hairpin(foldparam->hloop_min, i, j, L, covct);
   allow_si = allow_single(i, L, covct);
   allow_sj = allow_single(j, L, covct);
 
@@ -4337,7 +4259,16 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
 
   case RBG_P:
     /* rule9: P -> m..m */
-    status = dp_recursion_rbg_score_P_HL_plain(foldparam, p, psq, mi, covct, j, d, &sc, errbuf, verbose);
+    d1 = d2 = 0;
+    if (d >= MAXLOOP_H && !force_bpair(i-1, j+1, L, covct)) {
+      sc = -eslINFINITY;
+    }
+    else {
+      d_ng = segment_remove_gaps_prof(i,j,psq); if (d_ng == 0) d_ng = d;
+      len  = (d_ng-1 < MAXLOOP_H)? d_ng - 1 : MAXLOOP_H - 1;
+	
+      sc = (allow_hp)? p->tP[0] + p->l1[len] + score_loop_hairpin_prof(i, j, L, p, mi->pm) : -eslINFINITY;
+    }
     sumsc = e2_FLogsum(sumsc, sc); 
 
     /* rule10: P -> m..m F0 */
@@ -4347,8 +4278,15 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
     //  i________________j
     //          P
     //
+    d2 = 0;
     for (d1 = 1; d1 <= d; d1++) {
-      status = dp_recursion_rbg_score_P_B5_plain(foldparam, p, psq, mi, covct, imx, j, d, d1, &sc, errbuf, verbose);
+      
+      k = i + d1 - 1;
+      
+      d1_ng = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
+      len1  = (d1_ng-1 < MAXLOOP_B)? d1_ng - 1 : MAXLOOP_B - 1;
+
+      sc = allow_loop(i, k, L, covct)? imx->F0->dp[j][d-d1] + p->tP[1] + p->l2[len1] + score_loop_bulge_prof(i, k, L, p, mi->pm) : -eslINFINITY;
       sumsc = e2_FLogsum(sumsc, sc); 
     }
     
@@ -4359,8 +4297,15 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
     //  i________________j
     //          P
     //
+    d1 = 0;
     for (d2 = 1; d2 <= d; d2++) {
-      status = dp_recursion_rbg_score_P_B3_plain(foldparam, p, psq, mi, covct, imx, j, d, d2, &sc, errbuf, verbose);
+      
+      l = j - d2 + 1;
+      
+      d2_ng = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
+      len2  = (d2_ng-1 < MAXLOOP_B)? d2_ng - 1 : MAXLOOP_B - 1;
+      
+      sc = allow_loop(l, j, L, covct)? imx->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[len2] + score_loop_bulge_prof(l, j, L, p, mi->pm) : -eslINFINITY;
       sumsc = e2_FLogsum(sumsc, sc); 
     }
     
@@ -4373,7 +4318,19 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
     //
     for (d1 = 1; d1 <= d; d1++) {
       for (d2 = 1; d2 <= d-d1; d2++) {
-	status = dp_recursion_rbg_score_P_IL_plain(foldparam, p, psq, mi, covct, imx, j, d, d1, d2, &sc, errbuf, verbose);
+	
+	if (d1 + d2 > MAXLOOP_I) break;
+
+	k = i + d1 - 1;
+	l = j - d2 + 1;
+
+	d1_ng = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
+	d2_ng = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
+	len1  = (d1_ng-1 < MAXLOOP_I)? d1_ng - 1 : MAXLOOP_I - 1;
+	len2  = (d2_ng-1 < MAXLOOP_I)? d2_ng - 1 : MAXLOOP_I - 1;
+
+	sc = (l > 0 && allow_loop(i,k,L,covct) && allow_loop(l,j,L,covct))?
+	  imx->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[len1][len2] + score_loop_intloop_prof(i, k, L, p, mi->pm) + score_loop_intloop_prof(l, j, L, p, mi->pm) : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc); 
       }
     }
@@ -4455,9 +4412,6 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
     
   }
 
-  if (sumsc <= -eslINFINITY) esl_fail(errbuf, "RBG Inside failed: sc = -inf.");
-  if (sumsc >= +eslINFINITY) esl_fail(errbuf, "RBG Inside failed: sc = +inf.");
-
   *ret_sc = sumsc;
   return eslOK;
 
@@ -4466,7 +4420,7 @@ dp_recursion_rbg_inside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutu
 }
 
 
-static int 
+static inline int 
 dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, RBG_MX *omx, RBG_MX *imx,
 			 int w, int j, int d, SCVAL *ret_sc, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -4786,7 +4740,7 @@ dp_recursion_rbg_outside(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mut
 }
 
 
-static int 
+static inline int 
 dp_recursion_rbg_posterior_pair(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 				RBG_MX *imx, RBG_MX *omx, int w, int j, int d, POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
@@ -4866,11 +4820,13 @@ dp_recursion_rbg_posterior_pair(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, str
     }
     break;
     
-  default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG nt %d\n", w);
+  default: ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RBG NT %d\n", w);
+    break;
   }
 
+  
   post->pp[i][j] = pp;
-  post->pp[j][i] = pp;										
+  post->pp[j][i] = pp;
   
   return eslOK;
 
@@ -4879,30 +4835,28 @@ dp_recursion_rbg_posterior_pair(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, str
 }
 
 /* rule9-plain: P -> m..m */
-static int
-dp_recursion_rbg_score_P_HL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, int j, int d, SCVAL *ret_sc,
-				  char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_HL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, int j, int d,
+				  SCVAL *ret_sc, int *ret_hl_allow, char *errbuf, int verbose)
 {
   SCVAL    sc;	        	        /* score for a rule */
-  int      allow_hp;
   int      L = mi->alen;
+  int      hl_allow;
+  int      hl_len;
   int      i;
   int      d_ng;
-  int      len;
 
   i = j - d + 1;
 
-  // decide on constrains
-  allow_hp = allow_hairpin(foldparam->hloop_min, i, j, L, covct);
+  // decide on constraints
+  hl_allow = allow_hairpin(foldparam->hloop_min, i, j, L, covct);
+  if (d >= MAXLOOP_H && !force_bpair(i-1, j+1, L, covct)) hl_allow = FALSE;
+  
+  d_ng   = segment_remove_gaps_prof(i, j, psq); if (d_ng == 0) d_ng = d;
+  hl_len = (d_ng-1 < MAXLOOP_H)? d_ng - 1 : MAXLOOP_H - 1;
+  sc     = (hl_allow)? p->tP[0] + p->l1[hl_len] + score_loop_hairpin_prof(i, j, L, p, mi->pm) : -eslINFINITY;
 
-  if (d >= MAXLOOP_H && !force_bpair(i-1, j+1, L, covct)) {
-    sc = -eslINFINITY;
-  }
-  else {
-    d_ng = segment_remove_gaps_prof(i, j, psq); if (d_ng == 0) d_ng = d;
-    len  = (d_ng-1 < MAXLOOP_H)? d_ng - 1 : MAXLOOP_H - 1;
-    sc   = (allow_hp)? p->tP[0] + p->l1[len] + score_loop_hairpin_prof(i, j, L, p, mi->pm) : -eslINFINITY;
-  }
+  if (ret_hl_allow) *ret_hl_allow = hl_allow;
   
   *ret_sc = sc;
   return eslOK;
@@ -4915,26 +4869,12 @@ dp_recursion_rbg_score_P_HL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, s
 //  ...
 // HL^{nB-1}_k --> L^{nB}_k  Loop_k    R^{nB}_k | HL^{nB}_k
 //
-static int
-dp_recursion_rbg_score_P_HL_R3D(FOLDPARAM *foldparam, R3D_HL *HL, RBGparam *p, R3D_HLparam *HLp, PSQ *psq, struct mutual_s *mi, int *covct,
-				R3D_HLMX *HLmx, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_HL_R3D(R3D_HLparam *HLp, R3D_HLMX *HLmx, int j, int d, int L, SCVAL *ret_sc, int hl_allow, char *errbuf, int verbose)
 {
-  SCVAL    sc = -eslINFINITY;	    /* score for a rule */
-  int      allow_hp;
-  int      L = mi->alen;
-  int      i;
+  SCVAL sc = -eslINFINITY;	    /* score for a rule */
 
-  i = j - d + 1;
-
-  // decide on constraints
-  allow_hp = allow_hairpin(foldparam->hloop_min, i, j, L, covct);
-
-  if (d >= MAXLOOP_H && !force_bpair(i-1, j+1, L, covct)) {
-    sc = -eslINFINITY;
-  }
-  else {
-    sc   = (allow_hp)? HLp->pHL + HLmx->mx->mx[0]->dp[j][d] : -eslINFINITY;
-  }
+  sc  = (hl_allow)? HLp->pHL + HLmx->mx->mx[0]->dp[j][d] : -eslINFINITY;
 
   *ret_sc = sc;
   
@@ -4948,27 +4888,31 @@ dp_recursion_rbg_score_P_HL_R3D(FOLDPARAM *foldparam, R3D_HL *HL, RBGparam *p, R
 //  i________________j
 //          P
 //
-static int
-dp_recursion_rbg_score_P_B5_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct,
-				  RBG_MX *rbgmx, int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_B5_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+				  int j, int d, int d1, SCVAL *ret_sc, int *ret_bl_allow, char *errbuf, int verbose)
 {
   SCVAL    sc = -eslINFINITY;	 /* score for a rule */
-  int      allow_hp;
   int      L = mi->alen;
+  int      bl_allow;
+  int      bl_len;
   int      i, k;
   int      d1_ng;
   int      len1;
   
   i = j - d  + 1;
   k = i + d1 - 1;
+
+  bl_allow = allow_loop(i, k, L, covct);
+  if (d1 > MAXLOOP_B && !force_bpair(k+1, j, L, covct)) bl_allow = FALSE;
   
-  if (d1 > MAXLOOP_B && !force_bpair(k+1, j, L, covct)) { *ret_sc = sc; return eslOK; } 
+  d1_ng  = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
+  bl_len = (d1_ng-1 < MAXLOOP_B)? d1_ng - 1 : MAXLOOP_B - 1;
   
-  d1_ng = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
-  len1  = (d1_ng-1 < MAXLOOP_B)? d1_ng - 1 : MAXLOOP_B - 1;
-  
-  sc  = allow_loop(i, k, L, covct)? rbgmx->F0->dp[j][d-d1] + p->tP[1] + p->l2[len1] + score_loop_bulge_prof(i, k, L, p, mi->pm) : -eslINFINITY;
-  
+  sc  = (bl_allow)? p->tP[1] + p->l2[bl_len] + score_loop_bulge_prof(i, k, L, p, mi->pm) + rbgmx->F0->dp[j][d-d1] : -eslINFINITY;
+
+  if (ret_bl_allow) *ret_bl_allow = bl_allow;
+
   *ret_sc = sc;
   return eslOK;
 }
@@ -4980,21 +4924,17 @@ dp_recursion_rbg_score_P_B5_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, s
 //  ...
 // BL^{nB-1}_k --> L^{nB}_k  Loop_k    R^{nB}_k | BL^{nB}_k
 
-static int
-dp_recursion_rbg_score_P_B5_R3D(FOLDPARAM *foldparam, R3D_BL *HL, RBGparam *p, R3D_BLparam *BLp, PSQ *psq, struct mutual_s *mi, int *covct,
-				RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_B5_R3D(R3D_BLparam *BLp, RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d1, int L,
+				SCVAL *ret_sc, int bl_allow, char *errbuf, int verbose)
 {
   SCVAL    sc = -eslINFINITY;	    /* score for a rule */
-  int      allow_hp;
-  int      L = mi->alen;
   int      i, k;
  
   i = j - d  + 1;
   k = i + d1 - 1;
   
-  if (d1 > MAXLOOP_B && !force_bpair(k+1, j, L, covct)) { *ret_sc = sc; return eslOK; } 
-  
-  sc  = allow_loop(i, k, L, covct)? BLp->pBL5 + BLmx->mx->mx[0]->dp[k][d1] + rbgmx->F0->dp[j][d-d1] : -eslINFINITY;
+  sc  = (bl_allow)? BLp->pBL5 + BLmx->mx->mx[0]->dp[k][d1] + rbgmx->F0->dp[j][d-d1] : -eslINFINITY;
 
   *ret_sc = sc;
   
@@ -5008,27 +4948,30 @@ dp_recursion_rbg_score_P_B5_R3D(FOLDPARAM *foldparam, R3D_BL *HL, RBGparam *p, R
 //  i________________j
 //          P
 //
-static int
-dp_recursion_rbg_score_P_B3_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct,
-				  RBG_MX *rbgmx, int j, int d, int d2, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_B3_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+				  int j, int d, int d2, SCVAL *ret_sc, int *ret_bl_allow, char *errbuf, int verbose)
 {
   SCVAL    sc = -eslINFINITY;	        	        /* score for a rule */
-  int      allow_hp;
   int      L = mi->alen;
+  int      bl_allow;
+  int      bl_len;
   int      i, l;
   int      d2_ng;
-  int      len2;
 
   i = j - d  + 1;
   l = j - d2 + 1;
 
-  if (d-d2 < 0) { *ret_sc = sc; return eslOK; }
-  if (d2 > MAXLOOP_B && !force_bpair(i, l-1, L, covct)) { *ret_sc = sc; return eslOK; }  
+  bl_allow = allow_loop(l, j, L, covct);
+  if (d-d2 < 0) bl_allow = FALSE;
+  if (d2 > MAXLOOP_B && !force_bpair(i, l-1, L, covct)) bl_allow = FALSE;
   
-  d2_ng = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
-  len2  = (d2_ng-1 < MAXLOOP_B)? d2_ng - 1 : MAXLOOP_B - 1;
+  d2_ng  = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
+  bl_len = (d2_ng-1 < MAXLOOP_B)? d2_ng - 1 : MAXLOOP_B - 1;
   
-  sc = allow_loop(l, j, L, covct)? rbgmx->F0->dp[l-1][d-d2] + p->tP[2] + p->l2[len2] + score_loop_bulge_prof(l, j, L, p, mi->pm) : -eslINFINITY;
+  sc = (bl_allow)? p->tP[2] + p->l2[bl_len] + score_loop_bulge_prof(l, j, L, p, mi->pm) + rbgmx->F0->dp[l-1][d-d2] : -eslINFINITY;
+
+  if (ret_bl_allow) *ret_bl_allow = bl_allow;
 
   *ret_sc = sc;
   return eslOK;
@@ -5041,22 +4984,16 @@ dp_recursion_rbg_score_P_B3_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, s
 //  ...
 // BL^{nB-1}_k --> L^{nB}_k  Loop_k    R^{nB}_k | BL^{nB}_k
 //
-static int
-dp_recursion_rbg_score_P_B3_R3D(FOLDPARAM *foldparam, R3D_BL *HL, RBGparam *p, R3D_BLparam *BLp, PSQ *psq, struct mutual_s *mi, int *covct,
-				RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d2, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_B3_R3D(R3D_BLparam *BLp, RBG_MX *rbgmx, R3D_BLMX *BLmx, int j, int d, int d2, int L,
+				SCVAL *ret_sc, int bl_allow, char *errbuf, int verbose)
 {
   SCVAL    sc = -eslINFINITY;	    /* score for a rule */
-  int      allow_hp;
-  int      L = mi->alen;
-  int      i, l;
+  int      l;
  
-  i = j - d  + 1;
   l = j - d2 + 1;
   
-  if (d-d2 < 0) { *ret_sc = sc; return eslOK; }
-  if (d2 > MAXLOOP_B && !force_bpair(i, l-1, L, covct)) { *ret_sc = sc; return eslOK; }
-
-  sc  = allow_loop(l, j, L, covct)? BLp->pBL3 + BLmx->mx->mx[0]->dp[j][d2] + rbgmx->F0->dp[l-1][d-d2] : -eslINFINITY;
+  sc  = (bl_allow)? BLp->pBL3 + BLmx->mx->mx[0]->dp[j][d2] + rbgmx->F0->dp[l-1][d-d2] : -eslINFINITY;
 
   *ret_sc = sc;
   return eslOK;
@@ -5069,32 +5006,36 @@ dp_recursion_rbg_score_P_B3_R3D(FOLDPARAM *foldparam, R3D_BL *HL, RBGparam *p, R
 //  i__________________________j
 //                P
 //
-static int
-dp_recursion_rbg_score_P_IL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct,
-				  RBG_MX *rbgmx, int j, int d, int d1, int d2, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_IL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+				  int j, int d, int d1, int d2, SCVAL *ret_sc, int *ret_il_allow, char *errbuf, int verbose)
 {
   SCVAL    sc = -eslINFINITY;	        	        /* score for a rule */
-  int      allow_hp;
   int      L = mi->alen;
+  int      il_allow;
+  int      il_len1, il_len2;
   int      i, k, l;
   int      d1_ng, d2_ng;
-  int      len1, len2;
 
   i = j - d  + 1;
   k = i + d1 - 1;
   l = j - d2 + 1;
 
-  if (d1 + d2 > MAXLOOP_I && !force_bpair(k+1, l-1, L, covct)) { *ret_sc = sc; return eslOK; }
+  il_allow = (l > 0 && allow_loop(i,k,L,covct) && allow_loop(l,j,L,covct))? TRUE : FALSE;
+  if (d1 + d2 > MAXLOOP_I && !force_bpair(k+1, l-1, L, covct)) il_allow = FALSE;
 
-  d1_ng = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
-  d2_ng = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
-  len1  = (d1_ng-1 < MAXLOOP_I)? d1_ng - 1 : MAXLOOP_I - 1;
-  len2  = (d2_ng-1 < MAXLOOP_I)? d2_ng - 1 : MAXLOOP_I - 1;
+  d1_ng   = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
+  d2_ng   = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
+  il_len1 = (d1_ng-1 < MAXLOOP_I)? d1_ng - 1 : MAXLOOP_I - 1;
+  il_len2 = (d2_ng-1 < MAXLOOP_I)? d2_ng - 1 : MAXLOOP_I - 1;
   
-  sc = (l > 0 && allow_loop(i,k,L,covct) && allow_loop(l,j,L,covct))?
-    rbgmx->F0->dp[l-1][d-d1-d2] + p->tP[3] + p->l3[len1][len2] + score_loop_intloop_prof(i, k, L, p, mi->pm) + score_loop_intloop_prof(l, j, L, p, mi->pm) : -eslINFINITY;
+  sc = (il_allow)?
+    p->tP[3] + p->l3[il_len1][il_len2] + score_loop_intloop_prof(i, k, L, p, mi->pm) + score_loop_intloop_prof(l, j, L, p, mi->pm) + rbgmx->F0->dp[l-1][d-d1-d2] : -eslINFINITY;
+
+  if (ret_il_allow) *ret_il_allow = il_allow;
   
   *ret_sc = sc;
+  
   return eslOK;
 }
 
@@ -5111,21 +5052,28 @@ dp_recursion_rbg_score_P_IL_plain(FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, s
 // ILi^{nBi-1}_k --> Li^{nBi}_k   F0       Li^{nBi}_k |   F0
 //
 //
-static int
-dp_recursion_rbg_score_P_IL_R3D(FOLDPARAM *foldparam, R3D_IL *IL, RBGparam *p, R3D_ILparam *ILp, PSQ *psq, struct mutual_s *mi, int *covct,
-				RBG_MX *rbgmx, R3D_ILMX *ILmx, int j, int d, SCVAL *ret_sc, char *errbuf, int verbose)
+static inline int
+dp_recursion_rbg_score_P_IL_R3D(FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude, int j, int d, int L, SCVAL *ret_sc,
+				char *errbuf, int verbose)
 {
   SCVAL sc = -eslINFINITY;	    /* score for a rule */
+  int   force_bp_ext;
+  int   allow_bp_ext;
+  int   i;
+
+  i = j - d + 1;
+  force_bp_ext = force_bpair(i-1, j+1, L, covct);
+  allow_bp_ext = (i > 1 && j < L)? allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i-1, j+1, L, covct, exclude, spair, NULL) : FALSE;
 
   sc = ILp->pIL + ILmx->mxo->mx[0]->dp[j][d];
-
+  
   *ret_sc = sc;
   return eslOK;
 }
 
-static int 
+static inline int 
 dp_recursion_r3d_cyk(FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-		     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+		     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   R3D      *r3d = foldparam->r3d;
   R3D_HL   *HL;
@@ -5135,42 +5083,42 @@ dp_recursion_r3d_cyk(FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mut
   R3D_BLMX *BLmx;
   R3D_ILMX *ILmx;
   R3D_HMX  *fwd = cyk_r3d->fwd;
-  SCVAL     sc;
+  int       L = mi->alen;
   int       i, k, l;
   int       status;
 
-  if (d <= 0) { *ret_sc = -eslINFINITY; return eslOK; }
+  if (d <= 0) { *ret_bestsc = -eslINFINITY; return eslOK; }
   
-  if (alts) esl_stack_Reuse(alts);
-   
   i = j - d + 1;
   
   if (w == R3D_NT_HL) {
+
     HL   = r3d->HL[m];
     HLmx = cyk_r3d->HLmx[m];
     
-    status = dp_recursion_r3d_cyk_HL(HL, foldparam, r3d_p, psq, mi, spair, covct, exclude,      HLmx, fwd, n, j, d, ret_sc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_HL(HL, foldparam, r3d_p, psq, mi, spair, covct, exclude,      HLmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_HL error\n");
   }
   else if (w == R3D_NT_BL) {
+       
     BL   = r3d->BL[m];
     BLmx = cyk_r3d->BLmx[m];
     
-    status = dp_recursion_r3d_cyk_BL(BL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       BLmx, fwd, n, j, d, ret_sc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_BL(BL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       BLmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_BL error\n");
   } 
   else if (w == R3D_NT_ILi) {
     IL   = r3d->IL[m];
     ILmx = cyk_r3d->ILmx[m];
     
-    status = dp_recursion_r3d_cyk_ILi(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, ILmx, fwd, n, j, d, ret_sc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_ILi(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, ILmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_ILi error\n");
   }
   else if (w == R3D_NT_ILo) {
     IL   = r3d->IL[m];
     ILmx = cyk_r3d->ILmx[m];
-    
-    status = dp_recursion_r3d_cyk_ILo(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       ILmx, fwd, n, j, d, ret_sc, alts, errbuf, verbose);
+ 
+    status = dp_recursion_r3d_cyk_ILo(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       ILmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_ILo error\n");
   }    
   
@@ -5181,18 +5129,39 @@ dp_recursion_r3d_cyk(FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mut
 }
 
    
-static int 
+static inline int 
 dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-			R3D_HLMX *HLmx, R3D_HMX *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+			R3D_HLMX *HLmx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
-  SCVAL sc;      
+  SCVAL sc;
+  SCVAL t_loop_M, t_loop_L, t_loop_R, t_loop_E; 
+  SCVAL t_LR_M, t_LR_L, t_LR_R, t_LR_E;
+  SCVAL ttmp;
   int   L  = mi->alen;
+  int   maxLL, maxLR, maxLLoop;
   int   i, k, l;
-  int   d_ng;
   int   d1, d2;
+  int   M_allow, L_allow, R_allow, E_allow;
   int   status;
                        
+  if (alts) esl_stack_Reuse(alts);
+
+  // update the transition probabilities
+  t_loop_M = r3d_p->HLp->pHL_Loop[0];
+  t_loop_L = r3d_p->HLp->pHL_Loop[1];
+  t_loop_R = r3d_p->HLp->pHL_Loop[2];
+  t_loop_E = r3d_p->HLp->pHL_Loop[3];
+
+  t_LR_M   = r3d_p->HLp->pHL_LR[0];
+  t_LR_L   = r3d_p->HLp->pHL_LR[1];
+  t_LR_R   = r3d_p->HLp->pHL_LR[2];
+  t_LR_E   = r3d_p->HLp->pHL_LR[3];
+
+  maxLL    = HL->HMML[n]->avglen + HMM_maxL_add;
+  maxLR    = HL->HMMR[n]->avglen + HMM_maxL_add;
+  maxLLoop = HL->HMMLoop->avglen + HMM_maxL_add;
+
   //                         M                          L                     R               E
   //
   // HL^{nB-1} --> L^{nB-1} Loop      R^{nB-1} | L^{nB-1} Loop      |  Loop     R^{nB-1} | Loop
@@ -5206,16 +5175,16 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
      
   i = j - d + 1;
 
-  d_ng = segment_remove_gaps_prof(i, j, psq);
-  if (d_ng > MAXLOOP_I)         { *ret_sc = sc; return eslOK; }
-  if (!allow_loop(i,j,L,covct)) { *ret_sc = sc; return eslOK; }
-
-  for (d1 = 1; d1 <= d; d1++) {
-    for (d2 = 1; d2 <= d-d1; d2++) {
+  for (d1 = 0; d1 <= d; d1++) {
+    for (d2 = 0; d2 <= d-d1; d2++) {
+      
+      if (d1 > maxLL) break;
+      if (d2 > maxLR) break;
+      if (n == HL->nB-1 && d-d1-d2 > maxLLoop) break;
       
       k = i + d1 - 1;
       l = j - d2 + 1;
-      
+
       //
       //  M
       //
@@ -5225,12 +5194,20 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       //  i__________________________j
       //             HL^{n}
       //
+      M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+      if (n == HL->nB-1 && !allow_HMM(k+1,l-1,L,covct)) M_allow = FALSE;
+      if (!M_allow) break;
+      
       if (n == HL->nB-1) {
-	sc = r3d_p->HLp->pHL_Loop[0] + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,HL->HMMR[n],fwd,errbuf)
+	sc = t_loop_M
+	  + R3D_hmm_Forward(i,  k,  mi->pm,HL->HMML[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,  j,  mi->pm,HL->HMMR[n],fwd,errbuf)
 	  + R3D_hmm_Forward(k+1,l-1,mi->pm,HL->HMMLoop,fwd,errbuf);
       }
       else {
- 	sc = r3d_p->HLp->pHL_LR[0]   + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,HL->HMMR[n],fwd,errbuf)
+ 	sc = t_LR_M
+	  + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,HL->HMMR[n],fwd,errbuf)
 	  + HLmx->mx->mx[n+1]->dp[l-1][d-d1-d2];
       } 
       if (sc >= bestsc) {
@@ -5239,8 +5216,9 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, n+1);
 	  esl_stack_IPush(alts, R3D_HL_M);
+	  esl_stack_IPush(alts, m);
+	  esl_stack_IPush(alts, n);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -5248,8 +5226,11 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     }
   }
 
-  for (d1 = 1; d1 <= d; d1++) {
+  for (d1 = 0; d1 <= d; d1++) {
 
+    if (d1 > maxLL) break;
+    if (n == HL->nB-1 && d-d1 > maxLLoop) break;
+    
     k = i + d1 - 1;
 
     // L
@@ -5259,11 +5240,19 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //  i________________j
     //        HL^{n}
     //
+    L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
+    if (n == HL->nB-1 && !allow_HMM(k+1,j,L,covct)) L_allow = FALSE;
+    if (!L_allow) break;
+    
     if (n == HL->nB-1) {
-      sc = r3d_p->HLp->pHL_Loop[1] + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(k+1,j,mi->pm,HL->HMMLoop,fwd,errbuf);
+      sc = t_loop_L
+	+ R3D_hmm_Forward(i,  k,mi->pm,HL->HMML[n],fwd,errbuf)
+	+ R3D_hmm_Forward(k+1,j,mi->pm,HL->HMMLoop,fwd,errbuf);
     }
     else {
-      sc = r3d_p->HLp->pHL_LR[1]   + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf) + HLmx->mx->mx[n+1]->dp[j][d-d1];
+      sc = t_LR_L
+	+ R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf)
+	+ HLmx->mx->mx[n+1]->dp[j][d-d1];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5271,15 +5260,19 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_HL_L);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, 0);
       }
     }
   }
 
-  for (d2 = 1; d2 <= d; d2++) {
+  for (d2 = 0; d2 <= d; d2++) {
+    
+    if (d2 > maxLR) break;
+    if (n == HL->nB-1 && d-d2 > maxLLoop) break;
     
     l = j - d2 + 1;
     
@@ -5290,11 +5283,19 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //  i________________j
     //       HL^{n}
     //
+    R_allow = (l > 0 && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+    if (n == HL->nB-1 && !allow_HMM(i,l-1,L,covct)) R_allow = FALSE;
+    if (!R_allow) break;
+
     if (n == HL->nB-1) {
-      sc = r3d_p->HLp->pHL_Loop[2] + R3D_hmm_Forward(l,j,mi->pm,HL->HMMR[n],fwd,errbuf) + R3D_hmm_Forward(i,l-1,mi->pm,HL->HMMLoop,fwd,errbuf);
+      sc = t_loop_R
+	+ R3D_hmm_Forward(l,j,  mi->pm,HL->HMMR[n],fwd,errbuf)
+	+ R3D_hmm_Forward(i,l-1,mi->pm,HL->HMMLoop,fwd,errbuf);
     }
     else {
-      sc = r3d_p->HLp->pHL_LR[2]   + R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf) + HLmx->mx->mx[n+1]->dp[l-1][d-d2];
+      sc = t_LR_R
+	+ R3D_hmm_Forward(i,k,mi->pm,HL->HMML[n],fwd,errbuf)
+	+ HLmx->mx->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5302,8 +5303,9 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_HL_R);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d2);
       }
@@ -5316,12 +5318,14 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
   //  i________________j
   //  i________________j
   //       HL^{n}
+  //
+  E_allow = (n == HL->nB-1 && !allow_HMM(i,j,L,covct))? FALSE : TRUE;
   
   if (n == HL->nB-1) {
-    sc = r3d_p->HLp->pHL_Loop[3] + R3D_hmm_Forward(i,j,mi->pm,HL->HMMLoop,fwd,errbuf);
+    sc = (E_allow)? t_loop_E + R3D_hmm_Forward(i,j,mi->pm,HL->HMMLoop,fwd,errbuf) : -eslINFINITY;
   }
   else {
-    sc = r3d_p->HLp->pHL_LR[3]   + HLmx->mx->mx[n+1]->dp[j][d];
+    sc = (E_allow)? t_LR_E + HLmx->mx->mx[n+1]->dp[j][d] : -eslINFINITY;
   } 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5329,14 +5333,15 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       bestsc = sc;
     }     
     if (alts) {
-      esl_stack_IPush(alts, n+1);
       esl_stack_IPush(alts, R3D_HL_E);
+      esl_stack_IPush(alts, m);
+      esl_stack_IPush(alts, n);
       esl_stack_IPush(alts, 0);
       esl_stack_IPush(alts, 0);
     }
   }
 
-  *ret_sc = sc;
+  *ret_bestsc = bestsc;
   return eslOK;
 
  ERROR:
@@ -5344,17 +5349,38 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 }
 
 
-static int 
+static inline int 
 dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-			R3D_BLMX *BLmx, R3D_HMX *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+			R3D_BLMX *BLmx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
   SCVAL sc;      
+  SCVAL t_loop_M, t_loop_L, t_loop_R, t_loop_E; 
+  SCVAL t_LR_M, t_LR_L, t_LR_R, t_LR_E;
+  SCVAL ttmp;
   int   L = mi->alen;
+  int   maxLL, maxLR, maxLLoop;
+  int   M_allow, L_allow, R_allow, E_allow;
   int   i, k, l;
-  int   d_ng;
   int   d1, d2;
   int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  // update the transition probabilities
+  t_loop_M = r3d_p->BLp->pBL_Loop[0];
+  t_loop_L = r3d_p->BLp->pBL_Loop[1];
+  t_loop_R = r3d_p->BLp->pBL_Loop[2];
+  t_loop_E = r3d_p->BLp->pBL_Loop[3];
+
+  t_LR_M   = r3d_p->BLp->pBL_LR[0];
+  t_LR_L   = r3d_p->BLp->pBL_LR[1];
+  t_LR_R   = r3d_p->BLp->pBL_LR[2];
+  t_LR_E   = r3d_p->BLp->pBL_LR[3];
+  
+  maxLL    = BL->HMML[n]->avglen + HMM_maxL_add;
+  maxLR    = BL->HMMR[n]->avglen + HMM_maxL_add;
+  maxLLoop = BL->HMMLoop->avglen + HMM_maxL_add;
 
   //                         M                          L                     R               E
   //
@@ -5369,12 +5395,12 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 
   i = j - d + 1;
 
-  d_ng = segment_remove_gaps_prof(i, j, psq);
-  if (d_ng > MAXLOOP_I)         { *ret_sc = sc; return eslOK; }
-  if (!allow_loop(i,j,L,covct)) { *ret_sc = sc; return eslOK; }
+   for (d1 = 0; d1 <= d; d1++) {
+    for (d2 = 0; d2 <= d-d1; d2++) {
 
-  for (d1 = 1; d1 <= d; d1++) {
-    for (d2 = 1; d2 <= d-d1; d2++) {
+      if (d1 > maxLL) break;
+      if (d2 > maxLR) break;
+      if (n == BL->nB-1 && d-d1-d2 > maxLLoop) break;
       
       k = i + d1 - 1;
       l = j - d2 + 1;
@@ -5388,12 +5414,20 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       //  i__________________________j
       //             BL^{n}
       //
+      M_allow = (l > 0 && allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+      if (n == BL->nB-1 && !allow_HMM(k+1,l-1,L,covct)) M_allow = FALSE;
+      if (!M_allow) break;
+
       if (n == BL->nB-1) {
-	sc = r3d_p->BLp->pBL_Loop[0] + R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf)
+	sc = t_loop_M
+	  + R3D_hmm_Forward(i,  k,  mi->pm,BL->HMML[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,  j,  mi->pm,BL->HMMR[n],fwd,errbuf)
 	  + R3D_hmm_Forward(k+1,l-1,mi->pm,BL->HMMLoop,fwd,errbuf);
       }
       else {
- 	sc = r3d_p->BLp->pBL_LR[0]   + R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf)
+ 	sc = t_LR_M
+	  + R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf)
 	  + BLmx->mx->mx[n+1]->dp[l-1][d-d1-d2];
       } 
       if (sc >= bestsc) {
@@ -5402,8 +5436,9 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, n+1);
 	  esl_stack_IPush(alts, R3D_BL_M);
+	  esl_stack_IPush(alts, m);
+	  esl_stack_IPush(alts, n);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -5411,8 +5446,11 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     }
   }
 
-  for (d1 = 1; d1 <= d; d1++) {
+  for (d1 = 0; d1 <= d; d1++) {
     
+    if (d1 > maxLL) break;
+    if (n == BL->nB-1 && d-d1 > maxLLoop) break;
+      
     k = i + d1 - 1;
     
     // L
@@ -5422,11 +5460,19 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //  i________________j
     //        BL^{n}
     //
+    L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
+    if (n == BL->nB-1 && !allow_HMM(k+1,j,L,covct)) L_allow = FALSE;
+    if (!L_allow) break;
+    
     if (n == BL->nB-1) {
-      sc = r3d_p->BLp->pBL_Loop[1] + R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf) + R3D_hmm_Forward(k+1,j,mi->pm,BL->HMMLoop,fwd,errbuf);
+      sc = t_loop_L
+	+ R3D_hmm_Forward(i,  k,mi->pm,BL->HMML[n],fwd,errbuf)
+	+ R3D_hmm_Forward(k+1,j,mi->pm,BL->HMMLoop,fwd,errbuf);
     }
     else {
-      sc = r3d_p->BLp->pBL_LR[1]   + R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf) + BLmx->mx->mx[n+1]->dp[j][d-d1];
+      sc = t_LR_L
+	+ R3D_hmm_Forward(i,k,mi->pm,BL->HMML[n],fwd,errbuf)
+	+ BLmx->mx->mx[n+1]->dp[j][d-d1];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5434,15 +5480,19 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_BL_L);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, 0);
       }
     }
   }
 
-  for (d2 = 1; d2 <= d; d2++) {
+  for (d2 = 0; d2 <= d; d2++) {
+    
+    if (d2 > maxLR) break;
+    if (n == BL->nB-1 && d-d2 > maxLLoop) break;
     
     l = j -  d2 + 1;
     
@@ -5453,11 +5503,19 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //  i________________j
     //       BL^{n}
     //
+    R_allow = (l > 0 && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+    if (n == BL->nB-1 && !allow_HMM(i,l-1,L,covct)) R_allow = FALSE;
+    if (!R_allow) break;
+
     if (n == BL->nB-1) {
-      sc = r3d_p->BLp->pBL_Loop[2] + R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf) + R3D_hmm_Forward(i,l-1,mi->pm,BL->HMMLoop,fwd,errbuf);
+      sc = t_loop_R
+	+ R3D_hmm_Forward(l,j,  mi->pm,BL->HMMR[n],fwd,errbuf)
+	+ R3D_hmm_Forward(i,l-1,mi->pm,BL->HMMLoop,fwd,errbuf);
     }
     else {
-      sc = r3d_p->BLp->pBL_LR[2]   + R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf) + BLmx->mx->mx[n+1]->dp[l-1][d-d2];
+      sc = t_LR_R
+	+ R3D_hmm_Forward(l,j,mi->pm,BL->HMMR[n],fwd,errbuf)
+	+ BLmx->mx->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5465,8 +5523,9 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_BL_R);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d2);
       }
@@ -5479,12 +5538,14 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
   //  i________________j
   //  i________________j
   //       BL^{n}
-  
+  //
+  E_allow = (n == BL->nB-1 && !allow_HMM(i,j,L,covct))? FALSE : TRUE;
+    
   if (n == BL->nB-1) {
-    sc = r3d_p->BLp->pBL_Loop[3] + R3D_hmm_Forward(i,j,mi->pm,BL->HMMLoop,fwd,errbuf);
+    sc = (E_allow)? t_loop_E + R3D_hmm_Forward(i,j,mi->pm,BL->HMMLoop,fwd,errbuf) : -eslINFINITY;
   }
   else {
-    sc = r3d_p->BLp->pBL_LR[3]   + BLmx->mx->mx[n+1]->dp[j][d];
+    sc = (E_allow)? t_LR_E   + BLmx->mx->mx[n+1]->dp[j][d]  : -eslINFINITY;
   } 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5492,31 +5553,53 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  bestsc = sc;
     }     
     if (alts) {
-      esl_stack_IPush(alts, n+1);
       esl_stack_IPush(alts, R3D_BL_E);
+      esl_stack_IPush(alts, m);
+      esl_stack_IPush(alts, n);
       esl_stack_IPush(alts, 0);
       esl_stack_IPush(alts, 0);
     }
   }
       
-  *ret_sc = sc;
+  *ret_bestsc = bestsc;
   return eslOK;
 
  ERROR:
   return status;
 }
 
-static int 
+static inline int 
 dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-			 RBG_MX *cyk, R3D_ILMX *ILmx, R3D_HMX *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+			 RBG_MX *cyk, R3D_ILMX *ILmx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
   SCVAL sc;      
+  SCVAL t_loop_M, t_loop_L, t_loop_R, t_loop_E; 
+  SCVAL t_LR_M, t_LR_L, t_LR_R, t_LR_E;
+  SCVAL ttmp;
   int   L = mi->alen;
+  int   maxLL, maxLR;
+  int   M_allow, L_allow, R_allow;
+  int   force_bp, allow_bp;
   int   i, k, l;
-  int   d_ng;
   int   d1, d2;
   int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  // update the transition probabilities
+  t_loop_M = r3d_p->ILp->pIL_Loop[0];
+  t_loop_L = r3d_p->ILp->pIL_Loop[1];
+  t_loop_R = r3d_p->ILp->pIL_Loop[2];
+  t_loop_E = r3d_p->ILp->pIL_Loop[3];
+
+  t_LR_M   = r3d_p->ILp->pIL_LR[0];
+  t_LR_L   = r3d_p->ILp->pIL_LR[1];
+  t_LR_R   = r3d_p->ILp->pIL_LR[2];
+  t_LR_E   = r3d_p->ILp->pIL_LR[3];
+
+  maxLL = IL->HMMLi[n]->avglen + HMM_maxL_add; if (MAXLOOP_I < maxLL) maxLL = MAXLOOP_I;
+  maxLR = IL->HMMRi[n]->avglen + HMM_maxL_add; if (MAXLOOP_I < maxLR) maxLR = MAXLOOP_I;
 
   //                               M                              L                          R               E
   //
@@ -5531,13 +5614,12 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   
   i = j - d + 1;
 
-  d_ng = segment_remove_gaps_prof(i, j, psq);
-  if (d_ng > MAXLOOP_I)         { *ret_sc = sc; return eslOK; }
-  if (!allow_loop(i,j,L,covct)) { *ret_sc = sc; return eslOK; }
-
-  for (d1 = 1; d1 <= d; d1++) {
-    for (d2 = 1; d2 <= d-d1; d2++) {
+  for (d1 = 0; d1 <= d; d1++) {
+    for (d2 = 0; d2 <= d-d1; d2++) {
       
+      if (d1 > maxLL) break;
+      if (d2 > maxLR) break;
+
       k = i + d1 - 1;
       l = j - d2 + 1;
       
@@ -5545,25 +5627,36 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
       //  M
       //
       //   L^{n}                R^{n}
-      //  m.....m  ILi^{n+1}    m.....m
+      //  m.....m  ILi^{n+1}   m.....m
       //  i_____k k+1______l-1 l_____j
       //  i__________________________j
       //             ILi^{n}
       //
+      M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+      if (!M_allow) break;
+      
       if (n == IL->nBi-1) {
-	sc = r3d_p->ILp->pIL_Loop[0] + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf) + cyk->F0->dp[l-1][d-d1-d2];
-      }
+	sc = t_loop_M
+	  + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf)
+	  + cyk->F0->dp[l-1][d-d1-d2];
+     }
       else {
- 	sc = r3d_p->ILp->pIL_LR[0]   + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf) + ILmx->mxi->mx[n+1]->dp[l-1][d-d1-d2];
-      } 
+ 	sc = t_LR_M
+	  + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf)
+	  + ILmx->mxi->mx[n+1]->dp[l-1][d-d1-d2];
+     }
+  
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, (n == IL->nBi-1)? 0:n+1);
 	  esl_stack_IPush(alts, R3D_ILi_M);
+	  esl_stack_IPush(alts, m);
+	  esl_stack_IPush(alts, n);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -5571,8 +5664,10 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     }
   }
   
-  for (d1 = 1; d1 <= d; d1++) {
+  for (d1 = 0; d1 <= d; d1++) {
     
+    if (d1 > maxLL) break;
+
     k = i + d1 - 1;
     
     // L
@@ -5582,27 +5677,38 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //  i________________j
     //        ILi^{n}
     //
+    L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
+    if (!L_allow) break;
+   
     if (n == IL->nBi-1) {
-      sc = r3d_p->ILp->pIL_Loop[1] + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf) + cyk->F0->dp[j][d-d1];
+      sc = t_loop_L
+	+ R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf)
+	+ cyk->F0->dp[j][d-d1];
     }
     else {
-      sc = r3d_p->ILp->pIL_LR[1]   + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf) + ILmx->mxi->mx[n+1]->dp[j][d-d1];
-    } 
+      sc = t_LR_L
+	+ R3D_hmm_Forward(i,k,mi->pm,IL->HMMLi[n],fwd,errbuf)
+	+ ILmx->mxi->mx[n+1]->dp[j][d-d1];
+    }
+			       
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, (n == IL->nBi-1)? 0:n+1);
 	esl_stack_IPush(alts, R3D_ILi_L);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, 0);
       }
     }
   }
 
-  for (d2 = 1; d2 <= d; d2++) {
+  for (d2 = 0; d2 <= d; d2++) {
+
+    if (d2 > maxLR) break;
 
     l = j - d2 + 1;
     
@@ -5613,11 +5719,18 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //  i________________j
     //       ILi^{n}
     //
-    if (n == IL->nBi-1) {
-      sc = r3d_p->ILp->pIL_Loop[2] + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf) + cyk->F0->dp[l-1][d-d2];
+    R_allow = (allow_HMM(l,j,L,covct))? TRUE : FALSE;
+    if (!R_allow) break;
+      
+     if (n == IL->nBi-1) {
+      sc = t_loop_R
+	+ R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf)
+	+ cyk->F0->dp[l-1][d-d2];
     }
     else {
-      sc = r3d_p->ILp->pIL_LR[2]   + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf) + ILmx->mxi->mx[n+1]->dp[l-1][d-d2];
+      sc = t_LR_R
+	+ R3D_hmm_Forward(l,j,mi->pm,IL->HMMRi[n],fwd,errbuf)
+	+ ILmx->mxi->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5625,8 +5738,9 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, (n == IL->nBi-1)? 0:n+1);
 	esl_stack_IPush(alts, R3D_ILi_R);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d2);
       }
@@ -5639,43 +5753,67 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   //  i________________j
   //  i________________j
   //       ILi^{n}
-  
+  //
   if (n == IL->nBi-1) {
-    sc = r3d_p->ILp->pIL_Loop[3] + cyk->F0->dp[j][d];
+    sc = t_loop_E + cyk->F0->dp[j][d];
   }
   else {
-    sc = r3d_p->ILp->pIL_LR[3]   + ILmx->mxi->mx[n+1]->dp[j][d];
-  } 
+    sc = t_LR_E   + ILmx->mxi->mx[n+1]->dp[j][d];
+  }
+
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
       bestsc = sc;
     }     
     if (alts) {
-      esl_stack_IPush(alts, (n == IL->nBi-1)? 0:n+1);
       esl_stack_IPush(alts, R3D_ILi_E);
+      esl_stack_IPush(alts, m);
+      esl_stack_IPush(alts, n);
       esl_stack_IPush(alts, 0);
       esl_stack_IPush(alts, 0);
     }
   }
-  
-  *ret_sc = sc;
+
+  *ret_bestsc = bestsc;
   return eslOK;
 
  ERROR:
   return status;
 }
-static int 
+static inline int 
 dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
-			 R3D_ILMX *ILmx, R3D_HMX *fwd, int n, int j, int d, SCVAL *ret_sc, ESL_STACK *alts, char *errbuf, int verbose)
+			 R3D_ILMX *ILmx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
   SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
   SCVAL sc;
+  SCVAL t_loop_M, t_loop_L, t_loop_R, t_loop_E; 
+  SCVAL t_LR_M, t_LR_L, t_LR_R, t_LR_E;
+  SCVAL ttmp;
   int   L = mi->alen;
+  int   maxLL, maxLR;
+  int   M_allow, L_allow, R_allow;
+  int   new_n;
   int   i, k, l;
   int   d_ng;
   int   d1, d2;
   int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  // update the transition probabilities
+  t_loop_M = r3d_p->ILp->pIL_Loop[0];
+  t_loop_L = r3d_p->ILp->pIL_Loop[1];
+  t_loop_R = r3d_p->ILp->pIL_Loop[2];
+  t_loop_E = r3d_p->ILp->pIL_Loop[3];
+  
+  t_LR_M   = r3d_p->ILp->pIL_LR[0];
+  t_LR_L   = r3d_p->ILp->pIL_LR[1];
+  t_LR_R   = r3d_p->ILp->pIL_LR[2];
+  t_LR_E   = r3d_p->ILp->pIL_LR[3];
+
+  maxLL = (n<IL->nBo)? IL->HMMLo[n]->avglen + HMM_maxL_add : IL->HMMLoop_L->avglen + HMM_maxL_add; if (MAXLOOP_I < maxLL) maxLL = MAXLOOP_I;
+  maxLR = (n<IL->nBo)? IL->HMMRo[n]->avglen + HMM_maxL_add : IL->HMMLoop_R->avglen + HMM_maxL_add; if (MAXLOOP_I < maxLR) maxLR = MAXLOOP_I;
 
   //                              M                          L                        R               E
   //
@@ -5690,39 +5828,53 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   
   i = j - d + 1;
 
-  d_ng = segment_remove_gaps_prof(i, j, psq);
-  if (d_ng > MAXLOOP_I)         { *ret_sc = sc; return eslOK; }
-  if (!allow_loop(i,j,L,covct)) { *ret_sc = sc; return eslOK; }
-
-  for (d1 = 1; d1 <= d; d1++) {
-    for (d2 = 1; d2 <= d-d1; d2++) {
+  if      (n <  IL->nBo) new_n = n + 1;
+  else if (n == IL->nBo) new_n = 0;
+  else ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk recurssion error");
+  
+  for (d1 = 0; d1 <= d; d1++) {
+    for (d2 = 0; d2 <= d-d1; d2++) {
       
+      if (d1 > maxLL) break;
+      if (d2 > maxLR) break;
+ 
       k = i + d1 - 1;
       l = j - d2 + 1;
 
-      //
+     //
       //  M
       //
       //   L^{n}                R^{n}
-      //  m.....m  ILo^{n+1}    m.....m
+      //  m.....m  ILo^{n+1}   m.....m
       //  i_____k k+1______l-1 l_____j
       //  i__________________________j
       //             ILo^{n}
       //
+      M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
+      if (!M_allow) break;
+      
       if (n == IL->nBo) {
-	sc = r3d_p->ILp->pIL_Loop[0] + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLoop_L,fwd,errbuf) + R3D_hmm_Forward(l,j,mi->pm,IL->HMMLoop_R,fwd,errbuf) + ILmx->mxi->mx[0]->dp[l-1][d-d1-d2];
+	sc = t_loop_M
+	  + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLoop_L,fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,IL->HMMLoop_R,fwd,errbuf)
+	  + ILmx->mxi->mx[new_n]->dp[l-1][d-d1-d2];
       }
       else {
- 	sc = r3d_p->ILp->pIL_LR[0]   + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)  + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRo[n],fwd,errbuf)  + ILmx->mxo->mx[n+1]->dp[l-1][d-d1-d2];
-      } 
+ 	sc = t_LR_M
+	  + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)
+	  + R3D_hmm_Forward(l,j,mi->pm,IL->HMMRo[n],fwd,errbuf)
+	  + ILmx->mxo->mx[new_n]->dp[l-1][d-d1-d2];
+      }
+      
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, n+1);
 	  esl_stack_IPush(alts, R3D_ILo_M);
+	  esl_stack_IPush(alts, m);
+	  esl_stack_IPush(alts, n);
 	  esl_stack_IPush(alts, d1);
 	  esl_stack_IPush(alts, d2);
 	}
@@ -5730,7 +5882,9 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     }
   }
 
-  for (d1 = 1; d1 <= d; d1++) {
+  for (d1 = 0; d1 <= d; d1++) {
+    
+    if (d1 > maxLL) break;
     
     k = i + d1 - 1;
     
@@ -5741,11 +5895,18 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //  i________________j
     //        ILo^{n}
     //
+    L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
+    if (!L_allow) break;
+      
     if (n == IL->nBo) {
-      sc = r3d_p->ILp->pIL_Loop[1] + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLoop_L,fwd,errbuf) + ILmx->mxi->mx[0]->dp[j][d-d1];
+      sc = t_loop_L
+	+ R3D_hmm_Forward(i,k,mi->pm,IL->HMMLoop_L,fwd,errbuf)
+	+ ILmx->mxi->mx[new_n]->dp[j][d-d1];
     }
     else {
-      sc = r3d_p->ILp->pIL_LR[1]   + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)  + ILmx->mxo->mx[n+1]->dp[j][d-d1];
+      sc = t_LR_L
+	+ R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)
+	+ ILmx->mxo->mx[new_n]->dp[j][d-d1];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5753,15 +5914,18 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_ILo_L);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, d1);
 	esl_stack_IPush(alts, 0);
       }
     }
   }
 
-  for (d2 = 1; d2 <= d; d2++) {
+  for (d2 = 0; d2 <= d; d2++) {
+    
+    if (d2 > maxLR) break;
     
     l = j - d2 + 1;
     
@@ -5772,11 +5936,18 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //  i________________j
     //       ILo^{n}
     //
+    R_allow = (allow_HMM(l,j,L,covct))? TRUE : FALSE;
+    if (!R_allow) break;
+    
     if (n == IL->nBo) {
-      sc = r3d_p->ILp->pIL_Loop[2] + R3D_hmm_Forward(l,j,mi->pm,IL->HMMLoop_R,fwd,errbuf) + ILmx->mxi->mx[0]->dp[l-1][d-d2];
+      sc = t_loop_R
+	+ R3D_hmm_Forward(l,j,mi->pm,IL->HMMLoop_R,fwd,errbuf)
+	+ ILmx->mxi->mx[new_n]->dp[l-1][d-d2];
     }
     else {
-      sc = r3d_p->ILp->pIL_LR[2]   + R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)  + ILmx->mxo->mx[n+1]->dp[l-1][d-d2];
+      sc = t_LR_R
+	+ R3D_hmm_Forward(i,k,mi->pm,IL->HMMLo[n],fwd,errbuf)
+	+ ILmx->mxo->mx[new_n]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5784,8 +5955,9 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
 	bestsc = sc;
       }     
       if (alts) {
-	esl_stack_IPush(alts, n+1);
 	esl_stack_IPush(alts, R3D_ILo_R);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
 	esl_stack_IPush(alts, 0);
 	esl_stack_IPush(alts, d2);
       }
@@ -5798,27 +5970,25 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   //  i________________j
   //  i________________j
   //       ILo^{n}
+  //
+  if (n == IL->nBo) sc = t_loop_E + ILmx->mxi->mx[new_n]->dp[j][d];
+  else              sc = t_LR_E   + ILmx->mxo->mx[new_n]->dp[j][d];
   
-  if (n == IL->nBo) {
-    sc = r3d_p->ILp->pIL_Loop[3] + ILmx->mxi->mx[0]->dp[j][d];
-  }
-  else {
-    sc = r3d_p->ILp->pIL_LR[3]   + ILmx->mxo->mx[n+1]->dp[j][d];
-  } 
   if (sc >= bestsc) {
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
       bestsc = sc;
     }     
     if (alts) {
-      esl_stack_IPush(alts, n+1);
       esl_stack_IPush(alts, R3D_ILo_E);
+      esl_stack_IPush(alts, m);
+      esl_stack_IPush(alts, n);
       esl_stack_IPush(alts, 0);
       esl_stack_IPush(alts, 0);
     }
   }
-      
-  *ret_sc = sc;
+
+  *ret_bestsc = bestsc;
   return eslOK;
   
  ERROR:
@@ -5827,7 +5997,7 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
 
 
 // do not allow if pair is in the exclude list
-static int
+static inline int
 allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, int j, int L, int *covct, COVLIST *exclude, SPAIR *spair, int *ret_nneg) 
 {
   double power;
@@ -5838,7 +6008,7 @@ allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, i
 
   if (i == 0 || j == 0 || i >=  j || j > L) return allow;
   
-  // check if is has the minimum loop requeriment
+  // check if it has the minimum loop requeriment
   // check if pair is in the excluded list
   for (n = 0; n < exclude->n; n ++) {
     if ((exclude->cov[n].i == i && exclude->cov[n].j == j) ||
@@ -5862,7 +6032,7 @@ allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, i
 }
 
 // a basepair is forced only if a covarying pair, eg, covct[i] = j
-static int
+static inline int
 force_bpair(int i, int j, int L, int *covct) 
 {
   int force = FALSE;
@@ -5881,7 +6051,7 @@ force_bpair(int i, int j, int L, int *covct)
 //    (2) if the closing pair is a covaring pair, allow any length
 //    (3) if the closing pair is not covaring enforce the hloop_min cutoff
 //
-static int
+static inline int
 allow_hairpin(int hloop_min, int i, int j, int L, int *covct)
 {
   int allow = TRUE;
@@ -5908,7 +6078,7 @@ allow_hairpin(int hloop_min, int i, int j, int L, int *covct)
 
 // a set of residues i..j is allowed to form a loop, unless any of the residues
 // is involved in a covarying basepair
-static int
+static inline int
 allow_loop(int i, int j, int L, int *covct)
 {
   int allow = TRUE;
@@ -5922,10 +6092,22 @@ allow_loop(int i, int j, int L, int *covct)
   return allow;
 }
 
+static inline int
+allow_HMM(int i, int j, int L, int *covct)
+{
+  int allow = TRUE;
+  int k;
+
+  // first check that there is no covariation anywhere else
+  for (k = i; k <= j; k ++) if (covct[k] > k) return FALSE;
+
+  return allow;
+}
+
 // A residue is allowed to be single stranded unless it is involved in  a covariation
 // covct[i] > 0 if in a covarying pair
 //
-static int
+static inline int
 allow_single(int i, int L, int *covct) 
 {
   int allow = TRUE;
@@ -5937,7 +6119,7 @@ allow_single(int i, int L, int *covct)
   return allow;
 }
 
-static SCVAL
+static inline SCVAL
 emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP][NP])
 {
   SCVAL sc;
@@ -5962,13 +6144,13 @@ emitsc_stck(int i, int j, int L, ESL_DSQ *dsq, SCVAL e_pair[NP], SCVAL e_stck[NP
   }
   return sc;
 }
-static SCVAL
+static inline SCVAL
 emitsc_stck_prof(int i, int j, int L, double ***pp, SCVAL e_pair[NP], SCVAL e_stck[NP][NP])
 {
   float num     = -eslINFINITY;
   float den     = -eslINFINITY;
   float sc      = -eslINFINITY;
-  float logval;
+  float logval1, logval;
   int   idx;
   int   cdx;
   int   ip = i-1;
@@ -5993,8 +6175,9 @@ emitsc_stck_prof(int i, int j, int L, double ***pp, SCVAL e_pair[NP], SCVAL e_st
 	  
 	  idx = k3*NB + k4;
 	  
-	  logval = (float)log(pp[i-1][j-1][idx]) + (float)log(pp[ip-1][jp-1][cdx]) + (float)e_stck[cdx][idx] + (float)e_pair[cdx];
-	  num    = e2_FLogsum(num, logval);
+	  logval1 = (float)log(pp[i-1][j-1][idx]) + (float)e_stck[cdx][idx];
+	  logval  = logval1 + (float)log(pp[ip-1][jp-1][cdx]) + (float)e_pair[cdx];
+	  num     = e2_FLogsum(num, logval);
 	}
     }
   if (den > -eslINFINITY) sc = num - den;
@@ -6002,7 +6185,7 @@ emitsc_stck_prof(int i, int j, int L, double ***pp, SCVAL e_pair[NP], SCVAL e_st
   return (SCVAL)sc;
 }
 
-static SCVAL
+static inline SCVAL
 emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP])
 {
   SCVAL sc;
@@ -6018,7 +6201,7 @@ emitsc_pair(int i, int j, ESL_DSQ *dsq, SCVAL e_pair[NP])
 
   return sc;
 }
-static SCVAL
+static inline SCVAL
 emitsc_pair_prof(int i, int j, double ***pp, SCVAL e_pair[NP])
 {
   float  sc = -eslINFINITY;
@@ -6027,6 +6210,7 @@ emitsc_pair_prof(int i, int j, double ***pp, SCVAL e_pair[NP])
   int    k1, k2;
 
   if (i >= j) return (SCVAL)sc;
+  if (i == 0) return (SCVAL)sc;
   
   e2_FLogsumInit();
   
@@ -6042,7 +6226,7 @@ emitsc_pair_prof(int i, int j, double ***pp, SCVAL e_pair[NP])
   return (SCVAL)sc;
 }
 
-static SCVAL
+static inline SCVAL
 emitsc_sing(int i, ESL_DSQ *dsq, SCVAL e_sing[NB])
 {
   SCVAL sc;
@@ -6052,7 +6236,7 @@ emitsc_sing(int i, ESL_DSQ *dsq, SCVAL e_sing[NB])
 
   return sc;
 }
-static SCVAL
+static inline SCVAL
 emitsc_sing_prof(int i, int L, double **pm, SCVAL e_sing[NB])
 {
   float  sc = -eslINFINITY;
@@ -6074,7 +6258,7 @@ emitsc_sing_prof(int i, int L, double **pm, SCVAL e_sing[NB])
   return (SCVAL)sc;
 }
 
-static SCVAL
+static inline SCVAL
 score_loop_hairpin(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 {
   SCVAL sc = 0.;
@@ -6085,7 +6269,7 @@ score_loop_hairpin(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 
   return sc;
 }
-static SCVAL
+static inline SCVAL
 score_loop_hairpin_prof(int i, int j, int L, RBGparam *p, double **pm)
 {
   SCVAL sc = 0.;
@@ -6097,7 +6281,7 @@ score_loop_hairpin_prof(int i, int j, int L, RBGparam *p, double **pm)
   return sc;
 }
 
-static SCVAL
+static inline SCVAL
 score_loop_bulge(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 {
   SCVAL sc = 0.;
@@ -6108,7 +6292,7 @@ score_loop_bulge(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 
   return sc;
 }
-static SCVAL
+static inline SCVAL
 score_loop_bulge_prof(int i, int j, int L, RBGparam *p, double **pm)
 {
   SCVAL sc = 0.;
@@ -6120,7 +6304,7 @@ score_loop_bulge_prof(int i, int j, int L, RBGparam *p, double **pm)
   return sc;
 }
 
-static SCVAL
+static inline SCVAL
 score_loop_intloop(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 {
   SCVAL sc = 0.;
@@ -6131,7 +6315,7 @@ score_loop_intloop(int i, int j, RBGparam *p, ESL_DSQ *dsq)
 
   return sc;
 }
-static SCVAL
+static inline SCVAL
 score_loop_intloop_prof(int i, int j, int L, RBGparam *p, double **pm)
 {
   SCVAL sc = 0.;
@@ -6143,7 +6327,7 @@ score_loop_intloop_prof(int i, int j, int L, RBGparam *p, double **pm)
   return sc;
 }
 
-static int
+static inline int
 segment_remove_gaps(int i, int j, ESL_DSQ *dsq)
 {
   int newlen = 0;
@@ -6155,7 +6339,7 @@ segment_remove_gaps(int i, int j, ESL_DSQ *dsq)
   return newlen;
 }
 
-static int
+static inline int
 segment_remove_gaps_prof(int i, int j, PSQ *psq)
 {
   int newlen = 0;
@@ -6194,7 +6378,7 @@ vec_SCVAL_LogNorm(SCVAL *scvec, int n)
   return status;
 }
 
-int
+int 
 dvec_SCVAL_LogNorm(int n1, int n2, SCVAL dvec[n1][n2])
 {
   double *vec = NULL;

@@ -87,6 +87,29 @@ the number of sequences in the alignment is $\leq$ 8 or the length of
 the alignment is $\leq$ 50, in which case it uses the two-class
 covariation statistic.
 
+\subsection{Options to calculate power}
+
+\subsubsection{\prog{--singlesubs}} Default option. The base pair substitutions are calculated as the sum of the individual substitutions observed for each of the positions in the base pair.
+
+\subsubsection{\prog{--joinsubs}} The base pair substitutions are calculated as the sum of the individual substitution observed for each positions in the base pair, but using only sequences in which both positions are occupied, that is, cases where one of the two positions is a gap are ignored.
+
+\subsubsection{\prog{--doublesubs}} The base pair substitutions are calculated a the subset of substations in which both residues have changed.
+
+\subsection{Covariation aggregation options}
+
+\subsubsection{\prog{--fisher,--sidak}} Two different options to produce aggregated E-values calculated for each helix in the proposed or CaCoFold structure.
+
+\subsubsection{\prog{--lancaster,--wfisther}} Two different options to produce aggregated E-values calculated for each helix in the proposed or CaCoFold structure.
+
+The Lancaster aggregation uses the number of substitutions per base pair. The weighted fisher (wfisher) aggregation uses the power per base pair. These two options require the use of the default option \textbf{\prog{--singlesubs}} in order to calculate the number of substitutions and power for each base pair respectively.
+
+\subsubsection{\prog{--lancaster\_join,--wfisther\_join}}
+These two options require the use of the option \textbf{\prog{--joinsubs}} in order to calculate the number of substitutions and power for each base pair respectively.
+
+\subsubsection{\prog{--lancaster\_double,--wfisther\_double}}
+ These two options require the use of the option \textbf{\prog{--doublesubs}} in order to calculate the number of substitutions and power for each base pair respectively.
+
+
 \subsection{Search options}
 
 
@@ -120,7 +143,7 @@ The window size is $n>0$.
 
 \subsubsection{\prog{--cshuffle}} Column shuffle, a developers tool. Before performing any analysis, it shuffles all columns in the alignment.
 
-\subsubsection{\prog{--givennull <f>}} Use histrogram provided in file $<f>$ as null. 
+\subsubsection{\prog{--givennull <f>}} Use histogram provided in file $<f>$ as null. 
 
 
 
@@ -139,8 +162,16 @@ minimum length of the two sequences. If this option is not used all
 \subsubsection{\prog{--submsa <n>}} Analyzes a random subset of the input alignment.
 
 \subsubsection{\prog{--treefile <f>}} A phylogenetic tree in Newick format can be given (by default a tree is created 
-from the alignment using the program FastTree~\citep{Price10}).  \rscape\ checks that the  number of taxa and the names
+from the alignment using the program FastTree (v2.1.11)~\citep{Price10}).  \rscape\ checks that the  number of taxa and the names
 of the taxa matches for all alignments analyzed.
+
+\subsubsection{\prog{--ntree <n>}} Number of different FastTree trees to use when generating the null alignments. Default is one tree, the one resulting from feeding the input alignment to FastTree. if \texttt{--ntree} $>$ 1, the rest of the trees are generated after randomly rearranging the sequences in the alignment.
+
+\noindent
+Because FastTree is not deterministic, altering the order of the sequences in the alignment can result in slightly different trees, and in some rare occasions that can results in different distribution of null covariation scores. In those cases, it is recommended to generate null alignments from different trees obtained from randomly rearrange the sequences in the alignment.
+
+\noindent
+Option \texttt{--ntree <n>} is incompatible with option \texttt{--treefile <f>} which inputs a particular tree.
 
 
 \subsection{Options for producing a CaCoFold structure}
@@ -182,7 +213,7 @@ contiguous positions are reported.
 
 \subsubsection{\prog{--allow\_negatives}} This option (just for developers) allows all base pairs to form regardless of their power.
 
-\subsubsection{\prog{--Rfam}} This option is meant to be used by the Rfam curators when using CaCoFold to propose improved consensus structures for an Rfam family. It removes covariations that cannot be taking into account by the Rfam models. Thus, maybe missing important covariation information that is not compatible with RNA secondary structure.
+\subsubsection{\prog{--Rfam}} This option is meant to be used by the Rfam curators when using CaCoFold to propose improved consensus structures for an Rfam family. It removes covariation that cannot be taking into account by the Rfam models. Thus, maybe missing important covariation information that is not compatible with RNA secondary structure.
 
 \noindent
 Using options \prog{--cacofold --Rfam}, the CaCoFold structure is trimmed such that:
@@ -228,23 +259,23 @@ From the PDB file we obtain three types of structural pairs:
 \item \textbf{Basepair:} RNA base pairs. \\
 RNA Basepair are calculated using the program \prog{rnaview}~\citep{YangWesthof03}.
 
-These RNA basepairs can be further classified in two types:
+These RNA base pairs can be further classified in two types:
 \begin{itemize}
-\item \textbf{Watson-Crick basepairs:} the canonical RNA basepairs. mostly A:U, G:C, or G:U pairs. (H-bond interactions between two W-C faces in cis).
-\item \textbf{Other basepairs:} the non-canonical RNA basepairs (all other types of H-bond interactions, 12 different types).
+\item \textbf{Watson-Crick base pairs:} the canonical RNA base pairs. mostly A:U, G:C, or G:U pairs. (H-bond interactions between two W-C faces in cis).
+\item \textbf{Other base pairs:} the non-canonical RNA base pairs (all other types of H-bond interactions, 12 different types).
 \end{itemize}
 \end{itemize}
 
-Contacts and RNA basepairs are extracted as follows:
+Contacts and RNA base pairs are extracted as follows:
 \begin{itemize}
 
 \item The spatial distance between any two residues is calculated as the  minimal Euclidean distance between any two atoms (excluding
  H atoms). Any two pairs at a distance not larger than a maximum value
 (\texttt{contmaxD}) are called a ``contact''.
 
-\item RNA basepairs are obtained using the program \texttt{rnaview}~\citep{YangWesthof03}\\
+\item RNA base pairs are obtained using the program \texttt{rnaview}~\citep{YangWesthof03}\\
 (http://ndbserver.rutgers.edu/ndbmodule/services/download/rnaview.html).\\
-The RNA basepair annotation takes precedent over the annotation as ``contact''.
+The RNA base pair annotation takes precedent over the annotation as ``contact''.
 \end{itemize}
 
 \vspace{2mm}
@@ -265,8 +296,8 @@ Option \prog{--pdb} is incompatible with \prog{--cacofold}.
 
 \subsubsection{\prog{--onlypdb}} Reads the structure from the pdbfile and ignores the alignment consensus structure (if provided).
 
-\subsubsection{\prog{--draw\_nonWC}} Adds the non-canonical basepairs into the structure graphical output. For clarity, the default is to draw only the Watson-Crick basepairs.
-This option affects only the drawing of the structure. All basepairs (canonical or not) are used as part of the structure to perform the two-set statistical test.
+\subsubsection{\prog{--draw\_nonWC}} Adds the non-canonical base pairs into the structure graphical output. For clarity, the default is to draw only the Watson-Crick base pairs.
+This option affects only the drawing of the structure. All base pairs (canonical or not) are used as part of the structure to perform the two-set statistical test.
 \\\\
 
 \noindent
@@ -289,7 +320,7 @@ The output is
 # Copyright (C) 2016 Howard Hughes Medical Institute.
 # Freely distributed under the GNU General Public License (GPLv3).
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Two-set statistical test (one test for annotated basepairs, another for all other pairs)
+# Two-set statistical test (one test for annotated base pairs, another for all other pairs)
 #
 # Structure obtained from the pdbfile
 # ij in alignment | ij in pdbsequence | basepair type
@@ -349,15 +380,15 @@ The output is
 
 \noindent
 All coordinates are relative to the input alignment. The annotation of
-all types of RNA basepairs (WWc, WWt, WHc,...) is produced by the
+all types of RNA base pairs (WWc, WWt, WHc,...) is produced by the
 program \prog{rnaview}~\citep{YangWesthof03}.
 
 \subsection{Options for type of pairs tested}
 
 When performing the two-class statistical test (option \prog{-s})
 using a pdbfile to read the structure, there are different options as
-to which types of basepairs are used to define the sample size for the
-basepairs test.
+to which types of base pairs are used to define the sample size for the
+base pairs test.
 
 The options are:
 
@@ -368,13 +399,13 @@ Stockholm format.  This is the default option for amino acid
 alignments if a PDB file is provided.  
 
 \subsubsection{\prog{--samplebp}} For RNA alignments with only.
-The basepair statistical test includes basepairs of all 12 possible types.
+The basepair statistical test includes base pairs of all 12 possible types.
 This is the default option for RNA/DNA alignments if a PDB file is
 provided.  
 
 \subsubsection{\prog{--samplewc}} For RNA alignments only.
 The basepair statistical test includes only the canonical
-(Watson-Crick/Watson-Crick type) basepairs (A:U, G:C, G:U).  This is
+(Watson-Crick/Watson-Crick type) base pairs (A:U, G:C, G:U).  This is
 the default option for RNA/DNA alignments if a consensus secondary
 structure is provided. 
 

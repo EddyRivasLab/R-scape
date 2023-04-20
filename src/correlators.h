@@ -19,8 +19,9 @@
 
 #include "covgrammars.h"
 #include "pottsbuild.h"
+#include "r3d.h"
 
-#define NCOVTYPE = 5;
+#define MAX_EVAL 1000 // forcing -E > MAX_EVAL reports all
 
 typedef enum {
   SAMPLE_CONTACTS = 0, // Use all contacts as the sample size
@@ -141,6 +142,7 @@ typedef struct hit_s {
   
   double  sc;
   double  Eval;
+  double  pval;
 
   int64_t nsubs;
   double  power;
@@ -151,9 +153,12 @@ typedef struct hit_s {
 } HIT;
 
 typedef struct hitlist_s{
-  int     nhit;
-  HIT  **srthit;
-  HIT    *hit;
+  int       nhit;
+  HIT     **srthit;
+  HIT      *hit;
+
+  int64_t   Nt; // number of tests for no ss pair (or all if no ss)
+  int64_t   Nb; // number of test for base pairs
 
 } HITLIST;
 
@@ -169,6 +174,34 @@ typedef struct thresh_s {
   double     sc_nbp;  // cov score at thershold (for no basepairs)
 } THRESH;
 
+typedef enum {
+  SINGLE_SUBS = 0,
+  DOUBLE_SUBS = 1,
+  JOIN_SUBS   = 2,
+} POWERTYPE;
+
+enum cttype_e {
+  CTTYPE_NESTED,
+  CTTYPE_PK,
+  CTTYPE_NONWC,
+  CTTYPE_TRI,
+  CTTYPE_SCOV,
+  CTTYPE_XCOV,
+  CTTYPE_RM_HL,
+  CTTYPE_RM_BL,
+  CTTYPE_RM_IL,
+  CTTYPE_NONE,
+};
+
+enum RMtype_e {
+  RMTYPE_HELIX,
+  RMTYPE_RM_HL,
+  RMTYPE_RM_BL,
+  RMTYPE_RM_IL,
+  RMTYPE_UNKNOWN,
+};
+
+
 typedef struct spair_s {
   int64_t iabs;   // coordenates relative to the input alignment    [1...alen]
   int64_t jabs;
@@ -176,9 +209,19 @@ typedef struct spair_s {
   int64_t i;      // coordenates relative to the analyzed alignment [0..L-1]
   int64_t j;
   
-  int64_t nsubs;
+  int64_t nsubs;          // power calculated using substitutions per position
   double  power;
 
+  int64_t nsubs_join;     // power calculated using substitutions per position when both positions non gaps
+  double  power_join;
+
+  int64_t nsubs_double;   // power calculated using substitutions when both positions have changed
+  double  power_double;
+
+  double  nseff;          // effective number of sequences
+
+  POWERTYPE  powertype;   // which power type?
+  
   double  sc;     // The covariation score
   double  Pval;   // The P-value
   double  Eval;   // The E-value
@@ -186,13 +229,12 @@ typedef struct spair_s {
   
   BPTYPE  bptype_given; // in given structure
   BPTYPE  bptype_caco;  // in cacofold structure
+
+  enum cttype_e cttype_given;
+  enum cttype_e cttype_caco;
   
 } SPAIR;
 
-typedef enum {
-  SUBS = 0,
-  DOUB = 1,
-} POWERTYPE;
 
 typedef struct power_s {
   int64_t    ns;
@@ -200,6 +242,10 @@ typedef struct power_s {
   POWERTYPE  type;
   double    *subs;
   double    *prob;
+  double    *subs_join;
+  double    *prob_join;
+  double    *subs_double;
+  double    *prob_double;
 } POWER;
 
 struct outfiles_s {
@@ -207,6 +253,9 @@ struct outfiles_s {
   char            *covfoldfile;         // list of covariations for CaCoFold structure
   char            *covsrtfile;          // list of covariations for given    structure sorted by E-value   
   char            *covfoldsrtfile;      // list of covariations for CaCoFold structure sorted by E-value   
+
+  char            *helixcovfile;        // list of helix covariation for given    structure
+  char            *helixcovfoldfile;    // list of helix covariation for CaCoFold structure
 
   char            *alipowerfile;        // list of pairs in given    structure annotated with power/substitutions
   char            *alipowerfoldfile;    // list of pairs in CaCoFOld structure annotated with power/substitutions
@@ -230,25 +279,10 @@ struct outfiles_s {
   char            *outtreefile;         // output tree (optional)
   char            *nullhisfile;         // output of null histogram (optional)
   char            *outnullfile;         // output of null alignments (optional)
+  char            *outprepfile;         // output pair representations (optional)
+  char            *outprepfoldfile;     // output pair representations (optional)
   char            *allbranchfile;       // (optional)
   char            *outpottsfile;        // (optional)
-};
-
-enum cttype_e {
-  CTTYPE_NESTED,
-  CTTYPE_PK,
-  CTTYPE_NONWC,
-  CTTYPE_TRI,
-  CTTYPE_SCOV,
-  CTTYPE_XCOV,
-  CTTYPE_NONE,
-};
-
-enum RMtype_e {
-  RMTYPE_HELIX,
-  RMTYPE_GNRA,
-  RMTYPE_KINK,
-  RMTYPE_UNKNOWN,
 };
 
 
@@ -269,6 +303,11 @@ typedef struct ctlist_s {
 enum agg_e {
   AGG_FISHER,
   AGG_LANCASTER,
+  AGG_WFISHER,
+  AGG_LANCASTER_JOIN,
+  AGG_WFISHER_JOIN,
+  AGG_LANCASTER_DOUBLE,
+  AGG_WFISHER_DOUBLE,
   AGG_SIDAK,
   AGG_NONE,
 };
@@ -276,22 +315,32 @@ enum agg_e {
 // structure to keep all the helices/motifs
 typedef struct RM_s {
   enum RMtype_e   type;         // RNAmotif type
+  char           *name;
+  
   int             nbp;          // Total number of pairs
   int             nbp_cov;      // Covarying pairs
   int             i, j, k, l;   // The RNAmotif extends from 5'-i..k-3' ^ 5'-l..j-3'  (i < k < l < j)
   CTLIST         *ctlist;       // ctlist per RNAmotif. A WC helix requires only one ct, a NOWC motif may require several.
+  double         *pvals;        // list of pvals to aggregate per RNAmotif.
 
-  double          Pval;         // the aggreated Pvalue of the RNA motif
-  double          Eval;         // the aggreated Evalue of the RNA motif
-  int             covary;       // TRUE if the helix covaries
+  int             nagg;         // aggregation methods tested
+  enum agg_e     *agg_method;   // aggregation methods
+
+  double         *Pval;         // the aggreated Pvalue of the RNA motif
+  double         *Eval;         // the aggreated Evalue of the RNA motif
+  int            *covary;       // TRUE if the helix covaries
+
 } RM;
 
 typedef struct RMlist_s {
   int            nrm;         // number of motifs
   int            L;           // total length of the alignment
+  
+  int            nagg;
+  enum agg_e    *agg_method;  // aggregation methods
+
   RM           **rm;          // the RM structures
 
-  enum agg_e     agg_method;  // aggregation method
 } RMLIST;
 
 
@@ -323,11 +372,15 @@ struct data_s {
   int                  nbpairs_fold;
   int                 *nsubs;
   int                 *ndouble;
+  int                 *njoin;
   SPAIR               *spair;
   POWER               *power;
 
+  R3D                 *r3d;
   int                  helix_unpaired;
-  enum agg_e           agg_method;
+  int                  nagg;
+  double               agg_Eval;
+  enum agg_e          *agg_method;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;
@@ -360,7 +413,7 @@ struct data_s {
 extern int              corr_CalculateCHI     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateCHI_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateCHI_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data);
+;extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateOMES_C16(struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateOMES_C2 (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
 extern int              corr_CalculateGT      (COVCLASS covclass, struct data_s *data);

@@ -31,25 +31,24 @@ static int  r3d_add_reversedBL(int b, R3D *r3d, char *errbuf, int verbose);
 static int  r3d_add_reversedIL(int b, R3D *r3d, char *errbuf, int verbose);
 static int  r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2);
 static int  r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2);
-static void r3d_write_HL(FILE *fp, R3D_HL *HL);
-static void r3d_write_BL(FILE *fp, R3D_BL *BL);
-static void r3d_write_IL(FILE *fp, R3D_IL *IL);
+static void r3d_write_HL(FILE *fp, R3D_HL *HL, int verbose);
+static void r3d_write_BL(FILE *fp, R3D_BL *BL, int verbose);
+static void r3d_write_IL(FILE *fp, R3D_IL *IL, int verbose);
 
 const R3D_HLparam R3D_HL_PRELOADS = {
-  log(pRM),
-  //-eslINFINITY,
-  {log(pRM_LR),    log(pRM_LoR),   log(pRM_LoR),   log(1-pRM_LR-pRM_LoR-pRM_LoR)},
-  {log(pRM_Loop2), log(pRM_Loop1), log(pRM_Loop1), log(1-pRM_Loop2-pRM_Loop1-pRM_Loop1)},
+  pRM,
+  {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
+  {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
 const R3D_BLparam R3D_BL_PRELOADS = {
-  log(pRM), log(pRM),
-  {log(pRM_LR),    log(pRM_LoR),   log(pRM_LoR),   log(1-pRM_LR-pRM_LoR-pRM_LoR)},
-  {log(pRM_Loop2), log(pRM_Loop1), log(pRM_Loop1), log(1-pRM_Loop2-pRM_Loop1-pRM_Loop1)},
+  pRM, pRM,
+  {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
+  {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
 const R3D_ILparam R3D_IL_PRELOADS = {
-  log(pRM),
-  {log(pRM_LR),    log(pRM_LoR),   log(pRM_LoR),   log(1-pRM_LR-pRM_LoR-pRM_LoR)},
-  {log(pRM_Loop2), log(pRM_Loop1), log(pRM_Loop1), log(1-pRM_Loop2-pRM_Loop1-pRM_Loop1)},
+  pRM,
+  {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
+  {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
 
 extern R3D*
@@ -297,86 +296,112 @@ R3D_IL_Create(ESL_ALPHABET *abc, int nBo, int nBi)
 extern int
 R3D_HL_HMMCreate(R3D_HL *HL, int *ret_maxM, char *errbuf, int verbose)
 {
-  int maxM = *ret_maxM;
-  int n;
-  int status;
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
 
-  HL->HMMLoop = R3D_hmm_Create(HL->abc, HL->Loop, errbuf, verbose);
+  esl_sprintf(&name, "%s.Loop", HL->name);
+  HL->HMMLoop = R3D_hmm_Create(HL->abc, HL->Loop, name, errbuf, verbose);
   if (!HL->HMMLoop) esl_fail(errbuf, "R3D_HL_HMMCreate() Loop failed");
   if (HL->HMMLoop->M > maxM) maxM = HL->HMMLoop->M;
 
   ESL_ALLOC(HL->HMML, sizeof(R3D_HMM *) * HL->nB);
   ESL_ALLOC(HL->HMMR, sizeof(R3D_HMM *) * HL->nB);
   for (n = 0; n < HL->nB; n ++) {
-    HL->HMML[n] = R3D_hmm_Create(HL->abc, HL->L[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.L[%d]", HL->name, n);
+    HL->HMML[n] = R3D_hmm_Create(HL->abc, HL->L[n], name, errbuf, verbose);
     if (!HL->HMML[n]) esl_fail(errbuf, "R3D_HL_HMMCreate() L failed");
     if (HL->HMML[n]->M > maxM) maxM = HL->HMML[n]->M;
     
-    HL->HMMR[n] = R3D_hmm_Create(HL->abc, HL->R[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.R[%d]", HL->name, n);    
+    HL->HMMR[n] = R3D_hmm_Create(HL->abc, HL->R[n], name, errbuf, verbose);
     if (!HL->HMMR[n]) esl_fail(errbuf, "R3D_HL_HMMCreate() R failed");
     if (HL->HMMR[n]->M > maxM) maxM = HL->HMMR[n]->M;
   }
 
   *ret_maxM = maxM;
+
+  if (name) free(name);
   return eslOK;
 
  ERROR:
+  if (name) free(name);
   return status;
 }
 
 extern int
 R3D_BL_HMMCreate(R3D_BL *BL, int *ret_maxM, char *errbuf, int verbose)
 {
-  int maxM = *ret_maxM;
-  int n;
-  int status;
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
 
-  BL->HMMLoop = R3D_hmm_Create(BL->abc, BL->Loop, errbuf, verbose);
+  esl_sprintf(&name, "%s.Loop", BL->name);
+  BL->HMMLoop = R3D_hmm_Create(BL->abc, BL->Loop, name, errbuf, verbose);
   if (!BL->HMMLoop) esl_fail(errbuf, "R3D_BL_HMMCreate() Loop failed");
   if (BL->HMMLoop->M > maxM) maxM = BL->HMMLoop->M;
 
   ESL_ALLOC(BL->HMML, sizeof(R3D_HMM *) * BL->nB);
   ESL_ALLOC(BL->HMMR, sizeof(R3D_HMM *) * BL->nB);
   for (n = 0; n < BL->nB; n ++) {
-    BL->HMML[n] = R3D_hmm_Create(BL->abc, BL->L[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.L[%d]", BL->name, n);
+    BL->HMML[n] = R3D_hmm_Create(BL->abc, BL->L[n], name, errbuf, verbose);
     if (!BL->HMML[n]) esl_fail(errbuf, "R3D_BL_HMMCreate() L failed");
     if (BL->HMML[n]->M > maxM) maxM = BL->HMML[n]->M;
     
-    BL->HMMR[n] = R3D_hmm_Create(BL->abc, BL->R[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.R[%d]", BL->name, n);
+    BL->HMMR[n] = R3D_hmm_Create(BL->abc, BL->R[n], name, errbuf, verbose);
     if (!BL->HMMR[n]) esl_fail(errbuf, "R3D_BL_HMMCreate() R failed");
     if (BL->HMMR[n]->M > maxM) maxM = BL->HMMR[n]->M;
   }
   
   *ret_maxM = maxM;
+
+  if (name) free(name);
   return eslOK;
 
  ERROR:
+  if (name) free(name);
   return status;
 }
 
 extern int
 R3D_IL_HMMCreate(R3D_IL *IL, int *ret_maxM, char *errbuf, int verbose)
 {
-  int maxM = *ret_maxM;
-  int n;
-  int status;
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
 
-  IL->HMMLoop_L = R3D_hmm_Create(IL->abc, IL->Loop_L, errbuf, verbose);
+  esl_sprintf(&name, "%s.Loop_L", IL->name);
+  IL->HMMLoop_L = R3D_hmm_Create(IL->abc, IL->Loop_L, name, errbuf, verbose);
   if (!IL->HMMLoop_L) esl_fail(errbuf, "R3D_IL_HMMCreate() Loop_L failed");
   if (IL->HMMLoop_L->M > maxM) maxM = IL->HMMLoop_L->M;
 
-  IL->HMMLoop_R = R3D_hmm_Create(IL->abc, IL->Loop_R, errbuf, verbose);
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.Loop_R", IL->name);
+  IL->HMMLoop_R = R3D_hmm_Create(IL->abc, IL->Loop_R, name, errbuf, verbose);
   if (!IL->HMMLoop_R) esl_fail(errbuf, "R3D_IL_HMMCreate() Loop_R failed");
   if (IL->HMMLoop_R->M > maxM) maxM = IL->HMMLoop_R->M;
   
   ESL_ALLOC(IL->HMMLo, sizeof(R3D_HMM *) * IL->nBo);
   ESL_ALLOC(IL->HMMRo, sizeof(R3D_HMM *) * IL->nBo);
   for (n = 0; n < IL->nBo; n ++) {
-    IL->HMMLo[n] = R3D_hmm_Create(IL->abc, IL->Lo[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.Lo[%d]", IL->name, n);
+    IL->HMMLo[n] = R3D_hmm_Create(IL->abc, IL->Lo[n], name, errbuf, verbose);
     if (!IL->HMMLo[n]) esl_fail(errbuf, "R3D_IL_HMMCreate() Lo failed");
     if (IL->HMMLo[n]->M > maxM) maxM = IL->HMMLo[n]->M;
     
-    IL->HMMRo[n] = R3D_hmm_Create(IL->abc, IL->Ro[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.Ro[%d]", IL->name, n);
+    IL->HMMRo[n] = R3D_hmm_Create(IL->abc, IL->Ro[n], name, errbuf, verbose);
     if (!IL->HMMRo[n]) esl_fail(errbuf, "R3D_IL_HMMCreate() Ro failed");
     if (IL->HMMRo[n]->M > maxM) maxM = IL->HMMRo[n]->M;
   }
@@ -384,19 +409,25 @@ R3D_IL_HMMCreate(R3D_IL *IL, int *ret_maxM, char *errbuf, int verbose)
   ESL_ALLOC(IL->HMMLi, sizeof(R3D_HMM *) * IL->nBi);
   ESL_ALLOC(IL->HMMRi, sizeof(R3D_HMM *) * IL->nBi);
   for (n = 0; n < IL->nBi; n ++) {
-    IL->HMMLi[n] = R3D_hmm_Create(IL->abc, IL->Li[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.Li[%d]", IL->name, n);
+    IL->HMMLi[n] = R3D_hmm_Create(IL->abc, IL->Li[n], name, errbuf, verbose);
     if (!IL->HMMLi[n]) esl_fail(errbuf, "R3D_IL_HMMCreate() Li failed");
     if (IL->HMMLi[n]->M > maxM) maxM = IL->HMMLi[n]->M;
     
-    IL->HMMRi[n] = R3D_hmm_Create(IL->abc, IL->Ri[n], errbuf, verbose);
+    if (name) free(name);
+    esl_sprintf(&name, "%s.Ri[%d]", IL->name, n);
+    IL->HMMRi[n] = R3D_hmm_Create(IL->abc, IL->Ri[n], name, errbuf, verbose);
     if (!IL->HMMRi[n]) esl_fail(errbuf, "R3D_IL_HMMCreate() Ri failed"); 
     if (IL->HMMRi[n]->M > maxM) maxM = IL->HMMRi[n]->M;
   }
 
+  if (name) free(name);
   *ret_maxM = maxM;
   return eslOK;
 
  ERROR:
+  if (name) free(name);
   return status;
 }
 
@@ -407,9 +438,9 @@ R3D_Destroy(R3D *r3d)
   int b;
   int i;
   
-  if (r3d->HL) { for (h = 0; h < r3d->nHL; h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
-  if (r3d->BL) { for (b = 0; b < r3d->nBL; b ++) if (r3d->BL[b]) R3D_BL_Destroy(r3d->BL[b]); free(r3d->BL); }
-  if (r3d->IL) { for (i = 0; i < r3d->nIL; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
+  if (r3d->HL) { for (h = 0; h < r3d->nHL;       h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
+  if (r3d->BL) { for (b = 0; b < r3d->nBL_total; b ++) if (r3d->BL[b]) R3D_BL_Destroy(r3d->BL[b]); free(r3d->BL); }
+  if (r3d->IL) { for (i = 0; i < r3d->nIL_total; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
   if (r3d) free(r3d);
 }
 
@@ -502,36 +533,36 @@ R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
    ESL_ALLOC(r3dp->BLp, sizeof(R3D_BLparam));
    ESL_ALLOC(r3dp->ILp, sizeof(R3D_ILparam));
 
-   r3dp->HLp->pHL         = R3D_HL_PRELOADS.pHL;
-   r3dp->HLp->pHL_LR[0]   = R3D_HL_PRELOADS.pHL_LR[0];
-   r3dp->HLp->pHL_LR[1]   = R3D_HL_PRELOADS.pHL_LR[1];
-   r3dp->HLp->pHL_LR[2]   = R3D_HL_PRELOADS.pHL_LR[2];
-   r3dp->HLp->pHL_LR[3]   = R3D_HL_PRELOADS.pHL_LR[3];
-   r3dp->HLp->pHL_Loop[0] = R3D_HL_PRELOADS.pHL_Loop[0];
-   r3dp->HLp->pHL_Loop[1] = R3D_HL_PRELOADS.pHL_Loop[1];
-   r3dp->HLp->pHL_Loop[2] = R3D_HL_PRELOADS.pHL_Loop[2];
-   r3dp->HLp->pHL_Loop[3] = R3D_HL_PRELOADS.pHL_Loop[3];
+   r3dp->HLp->pHL         = log(R3D_HL_PRELOADS.pHL);
+   r3dp->HLp->pHL_LR[0]   = log(R3D_HL_PRELOADS.pHL_LR[0]);
+   r3dp->HLp->pHL_LR[1]   = log(R3D_HL_PRELOADS.pHL_LR[1]);
+   r3dp->HLp->pHL_LR[2]   = log(R3D_HL_PRELOADS.pHL_LR[2]);
+   r3dp->HLp->pHL_LR[3]   = log(R3D_HL_PRELOADS.pHL_LR[3]);
+   r3dp->HLp->pHL_Loop[0] = log(R3D_HL_PRELOADS.pHL_Loop[0]);
+   r3dp->HLp->pHL_Loop[1] = log(R3D_HL_PRELOADS.pHL_Loop[1]);
+   r3dp->HLp->pHL_Loop[2] = log(R3D_HL_PRELOADS.pHL_Loop[2]);
+   r3dp->HLp->pHL_Loop[3] = log(R3D_HL_PRELOADS.pHL_Loop[3]);
    
-   r3dp->BLp->pBL5        = R3D_BL_PRELOADS.pBL5;
-   r3dp->BLp->pBL3        = R3D_BL_PRELOADS.pBL3;
-   r3dp->BLp->pBL_LR[0]   = R3D_BL_PRELOADS.pBL_LR[0];
-   r3dp->BLp->pBL_LR[1]   = R3D_BL_PRELOADS.pBL_LR[1];
-   r3dp->BLp->pBL_LR[2]   = R3D_BL_PRELOADS.pBL_LR[2];
-   r3dp->BLp->pBL_LR[3]   = R3D_BL_PRELOADS.pBL_LR[3];
-   r3dp->BLp->pBL_Loop[0] = R3D_BL_PRELOADS.pBL_Loop[0];
-   r3dp->BLp->pBL_Loop[1] = R3D_BL_PRELOADS.pBL_Loop[1];
-   r3dp->BLp->pBL_Loop[2] = R3D_BL_PRELOADS.pBL_Loop[2];
-   r3dp->BLp->pBL_Loop[3] = R3D_BL_PRELOADS.pBL_Loop[3];
+   r3dp->BLp->pBL5        = log(R3D_BL_PRELOADS.pBL5);
+   r3dp->BLp->pBL3        = log(R3D_BL_PRELOADS.pBL3);
+   r3dp->BLp->pBL_LR[0]   = log(R3D_BL_PRELOADS.pBL_LR[0]);
+   r3dp->BLp->pBL_LR[1]   = log(R3D_BL_PRELOADS.pBL_LR[1]);
+   r3dp->BLp->pBL_LR[2]   = log(R3D_BL_PRELOADS.pBL_LR[2]);
+   r3dp->BLp->pBL_LR[3]   = log(R3D_BL_PRELOADS.pBL_LR[3]);
+   r3dp->BLp->pBL_Loop[0] = log(R3D_BL_PRELOADS.pBL_Loop[0]);
+   r3dp->BLp->pBL_Loop[1] = log(R3D_BL_PRELOADS.pBL_Loop[1]);
+   r3dp->BLp->pBL_Loop[2] = log(R3D_BL_PRELOADS.pBL_Loop[2]);
+   r3dp->BLp->pBL_Loop[3] = log(R3D_BL_PRELOADS.pBL_Loop[3]);
    
-   r3dp->ILp->pIL         = R3D_IL_PRELOADS.pIL;
-   r3dp->ILp->pIL_LR[0]   = R3D_IL_PRELOADS.pIL_LR[0];
-   r3dp->ILp->pIL_LR[1]   = R3D_IL_PRELOADS.pIL_LR[1];
-   r3dp->ILp->pIL_LR[2]   = R3D_IL_PRELOADS.pIL_LR[2];
-   r3dp->ILp->pIL_LR[3]   = R3D_IL_PRELOADS.pIL_LR[3];
-   r3dp->ILp->pIL_Loop[0] = R3D_IL_PRELOADS.pIL_Loop[0];
-   r3dp->ILp->pIL_Loop[1] = R3D_IL_PRELOADS.pIL_Loop[1];
-   r3dp->ILp->pIL_Loop[2] = R3D_IL_PRELOADS.pIL_Loop[2];
-   r3dp->ILp->pIL_Loop[3] = R3D_IL_PRELOADS.pIL_Loop[3];
+   r3dp->ILp->pIL         = log(R3D_IL_PRELOADS.pIL);
+   r3dp->ILp->pIL_LR[0]   = log(R3D_IL_PRELOADS.pIL_LR[0]);
+   r3dp->ILp->pIL_LR[1]   = log(R3D_IL_PRELOADS.pIL_LR[1]);
+   r3dp->ILp->pIL_LR[2]   = log(R3D_IL_PRELOADS.pIL_LR[2]);
+   r3dp->ILp->pIL_LR[3]   = log(R3D_IL_PRELOADS.pIL_LR[3]);
+   r3dp->ILp->pIL_Loop[0] = log(R3D_IL_PRELOADS.pIL_Loop[0]);
+   r3dp->ILp->pIL_Loop[1] = log(R3D_IL_PRELOADS.pIL_Loop[1]);
+   r3dp->ILp->pIL_Loop[2] = log(R3D_IL_PRELOADS.pIL_Loop[2]);
+   r3dp->ILp->pIL_Loop[3] = log(R3D_IL_PRELOADS.pIL_Loop[3]);
 
    // renormalize, just in case
    vec_SCVAL_LogNorm(r3dp->HLp->pHL_LR,   4);
@@ -555,11 +586,11 @@ R3D_Param_Destroy(R3Dparam *r3dp)
   if (r3dp->HLp) free(r3dp->HLp);
   if (r3dp->BLp) free(r3dp->BLp);
   if (r3dp->ILp) free(r3dp->ILp);
-  if (r3dp) free(r3dp);
+  if (r3dp)      free(r3dp);
 }
 
 void
-R3D_Write(FILE *fp, R3D *r3d)
+R3D_Write(FILE *fp, R3D *r3d, int verbose)
 {
   int     h;
   int     b;
@@ -570,15 +601,15 @@ R3D_Write(FILE *fp, R3D *r3d)
   fprintf(fp, "R3D\n");
   fprintf(fp, "HL %d\n", r3d->nHL);
   for (h = 0; h < r3d->nHL; h ++)
-    r3d_write_HL(fp, r3d->HL[h]);
+    r3d_write_HL(fp, r3d->HL[h], verbose);
     
   fprintf(fp, "BL %d/%d\n", r3d->nBL, r3d->nBL_total);
   for (b = 0; b < r3d->nBL_total; b ++) 
-    r3d_write_BL(fp, r3d->BL[b]);
+    r3d_write_BL(fp, r3d->BL[b], verbose);
 
   fprintf(fp, "IL %d/%d\n", r3d->nIL, r3d->nIL_total);
   for (i = 0; i < r3d->nIL_total; i ++) 
-    r3d_write_IL(fp, r3d->IL[i]);
+    r3d_write_IL(fp, r3d->IL[i], verbose);
 }
 
 
@@ -655,21 +686,21 @@ R3D_MX_Create(int L, R3D *r3d)
   ESL_ALLOC(r3dmx, sizeof(R3D));
   r3dmx->nHL  = r3d->nHL;
   r3dmx->nBL  = r3d->nBL;
-  r3dmx->nIL  = r3d->nIL;
+  r3dmx->nIL  = r3d->nIL_total;
   r3dmx->HLmx = NULL;
   r3dmx->BLmx = NULL;
   r3dmx->ILmx = NULL;
-  if (r3d->nHL > 0) ESL_ALLOC(r3dmx->HLmx, sizeof(R3D_HLMX) * r3d->nHL);
-  if (r3d->nBL > 0) ESL_ALLOC(r3dmx->BLmx, sizeof(R3D_BLMX) * r3d->nBL);
-  if (r3d->nIL > 0) ESL_ALLOC(r3dmx->ILmx, sizeof(R3D_ILMX) * r3d->nIL);
+  if (r3dmx->nHL > 0) ESL_ALLOC(r3dmx->HLmx, sizeof(R3D_HLMX) * r3dmx->nHL);
+  if (r3dmx->nBL > 0) ESL_ALLOC(r3dmx->BLmx, sizeof(R3D_BLMX) * r3dmx->nBL);
+  if (r3dmx->nIL > 0) ESL_ALLOC(r3dmx->ILmx, sizeof(R3D_ILMX) * r3dmx->nIL);
   
-  for (n = 0; n < r3d->nHL; n ++)
+  for (n = 0; n < r3dmx->nHL; n ++)
     r3dmx->HLmx[n] = R3D_HLMX_Create (L, r3d->HL[n]);
   
-  for (n = 0; n < r3d->nBL; n ++)
+  for (n = 0; n < r3dmx->nBL; n ++)
     r3dmx->BLmx[n] = R3D_BLMX_Create (L, r3d->BL[n]);
   
-  for (n = 0; n < r3d->nIL; n ++)
+  for (n = 0; n < r3dmx->nIL; n ++)
     r3dmx->ILmx[n] = R3D_ILMX_Create (L, r3d->IL[n]);
 
   r3dmx->fwd = R3D_hmx_Create(L, r3d->maxM);
@@ -1210,7 +1241,7 @@ r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2)
 }
 
 static void
-r3d_write_HL(FILE *fp, R3D_HL *HL)
+r3d_write_HL(FILE *fp, R3D_HL *HL, int verbose)
 {
   int n;
   
@@ -1220,10 +1251,18 @@ r3d_write_HL(FILE *fp, R3D_HL *HL)
     fprintf(fp, "%s/%s,", HL->L[n], HL->R[n]);
   fprintf(fp, "%s/%s", HL->L[HL->nB-1], HL->R[HL->nB-1]);
   fprintf(fp, "\tname: %s\n", HL->name);
+
+  if (verbose) {
+    R3D_hmm_Write(fp, HL->HMMLoop);
+    for (n = 0; n < HL->nB; n++) {
+      R3D_hmm_Write(fp, HL->HMML[n]);
+      R3D_hmm_Write(fp, HL->HMMR[n]);
+    }
+  }
 }
 
 static void
-r3d_write_BL(FILE *fp, R3D_BL *BL)
+r3d_write_BL(FILE *fp, R3D_BL *BL, int verbose)
 {
   int n;
   
@@ -1234,16 +1273,24 @@ r3d_write_BL(FILE *fp, R3D_BL *BL)
   }
   fprintf(fp, "%s/%s", BL->L[BL->nB-1], BL->R[BL->nB-1]);
   fprintf(fp, "\tname: %s\n", BL->name);
+
+  if (verbose) {
+    R3D_hmm_Write(fp, BL->HMMLoop);
+    for (n = 0; n < BL->nB; n++) {
+      R3D_hmm_Write(fp, BL->HMML[n]);
+      R3D_hmm_Write(fp, BL->HMMR[n]);
+    }
+  }
 }
 
 static void
-r3d_write_IL(FILE *fp, R3D_IL *IL)
+r3d_write_IL(FILE *fp, R3D_IL *IL, int verbose)
 {
   int n;
   
   fprintf(fp, "IL Loop_L: %s\tLoop_R: %s", IL->Loop_L, IL->Loop_R);
   fprintf(fp, "\tLo/Ro: ");
-  for (n = 0; n < IL->nBo; n++)
+  for (n = 0; n < IL->nBo-1; n++)
     fprintf(fp, "%s/%s,", IL->Lo[n], IL->Ro[n]);
   fprintf(fp, "%s/%s", IL->Lo[IL->nBo-1], IL->Ro[IL->nBo-1]);
   fprintf(fp, "\t\t\tLi/Ri: ");
@@ -1251,10 +1298,23 @@ r3d_write_IL(FILE *fp, R3D_IL *IL)
     fprintf(fp, "%s/%s,", IL->Li[n], IL->Ri[n]);
   fprintf(fp, "%s/%s", IL->Li[IL->nBi-1], IL->Ri[IL->nBi-1]);
   fprintf(fp, "\t\tname: %s\n", IL->name);
+
+  if (verbose) {
+    R3D_hmm_Write(fp, IL->HMMLoop_L);
+    R3D_hmm_Write(fp, IL->HMMLoop_R);
+    for (n = 0; n < IL->nBo; n++) {
+      R3D_hmm_Write(fp, IL->HMMLo[n]);
+      R3D_hmm_Write(fp, IL->HMMRo[n]);
+    }
+    for (n = 0; n < IL->nBi; n++) {
+      R3D_hmm_Write(fp, IL->HMMLi[n]);
+      R3D_hmm_Write(fp, IL->HMMRi[n]);
+    }
+  }
 }
 
 extern int
-R3D_RMtoCT(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
+R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
 {
   int idx;
   int status;
@@ -1262,16 +1322,16 @@ R3D_RMtoCT(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
   switch(type) {
   case R3D_TP_HL:
     if (m >= r3d->nHL) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -m;
+    idx = -(m + 1);
     break;
   case R3D_TP_BL:
     if (m >= r3d->nBL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + r3d->nHL);
+    idx = -(m + 1 + r3d->nHL);
     break;
   case R3D_TP_ILo:
   case R3D_TP_ILi:
     if (m >= r3d->nIL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + r3d->nHL + r3d->nBL_total);
+    idx = -(m + 1 + r3d->nHL + r3d->nBL_total);
     break;
   default:
     ESL_XFAIL(eslFAIL, errbuf, "cannot recognize R3D type %d\n", m);
@@ -1286,22 +1346,22 @@ R3D_RMtoCT(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
 }
 
 extern int
-R3D_CTtoRM(R3D *r3d, int idx, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
+R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
 {
   R3D_TYPE type;
   int      nt_HL = r3d->nHL;
   int      nt_BL = r3d->nHL + r3d->nBL_total;
   int      nt_IL = r3d->nHL + r3d->nBL_total + r3d->nIL_total;
-  int      mdx = -idx;
+  int      mdx = -ctval;
   int      m;
   int      status;
 
-  if (idx > 0) ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be positive but it is %d\n", idx);
+  if (ctval >= 0) ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be semi-positive but it is %d\n", ctval);
   
-  if      (mdx < nt_HL) { type = R3D_TP_HL;  m = mdx;         }
-  else if (mdx < nt_BL) { type = R3D_TP_BL;  m = mdx - nt_HL; }
-  else if (mdx < nt_HL) { type = R3D_TP_ILo; m = mdx - nt_BL; }
-  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -nt_IL, idx);
+  if      (mdx <= nt_HL) { type = R3D_TP_HL;  m = mdx - 1;         }
+  else if (mdx <= nt_BL) { type = R3D_TP_BL;  m = mdx - 1 - nt_HL; }
+  else if (mdx <= nt_HL) { type = R3D_TP_ILo; m = mdx - 1 - nt_BL; }
+  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -nt_IL, ctval);
   
   *ret_m    = m;
   *ret_type = type;
@@ -1309,4 +1369,25 @@ R3D_CTtoRM(R3D *r3d, int idx, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
 
  ERROR:
   return status;
+}
+
+extern void
+R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss)
+{
+  int j;
+  
+ /* init ss[] to single stranded */
+  for (j = 1; j <= n; j ++) { ss[j-1] = ':'; }  
+  ss[n] = '\0'; 
+
+  for (j = 1; j <= n; j ++) {
+    if (ct[j] < 0) {
+      ss[j-1] = 'x';
+
+      if (covct) {
+	if      (covct[j] == 1) ss[j-1] = 'X';
+	else if (covct[j] == 2) ss[j-1] = 'Y';
+      }
+    }
+  }
 }

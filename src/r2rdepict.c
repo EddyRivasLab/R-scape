@@ -20,7 +20,9 @@
 
 #include "covariation.h"
 #include "correlators.h"
+#include "msamanip.h"
 #include "r2rdepict.h"
+#include "structure.h"
 
 static int   r2r_depict_pdf             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verbose, char *errbuf);
@@ -34,7 +36,8 @@ static int   r2r_write_meta             (char *metafile, char *r2rfile, CTLIST *
 static char *strtokm(char *str, const char *delim);
 
 int 
-r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, int makepdf, int makesvg, char *errbuf, int verbose)
+r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *ctlist, HITLIST *hitlist, RMLIST *rmlist,
+	   double Eval_target, int makepdf, int makesvg, char *errbuf, int verbose)
 {
   char    **r2rpkfile = NULL;
   char     *metafile  = NULL;
@@ -42,6 +45,7 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hit
   char     *args      = NULL;
   char     *buf       = NULL;
   FILE     *fp        = NULL;
+  ESL_MSA  *msa       = NULL;
   ESL_MSA  *r2rmsa    = NULL;
   int       pkcallout = TRUE;
   int       nct       = ctlist->nct;
@@ -50,17 +54,28 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hit
 
   if (r2rfile == NULL) return eslOK;
 
+  if (omsa->nseq > R2R_NSEQ_MAX) {
+    msa = esl_msa_Clone(omsa);
+    status = msamanip_SelectSubset(r, R2R_NSEQ_MAX, &msa, NULL, FALSE, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+  }
+  else msa = omsa;
+
   esl_msa_AddGF(msa, "R2R SetDrawingParam prefixSsWithPkInDrawings false", -1, "", -1);
 
   status = r2r_Overwrite_SS_cons(msa, ctlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-
-  // run R2R 
+  
+  // run R2R
   status = r2r_run_consensus_from_msa(msa, &r2rmsa, errbuf);
   if (status != eslOK) goto ERROR;
 
   // replace the r2r 'cov_SS_cons' GC line(s) with our own
   status = r2r_Overwrite_cov_SS_cons(r2rmsa, ctlist, hitlist, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+    
+  // add the 'cov_h_SS_cons' GC line(s) for helix covariation (rmlist)
+  status = r2r_Write_cov_helix_SS_cons(r2rmsa, ctlist, rmlist, Eval_target, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
   // add line #=GF R2R keep allpairs, so that it does not truncate ss 
@@ -91,7 +106,15 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hit
   // create additional sto files with the extra structures
   ESL_ALLOC(r2rpkfile, sizeof(char *) * nct);
   r2rpkfile[0] = NULL;
-  for (s = 1; s < nct; s ++) esl_sprintf(&r2rpkfile[s], "%s.%s.sto", filename, ctlist->ctname[s]);
+  for (s = 1; s < nct; s ++) {
+    r2rpkfile[s] = NULL;
+    
+    if (ctlist->cttype[s] != CTTYPE_RM_HL &&
+	ctlist->cttype[s] != CTTYPE_RM_BL &&
+	ctlist->cttype[s] != CTTYPE_RM_IL   ) {
+      esl_sprintf(&r2rpkfile[s], "%s.%s.sto", filename, ctlist->ctname[s]);
+    }
+  }
   status = r2r_pseudoknot_callout(r2rfile, hitlist, nct, r2rpkfile, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
@@ -110,25 +133,27 @@ r2r_Depict(char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hit
     if (status != eslOK) goto ERROR;
   }
 
-  for (s = 1; s < nct; s ++) remove(r2rpkfile[s]);
+  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
   remove(metafile);
   
-  for (s = 1; s < nct; s ++) free(r2rpkfile[s]);
+  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) free(r2rpkfile[s]);
   free(metafile);
   free(buf);
   free(args);
   free(r2rpkfile);
   esl_msa_Destroy(r2rmsa);
+  if (omsa->nseq > R2R_NSEQ_MAX) esl_msa_Destroy(msa);
   return eslOK;
 
  ERROR:
-  for (s = 1; s < nct; s ++) remove(r2rpkfile[s]);
+  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
   remove(metafile);
   if (buf)       free(buf);
   if (args)      free(args);
   if (r2rpkfile) free(r2rpkfile);
   if (metafile)  free(metafile);
   if (r2rmsa)    esl_msa_Destroy(r2rmsa);
+  if (omsa->nseq > R2R_NSEQ_MAX) esl_msa_Destroy(msa);
   return status;
 }
 
@@ -149,9 +174,11 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {    
     if (strncmp(msa->gc_tag[tagidx], sstag, 7) == 0) {
       for (idx = tagidx+1; idx < msa->ngc; idx ++) {
-  	msa->gc_tag[idx-1] = msa->gc_tag[idx];
-  	msa->gc[idx-1]     = msa->gc[idx];
-       }
+	free(msa->gc_tag[idx-1]); esl_strdup(msa->gc_tag[idx], -1, &(msa->gc_tag[idx-1]));
+	free(msa->gc[idx-1]);     esl_strdup(msa->gc[idx],     -1, &(msa->gc[idx-1]));
+      }
+      free(msa->gc_tag[idx-1]); msa->gc_tag[idx-1] = NULL;
+      free(msa->gc[idx-1]);     msa->gc[idx-1]     = NULL;
  
       tagidx   --;
       msa->ngc --;
@@ -163,7 +190,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   for (s = 0; s < nct; s ++) {
 
     // first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
-    esl_ct2simplewuss(ctlist->ct[s], msa->alen, ss);
+    esl_ct2simplewuss_er(ctlist->ct[s], msa->alen, ss);
 
     // replace the 'SS_cons' GC line with the new ss
     switch(ctlist->cttype[s]) {
@@ -181,8 +208,13 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
       r2r_esl_msa_AppendGC(msa, tag, ss);
       free(tag); tag = NULL;
       break;
+    case CTTYPE_RM_HL:
+    case CTTYPE_RM_BL:
+    case CTTYPE_RM_IL:
+      continue;
+      break;
     default:
-      ESL_XFAIL(eslFAIL, errbuf, "no cttype");
+      ESL_XFAIL(eslFAIL, errbuf, "Unknown cttype");
       break;
     }
     
@@ -223,9 +255,12 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
   for (tagidx = 0; tagidx < msa->ngc; tagidx++) {
     if (strncmp(msa->gc_tag[tagidx], covtag, 11) == 0) {
       for (idx = tagidx+1; idx < msa->ngc; idx ++) {
-	msa->gc_tag[idx-1] = msa->gc_tag[idx];
-	msa->gc[idx-1]     = msa->gc[idx];
+	free(msa->gc_tag[idx-1]); esl_strdup(msa->gc_tag[idx], -1, &(msa->gc_tag[idx-1]));
+ 	free(msa->gc[idx-1]);     esl_strdup(msa->gc[idx],     -1, &(msa->gc[idx-1]));
       }
+      free(msa->gc_tag[idx-1]); msa->gc_tag[idx-1] = NULL;
+      free(msa->gc[idx-1]);     msa->gc[idx-1]     = NULL;
+      
       tagidx   --;
       msa->ngc --;
     }
@@ -254,7 +289,7 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
 	    if (found) break;
 	  }
 	}
-	if (!found) esl_sprintf(&tok, ".");
+	if (!found) { if (tok) free(tok); esl_sprintf(&tok, "."); }
 	
 	if (i == 1) esl_sprintf(&covstr, "%s", tok);
 	else        esl_sprintf(&covstr, "%s%s", aux_covstr, tok);
@@ -287,8 +322,13 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
     case CTTYPE_NONE:
       esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
       break;
+    case CTTYPE_RM_HL:
+    case CTTYPE_RM_BL:
+    case CTTYPE_RM_IL:
+      continue;
+      break;
     default:
-      ESL_XFAIL(eslFAIL, errbuf, "no cttype");
+      ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");
       break;
     }
  
@@ -303,13 +343,143 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
     }
     if (msa->gc_tag[tagidx]) { free(msa->gc_tag[tagidx]); msa->gc_tag[tagidx] = NULL; }
     if ((status = esl_strdup(covtag1, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+    
     if (msa->gc[tagidx]) { free(msa->gc[tagidx]); msa->gc[tagidx] = NULL; }
     esl_sprintf(&(msa->gc[tagidx]), "%s", new_covstr[s]);
     free(covtag1); covtag1 = NULL;
   }
   if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
   
-  free(tok);
+  if (tok)        free(tok);
+  if (tag)        free(tag);
+  if (covstr)     free(covstr);
+  if (covtag1)    free(covtag1);
+  if (aux_covstr) free(aux_covstr);
+  for (s = 0; s < nct; s ++) if (new_covstr[s]) free(new_covstr[s]);
+  if (new_covstr) free(new_covstr);
+  return eslOK;
+
+ ERROR:
+  if (tok)        free(tok);
+  if (tag)        free(tag);
+  if (covstr)     free(covstr);
+  if (covtag1)    free(covtag1);
+  if (aux_covstr) free(aux_covstr);
+  for (s = 0; s < nct; s ++) if (new_covstr[s]) free(new_covstr[s]);
+  if (new_covstr) free(new_covstr);
+  return status;
+}
+
+int
+r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double Eval_target, char *errbuf, int verbose)
+{
+  char   covtag[14] = "cov_h_SS_cons";
+  char **new_covstr = NULL;
+  char  *covstr     = NULL;
+  char  *aux_covstr = NULL;
+  char  *tok        = NULL;
+  char  *tag        = NULL;
+  char  *covtag1    = NULL;
+  RM    *rm;
+  int    nct        = ctlist->nct;
+  int    tagidx;
+  int    idx;
+  int    found;
+  int    s;
+  int    i, j;
+  int    h;
+  int    ih, kh, lh, jh;
+  int    status;
+
+  if (!rmlist) return eslOK;
+  if (rmlist->nagg == 1 && rmlist->agg_method[0] == AGG_NONE) return eslOK;
+  
+  /* make a cov_h_cons_ss (new_covstr) line according to our rmlist */
+  ESL_ALLOC(new_covstr, sizeof(char *) * nct);
+  for (s = 0; s < nct; s ++) new_covstr[s] = NULL;
+
+  for (s = 0; s < nct; s ++) {
+    
+    if (aux_covstr) free(aux_covstr); aux_covstr = NULL;
+    for (i = 1; i <= msa->alen; i ++) {
+      found = FALSE;
+ 
+      j = ctlist->ct[s][i];
+      
+      if (j > i && rmlist) {
+	for (h = 0; h < rmlist->nrm; h ++) {
+	  rm = rmlist->rm[h];
+	  if (rm->Eval[0] >= Eval_target) continue;
+	  
+	  ih = rm->i;
+	  kh = rm->k;
+	  lh = rm->l;
+	  jh = rm->j;
+
+	  if (i >= ih && i <= kh && j >= lh && j <= jh) { 
+	    esl_sprintf(&tok, "3"); 
+	    found = TRUE; 
+	  }
+	  if (found) break;
+	}
+      }
+      if (!found) { if (tok) free(tok); esl_sprintf(&tok, "."); }
+
+      if (i == 1) esl_sprintf(&covstr, "%s", tok);
+      else        esl_sprintf(&covstr, "%s%s", aux_covstr, tok);
+      
+      if (aux_covstr) free(aux_covstr); aux_covstr = NULL;
+      esl_sprintf(&aux_covstr, "%s", covstr);
+      free(tok); tok = NULL;
+      free(covstr); covstr = NULL;
+    }
+    esl_sprintf(&new_covstr[s], "%s", aux_covstr);
+    free(aux_covstr); aux_covstr = NULL;
+  }
+  
+  for (s = 0; s < nct; s ++) {
+
+    switch(ctlist->cttype[s]) {
+    case CTTYPE_NESTED:
+      esl_sprintf(&covtag1, "%s",    covtag);
+      break;
+    case CTTYPE_PK:
+    case CTTYPE_NONWC:
+    case CTTYPE_TRI:
+    case CTTYPE_SCOV:
+    case CTTYPE_XCOV:
+    case CTTYPE_NONE:
+      esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
+      break;
+    case CTTYPE_RM_HL:
+    case CTTYPE_RM_BL:
+    case CTTYPE_RM_IL:
+      continue;
+      break;
+    default:
+      ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");
+      break;
+    }
+ 
+    for (tagidx = 0; tagidx < msa->ngc; tagidx++)
+      if (strcmp(msa->gc_tag[tagidx], covtag1) == 0) break;
+    if (tagidx == msa->ngc) {
+      ESL_REALLOC(msa->gc_tag, (msa->ngc+1) * sizeof(char **));
+      ESL_REALLOC(msa->gc,     (msa->ngc+1) * sizeof(char **));
+      msa->gc_tag[msa->ngc] = NULL;
+      msa->gc[msa->ngc]     = NULL;
+      msa->ngc++;
+    }
+    if (msa->gc_tag[tagidx]) { free(msa->gc_tag[tagidx]); msa->gc_tag[tagidx] = NULL; }
+    if ((status = esl_strdup(covtag1, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+    
+    if (msa->gc[tagidx]) { free(msa->gc[tagidx]); msa->gc[tagidx] = NULL; }
+    esl_sprintf(&(msa->gc[tagidx]), "%s", new_covstr[s]);
+    free(covtag1); covtag1 = NULL;
+  }
+  if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_PFAM);
+  
+  if (tok)        free(tok);
   if (tag)        free(tag);
   if (covstr)     free(covstr);
   if (covtag1)    free(covtag1);
@@ -400,8 +570,8 @@ r2r_depict_pdf(char *r2rfile, char *metafile, int verbose, char *errbuf)
   esl_sprintf(&r2rpdf, "%s.pdf", r2rfile);
   if (verbose) esl_sprintf(&args, "%s %s %s ",           cmd, metafile, r2rpdf);
   else         esl_sprintf(&args, "%s %s %s >/dev/null", cmd, metafile, r2rpdf);
- 
   status = system(args);
+  if (verbose) printf("%s\n", args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R2pdf\n");
 
   free(cmd);
@@ -535,7 +705,11 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
   esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
   
   for (s = 1; s < nct; s ++) {
-    esl_ct2wuss(ctlist->ct[s], L, ss);
+    if (ctlist->cttype[s] == CTTYPE_RM_HL ||
+	ctlist->cttype[s] == CTTYPE_RM_BL ||
+	ctlist->cttype[s] == CTTYPE_RM_IL   ) continue;
+    
+    esl_ct2wuss_er(ctlist->ct[s], L, ss);
 
     // mark the whole region to form a callout
     new[L] = '\0';
@@ -561,6 +735,10 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss primary", s);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
     for (s2 = 1; s2 < nct; s2 ++) {
+      if (ctlist->cttype[s2] == CTTYPE_RM_HL ||
+	  ctlist->cttype[s2] == CTTYPE_RM_BL ||
+	  ctlist->cttype[s2] == CTTYPE_RM_IL   ) continue;
+
       if (s2 != s) {
 	esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss _%s", s, ctlist->ctname[s2]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
@@ -617,12 +795,14 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
   // (4) write r2r_meta file with the names of all files
   //
   for (s = 1; s < nct; s ++) {
+    if (!r2rpkfile[s]) continue;
+    
     esl_sprintf(&cmd, "%s/SelectSubFamilyFromStockholm.pl", RSCAPE_BIN);
     esl_sprintf(&args, "%s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R script SelectSubFamilyFromStockholm.pl\n");
     free(args); args = NULL;
-
+    
     // now again run the script to modify a perfectly good stockholm file into something that R2R can digest
     esl_sprintf(&args, "%s/r2r_msa_comply.pl %s", RSCAPE_BIN, r2rpkfile[s]);
     status = system(args);
@@ -696,7 +876,7 @@ r2r_run_consensus_from_msa(ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf)
   remove(tmpoutfile);
 
   *ret_r2rmsa = r2rmsa;
-  
+ 
   return eslOK;
 
  ERROR:
@@ -730,7 +910,7 @@ r2r_write_meta(char *metafile, char *r2rfile, CTLIST *ctlist, char **r2rpkfile, 
   free(buf); buf = NULL;
    
   if (pkcallout) 
-    for (s = 1; s < nct; s ++) fprintf(fp, "%s\tdisplayname\t%s\n", r2rpkfile[s], ctlist->ctname[s]);
+    for (s = 1; s < nct; s ++) if (r2rpkfile[s]) fprintf(fp, "%s\tdisplayname\t%s\n", r2rpkfile[s], ctlist->ctname[s]);
   fclose(fp);
   
   if (buf)  free(buf);

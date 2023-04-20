@@ -19,7 +19,9 @@
 #include "easel.h"
 #include "esl_buffer.h"
 #include "esl_mem.h"
+#include "esl_vectorops.h"
 
+#include "correlators.h"
 #include "plot.h"
 #include "power.h"
 
@@ -56,33 +58,45 @@ power_Histogram_Destroy(POWERHIS *powerhis)
 }
 
 int 
-power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER *power, CLIST *clist, int *nsubs, int *ndouble, char *errbuf, int verbose)
+power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct mutual_s *mi, POWER *power, CLIST *clist, CTLIST *ctlist,
+		   int *nsubs, int *njoin, int *ndouble, char *errbuf, int verbose)
 {
   SPAIR   *spair = NULL;
+  int     *ct;
   double   prob;
   int64_t  dim = alen * (alen - 1.) / 2;
-  int64_t  subs;
   int64_t  n = 0;
   int64_t  s;
   int      i, j;
+  int      ii, jj;
   int      c;
   int      status;
   
   if (ret_spair == NULL) return eslOK;
-
-  if (!nsubs && !ndouble) esl_fatal("need some kind of substitutions!");
+  
+  if (!nsubs && !ndouble && !njoin)           esl_fatal("need some kind of substitutions!");
+  if (!nsubs   && power->type == SINGLE_SUBS) esl_fatal("you need single_subs");
+  if (!njoin   && power->type == JOIN_SUBS)   esl_fatal("you need join_subs");
+  if (!ndouble && power->type == DOUBLE_SUBS) esl_fatal("you need double_subs");
   
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 
     for (j = i+1; j < alen; j ++) {
-      
-      subs            = (nsubs)? nsubs[i] + nsubs[j] : ndouble[i*alen+j];                    
+
       spair[n].iabs   = msamap[i]+1;
       spair[n].jabs   = msamap[j]+1;
       spair[n].i      = i;
       spair[n].j      = j;
-      spair[n].nsubs  = subs;
-      spair[n].power  = 0.;
+      
+      spair[n].nseff        = mi->nseff[i][j];
+      spair[n].powertype    = power->type;
+      spair[n].nsubs        = (nsubs)?   nsubs[i] + nsubs[j] : 0;
+      spair[n].power        = -1.;
+      spair[n].nsubs_join   = (njoin)?   njoin[i*alen+j]     : 0;
+      spair[n].power_join   = -1.;
+      spair[n].nsubs_double = (ndouble)? ndouble[i*alen+j]   : 0;
+      spair[n].power_double = -1.;
+      
       spair[n].covary = FALSE;
       spair[n].sc     = -1.;
       spair[n].Pval   = -1.;
@@ -91,15 +105,37 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
       spair[n].bptype_given = BPNONE;  // bptype in given structure
       spair[n].bptype_caco  = BPNONE;  // bptype in cacofold structure
       
+      spair[n].cttype_given = CTTYPE_NONE;  // bptype in given structure
+      spair[n].cttype_caco  = CTTYPE_NONE;  // bptype in cacofold structure
+      
       if (power) {
-	prob = 0.;
-	for (s = 0; s < power->ns; s ++) {
-	  if (subs > power->subs[s]) prob = power->prob[s];
-	  else break;
+	if (nsubs) {
+	  prob = 0.;
+	  for (s = 0; s < power->ns; s ++) {
+	    if (spair[n].nsubs > power->subs[s]) prob = power->prob[s];
+	    else break;
+	  }
+	  spair[n].power = prob;
 	}
-	spair[n].power = prob;
+	if (njoin) {
+	  prob = 0.;
+	  for (s = 0; s < power->ns; s ++) {
+	    if (spair[n].nsubs_join > power->subs_join[s]) prob = power->prob_join[s];
+	    else break;
+	  }
+	  spair[n].power_join = prob;
+	}
+	if (ndouble) { 
+	  prob = 0.;
+	  for (s = 0; s < power->ns; s ++) {
+	    if (spair[n].nsubs_double > power->subs_double[s]) prob = power->prob_double[s];
+	    else break;
+	  }
+	  spair[n].power_double = prob;
+	}
+	
       }
-       
+      
       if (clist) {
 	for (c = 0; c < clist->ncnt; c++) {
 	  if (spair[n].iabs == clist->cnt[c].posi && spair[n].jabs == clist->cnt[c].posj) {
@@ -109,13 +145,28 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
 	}
       }
       
-      if (spair[n].bptype_given == WWc) 
-	if (verbose) printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
-      
-      n ++;
+     if (ctlist) {
+       ii = spair[n].i + 1;
+       jj = spair[n].j + 1;
+       
+       for (c = 0; c < ctlist->nct; c++) {
+	 ct = ctlist->ct[c];
+	 if (ct[ii] > 0 && ct[ii] == jj && ct[jj] == ii) {
+	   spair[n].cttype_given = ctlist->cttype[c];
+	   break;
+	 }
+       }
+     }
+     
+     if (verbose && spair[n].bptype_given == WWc) 
+       printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+     if (verbose && spair[n].cttype_given == CTTYPE_NESTED) 
+       printf("^^NESTED: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+     
+     n ++;
     }
-
-  if (ret_np) *ret_np = n;
+  
+  *ret_np    = n;
   *ret_spair = spair;
   return eslOK;
   
@@ -125,21 +176,39 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, POWER 
 }
 
 int 
-power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbose)
+power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, CTLIST *ctlist, char *errbuf, int verbose)
 {
-  int n;
-  int c;
+  int *ct;
+  int  n;
+  int  c;
+  int  i, j;
 
   for (n = 0; n < dim; n ++) {
+    
     for (c = 0; c < clist->ncnt; c++) {
       if (spair[n].iabs == clist->cnt[c].posi && spair[n].jabs == clist->cnt[c].posj) {
 	spair[n].bptype_caco = clist->cnt[c].bptype;
 	break;
       }
     }
+    
+    if (ctlist) {
+      i = spair[n].i + 1;
+      j = spair[n].j + 1;
+      
+      for (c = 0; c < ctlist->nct; c++) {
+	ct = ctlist->ct[c];
+	if (ct[i] > 0 && ct[i] == j && ct[j] == i) {
+	  spair[n].cttype_given = ctlist->cttype[c];
+	  break;
+	}
+      }
+    }
 
-    if (spair[n].bptype_given == WWc) 
-      if (verbose) printf("CaCo WWc: %lld-%lld \n", spair[n].iabs, spair[n].jabs);
+    if (verbose && spair[n].bptype_caco == WWc) 
+      printf("CaCo WWc: %lld-%lld \n", spair[n].iabs, spair[n].jabs);
+    if (verbose && spair[n].cttype_caco == CTTYPE_NESTED) 
+      printf("CaCo NESTED: %lld-%lld \n", spair[n].iabs, spair[n].jabs);
 
   }
 
@@ -149,6 +218,7 @@ power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, char *errbuf, int verbo
 void
 power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 {
+  POWERTYPE  powertype;
   double     expect    = 0.;
   double     exp_std   = 0.;
   double     avgsub    = 0.;
@@ -157,41 +227,204 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   int64_t    n;
 
   if (fp == NULL) return;
+	
+  powertype = spair[0].powertype;
   
   if (in_given) fprintf(fp, "\n# Power analysis of given structure \n#\n");
   else          fprintf(fp, "\n# Power analysis of CaCoFold structure \n#\n");
-  fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
-  fprintf(fp, "#----------------------------------------------------------------\n");
-  for (n = 0; n < dim; n ++)
-    if ( ( in_given && spair[n].bptype_given == WWc) ||
-	 (!in_given && spair[n].bptype_caco  == WWc)) {
-      nbp ++;
-      expect    += spair[n].power;
-      exp_std   += spair[n].power * (1.0-spair[n].power);
-      avgsub    += spair[n].nsubs;
-      if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power); ncv ++; }
-      else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+  switch(powertype) {
+  case SINGLE_SUBS:
+    fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
+    fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
+    fprintf(fp, "#----------------------------------------------------------------\n");
+    for (n = 0; n < dim; n ++) {   
+      if (spair[n].powertype != powertype) esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype");
+      
+      if ( ( in_given && spair[n].bptype_given == WWc) ||
+	   (!in_given && spair[n].bptype_caco  == WWc)   ) {
+	nbp ++;
+	expect    += spair[n].power;
+	exp_std   += spair[n].power * (1.0-spair[n].power);
+	avgsub    += spair[n].nsubs;
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+      }
     }
-  avgsub /= (nbp > 0)? nbp : 1;
-  if (exp_std > 0) exp_std = sqrt(exp_std);
-  
+    avgsub /= (nbp > 0)? nbp : 1;
+    if (exp_std > 0) exp_std = sqrt(exp_std);
+    break;
+    
+  case JOIN_SUBS:
+    fprintf(fp, "# Powertype = JOIN SUBSTITUTIONS\n");
+    fprintf(fp, "# covary  left_pos      right_pos    subs_join     power_join\n");
+    fprintf(fp, "#----------------------------------------------------------------\n");
+    for (n = 0; n < dim; n ++) {
+      if ( ( in_given && spair[n].bptype_given == WWc) ||
+	   (!in_given && spair[n].bptype_caco  == WWc)) {
+	nbp ++;
+	expect    += spair[n].power_join;
+	exp_std   += spair[n].power_join * (1.0-spair[n].power_join);
+	avgsub    += spair[n].nsubs_join;
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join);
+      }
+    }
+    avgsub /= (nbp > 0)? nbp : 1;
+    if (exp_std > 0) exp_std = sqrt(exp_std);
+    break;
+    
+  case DOUBLE_SUBS:
+	   fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
+	   fprintf(fp, "# covary  left_pos      right_pos    subs_double     power_double\n");
+    fprintf(fp, "#----------------------------------------------------------------\n");
+    for (n = 0; n < dim; n ++) {
+      if ( ( in_given && spair[n].bptype_given == WWc) ||
+	   (!in_given && spair[n].bptype_caco  == WWc)) {
+	nbp ++;
+	expect    += spair[n].power_double;
+	exp_std   += spair[n].power_double * (1.0-spair[n].power_double);
+	avgsub    += spair[n].nsubs_double;
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double);
+      }
+    }
+    avgsub /= (nbp > 0)? nbp : 1;
+    if (exp_std > 0) exp_std = sqrt(exp_std);
+    break;
+
+  default:
+    esl_fatal("power_SPAIR_Write(): need some kind of substitutions!");
+    break;
+  }
+
   fprintf(fp, "#\n# BPAIRS %lld\n", nbp);
   fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
   fprintf(fp, "# BPAIRS expected to covary %.1f +/- %.1f\n", expect, exp_std);
   fprintf(fp, "# BPAIRS observed to covary %lld\n#\n", ncv);
 }
 
+int
+power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in_given)
+{
+  POWERTYPE      powertype;
+  FILE          *fp = NULL;
+  int           *mask = NULL;
+  BPTYPE         bptype;
+  enum cttype_e  cttype;
+  double         Eval_fake  = -1.;
+  double         power_fake = -1.;
+  int64_t        iabs, jabs;
+  int64_t        curri, currj;
+  int64_t        prvi = 0;
+  int64_t        prvj = 1;
+  int64_t        n;
+  int64_t        l;
+  int            status;
+
+  if (!prepfile) return eslFAIL;
+
+  ESL_ALLOC(mask, sizeof(int) * Labs);
+  esl_vec_ISet(mask, Labs, 1);
+  for (n = 0; n < dim; n ++) { mask[spair[n].iabs-1] = 0; }
+  
+  if ((fp = fopen(prepfile, "w")) == NULL) esl_fatal("Failed to open prepfile %s", prepfile);
+  
+  powertype = spair[0].powertype;
+ 
+
+  fprintf(fp, "# legend\n#\n");
+  fprintf(fp, "# i j E-value power ctype bptye\n\n");
+  fprintf(fp, "# 1 < i < j < alignment length=%lld\n", Labs);
+  fprintf(fp, "# E-value [0,infity), provided by R-scape.");
+  fprintf(fp, "# power[0,1], provided by R-scape");
+  fprintf(fp, "# CTTYPE:(0)CTTYPE_NESTED,(1)CTTYPE_PK,(2)CTTYPE_NONWC,(3)CTTYPE_TRI,(4)CTTYPE_SCOV,(5)CTTYPE_XCOV,(6)CTTYPE_RM_HL,(7)CTTYPE_RM_BL,(8)CTTYPE_RM_IL,(9)CTTYPE_NONE\n");
+  fprintf(fp, "# BYTPYE:(0)WWc,(1)WWt,(2)WHc,(3)WHt,(4)WSc,(5)WSt,(6)Wxc,(7)Wxt,(8)xWc,(9)xWt,(10)HWc,(11)HWt,(12)HHc,(13)HHt,(14)HSc,(15)HSt,(16)Hxc,(17)Hxt,(18)xHc,(19)xHt,(20)SWc,(21)SWt,(22)SHc,(23)SHt,(24)SSc,(25)SSt,(26)Sxc,(27)Sxt,(28)xSc,(29)xSt,(30)xxc,(31)xxt,(32)STACKED,(33)CONTACT,(34)BPNONE\n");
+  fprintf(fp, "#MASK:");
+  for (l = 0; l < Labs; l ++) fprintf(fp, "%d", mask[l]);
+  fprintf(fp, "\n");
+  
+  for (n = 0; n < dim; n ++) {
+    if (spair[n].powertype != powertype) esl_fatal("power_PREP_Write(): all pairs should use the same powertype");
+
+    iabs = spair[n].iabs;
+    jabs = spair[n].jabs;
+
+    currj = prvj + 1;
+    while (iabs == prvi && currj < jabs) {
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      currj ++;
+    }      
+
+    curri = prvi + 1;
+    while (curri < iabs) {
+      currj = curri + 1;
+      while (currj <= Labs) {
+	fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+	currj ++;
+      }      
+      curri ++;
+    }
+
+    currj = curri + 1;
+    while (curri == iabs && currj < jabs) {
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      currj ++;
+    }
+
+    cttype = (in_given)? spair[n].cttype_given : spair[n].cttype_caco;
+    bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
+    
+    switch(powertype) {
+    case SINGLE_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power,        cttype, bptype);
+      break;
+    case JOIN_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power_join,   cttype, bptype);
+       break;
+    case DOUBLE_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power_double, cttype, bptype);
+       break; 
+    }
+
+    prvi = iabs;
+    prvj = jabs;
+
+  }
+
+  curri ++;
+  while (curri < Labs) {
+    currj = curri + 1;
+    while (currj <= Labs) {
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      currj ++;
+    }      
+    curri ++;
+  }
+
+  fclose(fp);
+  free(mask);
+  return eslOK;
+
+ ERROR:
+  if (mask) free(mask);
+  return status;
+}
+
 void
 power_Destroy(POWER *power)
 {
   if (power == NULL) return;
-  if (power->subs) free(power->subs);
-  if (power->prob) free(power->prob);
+  if (power->subs)        free(power->subs);
+  if (power->prob)        free(power->prob);
+  if (power->subs_join)   free(power->subs_join);
+  if (power->prob_join)   free(power->prob_join);
+  if (power->subs_double) free(power->subs_double);
+  if (power->prob_double) free(power->prob_double);
   free(power);
 }
 
 int
-power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, char *errbuf, int verbose)
+power_Read(char *powerfile, int doublesubs, int joinsubs, int includegaps, POWER **ret_power, char *errbuf, int verbose)
 {
   ESL_BUFFER      *bf    = NULL;
   char            *subs  = NULL;
@@ -214,21 +447,16 @@ power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, 
   ESL_ALLOC(power, sizeof(POWER));
   power->ns   = 0;
   power->includegaps = includegaps;
-  power->type = (doublesubs)? DOUB : SUBS;
-  power->subs = NULL;
-  power->prob = NULL;
+  power->type = (doublesubs)? DOUBLE_SUBS : ((joinsubs)? JOIN_SUBS : SINGLE_SUBS);
+  power->subs        = NULL;
+  power->prob        = NULL;
+  power->subs_join   = NULL;
+  power->prob_join   = NULL;
+  power->subs_double = NULL;
+  power->prob_double = NULL;
   
   while (( status = esl_buffer_GetLine(bf, &p, &n)) == eslOK) 
     {
-      if (power->ns == 0) {
-	ESL_ALLOC(power->subs, sizeof(double)*(power->ns+1));
-	ESL_ALLOC(power->prob, sizeof(double)*(power->ns+1));
-      }
-      else {
-	ESL_REALLOC(power->subs, sizeof(double)*(power->ns+1));
-	ESL_REALLOC(power->prob, sizeof(double)*(power->ns+1));
-      }
-
       idx = 0;
       len = 0;
       if (power->ns == 0) {
@@ -236,7 +464,7 @@ power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, 
 	ESL_ALLOC(subs, sizeof(char) * salloc);
 	ESL_ALLOC(prob, sizeof(char) * salloc);
       }
-
+      
       for (i = 0; i < n; i++) {
 	if (! isspace(p[i])) {
 	  if      (idx == 0) subs[len++] = p[i];
@@ -245,13 +473,64 @@ power_Read(char *powerfile, int doublesubs, int includegaps, POWER **ret_power, 
 	else { subs[len] = '\0'; len = 0; idx ++; }
       }
       prob[len] = '\0';
-      
-      power->subs[power->ns] = atof(subs);
-      power->prob[power->ns] = atof(prob);
-      if (power->prob[power->ns] < 0.)   power->prob[power->ns] = 0.;
-      if (power->prob[power->ns] > 1.) { power->prob[power->ns] = 1.; reached = TRUE; }
-      if (reached)                       power->prob[power->ns] = 1.;
-      
+ 
+      switch(power->type) {
+      case SINGLE_SUBS:
+	if (power->ns == 0) {
+	  ESL_ALLOC(power->subs, sizeof(double)*(power->ns+1));
+	  ESL_ALLOC(power->prob, sizeof(double)*(power->ns+1));
+	}
+	else {
+	  ESL_REALLOC(power->subs, sizeof(double)*(power->ns+1));
+	  ESL_REALLOC(power->prob, sizeof(double)*(power->ns+1));
+	}
+	
+	power->subs[power->ns] = atof(subs);
+	power->prob[power->ns] = atof(prob);
+	if (power->prob[power->ns] < 0.)   power->prob[power->ns] = 0.;
+	if (power->prob[power->ns] > 1.) { power->prob[power->ns] = 1.; reached = TRUE; }
+	if (reached)                       power->prob[power->ns] = 1.;
+  
+	break;
+      case JOIN_SUBS:
+	if (power->ns == 0) {
+	  ESL_ALLOC(power->subs_join, sizeof(double)*(power->ns+1));
+	  ESL_ALLOC(power->prob_join, sizeof(double)*(power->ns+1));
+	}
+	else {
+	  ESL_REALLOC(power->subs_join, sizeof(double)*(power->ns+1));
+	  ESL_REALLOC(power->prob_join, sizeof(double)*(power->ns+1));
+	}
+
+	power->subs_join[power->ns] = atof(subs);
+	power->prob_join[power->ns] = atof(prob);
+	if (power->prob_join[power->ns] < 0.)   power->prob_join[power->ns] = 0.;
+	if (power->prob_join[power->ns] > 1.) { power->prob_join[power->ns] = 1.; reached = TRUE; }
+	if (reached)                            power->prob_join[power->ns] = 1.;
+	
+	break;       
+      case DOUBLE_SUBS:
+	if (power->ns == 0) {
+	  ESL_ALLOC(power->subs_double, sizeof(double)*(power->ns+1));
+	  ESL_ALLOC(power->prob_double, sizeof(double)*(power->ns+1));
+	}
+	else {
+	  ESL_REALLOC(power->subs_double, sizeof(double)*(power->ns+1));
+	  ESL_REALLOC(power->prob_double, sizeof(double)*(power->ns+1));
+	}
+	
+	power->subs_double[power->ns] = atof(subs);
+	power->prob_double[power->ns] = atof(prob);
+	if (power->prob_double[power->ns] < 0.)   power->prob_double[power->ns] = 0.;
+	if (power->prob_double[power->ns] > 1.) { power->prob_double[power->ns] = 1.; reached = TRUE; }
+	if (reached)                              power->prob_double[power->ns] = 1.;
+	break;
+	
+      default:
+	esl_fatal("power_Read() missing powertype");
+	break;
+      }
+
       power->ns ++;
     }
 
@@ -279,8 +558,14 @@ power_Write(FILE *fp, POWER *power, int verbose)
 {
   int n;
 
-  for (n = 0; n < power->ns; n ++)
-    fprintf(fp, "%f\t%f\n", power->subs[n], power->prob[n]);
+  for (n = 0; n < power->ns; n ++) {
+    switch(power->type) {
+    case SINGLE_SUBS: fprintf(fp, "%f\t%f\n", power->subs[n],        power->prob[n]);        break;
+    case JOIN_SUBS:   fprintf(fp, "%f\t%f\n", power->subs_join[n],   power->prob_join[n]);   break;
+    case DOUBLE_SUBS: fprintf(fp, "%f\t%f\n", power->subs_double[n], power->prob_double[n]); break;
+    default:          esl_fatal("power_Read() missing powertype");                           break;
+    }
+  }
 }
 
 void
@@ -314,7 +599,7 @@ power_WriteFromHistograms(FILE *fp, POWERHIS *powerhis, int verbose)
 }
 
 void
-power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERHIS *powerhis, char *powerfile, int powerdouble, char *errbuf, int verbose)
+power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERHIS *powerhis, char *powerfile, int powerdouble, int powerjoin, char *errbuf, int verbose)
 {
   char *powersubspdf   = NULL;
   char *subspdf        = NULL;
@@ -331,14 +616,17 @@ power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERH
   plot_write_Histogram(subshisfile[1], powerhis->hsubs_ur);
     
   esl_sprintf(&subspdf, "%s.pdf", powerhisfile);
-  if (powerdouble) plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of double substitutions", FALSE, errbuf, verbose);
-  else             plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of substitutions",        FALSE, errbuf, verbose);
+  if      (powerdouble) plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of double substitutions", FALSE, errbuf, verbose);
+  else if (powerjoin)   plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of join substitutions",   FALSE, errbuf, verbose);
+  else                  plot_gplot_Histogram(gnuplot, subspdf, 2, subshisfile, "number of substitutions",        FALSE, errbuf, verbose);
   free(subspdf);
   
   esl_sprintf(&powersubspdf,  "%s.pdf", powerfile);
   if (powerhis->hsubs_bp->n > 0) {
     if (powerdouble) 
       status = plot_gplot_XYfile(gnuplot, powersubspdf,   powerfile, 1, 2, "number of double substitutions in basepairs", "fraction of covarying basepairs", errbuf);
+    else if (powerjoin) 
+      status = plot_gplot_XYfile(gnuplot, powersubspdf,   powerfile, 1, 2, "number of join substitutions in basepairs",   "fraction of covarying basepairs", errbuf);
     else
       status = plot_gplot_XYfile(gnuplot, powersubspdf,   powerfile, 1, 2, "number of substitutions in basepairs",        "fraction of covarying basepairs", errbuf);
     if (status != eslOK) printf("%s\n", errbuf);

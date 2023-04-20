@@ -235,7 +235,7 @@ main(int argc, char **argv)
     
     /* select submsa */
     if (cfg.submsa) {
-      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
+      if (msamanip_SelectSubset(cfg.r, cfg.submsa, &msa, NULL, TRUE, cfg.errbuf, cfg.verbose) != eslOK) { printf("%s\n", cfg.errbuf); esl_fatal(msg); }
     }
     
     /* outheader for all msa-output files */

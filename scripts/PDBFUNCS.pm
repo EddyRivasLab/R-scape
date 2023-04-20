@@ -439,9 +439,9 @@ sub contacts_from_pdb {
 
     my $stoname = $stofile;
     my $stodir = "";
-    if ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
-    my $famname = $stofile;
-    if ($famname =~ /\/([^\/]+)\.[^\/]+$/) { $famname = $1; }
+    if    ($stoname =~ /^(\S+)\/([^\/]+)\.[^\/]+$/) { $stodir = $1; $stoname = $2; }
+    elsif ($stoname =~ /^([^\/]+)\.[^\/]+$/)        {               $stoname = $1; }
+    my $famname = $stoname;
     
     my $hmmer       = "$rscapebin/../lib/hmmer";
     my $hmmbuild    = "$hmmer/src/hmmbuild";
@@ -772,7 +772,13 @@ sub find_pdbsq_in_ali {
     #system("/bin/echo $hmmsearch -E $eval --max          $hmm  $pdbsqfile \n");
     system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
     #system("more $hmmout\n");
-    if (hmmout_has_hit($hmmout) == 0) { return 0; }
+    if (hmmout_has_hit($hmmout) == 0) {
+	system("/bin/rm $pdbsqfile\n");
+	system("/bin/rm $allsqfile\n");
+	system("/bin/rm $hmmout\n");
+	system("/bin/rm $hmmali\n");
+	return 0; 
+    }
     print "$pdbname chain $chain found by homology\n";
   
     # there is a hit, now use hmmalign or cmalign to place the pdbsq in the alignment
@@ -785,7 +791,7 @@ sub find_pdbsq_in_ali {
     FUNCS::parse_stofile($stofile, \$nsq, \@sqname, \@sq, \$ss, \@ct, \$rfasq, 1);
     if ($nsq == 0) { print "msa $stofile has no sequences\n"; die; }
     
-    $allsqfile    = "$currdir/$stoname";
+    $allsqfile    = "$currdir/$stoname.all";
     $sqname[$nsq] = $pdbname;
     $sq[$nsq]     = $pdbsq;
     $nsq ++;
@@ -1484,7 +1490,6 @@ sub pdbseq_map {
     my $pdb_asq  = $asq[$nsq]; # the pdbsq was the last sequence aligned
     mapsq2msa($pdb_asq, $nsq, \@asq, $refsq, \@asq_msa, $refsq_msa, $from_pdb, $from_fam, $map_ref, $revmap_ref, 0);
 
-	    
     return $alen;
 }
 
@@ -1973,13 +1978,19 @@ sub pdb_contact_map {
 
     my $thissto = "$stofile.sto"; # the msa may not be stockholm formatted
     system("$reformat stockholm $stofile > $thissto\n");
-    
+   
     # make the hmm and cm models from the alignment
     my $hmm =           sto2hmm($rscapebin, $currdir, $pdbname, $thissto, $isrna);
     my $cm  = ($isrna)? sto2cm ($rscapebin, $currdir, $pdbname, $thissto, $noss) : "";
  
     my $alen = pdbseq_map($rscapebin, $currdir, $hmm, $cm, $thissto, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
-    if ($alen == 0) { return $alen; }
+    if ($alen == 0) {
+	system("/bin/rm $thissto\n");
+	system("/bin/rm $hmm\n");
+	if ($isrna) { system("/bin/rm $cm\n"); }
+	return $alen; 
+    }
+    
     for (my $x = 0; $x < $len; $x ++) {
 	printf COR "%d %d\n", $x+1, $map_ref->[$x]+1; 
 	#printf     "%d %d\n", $x+1, $map_ref->[$x]+1;
@@ -2076,7 +2087,7 @@ sub pdb_contact_map {
 	}
     }
 
-    ## If RNA, run rnaview to extract the bptypes
+     ## If RNA, run rnaview to extract the bptypes
     if ($isrna) { run_rnaview($rscapebin, $currdir, $hmm, $cm, $pdbfile, $thissto, $pdbname, $famname, $chain, $minL, \$ncnt, \@cnt); }
     contactlist_print(\*STDOUT, $ncnt, \@cnt, 1);
    
@@ -2093,7 +2104,7 @@ sub pdb_contact_map {
     system("/bin/rm $thissto\n");
     system("/bin/rm $hmm\n");
     if ($isrna) { system("/bin/rm $cm\n"); }
-    
+
     return $alen;
 }
 
@@ -2197,8 +2208,8 @@ sub run_rnaview {
 	elsif (/^(\d+)\s+(\d+)\s+$chain\s+\d+\s+(\S)\s+(\S)\s+\d+\s+$chain\s+(\S+)\s*$/) {
 	    my $i      = $1;
 	    my $j      = $2;
-	    my $posi   = $map[$i-1]+1;
-	    my $posj   = $map[$j-1]+1;
+	    my $posi   = ($i>0)? $map[$i-1]+1:0;
+	    my $posj   = ($j>0)?$map[$j-1]+1:0;
 	    my $chri   = aa_conversion($3, 1);
 	    my $chrj   = aa_conversion($4, 1);
 	    my $bptype = $5;

@@ -43,8 +43,7 @@ void ConnectOutlineStyleArcOrLineList_LineAndArcHelper(bool& joinError,AdobeGrap
 
 	// written with prevLine and nextArc, but you can flip things to get it the other way
 	bool intersects;
-	P2 intersectionSet;
-	double2 t1Set;
+	P2 intersectionSet; double2 t1Set;
 	AdobeGraphics::Point p1=prevLine.from;
 	AdobeGraphics::Point v1=prevLine.to-prevLine.from;
 	v1.MakeUnitVector();
@@ -1156,146 +1155,242 @@ void RnaDrawer::DrawVarStemAndTerminal(AdobeGraphics& pdf,size_t i,int numFakePa
 }
 void RnaDrawer::DrawAllBonds(AdobeGraphics& pdf,double radiusAroundNucCenter)
 {
-	const AdobeGraphics::Point genericNucBBox=drawingParams.genericNucBBox;
-	for (size_t i=0; i<posInfoVector.size(); i++) {
-		int pair=posInfoVector[i].pairsWith;
-		if (pair!=-1 && !posInfoVector[i].varHairpin) {
-			assertr(pair>=0 && pair<(int)(posInfoVector.size()));
-			if ((int)(i)<pair) { // don't do it twice
+  const AdobeGraphics::Point genericNucBBox=drawingParams.genericNucBBox;
+  for (size_t i=0; i<posInfoVector.size(); i++) {
+    int pair=posInfoVector[i].pairsWith;
+    if (pair!=-1 && !posInfoVector[i].varHairpin) {
+      assertr(pair>=0 && pair<(int)(posInfoVector.size()));
+      if ((int)(i)<pair) { // don't do it twice
+	
+	// left/right of pair
+	AdobeGraphics::Point p1=posInfoVector[i].pos;
+	AdobeGraphics::Point p2=posInfoVector[pair].pos;
 
-				// left/right of pair
-				AdobeGraphics::Point p1=posInfoVector[i].pos;
-				AdobeGraphics::Point p2=posInfoVector[pair].pos;
-
-				AdobeGraphics::Color bondColor=AdobeGraphics::Color_Black();
-
-				if (posInfoVector[i].varStem) {
-					DrawVarStemAndTerminal(pdf,i,posInfoVector[i].varStemNumFakePairs,radiusAroundNucCenter,false,otherDrawingStuff.skeletonMode); // skeletonMode --> already drawn var hairpin outline
-				}
-				else {
-
-					if (!otherDrawingStuff.doOneSeq && otherDrawingStuff.annotateBasePairs) {
-						// shade to indicate quality
-						StringToColorMap::const_iterator findIter;
-						findIter=drawingParams.pairQualityColorMap.find(posInfoVector[i].ss_cov);
-						if (findIter!=drawingParams.pairQualityColorMap.end()) {
-							AdobeGraphics::Color shade=findIter->second;
-
-							if (drawingParams.shadeBackgroundForBonds) {
-
-								bool kirstenStyle=true;
-
-								AdobeGraphics::Rect leftBBox(p1-genericNucBBox/2.0,p1+genericNucBBox/2.0);
-								AdobeGraphics::Rect rightBBox(p2-genericNucBBox/2.0,p2+genericNucBBox/2.0);
-
-								if (kirstenStyle) {
-									AdobeGraphics::Point toRight=(p2-p1);
-									toRight.MakeUnitVector();
-									AdobeGraphics::Point toUp=toRight*AdobeGraphics::Point::UnitDirectionVector(-90); // doesn't actually matter if it's really going down
-
-									int numDirVector=2;
-									AdobeGraphics::Point dirVectorArray[2]={
-										toRight,toUp
-									};
-									int numPoints=8;
-									AdobeGraphics::Point pointArray[8]={
-										leftBBox.GetTopLeft(),leftBBox.GetTopRight(),leftBBox.GetBottomLeft(),leftBBox.GetBottomRight(),
-										rightBBox.GetTopLeft(),rightBBox.GetTopRight(),rightBBox.GetBottomLeft(),rightBBox.GetBottomRight()
-									};
-									double minDist[2],maxDist[2];
-									for (int dir=0; dir<numDirVector; dir++) {
-										AdobeGraphics::Point v=dirVectorArray[dir];
-										minDist[dir]=+FLT_MAX;
-										maxDist[dir]=-FLT_MAX;
-										for (int pi=0; pi<numPoints; pi++) {
-											AdobeGraphics::Point p=pointArray[pi];
-											double dist=v.Dot(p);
-											minDist[dir]=std::min(minDist[dir],dist);
-											maxDist[dir]=std::max(maxDist[dir],dist);
-										}
-									}
-
-									double width=maxDist[0]-minDist[0];
-									double height=maxDist[1]-minDist[1];
-									double maxHeight=drawingParams.internucleotideLen - drawingParams.minPairShadeGap/2.0;
-									height=std::min(height,maxHeight);
-
-									AdobeGraphics::Point midpoint=(p1+p2)/2.0;
-									AdobeGraphics::Point topLeft=midpoint
-										+toUp*height/2.0
-										-toRight*width/2.0;
-									AdobeGraphics::Point rect[4]={
-										topLeft,topLeft+toRight*width,
-										topLeft+toRight*width-toUp*height,topLeft-toUp*height
-									};
-									pdf.FillPolygon(shade,rect,4);
-								}
-								else {
-									// old style, which looks wonky on diagonals
-									pdf.FillRectangle(shade,leftBBox);
-									pdf.FillRectangle(shade,rightBBox);
-
-									if (fabs(p1.GetX()-p2.GetX())<1e-6 || fabs(p1.GetY()-p2.GetY())<1e-6) {
-										// special code for horiz/vert case.  note: this chooses a good internal rect size that matches the bounding boxes of nucs
-
-										// dumb way assuming horizontal -- I'll fix this up later if necessary
-										AdobeGraphics::Rect between=AdobeGraphics::Rect::MakeRectFromInsaneData(leftBBox.GetTopRight(),rightBBox.GetBottomLeft());
-										pdf.FillRectangle(shade,between);
-									}
-									else {
-										AdobeGraphics::Point x=p2-p1;
-										x.MakeUnitVector();
-										AdobeGraphics::Point y=x*AdobeGraphics::Point(0,1);
-										AdobeGraphics::Point rect[4];
-										double d=std::min(genericNucBBox.GetX(),genericNucBBox.GetY())
-											/ 2.0;
-										rect[0]=p1-y*d;
-										rect[1]=p2-y*d;
-										rect[2]=p2+y*d;
-										rect[3]=p1+y*d;
-										pdf.FillPolygon(shade,rect,4);
-									}
-								}
-							}
-							else {
-								// shade bond
-								bondColor=shade;
-							}
-						}
-					}
-				}
-
-				// draw the actual bond marking
-				BondType bondType=BondType_WatsonCrick; // default bond type for consensus structure
-				if (otherDrawingStuff.doOneSeq && drawingParams.indicateOneseqWobblesAndNonCanonicals) {
-					bondType=BondType_NonCanonical;
-                    std::string l=posInfoVector[i].nuc;
-                    std::string r=posInfoVector[pair].nuc;
-                    if (l=="T") {
-                      l="U"; // deal with it as RNA, for convenience
-                    }
-                    if (r=="T") {
-                      r="U";
-                    }
-					if (
-						(l=="A" && r=="U") ||
-						(l=="C" && r=="G") ||
-						(l=="G" && r=="C") ||
-						(l=="U" && r=="A")) {
-							bondType=BondType_WatsonCrick;
-					}
-					if (
-						(l=="G" && r=="U") ||
-						(l=="U" && r=="G")) {
-							bondType=BondType_GU;
-					}
-				}
-				if (otherDrawingStuff.drawBasePairBonds) {
-					DrawBond(pdf,p1,p2,drawingParams,bondColor,bondType);
-				}
-			}
-		}
+	AdobeGraphics::Color bondColor=AdobeGraphics::Color_Black();
+	
+	if (posInfoVector[i].varStem) {
+	  DrawVarStemAndTerminal(pdf,i,posInfoVector[i].varStemNumFakePairs,radiusAroundNucCenter,false,otherDrawingStuff.skeletonMode); // skeletonMode --> already drawn var hairpin outline
 	}
+	else {
+
+	  //ER AddStart
+	  if (!otherDrawingStuff.doOneSeq && otherDrawingStuff.annotateBasePairs) {
+		
+	    // shade to indicate quality
+	    StringToColorMap::const_iterator findIter;
+	    findIter=drawingParams.pairQualityColorMap.find(posInfoVector[i].ss_cov_h);
+	    if (findIter!=drawingParams.pairQualityColorMap.end()) {
+	      AdobeGraphics::Color shade=findIter->second;
+
+	      if (drawingParams.shadeBackgroundForBonds) {
+		
+		bool kirstenStyle=true;
+
+		//ER adjusted to /1.0 instead of /2.0
+		AdobeGraphics::Rect leftBBox(p1-genericNucBBox/1.0,p1+genericNucBBox/1.0);  //ER divides by 1.0 instead of 2.0
+		AdobeGraphics::Rect rightBBox(p2-genericNucBBox/1.0,p2+genericNucBBox/1.0); //ER divides by 1.0 instead of 2.0
+		
+		if (kirstenStyle) {
+		  AdobeGraphics::Point toRight=(p2-p1);
+		  toRight.MakeUnitVector();
+		  AdobeGraphics::Point toUp=toRight*AdobeGraphics::Point::UnitDirectionVector(-90); // doesn't actually matter if it's really going down
+		  
+		  int numDirVector=2;
+		  AdobeGraphics::Point dirVectorArray[2]={
+		    toRight,toUp
+		  };
+		  int numPoints=8;
+		  AdobeGraphics::Point pointArray[8]={
+		    leftBBox.GetTopLeft(),leftBBox.GetTopRight(),leftBBox.GetBottomLeft(),leftBBox.GetBottomRight(),
+		    rightBBox.GetTopLeft(),rightBBox.GetTopRight(),rightBBox.GetBottomLeft(),rightBBox.GetBottomRight()
+		  };
+		  double minDist[2],maxDist[2];
+		  for (int dir=0; dir<numDirVector; dir++) {
+		    AdobeGraphics::Point v=dirVectorArray[dir];
+		    minDist[dir]=+FLT_MAX;
+		    maxDist[dir]=-FLT_MAX;
+		    for (int pi=0; pi<numPoints; pi++) {
+		      AdobeGraphics::Point p=pointArray[pi];
+		      double dist=v.Dot(p);
+		      minDist[dir]=std::min(minDist[dir],dist);
+		      maxDist[dir]=std::max(maxDist[dir],dist);
+		    }
+		  }
+		  
+		  double width=maxDist[0]-minDist[0];
+		  double height=maxDist[1]-minDist[1];
+		  double maxHeight=drawingParams.internucleotideLen - drawingParams.minPairShadeGap_h/2.0;
+		  height=std::min(height,maxHeight);
+		  
+		  AdobeGraphics::Point midpoint=(p1+p2)/2.0;
+		  AdobeGraphics::Point topLeft=midpoint
+		    +toUp*height/2.0
+		    -toRight*width/2.0;
+		  AdobeGraphics::Point rect[4]={
+		    topLeft,topLeft+toRight*width,
+		    topLeft+toRight*width-toUp*height,topLeft-toUp*height
+		  };
+		  pdf.FillPolygon(shade,rect,4);
+		}
+		else {
+		  // old style, which looks wonky on diagonals
+		  pdf.FillRectangle(shade,leftBBox);
+		  pdf.FillRectangle(shade,rightBBox);
+		  
+		  if (fabs(p1.GetX()-p2.GetX())<1e-6 || fabs(p1.GetY()-p2.GetY())<1e-6) {
+		    // special code for horiz/vert case.  note: this chooses a good internal rect size that matches the bounding boxes of nucs
+		    
+		    // dumb way assuming horizontal -- I'll fix this up later if necessary
+		    AdobeGraphics::Rect between=AdobeGraphics::Rect::MakeRectFromInsaneData(leftBBox.GetTopRight(),rightBBox.GetBottomLeft());
+		    pdf.FillRectangle(shade,between);
+		  }
+		  else {
+		    AdobeGraphics::Point x=p2-p1;
+		    x.MakeUnitVector();
+		    AdobeGraphics::Point y=x*AdobeGraphics::Point(0,1);
+		    AdobeGraphics::Point rect[4];
+		    double d=std::min(genericNucBBox.GetX(),genericNucBBox.GetY())
+		      / 2.0;
+		    rect[0]=p1-y*d;
+		    rect[1]=p2-y*d;
+		    rect[2]=p2+y*d;
+		    rect[3]=p1+y*d;
+		    pdf.FillPolygon(shade,rect,4);
+		  }
+		}
+	      }
+	      else {
+		// shade bond
+		bondColor=shade;
+	      }
+	    }
+	  }
+	  //ER AddEnd
+	  
+	  if (!otherDrawingStuff.doOneSeq && otherDrawingStuff.annotateBasePairs) {
+	    // shade to indicate quality
+	    StringToColorMap::const_iterator findIter;
+	    findIter=drawingParams.pairQualityColorMap.find(posInfoVector[i].ss_cov);
+	    if (findIter!=drawingParams.pairQualityColorMap.end()) {
+	      AdobeGraphics::Color shade=findIter->second;
+	      
+	      if (drawingParams.shadeBackgroundForBonds) {
+		
+		bool kirstenStyle=true;
+		
+		AdobeGraphics::Rect leftBBox(p1-genericNucBBox/2.0,p1+genericNucBBox/2.0);
+		AdobeGraphics::Rect rightBBox(p2-genericNucBBox/2.0,p2+genericNucBBox/2.0);
+		
+		if (kirstenStyle) {
+		  AdobeGraphics::Point toRight=(p2-p1);
+		  toRight.MakeUnitVector();
+		  AdobeGraphics::Point toUp=toRight*AdobeGraphics::Point::UnitDirectionVector(-90); // doesn't actually matter if it's really going down
+		  
+		  int numDirVector=2;
+		  AdobeGraphics::Point dirVectorArray[2]={
+		    toRight,toUp
+		  };
+		  int numPoints=8;
+		  AdobeGraphics::Point pointArray[8]={
+		    leftBBox.GetTopLeft(),leftBBox.GetTopRight(),leftBBox.GetBottomLeft(),leftBBox.GetBottomRight(),
+		    rightBBox.GetTopLeft(),rightBBox.GetTopRight(),rightBBox.GetBottomLeft(),rightBBox.GetBottomRight()
+		  };
+		  double minDist[2],maxDist[2];
+		  for (int dir=0; dir<numDirVector; dir++) {
+		    AdobeGraphics::Point v=dirVectorArray[dir];
+		    minDist[dir]=+FLT_MAX;
+		    maxDist[dir]=-FLT_MAX;
+		    for (int pi=0; pi<numPoints; pi++) {
+		      AdobeGraphics::Point p=pointArray[pi];
+		      double dist=v.Dot(p);
+		      minDist[dir]=std::min(minDist[dir],dist);
+		      maxDist[dir]=std::max(maxDist[dir],dist);
+		    }
+		  }
+		  
+		  double width=maxDist[0]-minDist[0];
+		  double height=maxDist[1]-minDist[1];
+		  double maxHeight=drawingParams.internucleotideLen - drawingParams.minPairShadeGap/2.0;
+		  height=std::min(height,maxHeight);
+		  
+		  AdobeGraphics::Point midpoint=(p1+p2)/2.0;
+		  AdobeGraphics::Point topLeft=midpoint
+		    +toUp*height/2.0
+		    -toRight*width/2.0;
+		  AdobeGraphics::Point rect[4]={
+		    topLeft,topLeft+toRight*width,
+		    topLeft+toRight*width-toUp*height,topLeft-toUp*height
+		  };
+		  pdf.FillPolygon(shade,rect,4);
+		}
+		else {
+		  // old style, which looks wonky on diagonals
+		  pdf.FillRectangle(shade,leftBBox);
+		  pdf.FillRectangle(shade,rightBBox);
+		  
+		  if (fabs(p1.GetX()-p2.GetX())<1e-6 || fabs(p1.GetY()-p2.GetY())<1e-6) {
+		    // special code for horiz/vert case.  note: this chooses a good internal rect size that matches the bounding boxes of nucs
+		    
+		    // dumb way assuming horizontal -- I'll fix this up later if necessary
+		    AdobeGraphics::Rect between=AdobeGraphics::Rect::MakeRectFromInsaneData(leftBBox.GetTopRight(),rightBBox.GetBottomLeft());
+		    pdf.FillRectangle(shade,between);
+		  }
+		  else {
+		    AdobeGraphics::Point x=p2-p1;
+		    x.MakeUnitVector();
+		    AdobeGraphics::Point y=x*AdobeGraphics::Point(0,1);
+		    AdobeGraphics::Point rect[4];
+		    double d=std::min(genericNucBBox.GetX(),genericNucBBox.GetY())
+		      / 2.0;
+		    rect[0]=p1-y*d;
+		    rect[1]=p2-y*d;
+		    rect[2]=p2+y*d;
+		    rect[3]=p1+y*d;
+		    pdf.FillPolygon(shade,rect,4);
+		  }
+		}
+	      }
+	      else {
+		// shade bond
+		bondColor=shade;
+	      }
+	    }
+	  }
+	  
+	  
+	}
+	
+	// draw the actual bond marking
+	BondType bondType=BondType_WatsonCrick; // default bond type for consensus structure
+	if (otherDrawingStuff.doOneSeq && drawingParams.indicateOneseqWobblesAndNonCanonicals) {
+	  bondType=BondType_NonCanonical;
+	  std::string l=posInfoVector[i].nuc;
+	  std::string r=posInfoVector[pair].nuc;
+	  if (l=="T") {
+	    l="U"; // deal with it as RNA, for convenience
+	  }
+	  if (r=="T") {
+	    r="U";
+	  }
+	  if (
+	      (l=="A" && r=="U") ||
+	      (l=="C" && r=="G") ||
+	      (l=="G" && r=="C") ||
+	      (l=="U" && r=="A")) {
+	    bondType=BondType_WatsonCrick;
+	  }
+	  if (
+	      (l=="G" && r=="U") ||
+	      (l=="U" && r=="G")) {
+	    bondType=BondType_GU;
+	  }
+	}
+	if (otherDrawingStuff.drawBasePairBonds) {
+	  DrawBond(pdf,p1,p2,drawingParams,bondColor,bondType);
+	}
+      }
+    }
+  }
 }
 bool RnaDrawer::OutlineNuc (int pos,bool outline)
 {
@@ -1610,6 +1705,7 @@ void RnaDrawer::Internal_StartDrawing (AdobeGraphics& pdf_,AdobeGraphics::Point 
 	}
 
 	// bonds
+	
 	DrawAllBonds(pdf,radiusAroundNucCenter);
 
 	// outline and inline nuc, just on one side (e.g. for pseudoknots and labels)

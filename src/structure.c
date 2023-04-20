@@ -1,4 +1,3 @@
-
 /* structure.c */
 
 #include "rscape_config.h"
@@ -39,14 +38,14 @@
 static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
 			     FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
-				      enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
+				      CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int   ct_add_if_nested(int *ct, int *ctmain, int L);
 static int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
 static int   ct_count_bpairs(int L, int *ct);
 static void  ct_dump(int L, int *ct);
 static int   ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, RMLIST **ret_rmlist, char *errbuf, int verbose);
+static int   ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method, enum cttype_e cttype, R3D *r3d, RMLIST **ret_rmlist, char *errbuf, int verbose);
 static int   ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose);
 
 static int   ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, int verbose);
@@ -63,6 +62,7 @@ static int  *sorted_order(const int *vec, int n);
 static int   nonWC(int i, int j, int L, double *pp, double thresh);
 static int   islone(int i, int j, int L, int *ct, int *covct);
 static int   trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose);
+static int   r3dlist_annotate(int s, CTLIST *r3dlist, CTLIST *ctlist, int *ret_howmany, char *errbuf, int verbose);
 
 // cascade covariation/variation constrain folding algorithm (CaCoFold)
 //
@@ -112,13 +112,13 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   // create a new contact list from the ct
   CMAP_ReuseCList(data->clist);
   status = ContactMap_FromCTList(data->clist, ctlist, data->clist->mind, data->msamap, NULL);
-    if (status != eslOK) goto ERROR;
+  if (status != eslOK) goto ERROR;
 
   /* redo the hitlist since the ct has now changed */
   corr_COVTYPEString(&covtype, data->mi->type, data->errbuf);
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
-  status = cov_CreateFOLDHitList(data, ctlist, ranklist, (data->statsmethod != NAIVE)? hitlist : NULL, &foldhitlist, &rmlist, covtype, threshtype);
+  status = cov_CreateFOLDHitList(data, ctlist, ranklist, (data->statsmethod != NAIVE)? hitlist : NULL, foldparam->r3d, &foldhitlist, &rmlist, covtype, threshtype);
   if (status != eslOK) goto ERROR;
   
   for (s = 0; s < ctlist->nct; s ++) {
@@ -129,7 +129,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   }
 
   /* R2R */
-  status = r2r_Depict(data->ofile->R2Rfoldfile, data->R2Rall, msa, ctlist, foldhitlist, TRUE, TRUE, data->errbuf, data->verbose);
+  status = r2r_Depict(data->r, data->ofile->R2Rfoldfile, data->R2Rall, msa, ctlist, foldhitlist, rmlist, data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
   
   /* DotPlots (pdf,svg) */
@@ -408,16 +408,571 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
 }
 
 
+
+int
+struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)
+{
+  int64_t  apos;                 /* alignment position */
+  int     *ct = NULL;
+  int      c;
+  int      status;
+
+  ESL_ALLOC(ct, sizeof(int) * (len+1));
+  esl_wuss2ct(ss, len, ct);
+
+  for (apos = 1; apos <= len; apos++) { 
+    if (!(useme[apos-1])) { 
+      if (ct[apos] != 0) ct[ct[apos]] = 0;
+      ct[apos] = 0;
+    }
+  }
+
+  /* All broken bps removed from ct, convert to WUSS SS string and overwrite SS */
+  esl_ct2wuss_er(ct, len, ss);
+
+  free(ct);
+  return eslOK;
+
+ ERROR: 
+  if (ct) free(ct);
+  return status; 
+}  
+int
+struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
+{
+  char *tag = NULL;
+  int   gc;
+  int   i;
+  int   status;
+
+  if (msa->ss_cons) {
+    if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status;
+
+    // remove broken pairs also from the additional SS_cons_1,... annotations if any
+    esl_sprintf(&tag, "SS_cons_");
+    for (gc = 0; gc < msa->ngc; gc ++) {
+      if (!strncmp(msa->gc_tag[gc], tag, 8)) {
+	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->gc[gc], errbuf, msa->alen, useme)) != eslOK) return status;
+      }
+    }
+  }
+  
+  /* per-seq SS annotation */
+  if (msa->ss) {
+    for(i = 0; i < msa->nseq; i++) { 
+      if (msa->ss[i]) {
+	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss[i], errbuf, msa->alen, useme)) != eslOK) return status; 
+      }
+    }
+  }
+
+  if (tag) free(tag);
+  return eslOK;
+
+ ERROR:
+  if (tag) free(tag);
+  return status;
+}
+
+
+int
+struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme)
+{
+  int     status;
+  int64_t opos;			/* position in original alignment */
+  int64_t npos;			/* position in new alignment      */
+  int     idx;			/* sequence index */
+  int     i;			/* markup index */
+
+  /* For RNA/DNA digital alignments only:
+   * Remove any basepairs from SS_cons and individual sequence SS
+   * for aln columns i,j for which useme[i-1] or useme[j-1] are FALSE 
+   */
+  if ( msa->abc && (msa->abc->type == eslRNA || msa->abc->type == eslDNA) &&
+       (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) return status;
+
+  /* Since we're minimizing, we can overwrite in place, within the msa
+   * we've already got. 
+   * opos runs all the way to msa->alen to include (and move) the \0
+   * string terminators (or sentinel bytes, in the case of digital mode)
+   */
+  for (opos = 0, npos = 0; opos <= msa->alen; opos++)
+    {
+      if (opos < msa->alen && useme[opos] == FALSE) continue;
+
+      if (npos != opos)	/* small optimization */
+	{
+	  /* The alignment, and per-residue annotations */
+	  for (idx = 0; idx < msa->nseq; idx++)
+	    {
+	      if (msa->flags & eslMSA_DIGITAL) /* watch off-by-one in dsq indexing */
+		msa->ax[idx][npos+1] = msa->ax[idx][opos+1];
+	      else
+		msa->aseq[idx][npos] = msa->aseq[idx][opos];
+	      if (msa->ss != NULL && msa->ss[idx] != NULL) msa->ss[idx][npos] = msa->ss[idx][opos];
+	      if (msa->sa != NULL && msa->sa[idx] != NULL) msa->sa[idx][npos] = msa->sa[idx][opos];
+	      if (msa->pp != NULL && msa->pp[idx] != NULL) msa->pp[idx][npos] = msa->pp[idx][opos];
+	      for (i = 0; i < msa->ngr; i++)
+		if (msa->gr[i][idx] != NULL)
+		  msa->gr[i][idx][npos] = msa->gr[i][idx][opos];
+	    }	  
+	  /* The per-column annotations */
+	  if (msa->ss_cons != NULL) msa->ss_cons[npos] = msa->ss_cons[opos];
+	  if (msa->sa_cons != NULL) msa->sa_cons[npos] = msa->sa_cons[opos];
+	  if (msa->pp_cons != NULL) msa->pp_cons[npos] = msa->pp_cons[opos];
+	  if (msa->rf      != NULL) msa->rf[npos]      = msa->rf[opos];
+	  if (msa->mm      != NULL) msa->mm[npos]      = msa->mm[opos];
+	  for (i = 0; i < msa->ngc; i++)
+	    msa->gc[i][npos] = msa->gc[i][opos];
+	}
+      npos++;
+    }
+  msa->alen = npos-1;	/* -1 because npos includes NUL terminators */
+  return eslOK;
+}
+
+
+
+CTLIST *
+struct_ctlist_Create(int nct, int L)
+{
+  CTLIST *ctlist = NULL;
+  int     n;
+  int     j;
+  int     status;
+
+  if (nct <= 0 || L <= 0) return NULL;
+  
+  ESL_ALLOC(ctlist, sizeof(CTLIST));
+  
+  ctlist->nct = nct;
+  ctlist->L   = L;
+
+  ESL_ALLOC(ctlist->cttype, sizeof(enum cttype_e) * nct);
+  ESL_ALLOC(ctlist->ctname, sizeof(char *)        * nct);
+  ESL_ALLOC(ctlist->ct,     sizeof(int  *)        * nct);
+  ESL_ALLOC(ctlist->covct,  sizeof(int  *)        * nct);
+  
+  for (n = 0;  n < nct; n ++) {
+    ESL_ALLOC(ctlist->ct[n],    sizeof(int) * (L+1));
+    ESL_ALLOC(ctlist->covct[n], sizeof(int) * (L+1));
+    
+    esl_vec_ISet(ctlist->ct[n],    ctlist->L+1, 0);
+    esl_vec_ISet(ctlist->covct[n], ctlist->L+1, 0);
+    ctlist->cttype[n] = CTTYPE_NONE;
+    ctlist->ctname[n] = NULL;
+  }
+
+  return ctlist;
+
+ ERROR:
+  return NULL;
+}
+
+void 
+struct_ctlist_Destroy(CTLIST *ctlist)
+{
+  int n;
+  
+  if (!ctlist) return;
+
+  if (ctlist->cttype) free(ctlist->cttype);
+  
+  if (ctlist->ctname) {
+    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ctname[n]) free(ctlist->ctname[n]);
+    free(ctlist->ctname);
+  }
+
+  if (ctlist->ct) {
+    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ct[n]) free(ctlist->ct[n]);
+    free(ctlist->ct);
+  }
+  if (ctlist->covct) {
+    for (n = 0; n < ctlist->nct; n ++) if (ctlist->covct[n]) free(ctlist->covct[n]);
+    free(ctlist->covct);
+  }
+  free(ctlist);
+}
+
+
+int
+struct_ctlist_Dump(CTLIST *ctlist)
+{
+  char *ss    = NULL;
+  char *covss = NULL;
+  int   nct;
+  int   L;
+  int   s;
+  int   i;
+  int   status;
+
+  if (!ctlist) return eslOK;
+  
+  nct = ctlist->nct;
+  L   = ctlist->L;
+
+  ESL_ALLOC(ss,    sizeof(char) * (L+1));
+  ESL_ALLOC(covss, sizeof(char) * (L+1));
+
+  for (s = 0; s < nct; s ++) {
+    if (ctlist->cttype[s] == CTTYPE_RM_HL ||
+	ctlist->cttype[s] == CTTYPE_RM_BL ||
+	ctlist->cttype[s] == CTTYPE_RM_IL   ) {
+      R3D_RMCTtoSS(ctlist->ct[s], ctlist->covct[s], L, ss);
+    }
+    else {
+      esl_ct2wuss_er(ctlist->ct[s], L, ss);
+      esl_ct2wuss(ctlist->covct[s], L, covss);
+    }
+    
+    if      (ctlist->cttype[s] == CTTYPE_NESTED) printf("NESTED  %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_NONWC)  printf("NONWC   %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_TRI)    printf("TRIPLET %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_SCOV)   printf("SCOV    %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_XCOV)   printf("XCOV    %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_PK)     printf("PK      %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_RM_HL)  printf("RM_HL   %s %s\n", ss, ctlist->ctname[s]);
+    else if (ctlist->cttype[s] == CTTYPE_RM_BL)  printf("RM_BL   %s %s\n", ss, ctlist->ctname[s]);
+    else if (ctlist->cttype[s] == CTTYPE_RM_IL)  printf("RM_IL   %s %s\n", ss, ctlist->ctname[s]);
+    else if (ctlist->cttype[s] == CTTYPE_NONE)   printf("NONE    %s\n        %s\n", ss, covss);
+  }
+    
+  free(ss); 
+  free(covss);
+  return eslOK;
+  
+ ERROR:
+  if (ss)    free(ss);
+  if (covss) free(covss);
+  return status;
+}
+
+RMLIST * 
+struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, char *errbuf, int verbose)
+{
+  RMLIST        *rmlist = NULL;
+  int           *ct;                             // the current structure
+  int           *cov;                            // the covs for the current structure
+  enum cttype_e  cttype;
+  int            L;
+  int            nct;
+  int            s;
+  int            status;
+
+  if (!ctlist) return eslOK;
+  
+  nct = ctlist->nct;
+  L   = ctlist->L;
+
+  // split the ctlist into helices
+  for (s = 0; s < nct; s ++) {
+    ct     = ctlist->ct[s];
+    cov    = ctlist->covct[s];
+    cttype = ctlist->cttype[s];
+    status = ct_split_rmlist(helix_unpaired, ct, cov, L, nagg, agg_method,cttype, r3d, &rmlist, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+  }
+
+  return rmlist;
+
+ ERROR:
+  return NULL;
+}
+
+CTLIST *
+struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose)
+{
+  CTLIST *ctlist = NULL;
+  CNT    *cnt;
+  int    *useme  = NULL;
+  int    *ct     = NULL;
+  int     L      = clist->L;
+  int     n_pks  = clist->npks;
+  int     n_bps  = clist->nbps;
+  int     n_wwc  = clist->nwwc;
+  int     n_nest = n_wwc - n_pks;
+  int     n_oth  = n_bps - n_wwc;
+  int     nbp;
+  int     n;
+  int     i, j;
+  int     s;
+  int     status;
+
+  if (L <= 0) return NULL;
+
+  // allocate a ct array
+  ESL_ALLOC(ct, sizeof(int) * (L+1));
+  esl_vec_ISet(ct, L+1,  0);
+
+  // start with the WC basepairs
+  // there may be WC that are incompatible
+  //
+  // allocate a useme array
+  if (n_wwc > 0) {
+    if (n_nest == 0) return NULL;
+    
+    ESL_ALLOC(useme, sizeof(int) * n_nest);
+    esl_vec_ISet(useme, n_nest, TRUE);
+    
+    while (esl_vec_IMax(useme, n_nest)) {
+      
+      // initialize
+      nbp = 0;
+      esl_vec_ISet(ct, L+1, 0);
+      
+      for (n = 0; n < clist->ncnt; n ++) {
+	cnt = &(clist->cnt[n]);
+	
+	if (cnt->bptype == WWc && !cnt->ispk) {
+	  i = cnt->i;
+	  j = cnt->j;
+	  
+	  // nothing waranties that the WC are non-overlapping
+	  if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
+	    useme[nbp] = FALSE;
+	    ct[i] = j; 
+	    ct[j] = i;	    
+	  }
+	  
+	  nbp ++;
+	}
+      }
+      
+      // add to the ctlist
+      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+      else         struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+    }
+
+    // now the possible pks
+    if (n_pks > 0) {
+      ESL_REALLOC(useme, sizeof(int) * n_pks);
+      esl_vec_ISet(useme, n_pks, TRUE);
+
+      while (esl_vec_IMax(useme, n_pks)) {
+	
+	// initialize
+	nbp = 0;
+	esl_vec_ISet(ct, L+1, 0);
+	
+	for (n = 0; n < clist->ncnt; n ++) {
+	  cnt = &(clist->cnt[n]);
+	  
+	  if (cnt->bptype == WWc  && cnt->ispk) {
+	    i = cnt->i;
+	    j = cnt->j;
+	    
+	    // nothing waranties that the WC are non-overlapping
+	    if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
+	      useme[nbp] = FALSE;
+	      ct[i] = j; 
+	      ct[j] = i;	    
+	    }	
+	    nbp ++;
+	  }
+	}
+	// add to the ctlist
+	struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+      }
+    }
+  }
+  else { // no basepairs annotated
+    ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+  }
+    
+  // follow with the rest of the nonWC basepairs
+  if (draw_nonWC && n_oth > 0) {
+    ESL_REALLOC(useme, sizeof(int) * n_oth);
+    esl_vec_ISet(useme, n_oth, TRUE);
+
+    while (esl_vec_IMax(useme, n_oth)) {
+
+      // initialize
+      nbp = 0;
+      esl_vec_ISet(ct, L+1, 0);
+      
+      for (n = 0; n < clist->ncnt; n ++) {
+	cnt = &(clist->cnt[n]);
+	
+	if (cnt->bptype > WWc && cnt->bptype < STACKED) {
+	  i = cnt->i;
+	  j = cnt->j;
+	  
+	  // nothing waranties that the WC are non-overlapping
+	  if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
+	    useme[nbp] = FALSE;
+	    ct[i] = j; 
+	    ct[j] = i;	    
+	  }	
+	  nbp ++;
+	}
+      }
+      
+      // add to the ctlist
+      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+      else         struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_NONWC, &ctlist, errbuf, verbose);
+    }
+  }
+    
+  // annotate triplets
+  status = ctlist_tricov(ctlist, verbose);
+  if (status != eslOK) goto ERROR;
+  
+  // assign ctnames
+  status = ctlist_assign_ctnames(ctlist, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+  
+  if (verbose) struct_ctlist_Dump(ctlist);
+
+  if (ct)    free(ct);
+  if (useme) free(useme);
+  return ctlist;
+
+ ERROR:
+  if (ct)     free(ct);
+  if (useme)  free(useme);
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  
+  return NULL;
+}
+
+int
+struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, char *errbuf, int verbose)
+{
+  CTLIST        *ctmain = NULL;
+  int           *ct;                             // the current structure
+  int           *cov;                            // the covs for the current structure
+  enum cttype_e  cttype;
+  int            nhelix_main[3];
+  int            nhelix_main_cov[3];
+  int            nhelix_main_ncov[3];
+  int            nhelix_alt[3];
+  int            nhelix_alt_cov[3];
+  int            nhelix_alt_ncov[3];  
+  int            nhelix_tot_main      = 0;
+  int            nhelix_tot_main_cov  = 0;
+  int            nhelix_tot_main_ncov = 0;
+  int            nhelix_tot_alt       = 0;
+  int            nhelix_tot_alt_cov   = 0;
+  int            nhelix_tot_alt_ncov  = 0;
+  int            nct;
+  int            L;
+  int            nbps;
+  int            ncov;
+  int            s;
+  int            h;
+  int            status;
+
+  if (!ctlist) return eslOK;
+  
+  nct = ctlist->nct;
+  L   = ctlist->L;
+
+  // split the core secondary structure (s=0) into helices
+  ct     = ctlist->ct[0];
+  cov    = ctlist->covct[0];
+  cttype = ctlist->cttype[0];
+  status = ct_split_helices(foldparam->helix_unpaired, ct, cov, L, cttype, &ctmain, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  // get stats for all main helices
+  for (h = 0; h < 3; h ++) {
+    nhelix_main[h]      = 0;
+    nhelix_main_cov[h]  = 0;
+    nhelix_main_ncov[h] = 0;
+  }
+  for (s = 0; s < ctmain->nct; s ++) {
+    ct     = ctmain->ct[s];
+    cov    = ctmain->covct[s];
+    cttype = ctlist->cttype[s];
+
+    nbps = ct_count_bpairs(L, ct);
+    ncov = ctlist_helix_ncov(foldparam, L, ct, cov);
+    if (nbps == 0) ESL_XFAIL(eslFAIL, errbuf, "struct_ctlist_HelixStats() helix without bpairs");
+
+    if      (nbps == 1) {
+      nhelix_main[0]      ++;
+      nhelix_main_ncov[0] += ncov;
+      nhelix_main_cov[0]  += (ncov > 0)? 1 : 0;
+    }
+    else if (nbps == 2) {
+      nhelix_main[1]      ++;
+      nhelix_main_ncov[1] += ncov;
+      nhelix_main_cov[1]  += (ncov > 0)? 1 : 0;
+    }
+    else if (nbps > 2) {
+      nhelix_main[2]      ++;
+      nhelix_main_ncov[2] += ncov;
+      nhelix_main_cov[2]  += (ncov > 0)? 1 : 0;
+    }
+    
+    nhelix_tot_main      ++;
+    nhelix_tot_main_ncov += ncov;
+    nhelix_tot_main_cov  += (ncov > 0)? 1 : 0;
+  }
+    
+  // the rest of the structure (s>0) is already splitted in helices
+  for (h = 0; h < 3; h ++) {
+    nhelix_alt[h]      = 0;
+    nhelix_alt_cov[h]  = 0;
+    nhelix_alt_ncov[h] = 0;
+  }
+  for (s = 1; s < nct; s ++) {
+    ct  = ctlist->ct[s];
+    cov = ctlist->covct[s];
+
+    nbps = ct_count_bpairs(L, ct);
+    ncov = ctlist_helix_ncov(foldparam, L, ct, cov);
+    if (nbps == 0) ESL_XFAIL(eslFAIL, errbuf, "struct_ctlist_HelixStats() helix without bpairs");
+
+    if      (nbps == 1) {
+      nhelix_alt[0]      ++;
+      nhelix_alt_ncov[0] += ncov;
+      nhelix_alt_cov[0]  += (ncov > 0)? 1 : 0;
+    }
+    else if (nbps == 2) {
+      nhelix_alt[1]      ++;
+      nhelix_alt_ncov[1] += ncov;
+      nhelix_alt_cov[1]  += (ncov > 0)? 1 : 0;
+    }
+    else if (nbps > 2) {
+      nhelix_alt[2]      ++;
+      nhelix_alt_ncov[2] += ncov;
+      nhelix_alt_cov[2]  += (ncov > 0)? 1 : 0;
+    }
+
+    nhelix_tot_alt      ++;
+    nhelix_tot_alt_ncov += ncov;
+    nhelix_tot_alt_cov  += (ncov > 0)? 1 : 0;
+  }
+
+  printf("# Main Helices         %d covary %d ncovs %d\n", nhelix_tot_main, nhelix_tot_main_cov, nhelix_tot_main_ncov);
+  printf("# Main Helices  1 bp   %d covary %d ncovs %d\n", nhelix_main[0],  nhelix_main_cov[0],  nhelix_main_ncov[0]);
+  printf("# Main Helices  2 bp   %d covary %d ncovs %d\n", nhelix_main[1],  nhelix_main_cov[1],  nhelix_main_ncov[1]);
+  printf("# Main Helices >2 bp   %d covary %d ncovs %d\n", nhelix_main[2],  nhelix_main_cov[2],  nhelix_main_ncov[2]);
+  printf("# Alt  Helices         %d covary %d ncovs %d\n", nhelix_tot_alt,  nhelix_tot_alt_cov,  nhelix_tot_alt_ncov);
+  printf("# Alt  Helices  1 bp   %d covary %d ncovs %d\n", nhelix_alt[0],   nhelix_alt_cov[0],   nhelix_alt_ncov[0]);
+  printf("# Alt  Helices  2 bp   %d covary %d ncovs %d\n", nhelix_alt[1],   nhelix_alt_cov[1],   nhelix_alt_ncov[1]);
+  printf("# Alt  Helices >2 bp   %d covary %d ncovs %d\n", nhelix_alt[2],   nhelix_alt_cov[2],   nhelix_alt_ncov[2]);
+
+  struct_ctlist_Destroy(ctmain);
+  return eslOK;
+
+ ERROR:
+  if (ctmain) struct_ctlist_Destroy(ctmain);
+  return status;
+}
+
 // take the ctlist and convert to octlist in the coordinates of the original alignment
 // using the map function msamap
 int
-struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose)
+struct_ctlist_MAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose)
 {
   CTLIST   *octlist = NULL;
   char    **sslist  = NULL;
   int      *ct;
   char     *oss;
   int      *oct;
+  int      *ocovct;
   int       nct;
   int       blqsize = 60;
   int       s;
@@ -425,7 +980,7 @@ struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, c
   int       status;
 
   if (!ctlist) return eslOK;
-  
+
   // initialized
   nct = ctlist->nct;
 
@@ -442,10 +997,10 @@ struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, c
   //
   for (s = 0; s < nct; s ++) {
 
-    if (s == 0) octlist->cttype[s] = CTTYPE_NESTED;
-    else 	octlist->cttype[s] = CTTYPE_PK;
+    octlist->cttype[s] = ctlist->cttype[s];
 
-    oct = octlist->ct[s];
+    oct    = octlist->ct[s];
+    ocovct = octlist->covct[s];
     
     ESL_ALLOC(sslist[s],  sizeof(char) * (OL+1));
     oss = sslist[s];
@@ -454,11 +1009,17 @@ struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, c
     esl_vec_ISet(oct, OL+1, 0); // initialize the oct
     
     // use the mapping to create the oct from ct
-    for (i = 0; i < L; i++) 
-      if (ct[i+1] > 0) oct[msamap[i]+1] = msamap[ct[i+1]-1]+1;
-     
+    for (i = 0; i < L; i++) {
+      if (ct[i+1] > 0) oct[msamap[i]+1] = msamap[ct[i+1]-1]+1;      // a helix
+      if (ct[i+1] < 0) oct[msamap[i]+1] = ct[i+1];                  // an RM
+    }
+    
     // the structure in the coordenates of the original alignment
-    esl_ct2wuss(oct, OL, oss);
+    if (octlist->cttype[s] == CTTYPE_RM_HL ||
+	octlist->cttype[s] == CTTYPE_RM_BL ||
+	octlist->cttype[s] == CTTYPE_RM_IL   ) R3D_RMCTtoSS(oct, ocovct, OL, oss);
+    else 
+      esl_ct2wuss_er(oct, OL, oss);
   }
   if (fp)      struct_write_ss(fp,     blqsize, nct, sslist);
   if (verbose) struct_write_ss(stdout, blqsize, nct, sslist);
@@ -482,12 +1043,122 @@ struct_CTMAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octlist, c
   return status;
 }
 
+int 
+struct_ctlist_Realloc(CTLIST *ctlist, int nct)
+{
+  int n;
+  int status;
+  
+  if (nct <= ctlist->nct) return eslOK;
+  
+  ESL_REALLOC(ctlist->cttype, sizeof(enum cttype_e) * nct);
+  ESL_REALLOC(ctlist->ctname, sizeof(char *)        * nct);
+  ESL_REALLOC(ctlist->ct,     sizeof(int  *)        * nct);
+  ESL_REALLOC(ctlist->covct,  sizeof(int  *)        * nct);
+  
+  for (n = ctlist->nct;  n < nct; n ++) {
+    ESL_ALLOC(ctlist->ct[n],    sizeof(int) * (ctlist->L+1));
+    ESL_ALLOC(ctlist->covct[n], sizeof(int) * (ctlist->L+1));
+
+    esl_vec_ISet(ctlist->ct[n],    ctlist->L+1, 0);
+    esl_vec_ISet(ctlist->covct[n], ctlist->L+1, 0);
+    ctlist->cttype[n] = CTTYPE_NONE;
+    ctlist->ctname[n] = NULL;
+  }
+  
+  ctlist->nct = nct;
+  
+  return eslOK;
+
+ ERROR:
+  return eslFAIL;
+}
+
+
+COVLIST *
+struct_covlist_Create(int n)
+{
+  COVLIST *covlist = NULL;
+  int      c;
+  int      status;
+
+  ESL_ALLOC(covlist, sizeof(COVLIST));
+  
+  covlist->n   = n;
+  covlist->cov = NULL;
+  if (n > 0) ESL_ALLOC(covlist->cov, sizeof(COV) * n);
+    
+  // initialize to impossible values
+  for (c = 0; c < n; c ++) {
+    covlist->cov[c].i     = 0;
+    covlist->cov[c].j     = 0;
+    covlist->cov[c].nsubs = 0;
+    covlist->cov[c].power = 0;
+    covlist->cov[c].score = 0;
+    covlist->cov[c].isbp  = FALSE;
+  }
+  return covlist;
+
+ ERROR:
+  return NULL;
+}
+
+void 
+struct_covlist_Destroy(COVLIST *covlist)
+{
+  if (!covlist) return;
+  if (covlist->cov) free(covlist->cov);
+  free(covlist);
+}
+
+
+void
+struct_covlist_Dump(COVLIST *covlist)
+{
+  int c;
+
+  printf("i  j  nsubs  power  score   isbp\n");
+  for (c = 0; c < covlist->n; c ++)
+    printf("%lld %lld   %lld %.4f %.4f   %d\n",
+	   covlist->cov[c].i, covlist->cov[c].j, covlist->cov[c].nsubs,
+	   covlist->cov[c].power, covlist->cov[c].score, covlist->cov[c].isbp); 
+}
+
+int 
+struct_covlist_Realloc(COVLIST *covlist, int n)
+{
+  int c;
+  int status;
+  
+  if (n <= covlist->n) return eslOK;
+  
+  if (!covlist->cov) ESL_ALLOC  (covlist->cov, sizeof(COV) * n);
+  else               ESL_REALLOC(covlist->cov, sizeof(COV) * n);
+  
+  // initialize to impossible values
+  for (c = covlist->n; c < n; c ++) {
+    covlist->cov[c].i     = 0;
+    covlist->cov[c].j     = 0;
+    covlist->cov[c].nsubs = 0;
+    covlist->cov[c].power = 0;
+    covlist->cov[c].score = 0;
+    covlist->cov[c].isbp  = FALSE;
+  }
+ 
+  covlist->n = n;
+
+  return eslOK;
+
+ ERROR:
+  return eslFAIL;
+}
+
 // take a ct vector possibly with pseudoknots, and separate
 // into one ct without pseudoknots and additional ct's one with
 // each of the pseudoknots
 // if a ctlist already exist, it adds to it, otherwise it creates it
 CTLIST *
-struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose)
+struct_ctlist_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose)
 {
   CTLIST   *ctlist = NULL;
   char     *ss1    = NULL;  // the ct structure
@@ -501,7 +1172,7 @@ struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose)
   ESL_ALLOC(ss1, sizeof(char) * (L+1));
   ESL_ALLOC(ss2, sizeof(char) * (L+1));
 
-  esl_ct2wuss(ct, L, ss1);
+  esl_ct2wuss_er(ct, L, ss1);
   if (verbose) printf("given ss\n%s\n", ss1);
   
   // the nested structure
@@ -562,7 +1233,7 @@ struct_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose)
 }
 
 int
-struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose)
+struct_ctlist_AddCT(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST *ctlist   = *ret_ctlist;
   CTLIST *minilist = NULL;
@@ -573,15 +1244,15 @@ struct_AddCT2CTList(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CT
 
   if (verbose) {
     ESL_ALLOC(ss, sizeof(char)  * (L+1)); 
-    esl_ct2wuss(ct, L, ss);
+    esl_ct2wuss_er(ct, L, ss);
     printf("Add ss:%s\n", ss);
   }
 
   // the ct may have pseudonots, split
-  minilist = struct_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+  minilist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
   if (!minilist) return eslOK;
   
-  // it is possible that the are nonWC basepairs and struct_SplitCT() has not been used
+  // it is possible that the are nonWC basepairs and struct_ctlist_SplitCT() has not been used
   onct = (ctlist)? ctlist->nct : 0;
   if (!ctlist) ctlist = struct_ctlist_Create(minilist->nct, L);
   else         struct_ctlist_Realloc(ctlist, onct+minilist->nct);
@@ -756,678 +1427,43 @@ struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose)
 }
 
 
-int
-struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)
-{
-  int64_t  apos;                 /* alignment position */
-  int     *ct = NULL;
-  int      c;
-  int      status;
-
-  ESL_ALLOC(ct, sizeof(int) * (len+1));
-  esl_wuss2ct(ss, len, ct);
-
-  for (apos = 1; apos <= len; apos++) { 
-    if (!(useme[apos-1])) { 
-      if (ct[apos] != 0) ct[ct[apos]] = 0;
-      ct[apos] = 0;
-    }
-  }
-
-  /* All broken bps removed from ct, convert to WUSS SS string and overwrite SS */
-  esl_ct2wuss(ct, len, ss);
-
-  free(ct);
-  return eslOK;
-
- ERROR: 
-  if (ct) free(ct);
-  return status; 
-}  
-int
-struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
-{
-  char *tag = NULL;
-  int   gc;
-  int   i;
-  int   status;
-
-  if (msa->ss_cons) {
-    if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status;
-
-    // remove broken pairs also from the additional SS_cons_1,... annotations if any
-    esl_sprintf(&tag, "SS_cons_");
-    for (gc = 0; gc < msa->ngc; gc ++) {
-      if (!strncmp(msa->gc_tag[gc], tag, 8)) {
-	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->gc[gc], errbuf, msa->alen, useme)) != eslOK) return status;
-      }
-    }
-  }
-  
-  /* per-seq SS annotation */
-  if (msa->ss) {
-    for(i = 0; i < msa->nseq; i++) { 
-      if (msa->ss[i]) {
-	if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss[i], errbuf, msa->alen, useme)) != eslOK) return status; 
-      }
-    }
-  }
-
-  if (tag) free(tag);
-  return eslOK;
-
- ERROR:
-  if (tag) free(tag);
-  return status;
-}
-
-
-int
-struct_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme)
-{
-  int     status;
-  int64_t opos;			/* position in original alignment */
-  int64_t npos;			/* position in new alignment      */
-  int     idx;			/* sequence index */
-  int     i;			/* markup index */
-
-  /* For RNA/DNA digital alignments only:
-   * Remove any basepairs from SS_cons and individual sequence SS
-   * for aln columns i,j for which useme[i-1] or useme[j-1] are FALSE 
-   */
-  if ( msa->abc && (msa->abc->type == eslRNA || msa->abc->type == eslDNA) &&
-       (status = struct_RemoveBrokenBasepairs(msa, errbuf, useme)) != eslOK) return status;
-
-  /* Since we're minimizing, we can overwrite in place, within the msa
-   * we've already got. 
-   * opos runs all the way to msa->alen to include (and move) the \0
-   * string terminators (or sentinel bytes, in the case of digital mode)
-   */
-  for (opos = 0, npos = 0; opos <= msa->alen; opos++)
-    {
-      if (opos < msa->alen && useme[opos] == FALSE) continue;
-
-      if (npos != opos)	/* small optimization */
-	{
-	  /* The alignment, and per-residue annotations */
-	  for (idx = 0; idx < msa->nseq; idx++)
-	    {
-	      if (msa->flags & eslMSA_DIGITAL) /* watch off-by-one in dsq indexing */
-		msa->ax[idx][npos+1] = msa->ax[idx][opos+1];
-	      else
-		msa->aseq[idx][npos] = msa->aseq[idx][opos];
-	      if (msa->ss != NULL && msa->ss[idx] != NULL) msa->ss[idx][npos] = msa->ss[idx][opos];
-	      if (msa->sa != NULL && msa->sa[idx] != NULL) msa->sa[idx][npos] = msa->sa[idx][opos];
-	      if (msa->pp != NULL && msa->pp[idx] != NULL) msa->pp[idx][npos] = msa->pp[idx][opos];
-	      for (i = 0; i < msa->ngr; i++)
-		if (msa->gr[i][idx] != NULL)
-		  msa->gr[i][idx][npos] = msa->gr[i][idx][opos];
-	    }	  
-	  /* The per-column annotations */
-	  if (msa->ss_cons != NULL) msa->ss_cons[npos] = msa->ss_cons[opos];
-	  if (msa->sa_cons != NULL) msa->sa_cons[npos] = msa->sa_cons[opos];
-	  if (msa->pp_cons != NULL) msa->pp_cons[npos] = msa->pp_cons[opos];
-	  if (msa->rf      != NULL) msa->rf[npos]      = msa->rf[opos];
-	  if (msa->mm      != NULL) msa->mm[npos]      = msa->mm[opos];
-	  for (i = 0; i < msa->ngc; i++)
-	    msa->gc[i][npos] = msa->gc[i][opos];
-	}
-      npos++;
-    }
-  msa->alen = npos-1;	/* -1 because npos includes NUL terminators */
-  return eslOK;
-}
-
-CTLIST *
-struct_Contacts2CTList(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose)
-{
-  CTLIST *ctlist = NULL;
-  CNT    *cnt;
-  int    *useme  = NULL;
-  int    *ct     = NULL;
-  int     L      = clist->L;
-  int     n_pks  = clist->npks;
-  int     n_bps  = clist->nbps;
-  int     n_wwc  = clist->nwwc;
-  int     n_nest = n_wwc - n_pks;
-  int     n_oth  = n_bps - n_wwc;
-  int     nbp;
-  int     n;
-  int     i, j;
-  int     s;
-  int     status;
-
-  if (L <= 0) return NULL;
-
-  // allocate a ct array
-  ESL_ALLOC(ct, sizeof(int) * (L+1));
-  esl_vec_ISet(ct, L+1,  0);
-
-  // start with the WC basepairs
-  // there may be WC that are incompatible
-  //
-  // allocate a useme array
-  if (n_wwc > 0) {
-    if (n_nest == 0) return NULL;
-    
-    ESL_ALLOC(useme, sizeof(int) * n_nest);
-    esl_vec_ISet(useme, n_nest, TRUE);
-    
-    while (esl_vec_IMax(useme, n_nest)) {
-      
-      // initialize
-      nbp = 0;
-      esl_vec_ISet(ct, L+1, 0);
-      
-      for (n = 0; n < clist->ncnt; n ++) {
-	cnt = &(clist->cnt[n]);
-	
-	if (cnt->bptype == WWc && !cnt->ispk) {
-	  i = cnt->i;
-	  j = cnt->j;
-	  
-	  // nothing waranties that the WC are non-overlapping
-	  if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
-	    useme[nbp] = FALSE;
-	    ct[i] = j; 
-	    ct[j] = i;	    
-	  }
-	  
-	  nbp ++;
-	}
-      }
-      
-      // add to the ctlist
-      if (!ctlist) ctlist = struct_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
-      else         struct_AddCT2CTList(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
-    }
-
-    // now the possible pks
-    if (n_pks > 0) {
-      ESL_REALLOC(useme, sizeof(int) * n_pks);
-      esl_vec_ISet(useme, n_pks, TRUE);
-
-      while (esl_vec_IMax(useme, n_pks)) {
-	
-	// initialize
-	nbp = 0;
-	esl_vec_ISet(ct, L+1, 0);
-	
-	for (n = 0; n < clist->ncnt; n ++) {
-	  cnt = &(clist->cnt[n]);
-	  
-	  if (cnt->bptype == WWc  && cnt->ispk) {
-	    i = cnt->i;
-	    j = cnt->j;
-	    
-	    // nothing waranties that the WC are non-overlapping
-	    if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
-	      useme[nbp] = FALSE;
-	      ct[i] = j; 
-	      ct[j] = i;	    
-	    }	
-	    nbp ++;
-	  }
-	}
-	// add to the ctlist
-	struct_AddCT2CTList(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
-      }
-    }
-  }
-  else { // no basepairs annotated
-    ctlist = struct_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
-  }
-    
-  // follow with the rest of the nonWC basepairs
-  if (draw_nonWC && n_oth > 0) {
-    ESL_REALLOC(useme, sizeof(int) * n_oth);
-    esl_vec_ISet(useme, n_oth, TRUE);
-
-    while (esl_vec_IMax(useme, n_oth)) {
-
-      // initialize
-      nbp = 0;
-      esl_vec_ISet(ct, L+1, 0);
-      
-      for (n = 0; n < clist->ncnt; n ++) {
-	cnt = &(clist->cnt[n]);
-	
-	if (cnt->bptype > WWc && cnt->bptype < STACKED) {
-	  i = cnt->i;
-	  j = cnt->j;
-	  
-	  // nothing waranties that the WC are non-overlapping
-	  if (useme[nbp] && ct[i] == 0 &&  ct[j] == 0) {
-	    useme[nbp] = FALSE;
-	    ct[i] = j; 
-	    ct[j] = i;	    
-	  }	
-	  nbp ++;
-	}
-      }
-      
-      // add to the ctlist
-      if (!ctlist) ctlist = struct_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
-      else         struct_AddCT2CTList(helix_unpaired, ct, L, CTTYPE_NONWC, &ctlist, errbuf, verbose);
-    }
-  }
-    
-  // annotate triplets
-  status = ctlist_tricov(ctlist, verbose);
-  if (status != eslOK) goto ERROR;
-  
-  // assign ctnames
-  status = ctlist_assign_ctnames(ctlist, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
-  
-  if (verbose) struct_ctlist_Dump(ctlist);
-
-  if (ct)    free(ct);
-  if (useme) free(useme);
-  return ctlist;
-
- ERROR:
-  if (ct)     free(ct);
-  if (useme)  free(useme);
-  if (ctlist) struct_ctlist_Destroy(ctlist);
-  
-  return NULL;
-}
-
-
-CTLIST *
-struct_ctlist_Create(int nct, int L)
-{
-  CTLIST *ctlist = NULL;
-  int     n;
-  int     j;
-  int     status;
-
-  if (nct <= 0 || L <= 0) return NULL;
-  
-  ESL_ALLOC(ctlist, sizeof(CTLIST));
-  
-  ctlist->nct = nct;
-  ctlist->L   = L;
-
-  ESL_ALLOC(ctlist->cttype, sizeof(enum cttype_e) * nct);
-  ESL_ALLOC(ctlist->ctname, sizeof(char *)        * nct);
-  ESL_ALLOC(ctlist->ct,     sizeof(int  *)        * nct);
-  ESL_ALLOC(ctlist->covct,  sizeof(int  *)        * nct);
-  
-  for (n = 0;  n < nct; n ++) {
-    ESL_ALLOC(ctlist->ct[n],    sizeof(int) * (L+1));
-    ESL_ALLOC(ctlist->covct[n], sizeof(int) * (L+1));
-    
-    esl_vec_ISet(ctlist->ct[n],    ctlist->L+1, 0);
-    esl_vec_ISet(ctlist->covct[n], ctlist->L+1, 0);
-    ctlist->cttype[n] = CTTYPE_NONE;
-    ctlist->ctname[n] = NULL;
-  }
-
-  return ctlist;
-
- ERROR:
-  return NULL;
-}
-
-void 
-struct_ctlist_Destroy(CTLIST *ctlist)
-{
-  int n;
-  
-  if (!ctlist) return;
-
-  if (ctlist->cttype) free(ctlist->cttype);
-  
-  if (ctlist->ctname) {
-    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ctname[n]) free(ctlist->ctname[n]);
-    free(ctlist->ctname);
-  }
-
-  if (ctlist->ct) {
-    for (n = 0; n < ctlist->nct; n ++) if (ctlist->ct[n]) free(ctlist->ct[n]);
-    free(ctlist->ct);
-  }
-  if (ctlist->covct) {
-    for (n = 0; n < ctlist->nct; n ++) if (ctlist->covct[n]) free(ctlist->covct[n]);
-    free(ctlist->covct);
-  }
-  free(ctlist);
-}
-
-
-int
-struct_ctlist_Dump(CTLIST *ctlist)
-{
-  char *ss    = NULL;
-  char *covss = NULL;
-  int   nct;
-  int   L;
-  int   s;
-  int   i;
-  int   status;
-
-  if (!ctlist) return eslOK;
-  
-  nct = ctlist->nct;
-  L   = ctlist->L;
-
-  ESL_ALLOC(ss,    sizeof(char) * (L+1));
-  ESL_ALLOC(covss, sizeof(char) * (L+1));
-  
-  for (s = 0; s < nct; s ++) {
-    esl_ct2wuss(ctlist->ct[s],    L, ss);
-    esl_ct2wuss(ctlist->covct[s], L, covss);
-    if      (ctlist->cttype[s] == CTTYPE_NESTED) printf("NESTED  %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_NONWC)  printf("NONWC   %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_TRI)    printf("TRIPLET %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_SCOV)   printf("SCOV    %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_XCOV)   printf("XCOV    %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_PK)     printf("PK      %s\n        %s\n", ss, covss);
-    else if (ctlist->cttype[s] == CTTYPE_NONE)   printf("        %s\n        %s\n", ss, covss);
-  }
-    
-  free(ss); 
-  free(covss);
-  return eslOK;
-  
- ERROR:
-  if (ss)    free(ss);
-  if (covss) free(covss);
-  return status;
-}
-
-RMLIST * 
-struct_rmlist_FromCTLIST(int helix_unpaired, CTLIST *ctlist, char *errbuf, int verbose)
-{
-  RMLIST        *rmlist = NULL;
-  int           *ct;                             // the current structure
-  int           *cov;                            // the covs for the current structure
-  enum cttype_e  cttype;
-  int            L;
-  int            nct;
-  int            s;
-  int            status;
-
-  if (!ctlist) return eslOK;
-  
-  nct = ctlist->nct;
-  L   = ctlist->L;
-
-  // split the ctlist into helices
-  for (s = 0; s < nct; s ++) {
-    ct     = ctlist->ct[s];
-    cov    = ctlist->covct[s];
-    cttype = ctlist->cttype[s];
-    status = ct_split_rmlist(helix_unpaired, ct, cov, L, cttype, &rmlist, errbuf, verbose);
-    if (status != eslOK) goto ERROR;
-  }
-
-  return rmlist;
-
- ERROR:
-  return NULL;
-}
-
-
-int
-struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, char *errbuf, int verbose)
-{
-  CTLIST        *ctmain = NULL;
-  int           *ct;                             // the current structure
-  int           *cov;                            // the covs for the current structure
-  enum cttype_e  cttype;
-  int            nhelix_main[3];
-  int            nhelix_main_cov[3];
-  int            nhelix_main_ncov[3];
-  int            nhelix_alt[3];
-  int            nhelix_alt_cov[3];
-  int            nhelix_alt_ncov[3];  
-  int            nhelix_tot_main      = 0;
-  int            nhelix_tot_main_cov  = 0;
-  int            nhelix_tot_main_ncov = 0;
-  int            nhelix_tot_alt       = 0;
-  int            nhelix_tot_alt_cov   = 0;
-  int            nhelix_tot_alt_ncov  = 0;
-  int            nct;
-  int            L;
-  int            nbps;
-  int            ncov;
-  int            s;
-  int            h;
-  int            status;
-
-  if (!ctlist) return eslOK;
-  
-  nct = ctlist->nct;
-  L   = ctlist->L;
-
-  // split the core secondary structure (s=0) into helices
-  ct     = ctlist->ct[0];
-  cov    = ctlist->covct[0];
-  cttype = ctlist->cttype[0];
-  status = ct_split_helices(foldparam->helix_unpaired, ct, cov, L, cttype, &ctmain, errbuf, verbose);
-  if (status != eslOK) goto ERROR;
-
-  // get stats for all main helices
-  for (h = 0; h < 3; h ++) {
-    nhelix_main[h]      = 0;
-    nhelix_main_cov[h]  = 0;
-    nhelix_main_ncov[h] = 0;
-  }
-  for (s = 0; s < ctmain->nct; s ++) {
-    ct     = ctmain->ct[s];
-    cov    = ctmain->covct[s];
-    cttype = ctlist->cttype[s];
-
-    nbps = ct_count_bpairs(L, ct);
-    ncov = ctlist_helix_ncov(foldparam, L, ct, cov);
-    if (nbps == 0) ESL_XFAIL(eslFAIL, errbuf, "struct_ctlist_HelixStats() helix without bpairs");
-
-    if      (nbps == 1) {
-      nhelix_main[0]      ++;
-      nhelix_main_ncov[0] += ncov;
-      nhelix_main_cov[0]  += (ncov > 0)? 1 : 0;
-    }
-    else if (nbps == 2) {
-      nhelix_main[1]      ++;
-      nhelix_main_ncov[1] += ncov;
-      nhelix_main_cov[1]  += (ncov > 0)? 1 : 0;
-    }
-    else if (nbps > 2) {
-      nhelix_main[2]      ++;
-      nhelix_main_ncov[2] += ncov;
-      nhelix_main_cov[2]  += (ncov > 0)? 1 : 0;
-    }
-    
-    nhelix_tot_main      ++;
-    nhelix_tot_main_ncov += ncov;
-    nhelix_tot_main_cov  += (ncov > 0)? 1 : 0;
-  }
-    
-  // the rest of the structure (s>0) is already splitted in helices
-  for (h = 0; h < 3; h ++) {
-    nhelix_alt[h]      = 0;
-    nhelix_alt_cov[h]  = 0;
-    nhelix_alt_ncov[h] = 0;
-  }
-  for (s = 1; s < nct; s ++) {
-    ct  = ctlist->ct[s];
-    cov = ctlist->covct[s];
-
-    nbps = ct_count_bpairs(L, ct);
-    ncov = ctlist_helix_ncov(foldparam, L, ct, cov);
-    if (nbps == 0) ESL_XFAIL(eslFAIL, errbuf, "struct_ctlist_HelixStats() helix without bpairs");
-
-    if      (nbps == 1) {
-      nhelix_alt[0]      ++;
-      nhelix_alt_ncov[0] += ncov;
-      nhelix_alt_cov[0]  += (ncov > 0)? 1 : 0;
-    }
-    else if (nbps == 2) {
-      nhelix_alt[1]      ++;
-      nhelix_alt_ncov[1] += ncov;
-      nhelix_alt_cov[1]  += (ncov > 0)? 1 : 0;
-    }
-    else if (nbps > 2) {
-      nhelix_alt[2]      ++;
-      nhelix_alt_ncov[2] += ncov;
-      nhelix_alt_cov[2]  += (ncov > 0)? 1 : 0;
-    }
-
-    nhelix_tot_alt      ++;
-    nhelix_tot_alt_ncov += ncov;
-    nhelix_tot_alt_cov  += (ncov > 0)? 1 : 0;
-  }
-
-  printf("# Main Helices         %d covary %d ncovs %d\n", nhelix_tot_main, nhelix_tot_main_cov, nhelix_tot_main_ncov);
-  printf("# Main Helices  1 bp   %d covary %d ncovs %d\n", nhelix_main[0],  nhelix_main_cov[0],  nhelix_main_ncov[0]);
-  printf("# Main Helices  2 bp   %d covary %d ncovs %d\n", nhelix_main[1],  nhelix_main_cov[1],  nhelix_main_ncov[1]);
-  printf("# Main Helices >2 bp   %d covary %d ncovs %d\n", nhelix_main[2],  nhelix_main_cov[2],  nhelix_main_ncov[2]);
-  printf("# Alt  Helices         %d covary %d ncovs %d\n", nhelix_tot_alt,  nhelix_tot_alt_cov,  nhelix_tot_alt_ncov);
-  printf("# Alt  Helices  1 bp   %d covary %d ncovs %d\n", nhelix_alt[0],   nhelix_alt_cov[0],   nhelix_alt_ncov[0]);
-  printf("# Alt  Helices  2 bp   %d covary %d ncovs %d\n", nhelix_alt[1],   nhelix_alt_cov[1],   nhelix_alt_ncov[1]);
-  printf("# Alt  Helices >2 bp   %d covary %d ncovs %d\n", nhelix_alt[2],   nhelix_alt_cov[2],   nhelix_alt_ncov[2]);
-
-  struct_ctlist_Destroy(ctmain);
-  return eslOK;
-
- ERROR:
-  if (ctmain) struct_ctlist_Destroy(ctmain);
-  return status;
-}
-
-int 
-struct_ctlist_Realloc(CTLIST *ctlist, int nct)
-{
-  int n;
-  int status;
-  
-  if (nct <= ctlist->nct) return eslOK;
-  
-  ESL_REALLOC(ctlist->cttype, sizeof(enum cttype_e) * nct);
-  ESL_REALLOC(ctlist->ctname, sizeof(char *)        * nct);
-  ESL_REALLOC(ctlist->ct,     sizeof(int  *)        * nct);
-  ESL_REALLOC(ctlist->covct,  sizeof(int  *)        * nct);
-  
-  for (n = ctlist->nct;  n < nct; n ++) {
-    ESL_ALLOC(ctlist->ct[n],    sizeof(int) * (ctlist->L+1));
-    ESL_ALLOC(ctlist->covct[n], sizeof(int) * (ctlist->L+1));
-
-    esl_vec_ISet(ctlist->ct[n],    ctlist->L+1, 0);
-    esl_vec_ISet(ctlist->covct[n], ctlist->L+1, 0);
-    ctlist->cttype[n] = CTTYPE_NONE;
-    ctlist->ctname[n] = NULL;
-  }
-  
-  ctlist->nct = nct;
-  
-  return eslOK;
-
- ERROR:
-  return eslFAIL;
-}
-
-
-COVLIST *
-struct_covlist_Create(int n)
-{
-  COVLIST *covlist = NULL;
-  int      c;
-  int      status;
-
-  ESL_ALLOC(covlist, sizeof(COVLIST));
-  
-  covlist->n   = n;
-  covlist->cov = NULL;
-  if (n > 0) ESL_ALLOC(covlist->cov, sizeof(COV) * n);
-    
-  // initialize to impossible values
-  for (c = 0; c < n; c ++) {
-    covlist->cov[c].i     = 0;
-    covlist->cov[c].j     = 0;
-    covlist->cov[c].nsubs = 0;
-    covlist->cov[c].power = 0;
-    covlist->cov[c].score = 0;
-    covlist->cov[c].isbp  = FALSE;
-  }
-  return covlist;
-
- ERROR:
-  return NULL;
-}
-
-void 
-struct_covlist_Destroy(COVLIST *covlist)
-{
-  if (!covlist) return;
-  if (covlist->cov) free(covlist->cov);
-  free(covlist);
-}
-
-
-void
-struct_covlist_Dump(COVLIST *covlist)
-{
-  int c;
-
-  printf("i  j  nsubs  power  score   isbp\n");
-  for (c = 0; c < covlist->n; c ++)
-    printf("%lld %lld   %lld %.4f %.4f   %d\n",
-	   covlist->cov[c].i, covlist->cov[c].j, covlist->cov[c].nsubs,
-	   covlist->cov[c].power, covlist->cov[c].score, covlist->cov[c].isbp); 
-}
-
-int 
-struct_covlist_Realloc(COVLIST *covlist, int n)
-{
-  int c;
-  int status;
-  
-  if (n <= covlist->n) return eslOK;
-  
-  if (!covlist->cov) ESL_ALLOC  (covlist->cov, sizeof(COV) * n);
-  else               ESL_REALLOC(covlist->cov, sizeof(COV) * n);
-  
-  // initialize to impossible values
-  for (c = covlist->n; c < n; c ++) {
-    covlist->cov[c].i     = 0;
-    covlist->cov[c].j     = 0;
-    covlist->cov[c].nsubs = 0;
-    covlist->cov[c].power = 0;
-    covlist->cov[c].score = 0;
-    covlist->cov[c].isbp  = FALSE;
-  }
- 
-  covlist->n = n;
-
-  return eslOK;
-
- ERROR:
-  return eslFAIL;
-}
 
 RM *
-struct_rm_Create(int nct, int L)
+struct_rm_Create(int nct, int L, int nagg, enum agg_e *agg_method)
 {
-  RM *rm = NULL;
-  int    status;
+  RM  *rm = NULL;
+  int  agg;
+  int  status;
   
   ESL_ALLOC(rm, sizeof(RM));
   rm->type = RMTYPE_UNKNOWN;
+  rm->name = NULL;
   
   rm->ctlist = struct_ctlist_Create(nct, L);
   rm->nbp     = 0;
   rm->nbp_cov = 0;
+  rm->pvals   = NULL;
   rm->i = L+1;
   rm->j = -1;
   rm->k = -1;
   rm->l = L+1;
-    
-  rm->covary = FALSE;
-  rm->Pval   = -1.;
-  rm->Eval   = -1.;
+
+  rm->nagg   = nagg;
+  rm->covary = NULL;
+  rm->Pval   = NULL;
+  rm->Eval   = NULL;
+  if (nagg > 0) {
+    ESL_ALLOC(rm->agg_method, sizeof(enum agg_e) * nagg);    
+    ESL_ALLOC(rm->covary,     sizeof(int)        * nagg);
+    ESL_ALLOC(rm->Pval,       sizeof(double)     * nagg);
+    ESL_ALLOC(rm->Eval,       sizeof(double)     * nagg);
+    for (agg = 0; agg < nagg; agg ++) {
+      rm->agg_method[agg] = agg_method[agg];
+      rm->covary[agg] = FALSE;
+      rm->Pval[agg]   = -1.;
+      rm->Eval[agg]   = -1.;
+    }
+  }
 
   return rm;
 
@@ -1439,7 +1475,14 @@ void
 struct_rm_Destroy(RM *rm)
 {
   if (rm) {
+    if (rm->name)   free(rm->name);
     if (rm->ctlist) struct_ctlist_Destroy(rm->ctlist);
+    if (rm->pvals)  free(rm->pvals);
+    if (rm->Pval)   free(rm->Pval);
+    if (rm->Eval)   free(rm->Eval);
+    if (rm->covary) free(rm->covary);
+    if (rm->agg_method) free(rm->agg_method);
+
     free(rm);
   }
 }
@@ -1448,18 +1491,72 @@ void
 struct_rm_Dump(RM *rm, int *msamap, int firstpos)
 {
   int i, k, l, j;
+  int agg;
 
   i = (msamap)? msamap[rm->i-1] + firstpos : rm->i;
   k = (msamap)? msamap[rm->k-1] + firstpos : rm->k;
   l = (msamap)? msamap[rm->l-1] + firstpos : rm->l;
   j = (msamap)? msamap[rm->j-1] + firstpos : rm->j;
   
-  printf("\n# RM %d-%d %d-%d, nbp = %d npb_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
-  if (rm->Pval > 0) {
-    if (rm->covary) printf("# * E-value %g P-value %g\n", rm->Eval, rm->Pval);
-    else            printf("#   E-value %g P-value %g\n", rm->Eval, rm->Pval);
+  printf("\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
+
+  for (agg = 0; agg < rm->nagg; agg++) {
+    printf("# aggregated ");
+    if      (rm->agg_method[agg] == AGG_FISHER)           printf("FISHER           E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER)        printf("LANCASTER        E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER_JOIN)   printf("LANCASTER_JOIN   E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER_DOUBLE) printf("LANCASTER_DOUBLE E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER)          printf("WFISHER          E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER_JOIN)     printf("WFISHER_JOIN     E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER_DOUBLE)   printf("WFISHER_DOUBLE   E-value: ");
+    else if (rm->agg_method[agg] == AGG_SIDAK)            printf("SIDAK            E-value: ");
+    else                                                  printf("NONE\n");
+    
+    if (rm->Eval[agg] >= 0) {   
+      if (rm->covary[agg]) printf("%g *\n", rm->Eval[agg]);
+      else                 printf("%g\n",   rm->Eval[agg]);
+    }
   }
   struct_ctlist_Dump(rm->ctlist);
+}
+
+void
+struct_rm_Write(FILE *fp, RM *rm, int *msamap, int firstpos)
+{
+  int i, k, l, j;
+  int n;
+  int agg;
+
+  i = (msamap)? msamap[rm->i-1] + firstpos : rm->i;
+  k = (msamap)? msamap[rm->k-1] + firstpos : rm->k;
+  l = (msamap)? msamap[rm->l-1] + firstpos : rm->l;
+  j = (msamap)? msamap[rm->j-1] + firstpos : rm->j;
+  
+  fprintf(fp, "\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
+  if (rm->nbp > 0) {
+    fprintf(fp, "# pvals: ");
+    for (n = 0; n < rm->nbp-1; n ++) 
+      fprintf(fp, "%g,", rm->pvals[n]);
+    fprintf(fp, "%g\n", rm->pvals[rm->nbp-1]);
+  }
+  
+  for (agg = 0; agg < rm->nagg; agg++) {
+    fprintf(fp, "# aggregated ");
+    if      (rm->agg_method[agg] == AGG_FISHER)           fprintf(fp, "FISHER           E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER)        fprintf(fp, "LANCASTER        E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER_JOIN)   fprintf(fp, "LANCASTER_JOIN   E-value: ");
+    else if (rm->agg_method[agg] == AGG_LANCASTER_DOUBLE) fprintf(fp, "LANCASTER_DOUBLE E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER)          fprintf(fp, "WFISHER          E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER_JOIN)     fprintf(fp, "WFISHER_JOIN     E-value: ");
+    else if (rm->agg_method[agg] == AGG_WFISHER_DOUBLE)   fprintf(fp, "WFISHER_DOUBLE   E-value: ");
+    else if (rm->agg_method[agg] == AGG_SIDAK)            fprintf(fp, "SIDAK            E-value: ");
+    else                                                  fprintf(fp, "NONE\n");
+  
+    if (rm->Eval[agg] >= 0) {   
+      if (rm->covary[agg]) fprintf(fp, "%g P-value: %g *\n", rm->Eval[agg], rm->Pval[agg]);
+      else                 fprintf(fp, "%g P-value: %g\n",   rm->Eval[agg], rm->Pval[agg]);
+    }
+  }
 }
 
 int
@@ -1475,7 +1572,7 @@ struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose)
   
   if (nrm > 0) ESL_REALLOC(rmlist->rm, sizeof(RM) * rmlist->nrm);
   else         ESL_ALLOC  (rmlist->rm, sizeof(RM) * rmlist->nrm);
-  rmlist->rm[nrm] = struct_rm_Create(1, rmlist->L);
+  rmlist->rm[nrm] = struct_rm_Create(1, rmlist->L, rmlist->nagg, rmlist->agg_method);
   if (rmlist->rm[nrm] == NULL) goto ERROR;
   
   rmlist->nrm = nrm + 1;
@@ -1487,10 +1584,11 @@ struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose)
 }
 
 RMLIST   *
-struct_rmlist_Create(int nrm, int L)
+struct_rmlist_Create(int nrm, int L, int nagg, enum agg_e *agg_method)
 {
   RMLIST *rmlist = NULL;
   int     h;
+  int     agg;
   int     status;
 
   if (L <= 0) return NULL;
@@ -1500,11 +1598,15 @@ struct_rmlist_Create(int nrm, int L)
   rmlist->rm = NULL;
   if (nrm > 0) ESL_ALLOC(rmlist->rm, sizeof(RM *) * nrm);
   
-  rmlist->nrm = nrm;
-  rmlist->L   = L;
-
+  rmlist->nrm  = nrm;
+  rmlist->L    = L;
+  rmlist->nagg = nagg;
+  ESL_ALLOC(rmlist->agg_method, sizeof(enum agg_e) * nagg);
+  for (agg = 0; agg < nagg; agg++)
+    rmlist->agg_method[agg] = agg_method[agg];
+  
   for (h = 0;  h < nrm; h ++) {
-    rmlist->rm[h] = struct_rm_Create(1, L);
+    rmlist->rm[h] = struct_rm_Create(1, L, nagg, agg_method);
     if (rmlist->rm[h] == NULL) goto ERROR;
   }
   
@@ -1525,6 +1627,7 @@ struct_rmlist_Destroy(RMLIST *rmlist)
 	if (rmlist->rm[h]) struct_rm_Destroy(rmlist->rm[h]);
       free(rmlist->rm);
     }
+    if (rmlist->agg_method) free(rmlist->agg_method);
     free(rmlist);
   }
 }
@@ -1551,6 +1654,22 @@ struct_rmlist_Stats(RMLIST *rmlist) {
   int            nhelix_tot_ncov = 0;
 
   return eslOK;
+}
+
+void
+struct_rmlist_Write(char *rmlistfile, RMLIST *rmlist, int *msamap, int firstpos)
+{
+  FILE *fp;
+  int   h;
+
+  if (!rmlist) return;
+
+  if ((fp = fopen(rmlistfile, "w")) == NULL) esl_fatal("Failed to open rmlistfile %s", rmlistfile);
+  fprintf(fp, "# RMs = %d L = %d\n", rmlist->nrm, (msamap)? msamap[rmlist->L-1] + firstpos : rmlist->L);
+  for (h = 0; h < rmlist->nrm; h ++)
+    struct_rm_Write(fp, rmlist->rm[h], msamap, firstpos);
+
+  fclose(fp);
 }
 
 PAIRLIST *
@@ -1630,12 +1749,15 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 {
   enum grammar_e    G;
   CTLIST           *ctlist = *ret_ctlist;
+  CTLIST           *r3dlist = NULL;
   FILE             *fp      = NULL;
   char             *ss      = NULL;
   double           *sc      = NULL;
   int               nct     = ctlist->nct;
   int               L = msa->alen;
+  int               howmany;
   int               s;
+  int               idx;
   int               status;
 
   ESL_ALLOC(ss, sizeof(char)   * (L+1));
@@ -1648,9 +1770,9 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     else        G = foldparam->GP;
  
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
-    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], G, foldparam, gapthresh, errbuf, verbose);
+    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
-   }
+  }
   
   // Two special cases:
   //
@@ -1664,7 +1786,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
       
       // nothing is forced to basepair in this last/unique fold
       // and covarying basepairs cannot be present
-      status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
+      status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
       if (status != eslOK) goto ERROR;
       nct ++;
   }
@@ -1678,15 +1800,10 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
      
     // nothing is forced to basepair in this last/unique fold
     // and covarying basepairs cannot be present
-    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], G, foldparam, gapthresh, errbuf, verbose);
+    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;
   }
-  
-  if (verbose) {
-    printf("\nCaCoFold nct = %d\n", ctlist->nct);
-    struct_ctlist_Dump(ctlist);
-  }
-  
+
   // for the extra structures, break in individual helices
   // A helix is definded as...
   status = ctlist_break_in_helices(foldparam->helix_unpaired, &ctlist, errbuf, verbose);
@@ -1719,7 +1836,12 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   // order the pknots by the first paired position
   status = ctlist_pseudoknot_order(&ctlist, errbuf);
   if (status != eslOK) goto ERROR;
-  
+
+  if (verbose) {
+    printf("\nCaCoFold nct = %d\n", ctlist->nct);
+    struct_ctlist_Dump(ctlist);
+  }
+
   // CTTYPES are:
   //
   //       CTTYPE_NESTED,   (main nested structure)
@@ -1728,6 +1850,9 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   //       CTTYPE_TRI,      (involved in more than one basepairs)
   //       CTTYPE_SCOV,     (side covariations)
   //       CTTYPE_XCOV,     (cross covariations)
+  //       CTTYPE_RM_HL,    (RNA Module HL)
+  //       CTTYPE_RM_BL,    (RNA Module BL)
+  //       CTTYPE_RM_IL,    (RNA Module IL)
   //
   // a extra helix H is classified as CTTYPE_SCOV/CTTYPE_XCOV when
   //
@@ -1754,6 +1879,55 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
     struct_ctlist_Dump(ctlist);
   }
 
+  // merge r3dlist with ctlist
+  // r3dlist includes a ct for each RM found in the structure.
+  //
+  // the ct convention for an RM is
+  //
+  // ct[j] = 0,        if j is not in a RM
+  // ct[j] = -RMidx    if j is     in a RM of index RMidx.
+  //
+  if (r3dlist) {
+    // first figure out if the r3d motifs are bounded by helices with covariation support
+    // we use the covct to annotate.
+    //
+    //  ct     ::::::xxxxx:::::xx::::
+    //  covct  ::::::00000:::::00::::  if no cov in the outer or inner helix
+    //
+    //  covct  ::::::11111:::::11::::  if  cov in OUTER or INNER helix  (cov == at least 1 covarying base pair)
+    //
+    //  covct  ::::::22222:::::22::::  if cov in BOTH helices
+    //
+    
+    nct = ctlist->nct;
+    for (s = 0; s < r3dlist->nct; s ++) {
+
+      status = r3dlist_annotate(s, r3dlist, ctlist, &howmany, errbuf, verbose);
+      if (status != eslOK) goto ERROR;
+
+      if (1||verbose) printf("r3d trimming %s (%d/%d) howmany? %d\n", r3dlist->ctname[s], s+1, r3dlist->nct, howmany);
+      
+      if (howmany > 0) {
+	struct_ctlist_Realloc(ctlist, ctlist->nct+1);
+ 
+	idx = ctlist->nct - 1;
+	
+	esl_vec_ICopy(r3dlist->ct[s],    L, ctlist->ct[idx]);
+	esl_vec_ICopy(r3dlist->covct[s], L, ctlist->covct[idx]);
+	
+	ctlist->cttype[idx] = r3dlist->cttype[s];
+	esl_sprintf(&ctlist->ctname[idx], r3dlist->ctname[s]);
+      }
+    }
+    
+    struct_ctlist_Destroy(r3dlist); r3dlist = NULL;
+  }
+  
+  if (verbose) {
+    printf("\nCaCoFold nct = %d\n", ctlist->nct);
+    struct_ctlist_Dump(ctlist);
+  }
+ 
   // Modify the msa annotation with the CaCoFold structure
   //
   // if the primary structure (s==0), replace the 'SS_cons' GC line with the new ss
@@ -1774,11 +1948,13 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 
   if (sc) free(sc);
   if (ss) free(ss);
+  if (r3dlist) struct_ctlist_Destroy(r3dlist);
   return eslOK;
 
  ERROR:
   if (sc) free(sc);
   if (ss) free(ss);
+  if (r3dlist) struct_ctlist_Destroy(r3dlist);
   return status;
 }
 
@@ -1786,7 +1962,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 //
 static int
 struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct, int *ct, double *ret_sc, COVLIST *exclude,
-			 enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
+			 CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
 {
   char    *rfline = NULL;
   char    *newss  = NULL;
@@ -1828,7 +2004,7 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct m
   
   switch(foldparam->F) {
   case CYK:
-    status = CACO_CYK     (r, G, foldparam, psq, mi, spair, covct, exclude, ct, &sc, errbuf, verbose);
+    status = CACO_CYK     (r, G, foldparam, psq, mi, spair, covct, exclude, ct, &sc, ret_r3dlist, errbuf, verbose);
     if (status != eslOK) goto ERROR;
     break;
   case DECODING:
@@ -1839,7 +2015,7 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct m
 
   if (verbose) {
     ESL_ALLOC(newss, sizeof(char) * (msa->alen+1));
-    esl_ct2wuss(ct, msa->alen, newss);
+    esl_ct2wuss_er(ct, msa->alen, newss);
     printf("caco-fold score = %f\n%s\n", sc, newss);
   }
  
@@ -2028,12 +2204,13 @@ ct_dump(int L, int *ct)
 
 // split in helices
 static int
-ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, RMLIST **ret_rmlist, char *errbuf, int verbose)
+ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method,enum cttype_e cttype, R3D *r3d, RMLIST **ret_rmlist, char *errbuf, int verbose)
 {
   ESL_STACK  *pda    = NULL;                // stack for secondary structure 
   RMLIST     *rmlist = *ret_rmlist;
   RM         *rm;
   CTLIST     *ctlist;
+  int         has_rm = FALSE;
   int         idx;
   int         nsingle_max = helix_unpaired; // break stems when there is more than nsigle_max unpaired residues
   int         nsingle = 0;
@@ -2045,24 +2222,31 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
   int         npairs_reached = 0;           // number of basepairs found so far 
   int         found_partner;                // true if we've found left partner of a given base in stack pda */
   int         i, j;
+  int         m;
+  int         ctval;
+  int         found;
   int         status;
 
   if (!rmlist) {
-    rmlist = struct_rmlist_Create(0, L);
+    rmlist = struct_rmlist_Create(0, L, nagg, agg_method);
     if (rmlist == NULL) ESL_XFAIL(eslFAIL, errbuf, "ct_split_rmlist() allocation error");
     idx = 0;
   }
-  else idx = rmlist->nrm; 
+  else {
+    idx = rmlist->nrm;
+  }
   
   /* total number of basepairs */
   for (j = 1; j <= L; j ++) { if (ct[j] > 0 && j < ct[j]) npairs ++; }
   
   /* Initialization */
   if ((pda  = esl_stack_ICreate()) == NULL) goto FINISH;
-
+  
   for (j = 1; j <= L; j++)
     {
-      if (ct[j] == 0) {   // unpaired 
+      if (ct[j] <= 0) {   // == 0 unpaired; < 0 in a RNA module
+	if (ct[j] < 0) has_rm = TRUE;
+	
 	if (esl_stack_IPush(pda, j) != eslOK) goto FINISH;
       }
       else if (ct[j] > j) // left side of a bp: push j
@@ -2149,7 +2333,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
 		  }
 		  break;
 		}
-	      else if (ct[i] == 0) 
+	      else if (ct[i] <= 0) 
 	      {
 		nsingle ++;
 	      }
@@ -2167,6 +2351,111 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctty
 	} /* finished finding the left partner of j */
     }
 
+  // a ct can have negative values. Those indicate residues involved in RNA modules described by the R3D grammar
+  // add those to the RMlist
+  //
+  //  0000000xxxxxx00000000xxxxxx000000000000000000000000000000000000000
+  //
+  // x is the index of the RM
+  //
+  if (has_rm) {
+    if (!r3d) ESL_XFAIL(eslFAIL, errbuf, "ct_split_rmlist() has RNA modules but not R3D");
+    
+    for (m = 0; m < r3d->nHL; m ++) {
+      R3D_RMtoCTidx(r3d, R3D_TP_HL, m, &ctval, errbuf);
+      found = FALSE;
+     
+      for (j = 1; j <= L; j++)
+	{
+	  if (ct[j] == ctval) {   // in a RNA module
+	    if (found == FALSE) {
+	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	      rm  = rmlist->rm[idx];
+	      ctlist = rm->ctlist;
+	      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	      esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	      
+	      ctlist->cttype[0] = CTTYPE_RM_HL;
+	      esl_sprintf(&ctlist->ctname[0], r3d->HL[m]->name);
+	      esl_sprintf(&rm->name,          r3d->HL[m]->name);
+	      rm->nbp = 0;
+
+	      idx ++;
+	    }
+	    ctlist->ct[0][j] = ct[j];
+	    if (j < rm->i) rm->i = rm->k = j;
+	    if (j > rm->j) rm->j = rm->l = j;
+	    
+	    found = TRUE;
+	  }
+	}
+    }
+    
+    for (m = 0; m < r3d->nBL; m ++) {
+      R3D_RMtoCTidx(r3d, R3D_TP_BL, m, &ctval, errbuf);
+      found = FALSE;
+      
+      for (j = 1; j <= L; j++)
+	{
+	  if (ct[j] == ctval) {   // in a RNA module
+	    if (found == FALSE) {
+	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	      rm  = rmlist->rm[idx];
+	      ctlist = rm->ctlist;
+	      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	      esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	      
+	      ctlist->cttype[0] = CTTYPE_RM_BL;
+	      esl_sprintf(&ctlist->ctname[0], r3d->BL[m]->name);
+	      esl_sprintf(&rm->name,          r3d->BL[m]->name);
+	      rm->nbp = 0;
+	      idx ++;
+	    }
+	    ctlist->ct[0][j] = ct[j];
+	    if (j < rm->i) rm->i = rm->k = j;
+	    if (j > rm->j) rm->j = rm->l = j;
+
+	    found = TRUE;
+	  }
+	}
+    }
+
+    for (m = 0; m < r3d->nIL_total; m ++) {
+     R3D_RMtoCTidx(r3d, R3D_TP_ILo, m, &ctval, errbuf);
+     found = FALSE;
+     
+     for (j = 1; j <= L; j++)
+       {
+	 if (ct[j] == ctval) {   // in a RNA module
+	   if (found == FALSE) {
+	     struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	     rm  = rmlist->rm[idx];
+	     ctlist = rm->ctlist;
+	     esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	     esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	     
+	     ctlist->cttype[0] = CTTYPE_RM_IL;
+	     esl_sprintf(&ctlist->ctname[0], r3d->IL[m]->name);
+	     esl_sprintf(&rm->name,          r3d->IL[m]->name);
+		    
+	     rm->nbp = 0;
+	     rm->i = j;
+	     rm->k = j;
+	     rm->l = L;
+	     rm->j = L;
+	     idx ++;
+	   }
+	   ctlist->ct[0][j] = ct[j];
+	   if (j > rm->i && j < rm->l && ct[j+1] == 0) rm->k = j;
+	   if (j < rm->l && j > rm->k && ct[j-1] == 0) rm->l = j; 
+	   if (j > rm->l && j < L     && ct[j+1] == 0) rm->j = j;
+	   
+	   found = TRUE;
+	 }
+       }
+    }
+    
+  }
   *ret_rmlist = rmlist;
       
   esl_stack_Destroy(pda);
@@ -2211,7 +2500,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
 
   for (j = 1; j <= L; j++)
     {
-      if (ct[j] == 0) {   // unpaired 
+      if (ct[j] <= 0) {   // unpaired  or an RM
 	if (esl_stack_IPush(pda, j) != eslOK) goto FINISH;
       }
       else if (ct[j] > j) // left side of a bp: push j
@@ -2284,16 +2573,15 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
 		  }
 		  break;
 		}
-	      else if (ct[i] == 0) 
+	      else if (ct[i] <= 0) 
 	      {
 		nsingle ++;
 	      }
 	      else /* ct[i]>0, != j: i is paired, but not to j: pseudoknot! */
 		{
-		esl_stack_Destroy(pda); 
-		ESL_EXCEPTION(eslEINVAL, "should not find pseudoknots here");
-	      }
-
+		  esl_stack_Destroy(pda); 
+		  ESL_EXCEPTION(eslEINVAL, "should not find pseudoknots here");
+		} 
 	    }
 	  if (!found_partner) {
 	    esl_stack_Destroy(pda); 
@@ -2374,7 +2662,7 @@ ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, i
   for (s = 1; s < nct; s ++) {
     prv = new;
     if (verbose) {
-      esl_ct2wuss(ctlist->ct[s], L, ss);
+      esl_ct2wuss_er(ctlist->ct[s], L, ss);
       printf("break_in_helices: pknot %d/%d\n%s\n", s, nct, ss);
     }
     status = ct_split_helices(helix_unpaired, ctlist->ct[s], ctlist->covct[s], L, ctlist->cttype[s], &ctnew, errbuf, verbose);
@@ -2385,7 +2673,7 @@ ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, i
      add = new - prv;
      printf("pseudoknot breaks in %d structures. total structures so far %d prv %d\n", add, new, prv);
       for (s1 = prv; s1 < new; s1 ++) {
-	esl_ct2wuss(ctnew->ct[s1], L, ss);
+	esl_ct2wuss_er(ctnew->ct[s1], L, ss);
 	printf("broken pknot %d\n%s\n", s1, ss);
       }
     }
@@ -2509,7 +2797,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
   if (verbose) {
     ESL_ALLOC(ssmain, sizeof(char)  * (L+1));
     ESL_ALLOC(ss,     sizeof(char)  * (L+1));
-    esl_ct2wuss(ctmain, L, ssmain);
+    esl_ct2wuss_er(ctmain, L, ssmain);
   }
 
   // For all alternative structures:
@@ -2565,7 +2853,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
     }
 
     if (verbose) {
-      esl_ct2wuss(ct, L, ss);
+      esl_ct2wuss_er(ct, L, ss);
       printf("\n%s\n%s\nn_tot %d n_overlap %d n_dup %d | hascov %d isallowed %d isunique %d\n", ssmain, ss, n_tot, n_overlap, n_dup, hascov, isallowed, isunique);
     }
 
@@ -2842,6 +3130,9 @@ ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf)
 //       CTTYPE_TRI,      (involved in more than one basepair)
 //       CTTYPE_SCOV,     (side covariations)
 //       CTTYPE_XCOV,     (cross covariations)
+//       CTTYPE_RM_HL,    (RNA Module HL)
+//       CTTYPE_RM_BL,    (RNA Module BL)
+//       CTTYPE_RM_IL,    (RNA Module IL)
 //
 // a extra helix H is classified as CTTYPE_SCOV/CTTYPE_XCOV when
 //
@@ -2938,6 +3229,9 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
   int ntri    = 0;
   int nscov   = 0;
   int nxcov   = 0;
+  int nrm_hl  = 0;
+  int nrm_bl  = 0;
+  int nrm_il  = 0;
   int nnone   = 0;
   int s;
   int status;
@@ -2962,6 +3256,15 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
       break;
     case(CTTYPE_XCOV):
       esl_sprintf(&ctlist->ctname[s], "xc_%d",     ++nxcov);
+      break;
+    case(CTTYPE_RM_HL):
+      esl_sprintf(&ctlist->ctname[s], "hl_%d",     ++nrm_hl);
+      break;
+    case(CTTYPE_RM_BL):
+      esl_sprintf(&ctlist->ctname[s], "bl_%d",     ++nrm_bl);
+      break;
+    case(CTTYPE_RM_IL):
+      esl_sprintf(&ctlist->ctname[s], "il_%d",     ++nrm_il);
       break;
     case(CTTYPE_NONE):
       esl_sprintf(&ctlist->ctname[s], "_%d",       ++nnone);
@@ -3207,5 +3510,138 @@ trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, c
     }
   }
   
+  return status;
+}
+
+
+/* Function:  esl_ct2wuss_er()
+ * Incept:    SRE, Wed Feb 16 11:22:53 2005 [St. Louis]
+ *
+ * Purpose:   Convert a CT array <ct> for <n> residues (1..n) to a WUSS
+ *            format string <ss>. <ss> must be allocated for at least
+ *            n+1 chars (+1 for the terminal NUL). 
+ *
+ *            ER, Sat Aug 18 13:22:03 EDT 2012 
+ *            esl\_ct2wuss() extended to deal with pseudoknots structures.
+ *            Pseudoknots are annotated as AA...aa, BB...bb,..., ZZ..zz.
+ *            Attemting to convert a <ct> that requires more letters
+ *            than [A-Z] will return an <eslEINVAL> error.
+ *
+ *            Attempting to convert a <ct> that involves triplet interactions
+ *            will return an <eslEINVAL> error.
+ *
+ * Returns:   <eslOK> on success.
+ * 
+ * Throws:    <eslEMEM> on allocation failure.
+ *            <eslEINCONCEIVABLE> on internal failure.
+ */
+int
+esl_ct2wuss_er(int *ct, int n, char *ss)
+{
+  int       *cct = NULL;    /* copy of ct vector */
+  int        j;             /* sequence indices */
+  int        status ;	    /* exit status 'til proven otherwise */
+
+  /* Copy of ct; 
+   */
+  ESL_ALLOC(cct, sizeof(int)*(n+1));
+  esl_vec_ICopy(ct, (n+1), cct);
+  
+  // remove the negative ct's of RMs
+  for (j = 1; j <= n; j ++) { if (ct[j] < 0) cct[j] = 0; }  
+  status = esl_ct2wuss(cct, n, ss);
+
+  free(cct);
+  return status;
+
+ ERROR:
+  if (cct) free(cct);
+  return status;
+}
+int
+esl_ct2simplewuss_er(int *ct, int n, char *ss)
+{
+  int       *cct = NULL;    /* copy of ct vector */
+  int        j;             /* sequence indices */
+  int        status ;	    /* exit status 'til proven otherwise */
+
+  /* Copy of ct; 
+   */
+  ESL_ALLOC(cct, sizeof(int)*(n+1));
+  esl_vec_ICopy(ct, (n+1), cct);
+  
+  // remove the negative ct's of RMs
+  for (j = 1; j <= n; j ++) { if (ct[j] < 0) cct[j] = 0; }  
+  status = esl_ct2simplewuss(cct, n, ss);
+
+  free(cct);
+  return status;
+
+ ERROR:
+  if (cct) free(cct);
+  return status;
+}
+
+
+static int
+r3dlist_annotate(int s, CTLIST *r3dlist, CTLIST *ctlist, int *ret_howmany, char *errbuf, int verbose)
+{
+  char *ss    = NULL;
+  int  *ct    = ctlist->ct[0];
+  int  *covct = ctlist->covct[0];
+  int  *r3dct;
+  int  *r3dcovct;
+  int   L = ctlist->L;
+  int   inHcov, outHcov;
+  int   i, j, k, l;
+  int   g;
+  int   status;
+
+  r3dct    = r3dlist->ct[s];
+  r3dcovct = r3dlist->covct[s];
+  
+  inHcov  = FALSE;
+  outHcov = FALSE;
+  
+  for (g = 1; g <= L; g ++) {
+    if (r3dct[g] < 0 && r3dct[g-1] == 0)   i = g-1; 
+    if (r3dct[g] < 0 && r3dct[g+1] == 0) { k = g+1; break; }
+  }
+  for (g = L; g >= 1; g --) {
+    if (r3dct[g] < 0 && r3dct[g+1] == 0)   j = g+1; 
+    if (r3dct[g] < 0 && r3dct[g-1] == 0) { l = g-1; break; }
+  }
+  
+  g = i;
+  while (ct[g] > 0 && g > 0) {
+    if (covct[g] > 0) { outHcov = TRUE; break; }
+    g --;
+  }
+    
+  if (l != i) {
+    g = l;
+    while (ct[g] > 0) {
+      if (covct[g] > 0) { inHcov = TRUE; break; }
+      g --;
+    }
+  }
+  else inHcov = outHcov;
+  
+  for (g = 1; g <= L; g ++) {
+    if (r3dct[g] < 0) r3dcovct[g] = (inHcov && outHcov)? 2 : (inHcov || outHcov)? 1 : 0;
+  }
+  
+  if (verbose) {
+    ESL_ALLOC(ss, sizeof(char) * (L+1));
+    R3D_RMCTtoSS(r3dct, r3dcovct, L, ss);
+    printf("%s\n", ss);
+    free(ss);
+  }
+  
+  *ret_howmany = (inHcov && outHcov)? 2 : (inHcov || outHcov)? 1 : 0;
+  return eslOK;
+
+ ERROR:
+  if (ss) free(ss);
   return status;
 }

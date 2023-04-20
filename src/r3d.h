@@ -14,14 +14,23 @@
 
 #include "e2_profilesq.h"
 #include "covgrammars.h"
-#include "correlators.h"
 #include "r3d_hmm.h"
 
-#define pRM       0.00001    // tP[0](1-pRM) / tP[0] * pRM or tP[1](1-pRM) / tP[1] * pRM or tP[2](1-pRM) / tP[2] * pRM
-#define pRM_LR    0.990   // L/R 
-#define pRM_LoR   0.004   // L/   or  /R
-#define pRM_Loop2 0.900   // L Loop R            or Loop_L/Loop_R
-#define pRM_Loop1 0.040   // L Loop   or Loop R  or Loop_L/       or /Loop_R
+                            //     m..m      |      HL
+#define pRM       0.40      //  tP[0](1-pRM) | tP[0] * pRM
+                            //    m..m F0    |    BL F0
+                            //  tP[1](1-pRM) | tP[1] * pRM
+                            //    F0 m..m    |    F0 BL
+                            //  tP[2](1-pRM) | tP[2] * pRM
+                            //  m..m F0 m..m |      IL
+                            //  tP[3](1-pRM) | tP[3] * pRM
+
+#define pRM_E     1e-25                          // no L/   nor  /R
+#define pRM_LoR   1e-25                          //    L/   or   /R
+#define pRM_LR    1 - 2*pRM_LoR - pRM_E          // L/R 
+#define pRM_Loop0 1e-25                          // no L Loop nor Loop R  or no Loop_L/ nor /Loop_R
+#define pRM_Loop1 1e-12                          //    L Loop  or Loop R  or    Loop_L/  or /Loop_R
+#define pRM_Loop2 1 - 2*pRM_Loop1 - pRM_Loop0   //         L Loop R      or      Loop_L/Loop_R
 
 typedef enum r3d_type_e {
   R3D_TP_HL,
@@ -45,10 +54,10 @@ typedef enum r3d_type_e {
 #define R3D_BL_L  RBG_NR + 5  
 #define R3D_BL_R  RBG_NR + 6  
 #define R3D_BL_E  RBG_NR + 7  
-#define R3D_ILo_M RBG_NR + 8  
-#define R3D_ILo_L RBG_NR + 9  
-#define R3D_ILo_R RBG_NR + 10  
-#define R3D_ILo_E RBG_NR + 11  
+#define R3D_ILo_M RBG_NR + 8  // 32
+#define R3D_ILo_L RBG_NR + 9  // 33
+#define R3D_ILo_R RBG_NR + 10 // 34
+#define R3D_ILo_E RBG_NR + 11 // 35
 #define R3D_ILi_M RBG_NR + 12 
 #define R3D_ILi_L RBG_NR + 13  
 #define R3D_ILi_R RBG_NR + 14  
@@ -201,7 +210,7 @@ extern void       R3D_IL_Destroy(R3D_IL *r3d_IL);
 extern void       R3D_Destroy(R3D *r3d);
 extern int        R3D_GetParam (R3Dparam  **ret_r3dp, char *errbuf, int verbose);
 extern void       R3D_Param_Destroy(R3Dparam *r3dp);
-extern void       R3D_Write(FILE *fp, R3D *r3d);
+extern void       R3D_Write(FILE *fp, R3D *r3d, int verbose);
 extern R3D_RMMX  *R3D_RMMX_Create (int L, int nB);
 extern R3D_HLMX  *R3D_HLMX_Create (int L, R3D_HL *HL);
 extern R3D_BLMX  *R3D_BLMX_Create (int L, R3D_BL *BL);
@@ -215,7 +224,8 @@ extern void       R3D_HLMX_Destroy(R3D_HLMX *HLmx);
 extern void       R3D_BLMX_Destroy(R3D_BLMX *BLmx);
 extern void       R3D_ILMX_Destroy(R3D_ILMX *ILmx);
 extern void       R3D_MX_Destroy  (R3D_MX   *r3dmx);
-extern int        R3D_RMtoCT(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf);
-extern int        R3D_CTtoRM(R3D *r3d, int idx, R3D_TYPE *ret_type, int *ret_m, char *errbuf);
+extern int        R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf);
+extern int        R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf);
+extern void       R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss);
 #endif
 

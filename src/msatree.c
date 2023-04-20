@@ -25,6 +25,7 @@
 #include "esl_getopts.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+#include "esl_msashuffle.h"
 #include "esl_stack.h"
 #include "esl_tree.h"
 #include "esl_vectorops.h"
@@ -45,12 +46,16 @@ static ESL_DSQ tree_fitch_choose_residue(ESL_RANDOMNESS *r, int dim, float *frq,
  *****************************************************************/ 
 
 int
-Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, char *errbuf, int verbose)
+Tree_CalculateExtFromMSA(ESL_RANDOMNESS *r, ESL_MSA **omsa, ESL_TREE **ret_T, int shuffle_seqs, int rootatmid, char *errbuf, int verbose)
 {
-  char     *treefile = NULL;
-  FILE     *treefp   = NULL;
-  ESL_TREE *T        = NULL;
-  int       status;
+  char        *treefile  = NULL;
+  FILE        *treefp    = NULL;
+  ESL_MSA     *msa       = *omsa;
+  ESL_TREE    *T         = NULL;
+  int          uniqwidth = 0;
+  int          tmpnseq;
+  int          i;
+  int          status;
 
   if (msa->nseq == 1) { *ret_T = NULL; return eslOK; }
 
@@ -59,6 +64,21 @@ Tree_CalculateExtFromMSA(const ESL_MSA *msa, ESL_TREE **ret_T, int rootatmid, ch
   // replace parenthesis with curly brackets.
   msamanip_DoctorSeqNames(msa, errbuf);
 
+  status = esl_msa_CheckUniqueNames(msa);
+  if (status == eslFAIL) { // names are not unique
+    for (tmpnseq = msa->nseq; tmpnseq; tmpnseq /= 10) uniqwidth++;  /* how wide the uniqizing numbers need to be */
+    uniqwidth++; 		/* uniqwidth includes the '_' */
+
+    for (i = 0; i < msa->nseq; i++) // add 00_name, 01_name,...
+     esl_sprintf(&msa->sqname[i], "%0*d_%s", uniqwidth-1, i, msa->sqname[i]);
+  }
+
+  // reorder the sequences. Inferred trees may be different because of the reordering
+  if (shuffle_seqs) {
+    status = esl_msashuffle_PermuteSequenceOrder(r, msa);
+    if (status != eslOK) ESL_XFAIL(status,  errbuf, "Failed to permute sequence order");
+  }
+  
   if ((status = Tree_CreateExtFile(msa, &treefile, errbuf, verbose)) != eslOK) ESL_XFAIL(status,  errbuf, "Failed to create external tree");
   if ((treefp = fopen(treefile, "r"))                                == NULL)  ESL_XFAIL(eslFAIL, errbuf, "Failed to open Tree file %s for reading", treefile);
   if ((status = esl_tree_ReadNewick(treefp, errbuf, &T))             != eslOK) goto ERROR;
@@ -150,7 +170,7 @@ Tree_CreateExtFile(const ESL_MSA *msa, char **ret_treefile, char *errbuf, int ve
 
 
 int
-Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, char *errbuf, int verbose)
+Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_MSA **ret_allmsa, int *ret_sc, int profmark, char *errbuf, int verbose)
 {
   ESL_MSA *allmsa = NULL;
   float   *frq = NULL;
@@ -181,6 +201,12 @@ Tree_FitchAlgorithmAncenstral(ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *msa, ESL_
   }
   for (i = msa->nseq; i < allmsa->nseq; i++) {
     esl_sprintf(&(allmsa->sqname[i]), "node_%d", i-msa->nseq);
+  }
+
+  if (profmark) {
+    // copy the ss_cons of the original alignment.
+    // This allows us to write null alignments with the ss_cons of the original alignment, useful only for a profmark
+    esl_strdup(msa->ss_cons, -1, &(allmsa->ss_cons));
   }
 
   for (c = 1; c <= allmsa->alen; c ++) {
@@ -804,6 +830,8 @@ Tree_ReorderTaxaAccordingMSA(const ESL_MSA *msa, ESL_TREE *T, char *errbuf, int 
  int        foundmatch;
  int        status;
 
+ if (!T) return eslOK;
+ 
  ESL_ALLOC(map, sizeof(int) * T->N);
 
  for (i = 0; i < T->N; i++) {
@@ -1392,11 +1420,12 @@ Tree_MyCluster(ESL_DMATRIX *D, ESL_TREE **ret_T)
 }
 
 int
-Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, int includegaps, char *errbuf, int verbose)
+Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs, int **ret_ndouble, int **ret_njoin, int includegaps, char *errbuf, int verbose)
 {
   ESL_MSA    *allmsa  = NULL;
   int        *nsubs   = NULL;
   int        *ndouble = NULL;
+  int        *njoin   = NULL;
   ESL_DSQ    *ax;
   ESL_DSQ    *axl;
   ESL_DSQ    *axr;
@@ -1420,7 +1449,7 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
      return eslOK;
   }
   
-  status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, errbuf, verbose);
+  status = Tree_FitchAlgorithmAncenstral(r, T, msa, &allmsa, &sc, FALSE, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
   // single position substitutions
@@ -1435,23 +1464,20 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 	  axl = (T->left[v]  > 0)? allmsa->ax[T->N + T->left[v]]  : allmsa->ax[-T->left[v] ];
 	  axr = (T->right[v] > 0)? allmsa->ax[T->N + T->right[v]] : allmsa->ax[-T->right[v]];
 
-	  if (ax[i+1] < msa->abc->K) {
-	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
-	    if (axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
-	  }
-
 	  if (includegaps) {
-	    // gap to gap counts too as a substitution (a N to N)
-	    if (ax[i+1] == msa->abc->K) {
-	      if (axl[i+1] == ax[i+1]) { nsubs[i] ++; } 
-	      if (axr[i+1] == ax[i+1]) { nsubs[i] ++; }
+	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; } // a single substitution
+	  }
+	  else {
+	    if (ax[i+1] < msa->abc->K) {
+	      if (axl[i+1] < msa->abc->K && axl[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
+	      if (axr[i+1] < msa->abc->K && axr[i+1] != ax[i+1]) { nsubs[i] ++; }  // a single substitution
 	    }
 	  }
 	}
     }
   }
 
-  // double substitutiosn
+  // double substitutions
   if (ret_ndouble) {
     ESL_ALLOC(ndouble, sizeof(int) * msa->alen * msa->alen);
     esl_vec_ISet(ndouble, msa->alen*msa->alen, 0);
@@ -1481,8 +1507,39 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
     }
   }
   
-  if (ret_nsubs)   *ret_nsubs   = nsubs;
-  if (ret_ndouble) *ret_ndouble = ndouble;
+  // join substitutions
+  if (ret_njoin) {
+    ESL_ALLOC(njoin, sizeof(int) * msa->alen * msa->alen);
+    esl_vec_ISet(njoin, msa->alen*msa->alen, 0);
+    
+    for (i = 0; i < msa->alen-1; i ++) {
+      for (j = i+1; j < msa->alen; j ++) {
+	idx = i * msa->alen + j;
+	
+	for (v = 0; v < T->N-1; v++)
+	  {
+	    ax  = allmsa->ax[T->N+v];
+	    axl = (T->left[v]  > 0)? allmsa->ax[T->N + T->left[v]]  : allmsa->ax[-T->left[v] ];
+	    axr = (T->right[v] > 0)? allmsa->ax[T->N + T->right[v]] : allmsa->ax[-T->right[v]];
+
+	    if (includegaps) {
+	      if (axl[i+1] != ax[i+1] || axl[j+1] != ax[j+1]) { njoin[idx] ++; } // a join substitution 
+	      if (axr[i+1] != ax[i+1] || axr[j+1] != ax[j+1]) { njoin[idx] ++; } // a join substitution
+	    }
+	    else {
+	      if (ax[i+1] < msa->abc->K && ax[j+1] < msa->abc->K) {
+		if (axl[i+1] < msa->abc->K && axl[j+1] < msa->abc->K && ( axl[i+1] != ax[i+1] || axl[j+1] != ax[j+1] )) { njoin[idx] ++; } // a join substitution
+		if (axr[i+1] < msa->abc->K && axr[j+1] < msa->abc->K && ( axr[i+1] != ax[i+1] || axr[j+1] != ax[j+1] )) { njoin[idx] ++; } // a join substitution
+	      }
+	    }
+	  }
+      }
+    }
+  }
+  
+  if (ret_nsubs)   *ret_nsubs   = nsubs;   else free(nsubs);
+  if (ret_ndouble) *ret_ndouble = ndouble; else free(ndouble);
+  if (ret_njoin)   *ret_njoin   = njoin;   else free(njoin);
   
   esl_msa_Destroy(allmsa);
   return eslOK;
@@ -1490,6 +1547,7 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
  ERROR:
   if (nsubs)   free(nsubs);
   if (ndouble) free(ndouble);
+  if (njoin)   free(njoin);
   if (allmsa) esl_msa_Destroy(allmsa);
   return status;
 }

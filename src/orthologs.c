@@ -172,7 +172,7 @@ ortho_BoostrapTrees(ESL_RANDOMNESS *r, ESL_MSA *msa, char *outheader, int nboot,
       /* create corresponding T.
        * Don't need to do anything about the rooting of the tree. 
        * RIO does re-roots each gene tree as to minimize the sum of duplications */
-      if ((status = Tree_CalculateExtFromMSA(bmsa, &(Tlist[n]), FALSE, errbuf, FALSE)) != eslOK) { printf("%s\n", errbuf); goto ERROR; }
+      if ((status = Tree_CalculateExtFromMSA(r, &bmsa, &(Tlist[n]), FALSE, FALSE, errbuf, FALSE)) != eslOK) { printf("%s\n", errbuf); goto ERROR; }
       n ++;
       esl_msa_Destroy(bmsa); bmsa = NULL;
   }  

@@ -1965,17 +1965,18 @@ sub parse_stofile {
 	    }
 	}
 	elsif (/^([^#]\S+)\s+(\S+)\s*$/) {
+	    my $name  = $1;
+	    my $sq    = $2;
 	    if ($nali == $which) {
-		$name_ref->[$nsq]  = $1;
-		$sq_ref->[$nsq]   .= "$2";
+		$name_ref->[$nsq]  = $name;
+		$sq_ref->[$nsq]   .= "$sq";
 		$nsq ++;
 	    }
 	}
 	elsif ($nsq > 0 && /^([^#]\S+)\s+(\S+)\s*$/) {
+	    my $name  = $1;
+	    my $sq    = $2;
 	    if ($nali == $which) { 
-		my $name  = $1;
-		my $sq    = $2;
-		
 		if ($name =~ /^$name_ref->[$nsq]$/) {
 		    $sq_ref->[$nsq] .= "$sq";
 		    $nsq ++;
@@ -1983,18 +1984,23 @@ sub parse_stofile {
 		else { print "bad sq $name | $name_ref->[$nsq]\n"; die; }
 	    }
 	}
+	elsif (/\/\//) {
+	    $b = 0;
+	    $$ret_ss   = $ss;
+	    $$ret_rfsq = $rfsq;
+	    $$ret_nsq  = $nsq;
+	}
+
     }
     close(FILE);
-    if ($b > 1 && $nsq != $nsq_prv && $nsq_prv > 0) { print "parse_stofile error in block $b: nsq $nsq nsq_prv $nsq_prv\n"; die; }
+    if ($b > 1 && $nsq != $nsq_prv && $nsq_prv > 0) { print "$sqfile\nparse_stofile error in block $b: nsq $nsq nsq_prv $nsq_prv\n"; die; }
     
     ss2ct($ss, $ct_ref);
 
-    $$ret_ss   = $ss;
-    $$ret_rfsq = $rfsq;
-    $$ret_nsq  = $nsq;
  
     return length($sq_ref->[0]);
 }
+
 
 sub ss2ct {
     my ($ss, $ct_ref) = @_;
@@ -2830,22 +2836,34 @@ sub write_ave_histogram {
 
 sub write_histogram {
     
-    my ($N, $k, $shift, $histo_ref, $scale, $hfile, $expo) = @_;
+    my ($N, $k, $shift, $histo_ref, $scale, $hfile, $expo, $documulative) = @_;
     
     my $dim = $N * $k;
     
     open(HIS, ">$hfile");
-    
+
+    my $cum = 0;
     for (my $i=0; $i<=$dim; $i++) { 
 	my $len = ($i)/$k - $shift;
-	if ($histo_ref->[$i] > 0) { 
-	    if ($expo) { printf HIS "%g\t%f\n", exp($len), $histo_ref->[$i]*$scale; }
-	    else       { printf HIS "%f\t%f\n", $len, $histo_ref->[$i]*$scale; }
+	if ($histo_ref->[$i] > 0) {
+	    my $hval = $histo_ref->[$i]*$scale;
+	    $cum += $hval;
+
+	    if ($documulative) {
+		if ($expo) { printf HIS "%g\t%f\t%f\n", exp($len), $hval, $cum; }
+		else       { printf HIS "%f\t%f\t%f\n", $len,      $hval, $cum; }
+	    }
+	    else {
+		if ($expo) { printf HIS "%g\t%f\n", exp($len), $hval; }
+		else       { printf HIS "%f\t%f\n", $len,      $hval; }
+	    }
+	   
 	}
     }
     
     close (HIS);
 }
+
 
 sub write_histogram_piece {
     

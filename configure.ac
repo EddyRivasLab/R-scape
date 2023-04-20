@@ -42,7 +42,7 @@ AC_PREREQ(2.63)
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT(R-scape, 2.0.0.j, elenarivas@fas.harvard.edu, R-scape)
+AC_INIT(R-scape, 2.0.1.a, elenarivas@fas.harvard.edu, R-scape)
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the usexr is overriding CFLAGS
@@ -89,7 +89,7 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="May 2022"
+RSCAPE_DATE="March 2023"
 RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -104,7 +104,7 @@ RSCAPE_INFERNALDIR="lib/infernal/infernal-current"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
 
 RVIEW_NAME="R-view"
-RVIEW_DATE="May 2018"
+RVIEW_DATE="Feb 2023"
 RVIEW_COPYRIGHT="Copyright (C) 2018 Howard Hughes Medical Institute."
 RVIEW_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RVIEW_VERSION="0.1"

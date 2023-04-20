@@ -67,6 +67,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int                  nbpairs;
   int                  simnbpairs;
 
+  int                  profmark;
+  
   float                tol;
   int                  verbose;
 };
@@ -85,6 +87,7 @@ static ESL_OPTIONS options[] = {
   { "-o",          eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "send output to file <f>, not stdout",                                                     1 },
   /* other options */  
   { "--onemsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "if file has more than one msa, analyze only the first one",                               1 },
+  { "--profmark",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                "write alignments with the ss_cons of the original alignment, usefuls for profmark nulls",  1 },
   { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,                "tolerance",                                                                               0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,                "set RNG seed to <n>",                                                                     0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -161,6 +164,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.noss     = esl_opt_GetBoolean(go, "--noss");
   
   /* other options */
+  cfg.profmark = FALSE; if (esl_opt_IsOn(go, "--profmark"))  cfg.profmark = TRUE;   // write the orignal ss_cons in the null alignments
   cfg.onemsa  = esl_opt_IsOn(go, "--onemsa")?     esl_opt_GetBoolean(go, "--onemsa")    : FALSE;
   cfg.tol     = esl_opt_GetReal   (go, "--tol");
   cfg.verbose = esl_opt_GetBoolean(go, "-v");
@@ -240,7 +244,7 @@ main(int argc, char **argv)
     if (cfg.onemsa && cfg.nmsa > 1) break;
     
     if (cfg.N > 0 && cfg.N < msa->nseq) {
-      status = msamanip_SelectSubset(cfg.r, cfg.N, &msa, NULL, cfg.errbuf, cfg.verbose);
+      status = msamanip_SelectSubset(cfg.r, cfg.N, &msa, NULL, TRUE, cfg.errbuf, cfg.verbose);
       if (status != eslOK) {
 	printf("%s\n", cfg.errbuf);              
 	esl_fatal("Failed to manipulate original alignment"); 
@@ -359,7 +363,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   // create the tree with target abl
   create_tree(go, cfg, msa);
   
-  status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &msafull, &sc, cfg->errbuf, cfg->verbose);
+  status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &msafull, &sc, cfg->profmark, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   if (cfg->verbose) {
     esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM); 
@@ -368,7 +372,6 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   
   // use columns not involved in base pairs to do the shuffling
   status = msamanip_CalculateCT(msa, &ct, NULL, -1, cfg->errbuf);
-  // use all columns to do the shuffling
   ESL_ALLOC(usecol, sizeof(int) * (L+1));
   esl_vec_ISet(usecol, L+1, FALSE);
   for (n = 0; n <= L; n ++) if (ct[n] == 0) usecol[n] = TRUE;
@@ -419,7 +422,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   int  status;
   
   /* the TREE */
-  status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+  status = Tree_CalculateExtFromMSA(cfg->r, &msa, &cfg->T, FALSE, TRUE, cfg->errbuf, cfg->verbose);
   if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
   if (cfg->T) {
     cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 

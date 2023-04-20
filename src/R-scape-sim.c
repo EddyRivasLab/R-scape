@@ -67,6 +67,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   double               minidthresh;	       // fractional minimal identity threshold for selecting subset of sequences 
   double               gapthresh;              // only keep columns with <= gapthresh fraction of gaps in them 
 
+  char                *sim_name;               // optional, give a name to the synthetic msa
+  
   char                *outdir;
   char                *filename;
   int                 *msamap;
@@ -122,6 +124,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   POTTSPARAM           pottsparam;
   int                  L;                       // lenght of the alignment if not controlled by pottsfile of pdbfile
 
+  int                  profmark;
+
   char                *treefile;                // for an externally provided tree
   float                tol;
   int                  verbose;
@@ -131,6 +135,7 @@ static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
+  { "--sim_name",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a name for the similated msa",                                                    1 },
   /* alphabet type */
   { "--dna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use DNA alphabet",                                                                          0 },
   { "--rna",          eslARG_NONE,      FALSE,   NULL,       NULL,  ALPHOPTS, NULL,  NULL,               "use RNA alphabet",                                                                          0 },
@@ -183,7 +188,8 @@ static ESL_OPTIONS options[] = {
   { "--gapthresh",    eslARG_REAL,     "0.5",    NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
-  /* other options */  
+  /* other options */
+  { "--profmark",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,"--rnass",            "write alignments with the ss_cons of the original alignment, usefuls for profmark nulls",  1 },
   { "--tol",          eslARG_REAL,     "1e-3",   NULL,       NULL,   NULL,    NULL,  NULL,               "tolerance",                                                                                 0 },
   { "--seed",          eslARG_INT,       "0",    NULL,     "n>=0",   NULL,    NULL,  NULL,               "set RNG seed to <n>",                                                                       0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -290,6 +296,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
   cfg.gapthresh   = esl_opt_GetReal   (go, "--gapthresh");
 
+  /* msa name */
+  cfg.sim_name = NULL;
+  if (esl_opt_IsOn(go, "--sim_name")) esl_sprintf( &cfg.sim_name, "%s", esl_opt_GetString(go, "--sim_name"));
+  
   /* outdir */
   cfg.outdir = NULL;
   if (esl_opt_IsOn(go, "--outdir")) esl_sprintf( &cfg.outdir, "%s", esl_opt_GetString(go, "--outdir"));
@@ -329,6 +339,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.target_abl  = esl_opt_IsOn(go, "--abl")?   esl_opt_GetReal(go, "--abl")      : -1.0;
   cfg.abl  = -1.0;
   cfg.atbl = -1.0;
+
+  cfg.profmark = FALSE; if (esl_opt_IsOn(go, "--profmark"))  cfg.profmark = TRUE;   // write the orignal ss_cons in the alignments
 
   /* If POTTS */
   cfg.pottsfile = NULL;
@@ -469,7 +481,7 @@ main(int argc, char **argv)
     /* write the simulated msa to file */
     if (simsa) esl_msafile_Write(cfg.simsafp, simsa, eslMSAFILE_STOCKHOLM);
     if (1||cfg.verbose) 
-      MSA_banner(stdout, cfg.msaname, simstat, cfg.mstat, simnbpairs, cfg.nbpairs);
+      MSA_banner(stdout, cfg.msaname, simstat, cfg.mstat, simnbpairs, simnbpairs);
     if (cfg.verbose) 
       esl_msafile_Write(stdout, simsa, eslMSAFILE_STOCKHOLM);
   
@@ -605,7 +617,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (cfg->treetype == RAND) { // sequences are independent
     if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
     else { 
-      status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+      status = Tree_CalculateExtFromMSA(cfg->r, &msa, &cfg->T, FALSE, TRUE, cfg->errbuf, cfg->verbose);  
       if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
       Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
       esl_tree_Destroy(cfg->T); cfg->T = NULL;
@@ -614,7 +626,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   else if (cfg->treetype == STAR) { // sequences are independent but derived form a common ancestor
     if (cfg->target_atbl > 0) { cfg->T = NULL; cfg->atbl = cfg->target_atbl; }
     else { 
-       status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
+      status = Tree_CalculateExtFromMSA(cfg->r, &msa, &cfg->T, FALSE, TRUE, cfg->errbuf, cfg->verbose);
      
       if (status != eslOK) { printf("%s\n", cfg->errbuf); esl_fatal(cfg->errbuf); }
       Tree_GetNodeTime(0, cfg->T, &cfg->atbl, NULL, NULL, cfg->errbuf, cfg->verbose);
@@ -622,7 +634,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
     }
   }
   else if (cfg->treetype == GIVEN) {   // use the tree determined by the given alignment
-     status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);  
+    status = Tree_CalculateExtFromMSA(cfg->r, &msa, &cfg->T, FALSE, TRUE, cfg->errbuf, cfg->verbose);  
      if (status != eslOK) esl_fatal(cfg->errbuf); 
   }
   else if (cfg->treetype == EXTERNAL) {   // use an external tree
@@ -746,7 +758,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
 
   if (cfg->N > 0 && cfg->treetype != EXTERNAL) {
-    if (msamanip_SelectSubset(cfg->r, cfg->N, omsa, NULL, cfg->errbuf, cfg->verbose)                       != eslOK) {
+    if (msamanip_SelectSubset(cfg->r, cfg->N, omsa, NULL, TRUE, cfg->errbuf, cfg->verbose)                 != eslOK) {
       printf("%s\n", cfg->errbuf); esl_fatal(msg); }
   }
   
@@ -953,13 +965,13 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   case SAMPLE_NAIVE:
     noss = TRUE;
     if (cov_GenerateAlignment(cfg->r, cfg->treetype, cfg->N, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, cfg->ribosum, &msafull, 
-			      noss, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+			      noss, cfg->noindels, cfg->profmark, cfg->sim_name, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nfailed to generate the naive simulated alignment", cfg->errbuf);
     break;
   case SAMPLE_RNASS:
     noss = FALSE;
     if (cov_GenerateAlignment(cfg->r, cfg->treetype, cfg->N, cfg->atbl, cfg->T, root, cfg->e1rate, cfg->e1rateB, cfg->ribosum, &msafull, 
-			      noss, cfg->noindels, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
+			      noss, cfg->noindels, cfg->profmark, cfg->sim_name, cfg->tol, cfg->errbuf, cfg->verbose) != eslOK)
       esl_fatal("%s\nfailed to generate the rnass simulated alignment", cfg->errbuf);
     break;
   case SAMPLE_POTTS:

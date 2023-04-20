@@ -137,7 +137,7 @@ extern void   CMAP_FreeCListArray(int ncl, CLIST *list);
 extern BPTYPE CMAP_GetBPTYPE(int i, int j, CLIST *clist);
 extern int    CMAP_IsContactLocal(int i, int j, CLIST *list);
 extern int    CMAP_IsBPLocal(int i, int j, CLIST *list);
-extern int    CMAP_IsNewContact(int posi, int  posj, BPTYPE bptype, CLIST *clist);
+extern int    CMAP_IsNewContact(int posi, int  posj, int pdbi, int pdbj, BPTYPE bptype, CLIST *clist);
 extern int    CMAP_IsWCLocal(int i, int j, CLIST *clist);
 extern int    CMAP_ReuseCList(CLIST *list);
 extern int    CMAP_RemoveFromCLIST(int c, CLIST *clist);

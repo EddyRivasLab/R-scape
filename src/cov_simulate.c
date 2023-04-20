@@ -29,7 +29,7 @@
 #include "ribosum_matrix.h"
 
 static void ax_dump(ESL_DSQ *dsq);
-static int  cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, char *errbuf, int verbose);
+static int  cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, int profmark, char *errbuf, int verbose);
 static int  cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribusum,
 					  int *ct, ESL_MSA *msa, int *ret_idx, int *nidx, double tol, char *errbuf, int verbose);
 static int  cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double abl, E1_RATE *e1rate, int noss, struct ribomatrix_s *ribusum,
@@ -58,13 +58,13 @@ static int  cov_insert(ESL_RANDOMNESS *r, int sqidx, int pos, int **ret_ct, ESL_
 
 int 
 cov_GenerateAlignment(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double atbl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, E1_RATE *e1rateB, 
-		      struct ribomatrix_s *ribosum, ESL_MSA **ret_msafull, int noss, int noindels, double tol, char *errbuf, int verbose)
+		      struct ribomatrix_s *ribosum, ESL_MSA **ret_msafull, int noss, int noindels, int profmark, char *sim_name, double tol, char *errbuf, int verbose)
 {
   ESL_MSA *msafull = NULL;
   int     *ct = NULL;
   int      status;
 
-  status = cov_GenerateAlignmentUngapped(r, treetype, N, atbl, T, root, e1rate, ribosum, &msafull, &ct, noss, tol, errbuf, verbose);
+  status = cov_GenerateAlignmentUngapped(r, treetype, N, atbl, T, root, e1rate, ribosum, &msafull, &ct, noss, profmark, sim_name, tol, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   if (verbose) esl_msafile_Write(stdout, msafull, eslMSAFILE_STOCKHOLM);
 
@@ -86,7 +86,7 @@ cov_GenerateAlignment(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double atbl, 
 
 int 
 cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, double atbl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, struct ribomatrix_s *ribosum, 
-			      ESL_MSA **ret_msafull, int **ret_ct, int noss, double tol, char *errbuf, int verbose)
+			      ESL_MSA **ret_msafull, int **ret_ct, int noss, int profmark, char *sim_name, double tol, char *errbuf, int verbose)
 {
   ESL_MSA        *msa = NULL;     /* alignment of leaf and node sequences */
   char           *name = NULL;
@@ -119,18 +119,21 @@ cov_GenerateAlignmentUngapped(ESL_RANDOMNESS *r, TREETYPE treetype, int N, doubl
   else if (treetype == RAND)     esl_sprintf(&ttype, "rand");
   else { status = eslFAIL; goto ERROR; }
 
-  esl_sprintf(&name, "%s_synthetic_N%d_%s", root->name, N, ttype);
+  if (sim_name) 
+    esl_sprintf(&name, "%s_synthetic_N%d_%s", sim_name, N, ttype);
+  else 
+    esl_sprintf(&name, "%s_synthetic_N%d_%s", root->name, N, ttype);
   if (msa->acc) free(msa->acc); msa->acc = NULL;
   status = esl_strdup(name, -1, &(msa->acc));  if (status != eslOK) goto ERROR;
 
   /* The ct vector with the secondary structure */
   ESL_ALLOC(ct, sizeof(int)*(L+1));
   esl_vec_ISet(ct, L+1, 0);
-  if (noss || root->ss_cons == NULL) esl_vec_ISet(ct, L+1, 0);
-  else                               esl_wuss2ct(root->ss_cons, L, ct);
+  if ( (noss && !profmark) || root->ss_cons == NULL) esl_vec_ISet(ct, L+1, 0);
+  else                                               esl_wuss2ct(root->ss_cons, L, ct);
 
   /* we have the root and a secondary structure, add both to the growing alignment */
-  if (cov_add_root(root, msa, &idx, nidx, noss, errbuf, verbose)!= eslOK) { status = eslFAIL; goto ERROR; }
+  if (cov_add_root(root, msa, &idx, nidx, noss, profmark, errbuf, verbose)!= eslOK) { status = eslFAIL; goto ERROR; }
 
  /* evolve root */
   if (T)                     status = cov_evolve_root_ungapped_tree(r, T,       e1rate, noss, ribosum, ct, msa, &idx, nidx, tol, errbuf, verbose);
@@ -198,7 +201,7 @@ ax_dump(ESL_DSQ *dsq)
 }
 
 static int 
-cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, char *errbuf, int verbose) 
+cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, int profmark, char *errbuf, int verbose) 
 {
   int L = root->alen;
   int i;
@@ -218,7 +221,7 @@ cov_add_root(ESL_MSA *root, ESL_MSA *msa, int *ret_idx, int *nidx, int noss, cha
     msa->ax[nidx[0]][i] = root->ax[0][i];
   
   /* copy the secondary structure */
-  if (!noss) {
+  if (!noss || profmark) {
     if (msa->ss_cons) free(msa->ss_cons); msa->ss_cons = NULL;
     esl_strdup(root->ss_cons, -1, &(msa->ss_cons));
    }

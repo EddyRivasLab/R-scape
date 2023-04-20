@@ -27,6 +27,7 @@
 
 
 #include "msamanip.h"
+#include "r2rdepict.h"
 #include "structure.h"
 
 
@@ -84,7 +85,7 @@ msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, ch
       for (j = i+1; j < msa->alen; j ++)
 	if (ctlist->ct[c][i+1] == j+1) nbpairs ++;
   }
-  
+
   if (ret_ctlist)  *ret_ctlist  = ctlist;  else struct_ctlist_Destroy(ctlist);
   if (ret_nbpairs) *ret_nbpairs = nbpairs;
 
@@ -879,7 +880,7 @@ msamanip_SelectSubsetByminID(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh, i
 /* Extract subset with nseq sequences taken at random
  */
 int
-msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, char *errbuf, int verbose)
+msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafile, int randomize, char *errbuf, int verbose)
 {
   FILE         *msafp;
   char         *newfile = NULL;
@@ -900,7 +901,6 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   }
   if (nseq > msa->nseq) ESL_XFAIL(eslFAIL, errbuf, "cannot sample %d sequences. Alignment has %d sequences.", nseq, msa->nseq);
   
-
   /* the newfile file with submsa */
   if (msafile) {
     omsafile = *msafile;
@@ -930,7 +930,9 @@ msamanip_SelectSubset(ESL_RANDOMNESS  *r, int nseq, ESL_MSA **omsa, char **msafi
   for (n = 0; n <= msa->nseq; n ++) array[n] = n;
 
   /* randomize array */
-  if ((status = esl_vec_IShuffle(r, array, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize array");
+  if (randomize) {
+    if ((status = esl_vec_IShuffle(r, array, msa->nseq)) != eslOK) ESL_XFAIL(status, errbuf, "failed to randomize array");
+  }
 
   /* get the first 'nseq' */
   ESL_ALLOC(useme, sizeof(int) * msa->nseq);
@@ -1454,7 +1456,7 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
 
   if (verbose) {
       esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
-    }
+  }
 
   /* vector to mark residues in a column */
   ESL_ALLOC(useme, sizeof(int) * allmsa->nseq);
@@ -1493,7 +1495,11 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
       if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Error in ShuffleTreeSubstitutions - right descendant", errbuf);
     }
   }
-  
+
+  if (verbose) {
+    esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
+  }
+
   status = esl_msa_SequenceSubset(shallmsa, useme, &shmsa);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "Error in ShuffleTreeSubstitutions - could not create leaves' msa");
   
@@ -1627,13 +1633,13 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
 	  nsubs ++;
 	}
 
-    // assign shdescendant as the sh-ascendent, except for gaps that we keep the original ones.
+    // assign sh-descendant as the sh-ascendent, except for gaps that we keep the original ones.
     dxash[n] = (esl_abc_XIsGap(abc, axd[n]))? axd[n] : axash[n];
   }
   
 #if 0
   int x;
-  if (verbose) {
+  if (1||verbose) {
     printf("nsub %d\n", nsubs);
     for (x = 0; x < K; x ++)
       printf("%d %d %d %d %d\n", nsub[x*K+0], nsub[x*K+1], nsub[x*K+2], nsub[x*K+3], nsub[x*K+4]);

@@ -335,7 +335,7 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data)
   if (verbose) {
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (data->msamap[i]==15&&data->msamap[j]==70) printf("GT[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	printf("GT[%d][%d] = %f \n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, mi->COV->mx[i][j]);
       } 
   }
 
@@ -379,7 +379,7 @@ corr_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
       if (gt < mi->minCOV) mi->minCOV = gt;
       if (gt > mi->maxCOV) mi->maxCOV = gt;
     }
-  
+
    return status;
 }
 
@@ -1606,6 +1606,7 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     K = mi->abc->K;
 #endif
   int     K2 = K*K;
+  int     occ = 0;
   int     s;
   int     resi, resj;
   int     x, y;
@@ -1626,9 +1627,10 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     resi = coli[s];
     resj = colj[s];
     
-    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) { 
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
+      occ ++;
       mi->nseff[i][j]                += msa->wgt[s];
-      mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s]; 
+      mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s];
     }
 #if GAPASCHAR
     // add the contribution of A - and - - columns

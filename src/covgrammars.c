@@ -170,22 +170,24 @@ GMX_Create(int L)
   return NULL;
 }
 
+
 G6X_MX *
 G6XMX_Create(int L)
 {
   G6X_MX *g6mx = NULL;
-  int    status;
+  int     status;
 
   ESL_ALLOC(g6mx, sizeof(G6X_MX));
-
-  g6mx->S = GMX_Create(L);
-  g6mx->L = GMX_Create(L);
-  g6mx->F = GMX_Create(L);
+  
+  g6mx->S  = GMX_Create(L);
+  g6mx->L  = GMX_Create(L);
+  g6mx->F  = GMX_Create(L); 
 
   return g6mx;
  ERROR:
   return NULL;
 }
+
 
 RBG_MX *
 RBGMX_Create(int L)
@@ -195,18 +197,20 @@ RBGMX_Create(int L)
 
   ESL_ALLOC(rbgmx, sizeof(RBG_MX));
 
-  rbgmx->S  = GMX_Create(L);
-  rbgmx->F0 = GMX_Create(L);
-  rbgmx->F5 = GMX_Create(L);
-  rbgmx->P  = GMX_Create(L);
-  rbgmx->M  = GMX_Create(L);
-  rbgmx->R  = GMX_Create(L);
-  rbgmx->M1 = GMX_Create(L);
-
+  rbgmx->S   = GMX_Create(L);
+  rbgmx->F0  = GMX_Create(L);
+  rbgmx->F5  = GMX_Create(L);
+  rbgmx->P   = GMX_Create(L);
+  rbgmx->M   = GMX_Create(L);
+  rbgmx->R   = GMX_Create(L);
+  rbgmx->M1  = GMX_Create(L);
+  
   return rbgmx;
+  
  ERROR:
   return NULL;
 }
+
 
 MEA_MX *
 MEAMX_Create(int L)
@@ -236,24 +240,26 @@ void
 G6XMX_Destroy(G6X_MX *gmx)
 {
   if (gmx == NULL) return;
-  if (gmx->S) GMX_Destroy(gmx->S);
-  if (gmx->L) GMX_Destroy(gmx->L);
-  if (gmx->F) GMX_Destroy(gmx->F);
+  if (gmx->S)  GMX_Destroy(gmx->S);
+  if (gmx->L)  GMX_Destroy(gmx->L);
+  if (gmx->F)  GMX_Destroy(gmx->F);
   free(gmx);
 }
+
 void 
 RBGMX_Destroy(RBG_MX *gmx)
 {
   if (gmx == NULL) return;
-  if (gmx->S)  GMX_Destroy(gmx->S);
-  if (gmx->F0) GMX_Destroy(gmx->F0);
-  if (gmx->F5) GMX_Destroy(gmx->F5);
-  if (gmx->P)  GMX_Destroy(gmx->P);
-  if (gmx->M)  GMX_Destroy(gmx->M);
-  if (gmx->R)  GMX_Destroy(gmx->R);
-  if (gmx->M1) GMX_Destroy(gmx->M1);
+  if (gmx->S)   GMX_Destroy(gmx->S);
+  if (gmx->F0)  GMX_Destroy(gmx->F0);
+  if (gmx->F5)  GMX_Destroy(gmx->F5);
+  if (gmx->P)   GMX_Destroy(gmx->P);
+  if (gmx->M)   GMX_Destroy(gmx->M);
+  if (gmx->R)   GMX_Destroy(gmx->R);
+  if (gmx->M1)  GMX_Destroy(gmx->M1);
   free(gmx);
 }
+
 void 
 MEAMX_Destroy(MEA_MX *gmx)
 {
@@ -276,6 +282,7 @@ GMX_Dump(FILE *fp, GMX *gmx)
     }
   fputc('\n', fp);
 }
+
 
 POST *
 POST_Create(int L)

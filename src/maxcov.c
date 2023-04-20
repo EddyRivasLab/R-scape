@@ -54,6 +54,7 @@ MAXCOV(ESL_RANDOMNESS *r, struct mutual_s *mi, CLIST *clist, CTLIST **ret_ctlist
     (*ret_exclude)[0] = struct_covlist_Create(0);
     (*ret_exclude)[1] = struct_covlist_Create(0);
     *ret_ctlist = struct_ctlist_Create(1, mi->alen); // if there are no covariations, we still calculate one CaCoFold structure
+
     return eslOK;
   }
   

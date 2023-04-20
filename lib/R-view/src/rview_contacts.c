@@ -417,7 +417,7 @@ CMAP_Dump(FILE *fp, CLIST *clist, int pdbonly)
   int   status = eslOK;
 
   if (clist->pdbname == NULL) return eslOK;
-    
+
   if (pdbonly) fprintf(fp, "# ij in pdbsequence | basepair type\n");
   else         fprintf(fp, "# ij in alignment | ij in pdbsequence | basepair type\n");
   for (h = 0; h < clist->ncnt; h ++) {
@@ -574,11 +574,17 @@ CMAP_IsWCLocal(int i, int j, CLIST *clist)
 }
 
 int
-CMAP_IsNewContact(int posi, int  posj, BPTYPE bptype, CLIST *clist)
+CMAP_IsNewContact(int posi, int  posj, int pdbi, int pdbj, BPTYPE bptype, CLIST *clist)
 {
   int h;
   for (h = 0; h < clist->ncnt; h ++) {
-    if (posi == clist->cnt[h].posi && posj == clist->cnt[h].posj && clist->cnt[h].bptype == bptype) return FALSE;
+    if (posi == clist->cnt[h].posi && posj == clist->cnt[h].posj && clist->cnt[h].bptype == bptype)
+      {
+	clist->cnt[h].pdbi = pdbi;
+	clist->cnt[h].pdbj = pdbj;
+
+	return FALSE;
+      }
   }
   return TRUE;
 }

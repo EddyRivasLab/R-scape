@@ -500,6 +500,7 @@ int try_main(int argc, char* argv[])
 	drawingParams.pairBondNonCanonRadius=drawingParams.pairBondGURadius/2.0;
 	drawingParams.pairBondCircleLineWidth=drawingParams.pairBondNonCanonRadius/5.0;
 	drawingParams.minPairShadeGap=AdobeGraphics::PointsToInches(2.5);
+	drawingParams.minPairShadeGap_h=AdobeGraphics::PointsToInches(0.4);  //ER box side for ss_cov_h
 
 	drawingParams.anyNucCircleWidth=0.01;
 //	drawingParams.highlyConservedColor=AdobeGraphics::RGBColor(237.0/255.0,28.0/255.0,36.0/255.0);
@@ -523,19 +524,23 @@ int try_main(int argc, char* argv[])
 	drawingParams.defaultOneseqLabeling=true;
 	drawingParams.indicateOneseqWobblesAndNonCanonicals=true;
 	drawingParams.warnBackboneConnectorAngle=true;
+
 	if (drawingParams.shadeBackgroundForBonds) {
-		// want relatively light colors
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(215.0/255.0,239.0/255.0,197/255.0)));
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("1",AdobeGraphics::RGBColor(200.0/255.0,216.0/255.0,250.0/255.0)));
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("0",AdobeGraphics::RGBColor(255.0/255.0,216.0/255.5,216.0/255.0)));
+	  // want relatively light colors                  
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("3",AdobeGraphics::RGBColor(175.0/255.0,240.0/255.0,168/255.0)));   //ER color "3" added
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(49.0/255.0,163.0/255.0,84/255.0)));     //ER color "2" modified
+	  //drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(215.0/255.0,239.0/255.0,197/255.0)));
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("1",AdobeGraphics::RGBColor(200.0/255.0,216.0/255.0,250.0/255.0)));
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("0",AdobeGraphics::RGBColor(255.0/255.0,216.0/255.5,216.0/255.0)));
 	}
 	else {
-		// want relatively dark colors
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(125.0/255.0,188.0/255.0,0/255.0)));
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("1",AdobeGraphics::RGBColor(0/255.0,173/255.0,188.0/255.0)));
-		drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("0",AdobeGraphics::RGBColor(217.0/255.0,0,0)));
-		drawingParams.pairBondLen=0.054*1.3;
-		drawingParams.pairBondWidth=0.01*1.3*2.0;
+	  // want relatively dark colors
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("3",AdobeGraphics::RGBColor(100.0/255.0,169.0/255.0,100/255.0)));  //ER color "3" added
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("2",AdobeGraphics::RGBColor(125.0/255.0,188.0/255.0,0/255.0)));
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("1",AdobeGraphics::RGBColor(0/255.0,173/255.0,188.0/255.0)));
+	  drawingParams.pairQualityColorMap.insert(StringToColorMap::value_type("0",AdobeGraphics::RGBColor(217.0/255.0,0,0)));
+	  drawingParams.pairBondLen=0.054*1.3;
+	  drawingParams.pairBondWidth=0.01*1.3*2.0;
 	}
 
 	drawingParams.entropyMinColor=AdobeGraphics::RGBColor(1,0,0);
@@ -722,6 +727,7 @@ int try_main(int argc, char* argv[])
 	if (svg) {
 		pdf_=new SvgGraphics(outFileName,width,height,fontFaceSet);
 	}
+
 	else {
 		pdf_=new PdfGraphics(outFileName,width,height,fontFaceSet);
 	}

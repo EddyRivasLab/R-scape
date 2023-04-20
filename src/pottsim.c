@@ -22,7 +22,8 @@
 int
 potts_GenerateAlignment(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, TREETYPE treetype, int N, int L, double atbl, ESL_TREE *T, ESL_MSA *root, E1_RATE *e1rate, E1_RATE *e1rateB,
 			ESL_MSA **ret_msafull, char *msafile, ESL_MSA *msa, int *msamap, int *msarevmap, int abcisRNA, double cntmaxD, char *gnuplot,
-			POTTSPARAM pottsparamtype, double pottsigma, char *pottsfile, char *pdbfile, char *pdbchain, int noindels, int onlypdb, double tol, char *errbuf, int verbose)
+			POTTSPARAM pottsparamtype, double pottsigma, char *pottsfile, char *pdbfile, char *pdbchain, int noindels, int onlypdb,
+			double tol, char *errbuf, int verbose)
 {
   ESL_MSA *msafull = NULL;
   PT      *pt = NULL;

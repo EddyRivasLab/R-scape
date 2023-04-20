@@ -23,7 +23,7 @@
  HL   CUYG         -   	     -          CUYG-tetraloop  
  HL   YGNN         -   	     -          YGNN-tetraloop  
  HL   UKNRW        -         -          T-loop
-
+ 
 
 #BL  5'-L Loop R  F0  
 #BL               F0  5'-L Loop R
@@ -39,11 +39,18 @@
 #
 #IL   Loop-L(5'-3') Loop-R(5'-3')  L-o(5'-3')     R-o(5'-3')     L-i(5'-3')   R-i(5'-3')    name
 #------------------------------------------------------------------------------------------------------------------
- IL   RNN           -              N,G,A          N,A,G          -            -             K-turn               
- IL   RNN           -              N,G,A          N,A,A          -            -             Reverse_K-turn               
- IL   -             -              R,A,R,R,R,U,A  A,U,R,R,N,A,R  -            -             Loop-E
+ IL   RNN           -              G,A            A,R            -            -             K-turn               
+ IL   -             RNN            G,A            A,R            -            -             K-turn-b               
+#IL   GUA           -              G,G,A          G,A,A          -            -             K-turn-RMDetect              
+#IL   RNN           -              N,G,A          N,A,G          -            -             K-turn               
+#IL   RNN           -              N,G,A          N,A,A          -            -             Reverse_K-turn               
+#IL   GAMU          RUGA           -              -              -            -             Loop-E
+ IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
+#IL   -             -              R,A,R,R,R,U,A  A,U,R,R,N,A,R  -            -             Loop-E
  IL   UAAG          UAU            C,C            G,G            -            -             Tetraloop-receptor
- IL   CAC           C              G,C            C,G            U            A             C-loop
+ IL   CVC           V              -              -              -            -             C-loop
  IL   G             -              G,A            A,A            U,A          A,G           G-bulge
- IL   -             -              GA             GA             -            -             Tandem-GA
-#IL   -             -              G,A            A,G            -            -             Tandem-GA
+ IL   -             -              G,A            A,G            -            -             Tandem-GA
+ IL   YCC           AAC            -              -              -            -             Twisted-up
+ IL   YAA           RAN            -              -              -            -             UAA_GAN
+ IL   AGARA         GGUGRAA        -              -              -            -             Docking-elbow

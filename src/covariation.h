@@ -17,6 +17,7 @@
 
 #include "covgrammars.h"
 #include "correlators.h"
+#include "r3d.h"
 
 #define BMIN  -10.0     // minimum COV value (-10.0 is sensible)
 #define HPTS  400       // number of point in histogram
@@ -33,8 +34,8 @@ extern int              cov_DumpRankList(FILE *fp, RANKLIST *ranklist);
 extern int              cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h);
 extern int              cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, 
 					  char *covtype, char *threshtype);
-extern int              cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, HITLIST **ret_foldhitlist, RMLIST **ret_foldrmlist, 
-					     char *covtype, char *threshtype);
+extern int              cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklist, HITLIST *hitlist, R3D *r3d,
+					      HITLIST **ret_foldhitlist, RMLIST **ret_foldrmlist, char *covtype, char *threshtype);
 extern int              cov_ReadNullHistogram(char *nullhisfile, RANKLIST **ret_ranklist, char *errbuf, int verbose);
 extern int              cov_WriteNullHistogram(char *nullhisfile, RANKLIST *ranklist, char *errbuf, int verbose);
 extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);

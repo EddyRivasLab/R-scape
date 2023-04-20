@@ -9,3 +9,12 @@ src/Stockholm.pm repaced wiht src/R2R_Stockholm.pm
 src/SelectSubFamilyFromStockholm.pl modified (old saved as src/old.SelectSubFamilyFromStockholm.pl)
 
 demo/MetamakeDemos.pl
+
+
+------------------------------------------------------
+FIles modifies (look for //ER)
+
+R2R.h
+R2R.cpp
+RnaDrawer.cpp
+ParseOneSchokholm.cpp

@@ -40,16 +40,16 @@
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
-#define STATSOPTS    "--nullphylo,--givennull,--naive"              
+#define STATSOPTS    "--nullphylo,--givennull,--naive"
 #define COVTYPEOPTS  "\
 --CHI,--CHIa,--CHIp,\
 --GT,--GTa,--GTp,\
 --MI,--MIa,--MIp,\
---MIr,--MIra,--MIrp,\
---MIg,--MIga,--MIgp,\
+ --MIr,--MIra,--MIrp,\
+ --MIg,--MIga,--MIgp,\
 --OMES,--OMESa,--OMESp,\
 --RAF,--RAFa,--RAFp,\
- --RAFS,--RAFSa,--RAFSp,\
+--RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa"
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"
 #define COVCLASSOPTS "--C16,--C2,--CSELECT"
@@ -60,7 +60,8 @@
 #define THRESHOPTS   "-E"                                          
 #define POTTSTOPTS   "--ML,--PLM,--APLM,--DCA,--ACE,--BML"                                          
 #define FOLDOPTS     "--cyk,--decoding"
-#define AGGMETHOD    "--fisher,--lancaster,--sidak,--noagg"
+#define SUBSOPTS     "--singlesubs,--joinsubs,--doublesubs" 
+#define AGGMETHOD    "--fisher,--lancaster,--wfisher,---lancaster_join,--wfisher_join,---lancaster_double,--wfisher_double,--sidak"
 
 /* Exclusive options for evolutionary model choice */
 
@@ -119,7 +120,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FOLDPARAM       *foldparam;
   int              helix_stats;        // TRUE to  provide stats on helices (given or calculated with CaCoFold)
   int              helix_unpaired;     // number of unpaired res allowed in a helix
-  enum agg_e       agg_method;
+  int              nagg;
+  double           agg_Eval;           // Evalue target for helix significance
+  enum agg_e      *agg_method;
   
   int              nshuffle;
 
@@ -134,7 +137,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   
   char            *treefile;
   FILE            *treefp;
-  ESL_TREE        *T;
+  int             nT;          // number of trees (we may use more than one, obtained form different rearrangements of the sequences in the msa)
+  ESL_TREE      **T;
   double           treeavgt;
  
   char                *ribofile;
@@ -188,7 +192,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
 
   int              voutput;
 
-  double           hpts;    /* number of points in the histogram */
+  int              hpts;    /* number of points in the histogram */
   double           bmin;    /* score histograms */
   double           w;
   double           pmass;
@@ -214,7 +218,9 @@ struct cfg_s { /* Shared configuration in masters & workers */
   FILE            *powerfp;
   FILE            *powerhisfp;
   POWER           *power;
+  int              powersingle;
   int              powerdouble;
+  int              powerjoin;
   int              power_includegaps;
 
   // flags for optional files
@@ -223,6 +229,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int               outsubsfile;
   int               outtreefile;
   int               outnullfile;
+  int               outprepfile;
+  int               profmark;
   int               outpottsfile;
   int               allbranchfile;
   struct outfiles_s ofile;           // the output files
@@ -236,11 +244,11 @@ static ESL_OPTIONS options[] = {
   /* name             type              default  env        range    toggles  reqs   incomp              help                                                                                  docgroup*/
   { "-h",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "show brief help on version and usage",                                                      1 },
   /* options for statistical analysis */
-  { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "Eval: max expected number of covNBPs allowed",                                             1 },
-  { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                    1 },
-  { "--structured",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "-s",               "This is a structural RNA of unknown structure",                                            1 },
-  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                       1 },
-  { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",          1 },
+  { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "E-value target for base pair significance. E > 1000 means report all E-values",             1 },
+  { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                     1 },
+  { "--structured",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "-s",               "This is a structural RNA of unknown structure",                                             1 },
+  { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                        1 },
+  { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",                   1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
   { "--cacofold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "The CaCoFold structure including all covariation",                                          1 },
    { "--Rfam",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold",NULL,             "The CaCoFold structure w/o triplets/side/cross modules, overlaping or contiguou pairs",     1 },
@@ -268,7 +276,9 @@ static ESL_OPTIONS options[] = {
   { "--gapthresh",    eslARG_REAL,     "0.75",   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
-  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "provide external tree to use",                                                              1 },
+  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,"-ntree",             "provide external tree to use",                                                              1 },
+
+  { "--ntree",         eslARG_INT,       "1",    NULL,      "n>0",   NULL,    NULL,"--treefile",         "number of trees obtained by sequence rearrangements. Default is one from msa as is",        1 },
   { "--vshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the residues in a column",                                                          1 },
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
   /* Control of pdb contacts */
@@ -344,52 +354,63 @@ static ESL_OPTIONS options[] = {
   { "--ACE",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
   { "--BML",          eslARG_NONE,      NULL,    NULL,       NULL,POTTSTOPTS, NULL,  NULL,               "potts option for training",                                                                 0 },
   { "--outpotts",     eslARG_NONE,     FALSE,    NULL,       NULL,   NULL,    NULL,  NULL,               "write inferred potts parameters",
-           1 },
+                1 },
   /* reproduce gremlin (a particular potts implementation */
   { "--gremlin",      eslARG_NONE,      FALSE,   NULL,        NULL,  NULL,    NULL,  NULL,               "reproduce gremlin",                                                                         1 },
    /* Control of scoring system - ribosum */
   { "--ribofile",   eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    NULL,  "--mx",             "read ribosum structure from file <f>",                                                      0 },
   /* Control of output */
   { "--outmsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write actual msa used",
-           1 },
+         1 },
   { "--outtree",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write phylogenetic tree used",
-           1 },
-  { "--outsubs",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "--doublesubs",     "write # of substitutions per alignment position",
-           1 },
-  { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                    1 },
-  { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                              1 },
-  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                           1 },
+         1 },
+  { "--outsubs",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "--doublesubs,--joinsubs", "write # of substitutions per alignment position",
+         1 },
+  { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                     1 },
+  { "--outprep",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pair representations",                                                                1 },
+  { "--profmark",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--outnull",NULL,              "write null alignments with the ss_cons of the original alignment, usefuls for a profmark",  1 },
+  { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                               1 },
+  { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
   /* subsitution power analysis */  
-  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                          1 },
-  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",              1 },
-  { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes by default. The alternative is to ignore gaps", 1 },
-  /* pvalue methd */
-  { "--fisher",       eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
-  { "--lancaster",    eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
-  { "--sidak",        eslARG_NONE,      FALSE,   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
-  { "--noagg",        eslARG_NONE,     "TRUE",   NULL,       NULL,AGGMETHOD,  NULL, NULL,                "aggregation method",                                                                       1 },
-  /* folding options */
-  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--cacofold", NULL,             "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0", 1 },
-  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--cacofold", NULL,             "max length to do CaCoFold calculation",                                                   0 },   
-  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
-  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm options are [cyk,decoding]",                                            1 },   
-  { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: CaCoFold uses a RF sequence. Default creates a profileseq from the alignment",      1 },
-  { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "no pairs are forbidden for having power but no covariation",                              1 },
-  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to calculate helix stats in both given and CaCoFOld structures",                     0 },
-  { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,     NULL,             "min distance between covarying pairs to report the pair. Default 1 (contiguous)",         1 },   
-  { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to leave the overlap of alt helices with other helices",                             1 },
-  { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to run the CaCoFold recursion one last time",                                        0 },
-  { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to draw annotated non WC basepairs",                                                 1 },
-  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                 1 },
+  { "--power",     eslARG_OUTFILE,      FALSE,   NULL,       NULL,   NULL,    "-s",  NULL,               "calculate empirical power curve",                                                           1 },
+  { "--singlesubs",   eslARG_NONE,     "TRUE",   NULL,       NULL,SUBSOPTS,   NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
+  { "--doublesubs",   eslARG_NONE,      FALSE,   NULL,       NULL,SUBSOPTS,   NULL,  NULL,               "calculate power using double substitutions, default is single substitutions",               1 },
+  { "--joinsubs",     eslARG_NONE,      FALSE,   NULL,       NULL,SUBSOPTS,   NULL,  NULL,               "calculate power using join substitutions, default is single substitutions",                 1 },
+  { "--powergaps",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "calculate power including res->gap changes (default is not)",
+         1 },
+  /* Helix aggregated p-value method */
+  { "--E_hlx",        eslARG_REAL,     "0.05",   NULL,      "x>=0",  NULL,    NULL,  NULL,               "E-value target for Helix significance",                                                     1 },
+  { "--fisher",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,                          "aggregation method: fisher",                                                     1 },
+  { "--lancaster",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--singlesubs","--joinsubs,--doublesubs", "aggregation method: lancaster",                                                  1 },
+  { "--lancaster_join",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--joinsubs","--singlesubs,--doublesubs", "aggregation method: lancaster",                                                  1 },
+  { "--lancaster_double",eslARG_NONE,   FALSE,   NULL,       NULL,   NULL,"--doublesubs","--singlesubs,--joinsubs", "aggregation method: lancaster",                                                  1 },
+  { "--wfisher",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--singlesubs","--joinsubs,--doublesubs", "aggregation method: weighted fisher",                                            1 },
+  { "--wfisher_join", eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--joinsubs","--singlesubs,--doublesubs", "aggregation method: weighted fisher",                                            1 },
+  { "--wfisher_double",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--doublesubs","--singlesubs,--joinsubs", "aggregation method: weighted fisher",                                            1 },
+  { "--sidak",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL, NULL,                           "aggregation method: sidak",                                                      1 },
+   /* folding options */
+  { "--minhloop",      eslARG_INT,       NULL,   NULL,     "n>=0",   NULL,"--cacofold", NULL,             "minimum hairpin loop length. If i-j is the closing pair: minhloop = j-1-1. Default is 0",  1 },
+  { "--foldLmax",      eslARG_INT,     "5000",   NULL,      "n>0",   NULL,"--cacofold", NULL,             "max length to do CaCoFold calculation",                                                    0 },   
+  { "--cyk",          eslARG_NONE,     "TRUE",   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm is cyk (default). Options are [cyk,decoding]",                           1 },   
+  { "--decoding",     eslARG_NONE,      FALSE,   NULL,       NULL,FOLDOPTS,"--cacofold",NULL,             "folding algorithm is decoding. Options are [cyk,decoding] (default is cyk)",               1 },   
+  { "--refseq",        eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: CaCoFold uses a RF sequence. Default creates a profileseq from the alignment",       1 },
+  { "--allownegatives",eslARG_NONE,     FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "no pairs are forbidden for having power but no covariation",                               1 },
+  { "--helixstats",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to calculate helix stats in both given and CaCoFOld structures",                      0 },
+  { "--covmin",        eslARG_INT,        "1",   NULL,      "n>0",   NULL,    NULL,     NULL,             "min distance between covarying pairs to report the pair. Default 1 (contiguous)",          1 },   
+  { "--show_hoverlap",eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to leave the overlap of alt helices with other helices",                              1 },
+  { "--lastfold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE to run the CaCoFold recursion one last time",                                         0 },
+  { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to draw annotated non WC basepairs",                                                  1 },
+  { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                  1 },
   /* R3D */
-  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                               1 },
-  { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                          1 },
+  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                                1 },
+  { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                           1 },
 /* other options */  
-  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                               1 },
-  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,     NULL,             "set RNG seed to <n>. Use 0 for a random seed.",                                           1 },
-  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                              0 },
-  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                              1 },
-  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,     NULL,              "minimum score value considered",                                                         0 },
+  { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                                1 },
+  { "--seed",          eslARG_INT,      "42",    NULL,     "n>=0",   NULL,    NULL,     NULL,             "set RNG seed to <n>. Use 0 for a random seed.",                                            1 },
+  { "--fracfit",      eslARG_REAL,    "1.00",    NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                               0 },
+  { "--pmass",        eslARG_REAL,   "0.0005",   NULL,   "0<x<=1",   NULL,    NULL,     NULL,             "pmass for censored histogram of cov scores",                                               1 },
+  { "--scmin",        eslARG_REAL,      NULL,    NULL,       NULL,   NULL,    NULL,     NULL,              "minimum score value considered",                                                          0 },
+  { "--hpts",         eslARG_INT,       NULL,    NULL,       NULL,   NULL,    NULL,     NULL,              "number of bins in the null scores histogram (defuals 400)",                               0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options] <msafile>";
@@ -412,11 +433,11 @@ static int  no_overlap(int i, int j, int L, int *ct);
 static void rafs_disclaimer(FILE *fp);
 static int  rscape_banner(FILE *fp, char *progname, char *banner);
 static int  rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa);
-static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_cumranklist);
-static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
+static int  run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_TREE *T, RANKLIST **ret_cumranklist);
+static int  run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, int *njoin, SPAIR *spair,
 		       RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze);
-static int  substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs,   SPAIR **ret_spair, int verbose);
-static int  doublesubs   (struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose);
+static int  substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, CTLIST *ctlist,
+			  int **ret_nsubs, int **ret_njoin, int **ret_ndouble, SPAIR **ret_spair, int verbose);
 static int  write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
 static int  write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose);
 
@@ -549,7 +570,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.fragfrac    = esl_opt_IsOn(go, "-F")?           esl_opt_GetReal   (go, "-F")          :  0.0; // remove sequences with no residues always
   cfg.idthresh    = esl_opt_IsOn(go, "-I")?           esl_opt_GetReal   (go, "-I")          :  0.0;
   cfg.minidthresh = esl_opt_IsOn(go, "-i")?           esl_opt_GetReal   (go, "-i")          : -1.0;
-  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : -1;
+  cfg.nseqmin     = esl_opt_IsOn(go, "--nseqmin")?    esl_opt_GetInteger(go, "--nseqmin")   : 1;
   cfg.gapthresh   = (GAPASCHAR == 0)?                 esl_opt_GetReal(go, "--gapthresh")    : 1.0;
   cfg.tstart      = esl_opt_IsOn(go, "--tstart")?     esl_opt_GetInteger(go, "--tstart")    : 0;
   cfg.tend        = esl_opt_IsOn(go, "--tend")?       esl_opt_GetInteger(go, "--tend")      : 0;
@@ -568,7 +589,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
   if (esl_opt_IsOn(go, "-E")) {
-    cfg.thresh->type = Eval;    cfg.thresh->val = esl_opt_GetReal(go, "-E"); 
+    cfg.thresh->type = Eval;
+    cfg.thresh->val  = esl_opt_GetReal(go, "-E"); 
   }
 
   if (esl_opt_IsOn(go, "--structured") && esl_opt_IsOn(go, "-s"))
@@ -585,14 +607,58 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // parameters to break non-nested structures in helices
   // max number of unpaired residues in a non-nested helix. default 2
   cfg.helix_unpaired             = HELIX_UNPAIRED;     
-  cfg.foldparam->helix_unpaired  = cfg.helix_unpaired;   
+  cfg.foldparam->helix_unpaired  = cfg.helix_unpaired;
 
   // aggregation method
-  if      (esl_opt_GetBoolean(go, "--fisher"))    cfg.agg_method = AGG_FISHER;
-  else if (esl_opt_GetBoolean(go, "--lancaster")) cfg.agg_method = AGG_LANCASTER;
-  else if (esl_opt_GetBoolean(go, "--sidak"))     cfg.agg_method = AGG_SIDAK;
-  else if (esl_opt_GetBoolean(go, "--noagg"))     cfg.agg_method = AGG_NONE;
- 
+  cfg.nagg = 0;
+  cfg.agg_Eval   = esl_opt_GetReal(go, "--E_hlx");
+  cfg.agg_method = NULL;
+  
+  if (esl_opt_GetBoolean(go, "--fisher"))    {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_FISHER;
+  }
+  if (esl_opt_GetBoolean(go, "--lancaster")) {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_LANCASTER;
+  }
+  if (esl_opt_GetBoolean(go, "--wfisher"))   {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_WFISHER;
+  }
+  if (esl_opt_GetBoolean(go, "--lancaster_join")) {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_LANCASTER_JOIN;
+  }
+  if (esl_opt_GetBoolean(go, "--wfisher_join"))   {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_WFISHER_JOIN;
+  }
+  if (esl_opt_GetBoolean(go, "--lancaster_double")) {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_LANCASTER_DOUBLE;
+  }
+  if (esl_opt_GetBoolean(go, "--wfisher_double"))   {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_WFISHER_DOUBLE;
+  }
+  if (esl_opt_GetBoolean(go, "--sidak"))     {
+    if (cfg.nagg == 0) ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    else               ESL_REALLOC(cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_SIDAK;
+  }
+  if (cfg.nagg == 0) {
+    ESL_ALLOC  (cfg.agg_method, sizeof(cfg.nagg+1));
+    cfg.agg_method[cfg.nagg++] = AGG_NONE;
+  }
+  
   // The grammars used
   cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : RBG;
   cfg.foldparam->GP = G6X;
@@ -615,7 +681,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     
     cfg.foldparam->r3d = R3D_Read(cfg.r3dfile, cfg.abc, cfg.errbuf, cfg.verbose);
     if (cfg.foldparam->r3d == NULL) esl_fatal("%s\nfailed to create R3D grammar from file %s\n", cfg.errbuf, cfg.r3dfile);
-    if (1||cfg.verbose) R3D_Write(stdout, cfg.foldparam->r3d);
+    if (1||cfg.verbose) R3D_Write(stdout, cfg.foldparam->r3d, TRUE);
   }
   
   // sequence used to fold
@@ -624,13 +690,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // power threshold. default 0.95
   cfg.foldparam->power_thresh = POWER_THRESH;
   if (esl_opt_IsOn(go, "--allownegatives")) cfg.foldparam->power_thresh = 1.1; // all powers [0,1] allowed
-
-  // negative pairs eval threshold. default 1.0
-  cfg.foldparam->neg_eval_thresh = 1.0;
-  if (esl_opt_IsOn(go, "--E_neg")) {
-    cfg.foldparam->neg_eval_thresh = esl_opt_GetReal(go, "--E_neg");
-    if (cfg.foldparam->neg_eval_thresh < cfg.thresh->val) cfg.foldparam->neg_eval_thresh = cfg.thresh->val;
-  }
 
   // parameters for drawing the structure
   // default: only the WC basepairs
@@ -726,7 +785,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
   /* POTTS model */
   cfg.pt = NULL;
-  
+  char            *outnullfile;         // output of null alignments (optional)
   // potts - covariation measure: PTFp or PTAp  (implemented for now)
   //                     default is  PTFp = FROEB (froebenious norm) + APC (average product correction)
   //                     default is  APC corrected (only option implemented)
@@ -797,9 +856,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.allowpair->mx[2][3] = cfg.allowpair->mx[3][2] = 1.0;
 
   /* for the cov histograms */
-  cfg.hpts    = HPTS;                                                               /* number of points in the histogram */
-  cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin") : BMIN; /* lowest cov score to bound the histogram */
-  cfg.w       = W;                                                                  /* default. histogram step, will be determined for each msa */
+  cfg.hpts    = esl_opt_IsOn(go, "--hpts")?  esl_opt_GetInteger(go, "--hpts") : HPTS; /* number of points in the histogram */
+  cfg.bmin    = esl_opt_IsOn(go, "--scmin")? esl_opt_GetReal(go, "--scmin")   : BMIN; /* lowest cov score to bound the histogram */
+  cfg.w       = W;                                                                    /* default. histogram step, will be determined for each msa */
   cfg.pmass   = esl_opt_GetReal(go, "--pmass");
   cfg.fracfit = esl_opt_GetReal(go, "--fracfit");
 
@@ -831,9 +890,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.cntmind = esl_opt_GetInteger(go, "--cntmind");
   cfg.clist   = NULL;
   cfg.msa2pdb = NULL;
-  cfg.T       = NULL;
 
-  /* potts output parameter values */
+ /* potts output parameter values */
   cfg.outpottsfile = FALSE;
   if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) cfg.outpottsfile = TRUE;
 
@@ -842,8 +900,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile    = TRUE;   // the actual msa used just with the consensus columns
   cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go, "--outsubs"))   cfg.outsubsfile   = TRUE;   // the # of substitutions per position
   cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile   = TRUE;   // the phylogenetic tree used
-  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile   = TRUE;   // the null alignments
   cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
+  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile   = TRUE;   // the null alignments
+  cfg.outprepfile   = FALSE; if (esl_opt_IsOn(go, "--outprep"))   cfg.outprepfile   = TRUE;   // the pair representations
+  cfg.profmark      = FALSE; if (esl_opt_IsOn(go, "--profmark"))  cfg.profmark      = TRUE;   // write the orignal ss_cons in the null alignments
 
   // the output files nullify
   outfile_null(&cfg.ofile);
@@ -857,12 +917,17 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.fbp  = NULL;
   cfg.fnbp = NULL;
 
-  /*  check if a tree is given */
+ /*  check if a tree is given */
   cfg.treefile = NULL;
   if (esl_opt_IsOn(go, "--treefile"))
     esl_sprintf(&cfg.treefile, "%s", esl_opt_GetString(go, "--treefile")); // input a phylogenetic tree
   cfg.treefp  = NULL;
-  
+
+  // how many trees
+  cfg.nT = esl_opt_GetInteger(go, "--ntree");
+  if (cfg.treefile && cfg.nT > 1) esl_fatal("one tree per file but nT = %d\n", cfg.nT);
+  cfg.T  = NULL;
+
   /* the ribosum matrices */
   cfg.ribofile = NULL;
   cfg.ribosum  = NULL;
@@ -890,7 +955,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.powerhisfp   = NULL;
   cfg.power        = NULL;
   cfg.powerhis     = NULL;
+  cfg.powersingle        = esl_opt_IsOn(go, "--singlesubs");
   cfg.powerdouble        = esl_opt_IsOn(go, "--doublesubs");
+  cfg.powerjoin          = esl_opt_IsOn(go, "--joinsubs");
   cfg.power_includegaps  = esl_opt_IsOn(go, "--powergaps");
 
   if (esl_opt_IsOn(go, "--power")) { // create the power file 
@@ -907,6 +974,18 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
       }
       if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.double   file %s", cfg.powerfile);
       if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.double file %s", cfg.powerhisfile);
+    }
+    else if (cfg.powerjoin) { // create the power file using join substitutions
+      if (cfg.power_includegaps) {
+	esl_sprintf(&cfg.powerfile,    "%s.power.join.withgaps",    esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.join.withgaps", esl_opt_GetString(go, "--power"));
+      }
+      else {
+	esl_sprintf(&cfg.powerfile,    "%s.power.join",    esl_opt_GetString(go, "--power"));
+	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.join", esl_opt_GetString(go, "--power"));
+      }
+      if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.join   file %s", cfg.powerfile);
+      if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.join file %s", cfg.powerhisfile);
     }
     else { // create the power file using single substitutions
       if (cfg.power_includegaps) {
@@ -927,14 +1006,16 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   else { // read the power file
     if (cfg.power_includegaps) {
-      if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.withgaps.csv", RSCAPE_HOME);
-      else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.withgaps.csv",   RSCAPE_HOME);
+      if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.withgaps.csv", RSCAPE_HOME);
+      else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.join.withgaps.csv",   RSCAPE_HOME);
+      else                      esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.withgaps.csv",   RSCAPE_HOME);
     }
     else {
-      if (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
-      else                 esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
+      if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
+      else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.join.csv",   RSCAPE_HOME);
+      else                      esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
     }
-    power_Read(cfg.powerfile, cfg.powerdouble, cfg.power_includegaps, &cfg.power, cfg.errbuf, cfg.verbose);
+    power_Read(cfg.powerfile, cfg.powerdouble, cfg.powerjoin, cfg.power_includegaps, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   
   *ret_go  = go;
@@ -989,6 +1070,14 @@ main(int argc, char **argv)
   while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
     if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
+
+    // negative pairs eval threshold. default 1.0
+    cfg.foldparam->neg_eval_thresh = 1.0;
+    if (esl_opt_IsOn(go, "--E_neg")) {
+      cfg.foldparam->neg_eval_thresh = esl_opt_GetReal(go, "--E_neg");
+      if (cfg.foldparam->neg_eval_thresh < cfg.thresh->val) cfg.foldparam->neg_eval_thresh = cfg.thresh->val;
+    }
+
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
     cfg.omsa = esl_msa_Clone(msa); // save original msa to output the fold structure with it
@@ -1020,9 +1109,9 @@ main(int argc, char **argv)
       else if (esl_opt_GetBoolean(go, "--samplebp"))       { cfg.samplesize = SAMPLE_BP; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
       else if (esl_opt_GetBoolean(go, "--samplewc"))       { cfg.samplesize = SAMPLE_WC; if (!cfg.abcisRNA) esl_fatal("alphabet type should be RNA or DNA\n"); }
     }
-    else { // increase the neg_eval_thresh
-      cfg.foldparam->neg_eval_thresh *= cfg.omsa->alen;
-    }
+    //else { // increase the neg_eval_thresh (on hold, don't remember why I added this)
+      //cfg.foldparam->neg_eval_thresh *= cfg.omsa->alen;
+    //}
 
     /* C16/C2 applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
@@ -1065,13 +1154,14 @@ main(int argc, char **argv)
     }
     else {
       status = original_msa_manipulate(go, &cfg, &msa);
+ 
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
       if (msa == NULL) continue;
       if (msa->alen == 0) continue;
 
       cfg.firstpos = 1;
       status = rscape_for_msa(go, &cfg, &msa);
-  
+ 
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run R-scape"); }
     }
 
@@ -1092,7 +1182,7 @@ main(int argc, char **argv)
     power_WriteFromHistograms  (cfg.powerfp, cfg.powerhis, cfg.verbose);
     fclose(cfg.powerfp);
     
-    power_PlotHistograms(cfg.gnuplot, cfg.powerhisfile, cfg.powerhisfp, cfg.powerhis, cfg.powerfile, cfg.powerdouble, cfg.errbuf, cfg.verbose); 
+    power_PlotHistograms(cfg.gnuplot, cfg.powerhisfile, cfg.powerhisfp, cfg.powerhis, cfg.powerfile, cfg.powerdouble, cfg.powerjoin, cfg.errbuf, cfg.verbose); 
     fclose(cfg.powerhisfp);
   }
 
@@ -1127,6 +1217,7 @@ main(int argc, char **argv)
   if (cfg.foldparam->r3d) R3D_Destroy(cfg.foldparam->r3d);
   if (cfg.foldparam) free(cfg.foldparam);
   if (cfg.r3dfile) free(cfg.r3dfile);
+  if (cfg.agg_method) free(cfg.agg_method);
   return 0;
 }
 
@@ -1138,6 +1229,8 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   struct mutual_s *mi = cfg->mi;
   struct data_s    data;
   PT              *ptlocal = NULL;
+  double           w_old = cfg->w;
+  double           w_new;
   int              status;
 
   if (cfg->covmethod == POTTS) {
@@ -1150,7 +1243,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   }
   
   corr_Reuse(mi, TRUE, cfg->covtype, cfg->covclass);
-  
+
   /* main function */
   data.ofile            = NULL;
   data.R2Rall           = FALSE;
@@ -1179,8 +1272,10 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.spair            = NULL;
   data.power            = NULL;
   data.helix_unpaired   = cfg->helix_unpaired;
+  data.nagg             = cfg->nagg;
+  data.agg_Eval         = cfg->agg_Eval;
   data.agg_method       = cfg->agg_method;
-  data.T                = cfg->T;
+  data.T                = cfg->T[0];
   data.ribosum          = cfg->ribosum;
   data.clist            = cfg->clist;
   data.msa2pdb          = cfg->msa2pdb;
@@ -1201,10 +1296,11 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   if (mi->maxCOV <= cfg->bmin) ESL_XFAIL(eslFAIL, cfg->errbuf, "bmin %f should be larger than maxCOV %f\n", cfg->bmin, mi->maxCOV);
 
   if (cfg->statsmethod == NAIVE) cfg->bmin = ESL_MAX(data.bmin,mi->minCOV);
-  cfg->w = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
- if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
+  w_new = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
+  cfg->w = ESL_MIN(w_old, w_new);
+  if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
   
- if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f tol %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV, cfg->tol);
+  if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f tol %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV, cfg->tol);
   
   if (cfg->pt == NULL) potts_Destroy(ptlocal);
   
@@ -1218,47 +1314,83 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 static int
 create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
 {
-  FILE *treefp    = NULL;
-  FILE *outtreefp = NULL;
-  int   status; 
+  FILE    *treefp    = NULL;
+  FILE    *outtreefp = NULL;
+  ESL_MSA *this_msa  = NULL;
+  int      shuffle_seqs;
+  int      n;
+  int      status; 
 
+  this_msa = esl_msa_Clone(msa);
+  if (!this_msa) esl_fatal("create_tree() error. Could not copy msa");
+  
   if (cfg->treefile) {
+    ESL_ALLOC(cfg->T, sizeof(ESL_TREE) * cfg->nT);
+    for (n = 0; n < cfg->nT; n ++) cfg->T[n] = NULL;
+
     if ((treefp = fopen(cfg->treefile, "r")) == NULL) esl_fatal("Failed to open treefile %s", cfg->treefile);
-    if ((status = esl_tree_ReadNewick(treefp, cfg->errbuf, &cfg->T)) != eslOK) esl_fatal("Failed reading treefile %s", cfg->treefile);
+    if ((status = esl_tree_ReadNewick(treefp, cfg->errbuf, &cfg->T[0])) != eslOK) esl_fatal("Failed reading treefile %s", cfg->treefile);
     fclose(treefp);
     
-    status = original_tree_doctor_names(&cfg->T);
+    status = original_tree_doctor_names(&cfg->T[0]);
     if (status != eslOK) esl_fatal("Failed to doctor names of tree %s", cfg->treefile);
+    
+    /* match the tree leaves to the msa names */
+    status = Tree_ReorderTaxaAccordingMSA(this_msa, cfg->T[0], cfg->errbuf, cfg->verbose);
+    if (status != eslOK) esl_fatal(cfg->errbuf); 
   }
   
   /* create tree from MSA */
   if (cfg->T == NULL) {
-    status = Tree_CalculateExtFromMSA(msa, &cfg->T, TRUE, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) esl_fatal(cfg->errbuf); 
+    ESL_ALLOC(cfg->T, sizeof(ESL_TREE) * cfg->nT);
+    for (n = 0; n < cfg->nT; n ++) cfg->T[n] = NULL;
+
+    // There is an issue with FastTree. Changing the order of the sequences may change the resulting tree
+    // We use option --ntree to deal with that.
+    //
+    // By default nT = 1, and the tree is built using the given sequence ordering    (shuffle_seq = FALSE).
+    // if nT > 1, the rest of the trees are buildt by first reorderint the sequences (shuffle_seq = TRUE).
+    //
+    for (n = 0; n < cfg->nT; n ++) {
+      cfg->T[n] = NULL;
+      shuffle_seqs = (n == 0)? FALSE : TRUE;
+      status = Tree_CalculateExtFromMSA(cfg->r, &this_msa, &cfg->T[n], shuffle_seqs, TRUE, cfg->errbuf, cfg->verbose);
+      if (status != eslOK) esl_fatal(cfg->errbuf);
+     
+      /* match the tree leaves to the msa names */
+      status = Tree_ReorderTaxaAccordingMSA(this_msa, cfg->T[n], cfg->errbuf, cfg->verbose);
+      if (status != eslOK) esl_fatal(cfg->errbuf); 
+    }
   }
 
   if (cfg->T) {
-    /* match the tree leaves to the msa names */
-    status = Tree_ReorderTaxaAccordingMSA(msa, cfg->T, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) esl_fatal(cfg->errbuf); 
- 
-    cfg->treeavgt = esl_tree_er_AverageBL(cfg->T); 
-    if (cfg->verbose) { Tree_Dump(stdout, cfg->T, "Tree"); esl_tree_WriteNewick(stdout, cfg->T); }
-    
-    /* outtree file if requested */
-    if (cfg->ofile.outtreefile) {
-      if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
-      esl_tree_WriteNewick(outtreefp, cfg->T);
+    for (n = 0; n < cfg->nT; n ++) {
+      if (!cfg->T[n]) continue;
+      
+      cfg->treeavgt = esl_tree_er_AverageBL(cfg->T[n]); 
+      if (cfg->verbose) { Tree_Dump(stdout, cfg->T[n], "Tree"); esl_tree_WriteNewick(stdout, cfg->T[n]); }
+      
+      if (cfg->T[n]->N != msa->nseq)  { printf("Tree[%d] cannot not be used for this msa. T->N = %d nseq = %d\n", n, cfg->T[n]->N, msa->nseq); esl_fatal(cfg->errbuf); }
     }
-    
-    if (cfg->T->N != msa->nseq)  { printf("Tree cannot not be used for this msa. T->N = %d nseq = %d\n", cfg->T->N, msa->nseq); esl_fatal(cfg->errbuf); }
+      /* outtree file if requested */
+      if (cfg->ofile.outtreefile) {
+	if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
+	for (n = 0; n < cfg->nT; n ++)  esl_tree_WriteNewick(outtreefp, cfg->T[n]);
+      }
   }
-
+  
   // only case in which T = NULL
-  if (!cfg->T && msa->nseq > 1) { printf("You need a tree for this msa. nseq = %d\n", msa->nseq); esl_fatal(cfg->errbuf); }
+  if (!cfg->T && msa->nseq > 1) { printf("You need a tree for this msa. nseq = %d\n", this_msa->nseq); esl_fatal(cfg->errbuf); }
 
   if (outtreefp) fclose(outtreefp);
+  esl_msa_Destroy(this_msa);
   return eslOK;
+
+ ERROR:
+  if (cfg->T) { for (n = 0; n < cfg->nT; n ++) esl_tree_Destroy(cfg->T[n]); free(cfg->T); }
+  if (outtreefp) fclose(outtreefp);
+  if (this_msa) esl_msa_Destroy(this_msa);
+  return status;
 }
 
 static int
@@ -1431,15 +1563,17 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   RANKLIST  *cumranklist = NULL;
   RANKLIST  *ranklist = NULL;
   int       *usecol = NULL;
+  int       nshuffle_one;
   int       sc;
   int       s;
+  int       t;
   int       n;
   int       status;
 
   status = create_tree(go, cfg, msa);
   if (status != eslOK) goto ERROR;
-   
-  if (cfg->T == NULL) {
+  
+  if (cfg->nT == 0 || cfg->T == NULL) {
     if (msa->nseq == 1) return eslOK;
     else                return eslFAIL;
   }
@@ -1452,52 +1586,55 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   if (cfg->ofile.outnullfile) {
     if ((outnullfp = fopen(cfg->ofile.outnullfile, "w")) == NULL) esl_fatal("Failed to open outnullfile %s", cfg->ofile.outnullfile);
   }
-  
-  for (s = 0; s < nshuffle; s ++) {
- 
-    status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, &sc, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) goto ERROR;
 
-    if (cfg->verbose) {
-      esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
-      printf("fitch sc %d\n", sc);
+  nshuffle_one = ESL_MAX(1, nshuffle/cfg->nT);
+  for (t = 0; t < cfg->nT; t ++) {
+    for (s = 0; s < nshuffle_one; s ++) {
+      
+      status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T[t], msa, &allmsa, &sc, cfg->profmark, cfg->errbuf, cfg->verbose);
+      if (status != eslOK) goto ERROR;
+      
+      if (cfg->verbose) {
+	esl_msafile_Write(stdout, allmsa, eslMSAFILE_STOCKHOLM); 
+	printf("fitch sc %d\n", sc);
+      }
+      
+      status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T[t], msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
+      
+      /* Weigth the sequences.
+       * Null sequences don't need to be weigted as they have the same phylogeny
+       * and basecomp than the original alignment. We just copy the weights
+       */
+      for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
+      
+      /* output null msas to file if requested */
+      if (outnullfp) {
+	esl_msafile_Write(outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
+      }
+      
+      if (cfg->verbose) {
+	esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
+	msamanip_XStats(shmsa, &shmstat);
+	msamanip_DumpStats(stdout, shmsa, shmstat);
+      }
+    
+      if (s == 0) {
+	status = calculate_width_histo(go, cfg, shmsa);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
+      }
+      
+      status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
+      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
+      if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
+      
+      status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
+      if (status != eslOK) goto ERROR;
+      
+      esl_msa_Destroy(allmsa);    allmsa = NULL;
+      esl_msa_Destroy(shmsa);     shmsa = NULL;
+      cov_FreeRankList(ranklist); ranklist = NULL;
     }
-    
-    status = msamanip_ShuffleTreeSubstitutions(cfg->r, cfg->T, msa, allmsa, usecol, &shmsa, cfg->errbuf, cfg->verbose);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
-     
-    /* Weigth the sequences.
-     * Null sequences don't need to be weigted as they have the same phylogeny
-     * and basecomp than the original alignment. We just copy the weights
-     */
-    for (n = 0; n < msa->nseq; n ++) shmsa->wgt[n] = msa->wgt[n];
-    
-    /* output null msas to file if requested */
-    if (outnullfp) {
-      esl_msafile_Write(outnullfp, shmsa, eslMSAFILE_STOCKHOLM);
-    }
-    
-    if (cfg->verbose) {
-      esl_msafile_Write(stdout, shmsa, eslMSAFILE_STOCKHOLM); 
-      msamanip_XStats(shmsa, &shmstat);
-      msamanip_DumpStats(stdout, shmsa, shmstat);
-    }
-    
-    if (s == 0) {
-      status = calculate_width_histo(go, cfg, shmsa);
-      if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to calculate the width of the histogram", cfg->errbuf);
-    }
-
-    status = run_rscape(go, cfg, shmsa, NULL, NULL, NULL, NULL, NULL, &ranklist, TRUE);
-    if (status != eslOK) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s.\nFailed to run null R-scape", cfg->errbuf);
-    if (shmsa == NULL) ESL_XFAIL(eslFAIL, cfg->errbuf, "error creating shmsa");
-    
-    status = null_add2cumranklist(ranklist, &cumranklist, cfg->verbose, cfg->errbuf);
-    if (status != eslOK) goto ERROR;
-
-    esl_msa_Destroy(allmsa); allmsa = NULL;
-    esl_msa_Destroy(shmsa); shmsa = NULL;
-    cov_FreeRankList(ranklist); ranklist = NULL;
   }
   if (cfg->ofile.outnullfile) fclose(outnullfp);
  
@@ -1568,15 +1705,15 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   /* apply msa filters and then select submsa
    * none of these functions reduce the number of columns in the alignemnt
    */
-  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)                 != eslOK) {
+  if (cfg->fragfrac >= 0.    && msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)                    != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf);                 esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, cfg->singlelink, &nremoved) != eslOK) {
+  if (esl_opt_IsOn(go, "-I") && msamanip_SelectSubsetBymaxID(cfg->r, omsa, cfg->idthresh, cfg->singlelink, &nremoved)    != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetBymaxID failed\n"); esl_fatal(msg); }
-  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)               != eslOK) {
+  if (esl_opt_IsOn(go, "-i") && msamanip_SelectSubsetByminID(cfg->r, omsa, cfg->minidthresh, &nremoved)                  != eslOK) {
     printf("%s\n", cfg->errbuf); printf("select_subsetByminID failed\n"); esl_fatal(msg); }
-  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, cfg->errbuf, cfg->verbose)     != eslOK) {
+  if (cfg->submsa            && msamanip_SelectSubset(cfg->r, cfg->submsa, omsa, NULL, FALSE, cfg->errbuf, cfg->verbose) != eslOK) {
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
-  
+
   msa = *omsa;
   if (msa->alen != alen) {
     printf("filtering altered the length of the alignment!\n");
@@ -1723,6 +1860,8 @@ original_msa_doctor_names(ESL_MSA **omsa)
      *p = '_';
     for (p = msa->name; (p = strchr(p, ':')); ++p) 
      *p = '_';
+    for (p = msa->name; (p = strchr(p, '%')); ++p) 
+     *p = '_';
     
     (*omsa)->name = msa->name;
   }
@@ -1737,10 +1876,12 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = sqname; (p = strchr(p, '/')); ++p) 
       *p = '_';
-    
+    for (p = sqname; (p = strchr(p, '%')); ++p) 
+      *p = '_';
+      
     (*omsa)->sqname[s] = sqname;
   }
-  
+
   return eslOK;
 }
 
@@ -1781,6 +1922,8 @@ outfile_null(struct outfiles_s *ofile)
   ofile->covfoldsrtfile   = NULL;      
   ofile->alipowerfile     = NULL;       
   ofile->alipowerfoldfile = NULL;
+  ofile->helixcovfile     = NULL;           
+  ofile->helixcovfoldfile = NULL;         
 
   // cov survival plots
   ofile->covhisfile = NULL;
@@ -1798,14 +1941,16 @@ outfile_null(struct outfiles_s *ofile)
   ofile->folddplotfile = NULL;
   
   // optional files
-  ofile->rocfile       = NULL;            
-  ofile->outmsafile    = NULL;          
-  ofile->outsubsfile   = NULL;
-  ofile->outtreefile   = NULL;
-  ofile->nullhisfile   = NULL;
-  ofile->outnullfile   = NULL;
-  ofile->allbranchfile = NULL;       
-  ofile->outpottsfile  = NULL;
+  ofile->rocfile         = NULL;            
+  ofile->outmsafile      = NULL;          
+  ofile->outsubsfile     = NULL;
+  ofile->outtreefile     = NULL;
+  ofile->nullhisfile     = NULL;
+  ofile->outnullfile     = NULL;
+  ofile->outprepfile     = NULL;
+  ofile->outprepfoldfile = NULL;
+  ofile->allbranchfile   = NULL;       
+  ofile->outpottsfile    = NULL;
 
 }
 static void
@@ -1821,6 +1966,9 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     
     esl_sprintf(&ofile->covsrtfile, "%s/%s.sorted.cov", cfg->outdir, outname);
     if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s/%s.sorted.cacofold.cov", cfg->outdir, outname);
+    
+    esl_sprintf(&ofile->helixcovfile, "%s/%s.helixcov", cfg->outdir, outname);
+    if (cfg->dofold) esl_sprintf(&ofile->helixcovfoldfile, "%s/%s.cacofold.helixcov", cfg->outdir, outname);
     
     // alignment power file 
     esl_sprintf(&ofile->alipowerfile, "%s/%s.power", cfg->outdir, outname);
@@ -1853,6 +2001,13 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     // output with the null alignments 
     if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s/%s.null.sto", cfg->outdir, outname);
 
+    // output with the pair representations
+    if (cfg->outprepfile) {
+      esl_sprintf(&ofile->outprepfile,       "%s/%s.prep",          cfg->outdir, outname);
+      if (cfg->dofold)
+	esl_sprintf(&ofile->outprepfoldfile, "%s/%s.cacofold.prep", cfg->outdir, outname);
+    }
+      
     // output with msa with all branches
     if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s/%s.allbranch.sto", cfg->outdir, outname);
 
@@ -1885,6 +2040,9 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     esl_sprintf(&ofile->covsrtfile, "%s.sorted.cov", outname);
     if (cfg->dofold) esl_sprintf(&ofile->covfoldsrtfile, "%s.sorted.cacofold.cov",outname);
     
+    esl_sprintf(&ofile->helixcovfile, "%s.helixcov", outname);
+    if (cfg->dofold) esl_sprintf(&ofile->helixcovfoldfile, "%s.cacofold.helixcov", outname);
+
     // alignment power file 
     esl_sprintf(&ofile->alipowerfile, "%s.power", outname);
     if (cfg->dofold) esl_sprintf(&ofile->alipowerfoldfile, "%s.cacofold.power", outname);
@@ -1916,6 +2074,12 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     // output with the null alignments 
     if (cfg->outnullfile) esl_sprintf(&ofile->outnullfile, "%s.null.sto", outname);
     
+    // output with the pair representations
+    if (cfg->outprepfile) {
+      esl_sprintf(&ofile->outprepfile, "%s.prep", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->outprepfoldfile, "%s.cacofold.prep", outname);
+    }
+    
     // output with msa with all branches
     if (cfg->allbranchfile) esl_sprintf(&ofile->allbranchfile, "%s.allbranch.sto", outname);
     
@@ -1939,7 +2103,6 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.cacofold.dplot", outname);
     }
   }
-  
 }
 
 static void
@@ -1951,6 +2114,8 @@ outfile_destroy(struct outfiles_s *ofile)
   if (ofile->covfoldsrtfile)   free(ofile->covfoldsrtfile);      
   if (ofile->alipowerfile)     free(ofile->alipowerfile);       
   if (ofile->alipowerfoldfile) free(ofile->alipowerfoldfile);    
+  if (ofile->helixcovfile)     free(ofile->helixcovfile);           
+  if (ofile->helixcovfoldfile) free(ofile->helixcovfoldfile);         
 
   if (ofile->covhisfile) free(ofile->covhisfile);
   if (ofile->covqqfile)  free(ofile->covqqfile);
@@ -1964,14 +2129,16 @@ outfile_destroy(struct outfiles_s *ofile)
   if (ofile->omsapdbfile)  free(ofile->omsapdbfile);        
   if (ofile->omsafoldfile) free(ofile->omsafoldfile);        
   
-  if (ofile->rocfile)       free(ofile->rocfile);            
-  if (ofile->outmsafile)    free(ofile->outmsafile);          
-  if (ofile->outsubsfile)   free(ofile->outsubsfile);         
-  if (ofile->outtreefile)   free(ofile->outtreefile);         
-  if (ofile->nullhisfile)   free(ofile->nullhisfile);         
-  if (ofile->outnullfile)   free(ofile->outnullfile);         
-  if (ofile->allbranchfile) free(ofile->allbranchfile);       
-  if (ofile->outpottsfile)  free(ofile->outpottsfile);
+  if (ofile->rocfile)         free(ofile->rocfile);            
+  if (ofile->outmsafile)      free(ofile->outmsafile);          
+  if (ofile->outsubsfile)     free(ofile->outsubsfile);         
+  if (ofile->outtreefile)     free(ofile->outtreefile);         
+  if (ofile->nullhisfile)     free(ofile->nullhisfile);         
+  if (ofile->outnullfile)     free(ofile->outnullfile);         
+  if (ofile->outprepfile)     free(ofile->outprepfile);         
+  if (ofile->outprepfoldfile) free(ofile->outprepfoldfile);         
+  if (ofile->allbranchfile)   free(ofile->allbranchfile);       
+  if (ofile->outpottsfile)    free(ofile->outpottsfile);
 
 }
 
@@ -2035,9 +2202,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   char     *outname  = NULL;
   int      *nsubs    = NULL;
   int      *ndouble  = NULL;
+  int      *njoin    = NULL;
   int       has_ss   = FALSE;
   int       nshuffle;
   int       analyze;
+  int       n;
   int       status;
 
   if (msa == NULL)   return eslOK;
@@ -2080,7 +2249,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
   
   if (cfg->abcisRNA) {
-    cfg->ctlist = struct_Contacts2CTList(cfg->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
+    cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
     
      
@@ -2125,9 +2294,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* the null model first */
   if (cfg->statsmethod == NULLPHYLO) {
     nshuffle = cfg->nshuffle;
-    if (nshuffle < 0) {
+    if (nshuffle < 0) { // set the number of shuffled alignments based on alignment length
       nshuffle = 20;
       if (msa->nseq*msa->alen < 1e3) { nshuffle = 200; }
+      if (msa->alen < 50)            { nshuffle = 200; }
+      if (msa->alen < 40)            { nshuffle = 300; }
     }
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
 
@@ -2138,7 +2309,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
     if (cfg->savenullhis) cov_WriteNullHistogram(cfg->ofile.nullhisfile, ranklist_null, cfg->errbuf, cfg->verbose);
   }
-  else { // otherwise just create the tree
+  else { // otherwise just create the tree(s)
     status = create_tree(go, cfg, msa);
     if (status != eslOK) goto ERROR;
     
@@ -2155,9 +2326,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (cfg->verbose) esl_histogram_Write(stdout, ranklist_null->ha);
     }
   }
+
   
   if (cfg->ofile.allbranchfile) {
-    status = run_allbranch(go, cfg, msa, &ranklist_allbranch);
+    status = run_allbranch(go, cfg, msa, cfg->T[0], &ranklist_allbranch);
     if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run allbranch", cfg->errbuf);
   }
 
@@ -2166,15 +2338,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   analyze   = TRUE;
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
-
-  if (cfg->powerdouble) 
-    status = doublesubs   (cfg, msa, cfg->power, cfg->clist, &ndouble, &spair, cfg->verbose);
-  else {
-    status = substitutions(cfg, msa, cfg->power, cfg->clist, &nsubs,   &spair, cfg->verbose);
-  }
+  
+  status = substitutions(go, cfg, msa, cfg->power, cfg->clist, cfg->ctlist, &nsubs, &njoin, &ndouble, &spair, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
    
-  status = run_rscape(go, cfg, msa, nsubs, ndouble, spair, ranklist_null, ranklist_aux, NULL, analyze);
+  status = run_rscape(go, cfg, msa, nsubs, ndouble, njoin, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) goto ERROR;
  
   free(outname);
@@ -2182,7 +2350,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->clist) CMAP_FreeCList(cfg->clist); cfg->clist = NULL;
   if (cfg->msa2pdb) free(cfg->msa2pdb); cfg->msa2pdb = NULL;
   if (cfg->msafrq) free(cfg->msafrq); cfg->msafrq = NULL;
-  if (cfg->T) esl_tree_Destroy(cfg->T); cfg->T = NULL;
+  if (cfg->T) { for (n = 0; n < cfg->nT; n ++) esl_tree_Destroy(cfg->T[n]); } free(cfg->T); cfg->T = NULL;
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
   if (ranklist_aux) cov_FreeRankList(ranklist_aux); ranklist_aux = NULL;
   if (ranklist_allbranch) cov_FreeRankList(ranklist_allbranch); ranklist_allbranch = NULL;
@@ -2190,6 +2358,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pt) potts_Destroy(cfg->pt); cfg->pt = NULL;
   if (nsubs) free(nsubs);
   if (ndouble) free(ndouble);
+  if (njoin) free(njoin);
   if (spair) free(spair);
   outfile_destroy(&cfg->ofile);
   outfile_null(&cfg->ofile);
@@ -2200,8 +2369,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->ctlist) struct_ctlist_Destroy(cfg->ctlist);
   if (cfg->clist) CMAP_FreeCList(cfg->clist);
   if (cfg->msa2pdb) free(cfg->msa2pdb); 
-  if (cfg->msafrq) free(cfg->msafrq); 
-  if (cfg->T) esl_tree_Destroy(cfg->T); 
+  if (cfg->msafrq) free(cfg->msafrq);
+  if (cfg->T) { for (n = 0; n < cfg->nT; n ++) esl_tree_Destroy(cfg->T[n]); } free(cfg->T); cfg->T = NULL;
   if (cfg->msaname) free(cfg->msaname); cfg->msaname = NULL;
   if (outname) free(outname);
   if (ranklist_null) cov_FreeRankList(ranklist_null); ranklist_null = NULL;
@@ -2211,6 +2380,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   if (cfg->pt) potts_Destroy(cfg->pt);
   if (nsubs) free(nsubs);
   if (ndouble) free(ndouble);
+  if (njoin) free(njoin);
   if (spair) free(spair);
   outfile_destroy(&cfg->ofile);
   return status;
@@ -2218,7 +2388,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
 
 static int
-run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, SPAIR *spair,
+run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *ndouble, int *njoin, SPAIR *spair,
 	   RANKLIST *ranklist_null, RANKLIST *ranklist_aux, RANKLIST **ret_ranklist, int analyze)
 {
   char            *title = NULL;
@@ -2278,13 +2448,16 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.spair            = spair;
   data.nsubs            = nsubs;
   data.ndouble          = ndouble;
+  data.njoin            = njoin;
   data.power            = cfg->power;
   data.helix_unpaired   = cfg->helix_unpaired;
+  data.nagg             = cfg->nagg;
+  data.agg_Eval         = cfg->agg_Eval;
   data.agg_method       = cfg->agg_method;
-  data.T                = cfg->T;
+  data.T                = cfg->T[0];
   data.ribosum          = cfg->ribosum;
   data.OL               = cfg->omsa->alen;
-  data.nseq             = cfg->omsa->nseq;
+  data.nseq             = msa->nseq;
   data.clist            = cfg->clist;
   data.msa2pdb          = cfg->msa2pdb;
   data.msamap           = cfg->msamap;
@@ -2309,7 +2482,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump(rmlist, cfg->msamap, cfg->firstpos); 
+      struct_rmlist_Dump (rmlist, cfg->msamap, cfg->firstpos); 
+      struct_rmlist_Write(cfg->ofile.helixcovfile, rmlist, cfg->msamap, cfg->firstpos);
     }
 
     if (cfg->verbose) {
@@ -2324,7 +2498,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     if (status != eslOK) goto ERROR;
 
     if (1||cfg->verbose) {
-      printf("# Number of covarying pairs = %d\n", hitlist->nhit);
+      printf("# Number of covarying pairs = %d\n\n", hitlist->nhit);
     }
 
     if (cfg->power_train) 
@@ -2342,6 +2516,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
       struct_rmlist_Dump(foldrmlist, cfg->msamap, cfg->firstpos);
+      struct_rmlist_Write(cfg->ofile.helixcovfoldfile, foldrmlist, cfg->msamap, cfg->firstpos);
     }
  
     status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);
@@ -2367,9 +2542,9 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   if (ptlocal)    potts_Destroy(ptlocal);
   return status;
 }
-
+ 
 static int
-run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_list)
+run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_TREE *T, RANKLIST **ret_list)
 {
   ESL_MSA   *allmsa = NULL;
   int        status;
@@ -2383,9 +2558,9 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
     else                return eslFAIL;
   }
   
-  status = Tree_FitchAlgorithmAncenstral(cfg->r, cfg->T, msa, &allmsa, NULL, cfg->errbuf, cfg->verbose);
+  status = Tree_FitchAlgorithmAncenstral(cfg->r, T, msa, &allmsa, NULL, cfg->profmark, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
-  status = AllBranchMSA_Plot(cfg->ofile.allbranchfile, cfg->gnuplot, cfg->T, cfg->msamap, allmsa, cfg->ctlist->ct[0], cfg->clist, cfg->errbuf, cfg->verbose);
+  status = AllBranchMSA_Plot(cfg->ofile.allbranchfile, cfg->gnuplot, T, cfg->msamap, allmsa, cfg->ctlist->ct[0], cfg->clist, cfg->errbuf, cfg->verbose);
   if (status != eslOK) goto ERROR;
   
   if (cfg->verbose) {
@@ -2402,56 +2577,147 @@ run_allbranch(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, RANKLIST **ret_l
 
 
 static int
-substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_nsubs, SPAIR **ret_spair, int verbose)
+substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, CTLIST *ctlist,
+	      int **ret_nsubs, int **ret_njoin, int **ret_ndouble, SPAIR **ret_spair, int verbose)
 {
-  FILE    *outsubsfp = NULL;
-  int     *nsubs = NULL;
-  SPAIR   *spair;
-  double   avgsubs = 0.;
-  int      i;
-  int      ipos;
-  int      c;
-  int      np;
-  int      p;
-  int      status;
+  FILE      *outsubsfp = NULL;
+  int       *nsubs     = NULL;
+  int       *njoin     = NULL;
+  int       *ndouble   = NULL;
+  POWERTYPE  powertype = power->type;
+  SPAIR     *spair;
+  double     avgsubs   = 0.;
+  double     avgjoin   = 0.;
+  double     avgdouble = 0.;
+  int64_t    dim       = msa->alen * (msa->alen-1) / 2;
+  int64_t    idx;
+  int        i, j;
+  int        ipos, jpos;
+  int        c;
+  int        np = 0;
+  int        p;
+  int        status;
 
-  status = Tree_Substitutions(cfg->r, msa, cfg->T, &nsubs, NULL, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
- 
-  for (i = 0; i < msa->alen; i ++) avgsubs += nsubs[i];
-  avgsubs /= msa->alen;
+  // SINGLE SUBS
+  switch(powertype) {
+  case SINGLE_SUBS:
+    status = Tree_Substitutions(cfg->r, msa, cfg->T[0], &nsubs, NULL, NULL, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+    
+    for (i = 0; i < msa->alen; i ++) avgsubs += nsubs[i];
+    avgsubs /= msa->alen;
+    
+    /* outtree file if requested */
+    if (cfg->ofile.outsubsfile) {
+      if ((outsubsfp = fopen(cfg->ofile.outsubsfile, "w")) == NULL) esl_fatal("Failed to open outsubsfile %s", cfg->ofile.outsubsfile);
+      fprintf(outsubsfp, "# avgsubs %f\n", avgsubs);
+      fprintf(outsubsfp, "# position nsubs\n");
+      for (i = 0; i < msa->alen; i ++) 
+	fprintf(outsubsfp, "%d\t%d\n", cfg->msamap[i]+1, nsubs[i]);
+      fclose(outsubsfp);
+    }
+    
+    if (cfg->verbose) {
+      printf("avgsubs %f\n", avgsubs);
+      for (i = 0; i < msa->alen; i ++) 
+	if (nsubs[i] > 0) printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
+    }    
+    break;
+    
+    // JOIN SUBS
+  case JOIN_SUBS:
+    status = Tree_Substitutions(cfg->r, msa, cfg->T[0], NULL, &njoin, NULL, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+    
+    for (i = 0; i < msa->alen; i ++) avgsubs += njoin[i];
+    avgsubs /= msa->alen;
+    
+    for (i = 0; i < msa->alen-1; i ++) 
+      for (j = i+1; j < msa->alen; j ++) 
+	avgjoin += njoin[i*msa->alen+j];
+    avgjoin /= dim;
+    
+    /* outtree file if requested */
+    if (cfg->ofile.outsubsfile) {
+      if ((outsubsfp = fopen(cfg->ofile.outsubsfile, "w")) == NULL) esl_fatal("Failed to open outsubsfile %s", cfg->ofile.outsubsfile);
+      fprintf(outsubsfp, "# avgsubs %f\n", avgsubs);
+      fprintf(outsubsfp, "# position nsubs join\n");
+      for (i = 0; i < msa->alen; i ++) 
+	fprintf(outsubsfp, "%d\t%d\n", cfg->msamap[i]+1, njoin[i]);
+      fclose(outsubsfp);
+    }
 
-  /* outtree file if requested */
-  if (cfg->ofile.outsubsfile) {
-    if ((outsubsfp = fopen(cfg->ofile.outsubsfile, "w")) == NULL) esl_fatal("Failed to open outsubsfile %s", cfg->ofile.outsubsfile);
-    fprintf(outsubsfp, "# avgsubs %f\n", avgsubs);
-    fprintf(outsubsfp, "# position nsubs\n");
-    for (i = 0; i < msa->alen; i ++) 
-      fprintf(outsubsfp, "%d\t%d\n", cfg->msamap[i]+1, nsubs[i]);
-    fclose(outsubsfp);
+    if (cfg->verbose) {
+      printf("avgjoin %f\n", avgjoin);
+      for (i = 0; i < msa->alen-1; i ++) 
+	for (j = i+1; j < msa->alen; j ++) 
+	  if (njoin[i*msa->alen+j] > 0) printf("%d %d n %d\n", cfg->msamap[i]+1, cfg->msamap[j]+1, njoin[i*msa->alen+j]);
+    }
+    break;
+
+  // DOUBLE SUBS
+  case DOUBLE_SUBS:
+    status = Tree_Substitutions(cfg->r, msa, cfg->T[0], NULL, NULL, &ndouble, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+    
+    for (i = 0; i < msa->alen-1; i ++) 
+      for (j = i+1; j < msa->alen; j ++) 
+	avgdouble += ndouble[i*msa->alen+j];
+    avgdouble /= dim;
+    
+    /* outtree file if requested */
+    if (cfg->ofile.outsubsfile) {
+      if ((outsubsfp = fopen(cfg->ofile.outsubsfile, "w")) == NULL) esl_fatal("Failed to open outsubsfile %s", cfg->ofile.outsubsfile);
+      fprintf(outsubsfp, "# avgsubs %f\n", avgsubs);
+      fprintf(outsubsfp, "# position nsubs double\n");
+      for (i = 0; i < msa->alen; i ++) 
+	fprintf(outsubsfp, "%d\t%d\n", cfg->msamap[i]+1, ndouble[i]);
+      fclose(outsubsfp);
+    }
+
+    if (cfg->verbose) {
+      printf("avgdouble %f\n", avgdouble);
+      for (i = 0; i < msa->alen-1; i ++) 
+	for (j = i+1; j < msa->alen; j ++) 
+	  if (ndouble[i*msa->alen+j] > 0) printf("%d %d ndouble %d\n", cfg->msamap[i]+1, cfg->msamap[j]+1, ndouble[i*msa->alen+j]);
+    }
+    break;
+    
+  default:
+    esl_fatal("substitutions() no type found");
   }
-
- if (cfg->verbose) {
-    printf("avgsubs %f\n", avgsubs);
-    for (i = 0; i < msa->alen; i ++) 
-      if (nsubs[i] > 0) printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
- }
   
- // histograms of nsubs for paired/unpaired residues
+  // histograms of nsubs for paired/unpaired residues
   if (cfg->power_train && clist) {
     
     for (i = 0; i < msa->alen; i ++) {      
       ipos = cfg->msamap[i]+1;
       for (c = 0; c < clist->ncnt; c++) {
-	if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) 
-	  esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(nsubs[i]+1));
-	else 
-	  esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(nsubs[i]+1));       
+	if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) {
+	  if      (powertype == SINGLE_SUBS) {
+	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(nsubs[i]+1));
+	  }
+	  else if (powertype == JOIN_SUBS)   {
+	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(njoin[idx]+1));
+	    if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(njoin[idx]+1));
+	  }
+	  else if (powertype == DOUBLE_SUBS) {
+	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
+	    if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(ndouble[idx]+1));
+	  }
+	}
+	else {
+	  if      (powertype == SINGLE_SUBS) esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(nsubs[i]+1));
+	  else if (powertype == JOIN_SUBS)   esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(njoin[idx]+1));    
+	  else if (powertype == DOUBLE_SUBS) esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(ndouble[idx]+1));    
+	}
       }      
     }    
   }
-  
-  status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, power, clist, nsubs, NULL, cfg->errbuf, cfg->verbose);
+
+  // Create SPAIR adding all information about subs/power
+  //
+  status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, cfg->mi, power, clist, ctlist, nsubs, njoin, ndouble, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
   if (cfg->power_train) {
@@ -2467,84 +2733,19 @@ substitutions(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int *
     esl_histogram_Write(stdout, cfg->powerhis->hsubs_bp);
   }
   
-  if (ret_nsubs) *ret_nsubs = nsubs; else free(nsubs);
-  return eslOK;
-
- ERROR:
-  if (nsubs)     free(nsubs);
-  if (ret_spair) free(*ret_spair);
-  return status;
-}
-
-static int
-doublesubs(struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CLIST *clist, int **ret_ndouble, SPAIR **ret_spair, int verbose)
-{
-  int     *ndouble = NULL;
-  double   avgdouble = 0.;
-  int64_t  dim       = msa->alen * (msa->alen-1) / 2;
-  int64_t  idx;
-  int      i, j;
-  int      ipos, jpos;
-  int      c;
-  int      status;
-
-  if (cfg->T == NULL) return eslOK;
-  
-  status = Tree_Substitutions(cfg->r, msa, cfg->T, NULL, &ndouble, cfg->power_includegaps, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-  
-  for (i = 0; i < msa->alen-1; i ++) 
-    for (j = i+1; j < msa->alen; j ++) 
-      avgdouble += ndouble[i*msa->alen+j];
-  avgdouble /= dim;
- 
-  if (cfg->verbose) {
-    printf("avgdouble %f\n", avgdouble);
-    for (i = 0; i < msa->alen-1; i ++) 
-      for (j = i+1; j < msa->alen; j ++) 
-	if (ndouble[i*msa->alen+j] > 0) printf("%d %d ndouble %d\n", cfg->msamap[i]+1, cfg->msamap[j]+1, ndouble[i*msa->alen+j]);
-  }
-
-  // histograms of nsubs for paired/unpaired residues
-  if (cfg->power_train && clist) {
-    
-    for (i = 0; i < msa->alen-1; i ++) {      
-      ipos = cfg->msamap[i]+1;
-      
-      for (j = i+1; j < msa->alen; j ++) {
-	jpos = cfg->msamap[j]+1;
-	
-	idx = i * msa->alen +j;	
-	for (c = 0; c < clist->ncnt; c++) {
-	  if (ipos == clist->cnt[c].posi && jpos == clist->cnt[c].posj) {
-	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
-	    if (clist->cnt[c].bptype == WWc)
-	      esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(ndouble[idx]+1));
-	  }
-	  else 
-	    esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(ndouble[idx]+1));       
-	}      
-      }
-    }
-  }
-  
-  status = power_SPAIR_Create(NULL, ret_spair, msa->alen, cfg->msamap, power, clist, NULL, ndouble, cfg->errbuf, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
- if ((verbose) && cfg->power_train) {
-    esl_histogram_Write(stdout, cfg->powerhis->hsubs_pr);
-    esl_histogram_Write(stdout, cfg->powerhis->hsubs_ur);
-    esl_histogram_Write(stdout, cfg->powerhis->hsubs_bp);
-  }
-  
+  if (ret_nsubs)   *ret_nsubs   = nsubs;   else free(nsubs);
+  if (ret_njoin)   *ret_njoin   = njoin;   else free(njoin);
   if (ret_ndouble) *ret_ndouble = ndouble; else free(ndouble);
   return eslOK;
 
  ERROR:
+  if (nsubs)     free(nsubs);
+  if (njoin)     free(njoin);
   if (ndouble)   free(ndouble);
   if (ret_spair) free(*ret_spair);
   return status;
 }
+
 
 // write the original alignment annotated with the CaCoFOld structure
 static int
@@ -2571,7 +2772,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   //
   // SS_cons_xx is not orthodox stockholm format.
   //
-  status = struct_CTMAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
+  status = struct_ctlist_MAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
   
@@ -2592,8 +2793,13 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
 	}
       }
       else {
- 	octlist->ct[0][i]                 = octlist->ct[s][i];
-	octlist->ct[0][octlist->ct[s][i]] = i;
+	if (octlist->ct[s][i] > 0) {
+	  octlist->ct[0][i]                 = octlist->ct[s][i];
+	  octlist->ct[0][octlist->ct[s][i]] = i;
+	}
+	else {
+	  octlist->ct[0][i] = octlist->ct[s][i];
+	}
       } 
     }
   }
@@ -2638,7 +2844,7 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-  status = struct_CTMAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
+  status = struct_ctlist_MAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
 

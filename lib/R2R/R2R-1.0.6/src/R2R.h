@@ -52,6 +52,7 @@ struct DrawingParams {
 	double pairBondCircleLineWidth;
 	double pairBondScaleWithCircleNuc; // so we can see the circle_nuc, unobstructed by black bars
 	double minPairShadeGap;
+        double minPairShadeGap_h; //ER  box side for ss_cov_h
 
 	double scaleMeasurementsBy;
 
@@ -276,6 +277,7 @@ struct PartOfCircle {
 struct PosInfo {
 	std::string nuc,strength,consSymbol;
 	std::string ss_cov;
+	std::string ss_cov_h;
 	int pairsWith;
 	std::list<int> additionalPairsWith;
 	AdobeGraphics::Point offset; // user specified
@@ -768,8 +770,8 @@ public:
 typedef std::list<std::string *> StringPtrList;
 
 struct Ss {
-	std::string ss,ss_cov;
-	StringPtrList::iterator ss_columnListIter,ss_cov_columnListIter;
+  std::string ss,ss_cov_h,ss_cov;
+	StringPtrList::iterator ss_columnListIter,ss_cov_h_columnListIter,ss_cov_columnListIter;
 };
 typedef std::map<std::string,Ss> SsList;
 
