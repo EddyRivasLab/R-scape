@@ -21,6 +21,52 @@
 #include "e2_profilesq.h"
 #include "structure.h"
 
+/* G6X/G6XS
+ *----------------------------------------------------------
+ *   S -> LS   | L   | epsilon
+ *   L -> aFa' | aa' | a
+ *   F -> aFa' | aa' | LS
+ *
+ *
+ * RBG grammar
+ *-----------------------------------------------------------
+ *  S  -> a S     | F0 S    | e
+ *  F0 -> a F5 a' | a P a'  | aa'
+ *  F5 -> a F5 a' | a P a'  | aa'
+ *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
+ *  ML -> M1 ML   | M1 R
+ *  R  ->    R a  | M1
+ *  M1 -> a M1    | F0
+ *
+ *
+ * RBGJ3 grammar
+ *-----------------------------------------------------------
+ *  S  -> a S     | F0 S    | e
+ *  F0 -> a F5 a' | a P a'  | aa'
+ *  F5 -> a F5 a' | a P a'  | aa'
+ *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
+ *  ML -> J3      | JJ
+ *  J3 -> M1 R
+ *  JJ => M1 JJ   | M1 J3
+ *  R  ->    R a  | M1
+ *  M1 -> a M1    | F0
+ *
+*
+ * RBGJ3J4 grammar
+ *-----------------------------------------------------------
+ *  S  -> a S     | F0 S    | e
+ *  F0 -> a F5 a' | a P a'  | aa'
+ *  F5 -> a F5 a' | a P a'  | aa'
+ *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
+ *  ML -> J3 | J4 | JJ
+ *  J3 -> M1 R
+ *  J3 -> M1 J3
+ *  JJ => M1 JJ   | M1 J4
+ *  R  ->    R a  | M1
+ *  M1 -> a M1    | F0
+ *
+ */
+
 int
 CACO_G6X_GetParam(G6Xparam **ret_p, char *errbuf, int verbose)
 {
@@ -112,6 +158,8 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   
   ESL_ALLOC(p, sizeof(RBGparam));
 
+  p->G     = RBG_PRELOADS_TrATrBTrB.G;
+  
   p->tS[0] = RBG_PRELOADS_TrATrBTrB.tS[0];
   p->tS[1] = RBG_PRELOADS_TrATrBTrB.tS[1];
   p->tS[2] = RBG_PRELOADS_TrATrBTrB.tS[2];
@@ -130,8 +178,18 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   p->tP[3] = RBG_PRELOADS_TrATrBTrB.tP[3];
   p->tP[4] = RBG_PRELOADS_TrATrBTrB.tP[4];
   
-  p->tM[0]  = RBG_PRELOADS_TrATrBTrB.tM[0];
-  p->tM[1]  = RBG_PRELOADS_TrATrBTrB.tM[1];
+  p->tML[0] = RBG_PRELOADS_TrATrBTrB.tML[0];
+  p->tML[1] = RBG_PRELOADS_TrATrBTrB.tML[1];
+
+  p->tMJ[0] = RBG_PRELOADS_TrATrBTrB.tMJ[0];
+  p->tMJ[1] = RBG_PRELOADS_TrATrBTrB.tMJ[1];
+  p->tMJ[2] = RBG_PRELOADS_TrATrBTrB.tMJ[2];
+
+  p->tJ3[0] = RBG_PRELOADS_TrATrBTrB.tJ3[0];
+  p->tJ4[0] = RBG_PRELOADS_TrATrBTrB.tJ4[0];
+  
+  p->tJJ[0] = RBG_PRELOADS_TrATrBTrB.tJJ[0];
+  p->tJJ[1] = RBG_PRELOADS_TrATrBTrB.tJJ[1];
 
   p->tR[0]  = RBG_PRELOADS_TrATrBTrB.tR[0];
   p->tR[1]  = RBG_PRELOADS_TrATrBTrB.tR[1];
@@ -165,10 +223,117 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   // renormalize, just in case
   vec_SCVAL_LogNorm(p->tS,  3);
   vec_SCVAL_LogNorm(p->tF0, 3);
+  vec_SCVAL_LogNorm(p->tF5, 3);
+  vec_SCVAL_LogNorm(p->tP,  5);
+  vec_SCVAL_LogNorm(p->tML, 2);
+  vec_SCVAL_LogNorm(p->tR,  2);
+  vec_SCVAL_LogNorm(p->tM1, 2);
+  vec_SCVAL_LogNorm(p->e_sing,    NB);
+  vec_SCVAL_LogNorm(p->e_sing_l1, NB);
+  vec_SCVAL_LogNorm(p->e_sing_l2, NB);
+  vec_SCVAL_LogNorm(p->e_sing_l3, NB);
+  vec_SCVAL_LogNorm(p->e_pair1,   NP);
+  vec_SCVAL_LogNorm(p->e_pair2,   NP);
+  for (x = 0; x < NP; x ++)  {
+    vec_SCVAL_LogNorm(p->e_stck1[x], NP);
+    vec_SCVAL_LogNorm(p->e_stck2[x], NP);
+  }
+  vec_SCVAL_LogNorm(p->l1, MAXLOOP_H);
+  vec_SCVAL_LogNorm(p->l2, MAXLOOP_B);
+  dvec_SCVAL_LogNorm(MAXLOOP_I, MAXLOOP_I, p->l3);
+  
+  *ret_p = p;
+  return eslOK;
+
+ ERROR:
+  if (p) free(p);
+  return status;
+
+  return eslOK;
+}
+
+int
+CACO_RBGJ3J4_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
+{
+  RBGparam *p = NULL;
+  int       x, y;
+  int       l, l1, l2;
+  int       status;
+  
+  ESL_ALLOC(p, sizeof(RBGparam));
+
+  p->G     = RBGJ3J4_PRELOADS_TrATrBTrB.G;
+    
+  p->tS[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tS[0];
+  p->tS[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tS[1];
+  p->tS[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tS[2];
+  
+  p->tF0[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tF0[0];
+  p->tF0[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tF0[1];
+  p->tF0[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tF0[2];
+  
+  p->tF5[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tF5[0];
+  p->tF5[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tF5[1];
+  p->tF5[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tF5[2];
+  
+  p->tP[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tP[0];
+  p->tP[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tP[1];
+  p->tP[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tP[2];
+  p->tP[3] = RBGJ3J4_PRELOADS_TrATrBTrB.tP[3];
+  p->tP[4] = RBGJ3J4_PRELOADS_TrATrBTrB.tP[4];
+  
+  p->tML[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tML[0];
+  p->tML[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tML[1];
+  
+  p->tMJ[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tMJ[0];
+  p->tMJ[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tMJ[1];
+  p->tMJ[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tMJ[2];
+
+  p->tJ3[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ3[0];
+  p->tJ4[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ4[0];
+  
+  p->tJJ[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJJ[0];
+  p->tJJ[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tJJ[1];
+  
+  p->tR[0]  = RBGJ3J4_PRELOADS_TrATrBTrB.tR[0];
+  p->tR[1]  = RBGJ3J4_PRELOADS_TrATrBTrB.tR[1];
+
+  p->tM1[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tM1[0];
+  p->tM1[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tM1[1];
+  
+  for (x = 0; x < NB;  x ++) {
+    p->e_sing[x]    = RBGJ3J4_PRELOADS_TrATrBTrB.e_sing[x];
+    p->e_sing_l1[x] = RBGJ3J4_PRELOADS_TrATrBTrB.e_sing_l1[x];
+    p->e_sing_l2[x] = RBGJ3J4_PRELOADS_TrATrBTrB.e_sing_l2[x];
+    p->e_sing_l3[x] = RBGJ3J4_PRELOADS_TrATrBTrB.e_sing_l3[x];
+  }
+  
+  for (x = 0; x < NP; x ++) {
+    p->e_pair1[x] = RBGJ3J4_PRELOADS_TrATrBTrB.e_pair1[x];
+    p->e_pair2[x] = RBGJ3J4_PRELOADS_TrATrBTrB.e_pair2[x];
+    
+    for (y = 0; y < NP; y ++) {
+      p->e_stck1[x][y] = RBGJ3J4_PRELOADS_TrATrBTrB.e_stck1[x][y];
+      p->e_stck2[x][y] = RBGJ3J4_PRELOADS_TrATrBTrB.e_stck2[x][y];
+    }
+  }
+
+  for (l    = 0; l  < MAXLOOP_H; l ++) p->l1[l] = RBGJ3J4_PRELOADS_TrATrBTrB.l1[l];
+  for (l    = 0; l  < MAXLOOP_B; l ++) p->l2[l] = RBGJ3J4_PRELOADS_TrATrBTrB.l2[l];
+  for (l1   = 0; l1 < MAXLOOP_I; l1 ++) 
+    for (l2 = 0; l2 < MAXLOOP_I; l2 ++) 
+      p->l3[l1][l2] = RBGJ3J4_PRELOADS_TrATrBTrB.l3[l1][l2];
+
+  // renormalize, just in case
+  vec_SCVAL_LogNorm(p->tS,  3);
+  vec_SCVAL_LogNorm(p->tF0, 3);
 
   vec_SCVAL_LogNorm(p->tF5, 3);
   vec_SCVAL_LogNorm(p->tP,  5);
-  vec_SCVAL_LogNorm(p->tM,  2);
+  vec_SCVAL_LogNorm(p->tMJ, 3);
+  vec_SCVAL_LogNorm(p->tJ3, 1);
+  vec_SCVAL_LogNorm(p->tJ4, 1);
+  vec_SCVAL_LogNorm(p->tJJ, 2);
   vec_SCVAL_LogNorm(p->tR,  2);
   vec_SCVAL_LogNorm(p->tM1, 2);
   vec_SCVAL_LogNorm(p->e_sing,    NB);
@@ -254,5 +419,33 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
   if (rbgp) free(rbgp);
   if (r3dp) R3D_Param_Destroy(r3dp);
 
+  return status;
+}
+
+int
+CACO_G6X_MEA_GetParam(G6Xparam **ret_p, double gamma, char *errbuf, int verbose)
+{
+  G6Xparam *p = NULL;
+  double   lg = (gamma > 1)? log(gamma) : 0;
+  int       x;
+  int       status;
+
+ ESL_ALLOC(p, sizeof(G6Xparam));
+
+  p->t1[0] = 0.;
+  p->t1[1] = 0.;
+  p->t1[2] = 0.;
+  p->t2[0] = lg;
+  p->t2[1] = lg;
+  p->t2[2] = 0.;
+  p->t3[0] = lg;
+  p->t3[1] = lg;
+  p->t3[2] = 0.;
+
+  *ret_p = p;
+  return eslOK;
+
+ ERROR:
+  if (p) free(p);
   return status;
 }

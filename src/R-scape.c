@@ -1071,6 +1071,9 @@ main(int argc, char **argv)
     if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
 
+    // reset the histogram step for each msa
+    cfg.w = W;  /* default. histogram step, will be determined for each msa */
+
     // negative pairs eval threshold. default 1.0
     cfg.foldparam->neg_eval_thresh = 1.0;
     if (esl_opt_IsOn(go, "--E_neg")) {
@@ -1854,13 +1857,15 @@ original_msa_doctor_names(ESL_MSA **omsa)
   
   // the msaname (ID) has to be free of '/', '|", and ':' symbols
   if (msa->name) {
-    for (p = msa->name; (p = strchr(p, '/')); ++p) 
+    for (p = msa->name; (p = strchr(p, '/'));  ++p) 
      *p = '_';
-    for (p = msa->name; (p = strchr(p, '|')); ++p) 
+    for (p = msa->name; (p = strchr(p, '|'));  ++p) 
      *p = '_';
-    for (p = msa->name; (p = strchr(p, ':')); ++p) 
+    for (p = msa->name; (p = strchr(p, ':'));  ++p) 
      *p = '_';
-    for (p = msa->name; (p = strchr(p, '%')); ++p) 
+    for (p = msa->name; (p = strchr(p, '%'));  ++p) 
+     *p = '_';
+    for (p = msa->name; (p = strchr(p, '\'')); ++p) 
      *p = '_';
     
     (*omsa)->name = msa->name;
@@ -1870,13 +1875,15 @@ original_msa_doctor_names(ESL_MSA **omsa)
   // : /
   for (s = 0; s < msa->nseq; s++) {
     sqname = msa->sqname[s];
-    for (p = sqname; (p = strchr(p, '|')); ++p) 
+    for (p = sqname; (p = strchr(p, '/'));  ++p) 
       *p = '_';
-    for (p = sqname; (p = strchr(p, ':')); ++p) 
+    for (p = sqname; (p = strchr(p, '|'));  ++p) 
       *p = '_';
-    for (p = sqname; (p = strchr(p, '/')); ++p) 
+    for (p = sqname; (p = strchr(p, ':'));  ++p) 
       *p = '_';
-    for (p = sqname; (p = strchr(p, '%')); ++p) 
+    for (p = sqname; (p = strchr(p, '%'));  ++p) 
+      *p = '_';
+    for (p = sqname; (p = strchr(p, '\'')); ++p) 
       *p = '_';
       
     (*omsa)->sqname[s] = sqname;
@@ -1901,11 +1908,15 @@ original_tree_doctor_names(ESL_TREE **oT)
   // : /
   for (i = 0; i < T->N; i++) {
     taxonlabel = T->taxonlabel[i];
-    for (p = taxonlabel; (p = strchr(p, ':')); ++p) 
+    for (p = taxonlabel; (p = strchr(p, ':'));  ++p) 
       *p = '_';
-    for (p = taxonlabel; (p = strchr(p, '|')); ++p) 
+    for (p = taxonlabel; (p = strchr(p, '|'));  ++p) 
       *p = '_';
-    for (p = taxonlabel; (p = strchr(p, '/')); ++p) 
+    for (p = taxonlabel; (p = strchr(p, '/'));  ++p) 
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '%'));  ++p)
+      *p = '_';
+    for (p = taxonlabel; (p = strchr(p, '\'')); ++p) 
       *p = '_';
   }
   

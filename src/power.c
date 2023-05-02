@@ -25,6 +25,10 @@
 #include "plot.h"
 #include "power.h"
 
+#define BPONEHOT 12
+
+static int bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT]);
+
 POWERHIS *
 power_Histogram_Create(int bmin, int bmax, double w)
 {
@@ -309,6 +313,7 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   POWERTYPE      powertype;
   FILE          *fp = NULL;
   int           *mask = NULL;
+  int            bp_onehot[BPONEHOT];
   BPTYPE         bptype;
   enum cttype_e  cttype;
   double         Eval_fake  = -1.;
@@ -319,6 +324,8 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   int64_t        prvj = 1;
   int64_t        n;
   int64_t        l;
+  int            onehot = TRUE;
+  int            x;
   int            status;
 
   if (!prepfile) return eslFAIL;
@@ -338,7 +345,12 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   fprintf(fp, "# E-value [0,infity), provided by R-scape.");
   fprintf(fp, "# power[0,1], provided by R-scape");
   fprintf(fp, "# CTTYPE:(0)CTTYPE_NESTED,(1)CTTYPE_PK,(2)CTTYPE_NONWC,(3)CTTYPE_TRI,(4)CTTYPE_SCOV,(5)CTTYPE_XCOV,(6)CTTYPE_RM_HL,(7)CTTYPE_RM_BL,(8)CTTYPE_RM_IL,(9)CTTYPE_NONE\n");
-  fprintf(fp, "# BYTPYE:(0)WWc,(1)WWt,(2)WHc,(3)WHt,(4)WSc,(5)WSt,(6)Wxc,(7)Wxt,(8)xWc,(9)xWt,(10)HWc,(11)HWt,(12)HHc,(13)HHt,(14)HSc,(15)HSt,(16)Hxc,(17)Hxt,(18)xHc,(19)xHt,(20)SWc,(21)SWt,(22)SHc,(23)SHt,(24)SSc,(25)SSt,(26)Sxc,(27)Sxt,(28)xSc,(29)xSt,(30)xxc,(31)xxt,(32)STACKED,(33)CONTACT,(34)BPNONE\n");
+  if (onehot) {
+    fprintf(fp, "# [W H S X] [W H S X] [c t] [STACKED CONTACT BPNONE]\n");
+  }
+  else {
+    fprintf(fp, "# BYTPYE:(0)WWc,(1)WWt,(2)WHc,(3)WHt,(4)WSc,(5)WSt,(6)Wxc,(7)Wxt,(8)xWc,(9)xWt,(10)HWc,(11)HWt,(12)HHc,(13)HHt,(14)HSc,(15)HSt,(16)Hxc,(17)Hxt,(18)xHc,(19)xHt,(20)SWc,(21)SWt,(22)SHc,(23)SHt,(24)SSc,(25)SSt,(26)Sxc,(27)Sxt,(28)xSc,(29)xSt,(30)xxc,(31)xxt,(32)STACKED,(33)CONTACT,(34)BPNONE\n");
+  }
   fprintf(fp, "#MASK:");
   for (l = 0; l < Labs; l ++) fprintf(fp, "%d", mask[l]);
   fprintf(fp, "\n");
@@ -351,7 +363,10 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
 
     currj = prvj + 1;
     while (iabs == prvi && currj < jabs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, currj, Eval_fake, power_fake, CTTYPE_NONE);
+      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
+      else        fprintf(fp, "%d\n", BPNONE);
+      
       currj ++;
     }      
 
@@ -359,7 +374,9 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
     while (curri < iabs) {
       currj = curri + 1;
       while (currj <= Labs) {
-	fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+	fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
+	if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
+	else        fprintf(fp, "%d\n", BPNONE);
 	currj ++;
       }      
       curri ++;
@@ -367,24 +384,34 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
 
     currj = curri + 1;
     while (curri == iabs && currj < jabs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
+      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
+      else        fprintf(fp, "%d\n", BPNONE);
       currj ++;
     }
 
     cttype = (in_given)? spair[n].cttype_given : spair[n].cttype_caco;
     bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
-    
+    bptype2onehot(bptype, bp_onehot);
+
     switch(powertype) {
     case SINGLE_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power,        cttype, bptype);
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power,        cttype);
       break;
     case JOIN_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power_join,   cttype, bptype);
-       break;
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power_join,   cttype);
+      break;
     case DOUBLE_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", iabs, jabs, spair[n].Eval, spair[n].power_double, cttype, bptype);
-       break; 
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power_double, cttype);
+      break; 
     }
+    if (onehot) {
+      for (x = 0; x < BPONEHOT; x ++) 
+	fprintf(fp, "%d\t", bp_onehot[x]);
+      fprintf(fp, "\n");      
+    }
+    else 
+      fprintf(fp, "%d\n", bptype);
 
     prvi = iabs;
     prvj = jabs;
@@ -395,7 +422,9 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   while (curri < Labs) {
     currj = curri + 1;
     while (currj <= Labs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t%d\n", curri, currj, Eval_fake, power_fake, CTTYPE_NONE, BPNONE);
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
+      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
+      else        fprintf(fp, "%d\n", BPNONE);
       currj ++;
     }      
     curri ++;
@@ -633,3 +662,74 @@ power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERH
   }
   free(powersubspdf);
 }
+
+
+//# BYTPYE:
+// (0)WWc,(1)WWt,(2)WHc,(3)WHt,(4)WSc,(5)WSt,(6)Wxc,(7)Wxt,
+// (8)xWc,(9)xWt,
+// (10)HWc,(11)HWt,(12)HHc,(13)HHt,(14)HSc,(15)HSt,(16)Hxc,(17)Hxt,
+// (18)xHc,(19)xHt,
+// (20)SWc,(21)SWt,(22)SHc,(23)SHt,(24)SSc,(25)SSt,(26)Sxc,(27)Sxt,
+// (28)xSc,(29)xSt,(30)xxc,(31)xxt,
+// (32)STACKED,(33)CONTACT,(34)BPNONE
+//
+//  0 1 2 3   4 5 6 7   8 9   10 11 12
+// [W H S X] [W H S X] [C T] [S  C  N]
+//
+static int
+bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT])
+{
+  int x;
+  int status;
+
+  for (x = 0; x < BPONEHOT; x ++) bp_onehot[x] = 0;
+  
+  if      (bptype == 0)  { bp_onehot[0] = 1; bp_onehot[4] = 1; bp_onehot[8] = 1; } // WWc
+  else if (bptype == 1)  { bp_onehot[0] = 1; bp_onehot[4] = 1; bp_onehot[9] = 1; } // WWt
+  else if (bptype == 2)  { bp_onehot[0] = 1; bp_onehot[5] = 1; bp_onehot[8] = 1; } // WHc
+  else if (bptype == 3)  { bp_onehot[0] = 1; bp_onehot[5] = 1; bp_onehot[9] = 1; } // WHt
+  else if (bptype == 4)  { bp_onehot[0] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1; } // WSc
+  else if (bptype == 5)  { bp_onehot[0] = 1; bp_onehot[6] = 1; bp_onehot[9] = 1; } // WSt
+  else if (bptype == 6)  { bp_onehot[0] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // Wxc
+  else if (bptype == 7)  { bp_onehot[0] = 1; bp_onehot[7] = 1; bp_onehot[9] = 1; } // Wxt
+  
+  else if (bptype == 8)  { bp_onehot[3] = 1; bp_onehot[4] = 1; bp_onehot[8] = 1; } // xWc
+  else if (bptype == 9)  { bp_onehot[3] = 1; bp_onehot[4] = 1; bp_onehot[9] = 1; } // xWt
+  
+  else if (bptype == 10) { bp_onehot[1] = 1; bp_onehot[4] = 1; bp_onehot[8] = 1; } // HWc
+  else if (bptype == 11) { bp_onehot[1] = 1; bp_onehot[4] = 1; bp_onehot[9] = 1; } // HWt
+  else if (bptype == 12) { bp_onehot[1] = 1; bp_onehot[5] = 1; bp_onehot[8] = 1; } // HHc
+  else if (bptype == 13) { bp_onehot[1] = 1; bp_onehot[5] = 1; bp_onehot[9] = 1; } // HHt
+  else if (bptype == 14) { bp_onehot[1] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1; } // HSc
+  else if (bptype == 15) { bp_onehot[1] = 1; bp_onehot[6] = 1; bp_onehot[9] = 1; } // HSt
+  else if (bptype == 16) { bp_onehot[1] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // Hxc
+  else if (bptype == 17) { bp_onehot[1] = 1; bp_onehot[7] = 1; bp_onehot[9] = 1; } // Hxt
+  
+  else if (bptype == 18) { bp_onehot[3] = 1; bp_onehot[5] = 1; bp_onehot[8] = 1; } // xHc
+  else if (bptype == 19) { bp_onehot[3] = 1; bp_onehot[5] = 1; bp_onehot[9] = 1; } // xHt
+
+
+  else if (bptype == 20) { bp_onehot[2] = 1; bp_onehot[4] = 1; bp_onehot[8] = 1; } // SWc
+  else if (bptype == 21) { bp_onehot[2] = 1; bp_onehot[4] = 1; bp_onehot[9] = 1; } // SWt
+  else if (bptype == 22) { bp_onehot[2] = 1; bp_onehot[5] = 1; bp_onehot[8] = 1; } // SHc
+  else if (bptype == 23) { bp_onehot[2] = 1; bp_onehot[5] = 1; bp_onehot[9] = 1; } // SHt
+  else if (bptype == 24) { bp_onehot[2] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1; } // SSc
+  else if (bptype == 25) { bp_onehot[2] = 1; bp_onehot[6] = 1; bp_onehot[9] = 1; } // SSt
+  else if (bptype == 26) { bp_onehot[2] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // Sxc
+  else if (bptype == 27) { bp_onehot[2] = 1; bp_onehot[7] = 1; bp_onehot[9] = 1; } // SXt
+  
+  else if (bptype == 28) { bp_onehot[3] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1; } // xSc
+  else if (bptype == 29) { bp_onehot[3] = 1; bp_onehot[6] = 1; bp_onehot[9] = 1; } // xSt
+  
+  else if (bptype == 30) { bp_onehot[3] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // xxc
+  else if (bptype == 31) { bp_onehot[3] = 1; bp_onehot[7] = 1; bp_onehot[9] = 1; } // xxt
+  
+  else if (bptype == 32) { bp_onehot[10] = 1; } // STACKED
+  else if (bptype == 33) { bp_onehot[11] = 1; } // CONTACT
+  else if (bptype == 34) { bp_onehot[12] = 1; } // BPNONE
+  else esl_fatal("BP onehot failed");
+
+  return eslOK;
+  
+}
+

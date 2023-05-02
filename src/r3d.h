@@ -30,7 +30,7 @@
 #define pRM_LR    1 - 2*pRM_LoR - pRM_E          // L/R 
 #define pRM_Loop0 1e-25                          // no L Loop nor Loop R  or no Loop_L/ nor /Loop_R
 #define pRM_Loop1 1e-12                          //    L Loop  or Loop R  or    Loop_L/  or /Loop_R
-#define pRM_Loop2 1 - 2*pRM_Loop1 - pRM_Loop0   //         L Loop R      or      Loop_L/Loop_R
+#define pRM_Loop2 1 - 2*pRM_Loop1 - pRM_Loop0    //         L Loop R      or      Loop_L/Loop_R
 
 typedef enum r3d_type_e {
   R3D_TP_HL,
