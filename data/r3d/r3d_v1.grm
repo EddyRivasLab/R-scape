@@ -50,6 +50,7 @@
  IL   UAAG          UAU            C,C            G,G            -            -             Tetraloop-receptor
  IL   CVC           V              -              -              -            -             C-loop
  IL   G             -              G,A            A,A            U,A          A,G           G-bulge
+ IL   G             -              U,A            C,C            U,A          A,G           G-bulge_Das
  IL   -             -              G,A            A,G            -            -             Tandem-GA
  IL   YCC           AAC            -              -              -            -             Twisted-up
  IL   YAA           RAN            -              -              -            -             UAA_GAN

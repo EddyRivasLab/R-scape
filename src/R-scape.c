@@ -549,7 +549,10 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_FileTail(cfg.msafile, TRUE,  &cfg.filename);
   }
   
-  if (cfg.outdir) esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
+  if (cfg.outdir) {
+    if (cfg.outheader) free(cfg.outheader); cfg.outheader = NULL;
+    esl_sprintf( &cfg.outheader, "%s/%s", cfg.outdir, cfg.filename);
+  }
   
   if (esl_opt_IsOn(go, "--submsa")) { 
     cfg.submsa = esl_opt_GetInteger(go, "--submsa"); 
@@ -660,7 +663,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   // The grammars used
-  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : RBG;
+  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : RBGJ3J4;
   cfg.foldparam->GP = G6X;
 
   if      (esl_opt_GetBoolean(go, "--cyk"))      cfg.foldparam->F = CYK;

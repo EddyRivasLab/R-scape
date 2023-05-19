@@ -18,7 +18,7 @@
 #define RVIEW_DATE "Feb 2023"
 #define RVIEW_COPYRIGHT "Copyright (C) 2018 Howard Hughes Medical Institute."
 #define RVIEW_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define RVIEW_HOME "/Users/erivas/src/Mysrc/R-scape/lib/R-view"
+#define RVIEW_HOME "/media/psf/Home/src/Mysrc/R-scape/lib/R-view"
 #define RVIEW_BIN ""
 
 /* Large file support
@@ -40,7 +40,7 @@
 
 /* System headers
  */
-/* #undef HAVE_ENDIAN_H */
+#define HAVE_ENDIAN_H 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
 #define HAVE_UNISTD_H 1

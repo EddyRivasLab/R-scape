@@ -82,12 +82,12 @@ enum grammar_e {
 #define RBG_ML_1    18
 #define RBG_ML_2    19
 #define RBG_MJ_1    20
-#define RBG_MJ_1_J3 21
-#define RBG_MJ_2    22
-#define RBG_MJ_2_J4 23
-#define RBG_MJ_3    24
-#define RBG_J3_1    25
-#define RBG_J4_1    26
+#define RBG_MJ_2    21
+#define RBG_MJ_3    22
+#define RBG_J3_1    23
+#define RBG_J3_RM   24
+#define RBG_J4_1    25
+#define RBG_J4_RM   26
 #define RBG_JJ_1    27
 #define RBG_JJ_2    28
 #define RBG_R_1     29
@@ -125,13 +125,13 @@ typedef struct {
   SCVAL tS[3];       // S  -> a s | F0 S | epsilon
   SCVAL tF0[3];      // F0 -> a F5 a' | a P a' | a a'  
   SCVAL tF5[3];      // F5 -> a F5 a' | a P a' | a a'
-  SCVAL tML[2];      // ML -> M1 ML | M1 R
-  SCVAL tMJ[3];      // MJ -> J3 | J4 | JJ
-  SCVAL tJ3[1];      // J3 -> M1 R
-  SCVAL tJ4[1];      // J4 -> M1 J3
-  SCVAL tJJ[2];      // JJ -> M1 JJ | M1 J4
-  SCVAL tM1[2];      // M1 -> a M1 | F0
-  SCVAL tR[2];       // R  -> R a  | M1
+  SCVAL tML[2];      // ML -> M1 ML | M1 R            (RBG only)
+  SCVAL tMJ[3];      // MJ -> J3 | J4 | JJ            (RBGJ3J4 only)
+  SCVAL tJ3[1];      // J3 -> M1 R                    (RBGJ3J4 only)
+  SCVAL tJ4[1];      // J4 -> M1 J3                   (RBGJ3J4 only)
+  SCVAL tJJ[2];      // JJ -> M1 JJ | M1 J4           (RBGJ3J4 only)
+  SCVAL tM1[2];      // M1 -> a M1  | F0
+  SCVAL tR[2];       // R  ->   R a | M1
 
   SCVAL e_sing[NB];
   SCVAL e_pair1[NP];

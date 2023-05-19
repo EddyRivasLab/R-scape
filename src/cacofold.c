@@ -89,26 +89,35 @@
  *
  * RBG_J3J4-R3D grammar
  *-----------------------------------------------------------
- *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | MJ
+ *  P  -> m..m | m..m F0 | F0 m..m | m..m F0 m..m | MJ
+ *  
  *  J3 -> M1 R
  *  J4 -> M1 J3
  *
  *  replaced with
  *
- *  P  ->  HL | BL | BR | IL | MJ (same as RBG-R3D)
+ *  P  -> HL | BL F0 | F0 BL | IL | MJ  (HL BL IL same as RBG-R3D)
  *
- *  J3 -> J30 | J31 | .. | J3k
- *  J4 -> J40 | J41 | .. | J4k
+ *  J3 -> J3_0 | J3_1 | .. | J3_M
+ *  J4 -> J4_0 | J4_1 | .. | J4_M
  *
- *  J30 -> M1 R
- *  J40 -> M1 J30
+ *  J3_0 -> M1 R
+ *  J4_0 -> M1 J3
+ *
+ *  J3_m   -> L3_m^1 J3_m^1
+ *  J3_m^1 -> L3_m^2 S3
+ *
+ *  L3_m^1 -> S1 F0
+ *  L3_m^2 -> S2 F0
  *
  *
- *  J3k -> 
+ *  J4_m   -> L4_m^1 J4_m^1
+ *  J4_m^1 -> L4_m^2 J4_m^2
+ *  J4_m^2 -> L4_m^3 S4
  *
- *
- *
- *  J4k ->
+ *  L4_m^1 -> S1 F0
+ *  L4_m^2 -> S2 F0
+ *  L4_m^3 -> S3 F0
  *
  *
  */
@@ -173,6 +182,14 @@ static inline int   dp_recursion_rbg_score_P_IL_plain       (ALLOW *allow, FOLDP
 							     int j, int d, int d1, int d2, SCVAL *ret_sc, int *ret_il_allow, char *errbuf, int verbose);
 static inline int   dp_recursion_rbg_score_P_IL_R3D         (FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude,
 							     int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_J3_plain         (ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+							     int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_J3_R3D           (FOLDPARAM *foldparam, R3D_J3param *J3p, R3D_J3MX *J3mx, SPAIR *spair, int *covct, COVLIST *exclude,
+							     int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_J4_plain         (ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+							     int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
+static inline int   dp_recursion_rbg_score_J4_R3D           (FOLDPARAM *foldparam, R3D_J4param *J4p, R3D_J4MX *J4mx, SPAIR *spair, int *covct, COVLIST *exclude,
+							     int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose);
 static inline int   dp_recursion_r3d_cyk                    (ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 							     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
 static inline int   dp_recursion_r3d_cyk_HL                 (R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
@@ -185,6 +202,19 @@ static inline int   dp_recursion_r3d_cyk_ILi                (R3D_IL *IL, FOLDPAR
 static inline int   dp_recursion_r3d_cyk_ILo                (R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 							     R3D_ILMX *ILmx, R3D_HMX  *fwd,
 							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_J3J                (R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     R3D_J3MX *J3mx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_J3L                (R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *rbg_cyk, R3D_J3MX *J3mx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_J4J                (R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     R3D_J4MX *J4mx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+static inline int   dp_recursion_r3d_cyk_J4L                (R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+							     RBG_MX *rbg_cyk, R3D_J4MX *J4mx, R3D_HMX  *fwd,
+							     int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose);
+
 
 static inline int   allow_calculate(ALLOW *allow, FOLDPARAM *foldparam, int i, int j, int L, int *covct, COVLIST *exclude, SPAIR *spair, int *ret_nneg);
 static inline int   allow_bpair(double power_thresh,  double neg_eval_thresh, int hloop_min, int i, int j, int L, int *covct, COVLIST *exclude, SPAIR *spair, int *ret_nneg);
@@ -1046,12 +1076,62 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 
 	    for (no = r3d->IL[m]->nBo; no >= 0; no --) {
 	      gmx = cyk_r3d->ILmx[m]->mxo->mx[no];
+	      
 	      status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_ILo, m, no, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D ILo caco failed");
 	      if (verbose) 
 		printf("R3D CYK m=%d no=%d ILo %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, no, cyk_r3d->ILmx[m]->mxo->mx[no]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	    }
-	  } 
+	  }
+
+	  // J3-R3D
+	  for (m = 0; m < r3d->nJ3_total; m ++) {
+	    
+	    // J3J[n] -> L3[n] J3J[n+1]
+	    for (n = 0; n < 2; n ++) {
+	      gmx = cyk_r3d->J3mx[m]->mxJ->mx[n];
+	      
+	      status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_J3J, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D J3J caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d n=%d J3J %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->J3mx[m]->mxJ->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	    }
+	    
+	    // J3L[n] -> S[n] F0
+	    for (n = 0; n < 2; n ++) {
+	      gmx = cyk_r3d->J3mx[m]->mxL->mx[n];
+	      
+	      status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_J3L, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D J3L caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d n=%d J3L %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->J3mx[m]->mxL->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	    }
+	  }
+	  
+	  // J4-R3D
+	  for (m = 0; m < r3d->nJ4_total; m ++) {
+	    
+	    // J4J[n] -> L4[n] J4J[n+1]
+	    for (n = 0; n < 3; n ++) {
+	      gmx = cyk_r3d->J4mx[m]->mxJ->mx[n];
+	      
+	      status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_J4J, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D J3J caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d n=%d J4J %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->J4mx[m]->mxJ->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	    }
+	    
+	    // J4L[n] -> S[n] F0
+	    for (n = 0; n < 3; n ++) {
+	      gmx = cyk_r3d->J4mx[m]->mxL->mx[n];
+	      
+	      status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_J4L, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
+	      if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D J3L caco failed");
+	      if (verbose) 
+		printf("R3D CYK m=%d n=%d J4L %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->J4mx[m]->mxL->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	    }
+	  }
+	  
 	}
 
 	// (J3, J4, JJ, MJ) or  ML, P, F5, M1, R, S (rest of RBG NTs)
@@ -1090,9 +1170,9 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 		   cyk->J3->dp[j][d], cyk->J4->dp[j][d], cyk->JJ->dp[j][d], cyk->MJ->dp[j][d], cyk->P->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],
 		   cyk->F5->dp[j][d], cyk->F0->dp[j][d], cyk->S->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]);
 	}
-      } 
+      }
   sc = cyk->S->dp[L][L];
-  if (sc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "RBG failed: CYK sc = -inf.");
+  if (sc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "RBG failed: CYK sc = %f", sc);
 
   if (verbose) {
     if (r3d) printf("RBG-R3D CYK-score = %f\n# negatives = %d\n", sc, nneg);
@@ -1719,7 +1799,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
       if (w < RBG_NT) {
 	status = dp_recursion_rbg_cyk(allow, foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, w, j, d, &bestsc, NULL, alts, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG CYK failed");
-	if (bestsc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "RBG CYK sc is -inf.\n");
+	if (bestsc <= -eslINFINITY) ESL_XFAIL(eslFAIL, errbuf, "RBG CYK sc j = %d d = %d i = %d is -inf.\n", j, d, j-d+1);
 	
 	/* Some assertions.
 	 */
@@ -1800,7 +1880,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
         printf("i=%d j=%d d=%d d1=%d d2=%d\n", j-d+1, j, d, d1, d2);
 	printf("tracing %f\n", bestsc);
 	if (w < RBG_NT) {
-	  if (r == RBG_P_1_HL || r == RBG_P_2_BL || r == RBG_P_3_BL || r == RBG_P_4_IL)
+	  if (r == RBG_P_1_HL || r == RBG_P_2_BL || r == RBG_P_3_BL || r == RBG_P_4_IL || r == RBG_J3_RM || r == RBG_J4_RM)
 	    printf("RBG-R3D w=%d rule(%d) m = %d\n", w, r, rm);
 	  else printf("RBG w=%d rule(%d)\n", w, r);
 	}
@@ -1813,8 +1893,8 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
       if (w == RBG_S  && r != RBG_S_1  && r != RBG_S_2  && r != RBG_S_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with S",  r);
       if (w == RBG_F0 && r != RBG_F0_1 && r != RBG_F0_2 && r != RBG_F0_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with F0", r);
       if (w == RBG_F5 && r != RBG_F5_1 && r != RBG_F5_2 && r != RBG_F5_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with F5", r);
-      if (w == RBG_J3 && r != RBG_J3_1)                                   ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with J3",  r);
-      if (w == RBG_J4 && r != RBG_J4_1)                                   ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with J4",  r);
+      if (w == RBG_J3 && r != RBG_J3_1 && r != RBG_J3_RM)                 ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with J3",  r);
+      if (w == RBG_J4 && r != RBG_J4_1 && r != RBG_J4_RM)                 ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with J4",  r);
       if (w == RBG_JJ && r != RBG_JJ_1 && r != RBG_JJ_2)                  ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with JJ",  r);
       if (w == RBG_MJ && r != RBG_MJ_1 && r != RBG_MJ_2 && r != RBG_MJ_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with MJ",  r);
       if (w == RBG_ML && r != RBG_ML_1 && r != RBG_ML_2)                  ESL_XFAIL(eslFAIL, errbuf, "CACO_RBG_Traceback_CYK(): rule %d cannot appear with ML",  r);
@@ -1974,6 +2054,13 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
+      case RBG_J3_RM: // J3 -> J3RM[m]
+	esl_stack_IPush(ns, rm);
+	esl_stack_IPush(ns, 0);
+	esl_stack_IPush(ns, R3D_NT_J3J);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, j);
+	break;
 	  
       case RBG_J4_1: // J4 -> M1 J3
 	esl_stack_IPush(ns, RBG_M1);
@@ -1981,6 +2068,13 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k);
 	esl_stack_IPush(ns, RBG_J3);
 	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	break;
+      case RBG_J4_RM: // J4 -> J4RM[m]
+	esl_stack_IPush(ns, rm);
+	esl_stack_IPush(ns, 0);
+	esl_stack_IPush(ns, R3D_NT_J4J);
+	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
 	break;
 	  
@@ -2071,7 +2165,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, l-1);
 	
-	//annotate the CT
+	//annotate the CT TODO
 	R3D_RMtoCTidx(r3d, R3D_TP_ILo, rm, &idx, errbuf);
 	r3dct = r3dlist->ct[r3dlist->nct-1];
 	for (q = i; q <= k; q ++)
@@ -2205,6 +2299,74 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	}
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
+	break;
+	
+      case R3D_J3J: // J3J^{n} -> J3L^{n} J3J^{n+1}, for n = 0 || J3J^{n} -> J3L^{n} S3 , for n = 1
+	esl_stack_IPush(ns, rm);
+	esl_stack_IPush(ns, rn);
+	esl_stack_IPush(ns, R3D_NT_J3L);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, k);
+
+	if (rn == 0) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_J3J);
+	  esl_stack_IPush(ns, k+1);
+	  esl_stack_IPush(ns, j);
+
+	  //annotate the CT
+	  R3D_RMtoCTidx(r3d, R3D_TP_J3, rm, &idx, errbuf);
+	  r3dct = r3dlist->ct[r3dlist->nct-1];
+	  for (q = k+1; q <= j; q ++)
+	    r3dct[q] = idx;
+	}
+	break;
+	
+      case R3D_J3L: // J3L^{n} -> S[n] F0
+	esl_stack_IPush(ns, RBG_F0);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+
+	//annotate the CT
+	R3D_RMtoCTidx(r3d, R3D_TP_J3, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
+	for (q = i; q <= k; q ++)
+	  r3dct[q] = idx;
+	break;
+	
+      case R3D_J4J: // J4J^{n} -> J4L^{n} J4J^{n+1}, for n < 2 || J4J^{n} -> J4L^{n} S4 , for n = 2
+	esl_stack_IPush(ns, rm);
+	esl_stack_IPush(ns, rn);
+	esl_stack_IPush(ns, R3D_NT_J4L);
+	esl_stack_IPush(ns, i);
+	esl_stack_IPush(ns, k);
+	
+	if (rn < 2) {
+	  esl_stack_IPush(ns, rm);
+	  esl_stack_IPush(ns, rn+1);
+	  esl_stack_IPush(ns, R3D_NT_J4J);
+	  esl_stack_IPush(ns, k+1);
+	  esl_stack_IPush(ns, j);
+	  
+	  //annotate the CT
+	  R3D_RMtoCTidx(r3d, R3D_TP_J4, rm, &idx, errbuf);
+	  r3dct = r3dlist->ct[r3dlist->nct-1];
+	  for (q = k+1; q <= j; q ++)
+	    r3dct[q] = idx;
+	}
+	break;
+	
+     case R3D_J4L: // J4L^{n} -> S[n] F0
+	esl_stack_IPush(ns, RBG_F0);
+	esl_stack_IPush(ns, k+1);
+	esl_stack_IPush(ns, j);
+	
+	//annotate the CT
+	R3D_RMtoCTidx(r3d, R3D_TP_J4, rm, &idx, errbuf);
+	r3dct = r3dlist->ct[r3dlist->nct-1];
+	for (q = i; q <= k; q ++)
+	  r3dct[q] = idx;
 	break;
 	
      default: 
@@ -3644,8 +3806,8 @@ dp_recursion_g6xs_outside(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ 
 }
 
 static inline int 
-dp_recursion_g6xs_posterior_single(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude, G6X_MX *imx, G6X_MX *omx, int w, int j, 
-				   POST *post, int *ret_nneg, char *errbuf, int verbose)
+dp_recursion_g6xs_posterior_single(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+				   G6X_MX *imx, G6X_MX *omx, int w, int j, POST *post, int *ret_nneg, char *errbuf, int verbose)
 {
   SCVAL    thisps;	  // add to the ps posterior
   SCVAL    ps;
@@ -4186,8 +4348,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     /* rule: J3 -> M1 R */
     d2 = 0;
     for (d1 = 1; d1 <= d; d1++) {
-      k = i + d1 - 1;
-      
+      k = i + d1 - 1;      
       sc = cyk->M1->dp[k][d1] + cyk->R->dp[j][d-d1] + p->tJ3[0];
       
       if (sc >= bestsc) {
@@ -4203,14 +4364,34 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
 	}
       }
     }
+
+    /* rule: J3 -> J3_m */
+    if (r3d) {
+      for (m = 0; m < r3d->nJ3_total; m ++) {
+	status = dp_recursion_rbg_score_J3_R3D(foldparam, r3d_p->J3p, cyk_r3d->J3mx[m], spair, covct, exclude, j, d, mi->alen, &sc, errbuf, verbose);
+	
+	if (sc >= bestsc) {
+	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	    if (alts) esl_stack_Reuse(alts);
+	    bestsc = sc;
+	  }     
+	  if (alts) {
+	    esl_stack_IPush(alts, RBG_J3_RM);
+	    esl_stack_IPush(alts, m);
+	    esl_stack_IPush(alts, 0);
+	    esl_stack_IPush(alts, 0);
+	  }	
+	}  
+      }
+    }
+    
     break;
     
   case RBG_J4:
     /* rule: J4 -> M1 J3 */
    d2 = 0;
     for (d1 = 1; d1 <= d; d1++) {
-      k = i + d1 - 1;
-      
+      k = i + d1 - 1;      
       sc = cyk->M1->dp[k][d1] + cyk->J3->dp[j][d-d1] + p->tJ4[0];
       
       if (sc >= bestsc) {
@@ -4226,7 +4407,28 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
 	}
       }
     }
-     break;
+
+    /* rule: J4 -> J4_m */
+    if (r3d) {
+      for (m = 0; m < r3d->nJ4_total; m ++) {
+	status = dp_recursion_rbg_score_J4_R3D(foldparam, r3d_p->J4p, cyk_r3d->J4mx[m], spair, covct, exclude, j, d, mi->alen, &sc, errbuf, verbose);
+	
+	if (sc >= bestsc) {
+	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	    if (alts) esl_stack_Reuse(alts);
+	    bestsc = sc;
+	  }     
+	  if (alts) {
+	    esl_stack_IPush(alts, RBG_J4_RM);
+	    esl_stack_IPush(alts, m);
+	    esl_stack_IPush(alts, 0);
+	    esl_stack_IPush(alts, 0);
+	  }	
+	}  
+      }
+    }
+
+    break;
     
   case RBG_JJ:
     /* rule: JJ -> M1 JJ  */
@@ -4704,7 +4906,7 @@ dp_recursion_rbg_inside(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *ps
     /* rule: J3 -> M1 R  */
     for (d1 = 0; d1 <= d; d1++) {
       k = i + d1 - 1;
-      
+
       sc = imx->M1->dp[k][d1] + imx->R->dp[j][d-d1] + p->tJ3[0];
       sumsc = e2_FLogsum(sumsc, sc);             
     }
@@ -5411,6 +5613,7 @@ dp_recursion_rbg_posterior_pair(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p,
   return status;
 }
 
+
 /* rule9-plain: P -> m..m */
 static inline int
 dp_recursion_rbg_score_P_HL_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, int j, int d,
@@ -5648,6 +5851,72 @@ dp_recursion_rbg_score_P_IL_R3D(FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX
   return eslOK;
 }
 
+/* J3-plain: J3 -> M1 R */
+static inline int
+dp_recursion_rbg_score_J3_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+				int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose)
+{
+  SCVAL    sc;	        	        /* score for a rule */
+  int      L = mi->alen;
+  int      j3_allow;
+  int      i, k;
+  int      status;
+
+  i = j - d  + 1;
+  k = i + d1 - 1;
+  
+  sc = rbgmx->M1->dp[k][d1] + rbgmx->R->dp[j][d-d1] + p->tJ3[0];
+
+  *ret_sc = sc;
+  return eslOK;
+}
+
+/* J3-RM: J3 -> J3_k */
+static inline int
+dp_recursion_rbg_score_J3_R3D(FOLDPARAM *foldparam, R3D_J3param *J3p, R3D_J3MX *J3mx, SPAIR *spair, int *covct, COVLIST *exclude,
+			      int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose)
+{
+  SCVAL sc = -eslINFINITY;	    /* score for a rule */
+
+  sc  = J3p->pJ3 + J3mx->mxJ->mx[0]->dp[j][d];
+
+  *ret_sc = sc;
+  return eslOK;
+}
+
+/* J4-plain: J4 -> M1 J3 */
+static inline int
+dp_recursion_rbg_score_J4_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
+				int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose)
+{
+  SCVAL    sc;	        	        /* score for a rule */
+  int      L = mi->alen;
+  int      j3_allow;
+  int      i, k;
+  int      status;
+
+  i = j - d  + 1;
+  k = i + d1 - 1;
+  
+  sc = rbgmx->M1->dp[k][d1] + rbgmx->J3->dp[j][d-d1] + p->tJ4[0];
+
+  *ret_sc = sc;
+  return eslOK;
+}
+
+/* J4-RM: J4 -> J4_k */
+static inline int
+dp_recursion_rbg_score_J4_R3D(FOLDPARAM *foldparam, R3D_J4param *J4p, R3D_J4MX *J4mx, SPAIR *spair, int *covct, COVLIST *exclude,
+			      int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose)
+{
+  SCVAL sc = -eslINFINITY;	    /* score for a rule */
+
+  sc  = J4p->pJ4 + J4mx->mxJ->mx[0]->dp[j][d];
+
+  *ret_sc = sc;
+  return eslOK;
+}
+
 static inline int 
 dp_recursion_r3d_cyk(ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 		     RBG_MX *cyk, R3D_MX *cyk_r3d, int w, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
@@ -5656,9 +5925,13 @@ dp_recursion_r3d_cyk(ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *p
   R3D_HL   *HL;
   R3D_BL   *BL;
   R3D_IL   *IL;
+  R3D_J3   *J3;
+  R3D_J4   *J4;
   R3D_HLMX *HLmx;
   R3D_BLMX *BLmx;
   R3D_ILMX *ILmx;
+  R3D_J3MX *J3mx;
+  R3D_J4MX *J4mx;
   R3D_HMX  *fwd = cyk_r3d->fwd;
   int       L = mi->alen;
   int       i, k, l;
@@ -5697,7 +5970,37 @@ dp_recursion_r3d_cyk(ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *p
  
     status = dp_recursion_r3d_cyk_ILo(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       ILmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_ILo error\n");
-  }    
+  }
+  else if (w == R3D_NT_J3J) {
+    J3   = r3d->J3[m];
+    J3mx = cyk_r3d->J3mx[m];
+    
+    status = dp_recursion_r3d_cyk_J3J(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude,       J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J3J error\n");
+  }
+  else if (w == R3D_NT_J3L) {
+    J3   = r3d->J3[m];
+    J3mx = cyk_r3d->J3mx[m];
+    
+    status = dp_recursion_r3d_cyk_J3L(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk,  J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J3J error\n");
+  }
+  else if (w == R3D_NT_J4J) {
+    J4   = r3d->J4[m];
+    J4mx = cyk_r3d->J4mx[m];
+    
+    status = dp_recursion_r3d_cyk_J4J(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude,       J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J4J error\n");
+  }
+  else if (w == R3D_NT_J4L) {
+    J4   = r3d->J4[m];
+    J4mx = cyk_r3d->J4mx[m];
+    
+    status = dp_recursion_r3d_cyk_J4L(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk,   J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J4J error\n");
+  }
+  else
+    ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk cannot find NT %d\n", w);
   
   return eslOK;
   
@@ -6563,6 +6866,224 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
       esl_stack_IPush(alts, 0);
       esl_stack_IPush(alts, 0);
     }
+  }
+
+  *ret_bestsc = bestsc;
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+static inline int 
+dp_recursion_r3d_cyk_J3J(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+			 R3D_J3MX *J3mx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
+{
+  SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
+  SCVAL sc;
+  int   L = mi->alen;
+  int   i, k;
+  int   d1;
+  int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  i = j - d + 1;
+
+  // n = 0
+  //
+  //     J3L^{n}        J3J^{n+1}
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J3J^{n}
+  //
+  // n = 1
+  //
+  //     J3L^{n}         S^{n+1}
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J3J^{n}
+  //
+  for (d1 = 0; d1 <= d; d1++) {
+    k = i + d1 - 1;
+
+    if      (n == 0) { sc = J3mx->mxL->mx[n]->dp[k][d1] + J3mx->mxJ->mx[n+1]->dp[j][d-d1]; }
+    else if (n == 1) { sc = J3mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S3,fwd,errbuf); }
+    
+    if (sc >= bestsc) {
+      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	if (alts) esl_stack_Reuse(alts);
+	bestsc = sc;
+      }     
+      if (alts) {
+	esl_stack_IPush(alts, R3D_J3J);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
+	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, 0);
+      }
+    }  
+      
+  }
+    
+  *ret_bestsc = bestsc;
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+static inline int 
+dp_recursion_r3d_cyk_J3L(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+			 RBG_MX *cyk, R3D_J3MX *J3mx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
+{
+  SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
+  SCVAL sc;
+  int   L = mi->alen;
+  int   i, k;
+  int   d1;
+  int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  i = j - d + 1;
+
+  //
+  //     S[n]              F0
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J3L^{n}
+  //
+  for (d1 = 0; d1 <= d; d1++) {
+    k = i + d1 - 1;
+
+    if      (n == 0) sc = R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+    else if (n == 1) sc = R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+    
+    if (sc >= bestsc) {
+      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	if (alts) esl_stack_Reuse(alts);
+	bestsc = sc;
+      }     
+      if (alts) {
+	esl_stack_IPush(alts, R3D_J3L);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
+	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, 0);
+      }
+    }  
+       
+ }
+
+  *ret_bestsc = bestsc;
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+static inline int 
+dp_recursion_r3d_cyk_J4J(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+			 R3D_J4MX *J4mx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
+{
+  SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
+  SCVAL sc;
+  int   L = mi->alen;
+  int   i, k;
+  int   d1;
+  int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  i = j - d + 1;
+
+  // n < 3
+  //
+  //     J4L^{n}        J4J^{n+1}
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J4J^{n}
+  //
+  // n = 3
+  //
+  //     J4L^{n}          S[n+1]
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J4J^{n}
+  //
+  for (d1 = 0; d1 <= d; d1++) {
+    k = i + d1 - 1;
+
+    if      (n <  3) { sc = J4mx->mxL->mx[n]->dp[k][d1] + J4mx->mxJ->mx[n+1]->dp[j][d-d1]; }
+    else if (n == 3) { sc = J4mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S4,fwd,errbuf); }
+    
+    if (sc >= bestsc) {
+      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+	if (alts) esl_stack_Reuse(alts);
+	bestsc = sc;
+      }     
+      if (alts) {
+	esl_stack_IPush(alts, R3D_J4J);
+	esl_stack_IPush(alts, m);
+	esl_stack_IPush(alts, n);
+	esl_stack_IPush(alts, d1);
+	esl_stack_IPush(alts, 0);
+      }
+    }  
+      
+
+  }
+
+  *ret_bestsc = bestsc;
+  return eslOK;
+  
+ ERROR:
+  return status;
+}
+
+static inline int 
+dp_recursion_r3d_cyk_J4L(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
+			 RBG_MX *cyk, R3D_J4MX *J4mx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
+{
+  SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
+  SCVAL sc;
+  int   L = mi->alen;
+  int   i, k;
+  int   d1;
+  int   status;
+
+  if (alts) esl_stack_Reuse(alts);
+
+  i = j - d + 1;
+
+  //
+  //     S[n]              F0
+  //  i___________k k+1___________j
+  //  i___________________________j
+  //             J4L^{n}
+  //
+  for (d1 = 0; d1 <= d; d1++) {
+   k = i + d1 - 1;
+
+   if      (n == 0) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   else if (n == 1) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   else if (n == 2) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S3,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   
+   if (sc >= bestsc) {
+     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+       if (alts) esl_stack_Reuse(alts);
+       bestsc = sc;
+     }     
+     if (alts) {
+       esl_stack_IPush(alts, R3D_J4L);
+       esl_stack_IPush(alts, m);
+       esl_stack_IPush(alts, n);
+       esl_stack_IPush(alts, d1);
+       esl_stack_IPush(alts, 0);
+     }
+   }  
+   
   }
 
   *ret_bestsc = bestsc;

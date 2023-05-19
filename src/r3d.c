@@ -27,13 +27,21 @@
 static int  r3d_read_HL(esl_pos_t i, char *p, esl_pos_t n, R3D_HL **ret_HL, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_BL(esl_pos_t i, char *p, esl_pos_t n, R3D_BL **ret_BL, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_IL(esl_pos_t i, char *p, esl_pos_t n, R3D_IL **ret_IL, ESL_ALPHABET *abc, char *errbuf, int verbose);
-static int  r3d_add_reversedBL(int b, R3D *r3d, char *errbuf, int verbose);
-static int  r3d_add_reversedIL(int b, R3D *r3d, char *errbuf, int verbose);
+static int  r3d_read_J3(esl_pos_t i, char *p, esl_pos_t n, R3D_J3 **ret_J3, ESL_ALPHABET *abc, char *errbuf, int verbose);
+static int  r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *abc, char *errbuf, int verbose);
+static int  r3d_add_reversedBL(int b,            R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_reversedIL(int b,            R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedJ3 (int b, int which, R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedJ4 (int b, int which, R3D *r3d, char *errbuf, int verbose);
 static int  r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2);
 static int  r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2);
+static int  r3d_identical_J3(R3D_J3 *J3a, R3D_J3 *J3b);
+static int  r3d_identical_J4(R3D_J4 *J4a, R3D_J4 *J4b);
 static void r3d_write_HL(FILE *fp, R3D_HL *HL, int verbose);
 static void r3d_write_BL(FILE *fp, R3D_BL *BL, int verbose);
 static void r3d_write_IL(FILE *fp, R3D_IL *IL, int verbose);
+static void r3d_write_J3(FILE *fp, R3D_J3 *J3, int verbose);
+static void r3d_write_J4(FILE *fp, R3D_J4 *J4, int verbose);
 
 const R3D_HLparam R3D_HL_PRELOADS = {
   pRM,
@@ -50,6 +58,12 @@ const R3D_ILparam R3D_IL_PRELOADS = {
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
+const R3D_J3param R3D_J3_PRELOADS = {
+  pRM_J3,
+};
+const R3D_J4param R3D_J4_PRELOADS = {
+  pRM_J4,
+};
 
 extern R3D*
 R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
@@ -62,6 +76,7 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   esl_pos_t        len;
   esl_pos_t        idx;
   int              k;        // RMs index
+  int              which;
   int              status;
 
   if (!r3dfile) return NULL;
@@ -75,9 +90,13 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   r3d->nHL  = 0;
   r3d->nBL  = 0;
   r3d->nIL  = 0;
+  r3d->nJ3  = 0;
+  r3d->nJ4  = 0;
   r3d->HL   = NULL;
   r3d->BL   = NULL;
   r3d->IL   = NULL;
+  r3d->J3   = NULL;
+  r3d->J4   = NULL;
   r3d->maxM = 0;
 
   while (( status = esl_buffer_GetLine(bf, &p, &n)) == eslOK) 
@@ -118,6 +137,26 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
 	
 	status = r3d_read_IL(i, p, n, &(r3d->IL[idx]), abc, errbuf, verbose);
 	if (status != eslOK) esl_fatal("r3d_read_IL() failed with error code %d", status);
+      }
+      else if (p[i] == 'J' && p[i+1] == '3') { // J3 = 3-way juntion module
+	i += 2;
+	r3d->nJ3 ++;
+ 	if (r3d->nJ3 == 1) ESL_ALLOC  (r3d->J3, sizeof(R3D_J3 *) * r3d->nJ3);
+	else               ESL_REALLOC(r3d->J3, sizeof(R3D_J3 *) * r3d->nJ3);
+	idx = r3d->nJ3-1;
+	
+	status = r3d_read_J3(i, p, n, &(r3d->J3[idx]), abc, errbuf, verbose);
+	if (status != eslOK) esl_fatal("r3d_read_J3() failed with error code %d", status);
+      }
+      else if (p[i] == 'J' && p[i+1] == '4') { // J4 = 4-way juntion module
+	i += 2;
+	r3d->nJ4 ++;
+ 	if (r3d->nJ4 == 1) ESL_ALLOC  (r3d->J4, sizeof(R3D_J4 *) * r3d->nJ4);
+	else               ESL_REALLOC(r3d->J4, sizeof(R3D_J4 *) * r3d->nJ4);
+	idx = r3d->nJ4-1;
+	
+	status = r3d_read_J4(i, p, n, &(r3d->J4[idx]), abc, errbuf, verbose);
+	if (status != eslOK) esl_fatal("r3d_read_J4() failed with error code %d", status);
      }
     }
   
@@ -136,6 +175,24 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   for (k = 0; k < r3d->nIL; k ++) {
     status = r3d_add_reversedIL(k, r3d, errbuf, verbose);
     if (status != eslOK) esl_fatal("r3d_add_reversedIL() failed with error code %d", status);
+  }
+
+  // Add the rotated J3s
+  r3d->nJ3_total = r3d->nJ3;
+  for (k = 0; k < r3d->nJ3; k ++) {
+    for (which = 1; which < 3; which ++) {
+      status = r3d_add_rotatedJ3(k, 1, r3d, errbuf, verbose);
+      if (status != eslOK) esl_fatal("r3d_add_rotatedJ3() failed with error code %d", status);
+    }
+  }
+
+  // Add the rotated J4s
+  r3d->nJ4_total = r3d->nJ4;
+  for (k = 0; k < r3d->nJ4; k ++) {
+    for (which = 1; which < 4; which ++) {
+      status = r3d_add_rotatedJ4(k, 1, r3d, errbuf, verbose);
+      if (status != eslOK) esl_fatal("r3d_add_rotatedJ4() failed with error code %d", status);
+    }
   }
 
   // Finally create the HMMs
@@ -293,6 +350,70 @@ R3D_IL_Create(ESL_ALPHABET *abc, int nBo, int nBi)
   return NULL;
 }
 
+R3D_J3 *
+R3D_J3_Create(ESL_ALPHABET *abc)
+{
+  R3D_J3 *r3d_J3 = NULL;
+  int     status;
+  
+  ESL_ALLOC(r3d_J3, sizeof(R3D_J3));
+  r3d_J3->J3_S1    = NULL;
+  r3d_J3->J3_S2    = NULL;
+  r3d_J3->J3_S3    = NULL;
+  
+  r3d_J3->HMMJ3_S1 = NULL;
+  r3d_J3->HMMJ3_S2 = NULL;
+  r3d_J3->HMMJ3_S3 = NULL;
+
+  ESL_ALLOC(r3d_J3->J3_S1,    sizeof(char *));
+  ESL_ALLOC(r3d_J3->J3_S2,    sizeof(char *));
+  ESL_ALLOC(r3d_J3->J3_S3,    sizeof(char *));
+  ESL_ALLOC(r3d_J3->HMMJ3_S1, sizeof(R3D_HMM));
+  ESL_ALLOC(r3d_J3->HMMJ3_S2, sizeof(R3D_HMM));
+  ESL_ALLOC(r3d_J3->HMMJ3_S3, sizeof(R3D_HMM));
+
+  r3d_J3->abc = abc;
+
+  return r3d_J3;
+
+ ERROR:
+  return NULL;
+}
+
+R3D_J4 *
+R3D_J4_Create(ESL_ALPHABET *abc)
+{
+  R3D_J4 *r3d_J4 = NULL;
+  int     status;
+  
+  ESL_ALLOC(r3d_J4, sizeof(R3D_J4));
+  r3d_J4->J4_S1    = NULL;
+  r3d_J4->J4_S2    = NULL;
+  r3d_J4->J4_S3    = NULL;
+  r3d_J4->J4_S4    = NULL;
+  
+  r3d_J4->HMMJ4_S1 = NULL;
+  r3d_J4->HMMJ4_S2 = NULL;
+  r3d_J4->HMMJ4_S3 = NULL;
+  r3d_J4->HMMJ4_S4 = NULL;
+
+  ESL_ALLOC(r3d_J4->J4_S1,    sizeof(char *));
+  ESL_ALLOC(r3d_J4->J4_S2,    sizeof(char *));
+  ESL_ALLOC(r3d_J4->J4_S3,    sizeof(char *));
+  ESL_ALLOC(r3d_J4->J4_S4,    sizeof(char *));
+  ESL_ALLOC(r3d_J4->HMMJ4_S1, sizeof(R3D_HMM));
+  ESL_ALLOC(r3d_J4->HMMJ4_S2, sizeof(R3D_HMM));
+  ESL_ALLOC(r3d_J4->HMMJ4_S3, sizeof(R3D_HMM));
+  ESL_ALLOC(r3d_J4->HMMJ4_S4, sizeof(R3D_HMM));
+
+  r3d_J4->abc = abc;
+
+  return r3d_J4;
+
+ ERROR:
+  return NULL;
+}
+
 extern int
 R3D_HL_HMMCreate(R3D_HL *HL, int *ret_maxM, char *errbuf, int verbose)
 {
@@ -437,10 +558,13 @@ R3D_Destroy(R3D *r3d)
   int h;
   int b;
   int i;
+  int j;
   
   if (r3d->HL) { for (h = 0; h < r3d->nHL;       h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
   if (r3d->BL) { for (b = 0; b < r3d->nBL_total; b ++) if (r3d->BL[b]) R3D_BL_Destroy(r3d->BL[b]); free(r3d->BL); }
   if (r3d->IL) { for (i = 0; i < r3d->nIL_total; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
+  if (r3d->J3) { for (j = 0; j < r3d->nJ3_total; j ++) if (r3d->J3[j]) R3D_J3_Destroy(r3d->J3[i]); free(r3d->J3); }
+  if (r3d->J4) { for (j = 0; j < r3d->nJ4_total; j ++) if (r3d->J4[j]) R3D_J4_Destroy(r3d->J4[i]); free(r3d->J4); }
   if (r3d) free(r3d);
 }
 
@@ -521,6 +645,34 @@ R3D_IL_Destroy(R3D_IL *r3d_IL)
   if (r3d_IL->HMMRi) free(r3d_IL->HMMRi);
   if (r3d_IL)        free(r3d_IL);
 }
+void
+R3D_J3_Destroy(R3D_J3 *r3d_J3)
+{
+  int no, ni;
+  
+  if (r3d_J3->name)      free(r3d_J3->name);  
+  if (r3d_J3->J3_S1)     free(r3d_J3->J3_S1);
+  if (r3d_J3->J3_S2)     free(r3d_J3->J3_S2);
+  if (r3d_J3->J3_S3)     free(r3d_J3->J3_S3);
+  if (r3d_J3->HMMJ3_S1)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S1);
+  if (r3d_J3->HMMJ3_S2)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S2);
+  if (r3d_J3->HMMJ3_S3)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S3);
+}
+void
+R3D_J4_Destroy(R3D_J4 *r3d_J4)
+{
+  int no, ni;
+  
+  if (r3d_J4->name)      free(r3d_J4->name);  
+  if (r3d_J4->J4_S1)     free(r3d_J4->J4_S1);
+  if (r3d_J4->J4_S2)     free(r3d_J4->J4_S2);
+  if (r3d_J4->J4_S3)     free(r3d_J4->J4_S3);
+  if (r3d_J4->J4_S4)     free(r3d_J4->J4_S4);
+  if (r3d_J4->HMMJ4_S1)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S1);
+  if (r3d_J4->HMMJ4_S2)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S2);
+  if (r3d_J4->HMMJ4_S3)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S3);
+  if (r3d_J4->HMMJ4_S4)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S4);
+}
 
 extern int
 R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
@@ -532,6 +684,8 @@ R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
    ESL_ALLOC(r3dp->HLp, sizeof(R3D_HLparam));
    ESL_ALLOC(r3dp->BLp, sizeof(R3D_BLparam));
    ESL_ALLOC(r3dp->ILp, sizeof(R3D_ILparam));
+   ESL_ALLOC(r3dp->J3p, sizeof(R3D_J3param));
+   ESL_ALLOC(r3dp->J4p, sizeof(R3D_J4param));
 
    r3dp->HLp->pHL         = log(R3D_HL_PRELOADS.pHL);
    r3dp->HLp->pHL_LR[0]   = log(R3D_HL_PRELOADS.pHL_LR[0]);
@@ -564,6 +718,9 @@ R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
    r3dp->ILp->pIL_Loop[2] = log(R3D_IL_PRELOADS.pIL_Loop[2]);
    r3dp->ILp->pIL_Loop[3] = log(R3D_IL_PRELOADS.pIL_Loop[3]);
 
+   r3dp->J3p->pJ3         = log(R3D_J3_PRELOADS.pJ3);
+   r3dp->J4p->pJ4         = log(R3D_J4_PRELOADS.pJ4);
+   
    // renormalize, just in case
    vec_SCVAL_LogNorm(r3dp->HLp->pHL_LR,   4);
    vec_SCVAL_LogNorm(r3dp->HLp->pHL_Loop, 4);
@@ -586,6 +743,8 @@ R3D_Param_Destroy(R3Dparam *r3dp)
   if (r3dp->HLp) free(r3dp->HLp);
   if (r3dp->BLp) free(r3dp->BLp);
   if (r3dp->ILp) free(r3dp->ILp);
+  if (r3dp->J3p) free(r3dp->J3p);
+  if (r3dp->J4p) free(r3dp->J4p);
   if (r3dp)      free(r3dp);
 }
 
@@ -610,6 +769,14 @@ R3D_Write(FILE *fp, R3D *r3d, int verbose)
   fprintf(fp, "IL %d/%d\n", r3d->nIL, r3d->nIL_total);
   for (i = 0; i < r3d->nIL_total; i ++) 
     r3d_write_IL(fp, r3d->IL[i], verbose);
+  
+  fprintf(fp, "J3 %d/%d\n", r3d->nJ3, r3d->nJ3_total);
+  for (i = 0; i < r3d->nJ3_total; i ++) 
+    r3d_write_J3(fp, r3d->J3[i], verbose);
+  
+  fprintf(fp, "J4 %d/%d\n", r3d->nJ4, r3d->nJ4_total);
+  for (i = 0; i < r3d->nJ4_total; i ++) 
+    r3d_write_J4(fp, r3d->J4[i], verbose);
 }
 
 
@@ -676,6 +843,38 @@ R3D_ILMX_Create (int L, R3D_IL *IL)
   return NULL;
  }
 
+extern R3D_J3MX *
+R3D_J3MX_Create (int L, R3D_J3 *J3)
+{
+  R3D_J3MX *J3mx = NULL;
+  int       status;
+  
+  ESL_ALLOC(J3mx, sizeof(R3D_J3MX));
+  J3mx->mxJ = R3D_RMMX_Create(L, 2);
+  J3mx->mxL = R3D_RMMX_Create(L, 2);
+
+  return J3mx;
+  
+ ERROR:
+  return NULL;
+}
+
+extern R3D_J4MX *
+R3D_J4MX_Create (int L, R3D_J4 *J4)
+{
+  R3D_J4MX *J4mx = NULL;
+  int       status;
+  
+  ESL_ALLOC(J4mx, sizeof(R3D_J4MX));
+  J4mx->mxJ = R3D_RMMX_Create(L, 3);
+  J4mx->mxL = R3D_RMMX_Create(L, 3);
+
+  return J4mx;
+  
+ ERROR:
+  return NULL;
+ }
+
 extern R3D_MX *
 R3D_MX_Create(int L, R3D *r3d)
 {
@@ -687,9 +886,13 @@ R3D_MX_Create(int L, R3D *r3d)
   r3dmx->nHL  = r3d->nHL;
   r3dmx->nBL  = r3d->nBL;
   r3dmx->nIL  = r3d->nIL_total;
+  r3dmx->nJ3  = r3d->nJ3_total;
+  r3dmx->nJ4  = r3d->nJ4_total;
   r3dmx->HLmx = NULL;
   r3dmx->BLmx = NULL;
   r3dmx->ILmx = NULL;
+  r3dmx->J3mx = NULL;
+  r3dmx->J4mx = NULL;
   if (r3dmx->nHL > 0) ESL_ALLOC(r3dmx->HLmx, sizeof(R3D_HLMX) * r3dmx->nHL);
   if (r3dmx->nBL > 0) ESL_ALLOC(r3dmx->BLmx, sizeof(R3D_BLMX) * r3dmx->nBL);
   if (r3dmx->nIL > 0) ESL_ALLOC(r3dmx->ILmx, sizeof(R3D_ILMX) * r3dmx->nIL);
@@ -702,6 +905,12 @@ R3D_MX_Create(int L, R3D *r3d)
   
   for (n = 0; n < r3dmx->nIL; n ++)
     r3dmx->ILmx[n] = R3D_ILMX_Create (L, r3d->IL[n]);
+
+  for (n = 0; n < r3dmx->nJ3; n ++)
+    r3dmx->J3mx[n] = R3D_J3MX_Create (L, r3d->J3[n]);
+  
+  for (n = 0; n < r3dmx->nJ4; n ++)
+    r3dmx->J4mx[n] = R3D_J4MX_Create (L, r3d->J4[n]);
 
   r3dmx->fwd = R3D_hmx_Create(L, r3d->maxM);
   
@@ -746,6 +955,22 @@ R3D_ILMX_Destroy(R3D_ILMX *ILmx)
   if (ILmx->mxi) R3D_RMMX_Destroy(ILmx->mxi);
   free(ILmx);
 }
+extern void
+R3D_J3MX_Destroy(R3D_J3MX *J3mx)
+{
+  if (!J3mx) return;
+  if (J3mx->mxJ) R3D_RMMX_Destroy(J3mx->mxJ);
+  if (J3mx->mxL) R3D_RMMX_Destroy(J3mx->mxL);
+  free(J3mx);
+}
+extern void
+R3D_J4MX_Destroy(R3D_J4MX *J4mx)
+{
+  if (!J4mx) return;
+  if (J4mx->mxJ) R3D_RMMX_Destroy(J4mx->mxJ);
+  if (J4mx->mxL) R3D_RMMX_Destroy(J4mx->mxL);
+  free(J4mx);
+}
 
 extern void
 R3D_MX_Destroy(R3D_MX *r3dmx)
@@ -756,6 +981,8 @@ R3D_MX_Destroy(R3D_MX *r3dmx)
   for (n = 0; n < r3dmx->nHL; n ++) R3D_HLMX_Destroy(r3dmx->HLmx[n]);
   for (n = 0; n < r3dmx->nBL; n ++) R3D_BLMX_Destroy(r3dmx->BLmx[n]);
   for (n = 0; n < r3dmx->nIL; n ++) R3D_ILMX_Destroy(r3dmx->ILmx[n]);
+  for (n = 0; n < r3dmx->nJ3; n ++) R3D_J3MX_Destroy(r3dmx->J3mx[n]);
+  for (n = 0; n < r3dmx->nJ4; n ++) R3D_J4MX_Destroy(r3dmx->J4mx[n]);
   if (r3dmx->HLmx) free(r3dmx->HLmx);
   if (r3dmx->BLmx) free(r3dmx->BLmx);
   if (r3dmx->ILmx) free(r3dmx->ILmx);
@@ -1073,6 +1300,126 @@ r3d_read_IL(esl_pos_t i, char *p, esl_pos_t n, R3D_IL **ret_IL, ESL_ALPHABET *ab
   return status;
 }
 
+static int
+r3d_read_J3(esl_pos_t i, char *p, esl_pos_t n, R3D_J3 **ret_J3, ESL_ALPHABET *abc, char *errbuf, int verbose)
+{
+  R3D_J3     *J3 = NULL;
+  esl_pos_t  salloc = n-i+1;
+  esl_pos_t  len;
+  int        status;
+   
+  J3 = R3D_J3_Create(abc);
+  ESL_ALLOC(J3->J3_S1, sizeof(char) * salloc);
+  ESL_ALLOC(J3->J3_S2, sizeof(char) * salloc);
+  ESL_ALLOC(J3->J3_S3, sizeof(char) * salloc);
+  ESL_ALLOC(J3->name,  sizeof(char) * salloc);
+  J3->type = R3D_TP_J3;
+  
+  // J3_S1
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J3->J3_S1[len++] = p[i++];
+  }
+  J3->J3_S1[len] = '\0';
+  
+  // J3_S2
+  len  = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J3->J3_S2[len++] = p[i++];
+  }
+  J3->J3_S2[len] = '\0';
+  
+  // J3_S3
+  len  = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J3->J3_S3[len++] = p[i++];
+  }
+  J3->J3_S3[len] = '\0';
+
+  // name
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    
+    J3->name[len++] = p[i++];
+  }
+  J3->name[len] = '\0';
+
+  *ret_J3 = J3;
+  return eslOK;
+
+ ERROR:
+  if (J3) R3D_J3_Destroy(J3);
+  return status;
+}
+
+static int
+r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *abc, char *errbuf, int verbose)
+{
+  R3D_J4     *J4 = NULL;
+  esl_pos_t  salloc = n-i+1;
+  esl_pos_t  len;
+  int        status;
+  
+  J4 = R3D_J4_Create(abc);
+  ESL_ALLOC(J4->J4_S1, sizeof(char) * salloc);
+  ESL_ALLOC(J4->J4_S2, sizeof(char) * salloc);
+  ESL_ALLOC(J4->J4_S3, sizeof(char) * salloc);
+  ESL_ALLOC(J4->name,  sizeof(char) * salloc);
+  J4->type = R3D_TP_J4;
+  
+  // J4_S1
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J4->J4_S1[len++] = p[i++];
+  }
+  J4->J4_S1[len] = '\0';
+  
+  // J4_S2
+  len  = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J4->J4_S2[len++] = p[i++];
+  }
+  J4->J4_S2[len] = '\0';
+  
+  // J4_S3
+  len  = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J4->J4_S3[len++] = p[i++];
+  }
+  J4->J4_S3[len] = '\0';
+
+  // J4_S4
+  len  = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    J4->J4_S4[len++] = p[i++];
+  }
+  J4->J4_S4[len] = '\0';
+
+  // name
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    
+    J4->name[len++] = p[i++];
+  }
+  J4->name[len] = '\0';
+
+  *ret_J4 = J4;
+  return eslOK;
+
+ ERROR:
+  if (J4) R3D_J4_Destroy(J4);
+  return status;
+}
+
 // for each BL add its reversed counterpart
 //
 //     5'-- L_{1} ... L_{nB} Loop R_{nB} ... R_{1} --3'   
@@ -1103,7 +1450,7 @@ r3d_add_reversedBL(int k, R3D *r3d, char *errbuf, int verbose)
   newBL->HMML = NULL;
   newBL->HMMR = NULL;
 
-  if(r3d_identical_BL(BL, newBL)) {
+  if (r3d_identical_BL(BL, newBL)) {
     R3D_BL_Destroy(newBL); 
   }
   else {
@@ -1182,6 +1529,121 @@ r3d_add_reversedIL(int k, R3D *r3d, char *errbuf, int verbose)
   return status;
 }
 
+// for each J3 there are two rotations
+//
+//      5'-- S1 F0 S2 F0 S3  --3'
+// to
+//      5'-- S2 F0 S3 F0 S1  --3' (which = 1)
+// and
+//      5'-- S3 F0 S1 F0 S2  --3' (which = 2)
+//
+static int
+r3d_add_rotatedJ3(int k, int which, R3D *r3d, char *errbuf, int verbose)
+{
+  R3D_J3 *J3    = r3d->J3[k];
+  R3D_J3 *newJ3 = NULL;
+  int     status;
+  
+  ESL_ALLOC(newJ3, sizeof(R3D_J3));
+  newJ3->abc = J3->abc;
+ 
+  esl_sprintf(&newJ3->name,  "%s.rev", J3->name);
+  if (which == 1) {
+    esl_sprintf(&newJ3->J3_S2, "%s",     J3->J3_S1); // S1 -> S2
+    esl_sprintf(&newJ3->J3_S3, "%s",     J3->J3_S2); // S2 -> S3
+    esl_sprintf(&newJ3->J3_S1, "%s",     J3->J3_S3); // S3 -> S1
+  }
+  else if (which == 2) {
+    esl_sprintf(&newJ3->J3_S3, "%s",     J3->J3_S1); // S1 -> S3
+    esl_sprintf(&newJ3->J3_S1, "%s",     J3->J3_S2); // S2 -> S1
+    esl_sprintf(&newJ3->J3_S2, "%s",     J3->J3_S3); // S3 -> S2
+  }
+  else
+    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2"); 
+  
+  newJ3->HMMJ3_S1 = NULL;
+  newJ3->HMMJ3_S2 = NULL;
+  newJ3->HMMJ3_S3 = NULL;
+
+  if (r3d_identical_J3(J3, newJ3)) {
+    R3D_J3_Destroy(newJ3);
+  }
+  else {
+    r3d->nJ3_total ++;
+    ESL_REALLOC(r3d->J3, sizeof(R3D_J3 *) * r3d->nJ3_total);
+    r3d->J3[r3d->nJ3_total-1] = newJ3;
+  }
+  
+  return eslOK;
+  
+ ERROR:
+  if (newJ3) R3D_J3_Destroy(newJ3);
+  return status;
+}
+
+// for each J4 there are three rotations
+//
+//      5'-- S1 F0 S2 F0 S3 F0 S4 --3'
+// to
+//      5'-- S2 F0 S3 F0 S4 F0 S1 --3' (which = 1)
+// and
+//      5'-- S3 F0 S4 F0 S1 F0 S2 --3' (which = 2)
+// and
+//      5'-- S4 F0 S1 F0 S2 F0 S3 --3' (which = 3)
+//
+static int
+r3d_add_rotatedJ4(int k, int which, R3D *r3d, char *errbuf, int verbose)
+{
+  R3D_J4 *J4    = r3d->J4[k];
+  R3D_J4 *newJ4 = NULL;
+  int     status;
+  
+  ESL_ALLOC(newJ4, sizeof(R3D_J4));
+  newJ4->abc = J4->abc;
+ 
+  esl_sprintf(&newJ4->name,  "%s.rev", J4->name);
+  if (which == 1) {
+    esl_sprintf(&newJ4->J4_S2, "%s",     J4->J4_S1); // S1 -> S2
+    esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S2); // S2 -> S3
+    esl_sprintf(&newJ4->J4_S4, "%s",     J4->J4_S3); // S3 -> S4
+    esl_sprintf(&newJ4->J4_S1, "%s",     J4->J4_S4); // S4 -> S1
+  }
+  else if (which == 2) {
+    esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S1); // S1 -> S3
+    esl_sprintf(&newJ4->J4_S4, "%s",     J4->J4_S2); // S2 -> S4
+    esl_sprintf(&newJ4->J4_S1, "%s",     J4->J4_S3); // S3 -> S1
+    esl_sprintf(&newJ4->J4_S2, "%s",     J4->J4_S4); // S4 -> S2
+  }
+   else if (which == 3) {
+    esl_sprintf(&newJ4->J4_S4, "%s",     J4->J4_S1); // S1 -> S4
+    esl_sprintf(&newJ4->J4_S1, "%s",     J4->J4_S2); // S2 -> S1
+    esl_sprintf(&newJ4->J4_S2, "%s",     J4->J4_S3); // S3 -> S2
+    esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S4); // S4 -> S3
+  }
+  else
+    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2 or 3"); 
+  
+  newJ4->HMMJ4_S1 = NULL;
+  newJ4->HMMJ4_S2 = NULL;
+  newJ4->HMMJ4_S3 = NULL;
+  newJ4->HMMJ4_S4 = NULL;
+
+  if (r3d_identical_J4(J4, newJ4)) {
+    R3D_J4_Destroy(newJ4);
+  }
+  else {
+    r3d->nJ4_total ++;
+    ESL_REALLOC(r3d->J4, sizeof(R3D_J4 *) * r3d->nJ4_total);
+    r3d->J4[r3d->nJ4_total-1] = newJ4;
+  }
+  
+  return eslOK;
+  
+ ERROR:
+  if (newJ4) R3D_J4_Destroy(newJ4);
+  return status;
+}
+
 static int
 r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2)
 {
@@ -1236,6 +1698,31 @@ r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2)
     if (esl_strcmp(IL1->Li[n], IL2->Li[n]) != 0)  return FALSE;
     if (esl_strcmp(IL1->Ri[n], IL2->Ri[n]) != 0)  return FALSE;
   }
+  
+  return same;
+}
+
+static int
+r3d_identical_J3(R3D_J3 *J3a, R3D_J3 *J3b)
+{
+  int same = TRUE;
+
+  if (esl_strcmp(J3a->J3_S1, J3b->J3_S1) != 0)  return FALSE;
+  if (esl_strcmp(J3a->J3_S2, J3b->J3_S2) != 0)  return FALSE;
+  if (esl_strcmp(J3a->J3_S3, J3b->J3_S3) != 0)  return FALSE;
+  
+  return same;
+}
+
+static int
+r3d_identical_J4(R3D_J4 *J4a, R3D_J4 *J4b)
+{
+  int same = TRUE;
+
+  if (esl_strcmp(J4a->J4_S1, J4b->J4_S1) != 0)  return FALSE;
+  if (esl_strcmp(J4a->J4_S2, J4b->J4_S2) != 0)  return FALSE;
+  if (esl_strcmp(J4a->J4_S3, J4b->J4_S3) != 0)  return FALSE;
+  if (esl_strcmp(J4a->J4_S4, J4b->J4_S4) != 0)  return FALSE;
   
   return same;
 }
@@ -1313,6 +1800,33 @@ r3d_write_IL(FILE *fp, R3D_IL *IL, int verbose)
   }
 }
 
+static void
+r3d_write_J3(FILE *fp, R3D_J3 *J3, int verbose)
+{
+  fprintf(fp, "J3 S1: %s\tS2: %s\tS3: %s", J3->J3_S1, J3->J3_S2, J3->J3_S3);
+  fprintf(fp, "\t\tname: %s\n", J3->name);
+  
+  if (verbose) {
+    R3D_hmm_Write(fp, J3->HMMJ3_S1);
+    R3D_hmm_Write(fp, J3->HMMJ3_S2);
+    R3D_hmm_Write(fp, J3->HMMJ3_S3);
+  }
+}
+
+static void
+r3d_write_J4(FILE *fp, R3D_J4 *J4, int verbose)
+{
+  fprintf(fp, "J4 S1: %s\tS2: %s\tS3: %s\tS3: %s", J4->J4_S1, J4->J4_S2, J4->J4_S3, J4->J4_S4);
+  fprintf(fp, "\t\tname: %s\n", J4->name);
+  
+  if (verbose) {
+    R3D_hmm_Write(fp, J4->HMMJ4_S1);
+    R3D_hmm_Write(fp, J4->HMMJ4_S2);
+    R3D_hmm_Write(fp, J4->HMMJ4_S3);
+    R3D_hmm_Write(fp, J4->HMMJ4_S4);
+  }
+}
+
 extern int
 R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
 {
@@ -1333,6 +1847,14 @@ R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
     if (m >= r3d->nIL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
     idx = -(m + 1 + r3d->nHL + r3d->nBL_total);
     break;
+  case R3D_TP_J3:
+    if (m >= r3d->nJ3_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
+    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total);
+    break;
+   case R3D_TP_J4:
+    if (m >= r3d->nJ4_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
+    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total);
+    break;
   default:
     ESL_XFAIL(eslFAIL, errbuf, "cannot recognize R3D type %d\n", m);
     break;
@@ -1350,17 +1872,21 @@ R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
 {
   R3D_TYPE type;
   int      nt_HL = r3d->nHL;
-  int      nt_BL = r3d->nHL + r3d->nBL_total;
-  int      nt_IL = r3d->nHL + r3d->nBL_total + r3d->nIL_total;
+  int      nt_BL = nt_HL + r3d->nBL_total;
+  int      nt_IL = nt_BL + r3d->nIL_total;
+  int      nt_J3 = nt_IL + r3d->nJ3_total;
+  int      nt_J4 = nt_J3 + r3d->nJ4_total;
   int      mdx = -ctval;
   int      m;
   int      status;
 
   if (ctval >= 0) ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be semi-positive but it is %d\n", ctval);
   
-  if      (mdx <= nt_HL) { type = R3D_TP_HL;  m = mdx - 1;         }
+  if      (mdx <= nt_HL) { type = R3D_TP_HL;  m = mdx - 1; }
   else if (mdx <= nt_BL) { type = R3D_TP_BL;  m = mdx - 1 - nt_HL; }
-  else if (mdx <= nt_HL) { type = R3D_TP_ILo; m = mdx - 1 - nt_BL; }
+  else if (mdx <= nt_IL) { type = R3D_TP_ILo; m = mdx - 1 - nt_BL; }
+  else if (mdx <= nt_J3) { type = R3D_TP_J3;  m = mdx - 1 - nt_IL; }
+  else if (mdx <= nt_J4) { type = R3D_TP_J4;  m = mdx - 1 - nt_J3; }
   else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -nt_IL, ctval);
   
   *ret_m    = m;

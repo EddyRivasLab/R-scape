@@ -17,13 +17,20 @@
 #include "r3d_hmm.h"
 
                             //     m..m      |      HL
-#define pRM       0.40      //  tP[0](1-pRM) | tP[0] * pRM
+#define pRM    0.40         //  tP[0](1-pRM) | tP[0] * pRM
                             //    m..m F0    |    BL F0
                             //  tP[1](1-pRM) | tP[1] * pRM
                             //    F0 m..m    |    F0 BL
                             //  tP[2](1-pRM) | tP[2] * pRM
                             //  m..m F0 m..m |      IL
                             //  tP[3](1-pRM) | tP[3] * pRM
+
+#define pRM_J3 0.40         // J3 ->    J30    |   J3_1    | .. |    J3_M
+                            //       1-pRM_J3    pRM_J3/M          pRM_J3/M
+
+#define pRM_J4 0.40         // J4 ->    J40    |   J4_1    | .. |    J4_M
+                            //       1-pRM_J4    pRM_J4/M          pRM_J4/M
+
 
 #define pRM_E     1e-25                          // no L/   nor  /R
 #define pRM_LoR   1e-25                          //    L/   or   /R
@@ -37,15 +44,22 @@ typedef enum r3d_type_e {
   R3D_TP_BL,
   R3D_TP_ILo,
   R3D_TP_ILi,
+  R3D_TP_J3,
+  R3D_TP_J4,
 } R3D_TYPE;
 
+// R3D NTs
 #define R3D_NT_HL  RBG_NT + 0
 #define R3D_NT_BL  RBG_NT + 1
 #define R3D_NT_ILo RBG_NT + 2
 #define R3D_NT_ILi RBG_NT + 3
-#define R3D_NT              4
+#define R3D_NT_J3J RBG_NT + 4
+#define R3D_NT_J3L RBG_NT + 5
+#define R3D_NT_J4J RBG_NT + 6
+#define R3D_NT_J4L RBG_NT + 7
+#define R3D_NT              8
 
-// four rules for each R3D NT (M, L, R, E). 
+// four rules for HL BL IL  R3D_NTs (M, L, R, E). 
 #define R3D_HL_M  RBG_NR + 0    // HL L/R
 #define R3D_HL_L  RBG_NR + 1    // HL L/-
 #define R3D_HL_R  RBG_NR + 2    // HL -/R
@@ -61,8 +75,13 @@ typedef enum r3d_type_e {
 #define R3D_ILi_M RBG_NR + 12 
 #define R3D_ILi_L RBG_NR + 13  
 #define R3D_ILi_R RBG_NR + 14  
-#define R3D_ILi_E RBG_NR + 15  
-#define R3D_NR             16
+#define R3D_ILi_E RBG_NR + 15
+// one rule for each J3 J4  R3D_NT 
+#define R3D_J3J   RBG_NR + 16
+#define R3D_J3L   RBG_NR + 17
+#define R3D_J4J   RBG_NR + 18
+#define R3D_J4L   RBG_NR + 19
+#define R3D_NR             20
 
 typedef struct {
   R3D_TYPE  type;
@@ -121,6 +140,36 @@ typedef struct {
 } R3D_IL;
 
 typedef struct {
+  R3D_TYPE  type;
+  char     *name;
+  
+  char    *J3_S1;
+  char    *J3_S2;
+  char    *J3_S3;
+  R3D_HMM *HMMJ3_S1;
+  R3D_HMM *HMMJ3_S2;
+  R3D_HMM *HMMJ3_S3;
+  
+  ESL_ALPHABET *abc;
+} R3D_J3;
+
+typedef struct {
+  R3D_TYPE  type;
+  char     *name;
+
+  char    *J4_S1;
+  char    *J4_S2;
+  char    *J4_S3;
+  char    *J4_S4;
+  R3D_HMM *HMMJ4_S1;
+  R3D_HMM *HMMJ4_S2;
+  R3D_HMM *HMMJ4_S3;
+  R3D_HMM *HMMJ4_S4;
+
+  ESL_ALPHABET *abc;
+} R3D_J4;
+
+typedef struct {
   int      nHL;
   R3D_HL **HL;
   
@@ -131,6 +180,14 @@ typedef struct {
   int      nIL;
   int      nIL_total;
   R3D_IL **IL;
+  
+  int      nJ3;
+  int      nJ3_total;
+  R3D_J3 **J3;
+
+  int      nJ4;
+  int      nJ4_total;
+  R3D_J4 **J4;
 
   int       maxM;  // max number of states for the segment HMMs
 } R3D;
@@ -153,7 +210,7 @@ typedef struct {
 } R3D_BLparam;
 
 typedef struct {
-  SCVAL  pIL; //  IL  ->  IL_naiv e    | IL_1           | ... | IL_nH
+  SCVAL  pIL; //  IL  ->  IL_naive     | IL_1           | ... | IL_nH
               //          tP[3](1-pIL) | tP[3]*pIL/nIL  |     | tP[3]*pIL/nIL
   
   SCVAL  pIL_LR[4];   // ILo^{n}      --> Lo^{n}     ILo^{n+1}  Ro^{n}     | Lo^{n} ILo^{n+1} | ILo^{n+1} Ro^{n}     | ILo^{n+1}  // for n <  nBo
@@ -163,9 +220,21 @@ typedef struct {
 } R3D_ILparam;
 
 typedef struct {
+ SCVAL  pJ3;  //  J3  ->  J3_naive |   J3_1   | ... | J3_nJ3
+              //          (1-pJ3)  | pJ3/nJ3  |     | pJ3/nJ3
+} R3D_J3param;
+
+typedef struct {
+ SCVAL  pJ4;  //  J4  ->  J4_naive |   J4_1   | ... | J4_nJ4
+              //          (1-pJ4)  | pJ4/nJ4  |     | pJ4/nJ4
+} R3D_J4param;
+
+typedef struct {
   R3D_HLparam *HLp;
   R3D_BLparam *BLp;
   R3D_ILparam *ILp;
+  R3D_J3param *J3p;
+  R3D_J4param *J4p;
 } R3Dparam;
 
 typedef struct {
@@ -187,15 +256,30 @@ typedef struct {
 } R3D_ILMX;
 
 typedef struct {
+  R3D_RMMX *mxJ;
+  R3D_RMMX *mxL;
+} R3D_J3MX;
+
+typedef struct {
+  R3D_RMMX *mxJ;
+  R3D_RMMX *mxL;
+} R3D_J4MX;
+
+
+typedef struct {
   int nHL;
   int nBL;
   int nIL;
+  int nJ3;
+  int nJ4;
   
   R3D_HLMX **HLmx;
   R3D_BLMX **BLmx;
   R3D_ILMX **ILmx;
+  R3D_J3MX **J3mx;
+  R3D_J4MX **J4mx;
 
-  // one forward R3D_HMX for all segmentes
+  // one forward R3D_HMX for all segments
   R3D_HMX  *fwd;
 } R3D_MX;
 
@@ -204,9 +288,13 @@ extern R3D       *R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int v
 extern R3D_HL    *R3D_HL_Create(ESL_ALPHABET *abc, int nB);
 extern R3D_BL    *R3D_BL_Create(ESL_ALPHABET *abc, int nB);
 extern R3D_IL    *R3D_IL_Create(ESL_ALPHABET *abc, int nBo, int nBi);
+extern R3D_J3    *R3D_J3_Create(ESL_ALPHABET *abc);
+extern R3D_J4    *R3D_J4_Create(ESL_ALPHABET *abc);
 extern void       R3D_HL_Destroy(R3D_HL *r3d_HL);
 extern void       R3D_BL_Destroy(R3D_BL *r3d_BL);
 extern void       R3D_IL_Destroy(R3D_IL *r3d_IL);
+extern void       R3D_J3_Destroy(R3D_J3 *r3d_J3);
+extern void       R3D_J4_Destroy(R3D_J4 *r3d_J4);
 extern void       R3D_Destroy(R3D *r3d);
 extern int        R3D_GetParam (R3Dparam  **ret_r3dp, char *errbuf, int verbose);
 extern void       R3D_Param_Destroy(R3Dparam *r3dp);
@@ -215,14 +303,20 @@ extern R3D_RMMX  *R3D_RMMX_Create (int L, int nB);
 extern R3D_HLMX  *R3D_HLMX_Create (int L, R3D_HL *HL);
 extern R3D_BLMX  *R3D_BLMX_Create (int L, R3D_BL *BL);
 extern R3D_ILMX  *R3D_ILMX_Create (int L, R3D_IL *IL);
+extern R3D_J3MX  *R3D_J3MX_Create (int L, R3D_J3 *J3);
+extern R3D_J4MX  *R3D_J4MX_Create (int L, R3D_J4 *J4);
 extern R3D_MX    *R3D_MX_Create   (int L, R3D *r3d);
 extern int        R3D_HL_HMMCreate(R3D_HL *HL, int *ret_maxM, char *errbuf, int verbose);
 extern int        R3D_BL_HMMCreate(R3D_BL *BL, int *ret_maxM, char *errbuf, int verbose);
 extern int        R3D_IL_HMMCreate(R3D_IL *IL, int *ret_maxM, char *errbuf, int verbose);
+extern int        R3D_J3_HMMCreate(R3D_J3 *J3, int *ret_maxM, char *errbuf, int verbose);
+extern int        R3D_J4_HMMCreate(R3D_J4 *J4, int *ret_maxM, char *errbuf, int verbose);
 extern void       R3D_RMMX_Destroy(R3D_RMMX *RMmx);
 extern void       R3D_HLMX_Destroy(R3D_HLMX *HLmx);
 extern void       R3D_BLMX_Destroy(R3D_BLMX *BLmx);
 extern void       R3D_ILMX_Destroy(R3D_ILMX *ILmx);
+extern void       R3D_J3MX_Destroy(R3D_J3MX *J3mx);
+extern void       R3D_J4MX_Destroy(R3D_J4MX *J4mx);
 extern void       R3D_MX_Destroy  (R3D_MX   *r3dmx);
 extern int        R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf);
 extern int        R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf);

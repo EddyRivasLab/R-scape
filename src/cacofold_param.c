@@ -402,7 +402,7 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
     rbgp->tP[3]     = tP3 + log(1.0 - exp(r3dp->ILp->pIL));
     r3dp->ILp->pIL += tP3 - log(r3d->nIL_total);
   }
-
+  
   if (verbose) {
     printf("RBG_R3D Param\n");
     printf("P0 %f to %f rest %f\n", tP0, rbgp->tP[0], r3dp->HLp->pHL);
@@ -411,6 +411,24 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
     printf("P3 %f to %f rest %f\n", tP3, rbgp->tP[3], r3dp->ILp->pIL);
   }
   
+  // modify the  J3 -> M1 R
+  //  to
+  //             J3 -> (1-pJ3)  M1 R  | pJ3/nJ3  J3_1  | ... | pJ3/nJ3  J3_{nJ3}  
+  if (r3d->nJ3_total > 0) {
+    rbgp->tJ3[0]    = log(1.0 - exp(r3dp->J3p->pJ3));
+    r3dp->J3p->pJ3 -= log(r3d->nJ3_total);
+    if (verbose) printf("J3 %f rest %f\n", rbgp->tJ3[0], r3dp->J3p->pJ3);
+  }
+  
+  // modify the  J4 -> M1 J3
+  //  to
+  //             J4 -> (1-pJ4)  M1 J3  | pJ4/nJ4  J4_1  | ... | pJ4/nJ4  J4_{nJ4}  
+  if (r3d->nJ4_total > 0) {
+    rbgp->tJ4[0]    = log(1.0 - exp(r3dp->J4p->pJ4));
+    r3dp->J4p->pJ4 -= log(r3d->nJ4_total);
+    if (verbose) printf("J4 %f rest %f\n", rbgp->tJ4[0], r3dp->J4p->pJ4);
+  }
+
   *ret_rbgp = rbgp;
   *ret_r3dp = r3dp;
   return status;

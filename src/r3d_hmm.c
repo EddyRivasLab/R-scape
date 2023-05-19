@@ -21,19 +21,19 @@
 #include "r3d_hmm.h"
 
 
-// For a sequence of length M
+// For a sequence of length M,  S_M
 //
-//   S^{0} --> S^{1} | I^{0}
+//   S_M     --> S_M^{1} | I^{0}
 //
-//   S^{k} --> x_k S^{k+1} | x_k I^{k} | S^{k+1} | I^{k} ,, k in [1..M-1]
-//   S^{M} --> x_M         | x_M I^{M} | e       | I^{M} 
+//   S_M^{m} --> x_m S_M^{m+1} | x_m I^{m} | S_M^{m+1} | I^{m} ,, m in [1..M-1]
+//   S_M^{M} --> x_M           | x_M I^{M} | e         | I^{M} 
 //
-//   I^{k} --> x I^{k} | S^{k+1} ,, k in [0..M-1]
-//   I^{n} --> x I^{n} | e      
+//   I^{m} --> x I^{m} | S^{m+1} ,, m in [0..M-1]
+//   I^{M} --> x I^{M} | e      
 //
 // if len(RNAmotif) = 0
 //
-//   S^{0} -->  x I^{0} | e 
+//   S_{M=0}^{0} -->  x I^{0} | e 
 //
 //
 extern R3D_HMM *
@@ -63,7 +63,7 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   hmm->tB[0] = log(HMM_tB);
   hmm->tB[1] = log(1. - HMM_tB);
   
-  //   S^{k} --> x_k S^{k+1} | x_k I^{k} | S^{k+1} | I^{k}  ,, k in [1..M-1]
+  //   S^{m} --> x_m S^{m+1} | x_m I^{m} | S^{m+1} | I^{m}  ,, m in [1..M-1]
   //   S^{M} --> x_M         | x_M I^{M} | e       | I^{M}
   //                tS[0]       tS[1]      tS[2]     tS[3]
   //                 tM          tMI       tD        tDI
@@ -75,8 +75,8 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   esl_vec_FLogNorm(hmm->tS, 4);
   esl_vec_FLog(hmm->tS, 4);
  
-  //   I^{k} --> x I^{k} | S^{k+1} ,, k in [0..M-1]
-  //   I^{n} --> x I^{n} | e      
+  //   I^{m} --> x I^{m} | S^{m+1} ,, k in [0..M-1]
+  //   I^{M} --> x I^{M} | e      
   //              tI[0]     tI[1]
   //
   // set tI so that the expected length of an insert is HMM_uL
@@ -103,7 +103,7 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
 
   // avglen
   //
-  // Mx(tM + tMI) + (M+1) * (tMI + tDI) /(1-tI)
+  // M * (tM + tMI) + (M+1) * (tMI + tDI) /(1-tI)
   //
   // (1-tB)/(1-tI) for M = 0
   //
@@ -111,7 +111,7 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   
   // Emission probabilities (profiled)
   //
-  hmm->e  = NULL;
+  hmm->e = NULL;
   ESL_ALLOC(hmm->e,    sizeof(SCVAL *) * (M+1)); hmm->e[0] = NULL;
   ESL_ALLOC(hmm->e[0], sizeof(SCVAL)   * (M+1) * abc->K);
   for (k = 1; k <= M; k++)
@@ -119,7 +119,7 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   
   // assign the emission probabilities for the I state
   // from G6X
-  p = hmm->e[0];
+  p    = hmm->e[0];
   p[0] = -1.013848;
   p[1] = -1.753817;
   p[2] = -1.518912;
@@ -237,6 +237,8 @@ R3D_hmm_Write(FILE *fp, R3D_HMM *hmm)
 {
   int k;
   int i;
+
+  if (!hmm) return eslOK;
 
   fprintf(fp, "\tHMM %s\n\tM = %d\n\tavglen %.2f\n", hmm->name, hmm->M, hmm->avglen);
   fprintf(fp, "\ttB = %f %f\n", exp(hmm->tB[0]), exp(hmm->tB[1]));
