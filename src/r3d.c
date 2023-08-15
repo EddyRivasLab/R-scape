@@ -29,10 +29,10 @@ static int  r3d_read_BL(esl_pos_t i, char *p, esl_pos_t n, R3D_BL **ret_BL, ESL_
 static int  r3d_read_IL(esl_pos_t i, char *p, esl_pos_t n, R3D_IL **ret_IL, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_J3(esl_pos_t i, char *p, esl_pos_t n, R3D_J3 **ret_J3, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *abc, char *errbuf, int verbose);
-static int  r3d_add_reversedBL(int b,            R3D *r3d, char *errbuf, int verbose);
-static int  r3d_add_reversedIL(int b,            R3D *r3d, char *errbuf, int verbose);
-static int  r3d_add_rotatedJ3 (int b, int which, R3D *r3d, char *errbuf, int verbose);
-static int  r3d_add_rotatedJ4 (int b, int which, R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedBL(int b,            R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedIL(int b,            R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedJ3(int b, int which, R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedJ4(int b, int which, R3D *r3d, char *errbuf, int verbose);
 static int  r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2);
 static int  r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2);
 static int  r3d_identical_J3(R3D_J3 *J3a, R3D_J3 *J3b);
@@ -48,6 +48,7 @@ const R3D_HLparam R3D_HL_PRELOADS = {
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
+
 const R3D_BLparam R3D_BL_PRELOADS = {
   pRM, pRM,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
@@ -163,25 +164,25 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   if (status != eslEOF) esl_fatal("file %s: expected EOF, got code %d", bf->filename, status);
   esl_buffer_Close(bf);
 
-  // Add the reversed BLs
+  // Add the rotated BLs
   r3d->nBL_total = r3d->nBL;
   for (k = 0; k < r3d->nBL; k ++) {
-    status = r3d_add_reversedBL(k, r3d, errbuf, verbose);
-    if (status != eslOK) esl_fatal("r3d_add_reversedBL() failed with error code %d", status);
+    status = r3d_add_rotatedBL(k, r3d, errbuf, verbose);
+    if (status != eslOK) esl_fatal("r3d_add_rotatedBL() failed with error code %d", status);
   }
   
-  // Add the reversed ILs
+  // Add the rotated ILs
   r3d->nIL_total = r3d->nIL;
   for (k = 0; k < r3d->nIL; k ++) {
-    status = r3d_add_reversedIL(k, r3d, errbuf, verbose);
-    if (status != eslOK) esl_fatal("r3d_add_reversedIL() failed with error code %d", status);
+    status = r3d_add_rotatedIL(k, r3d, errbuf, verbose);
+    if (status != eslOK) esl_fatal("r3d_add_rotatedIL() failed with error code %d", status);
   }
 
   // Add the rotated J3s
   r3d->nJ3_total = r3d->nJ3;
   for (k = 0; k < r3d->nJ3; k ++) {
     for (which = 1; which < 3; which ++) {
-      status = r3d_add_rotatedJ3(k, 1, r3d, errbuf, verbose);
+      status = r3d_add_rotatedJ3(k, which, r3d, errbuf, verbose);
       if (status != eslOK) esl_fatal("r3d_add_rotatedJ3() failed with error code %d", status);
     }
   }
@@ -190,7 +191,7 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   r3d->nJ4_total = r3d->nJ4;
   for (k = 0; k < r3d->nJ4; k ++) {
     for (which = 1; which < 4; which ++) {
-      status = r3d_add_rotatedJ4(k, 1, r3d, errbuf, verbose);
+      status = r3d_add_rotatedJ4(k, which, r3d, errbuf, verbose);
       if (status != eslOK) esl_fatal("r3d_add_rotatedJ4() failed with error code %d", status);
     }
   }
@@ -208,6 +209,14 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
     status = R3D_IL_HMMCreate(r3d->IL[k], &r3d->maxM, errbuf, verbose);
     if (status != eslOK) esl_fatal("R3D_IL_HMMCreate() failed with error code %d", status);
   }
+  for (k = 0; k < r3d->nJ3_total; k ++) {
+    status = R3D_J3_HMMCreate(r3d->J3[k], &r3d->maxM, errbuf, verbose);
+    if (status != eslOK) esl_fatal("R3D_J3_HMMCreate() failed with error code %d", status);
+  }
+  for (k = 0; k < r3d->nJ4_total; k ++) {
+    status = R3D_J4_HMMCreate(r3d->J4[k], &r3d->maxM, errbuf, verbose);
+    if (status != eslOK) esl_fatal("R3D_J4_HMMCreate() failed with error code %d", status);
+  }
 
   return r3d;
 
@@ -224,6 +233,7 @@ R3D_HL_Create(ESL_ALPHABET *abc, int nB)
   int     status;
   
   ESL_ALLOC(r3d_HL, sizeof(R3D_HL));
+  r3d_HL->name    = NULL;
   r3d_HL->Loop    = NULL;
   r3d_HL->HMMLoop = NULL;
   
@@ -263,6 +273,7 @@ R3D_BL_Create(ESL_ALPHABET *abc, int nB)
   int     status;
   
   ESL_ALLOC(r3d_BL, sizeof(R3D_BL));
+  r3d_BL->name    = NULL;
   r3d_BL->Loop    = NULL;
   r3d_BL->HMMLoop = NULL;
   
@@ -301,6 +312,7 @@ R3D_IL_Create(ESL_ALPHABET *abc, int nBo, int nBi)
   int     status;
   
   ESL_ALLOC(r3d_IL, sizeof(R3D_IL));
+  r3d_IL->name      = NULL;
   r3d_IL->Loop_L    = NULL;
   r3d_IL->Loop_R    = NULL;
   r3d_IL->HMMLoop_L = NULL;
@@ -357,6 +369,7 @@ R3D_J3_Create(ESL_ALPHABET *abc)
   int     status;
   
   ESL_ALLOC(r3d_J3, sizeof(R3D_J3));
+  r3d_J3->name     = NULL;
   r3d_J3->J3_S1    = NULL;
   r3d_J3->J3_S2    = NULL;
   r3d_J3->J3_S3    = NULL;
@@ -364,13 +377,6 @@ R3D_J3_Create(ESL_ALPHABET *abc)
   r3d_J3->HMMJ3_S1 = NULL;
   r3d_J3->HMMJ3_S2 = NULL;
   r3d_J3->HMMJ3_S3 = NULL;
-
-  ESL_ALLOC(r3d_J3->J3_S1,    sizeof(char *));
-  ESL_ALLOC(r3d_J3->J3_S2,    sizeof(char *));
-  ESL_ALLOC(r3d_J3->J3_S3,    sizeof(char *));
-  ESL_ALLOC(r3d_J3->HMMJ3_S1, sizeof(R3D_HMM));
-  ESL_ALLOC(r3d_J3->HMMJ3_S2, sizeof(R3D_HMM));
-  ESL_ALLOC(r3d_J3->HMMJ3_S3, sizeof(R3D_HMM));
 
   r3d_J3->abc = abc;
 
@@ -387,6 +393,7 @@ R3D_J4_Create(ESL_ALPHABET *abc)
   int     status;
   
   ESL_ALLOC(r3d_J4, sizeof(R3D_J4));
+  r3d_J4->name     = NULL;
   r3d_J4->J4_S1    = NULL;
   r3d_J4->J4_S2    = NULL;
   r3d_J4->J4_S3    = NULL;
@@ -396,16 +403,7 @@ R3D_J4_Create(ESL_ALPHABET *abc)
   r3d_J4->HMMJ4_S2 = NULL;
   r3d_J4->HMMJ4_S3 = NULL;
   r3d_J4->HMMJ4_S4 = NULL;
-
-  ESL_ALLOC(r3d_J4->J4_S1,    sizeof(char *));
-  ESL_ALLOC(r3d_J4->J4_S2,    sizeof(char *));
-  ESL_ALLOC(r3d_J4->J4_S3,    sizeof(char *));
-  ESL_ALLOC(r3d_J4->J4_S4,    sizeof(char *));
-  ESL_ALLOC(r3d_J4->HMMJ4_S1, sizeof(R3D_HMM));
-  ESL_ALLOC(r3d_J4->HMMJ4_S2, sizeof(R3D_HMM));
-  ESL_ALLOC(r3d_J4->HMMJ4_S3, sizeof(R3D_HMM));
-  ESL_ALLOC(r3d_J4->HMMJ4_S4, sizeof(R3D_HMM));
-
+  
   r3d_J4->abc = abc;
 
   return r3d_J4;
@@ -552,6 +550,80 @@ R3D_IL_HMMCreate(R3D_IL *IL, int *ret_maxM, char *errbuf, int verbose)
   return status;
 }
 
+extern int
+R3D_J3_HMMCreate(R3D_J3 *J3, int *ret_maxM, char *errbuf, int verbose)
+{
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
+
+  esl_sprintf(&name, "%s.J3_S1", J3->name);
+  J3->HMMJ3_S1 = R3D_hmm_Create(J3->abc, J3->J3_S1, name, errbuf, verbose);
+  if (!J3->HMMJ3_S1) esl_fail(errbuf, "R3D_J3_HMMCreate() S1 failed");
+  if (J3->HMMJ3_S1->M > maxM) maxM = J3->HMMJ3_S1->M;
+
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.J3_S2", J3->name);
+  J3->HMMJ3_S2 = R3D_hmm_Create(J3->abc, J3->J3_S2, name, errbuf, verbose);
+  if (!J3->HMMJ3_S2) esl_fail(errbuf, "R3D_J3_HMMCreate() S2 failed");
+  if (J3->HMMJ3_S2->M > maxM) maxM = J3->HMMJ3_S2->M;
+
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.J3_S3", J3->name);
+  J3->HMMJ3_S3 = R3D_hmm_Create(J3->abc, J3->J3_S3, name, errbuf, verbose);
+  if (!J3->HMMJ3_S3) esl_fail(errbuf, "R3D_J3_HMMCreate() S3 failed");
+  if (J3->HMMJ3_S3->M > maxM) maxM = J3->HMMJ3_S3->M;
+
+  if (name) free(name);
+  *ret_maxM = maxM;
+  return eslOK;
+
+ ERROR:
+  if (name) free(name);
+  return status;
+}
+
+extern int
+R3D_J4_HMMCreate(R3D_J4 *J4, int *ret_maxM, char *errbuf, int verbose)
+{
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
+
+  esl_sprintf(&name, "%s.J4_S1", J4->name);
+  J4->HMMJ4_S1 = R3D_hmm_Create(J4->abc, J4->J4_S1, name, errbuf, verbose);
+  if (!J4->HMMJ4_S1) esl_fail(errbuf, "R3D_J4_HMMCreate() S1 failed");
+  if (J4->HMMJ4_S1->M > maxM) maxM = J4->HMMJ4_S1->M;
+
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.J4_S2", J4->name);
+  J4->HMMJ4_S2 = R3D_hmm_Create(J4->abc, J4->J4_S2, name, errbuf, verbose);
+  if (!J4->HMMJ4_S2) esl_fail(errbuf, "R3D_J4_HMMCreate() S2 failed");
+  if (J4->HMMJ4_S2->M > maxM) maxM = J4->HMMJ4_S2->M;
+
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.J4_S3", J4->name);
+  J4->HMMJ4_S3 = R3D_hmm_Create(J4->abc, J4->J4_S3, name, errbuf, verbose);
+  if (!J4->HMMJ4_S3) esl_fail(errbuf, "R3D_J4_HMMCreate() S3 failed");
+  if (J4->HMMJ4_S3->M > maxM) maxM = J4->HMMJ4_S3->M;
+
+  if (name) free(name); name = NULL;
+  esl_sprintf(&name, "%s.J4_S4", J4->name);
+  J4->HMMJ4_S4 = R3D_hmm_Create(J4->abc, J4->J4_S4, name, errbuf, verbose);
+  if (!J4->HMMJ4_S4) esl_fail(errbuf, "R3D_J4_HMMCreate() S4 failed");
+  if (J4->HMMJ4_S4->M > maxM) maxM = J4->HMMJ4_S4->M;
+
+  if (name) free(name);
+  *ret_maxM = maxM;
+  return eslOK;
+
+ ERROR:
+  if (name) free(name);
+  return status;
+}
+
 void
 R3D_Destroy(R3D *r3d)
 {
@@ -563,8 +635,8 @@ R3D_Destroy(R3D *r3d)
   if (r3d->HL) { for (h = 0; h < r3d->nHL;       h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
   if (r3d->BL) { for (b = 0; b < r3d->nBL_total; b ++) if (r3d->BL[b]) R3D_BL_Destroy(r3d->BL[b]); free(r3d->BL); }
   if (r3d->IL) { for (i = 0; i < r3d->nIL_total; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
-  if (r3d->J3) { for (j = 0; j < r3d->nJ3_total; j ++) if (r3d->J3[j]) R3D_J3_Destroy(r3d->J3[i]); free(r3d->J3); }
-  if (r3d->J4) { for (j = 0; j < r3d->nJ4_total; j ++) if (r3d->J4[j]) R3D_J4_Destroy(r3d->J4[i]); free(r3d->J4); }
+  if (r3d->J3) { for (j = 0; j < r3d->nJ3_total; j ++) if (r3d->J3[j]) R3D_J3_Destroy(r3d->J3[j]); free(r3d->J3); }
+  if (r3d->J4) { for (j = 0; j < r3d->nJ4_total; j ++) if (r3d->J4[j]) R3D_J4_Destroy(r3d->J4[j]); free(r3d->J4); }
   if (r3d) free(r3d);
 }
 
@@ -648,8 +720,6 @@ R3D_IL_Destroy(R3D_IL *r3d_IL)
 void
 R3D_J3_Destroy(R3D_J3 *r3d_J3)
 {
-  int no, ni;
-  
   if (r3d_J3->name)      free(r3d_J3->name);  
   if (r3d_J3->J3_S1)     free(r3d_J3->J3_S1);
   if (r3d_J3->J3_S2)     free(r3d_J3->J3_S2);
@@ -657,12 +727,11 @@ R3D_J3_Destroy(R3D_J3 *r3d_J3)
   if (r3d_J3->HMMJ3_S1)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S1);
   if (r3d_J3->HMMJ3_S2)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S2);
   if (r3d_J3->HMMJ3_S3)  R3D_hmm_Destroy(r3d_J3->HMMJ3_S3);
+  if (r3d_J3)            free(r3d_J3);
 }
 void
 R3D_J4_Destroy(R3D_J4 *r3d_J4)
 {
-  int no, ni;
-  
   if (r3d_J4->name)      free(r3d_J4->name);  
   if (r3d_J4->J4_S1)     free(r3d_J4->J4_S1);
   if (r3d_J4->J4_S2)     free(r3d_J4->J4_S2);
@@ -672,6 +741,7 @@ R3D_J4_Destroy(R3D_J4 *r3d_J4)
   if (r3d_J4->HMMJ4_S2)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S2);
   if (r3d_J4->HMMJ4_S3)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S3);
   if (r3d_J4->HMMJ4_S4)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S4);
+  if (r3d_J4)            free(r3d_J4);
 }
 
 extern int
@@ -834,6 +904,7 @@ R3D_ILMX_Create (int L, R3D_IL *IL)
   int       status;
   
   ESL_ALLOC(ILmx, sizeof(R3D_ILMX));
+
   ILmx->mxo = R3D_RMMX_Create(L, (IL->nBo+1));
   ILmx->mxi = R3D_RMMX_Create(L,  IL->nBi);
 
@@ -896,6 +967,8 @@ R3D_MX_Create(int L, R3D *r3d)
   if (r3dmx->nHL > 0) ESL_ALLOC(r3dmx->HLmx, sizeof(R3D_HLMX) * r3dmx->nHL);
   if (r3dmx->nBL > 0) ESL_ALLOC(r3dmx->BLmx, sizeof(R3D_BLMX) * r3dmx->nBL);
   if (r3dmx->nIL > 0) ESL_ALLOC(r3dmx->ILmx, sizeof(R3D_ILMX) * r3dmx->nIL);
+  if (r3dmx->nJ3 > 0) ESL_ALLOC(r3dmx->J3mx, sizeof(R3D_J3MX) * r3dmx->nJ3);
+  if (r3dmx->nJ4 > 0) ESL_ALLOC(r3dmx->J4mx, sizeof(R3D_J4MX) * r3dmx->nJ4);
   
   for (n = 0; n < r3dmx->nHL; n ++)
     r3dmx->HLmx[n] = R3D_HLMX_Create (L, r3d->HL[n]);
@@ -986,6 +1059,8 @@ R3D_MX_Destroy(R3D_MX *r3dmx)
   if (r3dmx->HLmx) free(r3dmx->HLmx);
   if (r3dmx->BLmx) free(r3dmx->BLmx);
   if (r3dmx->ILmx) free(r3dmx->ILmx);
+  if (r3dmx->J3mx) free(r3dmx->J3mx);
+  if (r3dmx->J4mx) free(r3dmx->J4mx);
 
   if (r3dmx->fwd) R3D_hmx_Destroy(r3dmx->fwd);
   
@@ -1368,6 +1443,7 @@ r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *ab
   ESL_ALLOC(J4->J4_S1, sizeof(char) * salloc);
   ESL_ALLOC(J4->J4_S2, sizeof(char) * salloc);
   ESL_ALLOC(J4->J4_S3, sizeof(char) * salloc);
+  ESL_ALLOC(J4->J4_S4, sizeof(char) * salloc);
   ESL_ALLOC(J4->name,  sizeof(char) * salloc);
   J4->type = R3D_TP_J4;
   
@@ -1420,14 +1496,14 @@ r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *ab
   return status;
 }
 
-// for each BL add its reversed counterpart
+// for each BL add its rotated counterpart
 //
 //     5'-- L_{1} ... L_{nB} Loop R_{nB} ... R_{1} --3'   
 // to
 //     5'-- R_{1} ... R_{nB} Loop L_{nB} ... L_{1} --3'
 //
 static int
-r3d_add_reversedBL(int k, R3D *r3d, char *errbuf, int verbose)
+r3d_add_rotatedBL(int k, R3D *r3d, char *errbuf, int verbose)
 {
   R3D_BL *BL    = r3d->BL[k];
   R3D_BL *newBL = NULL;
@@ -1437,7 +1513,7 @@ r3d_add_reversedBL(int k, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newBL, sizeof(R3D_BL));
   newBL->nB  = BL->nB;
   newBL->abc = BL->abc;
-  esl_sprintf(&newBL->name, "%s.rev", BL->name);
+  esl_sprintf(&newBL->name, "%s.rot", BL->name);
   esl_sprintf(&newBL->Loop, "%s",     BL->Loop);
   newBL->HMMLoop = NULL;
   
@@ -1468,14 +1544,14 @@ r3d_add_reversedBL(int k, R3D *r3d, char *errbuf, int verbose)
   return status;
 }
 
-// for each HL add its reversed counterpart
+// for each HL add its rotated counterpart
 //
 //    5'-- Lo_{1} ... Lo_{nBo} loop_L Li_{1} ... Li_{nBi} --3'   ^    5'-- Ri_{nBi} ... Ri_{1} Loop_R Ro_{nBo} ... Ro_{1} --3'
 // to
 //    5'-- Ri_{nBi} ... Ri_{1} loop_R Ro_{nBo} ... Ro_{1} --3'   ^    5'-- Lo_{1} ... Lo_{nBo} Loop_L Li_{1} ... Li_{nBi} --3'
 //
 static int
-r3d_add_reversedIL(int k, R3D *r3d, char *errbuf, int verbose)
+r3d_add_rotatedIL(int k, R3D *r3d, char *errbuf, int verbose)
 {
   R3D_IL *IL    = r3d->IL[k];
   R3D_IL *newIL = NULL;
@@ -1487,7 +1563,7 @@ r3d_add_reversedIL(int k, R3D *r3d, char *errbuf, int verbose)
   newIL->nBo = IL->nBi; // reverse o <-> i
   newIL->nBi = IL->nBo; // reverse o <-> i
 
-  esl_sprintf(&newIL->name,   "%s.rev", IL->name);
+  esl_sprintf(&newIL->name,   "%s.rot", IL->name);
   esl_sprintf(&newIL->Loop_R, "%s",     IL->Loop_L); // reverse L <-> R
   esl_sprintf(&newIL->Loop_L, "%s",     IL->Loop_R); // reverse L <-> R
   newIL->HMMLoop_L = NULL;
@@ -1547,7 +1623,7 @@ r3d_add_rotatedJ3(int k, int which, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newJ3, sizeof(R3D_J3));
   newJ3->abc = J3->abc;
  
-  esl_sprintf(&newJ3->name,  "%s.rev", J3->name);
+  esl_sprintf(&newJ3->name,  "%s.rot-%d", J3->name, which);
   if (which == 1) {
     esl_sprintf(&newJ3->J3_S2, "%s",     J3->J3_S1); // S1 -> S2
     esl_sprintf(&newJ3->J3_S3, "%s",     J3->J3_S2); // S2 -> S3
@@ -1559,7 +1635,7 @@ r3d_add_rotatedJ3(int k, int which, R3D *r3d, char *errbuf, int verbose)
     esl_sprintf(&newJ3->J3_S2, "%s",     J3->J3_S3); // S3 -> S2
   }
   else
-    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2"); 
+    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2, it is %d", which); 
   
   newJ3->HMMJ3_S1 = NULL;
   newJ3->HMMJ3_S2 = NULL;
@@ -1573,7 +1649,7 @@ r3d_add_rotatedJ3(int k, int which, R3D *r3d, char *errbuf, int verbose)
     ESL_REALLOC(r3d->J3, sizeof(R3D_J3 *) * r3d->nJ3_total);
     r3d->J3[r3d->nJ3_total-1] = newJ3;
   }
-  
+
   return eslOK;
   
  ERROR:
@@ -1601,7 +1677,7 @@ r3d_add_rotatedJ4(int k, int which, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newJ4, sizeof(R3D_J4));
   newJ4->abc = J4->abc;
  
-  esl_sprintf(&newJ4->name,  "%s.rev", J4->name);
+  esl_sprintf(&newJ4->name,  "%s.rot-%d", J4->name, which);
   if (which == 1) {
     esl_sprintf(&newJ4->J4_S2, "%s",     J4->J4_S1); // S1 -> S2
     esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S2); // S2 -> S3
@@ -1621,7 +1697,7 @@ r3d_add_rotatedJ4(int k, int which, R3D *r3d, char *errbuf, int verbose)
     esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S4); // S4 -> S3
   }
   else
-    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2 or 3"); 
+    ESL_XFAIL(eslFAIL, errbuf, "which has to be 1 or 2 or 3, it is %d", which); 
   
   newJ4->HMMJ4_S1 = NULL;
   newJ4->HMMJ4_S2 = NULL;
@@ -1867,27 +1943,36 @@ R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
   return status;
 }
 
+
+// a ct can have negative values. Those indicate residues involved in RNA modules described by the R3D grammar
+// add those to the RMlist
+//
+//  0000000xxxxxx00000000xxxxxx000000000000000000000000000000000000000
+//
+//  x < 0 and 
+// -x is the index of the RM
+//
 extern int
 R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
 {
   R3D_TYPE type;
-  int      nt_HL = r3d->nHL;
-  int      nt_BL = nt_HL + r3d->nBL_total;
-  int      nt_IL = nt_BL + r3d->nIL_total;
-  int      nt_J3 = nt_IL + r3d->nJ3_total;
-  int      nt_J4 = nt_J3 + r3d->nJ4_total;
+  int      cum_HL = r3d->nHL;
+  int      cum_BL = cum_HL + r3d->nBL_total;
+  int      cum_IL = cum_BL + r3d->nIL_total;
+  int      cum_J3 = cum_IL + r3d->nJ3_total;
+  int      cum_J4 = cum_J3 + r3d->nJ4_total;
   int      mdx = -ctval;
   int      m;
   int      status;
 
   if (ctval >= 0) ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be semi-positive but it is %d\n", ctval);
   
-  if      (mdx <= nt_HL) { type = R3D_TP_HL;  m = mdx - 1; }
-  else if (mdx <= nt_BL) { type = R3D_TP_BL;  m = mdx - 1 - nt_HL; }
-  else if (mdx <= nt_IL) { type = R3D_TP_ILo; m = mdx - 1 - nt_BL; }
-  else if (mdx <= nt_J3) { type = R3D_TP_J3;  m = mdx - 1 - nt_IL; }
-  else if (mdx <= nt_J4) { type = R3D_TP_J4;  m = mdx - 1 - nt_J3; }
-  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -nt_IL, ctval);
+  if      (mdx <= cum_HL) { type = R3D_TP_HL;  m = mdx - 1; }
+  else if (mdx <= cum_BL) { type = R3D_TP_BL;  m = mdx - 1 - cum_HL; }
+  else if (mdx <= cum_IL) { type = R3D_TP_ILo; m = mdx - 1 - cum_BL; }
+  else if (mdx <= cum_J3) { type = R3D_TP_J3;  m = mdx - 1 - cum_IL; }
+  else if (mdx <= cum_J4) { type = R3D_TP_J4;  m = mdx - 1 - cum_J3; }
+  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -cum_J4, ctval);
   
   *ret_m    = m;
   *ret_type = type;

@@ -482,7 +482,7 @@ min_ConjugateGradientDescent(ESL_MIN_CFG *cfg, double *x, int n,
 	dat->fx[i] = fx;
 
       /* Main convergence test. */
-      if (esl_DCompareNew(fx, oldfx, cg_rtol, cg_atol) == eslOK) break;
+      if (esl_DCompare(fx, oldfx, cg_rtol, cg_atol) == eslOK) break;
 
       /* Second (failsafe) convergence test: a zero direction can happen, 
        * and it either means we're stuck or we're finished (most likely stuck)

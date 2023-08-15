@@ -25,7 +25,7 @@
 #include "plot.h"
 #include "power.h"
 
-#define BPONEHOT 12
+#define BPONEHOT 13
 
 static int bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT]);
 
@@ -77,7 +77,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   int      status;
   
   if (ret_spair == NULL) return eslOK;
-  
+
   if (!nsubs && !ndouble && !njoin)           esl_fatal("need some kind of substitutions!");
   if (!nsubs   && power->type == SINGLE_SUBS) esl_fatal("you need single_subs");
   if (!njoin   && power->type == JOIN_SUBS)   esl_fatal("you need join_subs");
@@ -91,7 +91,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
       spair[n].jabs   = msamap[j]+1;
       spair[n].i      = i;
       spair[n].j      = j;
-      
+
       spair[n].nseff        = mi->nseff[i][j];
       spair[n].powertype    = power->type;
       spair[n].nsubs        = (nsubs)?   nsubs[i] + nsubs[j] : 0;
@@ -165,7 +165,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
      if (verbose && spair[n].bptype_given == WWc) 
        printf("WWc: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
      if (verbose && spair[n].cttype_given == CTTYPE_NESTED) 
-       printf("^^NESTED: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+       printf("NESTED: %lld-%lld nsubs %lld prob %f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
      
      n ++;
     }
@@ -233,7 +233,7 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   if (fp == NULL) return;
 	
   powertype = spair[0].powertype;
-  
+
   if (in_given) fprintf(fp, "\n# Power analysis of given structure \n#\n");
   else          fprintf(fp, "\n# Power analysis of CaCoFold structure \n#\n");
   switch(powertype) {
@@ -241,8 +241,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
     fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
     fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
     fprintf(fp, "#----------------------------------------------------------------\n");
-    for (n = 0; n < dim; n ++) {   
-      if (spair[n].powertype != powertype) esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype");
+    for (n = 0; n < dim; n ++) {
+      if (spair[n].powertype != powertype) esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype. n=%d found %d and %d", n, spair[n].powertype, powertype);
       
       if ( ( in_given && spair[n].bptype_given == WWc) ||
 	   (!in_given && spair[n].bptype_caco  == WWc)   ) {
@@ -308,7 +308,7 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 }
 
 int
-power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in_given)
+power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in_given, int onehot)
 {
   POWERTYPE      powertype;
   FILE          *fp = NULL;
@@ -324,11 +324,10 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   int64_t        prvj = 1;
   int64_t        n;
   int64_t        l;
-  int            onehot = TRUE;
   int            x;
   int            status;
 
-  if (!prepfile) return eslFAIL;
+  if (!prepfile) return eslOK;
 
   ESL_ALLOC(mask, sizeof(int) * Labs);
   esl_vec_ISet(mask, Labs, 1);
@@ -340,16 +339,24 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
  
 
   fprintf(fp, "# legend\n#\n");
-  fprintf(fp, "# i j E-value power ctype bptye\n\n");
+  if (onehot) fprintf(fp, "# i j E-value power ctype bptype_onehot\n#\n");
+  else        fprintf(fp, "# i j E-value power ctype bptype\n#\n");
   fprintf(fp, "# 1 < i < j < alignment length=%lld\n", Labs);
-  fprintf(fp, "# E-value [0,infity), provided by R-scape.");
-  fprintf(fp, "# power[0,1], provided by R-scape");
-  fprintf(fp, "# CTTYPE:(0)CTTYPE_NESTED,(1)CTTYPE_PK,(2)CTTYPE_NONWC,(3)CTTYPE_TRI,(4)CTTYPE_SCOV,(5)CTTYPE_XCOV,(6)CTTYPE_RM_HL,(7)CTTYPE_RM_BL,(8)CTTYPE_RM_IL,(9)CTTYPE_NONE\n");
+  fprintf(fp, "# E-value [0,infity), provided by R-scape.\n");
+  fprintf(fp, "# power[0,1], provided by R-scape\n");
+  fprintf(fp, "# CTTYPE:\n");
+  fprintf(fp, "# CTTYPE_NESTED=0, CTTYPE_PK=1, CTTYPE_NONWC=2, CTTYPE_TRI=3, CTTYPE_SCOV=4, CTTYPE_XCOV=5,\n");
+  fprintf(fp, "# CTTYPE_RM_HL=6, CTTYPE_RM_BL=7, CTTYPE_RM_IL=8, CTTYPE_NONE=9\n");
   if (onehot) {
-    fprintf(fp, "# [W H S X] [W H S X] [c t] [STACKED CONTACT BPNONE]\n");
+    fprintf(fp, "# BYTPYE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT BPNONE]\n");
   }
   else {
-    fprintf(fp, "# BYTPYE:(0)WWc,(1)WWt,(2)WHc,(3)WHt,(4)WSc,(5)WSt,(6)Wxc,(7)Wxt,(8)xWc,(9)xWt,(10)HWc,(11)HWt,(12)HHc,(13)HHt,(14)HSc,(15)HSt,(16)Hxc,(17)Hxt,(18)xHc,(19)xHt,(20)SWc,(21)SWt,(22)SHc,(23)SHt,(24)SSc,(25)SSt,(26)Sxc,(27)Sxt,(28)xSc,(29)xSt,(30)xxc,(31)xxt,(32)STACKED,(33)CONTACT,(34)BPNONE\n");
+    fprintf(fp, "# BYTPYE: \n");
+    fprintf(fp, "# WWc=0, WWt=1, WHc=2, WHt=3, WSc=4, WSt=5, Wxc=6, Wxt=7, xWc=8, xWt=9,\n");
+    fprintf(fp, "# HWc=10, HWt=11, HHc=12, HHt=13, HSc=14, HSt=15, Hxc=16, Hxt=17, xHc=18, xHt=19,\n");
+    fprintf(fp, "# SWc=20, SWt=21, SHc=22, SHt=23, SSc=24, SSt=25, Sxc=26, Sxt=27, xSc=28, xSt=29,\n");
+    fprintf(fp, "# xxc=30, xxt=31,\n");
+    fprintf(fp, "# STACKED=32, CONTACT=33, BPNONE=34\n");
   }
   fprintf(fp, "#MASK:");
   for (l = 0; l < Labs; l ++) fprintf(fp, "%d", mask[l]);

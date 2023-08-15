@@ -16,7 +16,7 @@ inline bool IsNormalNumber (double x)
 	return _finite(x)!=0;
 #else
 	// assume gcc
-	return finite(x)!=0;
+	return isfinite((double)x)!=0;
 #endif
 }
 

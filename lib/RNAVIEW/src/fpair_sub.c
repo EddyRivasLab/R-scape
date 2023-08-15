@@ -316,8 +316,11 @@ long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
 	strcpy(AtomName[n], " O3'");
       }
           
-      if (0) printf("fpair_sub ^^num %s %ld AtomNum %ld AtomName%4s%c%3s %c%4ld%c   %8.3lf%8.3lf%8.3lf\n", "ATOM  ", n, AtomNum[n], AtomName[n], Miscs[n][1],
-		    ResName[n], ChainID[n], ResSeq[n], Miscs[n][2], xyz[n][1], xyz[n][2], xyz[n][3]);      
+      if (0) printf("fpair_sub ^^num %s %ld AtomNum %ld AtomName%4s%c%3s |%c%4ld%c|   %8.3lf%8.3lf%8.3lf\n",
+		    "ATOM  ", n, AtomNum[n],
+		    AtomName[n], Miscs[n][1], ResName[n],
+		    ChainID[n], ResSeq[n], Miscs[n][2],
+		    xyz[n][1], xyz[n][2], xyz[n][3]);      
       
       n++;
       

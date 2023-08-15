@@ -63,10 +63,10 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   hmm->tB[0] = log(HMM_tB);
   hmm->tB[1] = log(1. - HMM_tB);
   
-  //   S^{m} --> x_m S^{m+1} | x_m I^{m} | S^{m+1} | I^{m}  ,, m in [1..M-1]
-  //   S^{M} --> x_M         | x_M I^{M} | e       | I^{M}
-  //                tS[0]       tS[1]      tS[2]     tS[3]
-  //                 tM          tMI       tD        tDI
+  //   S^{m} -->  x S^{m+1} | x I^{m} | S^{m+1} | I^{m}  ,, m in [1..M-1]
+  //   S^{M} -->  x         | x I^{M} | e       | I^{M}
+  //              tS[0]       tS[1]      tS[2]     tS[3]
+  //               tM          tMI       tD        tDI
   //
   hmm->tS[0] = log(HMM_tM);
   hmm->tS[1] = (HMM_tMI_frac > 0)? log(1-HMM_tM) + log(HMM_tMI_frac) : -eslINFINITY;   // tMI
@@ -75,14 +75,15 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   esl_vec_FLogNorm(hmm->tS, 4);
   esl_vec_FLog(hmm->tS, 4);
  
-  //   I^{m} --> x I^{m} | S^{m+1} ,, k in [0..M-1]
+  //   I^{m} --> x I^{m} | S^{m+1} ,, m in [0..M-1]
   //   I^{M} --> x I^{M} | e      
   //              tI[0]     tI[1]
   //
   // set tI so that the expected length of an insert is HMM_uL
   // then
-  // 1-tI = (1-tB)/uL      for M = 0
-  // 1-tI = (tMI+tDI)/uL   for M > 0
+  // 1-tI[0] = tI[1] = (1-tB)/uL      for M = 0
+  // 1-tI[0] = tI[1] = (tMI+tDI)/uL   for M > 0
+  //
   log_tMtMI  = e2_FLogsumExact(hmm->tS[0], hmm->tS[1]);
   log_tMItDI = e2_FLogsumExact(hmm->tS[1], hmm->tS[3]);
   

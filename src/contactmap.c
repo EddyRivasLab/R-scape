@@ -222,27 +222,27 @@ ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, i
   if (abcisRNA)  {// run rnaview as well
     if (pdbchain) {
       if (noss)
-	esl_sprintf(&args, "%s -N -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+	esl_sprintf(&args, "%s -N -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s > /dev/null",
 		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
        else 
-	esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+	esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
 		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     }
     else {
       if (noss)
-	esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+	esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
 		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
       else
-	esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  &> /dev/null",
+	esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
 		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     }
   }
   else {
     if (noss)
-      esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
+      esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null",
 		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     else 
-      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  &> /dev/null",
+      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null",
 		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
@@ -320,9 +320,10 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 	}
       }
        
+    remove(mapfile[c]);
+
     if (efp) esl_fileparser_Close(efp); efp = NULL;
     if (mapfile[c]) free(mapfile[c]);
-    remove(mapfile[c]);
   }
  
   *ret_pdblen = pdb_max - pdb_min + 1;

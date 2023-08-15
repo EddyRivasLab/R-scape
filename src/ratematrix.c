@@ -431,7 +431,7 @@ ratematrix_ValidateE(const ESL_DMATRIX *E, double tol, char *errbuf)
 
   for (i = 0; i < E->n; i++)
     for (j = 0; j < E->m; j++)
-      if (esl_DCompare(E->mx[i][j], E->mx[j][i], tol) == eslFAIL) return eslFAIL;
+      if (esl_DCompare(E->mx[i][j], E->mx[j][i], tol, tol) == eslFAIL) return eslFAIL;
  
   return eslOK;
 }

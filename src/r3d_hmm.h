@@ -16,19 +16,19 @@
 #include "e2_profilesq.h"
 #include "r3d.h"
 
-#define EPSILON  1e-25          // emission probability for non matching options.
-                                // example: R match, p[1]=p[3]=epsilon, p[0]=p[2]=1 - 2*epsilon
+#define EPSILON  1e-4          // emission probability for non matching options.
+                               // example: R match, p[1]=p[3]=epsilon, p[0]=p[2]=(1 - 2*epsilon)/2
 
-#define HMM_tB   0.99
-#define HMM_uL   0.20           // average length of an insert
-#define HMM_tM   0.9999         // 0 <= tM <= 1
+#define HMM_tB   0.99999
+#define HMM_uL   0.10           // average length of an insert
+#define HMM_tM   0.99999         // 0 <= tM <= 1
 
                                 // tMI_frac + tD_frac + tDI_frac = 1
 #define HMM_tMI_frac  0.49      // tMI = (1-tM) * tMI_frac
 #define HMM_tD_frac   0.50      // tD  = (1-tM) * tD_frac
 #define HMM_tDI_frac  0.01      // tDI = (1-tM) * tDI_frac
 
-#define HMM_maxL_add 1.5          // DP search up to a len == HMM_avglen + HMM_maxL_add
+#define HMM_maxL_add 1.5        // DP search up to a len == HMM_avglen + HMM_maxL_add
 
 // For an HMM of M states and a sequence of length L
 //

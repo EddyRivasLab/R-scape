@@ -230,6 +230,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int               outtreefile;
   int               outnullfile;
   int               outprepfile;
+  int               prep_onehot;
   int               profmark;
   int               outpottsfile;
   int               allbranchfile;
@@ -368,6 +369,7 @@ static ESL_OPTIONS options[] = {
          1 },
   { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                     1 },
   { "--outprep",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pair representations",                                                                1 },
+  { "--prep_nohot",   eslARG_NONE,      FALSE,    NULL,       NULL,   NULL,"--outprep",NULL,              "write pair representations is don't want to use default onehot representation",            1 },
   { "--profmark",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--outnull",NULL,              "write null alignments with the ss_cons of the original alignment, usefuls for a profmark",  1 },
   { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                               1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
@@ -899,14 +901,15 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   if (cfg.covmethod == POTTS && esl_opt_IsOn(go, "--outpotts")) cfg.outpottsfile = TRUE;
 
   // optional output files flags
-  cfg.rocfile       = FALSE; if (esl_opt_IsOn(go, "--roc"))       cfg.rocfile       = TRUE;   // rocplot file
-  cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go, "--outmsa"))    cfg.outmsafile    = TRUE;   // the actual msa used just with the consensus columns
-  cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go, "--outsubs"))   cfg.outsubsfile   = TRUE;   // the # of substitutions per position
-  cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go, "--outtree"))   cfg.outtreefile   = TRUE;   // the phylogenetic tree used
-  cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go, "--allbranch")) cfg.allbranchfile = TRUE;   // the msa with all branches
-  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go, "--outnull"))   cfg.outnullfile   = TRUE;   // the null alignments
-  cfg.outprepfile   = FALSE; if (esl_opt_IsOn(go, "--outprep"))   cfg.outprepfile   = TRUE;   // the pair representations
-  cfg.profmark      = FALSE; if (esl_opt_IsOn(go, "--profmark"))  cfg.profmark      = TRUE;   // write the orignal ss_cons in the null alignments
+  cfg.rocfile       = FALSE; if (esl_opt_IsOn(go,       "--roc"))          cfg.rocfile       = TRUE;   // rocplot file
+  cfg.outmsafile    = FALSE; if (esl_opt_IsOn(go,       "--outmsa"))       cfg.outmsafile    = TRUE;   // the actual msa used just with the consensus columns
+  cfg.outsubsfile   = FALSE; if (esl_opt_IsOn(go,       "--outsubs"))      cfg.outsubsfile   = TRUE;   // the # of substitutions per position
+  cfg.outtreefile   = FALSE; if (esl_opt_IsOn(go,       "--outtree"))      cfg.outtreefile   = TRUE;   // the phylogenetic tree used
+  cfg.allbranchfile = FALSE; if (esl_opt_IsOn(go,       "--allbranch"))    cfg.allbranchfile = TRUE;   // the msa with all branches
+  cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go,       "--outnull"))      cfg.outnullfile   = TRUE;   // the null alignments
+  cfg.outprepfile   = FALSE; if (esl_opt_IsOn(go,       "--outprep"))      cfg.outprepfile   = TRUE;   // the pair representations
+  cfg.profmark      = FALSE; if (esl_opt_IsOn(go,       "--profmark"))     cfg.profmark      = TRUE;   // write the orignal ss_cons in the null alignments
+  cfg.prep_onehot   = TRUE;  if (esl_opt_GetBoolean(go, "--prep_nohot"))   cfg.prep_onehot   = FALSE;  // format for the prep file
 
   // the output files nullify
   outfile_null(&cfg.ofile);
@@ -1296,6 +1299,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.verbose          = cfg->verbose;
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
+  data.prep_onehot      = cfg->prep_onehot;
 
   status = cov_Calculate(&data, msa, NULL, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
@@ -2352,10 +2356,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   analyze   = TRUE;
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
-  
+
   status = substitutions(go, cfg, msa, cfg->power, cfg->clist, cfg->ctlist, &nsubs, &njoin, &ndouble, &spair, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-   
+  
   status = run_rscape(go, cfg, msa, nsubs, ndouble, njoin, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) goto ERROR;
  
@@ -2486,6 +2490,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.verbose          = cfg->verbose;
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
+  data.prep_onehot      = cfg->prep_onehot;
+
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, &rmlist, analyze);
   if (status != eslOK) goto ERROR;
@@ -2739,6 +2745,10 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
     for (p = 0; p < np; p ++) {
       if (spair[p].bptype_given == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
     }
+  }
+
+  if (verbose) {
+    if (spair) power_SPAIR_Write(stdout, dim, *ret_spair, TRUE);
   }
   
   if ((verbose) && cfg->power_train) {

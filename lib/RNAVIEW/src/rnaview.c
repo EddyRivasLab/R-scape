@@ -696,7 +696,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   */
   
   bseq = cvector(1, num_residue);
-  nres = 0;    
+  nres = 0;
   seidx = residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);
   if (nres == 0) { printf("pdfile %s has no residues\n", pdbfile); exit(1); }
 

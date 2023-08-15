@@ -333,6 +333,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   double           bmax;
   double           add;
   double           tol = data->tol;
+  int              dim = mi->alen * (mi->alen - 1.) / 2;
   int              select;
   int              i, j;
   int              status;
@@ -341,7 +342,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   cov_THRESHTYPEString(&threshtype, data->thresh->type, NULL);
 
   // really bad alignment, covariation spread is smaller than tol, stop here.
-  if (data->w < 1e-20) {
+  if (data->nseq > 1 && data->w < 1e-20) {
     if (data->mode == GIVSS) {
       fprintf(stdout,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
       fprintf(stdout,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
@@ -350,6 +351,16 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       fprintf(stdout, "covariation scores are almost constant, no further analysis.\n");
       data->thresh->sc_bp  = eslINFINITY;
       data->thresh->sc_nbp = eslINFINITY;
+
+      if (data->abcisRNA) {
+	if (data->spair) {
+	  if (data->verbose) power_SPAIR_Write(stdout, dim, data->spair, TRUE);
+	  if (data->ofile->outprepfile) {
+	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
+	  }
+	}
+      }
+
     }
 
     free(threshtype); 
@@ -366,10 +377,20 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "one sequence, no covariation analysis.\n");
+
+      if (data->abcisRNA) {
+	if (data->spair) {
+	  if (data->verbose) power_SPAIR_Write(stdout, dim, data->spair, TRUE);
+	  if (data->ofile->outprepfile) {
+	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
+	  }
+	}
+      }
     }
     data->thresh->sc_bp  = eslINFINITY;
     data->thresh->sc_nbp = eslINFINITY;
-
+    
+  
     free(threshtype); 
     free(covtype);
     return eslOK; 
@@ -942,7 +963,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
     power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
 
-    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE);
+    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
   }
 
   // calculate aggregated p-values for the RNA motifs (rmlist)
@@ -1073,7 +1094,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   // write the power file output
   power_SPAIR_Write(stdout,  dim, data->spair, FALSE);
   power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
-  power_PREP_Write(data->ofile->outprepfoldfile, data->OL, dim, data->spair, FALSE);
+  power_PREP_Write(data->ofile->outprepfoldfile, data->OL, dim, data->spair, FALSE, data->prep_onehot);
 
   // calculate aggregated p-values for the RNA motifs (rmlist)
   if (data->nseq > 1) {

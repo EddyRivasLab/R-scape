@@ -1109,7 +1109,7 @@ e1_rate_SaturationTime(E1_RATE *R, double tol, char *errbuf, int verbose)
   while (R->tsat < 0. && it <= nit) {
     e1_model_Transitions(evom, R, 100, tol, errbuf, verbose);
     for (t = 0; t < e1H_NTRANSITIONS; t ++) {
-      if (esl_FCompareAbs(evom->t[t], evoinf->t[t], tol) != eslOK) break;
+      if (esl_FCompare(evom->t[t], evoinf->t[t], 0.0, tol) != eslOK) break;
     }
     if (t == e1H_NTRANSITIONS || it == nit) R->tsat = evom->time;
     evom->time += tinc;

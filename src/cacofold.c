@@ -96,7 +96,12 @@
  *
  *  replaced with
  *
- *  P  -> HL | BL F0 | F0 BL | IL | MJ  (HL BL IL same as RBG-R3D)
+ *  P  ->      m..m     |    HL         ,, HL BL IL same as RBG-R3D
+ *  P  ->  m..m F0      | BL F0
+ *  P  ->       F0 m..m |    F0 BL 
+ *  P  ->  m..m F0 m..m |    IL 
+ *  P  ->  MJ
+ *      
  *
  *  J3 -> J3_0 | J3_1 | .. | J3_M
  *  J4 -> J4_0 | J4_1 | .. | J4_M
@@ -180,7 +185,7 @@ static inline int   dp_recursion_rbg_score_P_B3_R3D         (R3D_BLparam *BLp, R
 							     SCVAL *ret_sc, int bl_allow, char *errbuf, int verbose);
 static inline int   dp_recursion_rbg_score_P_IL_plain       (ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
 							     int j, int d, int d1, int d2, SCVAL *ret_sc, int *ret_il_allow, char *errbuf, int verbose);
-static inline int   dp_recursion_rbg_score_P_IL_R3D         (FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude,
+static inline int   dp_recursion_rbg_score_P_IL_R3D         (FOLDPARAM *foldparam, PSQ *psq, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude,
 							     int j, int d, int L, SCVAL *ret_sc, char *errbuf, int verbose);
 static inline int   dp_recursion_rbg_score_J3_plain         (ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *psq, struct mutual_s *mi, int *covct, RBG_MX *rbgmx,
 							     int j, int d, int d1, SCVAL *ret_sc, char *errbuf, int verbose);
@@ -249,7 +254,7 @@ static inline SCVAL emitsc_prof_max(int iabs, int K, double **pm, SCVAL *e);
  *        covct[L+1]  - covct[i]  >  0 a covarying pair forced to  basepair in structure s (the covariation skeleton of s)
  *                      covct[i]  =  0 unrestricted
  *
- *        exclude     - a CLIST with those covarying pairs forced to remain unpaired in this strcture.
+ *        exclude     - a CLIST with those covarying pairs forced to remain unpaired in this structure.
  *
  * Output: fills  ct[L+1]  - A complete structure in ct format
  *
@@ -1047,7 +1052,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 		
 		status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_HL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 		if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D HL caco failed");
-		if (verbose) 
+		if ((j==11&&d==4&&m==0&&n==0)||verbose) 
 		  printf("R3D CYK m=%d HL[n=%d] %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->HLmx[m]->mx->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	      }
 	    }
@@ -2060,7 +2065,13 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, R3D_NT_J3J);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
+
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_J3;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->J3[rm]->name);
 	break;
+   	break;
 	  
       case RBG_J4_1: // J4 -> M1 J3
 	esl_stack_IPush(ns, RBG_M1);
@@ -2076,6 +2087,11 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, R3D_NT_J4J);
 	esl_stack_IPush(ns, i);
 	esl_stack_IPush(ns, j);
+
+	if (!r3dlist) r3dlist = struct_ctlist_Create(1, L);
+	else          struct_ctlist_Realloc(r3dlist, r3dlist->nct+1);
+	r3dlist->cttype[r3dlist->nct-1] = CTTYPE_RM_J4;
+	esl_sprintf(&r3dlist->ctname[r3dlist->nct-1], r3d->J4[rm]->name);
 	break;
 	  
       case RBG_JJ_1: // JJ -> M1 JJ
@@ -2086,6 +2102,7 @@ CACO_RBG_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
+   	break;
 	  
       case RBG_JJ_2: // JJ -> M1 J4
 	esl_stack_IPush(ns, RBG_M1);
@@ -4171,6 +4188,8 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
   case RBG_P:
     /* rule9 (plain): P -> m..m */
     status = dp_recursion_rbg_score_P_HL_plain(allow, foldparam, p, psq, mi, covct, j, d, &sc, &hl_allow, errbuf, verbose);
+    if (j == 91 && d ==4) printf("^^ plain %f\n", sc);
+    
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -4190,6 +4209,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
 	status = dp_recursion_rbg_score_P_HL_R3D(r3d_p->HLp, cyk_r3d->HLmx[m], j, d, mi->alen, &sc, hl_allow, errbuf, verbose);
 	    
 	if (sc >= bestsc) {
+	   if (j == 91 && d ==4) printf("^^ GANO j %d d %d m %d sc %f\n", j, d, m, sc);
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	    if (alts) esl_stack_Reuse(alts);
 	    bestsc = sc;
@@ -4308,7 +4328,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     //
     if (r3d) {
       for (m = 0; m < r3d->nIL_total; m ++) {
-	status = dp_recursion_rbg_score_P_IL_R3D(foldparam, r3d_p->ILp, cyk_r3d->ILmx[m], spair, covct, exclude, j, d, mi->alen, &sc, errbuf, verbose);
+	status = dp_recursion_rbg_score_P_IL_R3D(foldparam, psq, r3d_p->ILp, cyk_r3d->ILmx[m], spair, covct, exclude, j, d, mi->alen, &sc, errbuf, verbose);
 
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5636,6 +5656,8 @@ dp_recursion_rbg_score_P_HL_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *
   hl_len = (d_ng-1 < MAXLOOP_H)? d_ng - 1 : MAXLOOP_H - 1;
   sc     = (hl_allow)? p->tP[0] + p->l1[hl_len] + score_loop_hairpin_prof(i, j, L, p, mi->pm) : -eslINFINITY;
 
+  if (j==91&&d==4) printf("^^PLAIN tp %f l1(%d)= %f emit %f\n",  p->tP[0], hl_len, p->l1[hl_len], score_loop_hairpin_prof(i, j, L, p, mi->pm));
+
   if (ret_hl_allow) *ret_hl_allow = hl_allow;
   
   *ret_sc = sc;
@@ -5656,7 +5678,9 @@ dp_recursion_rbg_score_P_HL_R3D(R3D_HLparam *HLp, R3D_HLMX *HLmx, int j, int d, 
 
   sc  = (hl_allow)? HLp->pHL + HLmx->mx->mx[0]->dp[j][d] : -eslINFINITY;
 
-  *ret_sc = sc;
+  if (j==91&&d==4) printf("^^HL  pHL %f emit %f\n",  HLp->pHL, HLmx->mx->mx[0]->dp[j][d]);
+
+ *ret_sc = sc;
   
   return eslOK;
 }
@@ -5692,7 +5716,7 @@ dp_recursion_rbg_score_P_B5_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *
   sc  = (bl_allow)? p->tP[1] + p->l2[bl_len] + score_loop_bulge_prof(i, k, L, p, mi->pm) + rbgmx->F0->dp[j][d-d1] : -eslINFINITY;
 
   if (ret_bl_allow) *ret_bl_allow = bl_allow;
-
+ 
   *ret_sc = sc;
   return eslOK;
 }
@@ -5773,7 +5797,7 @@ dp_recursion_rbg_score_P_B3_R3D(R3D_BLparam *BLp, RBG_MX *rbgmx, R3D_BLMX *BLmx,
  
   l = j - d2 + 1;
   
-  sc  = (bl_allow)? BLp->pBL3 + BLmx->mx->mx[0]->dp[j][d2] + rbgmx->F0->dp[l-1][d-d2] : -eslINFINITY;
+  sc  = (bl_allow)? BLp->pBL3 +  BLmx->mx->mx[0]->dp[j][d2] + rbgmx->F0->dp[l-1][d-d2] : -eslINFINITY;
 
   *ret_sc = sc;
   return eslOK;
@@ -5833,12 +5857,13 @@ dp_recursion_rbg_score_P_IL_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *
 //
 //
 static inline int
-dp_recursion_rbg_score_P_IL_R3D(FOLDPARAM *foldparam, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude, int j, int d, int L, SCVAL *ret_sc,
+dp_recursion_rbg_score_P_IL_R3D(FOLDPARAM *foldparam, PSQ *psq, R3D_ILparam *ILp, R3D_ILMX *ILmx, SPAIR *spair, int *covct, COVLIST *exclude, int j, int d, int L, SCVAL *ret_sc,
 				char *errbuf, int verbose)
 {
   SCVAL sc = -eslINFINITY;	    /* score for a rule */
   int   force_bp_ext;
   int   allow_bp_ext;
+  int   il_allow;
   int   i;
 
   i = j - d + 1;
@@ -5946,7 +5971,7 @@ dp_recursion_r3d_cyk(ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *p
     HL   = r3d->HL[m];
     HLmx = cyk_r3d->HLmx[m];
     
-    status = dp_recursion_r3d_cyk_HL(HL, foldparam, r3d_p, psq, mi, spair, covct, exclude,      HLmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_HL(HL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       HLmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_HL error\n");
   }
   else if (w == R3D_NT_BL) {
@@ -5968,35 +5993,35 @@ dp_recursion_r3d_cyk(ALLOW *allow, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *p
     IL   = r3d->IL[m];
     ILmx = cyk_r3d->ILmx[m];
  
-    status = dp_recursion_r3d_cyk_ILo(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude,       ILmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_ILo(IL, foldparam, r3d_p, psq, mi, spair, covct, exclude,      ILmx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_ILo error\n");
   }
   else if (w == R3D_NT_J3J) {
     J3   = r3d->J3[m];
     J3mx = cyk_r3d->J3mx[m];
     
-    status = dp_recursion_r3d_cyk_J3J(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude,       J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_J3J(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude,      J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J3J error\n");
   }
   else if (w == R3D_NT_J3L) {
     J3   = r3d->J3[m];
     J3mx = cyk_r3d->J3mx[m];
     
-    status = dp_recursion_r3d_cyk_J3L(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk,  J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_J3L(J3, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, J3mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J3J error\n");
   }
   else if (w == R3D_NT_J4J) {
     J4   = r3d->J4[m];
     J4mx = cyk_r3d->J4mx[m];
     
-    status = dp_recursion_r3d_cyk_J4J(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude,       J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_J4J(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude,      J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J4J error\n");
   }
   else if (w == R3D_NT_J4L) {
     J4   = r3d->J4[m];
     J4mx = cyk_r3d->J4mx[m];
     
-    status = dp_recursion_r3d_cyk_J4L(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk,   J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
+    status = dp_recursion_r3d_cyk_J4L(J4, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, J4mx, fwd, m, n, j, d, ret_bestsc, alts, errbuf, verbose);
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "r3d_cyk_J4J error\n");
   }
   else
@@ -6083,6 +6108,10 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  + R3D_hmm_Forward(i,  k,  mi->pm,HL->HMML[n],fwd,errbuf)
 	  + R3D_hmm_Forward(l,  j,  mi->pm,HL->HMMR[n],fwd,errbuf)
 	  + R3D_hmm_Forward(k+1,l-1,mi->pm,HL->HMMLoop,fwd,errbuf);
+	if (j==91&&d==4&&m==0) printf("^^this?? winner M k %d l %d sc %f | %f %f %f\n", k, l, sc,
+					    R3D_hmm_Forward(i,  k,  mi->pm,HL->HMML[n],fwd,errbuf),
+					    R3D_hmm_Forward(l,  j,  mi->pm,HL->HMMR[n],fwd,errbuf),
+					    R3D_hmm_Forward(k+1,l-1,mi->pm,HL->HMMLoop,fwd,errbuf));
       }
       else {
  	sc = t_LR_M
@@ -6091,6 +6120,7 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  + HLmx->mx->mx[n+1]->dp[l-1][d-d1-d2];
       } 
       if (sc >= bestsc) {
+	if (j==91&&d==4&&m==0) printf("^^nb %d winner M k %d l %d sc %f\n", HL->nB, k, l, sc);
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
@@ -6135,6 +6165,8 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	+ HLmx->mx->mx[n+1]->dp[j][d-d1];
     } 
     if (sc >= bestsc) {
+      if (j==91&&d==4&&m==0&&n==0) printf("^^winner L k %d  sc %f\n", k, sc);
+
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
@@ -6178,6 +6210,8 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	+ HLmx->mx->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
+           if (j==91&&d==4&&m==0&&n==0) printf("^^winner R l %d  sc %f\n", l, sc);
+
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
@@ -6208,6 +6242,8 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     sc = (E_allow)? t_LR_E + HLmx->mx->mx[n+1]->dp[j][d] : -eslINFINITY;
   } 
   if (sc >= bestsc) {
+         if (j==91&&d==4&&m==0&&n==0) printf("^^winner E sc %f\n", sc);
+
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
       bestsc = sc;
@@ -6220,6 +6256,8 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       esl_stack_IPush(alts, 0);
     }
   }
+
+  if (j==91&&d==4&&m==0&&n==0) printf("^^winner END sc %f\n", sc);
 
   *ret_bestsc = bestsc;
   return eslOK;
@@ -6613,7 +6651,7 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
 	+ ILmx->mxi->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
-      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
+       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
       }     
@@ -6884,11 +6922,14 @@ dp_recursion_r3d_cyk_J3J(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   int   L = mi->alen;
   int   i, k;
   int   d1;
+  int   maxLS3;
   int   status;
 
   if (alts) esl_stack_Reuse(alts);
 
   i = j - d + 1;
+
+  maxLS3 = J3->HMMJ3_S3->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS3) maxLS3 = MAXLOOP_M;
 
   // n = 0
   //
@@ -6905,6 +6946,8 @@ dp_recursion_r3d_cyk_J3J(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   //             J3J^{n}
   //
   for (d1 = 0; d1 <= d; d1++) {
+    if (n == 1 && d-d1 > maxLS3) break;
+ 
     k = i + d1 - 1;
 
     if      (n == 0) { sc = J3mx->mxL->mx[n]->dp[k][d1] + J3mx->mxJ->mx[n+1]->dp[j][d-d1]; }
@@ -6942,11 +6985,15 @@ dp_recursion_r3d_cyk_J3L(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   int   L = mi->alen;
   int   i, k;
   int   d1;
+  int   maxLS1, maxLS2;
   int   status;
 
   if (alts) esl_stack_Reuse(alts);
 
   i = j - d + 1;
+
+  maxLS1 = J3->HMMJ3_S1->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS1) maxLS1 = MAXLOOP_M;
+  maxLS2 = J3->HMMJ3_S2->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS2) maxLS2 = MAXLOOP_M;
 
   //
   //     S[n]              F0
@@ -6957,8 +7004,11 @@ dp_recursion_r3d_cyk_J3L(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   for (d1 = 0; d1 <= d; d1++) {
     k = i + d1 - 1;
 
-    if      (n == 0) sc = R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
-    else if (n == 1) sc = R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+    if (n == 0 && d1 > maxLS1) break;
+    if (n == 1 && d1 > maxLS2) break;
+    
+    if      (n == 0) sc = R3D_hmm_Forward(i,k,mi->pm,J3->HMMJ3_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+    else if (n == 1) sc = R3D_hmm_Forward(i,k,mi->pm,J3->HMMJ3_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -6992,11 +7042,14 @@ dp_recursion_r3d_cyk_J4J(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   int   L = mi->alen;
   int   i, k;
   int   d1;
+  int   maxLS4;
   int   status;
 
   if (alts) esl_stack_Reuse(alts);
 
   i = j - d + 1;
+
+  maxLS4 = J4->HMMJ4_S4->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS4) maxLS4 = MAXLOOP_M;
 
   // n < 3
   //
@@ -7015,8 +7068,10 @@ dp_recursion_r3d_cyk_J4J(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   for (d1 = 0; d1 <= d; d1++) {
     k = i + d1 - 1;
 
-    if      (n <  3) { sc = J4mx->mxL->mx[n]->dp[k][d1] + J4mx->mxJ->mx[n+1]->dp[j][d-d1]; }
-    else if (n == 3) { sc = J4mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S4,fwd,errbuf); }
+    if (n == 2 && d-d1 > maxLS4) break;
+    
+    if      (n <  2) { sc = J4mx->mxL->mx[n]->dp[k][d1] + J4mx->mxJ->mx[n+1]->dp[j][d-d1]; }
+    else if (n == 2) { sc = J4mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S4,fwd,errbuf); }
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -7051,12 +7106,18 @@ dp_recursion_r3d_cyk_J4L(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   int   L = mi->alen;
   int   i, k;
   int   d1;
+  int   maxLS1, maxLS2, maxLS3;
   int   status;
 
   if (alts) esl_stack_Reuse(alts);
 
   i = j - d + 1;
 
+  maxLS1 = J4->HMMJ4_S1->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS1) maxLS1 = MAXLOOP_M;
+  maxLS2 = J4->HMMJ4_S2->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS2) maxLS2 = MAXLOOP_M;
+  maxLS3 = J4->HMMJ4_S3->avglen + HMM_maxL_add; if (MAXLOOP_M < maxLS3) maxLS3 = MAXLOOP_M;
+  
+  
   //
   //     S[n]              F0
   //  i___________k k+1___________j
@@ -7066,9 +7127,13 @@ dp_recursion_r3d_cyk_J4L(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   for (d1 = 0; d1 <= d; d1++) {
    k = i + d1 - 1;
 
-   if      (n == 0) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
-   else if (n == 1) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
-   else if (n == 2) sc = R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S3,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   if (n == 0 && d1 > maxLS1) break;
+   if (n == 1 && d1 > maxLS2) break;
+   if (n == 2 && d1 > maxLS3) break;
+   
+   if      (n == 0) sc = R3D_hmm_Forward(i,k,mi->pm,J4->HMMJ4_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   else if (n == 1) sc = R3D_hmm_Forward(i,k,mi->pm,J4->HMMJ4_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
+   else if (n == 2) sc = R3D_hmm_Forward(i,k,mi->pm,J4->HMMJ4_S3,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
    
    if (sc >= bestsc) {
      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -7383,8 +7448,10 @@ score_loop_hairpin_prof(int i, int j, int L, RBGparam *p, double **pm)
   SCVAL sc = 0.;
   int   k;
 
-  for (k = i; k <= j; k ++) 
+  for (k = i; k <= j; k ++) {
     sc += emitsc_sing_prof(k, L, pm, p->e_sing_l1);
+    if (i == 87 && j ==91) printf("^^score_loop_hairpin_prof k %d sc %f add %f\n", k, sc, exp(emitsc_sing_prof(k, L, pm, p->e_sing_l1)));
+  }
 
   return sc;
 }
@@ -7517,23 +7584,44 @@ dvec_SCVAL_LogNorm(int n1, int n2, SCVAL dvec[n1][n2])
 }
 
 
-
+// Transition probabilities (all use the same)
+//
+//   S^{0} -->  S^{1} | I^{0}
+//              tB[0]   tB[1]
+//
+//   S^{m} -->  x S^{m+1}  | x I^{m}  | S^{m+1}  | I^{m}  ,, m in [1..M-1]
+//   S^{M} -->  x          | x I^{M}  | e        | I^{M}
+//                tS[0]       tS[1]      tS[2]     tS[3]
+//                 tM          tMI       tD        tDI
+//
+//   I^{m} -->  x I^{m} | S^{m+1} ,, m in [0..M-1]
+//   I^{M} -->  x I^{M} | e      
+//               tI[0]    tI[1]
+//
+// set tI so that the expected length of an insert is HMM_uL
+// then
+// 1-tI[0] = tI[1] = (1-tB)/uL      for M = 0
+// 1-tI[0] = tI[1] = (tMI+tDI)/uL   for M > 0
+//
 static inline SCVAL
 R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *errbuf)
 {
   SCVAL fwdsc  = -eslINFINITY;
   SCVAL sumsc  = -eslINFINITY;
   SCVAL sc;	        	        /* score for a rule */
-  SCVAL emit_k;
-  SCVAL emit_km;
+  SCVAL emit_m;
+  SCVAL emit_m_prv;
   SCVAL emit_i;
+  int   profsq = TRUE;
   int   L = j - i + 1;
   int   M = hmm->M;
   int   l, la;
-  int   k;
+  int   m;
 
   if (L < 0) return fwdsc;
 
+  if (i==8&&j==11) printf("M %d\n", M);
+  
   // an empty string
   if (L == 0) return (hmm->tB[0] + M*hmm->tS[2]);
   
@@ -7542,94 +7630,119 @@ R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *err
   for (l = 0; l < L; l++) {
     la = l + i;
 
-    emit_i = (l>0)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[0]) : -eslINFINITY;
+    if (profsq) emit_i = (l>0)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[0]) : -eslINFINITY;
+    else        emit_i = (l>0)? emitsc_prof_max(la-1, hmm->abc->K, pm, hmm->e[0]) : -eslINFINITY;
 
-    // S^{k=0}[l=0) = log(1)
-    // S^{k=0}[l>0) = log(0)
+    // S^{m=0}[l=0) = log(1)
+    // S^{m=0}[l>0) = log(0)
     //
     fwd->Sdp[0][l] = (l == 0)? 0 : -eslINFINITY;
 
-    // I^{k=0}
+    // I^{m=0}
     //
     sumsc = -eslINFINITY;
+    
     //     (1-tB) S^{0}(l)
     sc    = fwd->Sdp[0][l] + hmm->tB[1];
     sumsc = e2_FLogsum(sumsc, sc);
+    
     //     tI P_I(x_{l-1}) I^{0}(l-1)
     sc    = (l>0)? fwd->Idp[0][l-1] + hmm->tI[0] + emit_i : -eslINFINITY;
     sumsc = e2_FLogsum(sumsc, sc);
     //
     fwd->Idp[0][l] = sumsc;
     
-    // First S^k then I^k
-    for (k = 1; k <= M; k++) {
+    // First S^m then I^m
+    for (m = 1; m <= M; m++) {
 
-      emit_k  = (l>0)?        emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[k])   : -eslINFINITY;
-      emit_km = (l>0 && k>1)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[k-1]) : -eslINFINITY;
+      if (profsq) emit_m = (l>0)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[m]) : -eslINFINITY;
+      else        emit_m = (l>0)? emitsc_prof_max(la-1, hmm->abc->K, pm, hmm->e[m]) : -eslINFINITY;
+      
+      if (profsq) emit_m_prv = (l>0 && m>1)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[m-1]) : -eslINFINITY;
+      else        emit_m_prv = (l>0 && m>1)? emitsc_prof_max(la-1, hmm->abc->K, pm, hmm->e[m-1]) : -eslINFINITY;
       
       // S^{k=1}
       //
       sumsc = -eslINFINITY;
-      if (k == 1) {
+      
+      if (m == 1) {
 	//  tB     S^{0}(l)
 	sc    = fwd->Sdp[0][l] + hmm->tB[0];
 	sumsc = e2_FLogsum(sumsc, sc);
+	
 	//  (1-tI) P_I(x_{l-1}) I^{0}(l-1)
 	sc    = (l>0)? fwd->Idp[0][l-1] + hmm->tI[1] + emit_i : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
       }
-      // S^{k>1}[l]
+      // S^{m>1}[l]
       //
       else {
-	// t_M P_{k-1}(x_{l-1}) S^{k-1}(l-1)
-	sc    = (l>0)? fwd->Sdp[k-1][l-1] + hmm->tS[0] + emit_km : -eslINFINITY;
+	// t_M P_{m-1}(x_{l-1}) S^{m-1}(l-1)
+	sc    = (l>0)? fwd->Sdp[m-1][l-1] + hmm->tS[0] + emit_m_prv : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
-	// t_D          S^{k-1}(l)
-	sc    = fwd->Sdp[k-1][l] + hmm->tS[2];
+	
+	// t_D          S^{m-1}(l)
+	sc    = fwd->Sdp[m-1][l] + hmm->tS[2];
 	sumsc = e2_FLogsum(sumsc, sc);
-	// (1-tI) P_I(x_{l-1}) I^{k-1}(l-1)
-	sc    = (l>0)? fwd->Idp[k-1][l-1] + hmm->tI[1] + emit_i : -eslINFINITY;
+	
+	// (1-tI) P_I(x_{l-1}) I^{m-1}(l-1)
+	sc    = (l>0)? fwd->Idp[m-1][l-1] + hmm->tI[1] + emit_i : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
       }
-      fwd->Sdp[k][l] = sumsc;
+      fwd->Sdp[m][l] = sumsc;
       
-      // I^{k>0}[l]
+      // I^{m>0}[l]
       //
       sumsc = -eslINFINITY;
-      // t_MI P_{k}(x_{l-1}) S^{k}(l-1)
-      sc    = (l>0)? fwd->Sdp[k][l-1] + hmm->tS[1] + emit_k : -eslINFINITY;
+      
+      // t_MI P_{m}(x_{l-1}) S^{m}(l-1)
+      sc    = (l>0)? fwd->Sdp[m][l-1] + hmm->tS[1] + emit_m : -eslINFINITY;
       sumsc = e2_FLogsum(sumsc, sc);
-      // t_DI          S^{k}(l)
-      sc    = fwd->Sdp[k][l] + hmm->tS[3];
+      
+      // t_DI          S^{m}(l)
+      sc    = fwd->Sdp[m][l] + hmm->tS[3];
       sumsc = e2_FLogsum(sumsc, sc);
-      // tI   P_I(x_{l-1}) I^{k}(l-1)
-      sc    = (l>0)? fwd->Idp[k][l-1] + hmm->tI[0] + emit_i : -eslINFINITY;
+      
+      // tI   P_I(x_{l-1}) I^{m}(l-1)
+      sc    = (l>0)? fwd->Idp[m][l-1] + hmm->tI[0] + emit_i : -eslINFINITY;
       sumsc = e2_FLogsum(sumsc, sc);
       //
-      fwd->Idp[k][l] = sumsc;
+      fwd->Idp[m][l] = sumsc;
+
+      if (i==8&&j==11) printf("m %d l %d S %f I %f emit %f \n\n", m, la, fwd->Sdp[m][l], fwd->Idp[m][l], emit_m_prv);
     }
   }
   
   // End state E(j)
   //
   // special case M=0
+  
+  if (profsq) emit_i = emitsc_prof_sum(j, hmm->abc->K, pm, hmm->e[0]);
+  else        emit_i = emitsc_prof_max(j, hmm->abc->K, pm, hmm->e[0]);
+  
+  if (profsq) emit_m = emitsc_prof_sum(j, hmm->abc->K, pm, hmm->e[M]);
+  else        emit_m = emitsc_prof_max(j, hmm->abc->K, pm, hmm->e[M]);
+
   if (M == 0) {
-    // (1-t_I)  P_I(x_l) I^M(j)
-    sc    = fwd->Idp[M][L-1] + hmm->tI[1] + emitsc_prof_sum(j, hmm->abc->K, pm, hmm->e[0]);
+    // (1-t_I)  P_I(x_j) I^M(j)
+    sc    = fwd->Idp[M][L-1] + hmm->tI[1] + emit_i;
     fwdsc = e2_FLogsum(fwdsc, sc);
   }
   else {
     // t_M P_M(x_j) S^M(j)
-    sc    = fwd->Sdp[M][L-1] + hmm->tS[0] + emitsc_prof_sum(j, hmm->abc->K, pm, hmm->e[M]);
+    sc    = fwd->Sdp[M][L-1] + hmm->tS[0] + emit_m;
     fwdsc = e2_FLogsum(fwdsc, sc);
+    
     // t_D S^M(j)
     sc    = fwd->Sdp[M][L-1] + hmm->tS[2];
-    fwdsc = e2_FLogsum(fwdsc, sc);                 	        
-    // (1-t_I)  P_I(x_l) I^M(j)
-    sc    = fwd->Idp[M][L-1] + hmm->tI[1] + emitsc_prof_sum(j, hmm->abc->K, pm, hmm->e[0]);
+    fwdsc = e2_FLogsum(fwdsc, sc);
+    
+    // (1-t_I)  P_I(x_j) I^M(j)
+    sc    = fwd->Idp[M][L-1] + hmm->tI[1] + emit_i;
     fwdsc = e2_FLogsum(fwdsc, sc);
   }
-  
+  if (i==8&&j==11) printf("fwdsc j %d %f emit %f\n\n", j, fwdsc, emit_m);
+      
   if (fwdsc <= -eslINFINITY) esl_fail(errbuf, "R3D HMM failed: Forward sc = -inf.");
 
   return fwdsc;
@@ -7646,11 +7759,12 @@ emitsc_prof_sum(int i, int K, double **pm, SCVAL *e)
   if (i < 1) return (SCVAL)sc;
 
   e2_FLogsumInit();
-  
+
   for (k = 0; k < K; k ++) {
     logval = log(pm[i-1][k]) + (float)e[k];
     sc = e2_FLogsum(sc, logval);
   }
+  if (i >= 87 && i <= 91) printf("^^sum i %d pm %f %f | %f %f | %f %f | %f %f | sc %f\n", i, pm[i-1][0],(float)e[0],pm[i-1][1],(float)e[1],pm[i-1][2],(float)e[2],pm[i-1][3],(float)e[3],sc); 
   
   return (SCVAL)sc;
 }
@@ -7666,6 +7780,8 @@ emitsc_prof_max(int i, int K, double **pm, SCVAL *e)
   kmax = esl_vec_DArgMax(pm[i-1], K);
  
   sc = (float)e[kmax];
+  if (i >= 8 && i <= 11)
+    printf("^^max i %d kmax %d pm %f %f | %f %f | %f %f | %f %f | sc %f\n", i, kmax, pm[i-1][0],(float)e[0],pm[i-1][1],(float)e[1],pm[i-1][2],(float)e[2],pm[i-1][3],(float)e[3],sc); 
   
   return (SCVAL)sc;
 }

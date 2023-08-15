@@ -377,7 +377,7 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
   status = R3D_GetParam(&r3dp, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
-  // modify the  P -> t[0] m...m | t[1] m..., F0 | t[2] F0 m...m | t[3] m...m F0 m...m
+  // modify the  P -> t[0] m...m | t[1] m...m F0 | t[2] F0 m...m | t[3] m...m F0 m...m
   //  to
   //             P -> t[0]*(1-pHL)  HL_0  | t[0]*pHL/nHL  HL_1  | ... | t[0]*pHL/nHL  HL_{nHL}  
   //             P -> t[1]*(1-pBL5) BL_0  | t[1]*pBL5/nBL BL_1  | ... | t[1]*pBL5/nBL BL_{nBL}  

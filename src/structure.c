@@ -617,7 +617,9 @@ struct_ctlist_Dump(CTLIST *ctlist)
   for (s = 0; s < nct; s ++) {
     if (ctlist->cttype[s] == CTTYPE_RM_HL ||
 	ctlist->cttype[s] == CTTYPE_RM_BL ||
-	ctlist->cttype[s] == CTTYPE_RM_IL   ) {
+	ctlist->cttype[s] == CTTYPE_RM_IL ||
+	ctlist->cttype[s] == CTTYPE_RM_J3 ||
+	ctlist->cttype[s] == CTTYPE_RM_J4   ) {
       R3D_RMCTtoSS(ctlist->ct[s], ctlist->covct[s], L, ss);
     }
     else {
@@ -634,7 +636,10 @@ struct_ctlist_Dump(CTLIST *ctlist)
     else if (ctlist->cttype[s] == CTTYPE_RM_HL)  printf("RM_HL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_BL)  printf("RM_BL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_IL)  printf("RM_IL   %s %s\n", ss, ctlist->ctname[s]);
+    else if (ctlist->cttype[s] == CTTYPE_RM_J3)  printf("RM_J3   %s %s\n", ss, ctlist->ctname[s]);
+    else if (ctlist->cttype[s] == CTTYPE_RM_J4)  printf("RM_J4   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_NONE)   printf("NONE    %s\n        %s\n", ss, covss);
+    else goto ERROR;
   }
     
   free(ss); 
@@ -1017,7 +1022,9 @@ struct_ctlist_MAP(int L, CTLIST *ctlist, int OL, int *msamap, CTLIST **ret_octli
     // the structure in the coordenates of the original alignment
     if (octlist->cttype[s] == CTTYPE_RM_HL ||
 	octlist->cttype[s] == CTTYPE_RM_BL ||
-	octlist->cttype[s] == CTTYPE_RM_IL   ) R3D_RMCTtoSS(oct, ocovct, OL, oss);
+	octlist->cttype[s] == CTTYPE_RM_IL ||
+	octlist->cttype[s] == CTTYPE_RM_J3 ||
+	octlist->cttype[s] == CTTYPE_RM_J4   ) R3D_RMCTtoSS(oct, ocovct, OL, oss);
     else 
       esl_ct2wuss_er(oct, OL, oss);
   }
@@ -1443,10 +1450,10 @@ struct_rm_Create(int nct, int L, int nagg, enum agg_e *agg_method)
   rm->nbp     = 0;
   rm->nbp_cov = 0;
   rm->pvals   = NULL;
-  rm->i = L+1;
-  rm->j = -1;
-  rm->k = -1;
-  rm->l = L+1;
+
+  // i < k1 < l1 < k2 < l2 < k3 < l3 < j
+  rm->i = rm->l1 = rm->l2 = rm->l3 = L+1;  // i < k1, l1 < k2, k2 < k3, l3 < j
+  rm->j = rm->k1 = rm->k2 = rm->k3 = -1;
 
   rm->nagg   = nagg;
   rm->covary = NULL;
@@ -1490,16 +1497,30 @@ struct_rm_Destroy(RM *rm)
 void
 struct_rm_Dump(RM *rm, int *msamap, int firstpos)
 {
-  int i, k, l, j;
+  int i, j;
+  int k1, l1;
+  int k2, l2;
+  int k3, l3;
   int agg;
 
-  i = (msamap)? msamap[rm->i-1] + firstpos : rm->i;
-  k = (msamap)? msamap[rm->k-1] + firstpos : rm->k;
-  l = (msamap)? msamap[rm->l-1] + firstpos : rm->l;
-  j = (msamap)? msamap[rm->j-1] + firstpos : rm->j;
-  
-  printf("\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
+  i =  (msamap)? msamap[rm->i-1]  + firstpos : rm->i;
+  k1 = (msamap)? msamap[rm->k1-1] + firstpos : rm->k1;
+  k2 = (msamap)? msamap[rm->k2-1] + firstpos : rm->k2;
+  k3 = (msamap)? msamap[rm->k3-1] + firstpos : rm->k3;
+  l1 = (msamap)? msamap[rm->l1-1] + firstpos : rm->l1;
+  l2 = (msamap)? msamap[rm->l2-1] + firstpos : rm->l2;
+  l3 = (msamap)? msamap[rm->l3-1] + firstpos : rm->l3;
+  j =  (msamap)? msamap[rm->j-1]  + firstpos : rm->j;
 
+  if (l3 < j)
+    printf("\n# RM %d-%d %d-%d %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, k2, l2, k3, l3, j, rm->nbp, rm->nbp_cov);
+  else if (l2 < j)
+    printf("\n# RM %d-%d %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, k2, l2, j, rm->nbp, rm->nbp_cov);
+  else if (l1 < j)
+    printf("\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, j, rm->nbp, rm->nbp_cov);
+  else 
+    printf("\n# RM %d-%d, nbp = %d nbp_cov = %d\n", i, j, rm->nbp, rm->nbp_cov);
+  
   for (agg = 0; agg < rm->nagg; agg++) {
     printf("# aggregated ");
     if      (rm->agg_method[agg] == AGG_FISHER)           printf("FISHER           E-value: ");
@@ -1523,16 +1544,31 @@ struct_rm_Dump(RM *rm, int *msamap, int firstpos)
 void
 struct_rm_Write(FILE *fp, RM *rm, int *msamap, int firstpos)
 {
-  int i, k, l, j;
+  int i,  j;
+  int k1, l1;
+  int k2, l2;
+  int k3, l3;
   int n;
   int agg;
 
-  i = (msamap)? msamap[rm->i-1] + firstpos : rm->i;
-  k = (msamap)? msamap[rm->k-1] + firstpos : rm->k;
-  l = (msamap)? msamap[rm->l-1] + firstpos : rm->l;
-  j = (msamap)? msamap[rm->j-1] + firstpos : rm->j;
+  i  = (msamap)? msamap[rm->i-1]  + firstpos : rm->i;
+  k1 = (msamap)? msamap[rm->k1-1] + firstpos : rm->k1;
+  l1 = (msamap)? msamap[rm->l1-1] + firstpos : rm->l1;
+  k2 = (msamap)? msamap[rm->k2-1] + firstpos : rm->k2;
+  l2 = (msamap)? msamap[rm->l2-1] + firstpos : rm->l2;
+  k3 = (msamap)? msamap[rm->k3-1] + firstpos : rm->k3;
+  l3 = (msamap)? msamap[rm->l3-1] + firstpos : rm->l3;
+  j  = (msamap)? msamap[rm->j-1]  + firstpos : rm->j;
   
-  fprintf(fp, "\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k, l, j, rm->nbp, rm->nbp_cov);
+  if (l3 < j)
+    fprintf(fp, "\n# RM %d-%d %d-%d %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, k2, l2, k3, l3, j, rm->nbp, rm->nbp_cov);
+  else if (l2 < j)
+    fprintf(fp, "\n# RM %d-%d %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, k2, l2, j, rm->nbp, rm->nbp_cov);
+  else if (l1 < j)
+    fprintf(fp, "\n# RM %d-%d %d-%d, nbp = %d nbp_cov = %d\n", i, k1, l1, j, rm->nbp, rm->nbp_cov);
+  else 
+    fprintf(fp, "\n# RM %d-%d, nbp = %d nbp_cov = %d\n", i, j, rm->nbp, rm->nbp_cov);
+  
   if (rm->nbp > 0) {
     fprintf(fp, "# pvals: ");
     for (n = 0; n < rm->nbp-1; n ++) 
@@ -1853,6 +1889,8 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   //       CTTYPE_RM_HL,    (RNA Module HL)
   //       CTTYPE_RM_BL,    (RNA Module BL)
   //       CTTYPE_RM_IL,    (RNA Module IL)
+  //       CTTYPE_RM_J3,    (RNA Module J3)
+  //       CTTYPE_RM_J4,    (RNA Module J4)
   //
   // a extra helix H is classified as CTTYPE_SCOV/CTTYPE_XCOV when
   //
@@ -2301,7 +2339,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 		       (nfaces == 1 && nsingle > nsingle_max)  ) // break long stems if they have more than > nsingle_max single stranded residudes
 		    {
 		      // a new RNA motif
-		      if (verbose) printf("new RNA motif %d idx %d\n", nfaces, idx);
+		      if (1||verbose) printf("new RNA motif %d idx %d\n", nfaces, idx);
 		      npairs_rm     = 0;
 		      npairs_cov_rm = 0;
 		      struct_rmlist_AddRM(rmlist, errbuf, verbose);
@@ -2313,10 +2351,12 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 		      idx ++;
 		    }
 
-		  if (i < rm->i) rm->i = i;
-		  if (i > rm->k) rm->k = i;
-		  if (j < rm->l) rm->l = j;
-		  if (j > rm->j) rm->j = j;
+		  if (i < rm->i)  rm->i  = i;
+		  if (i > rm->k1) rm->k1 = i;
+		  if (j < rm->l1) rm->l1 = j;
+		  if (j > rm->j)  rm->j  = j;
+		  rm->k2 = rm->l2 = rm->k3 = rm->l3 = rm->j;
+		  
 		  npairs_rm ++;
 		  rm->nbp = npairs_rm;
 		  
@@ -2356,7 +2396,8 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
   //
   //  0000000xxxxxx00000000xxxxxx000000000000000000000000000000000000000
   //
-  // x is the index of the RM
+  //  x < 0 and 
+  // -x is the index of the RM
   //
   if (has_rm) {
     if (!r3d) ESL_XFAIL(eslFAIL, errbuf, "ct_split_rmlist() has RNA modules but not R3D");
@@ -2364,10 +2405,10 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
     for (m = 0; m < r3d->nHL; m ++) {
       R3D_RMtoCTidx(r3d, R3D_TP_HL, m, &ctval, errbuf);
       found = FALSE;
-     
+      
       for (j = 1; j <= L; j++)
 	{
-	  if (ct[j] == ctval) {   // in a RNA module
+	  if (ct[j] == ctval) {   // in a HL RNA module
 	    if (found == FALSE) {
 	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
 	      rm  = rmlist->rm[idx];
@@ -2379,12 +2420,12 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 	      esl_sprintf(&ctlist->ctname[0], r3d->HL[m]->name);
 	      esl_sprintf(&rm->name,          r3d->HL[m]->name);
 	      rm->nbp = 0;
-
+	      
 	      idx ++;
 	    }
 	    ctlist->ct[0][j] = ct[j];
-	    if (j < rm->i) rm->i = rm->k = j;
-	    if (j > rm->j) rm->j = rm->l = j;
+	    if (j < rm->i) rm->i = j;
+	    if (j > rm->j) rm->j = rm->k1 = rm->l1 = rm->k2 = rm->l2 = rm->k3 = rm->l3 = j;
 	    
 	    found = TRUE;
 	  }
@@ -2397,7 +2438,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
       
       for (j = 1; j <= L; j++)
 	{
-	  if (ct[j] == ctval) {   // in a RNA module
+	  if (ct[j] == ctval) {   // in a BL RNA module
 	    if (found == FALSE) {
 	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
 	      rm  = rmlist->rm[idx];
@@ -2412,52 +2453,136 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 	      idx ++;
 	    }
 	    ctlist->ct[0][j] = ct[j];
-	    if (j < rm->i) rm->i = rm->k = j;
-	    if (j > rm->j) rm->j = rm->l = j;
-
+	    if (j < rm->i) rm->i = j;
+	    if (j > rm->j) rm->j = rm->k1 = rm->l1 = rm->k2 = rm->l2 = rm->k3 = rm->l3 = j;
+	    
 	    found = TRUE;
 	  }
 	}
     }
-
+    
     for (m = 0; m < r3d->nIL_total; m ++) {
-     R3D_RMtoCTidx(r3d, R3D_TP_ILo, m, &ctval, errbuf);
-     found = FALSE;
-     
-     for (j = 1; j <= L; j++)
-       {
-	 if (ct[j] == ctval) {   // in a RNA module
-	   if (found == FALSE) {
-	     struct_rmlist_AddRM(rmlist, errbuf, verbose);
-	     rm  = rmlist->rm[idx];
-	     ctlist = rm->ctlist;
-	     esl_vec_ISet(ctlist->ct[0],    L+1, 0);
-	     esl_vec_ISet(ctlist->covct[0], L+1, 0);
-	     
-	     ctlist->cttype[0] = CTTYPE_RM_IL;
-	     esl_sprintf(&ctlist->ctname[0], r3d->IL[m]->name);
-	     esl_sprintf(&rm->name,          r3d->IL[m]->name);
-		    
-	     rm->nbp = 0;
-	     rm->i = j;
-	     rm->k = j;
-	     rm->l = L;
-	     rm->j = L;
-	     idx ++;
-	   }
-	   ctlist->ct[0][j] = ct[j];
-	   if (j > rm->i && j < rm->l && ct[j+1] == 0) rm->k = j;
-	   if (j < rm->l && j > rm->k && ct[j-1] == 0) rm->l = j; 
-	   if (j > rm->l && j < L     && ct[j+1] == 0) rm->j = j;
-	   
-	   found = TRUE;
-	 }
-       }
+      R3D_RMtoCTidx(r3d, R3D_TP_ILo, m, &ctval, errbuf);
+      found = FALSE;
+      
+      for (j = 1; j <= L; j++)
+	{
+	  if (ct[j] == ctval) {   // in a IL RNA module
+	    if (found == FALSE) {
+	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	      rm  = rmlist->rm[idx];
+	      ctlist = rm->ctlist;
+	      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	      esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	      
+	      ctlist->cttype[0] = CTTYPE_RM_IL;
+	      esl_sprintf(&ctlist->ctname[0], r3d->IL[m]->name);
+	      esl_sprintf(&rm->name,          r3d->IL[m]->name);
+	      
+	      rm->nbp = 0;
+	      rm->i  = j;
+	      rm->k1 = j;
+	      rm->l1 = L;
+	      rm->k2 = rm->l2 = rm->k3 = rm->l3 = L;
+	      rm->j  = L;
+	      idx ++;
+	    }
+	    ctlist->ct[0][j] = ct[j];
+	    if (j > rm->i  && j < rm->l1 && ct[j+1] == 0) rm->k1 = j;
+	    if (j < rm->l1 && j > rm->k1 && ct[j-1] == 0) rm->l1 = j; 
+	    if (j > rm->l1 && j < L      && ct[j+1] == 0) rm->j  = j;
+	    
+	    found = TRUE;
+	  }
+	}
     }
     
+    for (m = 0; m < r3d->nJ3_total; m ++) {
+      R3D_RMtoCTidx(r3d, R3D_TP_J3, m, &ctval, errbuf);
+      found = FALSE;
+      
+      for (j = 1; j <= L; j++)
+	{
+	  if (ct[j] == ctval) {   // in a J3 RNA module
+	    if (found == FALSE) {
+	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	      rm  = rmlist->rm[idx];
+	      ctlist = rm->ctlist;
+	      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	      esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	      
+	      ctlist->cttype[0] = CTTYPE_RM_J3;
+	      esl_sprintf(&ctlist->ctname[0], r3d->J3[m]->name);
+	      esl_sprintf(&rm->name,          r3d->J3[m]->name);
+	      
+	      rm->nbp = 0;
+	      rm->i  = j;
+	      rm->k1 = j;
+	      rm->l1 = L;
+	      rm->k2 = rm->l2 = rm->k3 = rm->l3 = L;
+	      rm->j  = L;
+	      idx ++;
+	    }
+	    ctlist->ct[0][j] = ct[j];
+	    if (j > rm->i  && j < rm->l1 && ct[j+1] == 0) rm->k1 = j;
+	    if (j < rm->l1 && j > rm->k1 && ct[j-1] == 0) rm->l1 = j;
+	    
+	    if (j > rm->l1 && j < rm->l2 && ct[j+1] == 0) rm->k2 = j;
+	    if (j < rm->l2 && j > rm->k2 && ct[j-1] == 0) rm->l2 = j;
+	    
+	    if (j > rm->l2 && j < L      && ct[j+1] == 0) rm->j  = j;
+	    
+	    found = TRUE;
+	  }
+	}
+    }
+    
+    for (m = 0; m < r3d->nJ4_total; m ++) {
+      R3D_RMtoCTidx(r3d, R3D_TP_J4, m, &ctval, errbuf);
+      found = FALSE;
+      
+      for (j = 1; j <= L; j++)
+	{
+	  if (ct[j] == ctval) {   // in a J3 RNA module
+	    if (found == FALSE) {
+	      struct_rmlist_AddRM(rmlist, errbuf, verbose);
+	      rm  = rmlist->rm[idx];
+	      ctlist = rm->ctlist;
+	      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
+	      esl_vec_ISet(ctlist->covct[0], L+1, 0);
+	      
+	      ctlist->cttype[0] = CTTYPE_RM_J4;
+	      esl_sprintf(&ctlist->ctname[0], r3d->J4[m]->name);
+	      esl_sprintf(&rm->name,          r3d->J4[m]->name);
+	      
+	      rm->nbp = 0;
+	      rm->i  = j;
+	      rm->k1 = j;
+	      rm->l1 = L;
+	      rm->k2 = rm->l2 = rm->k3 = rm->l3 = L;
+	      rm->j  = L;
+	      idx ++;
+	    }
+	    ctlist->ct[0][j] = ct[j];
+	    if (j > rm->i  && j < rm->l1 && ct[j+1] == 0) rm->k1 = j;
+	    if (j < rm->l1 && j > rm->k1 && ct[j-1] == 0) rm->l1 = j;
+	    
+	    if (j > rm->l1 && j < rm->l2 && ct[j+1] == 0) rm->k2 = j;
+	    if (j < rm->l2 && j > rm->k2 && ct[j-1] == 0) rm->l2 = j;
+	    
+	    if (j > rm->l2 && j < rm->l3 && ct[j+1] == 0) rm->k3 = j;
+	    if (j < rm->l3 && j > rm->k3 && ct[j-1] == 0) rm->l3 = j;
+	    
+	    if (j > rm->l3 && j < L      && ct[j+1] == 0) rm->j  = j;
+	    
+	    found = TRUE;
+	  }
+	}
+      
+    }
   }
   *ret_rmlist = rmlist;
-      
+  
   esl_stack_Destroy(pda);
   return eslOK;
   
@@ -2908,7 +3033,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
   return status;
 }
 
-// Clean up the CaCoFold structure
+// Clean up the CaCoFold structure if asked to to make it Rfam friendly
 // rules:
 //
 // (1) hairpin looks include at least 3 nts (hloop_min = 3)

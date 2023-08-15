@@ -16,8 +16,8 @@
 #HL  5'-L Loop R
 #HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
 #------------------------------------------------------------------------------------------------------------------
-#HL   GNRA         -         -          GNRA-tetraloop
- HL   N            G         RA         GNRA-tetraloop
+HL   GNRA         -         -          GNRA-tetraloop
+#HL   N            G         RA         GNRA-tetraloop
  HL   UNCG         -         -          UNCG-tetraloop  
  HL   ANYA         -         -          ANYA-tetraloop  
  HL   CUYG         -   	     -          CUYG-tetraloop  
@@ -55,3 +55,19 @@
  IL   YCC           AAC            -              -              -            -             Twisted-up
  IL   YAA           RAN            -              -              -            -             UAA_GAN
  IL   AGARA         GGUGRAA        -              -              -            -             Docking-elbow
+
+
+#J3   S1(5'-3')   S2(5'-3')  S3(5'-3')                  name
+#------------------------------------------------------------------------------------------------------------------
+J3	NN  	  NNNNNN     NN	                        J3_typeA
+J3	NNNN  	  NNNN	     NNNN	                J3_typeB
+J3	NN  	  NNN	     NNNNNN	                J3_typeC
+J3	UA	  GUYUCUAC   AC				J3_purine
+J3	N	  CUGAUGA    GAA			J3_hammerhead
+
+#J4   S1(5'-3')   S2(5'-3')  S3(5'-3')   S4(5'-3')     name
+#------------------------------------------------------------------------------------------------------------------
+J4	N  	   -	      NNN	  -	        J4_tRNA
+J4	N  	   N	      NN	  -	        J4_manA
+
+ 

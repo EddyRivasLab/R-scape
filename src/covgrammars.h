@@ -12,9 +12,10 @@
 #include "esl_random.h"
 
 
-#define MAXLOOP_H 30   // maximum loop length
-#define MAXLOOP_B 30   // maximum loop length
-#define MAXLOOP_I 30   // maximum loop length
+#define MAXLOOP_H 30   // maximum loop length for hairpin loops
+#define MAXLOOP_B 30   // maximum loop length for bulges
+#define MAXLOOP_I 30   // maximum loop length for internal loop segments
+#define MAXLOOP_M 30   // maximum loop length for multiloop segments
 
 #define NB 4
 #define NP 16

@@ -3,8 +3,7 @@
 
 use strict;
 use Class::Struct;
-#use lib '/Users/erivas/projects/R-scape/scripts';
-use lib '/Users/rivase/projects/R-scape/scripts';
+use lib '../R-scape/scripts';
 use FUNCS;
 #use constant GNUPLOT => '/usr/bin/gnuplot';
 use constant GNUPLOT => '/opt/local/bin/gnuplot';

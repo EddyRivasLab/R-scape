@@ -40,6 +40,7 @@ man1ext     = .1
 #
 CC        = @CC@ 
 CFLAGS    = @CFLAGS@ @PTHREAD_CFLAGS@ 
+#CFLAGS    = -fsanitize=address @CFLAGS@ @PTHREAD_CFLAGS@ 
 #CFLAGS    = -fopenmp @CFLAGS@ @PTHREAD_CFLAGS@ 
 LDFLAGS   = -static @LDFLAGS@
 SIMDFLAGS = @SIMD_CFLAGS@
