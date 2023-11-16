@@ -247,7 +247,7 @@ static ESL_OPTIONS options[] = {
   /* options for statistical analysis */
   { "-E",             eslARG_REAL,     "0.05",   NULL,      "x>=0",THRESHOPTS,NULL,  NULL,               "E-value target for base pair significance. E > 1000 means report all E-values",             1 },
   { "-s",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "two-set test: basepairs / all other pairs. Requires a given structure",                     1 },
-  { "--structured",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "-s",               "This is a structural RNA of unknown structure",                                             1 },
+  { "--structured",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  "-s",               "Assumes a structural RNA of unknown ss with L/2 base pairs. The first L/2 hits are treated as base pairs when calculating E-values",  0 },
   { "--samplecontacts",eslARG_NONE,     FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all contacts (default for amino acids)",                        1 },
   { "--samplebp",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is all 12-type basepairs (default for RNA/DNA)",                   1 },
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
@@ -404,6 +404,7 @@ static ESL_OPTIONS options[] = {
   { "--draw_nonWC",   eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,     NULL,             "TRUE to draw annotated non WC basepairs",                                                  1 },
   { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                  1 },
   /* R3D */
+  { "--RBG",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG, default is RBGJ3J4",                                                1 },
   { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                                1 },
   { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                           1 },
 /* other options */  
@@ -665,7 +666,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   // The grammars used
-  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : RBGJ3J4;
+  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : ( (esl_opt_IsOn(go, "--RBG"))? RBG : RBGJ3J4 );
   cfg.foldparam->GP = G6X;
 
   if      (esl_opt_GetBoolean(go, "--cyk"))      cfg.foldparam->F = CYK;
@@ -1011,16 +1012,22 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
   }
   else { // read the power file
-    if (cfg.power_includegaps) {
-      if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.withgaps.csv", RSCAPE_HOME);
-      else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.join.withgaps.csv",   RSCAPE_HOME);
-      else                      esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.withgaps.csv",   RSCAPE_HOME);
+
+    if (RSCAPE_SHARE) {     
+      if (cfg.power_includegaps) {
+	if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.double.withgaps.csv", RSCAPE_SHARE);
+	else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.join.withgaps.csv",   RSCAPE_SHARE);
+	else                      esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.subs.withgaps.csv",   RSCAPE_SHARE);
+      }
+      else {
+	if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.double.csv", RSCAPE_SHARE);
+	else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.join.csv",   RSCAPE_SHARE);
+	else                      esl_sprintf(&cfg.powerfile, "%s/doc/R-scape.power.subs.csv",   RSCAPE_SHARE);
+      }
     }
-    else {
-      if      (cfg.powerdouble) esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.double.csv", RSCAPE_HOME);
-      else if (cfg.powerjoin)   esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.join.csv",   RSCAPE_HOME);
-      else                      esl_sprintf(&cfg.powerfile, "%s/data/power/R-scape.power.subs.csv",   RSCAPE_HOME);
-    }
+    else
+      ESL_XFAIL(status, cfg.errbuf, "Failed to find powerfiles\n");
+
     power_Read(cfg.powerfile, cfg.powerdouble, cfg.powerjoin, cfg.power_includegaps, &cfg.power, cfg.errbuf, cfg.verbose);
   }
   
@@ -1080,8 +1087,8 @@ main(int argc, char **argv)
     // reset the histogram step for each msa
     cfg.w = W;  /* default. histogram step, will be determined for each msa */
 
-    // negative pairs eval threshold. default 1.0
-    cfg.foldparam->neg_eval_thresh = 1.0;
+    // negative pairs eval threshold. default 10.0
+    cfg.foldparam->neg_eval_thresh = 10.0;
     if (esl_opt_IsOn(go, "--E_neg")) {
       cfg.foldparam->neg_eval_thresh = esl_opt_GetReal(go, "--E_neg");
       if (cfg.foldparam->neg_eval_thresh < cfg.thresh->val) cfg.foldparam->neg_eval_thresh = cfg.thresh->val;
@@ -2317,6 +2324,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (msa->nseq*msa->alen < 1e3) { nshuffle = 200; }
       if (msa->alen < 50)            { nshuffle = 200; }
       if (msa->alen < 40)            { nshuffle = 300; }
+      if (msa->nseq < 4)             { nshuffle = 300; }
     }
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
 

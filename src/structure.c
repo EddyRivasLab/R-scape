@@ -2339,7 +2339,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 		       (nfaces == 1 && nsingle > nsingle_max)  ) // break long stems if they have more than > nsingle_max single stranded residudes
 		    {
 		      // a new RNA motif
-		      if (1||verbose) printf("new RNA motif %d idx %d\n", nfaces, idx);
+		      if (verbose) printf("new RNA motif %d idx %d\n", nfaces, idx);
 		      npairs_rm     = 0;
 		      npairs_cov_rm = 0;
 		      struct_rmlist_AddRM(rmlist, errbuf, verbose);

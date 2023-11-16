@@ -2572,7 +2572,7 @@ sub sto2hmm {
 sub sto2cm {
     my ($rscapebin, $currdir, $pdbname, $stofile, $noss) = @_;
     
-    my $infernal    = "$rscapebin/../lib/infernal/infernal-current";
+    my $infernal    = "$rscapebin/../lib/infernal";
     my $cmbuild     = "$infernal/src/cmbuild";
   
     my $cm          = "$currdir/$pdbname.cm";
@@ -2607,7 +2607,7 @@ sub find_pdbsq_in_ali {
     my $hmmalign  = "$hmmer/src/hmmalign";
     my $hmmsearch = "$hmmer/src/hmmsearch";
     
-    my $infernal    = "$rscapebin/../lib/infernal/infernal-current";
+    my $infernal    = "$rscapebin/../lib/infernal";
     my $cmsearch    = "$infernal/src/cmsearch";
     my $cmalign     = "$infernal/src/cmalign";
     
@@ -2959,7 +2959,7 @@ sub get_chain_from_atoms {
 #
 #           * * * * * * * -> these are documented "missing residues" but those do not affect the ordering
 #
-#
+				  #
 # SEQRES_E  U  U  C  A  A  U  U  C  C  A  C  C  U  U  U  C  G  G  G  C  G  C  C  A
 # resSeq_E  54 55 56 57 58 59 60 61 62 63 64 65 66 67 67 68 69 70 71 72 73 74 75 0 
 #                                                   *  *

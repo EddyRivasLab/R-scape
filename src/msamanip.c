@@ -58,7 +58,7 @@ msamanip_CalculateCTList(ESL_MSA *msa, CTLIST **ret_ctlist, int *ret_nbpairs, ch
 
   if (msa->ss_cons) {
     ctlist = struct_wuss2CTList(msa->ss_cons, msa->alen, errbuf, verbose);
-    if (!ctlist)  ESL_FAIL(eslFAIL, errbuf, "bad SS_cons");
+    if (!ctlist)  ESL_FAIL(eslFAIL, errbuf, "bad SS_cons %s", msa->ss_cons);
     nct    = ctlist->nct;
    }
  

@@ -181,6 +181,10 @@ EVOPARAM  = \
 POWER   = \
 	R-scape.power.subs.csv  \
 	R-scape.power.double.csv  \
+	R-scape.power.join.csv  \
+	R-scape.power.subs.withgaps.csv  \
+	R-scape.power.double.withgaps.csv  \
+	R-scape.power.join.withgaps.csv  \
 
 R2R     = \
 	r2r \

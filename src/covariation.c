@@ -886,7 +886,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
       data->spair[n].sc   = cov;
       data->spair[n].Eval = eval;
       data->spair[n].Pval = pval;
-      
+
       n ++;
     }
   nhit = h;

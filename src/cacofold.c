@@ -1165,7 +1165,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG R caco-cyk failed");
 	status = dp_recursion_rbg_cyk(allow, foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_S,  j, d, &(cyk->S->dp[j][d]),  NULL, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG S caco-cyk failed");
-	if (verbose) {
+	if ((j==64 && (d==60 ||d== 59)) ||verbose) {
 	  if (p->G == RBG)
 	    printf("RBG CYK ML=%f P=%f M1=%f R=%f F5=%f F0=%f S=%f | i=%d j=%d d=%d L=%d | covct %d %d\n", 
 		   cyk->ML->dp[j][d], cyk->P->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],
@@ -4033,6 +4033,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
 	}
       }
     }
+    
     /* rule2: S -> epsilon */
     d1 = d2 = 0;
     if (d == 0) {
@@ -4188,7 +4189,6 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
   case RBG_P:
     /* rule9 (plain): P -> m..m */
     status = dp_recursion_rbg_score_P_HL_plain(allow, foldparam, p, psq, mi, covct, j, d, &sc, &hl_allow, errbuf, verbose);
-    if (j == 91 && d ==4) printf("^^ plain %f\n", sc);
     
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -4209,7 +4209,6 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
 	status = dp_recursion_rbg_score_P_HL_R3D(r3d_p->HLp, cyk_r3d->HLmx[m], j, d, mi->alen, &sc, hl_allow, errbuf, verbose);
 	    
 	if (sc >= bestsc) {
-	   if (j == 91 && d ==4) printf("^^ GANO j %d d %d m %d sc %f\n", j, d, m, sc);
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	    if (alts) esl_stack_Reuse(alts);
 	    bestsc = sc;
@@ -4628,7 +4627,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     d1 = d2 = 0;
     if (d > 0) {
       sc = (allow_si)? cyk->M1->dp[j][d-1] + p->tM1[0] + emitsc_singi : -eslINFINITY;
-      
+
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -4646,6 +4645,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     /* rule19: M1 -> F0 */
     d1 = d2 = 0;
     sc = cyk->F0->dp[j][d] + p->tM1[1];
+ 
     if (sc >= bestsc) {
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
@@ -5656,8 +5656,6 @@ dp_recursion_rbg_score_P_HL_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *
   hl_len = (d_ng-1 < MAXLOOP_H)? d_ng - 1 : MAXLOOP_H - 1;
   sc     = (hl_allow)? p->tP[0] + p->l1[hl_len] + score_loop_hairpin_prof(i, j, L, p, mi->pm) : -eslINFINITY;
 
-  if (j==91&&d==4) printf("^^PLAIN tp %f l1(%d)= %f emit %f\n",  p->tP[0], hl_len, p->l1[hl_len], score_loop_hairpin_prof(i, j, L, p, mi->pm));
-
   if (ret_hl_allow) *ret_hl_allow = hl_allow;
   
   *ret_sc = sc;
@@ -5677,8 +5675,6 @@ dp_recursion_rbg_score_P_HL_R3D(R3D_HLparam *HLp, R3D_HLMX *HLmx, int j, int d, 
   SCVAL sc = -eslINFINITY;	    /* score for a rule */
 
   sc  = (hl_allow)? HLp->pHL + HLmx->mx->mx[0]->dp[j][d] : -eslINFINITY;
-
-  if (j==91&&d==4) printf("^^HL  pHL %f emit %f\n",  HLp->pHL, HLmx->mx->mx[0]->dp[j][d]);
 
  *ret_sc = sc;
   
@@ -6108,10 +6104,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  + R3D_hmm_Forward(i,  k,  mi->pm,HL->HMML[n],fwd,errbuf)
 	  + R3D_hmm_Forward(l,  j,  mi->pm,HL->HMMR[n],fwd,errbuf)
 	  + R3D_hmm_Forward(k+1,l-1,mi->pm,HL->HMMLoop,fwd,errbuf);
-	if (j==91&&d==4&&m==0) printf("^^this?? winner M k %d l %d sc %f | %f %f %f\n", k, l, sc,
-					    R3D_hmm_Forward(i,  k,  mi->pm,HL->HMML[n],fwd,errbuf),
-					    R3D_hmm_Forward(l,  j,  mi->pm,HL->HMMR[n],fwd,errbuf),
-					    R3D_hmm_Forward(k+1,l-1,mi->pm,HL->HMMLoop,fwd,errbuf));
       }
       else {
  	sc = t_LR_M
@@ -6120,7 +6112,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	  + HLmx->mx->mx[n+1]->dp[l-1][d-d1-d2];
       } 
       if (sc >= bestsc) {
-	if (j==91&&d==4&&m==0) printf("^^nb %d winner M k %d l %d sc %f\n", HL->nB, k, l, sc);
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
@@ -6165,8 +6156,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	+ HLmx->mx->mx[n+1]->dp[j][d-d1];
     } 
     if (sc >= bestsc) {
-      if (j==91&&d==4&&m==0&&n==0) printf("^^winner L k %d  sc %f\n", k, sc);
-
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
@@ -6210,8 +6199,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
 	+ HLmx->mx->mx[n+1]->dp[l-1][d-d2];
     } 
     if (sc >= bestsc) {
-           if (j==91&&d==4&&m==0&&n==0) printf("^^winner R l %d  sc %f\n", l, sc);
-
       if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	if (alts) esl_stack_Reuse(alts);
 	bestsc = sc;
@@ -6242,8 +6229,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     sc = (E_allow)? t_LR_E + HLmx->mx->mx[n+1]->dp[j][d] : -eslINFINITY;
   } 
   if (sc >= bestsc) {
-         if (j==91&&d==4&&m==0&&n==0) printf("^^winner E sc %f\n", sc);
-
     if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
       if (alts) esl_stack_Reuse(alts);
       bestsc = sc;
@@ -6256,8 +6241,6 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       esl_stack_IPush(alts, 0);
     }
   }
-
-  if (j==91&&d==4&&m==0&&n==0) printf("^^winner END sc %f\n", sc);
 
   *ret_bestsc = bestsc;
   return eslOK;
@@ -7192,12 +7175,12 @@ allow_bpair(double power_thresh, double neg_eval_thresh, int hloop_min, int i, i
   if (covct[i] == 0 && covct[j] == 0) {
     idx   = INDEX(i-1, j-1, L);
     power = spair[idx].power;
-    eval  = spair[idx].Eval;
+    eval  = spair[idx].Eval/L; // make it easy on the Evalue
 
     if      (power < power_thresh)    allow = TRUE;   // no power,  allow to pair
     else if (eval  < neg_eval_thresh) allow = TRUE;   // has power, but it is in the gray zone for significantly covarying, allow to pair
-    else {                                            // power and unlikely to be covarying, a negative pair
-      if (ret_nneg) (*ret_nneg) ++;
+    else {                                            
+      if (ret_nneg) (*ret_nneg) ++;                   // has power and unlikely to be covarying, a negative pair
     }
    }
   
@@ -7450,7 +7433,6 @@ score_loop_hairpin_prof(int i, int j, int L, RBGparam *p, double **pm)
 
   for (k = i; k <= j; k ++) {
     sc += emitsc_sing_prof(k, L, pm, p->e_sing_l1);
-    if (i == 87 && j ==91) printf("^^score_loop_hairpin_prof k %d sc %f add %f\n", k, sc, exp(emitsc_sing_prof(k, L, pm, p->e_sing_l1)));
   }
 
   return sc;
@@ -7764,7 +7746,6 @@ emitsc_prof_sum(int i, int K, double **pm, SCVAL *e)
     logval = log(pm[i-1][k]) + (float)e[k];
     sc = e2_FLogsum(sc, logval);
   }
-  if (i >= 87 && i <= 91) printf("^^sum i %d pm %f %f | %f %f | %f %f | %f %f | sc %f\n", i, pm[i-1][0],(float)e[0],pm[i-1][1],(float)e[1],pm[i-1][2],(float)e[2],pm[i-1][3],(float)e[3],sc); 
   
   return (SCVAL)sc;
 }
@@ -7780,8 +7761,6 @@ emitsc_prof_max(int i, int K, double **pm, SCVAL *e)
   kmax = esl_vec_DArgMax(pm[i-1], K);
  
   sc = (float)e[kmax];
-  if (i >= 8 && i <= 11)
-    printf("^^max i %d kmax %d pm %f %f | %f %f | %f %f | %f %f | sc %f\n", i, kmax, pm[i-1][0],(float)e[0],pm[i-1][1],(float)e[1],pm[i-1][2],(float)e[2],pm[i-1][3],(float)e[3],sc); 
   
   return (SCVAL)sc;
 }
