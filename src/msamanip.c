@@ -15,6 +15,7 @@
 	
 #include "easel.h"
 #include "esl_distance.h"
+#include "esl_dsq.h"
 #include "esl_msa.h"
 #include "esl_msacluster.h"
 #include "esl_msaweight.h"
@@ -368,7 +369,7 @@ int msamanip_Getsqlen(ESL_MSA *msa)
   int status;
   
   ESL_ALLOC(msa->sqlen, sizeof(int64_t) * msa->nseq);  
-  for (n = 0; n < msa->nseq; n++) msa->sqlen[n] = esl_abc_dsqlen(msa->ax[n]);
+  for (n = 0; n < msa->nseq; n++) msa->sqlen[n] = esl_dsq_GetLen(msa->ax[n]);
 
   return eslOK;
 
@@ -556,9 +557,9 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 
   for (n = 0; n < omsa->ngc; n++) {
     if (strcmp(omsa->gc_tag[n], "seq_cons") == 0) {
-      esl_abc_CreateDsq(omsa->abc, omsa->gc[n], &dsq);
-      clen = (double)esl_abc_dsqrlen(omsa->abc, dsq);
-      alen = esl_abc_dsqlen(dsq);
+      esl_dsq_Create(omsa->abc, omsa->gc[n], &dsq);
+      clen = (double)esl_dsq_GetRawLen(omsa->abc, dsq);
+      alen = esl_dsq_GetLen(dsq);
       break;
     }
   }

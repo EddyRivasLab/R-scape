@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.0.4.a], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.0.4.b], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -119,7 +119,7 @@ E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
 RSCAPE_DATE="Dec 2023"
-RSCAPE_COPYRIGHT="Copyright (C) 2016 Howard Hughes Medical Institute."
+RSCAPE_COPYRIGHT="Copyright (C) 2023 Howard Hughes Medical Institute."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://rivaslab.org/"

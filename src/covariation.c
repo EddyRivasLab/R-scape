@@ -465,7 +465,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				&newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
-      if (data->verbose) 
+      if (1||data->verbose) 
 	fprintf(stdout, "# GammaFIT: pmass %f mu %f lambda %f tau %f | pmass %f\n", newmass, data->mu, data->lambda, data->tau, pmass);
       
     }
@@ -1879,7 +1879,8 @@ cov_NullFitExponential(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, dou
 }
 
 int 
-cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k, int verbose, char *errbuf)
+cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *ret_newmass, double *ret_mu, double *ret_lambda, double *ret_k,
+		 int verbose, char *errbuf)
 {
   double         ep[3];  	/* ep[0] = mu; ep[1]=lambda=1/2; ep[2] = tau = k/2 */
   double         newmass;

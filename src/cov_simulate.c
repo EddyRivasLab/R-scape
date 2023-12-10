@@ -11,6 +11,7 @@
 
 #include "easel.h"
 #include "esl_dmatrix.h"
+#include "esl_dsq.h"
 #include "esl_getopts.h"
 #include "esl_histogram.h"
 #include "esl_msafile.h"
@@ -195,7 +196,7 @@ static void
 ax_dump(ESL_DSQ *dsq)
 {
   int i;
-  for (i = 1; i <= esl_abc_dsqlen(dsq); i ++) 
+  for (i = 1; i <= esl_dsq_GetLen(dsq); i ++) 
     printf("%d", dsq[i]);
   printf("\n");
 }
@@ -250,8 +251,8 @@ cov_evolve_root_ungapped_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, i, atbl);
 
     if (verbose) {
-      printf("\n%s | len %" PRId64 " \n", msa->sqname[nidx[v]], esl_abc_dsqlen(msa->ax[nidx[v]])); ax_dump(msa->ax[nidx[v]]); 
-      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[inodes+i], i, esl_abc_dsqlen(msa->ax[inodes+i])); ax_dump(msa->ax[inodes+i]); 
+      printf("\n%s | len %" PRId64 " \n", msa->sqname[nidx[v]], esl_dsq_GetLen(msa->ax[nidx[v]])); ax_dump(msa->ax[nidx[v]]); 
+      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[inodes+i], i, esl_dsq_GetLen(msa->ax[inodes+i])); ax_dump(msa->ax[inodes+i]); 
     }
 
   }
@@ -274,7 +275,7 @@ cov_evolve_root_ungapped_rand(ESL_RANDOMNESS *r, int N, int noss, struct ribomat
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to create sequence %d\n", errbuf, i);
 
     if (verbose) {
-      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[inodes+i], i, esl_abc_dsqlen(msa->ax[inodes+i])); ax_dump(msa->ax[inodes+i]); 
+      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[inodes+i], i, esl_dsq_GetLen(msa->ax[inodes+i])); ax_dump(msa->ax[inodes+i]); 
     }
 
   }
@@ -307,12 +308,12 @@ cov_evolve_root_ungapped_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, i
       ESL_XFAIL(eslFAIL, errbuf, "%s\nungapped:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, dr, rd);
 
     if (verbose) {
-      printf("\n%s | len %" PRId64 " \n", msa->sqname[nidx[v]], esl_abc_dsqlen(msa->ax[nidx[v]])); ax_dump(msa->ax[nidx[v]]);  
-      if (dl > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dl]], nidx[dl],  esl_abc_dsqlen(msa->ax[nidx[dl]]));   ax_dump(msa->ax[nidx[dl]]);  }  
-      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[inodes-dl], inodes-dl, esl_abc_dsqlen(msa->ax[inodes-dl])); ax_dump(msa->ax[inodes-dl]); } 
+      printf("\n%s | len %" PRId64 " \n", msa->sqname[nidx[v]], esl_dsq_GetLen(msa->ax[nidx[v]])); ax_dump(msa->ax[nidx[v]]);  
+      if (dl > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dl]], nidx[dl],  esl_dsq_GetLen(msa->ax[nidx[dl]]));   ax_dump(msa->ax[nidx[dl]]);  }  
+      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[inodes-dl], inodes-dl, esl_dsq_GetLen(msa->ax[inodes-dl])); ax_dump(msa->ax[inodes-dl]); } 
       
-      if (dr > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dr]],  nidx[dr], esl_abc_dsqlen(msa->ax[nidx[dr]]));   ax_dump(msa->ax[nidx[dr]]);  }
-      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[inodes-dr], inodes-dr, esl_abc_dsqlen(msa->ax[inodes-dr])); ax_dump(msa->ax[inodes-dr]); }
+      if (dr > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dr]],  nidx[dr], esl_dsq_GetLen(msa->ax[nidx[dr]]));   ax_dump(msa->ax[nidx[dr]]);  }
+      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[inodes-dr], inodes-dr, esl_dsq_GetLen(msa->ax[inodes-dr])); ax_dump(msa->ax[inodes-dr]); }
      }
   }
   
@@ -345,11 +346,11 @@ cov_evolve_indels_tree(ESL_RANDOMNESS *r, ESL_TREE *T, E1_RATE *e1rate, E1_RATE 
       ESL_XFAIL(eslFAIL, errbuf, "%s\nindels:failed to evolve from parent %d to daughther %d after time %f", errbuf, v, dr, rd);
 
     if (verbose) {
-      if (dl > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dl]], nidx[dl],   esl_abc_dsqlen(msa->ax[nidx[dl]]));  ax_dump(msa->ax[nidx[dl]]);  }  
-      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[T->N-1-dl], T->N-1-dl, esl_abc_dsqlen(msa->ax[T->N-1-dl])); ax_dump(msa->ax[T->N-1-dl]); } 
+      if (dl > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dl]], nidx[dl],   esl_dsq_GetLen(msa->ax[nidx[dl]]));  ax_dump(msa->ax[nidx[dl]]);  }  
+      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[T->N-1-dl], T->N-1-dl, esl_dsq_GetLen(msa->ax[T->N-1-dl])); ax_dump(msa->ax[T->N-1-dl]); } 
       
-      if (dr > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dr]],  nidx[dr],  esl_abc_dsqlen(msa->ax[nidx[dr]]));  ax_dump(msa->ax[nidx[dr]]);  }
-      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[T->N-1-dr], T->N-1-dr, esl_abc_dsqlen(msa->ax[T->N-1-dr])); ax_dump(msa->ax[T->N-1-dr]); }
+      if (dr > 0) { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[nidx[dr]],  nidx[dr],  esl_dsq_GetLen(msa->ax[nidx[dr]]));  ax_dump(msa->ax[nidx[dr]]);  }
+      else        { printf("%s[%d] | len %" PRId64 "\n", msa->sqname[T->N-1-dr], T->N-1-dr, esl_dsq_GetLen(msa->ax[T->N-1-dr])); ax_dump(msa->ax[T->N-1-dr]); }
      }
   }
   
@@ -373,7 +374,7 @@ cov_evolve_indels_star(ESL_RANDOMNESS *r, int N, double atbl, E1_RATE *e1rate, E
       ESL_XFAIL(eslFAIL, errbuf, "%s\nfailed to evolve from parent %d to daughther %d after time %f", errbuf, v, i, atbl);
 
     if (verbose) { 
-      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[i], i, esl_abc_dsqlen(msa->ax[i])); ax_dump(msa->ax[i]);   
+      printf("%s[%d] | len %" PRId64 " \n", msa->sqname[i], i, esl_dsq_GetLen(msa->ax[i])); ax_dump(msa->ax[i]);   
     }
   }
 
@@ -397,7 +398,7 @@ cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int
 
   //printf("\nEMIT node %d --> %d %f\n", p, d, time);
   /* evolve the e1rate and ribosums to time */
-  e1model = e1_model_Create(e1rate, time, NULL, NULL, e2_GLOBAL, esl_abc_dsqrlen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
+  e1model = e1_model_Create(e1rate, time, NULL, NULL, e2_GLOBAL, esl_dsq_GetRawLen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
   if (e1model == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to evolve e1model to time %f", time);
   if (verbose) esl_dmatrix_Dump(stdout, e1model->sub, NULL, NULL);
   
@@ -422,12 +423,12 @@ cov_evolve_ascendant_to_descendant_ungapped(ESL_RANDOMNESS *r, int *ret_idx, int
 
   status = cov_emit_ungapped(r, e1model, noss, riboP, riboM, nidx[p], didx, ct, msa, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  msa->sqlen[didx] = esl_abc_dsqrlen(msa->abc, msa->ax[didx]);
+  msa->sqlen[didx] = esl_dsq_GetRawLen(msa->abc, msa->ax[didx]);
 
   if (verbose) {
-    printf("ungapped:ancestral[%d] %s  | len = %" PRId64 " \n", nidx[p], msa->sqname[nidx[p]], esl_abc_dsqlen(msa->ax[nidx[p]]));
+    printf("ungapped:ancestral[%d] %s  | len = %" PRId64 " \n", nidx[p], msa->sqname[nidx[p]], esl_dsq_GetLen(msa->ax[nidx[p]]));
     ax_dump(msa->ax[nidx[p]]);
-    printf("ungapped:descendant[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_abc_dsqlen(msa->ax[didx]));
+    printf("ungapped:descendant[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_dsq_GetLen(msa->ax[didx]));
     ax_dump(msa->ax[didx]);
   }
   
@@ -470,10 +471,10 @@ cov_create_random(ESL_RANDOMNESS *r, int *ret_idx, int *nidx, int d, int inodes,
 
   status = cov_emit_random(r, noss, riboM, urnaM, didx, ct, msa, errbuf, verbose);
   if (status != eslOK) goto ERROR;
-  msa->sqlen[didx] = esl_abc_dsqrlen(msa->abc, msa->ax[didx]);
+  msa->sqlen[didx] = esl_dsq_GetRawLen(msa->abc, msa->ax[didx]);
 
   if (verbose) {
-    printf("ungapped:rand[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_abc_dsqlen(msa->ax[didx]));
+    printf("ungapped:rand[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_dsq_GetLen(msa->ax[didx]));
     ax_dump(msa->ax[didx]);
   }
   
@@ -508,8 +509,8 @@ cov_evolve_ascendant_to_descendant_indels(ESL_RANDOMNESS *r, int *ret_idx, int *
   esl_vec_D2F(e1rate->em->f, K, ins);
  
   /* evolve the e1rate to time */
-  e1model  = e1_model_Create(e1rate,  time, NULL, ins, e2_GLOBAL, esl_abc_dsqrlen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
-  e1modelB = e1_model_Create(e1rateB, time, NULL, ins, e2_GLOBAL, esl_abc_dsqrlen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
+  e1model  = e1_model_Create(e1rate,  time, NULL, ins, e2_GLOBAL, esl_dsq_GetRawLen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
+  e1modelB = e1_model_Create(e1rateB, time, NULL, ins, e2_GLOBAL, esl_dsq_GetRawLen(msa->abc, msa->ax[nidx[p]]), msa->abc, tol, errbuf, verbose); 
   if (e1model  == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to evolve e1model to time %f", time);
   if (e1modelB == NULL) ESL_XFAIL(eslFAIL, errbuf, "failed to evolve e1modelB to time %f", time);
 
@@ -535,10 +536,10 @@ cov_evolve_ascendant_to_descendant_indels(ESL_RANDOMNESS *r, int *ret_idx, int *
   else       { didx = inodes - d;                 }
 
   if ((status = cov_emit_indels(r, e1model, e1modelB, didx, ret_ct, msa, errbuf, verbose)) != eslOK) goto ERROR;
-  msa->sqlen[didx] = esl_abc_dsqrlen(msa->abc, msa->ax[didx]);
+  msa->sqlen[didx] = esl_dsq_GetRawLen(msa->abc, msa->ax[didx]);
 
   if (verbose) {
-    printf("withindels[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_abc_dsqlen(msa->ax[didx]));
+    printf("withindels[%d] %s | len = %" PRId64 " \n", didx, msa->sqname[didx], esl_dsq_GetLen(msa->ax[didx]));
     ax_dump(msa->ax[didx]);
     char *ss = NULL;
     ESL_ALLOC(ss, sizeof(char)*(msa->alen+1));
@@ -824,7 +825,7 @@ cov_insert(ESL_RANDOMNESS *r, int sqidx, int pos, int **ret_ct, ESL_MSA *msa, do
       else            { msa->ax[i][pos+n] = K;                    }
     } 
     
-    msa->sqlen[i] = esl_abc_dsqlen(msa->ax[i]);
+    msa->sqlen[i] = esl_dsq_GetLen(msa->ax[i]);
   }
   
   /* update ss_cons */

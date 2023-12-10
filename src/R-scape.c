@@ -2324,7 +2324,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (msa->nseq*msa->alen < 1e3) { nshuffle = 200; }
       if (msa->alen < 50)            { nshuffle = 200; }
       if (msa->alen < 40)            { nshuffle = 300; }
-      if (msa->nseq < 4)             { nshuffle = 300; }
+      if (msa->nseq < 4)             { nshuffle = 300; if (cfg->mstat->avgid > 0.80) cfg->pmass = 1e-9; }
     }
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
 
