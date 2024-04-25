@@ -51,7 +51,7 @@
 
 /* Optional processor specific support
  */
-#define HAVE_FLUSH_ZERO_MODE 1
+/* #undef HAVE_FLUSH_ZERO_MODE */
 
 /* Debugging hooks
  */

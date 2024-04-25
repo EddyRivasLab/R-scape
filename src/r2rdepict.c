@@ -133,8 +133,8 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
     if (status != eslOK) goto ERROR;
   }
 
-  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
-  remove(metafile);
+  //for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
+  //remove(metafile);
   
   for (s = 1; s < nct; s ++) if (r2rpkfile[s]) free(r2rpkfile[s]);
   free(metafile);
@@ -657,7 +657,7 @@ r2r_keep(ESL_MSA *msa, int r2rall)
     if (tagidx < msa->ngf) { //remove 
       for (idx = tagidx; idx < msa->ngf-1; idx++) {
 	free(msa->gf_tag[idx]); msa->gf_tag[idx] = NULL; 
-	free(msa->gf[idx]);      msa->gf[idx] = NULL; 
+	free(msa->gf[idx]);     msa->gf[idx] = NULL; 
 	esl_sprintf(&msa->gf_tag[idx], msa->gf_tag[idx+1]);
 	esl_sprintf(&msa->gf[idx],     msa->gf[idx+1]);
       }
@@ -799,12 +799,14 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
     
     esl_sprintf(&cmd, "%s/SelectSubFamilyFromStockholm.pl", RSCAPE_BIN);
     esl_sprintf(&args, "%s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
+    if (verbose) printf("%s\n", args);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run R2R script SelectSubFamilyFromStockholm.pl\n");
     free(args); args = NULL;
     
     // now again run the script to modify a perfectly good stockholm file into something that R2R can digest
     esl_sprintf(&args, "%s/r2r_msa_comply.pl %s", RSCAPE_BIN, r2rpkfile[s]);
+    if (verbose) printf("%s\n", args);
     status = system(args);
     if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run r2r_msa_comply\n");
     free(cmd);  cmd = NULL;

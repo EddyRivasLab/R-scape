@@ -1052,7 +1052,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 		
 		status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_HL, m, n, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 		if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D HL caco failed");
-		if ((j==11&&d==4&&m==0&&n==0)||verbose) 
+		if (verbose) 
 		  printf("R3D CYK m=%d HL[n=%d] %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, n, cyk_r3d->HLmx[m]->mx->mx[n]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	      }
 	    }
@@ -1165,7 +1165,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG R caco-cyk failed");
 	status = dp_recursion_rbg_cyk(allow, foldparam, p, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, RBG_S,  j, d, &(cyk->S->dp[j][d]),  NULL, NULL, errbuf, verbose);
 	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "RBG S caco-cyk failed");
-	if ((j==64 && (d==60 ||d== 59)) ||verbose) {
+	if (verbose) {
 	  if (p->G == RBG)
 	    printf("RBG CYK ML=%f P=%f M1=%f R=%f F5=%f F0=%f S=%f | i=%d j=%d d=%d L=%d | covct %d %d\n", 
 		   cyk->ML->dp[j][d], cyk->P->dp[j][d], cyk->M1->dp[j][d], cyk->R->dp[j][d],

@@ -465,7 +465,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       status = cov_NullFitGamma(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				&newmass, &data->mu, &data->lambda, &data->tau, data->verbose, data->errbuf);      
       if (status != eslOK) ESL_XFAIL(eslFAIL, data->errbuf, "bad Gamma fit.");
-      if (1||data->verbose) 
+      if (data->verbose) 
 	fprintf(stdout, "# GammaFIT: pmass %f mu %f lambda %f tau %f | pmass %f\n", newmass, data->mu, data->lambda, data->tau, pmass);
       
     }

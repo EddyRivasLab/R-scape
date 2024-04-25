@@ -45,8 +45,8 @@
 --CHI,--CHIa,--CHIp,\
 --GT,--GTa,--GTp,\
 --MI,--MIa,--MIp,\
- --MIr,--MIra,--MIrp,\
- --MIg,--MIga,--MIgp,\
+--MIr,--MIra,--MIrp,\
+--MIg,--MIga,--MIgp,\
 --OMES,--OMESa,--OMESp,\
 --RAF,--RAFa,--RAFp,\
 --RAFS,--RAFSa,--RAFSp,\
@@ -1084,6 +1084,8 @@ main(int argc, char **argv)
     if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
 
+    original_msa_doctor_names(&msa); 
+
     // reset the histogram step for each msa
     cfg.w = W;  /* default. histogram step, will be determined for each msa */
 
@@ -1868,19 +1870,19 @@ original_msa_doctor_names(ESL_MSA **omsa)
   int      s;
 
   // check the msa name does not include a pipe '|'
-  
-  // the msaname (ID) has to be free of '/', '|", and ':' symbols
+ 
+  // the msaname (ID) has to be free of '/', '|', and ':' symbols
   if (msa->name) {
     for (p = msa->name; (p = strchr(p, '/'));  ++p) 
-     *p = '_';
+      *p = '_';
     for (p = msa->name; (p = strchr(p, '|'));  ++p) 
-     *p = '_';
+      *p = '_';
     for (p = msa->name; (p = strchr(p, ':'));  ++p) 
-     *p = '_';
+      *p = '_';
     for (p = msa->name; (p = strchr(p, '%'));  ++p) 
-     *p = '_';
+      *p = '_';
     for (p = msa->name; (p = strchr(p, '\'')); ++p) 
-     *p = '_';
+      *p = '_';
     
     (*omsa)->name = msa->name;
   }
@@ -1902,7 +1904,7 @@ original_msa_doctor_names(ESL_MSA **omsa)
       
     (*omsa)->sqname[s] = sqname;
   }
-
+  
   return eslOK;
 }
 
@@ -2299,6 +2301,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   esl_vec_DDump(stdout, cfg->fnbp, cfg->abc->K, "nonbasepairs BC");
 #endif
 
+  
   // Print some alignment information
   msa_banner(stdout, outname, cfg->mstat, cfg->omstat, cfg->nbpairs, cfg->onbpairs, cfg->samplesize, cfg->statsmethod);
   
