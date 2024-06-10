@@ -49,7 +49,7 @@
  *  F0 -> a F5 a' | a P a'  | aa'
  *  F5 -> a F5 a' | a P a'  | aa'
  *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | MJ
- *  ML -> J3 | J4 | JJ
+ *  MJ -> J3 | J4 | JJ
  *  J3 -> M1 R
  *  J4 -> M1 J3
  *  JJ -> M1 JJ   | M1 J4

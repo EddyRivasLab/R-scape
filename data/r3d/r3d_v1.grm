@@ -47,7 +47,7 @@ HL   GNRA         -         -          GNRA-tetraloop
 #IL   GAMU          RUGA           -              -              -            -             Loop-E
  IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
 #IL   -             -              R,A,R,R,R,U,A  A,U,R,R,N,A,R  -            -             Loop-E
- IL   UAAG          UAU            C,C            G,G            -            -             Tetraloop-receptor
+ IL   UAAG          UAU            C,C            G,G            -            -             GAAA_Tetraloop-receptor
  IL   CVC           V              -              -              -            -             C-loop
  IL   G             -              G,A            A,A            U,A          A,G           G-bulge
  IL   G             -              U,A            C,C            U,A          A,G           G-bulge_Das
