@@ -24,7 +24,6 @@ static void delete_file(char *pdbfile, char *extension);
 
 int main(int argc, char *argv[])
 {
-  clock_t start, finish;
   long    i;
   
   ARGV=cmatrix(0, 6, 0, 40);/*6 argument and 40 length each */
@@ -33,8 +32,6 @@ int main(int argc, char *argv[])
   for(i=0; i<argc; i++){
     strcpy(ARGV[i], argv[i]);
   }
-  
-  start = clock();
   
   if (argc <= 1 || (argc == 2 && strstr(argv[1], "-h")))
     usage();
@@ -48,9 +45,6 @@ int main(int argc, char *argv[])
     process_single_file(argc, argv);
   }
   
-  finish = clock();
-  //printf( "\nTime used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
-  //fprintf(stderr, "\nJOB finished! Time used: %.2f seconds\n", ((double) (finish - start)) / CLOCKS_PER_SEC);
   free_cmatrix(ARGV, 0, 6, 0,40);
  
   return 0;    
@@ -571,7 +565,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   char HB_ATOM[BUF512], ALT_LIST[BUF512];
   char *user_chain = NULL;
   char *ChainID, *bseq, **AtomName, **ResName, **Miscs;
-  long i, j, k, m, n, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
+  long i, j, k, m, ie, ib, dna_rna, num, num_residue, nres, bs_atoms;
   long *ResSeq, *RY, **seidx, num_modify, *modify_idx;
   long *AtomNum, *Atom2SEQ;
   long nchain_tot;
@@ -727,7 +721,6 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	    Miscs[bs_atoms][m] = Miscs[j][m];
 	  for(m = 1 ; m <=3; m++)
 	    xyz[bs_atoms][m] = xyz[j][m];
-	  n=bs_atoms;
 	}
       }
 

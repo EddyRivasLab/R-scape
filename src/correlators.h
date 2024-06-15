@@ -192,6 +192,7 @@ enum cttype_e {
   CTTYPE_RM_IL,
   CTTYPE_RM_J3,
   CTTYPE_RM_J4,
+  CTTYPE_RM_BS,
   CTTYPE_NONE,
 };
 

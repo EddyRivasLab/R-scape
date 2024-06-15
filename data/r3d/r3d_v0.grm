@@ -28,8 +28,9 @@
 # N = A/C/G/U
 #
 
-#HL  5'-L Loop R
-#HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
+
+
+#BS  5'- Loop 
+#HL  Loop(5'-3')  name
 #------------------------------------------------------------------------------------------------------------------
-HL   GNRA         -         -          GNRA-tetraloop
-#HL   N            G         RA         GNRA-tetraloop
+BS	 UKNRW	T-loop

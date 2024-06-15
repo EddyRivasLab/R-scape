@@ -70,4 +70,7 @@ J3	N	  CUGAUGA    GAA			J3_hammerhead
 J4	N  	   -	      NNN	  -	        J4_tRNA
 J4	N  	   N	      NN	  -	        J4_manA
 
- 
+#BB  5'- Loop 
+#HL  Loop(5'-3')  name
+#------------------------------------------------------------------------------------------------------------------
+BB	 UKNRW	T-loop

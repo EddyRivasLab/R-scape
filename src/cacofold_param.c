@@ -59,10 +59,12 @@
  *  F5 -> a F5 a' | a P a'  | aa'
  *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
  *  ML -> J3 | J4 | JJ
- *  J3 -> M1 R
- *  J3 -> M1 J3
- *  JJ => M1 JJ   | M1 J4
- *  R  ->    R a  | M1
+ *  J3 -> BB BT
+ *  J3 -> BB J3
+ *  JJ -> BB JJ   | BB J4
+ *  BB -> M1
+ *  BT -> R
+ *  R  ->    R a  | BB
  *  M1 -> a M1    | F0
  *
  */
@@ -191,6 +193,10 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   p->tJJ[0] = RBG_PRELOADS_TrATrBTrB.tJJ[0];
   p->tJJ[1] = RBG_PRELOADS_TrATrBTrB.tJJ[1];
 
+  p->tBB[0] = RBG_PRELOADS_TrATrBTrB.tBB[0];
+  
+  p->tBT[0] = RBG_PRELOADS_TrATrBTrB.tBT[0];
+
   p->tR[0]  = RBG_PRELOADS_TrATrBTrB.tR[0];
   p->tR[1]  = RBG_PRELOADS_TrATrBTrB.tR[1];
 
@@ -295,6 +301,10 @@ CACO_RBGJ3J4_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   p->tJJ[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJJ[0];
   p->tJJ[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tJJ[1];
   
+  p->tBB[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tBB[0];
+  
+  p->tBT[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tBT[0];
+
   p->tR[0]  = RBGJ3J4_PRELOADS_TrATrBTrB.tR[0];
   p->tR[1]  = RBGJ3J4_PRELOADS_TrATrBTrB.tR[1];
 
@@ -427,6 +437,23 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
     rbgp->tJ4[0]    = log(1.0 - exp(r3dp->J4p->pJ4));
     r3dp->J4p->pJ4 -= log(r3d->nJ4_total);
     if (verbose) printf("J4 %f rest %f\n", rbgp->tJ4[0], r3dp->J4p->pJ4);
+  }
+
+  // modify the  BB -> M1
+  //  to
+  //             BB -> (1-pBS)  M1   | pBS/nBS  BB_1  | ... | pBS/nBS  BB_{nBS}  
+  if (r3d->nBS_total > 0) {
+    rbgp->tBB[0]    = log(1.0 - exp(r3dp->BSp->pBS));
+    r3dp->BSp->pBS -= log(r3d->nBS_total);
+    if (verbose) printf("BB %f rest %f\n", rbgp->tBB[0], r3dp->BSp->pBS);
+  }
+
+  // modify the  BT -> R
+  //  to
+  //             BT -> (1-pBS)  M1   | pBS/nBS  BT_1  | ... | pBS/nBS  BT_{nBS}  
+  if (r3d->nBS_total > 0) {
+    rbgp->tBT[0]    = log(1.0 - exp(r3dp->BSp->pBS));
+    if (verbose) printf("BT %f rest %f\n", rbgp->tBT[0], r3dp->BSp->pBS);
   }
 
   *ret_rbgp = rbgp;

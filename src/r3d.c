@@ -29,26 +29,29 @@ static int  r3d_read_BL(esl_pos_t i, char *p, esl_pos_t n, R3D_BL **ret_BL, ESL_
 static int  r3d_read_IL(esl_pos_t i, char *p, esl_pos_t n, R3D_IL **ret_IL, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_J3(esl_pos_t i, char *p, esl_pos_t n, R3D_J3 **ret_J3, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *abc, char *errbuf, int verbose);
+static int  r3d_read_BS(esl_pos_t i, char *p, esl_pos_t n, R3D_BS **ret_BS, ESL_ALPHABET *abc, char *errbuf, int verbose);
 static int  r3d_add_rotatedBL(int b,            R3D *r3d, char *errbuf, int verbose);
 static int  r3d_add_rotatedIL(int b,            R3D *r3d, char *errbuf, int verbose);
 static int  r3d_add_rotatedJ3(int b, int which, R3D *r3d, char *errbuf, int verbose);
 static int  r3d_add_rotatedJ4(int b, int which, R3D *r3d, char *errbuf, int verbose);
+static int  r3d_add_rotatedBS(int b,            R3D *r3d, char *errbuf, int verbose);
 static int  r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2);
 static int  r3d_identical_IL(R3D_IL *IL1, R3D_IL *IL2);
 static int  r3d_identical_J3(R3D_J3 *J3a, R3D_J3 *J3b);
 static int  r3d_identical_J4(R3D_J4 *J4a, R3D_J4 *J4b);
+static int  r3d_identical_BS(R3D_BS *BSa, R3D_BS *BSb);
 static void r3d_write_HL(FILE *fp, R3D_HL *HL, int verbose);
 static void r3d_write_BL(FILE *fp, R3D_BL *BL, int verbose);
 static void r3d_write_IL(FILE *fp, R3D_IL *IL, int verbose);
 static void r3d_write_J3(FILE *fp, R3D_J3 *J3, int verbose);
 static void r3d_write_J4(FILE *fp, R3D_J4 *J4, int verbose);
+static void r3d_write_BS(FILE *fp, R3D_BS *BS, int verbose);
 
 const R3D_HLparam R3D_HL_PRELOADS = {
   pRM,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
-
 const R3D_BLparam R3D_BL_PRELOADS = {
   pRM, pRM,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
@@ -64,6 +67,9 @@ const R3D_J3param R3D_J3_PRELOADS = {
 };
 const R3D_J4param R3D_J4_PRELOADS = {
   pRM_J4,
+};
+const R3D_BSparam R3D_BS_PRELOADS = {
+  pRM_BS,
 };
 
 extern R3D*
@@ -93,11 +99,13 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   r3d->nIL  = 0;
   r3d->nJ3  = 0;
   r3d->nJ4  = 0;
+  r3d->nBS  = 0;
   r3d->HL   = NULL;
   r3d->BL   = NULL;
   r3d->IL   = NULL;
   r3d->J3   = NULL;
   r3d->J4   = NULL;
+  r3d->BS   = NULL;
   r3d->maxM = 0;
 
   while (( status = esl_buffer_GetLine(bf, &p, &n)) == eslOK) 
@@ -158,7 +166,18 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
 	
 	status = r3d_read_J4(i, p, n, &(r3d->J4[idx]), abc, errbuf, verbose);
 	if (status != eslOK) esl_fatal("r3d_read_J4() failed with error code %d", status);
-     }
+      }
+      else if (p[i] == 'B' && p[i+1] == 'S') { // BS = Multiloop branch module
+	i += 2;
+	r3d->nBS ++;
+	if (r3d->nBS == 1) ESL_ALLOC  (r3d->BS, sizeof(R3D_BS *) * r3d->nBS);
+	else               ESL_REALLOC(r3d->BS, sizeof(R3D_BS *) * r3d->nBS);
+	idx = r3d->nBS-1;
+
+	status = r3d_read_BS(i, p, n, &(r3d->BS[idx]), abc, errbuf, verbose);
+	if (status != eslOK) esl_fatal("r3d_read_BS() failed with error code %d", status);
+      }
+   
     }
   
   if (status != eslEOF) esl_fatal("file %s: expected EOF, got code %d", bf->filename, status);
@@ -196,6 +215,13 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
     }
   }
 
+  // Add the rotated BSs
+  r3d->nBS_total = r3d->nBS;
+  for (k = 0; k < r3d->nBS; k ++) {
+    status = r3d_add_rotatedBS(k, r3d, errbuf, verbose);
+    if (status != eslOK) esl_fatal("r3d_add_rotatedBS() failed with error code %d", status);
+  }
+  
   // Finally create the HMMs
   for (k = 0; k < r3d->nHL; k ++) {
     status = R3D_HL_HMMCreate(r3d->HL[k], &r3d->maxM, errbuf, verbose);
@@ -216,6 +242,10 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   for (k = 0; k < r3d->nJ4_total; k ++) {
     status = R3D_J4_HMMCreate(r3d->J4[k], &r3d->maxM, errbuf, verbose);
     if (status != eslOK) esl_fatal("R3D_J4_HMMCreate() failed with error code %d", status);
+  }
+  for (k = 0; k < r3d->nBS_total; k ++) {
+    status = R3D_BS_HMMCreate(r3d->BS[k], &r3d->maxM, errbuf, verbose);
+    if (status != eslOK) esl_fatal("R3D_BS_HMMCreate() failed with error code %d", status);
   }
 
   return r3d;
@@ -407,6 +437,27 @@ R3D_J4_Create(ESL_ALPHABET *abc)
   r3d_J4->abc = abc;
 
   return r3d_J4;
+
+ ERROR:
+  return NULL;
+}
+
+R3D_BS *
+R3D_BS_Create(ESL_ALPHABET *abc)
+{
+  R3D_BS *r3d_BS = NULL;
+  int     nb;
+  int     n;
+  int     status;
+  
+  ESL_ALLOC(r3d_BS, sizeof(R3D_BS));
+  r3d_BS->name    = NULL;
+  r3d_BS->Loop    = NULL;
+  r3d_BS->HMMLoop = NULL;
+  
+  r3d_BS->abc = abc;
+
+  return r3d_BS;
 
  ERROR:
   return NULL;
@@ -624,6 +675,29 @@ R3D_J4_HMMCreate(R3D_J4 *J4, int *ret_maxM, char *errbuf, int verbose)
   return status;
 }
 
+extern int
+R3D_BS_HMMCreate(R3D_BS *BS, int *ret_maxM, char *errbuf, int verbose)
+{
+  char *name = NULL;
+  int   maxM = *ret_maxM;
+  int   n;
+  int   status;
+
+  esl_sprintf(&name, "%s.Loop", BS->name);
+  BS->HMMLoop = R3D_hmm_Create(BS->abc, BS->Loop, name, errbuf, verbose);
+  if (!BS->HMMLoop) esl_fail(errbuf, "R3D_BS_HMMCreate() Loop failed");
+  if (BS->HMMLoop->M > maxM) maxM = BS->HMMLoop->M;
+
+  *ret_maxM = maxM;
+
+  if (name) free(name);
+  return eslOK;
+
+ ERROR:
+  if (name) free(name);
+  return status;
+}
+
 void
 R3D_Destroy(R3D *r3d)
 {
@@ -637,6 +711,7 @@ R3D_Destroy(R3D *r3d)
   if (r3d->IL) { for (i = 0; i < r3d->nIL_total; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
   if (r3d->J3) { for (j = 0; j < r3d->nJ3_total; j ++) if (r3d->J3[j]) R3D_J3_Destroy(r3d->J3[j]); free(r3d->J3); }
   if (r3d->J4) { for (j = 0; j < r3d->nJ4_total; j ++) if (r3d->J4[j]) R3D_J4_Destroy(r3d->J4[j]); free(r3d->J4); }
+  if (r3d->BS) { for (j = 0; j < r3d->nBS_total; j ++) if (r3d->BS[j]) R3D_BS_Destroy(r3d->BS[j]); free(r3d->BS); }
   if (r3d) free(r3d);
 }
 
@@ -743,6 +818,17 @@ R3D_J4_Destroy(R3D_J4 *r3d_J4)
   if (r3d_J4->HMMJ4_S4)  R3D_hmm_Destroy(r3d_J4->HMMJ4_S4);
   if (r3d_J4)            free(r3d_J4);
 }
+void
+R3D_BS_Destroy(R3D_BS *r3d_BS)
+{
+  int n;
+  
+  if (r3d_BS->name)    free(r3d_BS->name);
+  if (r3d_BS->Loop)    free(r3d_BS->Loop);
+  if (r3d_BS->HMMLoop) R3D_hmm_Destroy(r3d_BS->HMMLoop);
+  
+  if (r3d_BS) free(r3d_BS);
+}
 
 extern int
 R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
@@ -756,6 +842,7 @@ R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
    ESL_ALLOC(r3dp->ILp, sizeof(R3D_ILparam));
    ESL_ALLOC(r3dp->J3p, sizeof(R3D_J3param));
    ESL_ALLOC(r3dp->J4p, sizeof(R3D_J4param));
+   ESL_ALLOC(r3dp->BSp, sizeof(R3D_BSparam));
 
    r3dp->HLp->pHL         = log(R3D_HL_PRELOADS.pHL);
    r3dp->HLp->pHL_LR[0]   = log(R3D_HL_PRELOADS.pHL_LR[0]);
@@ -790,6 +877,9 @@ R3D_GetParam(R3Dparam **ret_r3dp, char *errbuf, int verbose)
 
    r3dp->J3p->pJ3         = log(R3D_J3_PRELOADS.pJ3);
    r3dp->J4p->pJ4         = log(R3D_J4_PRELOADS.pJ4);
+
+   r3dp->BSp->pBS         = log(R3D_BS_PRELOADS.pBS);
+
    
    // renormalize, just in case
    vec_SCVAL_LogNorm(r3dp->HLp->pHL_LR,   4);
@@ -815,6 +905,7 @@ R3D_Param_Destroy(R3Dparam *r3dp)
   if (r3dp->ILp) free(r3dp->ILp);
   if (r3dp->J3p) free(r3dp->J3p);
   if (r3dp->J4p) free(r3dp->J4p);
+  if (r3dp->BSp) free(r3dp->BSp);
   if (r3dp)      free(r3dp);
 }
 
@@ -847,6 +938,10 @@ R3D_Write(FILE *fp, R3D *r3d, int verbose)
   fprintf(fp, "J4 %d/%d\n", r3d->nJ4, r3d->nJ4_total);
   for (i = 0; i < r3d->nJ4_total; i ++) 
     r3d_write_J4(fp, r3d->J4[i], verbose);
+
+  fprintf(fp, "BS %d\n", r3d->nBS);
+  for (h = 0; h < r3d->nBS; h ++)
+    r3d_write_BS(fp, r3d->BS[h], verbose);
 }
 
 
@@ -946,6 +1041,20 @@ R3D_J4MX_Create (int L, R3D_J4 *J4)
   return NULL;
  }
 
+extern R3D_BSMX *
+R3D_BSMX_Create (int L, R3D_BS *BS)
+{
+  R3D_BSMX *BSmx = NULL;
+  int       status;
+  
+  ESL_ALLOC(BSmx, sizeof(R3D_BSMX));
+  BSmx->mx = R3D_RMMX_Create(L, 1);
+  return BSmx;
+  
+ ERROR:
+  return NULL;
+}
+
 extern R3D_MX *
 R3D_MX_Create(int L, R3D *r3d)
 {
@@ -959,16 +1068,19 @@ R3D_MX_Create(int L, R3D *r3d)
   r3dmx->nIL  = r3d->nIL_total;
   r3dmx->nJ3  = r3d->nJ3_total;
   r3dmx->nJ4  = r3d->nJ4_total;
+  r3dmx->nBS  = r3d->nBS_total;
   r3dmx->HLmx = NULL;
   r3dmx->BLmx = NULL;
   r3dmx->ILmx = NULL;
   r3dmx->J3mx = NULL;
   r3dmx->J4mx = NULL;
+  r3dmx->BSmx = NULL;
   if (r3dmx->nHL > 0) ESL_ALLOC(r3dmx->HLmx, sizeof(R3D_HLMX) * r3dmx->nHL);
   if (r3dmx->nBL > 0) ESL_ALLOC(r3dmx->BLmx, sizeof(R3D_BLMX) * r3dmx->nBL);
   if (r3dmx->nIL > 0) ESL_ALLOC(r3dmx->ILmx, sizeof(R3D_ILMX) * r3dmx->nIL);
   if (r3dmx->nJ3 > 0) ESL_ALLOC(r3dmx->J3mx, sizeof(R3D_J3MX) * r3dmx->nJ3);
   if (r3dmx->nJ4 > 0) ESL_ALLOC(r3dmx->J4mx, sizeof(R3D_J4MX) * r3dmx->nJ4);
+  if (r3dmx->nBS > 0) ESL_ALLOC(r3dmx->BSmx, sizeof(R3D_BSMX) * r3dmx->nBS);
   
   for (n = 0; n < r3dmx->nHL; n ++)
     r3dmx->HLmx[n] = R3D_HLMX_Create (L, r3d->HL[n]);
@@ -985,8 +1097,11 @@ R3D_MX_Create(int L, R3D *r3d)
   for (n = 0; n < r3dmx->nJ4; n ++)
     r3dmx->J4mx[n] = R3D_J4MX_Create (L, r3d->J4[n]);
 
-  r3dmx->fwd = R3D_hmx_Create(L, r3d->maxM);
+  for (n = 0; n < r3dmx->nBS; n ++)
+    r3dmx->BSmx[n] = R3D_BSMX_Create (L, r3d->BS[n]);
   
+  r3dmx->fwd = R3D_hmx_Create(L, r3d->maxM);
+   
   return r3dmx;
   
 ERROR:
@@ -1046,6 +1161,14 @@ R3D_J4MX_Destroy(R3D_J4MX *J4mx)
 }
 
 extern void
+R3D_BSMX_Destroy(R3D_BSMX *BSmx)
+{
+  if (!BSmx) return;
+  if (BSmx->mx) R3D_RMMX_Destroy(BSmx->mx);
+  free(BSmx);
+}
+
+extern void
 R3D_MX_Destroy(R3D_MX *r3dmx)
 {
   int n;
@@ -1056,11 +1179,13 @@ R3D_MX_Destroy(R3D_MX *r3dmx)
   for (n = 0; n < r3dmx->nIL; n ++) R3D_ILMX_Destroy(r3dmx->ILmx[n]);
   for (n = 0; n < r3dmx->nJ3; n ++) R3D_J3MX_Destroy(r3dmx->J3mx[n]);
   for (n = 0; n < r3dmx->nJ4; n ++) R3D_J4MX_Destroy(r3dmx->J4mx[n]);
+  for (n = 0; n < r3dmx->nBS; n ++) R3D_BSMX_Destroy(r3dmx->BSmx[n]);
   if (r3dmx->HLmx) free(r3dmx->HLmx);
   if (r3dmx->BLmx) free(r3dmx->BLmx);
   if (r3dmx->ILmx) free(r3dmx->ILmx);
   if (r3dmx->J3mx) free(r3dmx->J3mx);
   if (r3dmx->J4mx) free(r3dmx->J4mx);
+  if (r3dmx->BSmx) free(r3dmx->BSmx);
 
   if (r3dmx->fwd) R3D_hmx_Destroy(r3dmx->fwd);
   
@@ -1496,6 +1621,45 @@ r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *ab
   return status;
 }
 
+static int
+r3d_read_BS(esl_pos_t i, char *p, esl_pos_t n, R3D_BS **ret_BS, ESL_ALPHABET *abc, char *errbuf, int verbose)
+{
+  R3D_BS    *BS = NULL;
+  esl_pos_t  salloc = n-i+1;
+  esl_pos_t  len;
+  int        nB_L, nB_R;
+  int        status;
+
+  BS = R3D_BS_Create(abc);
+  ESL_ALLOC(BS->Loop, sizeof(char) * salloc);
+  ESL_ALLOC(BS->name, sizeof(char) * salloc);
+  BS->type = R3D_TP_BS;
+  
+  // Loop
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    BS->Loop[len++] = p[i++];
+  }
+  BS->Loop[len] = '\0';
+
+  // name
+  len = 0;
+  while ( isspace(p[i]) && i < n) i ++;
+  while (!isspace(p[i]) && i < n) {
+    BS->name[len++] = p[i++];
+  }
+  BS->name[len] = '\0';
+  
+  *ret_BS = BS;
+  return eslOK;
+
+ ERROR:
+  if (BS) R3D_BS_Destroy(BS);
+  return status;
+}
+
+
 // for each BL add its rotated counterpart
 //
 //     5'-- L_{1} ... L_{nB} Loop R_{nB} ... R_{1} --3'   
@@ -1720,6 +1884,51 @@ r3d_add_rotatedJ4(int k, int which, R3D *r3d, char *errbuf, int verbose)
   return status;
 }
 
+// for each BL add its rotated counterpart
+//
+//     5'-- Loop --3'   
+// to
+//     5'-- --3'
+//
+static int
+r3d_add_rotatedBS(int k, R3D *r3d, char *errbuf, int verbose)
+{
+  R3D_BS *BS    = r3d->BS[k];
+  R3D_BS *newBS = NULL;
+  int     b;
+  int     L;
+  int     i;
+  int     status;
+
+  ESL_ALLOC(newBS, sizeof(R3D_BS));
+  newBS->abc = BS->abc;
+  
+  esl_sprintf(&newBS->name, "%s.rot", BS->name);
+  esl_sprintf(&newBS->Loop, "%s",     BS->Loop);
+  newBS->HMMLoop = NULL;
+
+  // swap in place
+  L = strlen(newBS->Loop);
+  for (i = 0; i < L/2; i++)
+    ESL_SWAP(newBS->Loop[i], newBS->Loop[L-i-1], char);
+  
+  if (r3d_identical_BS(BS, newBS)) {
+    R3D_BS_Destroy(newBS); 
+  }
+  else {
+    r3d->nBS_total ++;
+    
+    ESL_REALLOC(r3d->BS, sizeof(R3D_BS *) * r3d->nBS_total);
+    r3d->BS[r3d->nBS_total-1] = newBS;
+  }
+  
+  return eslOK;
+  
+ ERROR:
+  if (newBS) R3D_BS_Destroy(newBS);
+  return status;
+}
+
 static int
 r3d_identical_BL(R3D_BL *BL1, R3D_BL *BL2)
 {
@@ -1802,6 +2011,17 @@ r3d_identical_J4(R3D_J4 *J4a, R3D_J4 *J4b)
   
   return same;
 }
+
+static int
+r3d_identical_BS(R3D_BS *BS1, R3D_BS *BS2)
+{
+  int same = TRUE;
+  
+  if (esl_strcmp(BS1->Loop, BS2->Loop) != 0)  return FALSE;
+
+  return same;
+}
+
 
 static void
 r3d_write_HL(FILE *fp, R3D_HL *HL, int verbose)
@@ -1903,6 +2123,17 @@ r3d_write_J4(FILE *fp, R3D_J4 *J4, int verbose)
   }
 }
 
+static void
+r3d_write_BS(FILE *fp, R3D_BS *BS, int verbose)
+{
+  int n;
+  
+  fprintf(fp, "BS Loop: %s", BS->Loop);
+
+  if (verbose) 
+    R3D_hmm_Write(fp, BS->HMMLoop);
+}
+
 extern int
 R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
 {
@@ -1930,6 +2161,10 @@ R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
    case R3D_TP_J4:
     if (m >= r3d->nJ4_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
     idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total);
+    break;
+    case R3D_TP_BS:
+    if (m >= r3d->nBS) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
+    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total + r3d->nJ4_total);
     break;
   default:
     ESL_XFAIL(eslFAIL, errbuf, "cannot recognize R3D type %d\n", m);
@@ -1961,6 +2196,7 @@ R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
   int      cum_IL = cum_BL + r3d->nIL_total;
   int      cum_J3 = cum_IL + r3d->nJ3_total;
   int      cum_J4 = cum_J3 + r3d->nJ4_total;
+  int      cum_BS = cum_J4 + r3d->nBS_total;
   int      mdx = -ctval;
   int      m;
   int      status;
@@ -1972,7 +2208,8 @@ R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
   else if (mdx <= cum_IL) { type = R3D_TP_ILo; m = mdx - 1 - cum_BL; }
   else if (mdx <= cum_J3) { type = R3D_TP_J3;  m = mdx - 1 - cum_IL; }
   else if (mdx <= cum_J4) { type = R3D_TP_J4;  m = mdx - 1 - cum_J3; }
-  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -cum_J4, ctval);
+  else if (mdx <= cum_BS) { type = R3D_TP_BS;  m = mdx - 1 - cum_J4; }
+  else ESL_XFAIL(eslFAIL, errbuf, "R3D CTidx cannot be smaller than %d it is %d\n", -cum_BS, ctval);
   
   *ret_m    = m;
   *ret_type = type;

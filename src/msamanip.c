@@ -550,6 +550,7 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
   double   clen = 0.;           // seq_cons length, otherwise avg lenght of sequences
   int64_t  alen;
   int64_t  len;
+  int64_t  L;
   int      n;
   int      i;
   int      x;
@@ -557,7 +558,12 @@ msamanip_RemoveFragments(float fragfrac, ESL_MSA **msa, int *ret_nfrags, int *re
 
   for (n = 0; n < omsa->ngc; n++) {
     if (strcmp(omsa->gc_tag[n], "seq_cons") == 0) {
-      esl_dsq_Create(omsa->abc, omsa->gc[n], &dsq);
+      ///esl_dsq_Create(omsa->abc, omsa->gc[n], &dsq);
+
+      L = strlen(omsa->gc[n]);
+      dsq = esl_dsq_Create(L);
+      esl_dsq_Digitize(omsa->abc, omsa->gc[n], dsq);
+
       clen = (double)esl_dsq_GetRawLen(omsa->abc, dsq);
       alen = esl_dsq_GetLen(dsq);
       break;

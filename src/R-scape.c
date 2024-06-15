@@ -405,7 +405,7 @@ static ESL_OPTIONS options[] = {
   { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                  1 },
   /* R3D */
   { "--RBG",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG, default is RBGJ3J4",                                                1 },
-  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG_R3D",                                                                1 },
+  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", "--decoding",     "TRUE: use grammar RBG_R3D",                                                                1 },
   { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                           1 },
 /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                                1 },
