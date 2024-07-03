@@ -59,19 +59,21 @@ const G6XSparam G6XS_PRELOADS_TrATrBTrB = {
 
 const RBGparam RBG_PRELOADS_TrATrBTrB = {
   RBG,
-  {-1.056660,-2.366106,-2.366106,-1.076890,-2.083121}, // tP   P --> m..m | m..m F0 | F0 m..m | m..m F0 m..m | ML
-  {-0.225328,-2.124901,-2.493731},                     // tS   S  -> a S | F0 S | epsilon
-  {-0.136633,-2.069549,-6.338424},                     // tF0  F0 -> a F5 a' | a P a' | a a'
-  {-0.352641,-1.217824,-6.439716},                     // tF5  F5 -> a F5 a' | a P a' | a a'
-  {-0.871292,-0.541647},                               // tML  ML -> BB ML | BB BT
-  {-eslINFINITY,-eslINFINITY,-eslINFINITY},            // tMJ  MJ -> J3 | J4 | JJ
-  {-eslINFINITY},                                      // tJ3  J3 -> BB BT
-  {-eslINFINITY},                                      // tJ4  J4 -> BB J3
-  {-eslINFINITY,-eslINFINITY},                         // tJJ  JJ -> BB JJ | BB J4
-  {0.0},                                               // tBB  BB -> M1
-  {0.0},                                               // tBT  BT -> R
-  {-0.200740,-1.703336},                               // tM1  M1 ->  a M1 | F0
-  {-0.238413,-1.549648},                               // tR   R  ->  R  a | BB
+  {-1.056660,-2.366106,-2.366106,-1.076890,-2.083121}, // tP    P --> m..m | m..m F0 | F0 m..m | m..m F0 m..m | ML
+  {-0.225328,-2.124901,-2.493731},                     // tS    S  -> a S | F0 S | epsilon
+  {-0.136633,-2.069549,-6.338424},                     // tF0   F0 -> a F5 a' | a P a' | a a'
+  {-0.352641,-1.217824,-6.439716},                     // tF5   F5 -> a F5 a' | a P a' | a a'
+  {-0.871292,-0.541647},                               // tML   ML -> BB ML | BB BT
+  {-eslINFINITY,-eslINFINITY,-eslINFINITY},            // tMJ   MJ -> J3 | J4 | JJ
+  {-eslINFINITY},                                      // tJ3o  J3o -> BB BT
+  {-eslINFINITY},                                      // tJ3   J3  -> J3o
+  {-eslINFINITY},                                      // tJ4o  J4o -> BB J3
+  {-eslINFINITY},                                      // tJ4   J4  -> J4o
+  {-eslINFINITY,-eslINFINITY},                         // tJJ   JJ  -> BB JJ | BB J4
+  {0.0},                                               // tBB   BB -> M1
+  {0.0},                                               // tBT   BT -> R
+  {-0.200740,-1.703336},                               // tM1   M1 ->  a M1 | F0
+  {-0.238413,-1.549648},                               // tR    R  ->  R  a | BB
   {-1.016203,-1.729177,-1.500313,-1.435726}, // e1_1_0_0
   {-6.260949,-6.374885,-5.756013,-1.954562,-6.362889,-6.862935,-1.357805,-6.824367,-6.111213,-1.149705,-6.503492,-2.358079,-2.026797,-6.304978,-3.198269,-5.933325}, // e1_2_0_0
   {-7.321742,-7.874012,-7.321742,-1.929221,-7.321742,-6.598601,-1.296629,-7.874012,-7.874012,-1.356878,-7.321742,-2.724212,-1.661460,-9.210340,-2.774637,-6.055880}, // e2_2_0_0
@@ -153,20 +155,22 @@ const RBGparam RBG_PRELOADS_TrATrBTrB = {
 
 const RBGparam RBGJ3J4_PRELOADS_TrATrBTrB = {
   RBGJ3J4,
-  {-1.056660,-2.366106,-2.366106,-1.076890,-2.083121}, // tP   P --> m..m | m..m F0 | F0 m..m | m..m F0 m..m | MJ
-  {-0.225328,-2.124901,-2.493731},                     // tS   S  -> a S | F0 S | epsilon
-  {-0.136633,-2.069549,-6.338424},                     // tF0  F0 -> a F5 a' | a P a' | a a'
-  {-0.352641,-1.217824,-6.439716},                     // tF5  F5 -> a F5 a' | a P a' | a a'
-  {-eslINFINITY,-eslINFINITY},                         // tML  ML -> BB ML | BB BT
-  {-0.672297,-1.128762,-1.793770},                     // tMJ  MJ -> J3 | J4 | JJ
-  {0.000100},                                          // tJ3  J3 -> BB R
-  {0.000100},                                          // tJ4  J4 -> BB J3
-  {-1.287413,-0.322665},                               // tJJ  JJ -> BB JJ | BB J4
-  {0.0},                                               // tBB  BB -> M1
-  {0.0},                                               // tBT  BT -> R
-  {-0.200740,-1.703336},                               // tM1  M1 ->  a M1 | F0
-  {-0.238413,-1.549648},                               // tR   R  ->  R  a | BB
-  {-1.016203,-1.729177,-1.500313,-1.435726}, // e1_1_0_0
+  {-1.056660,-2.366106,-2.366106,-1.076890,-2.083121}, // tP    P   -> m..m | m..m F0 | F0 m..m | m..m F0 m..m | MJ
+  {-0.225328,-2.124901,-2.493731},                     // tS    S   -> a S | F0 S | epsilon
+  {-0.136633,-2.069549,-6.338424},                     // tF0   F0  -> a F5 a' | a P a' | a a'
+  {-0.352641,-1.217824,-6.439716},                     // tF5   F5  -> a F5 a' | a P a' | a a'
+  {-eslINFINITY,-eslINFINITY},                         // tML   ML  -> BB ML | BB BT
+  {-0.672297,-1.128762,-1.793770},                     // tMJ   MJ  -> J3 | J4 | JJ
+  {0.000100},                                          // tJ3o  J3o -> BB R
+  {0.000100},                                          // tJ3   J3  -> J3o
+  {0.000100},                                          // tJ4o  J4o -> BB J3
+  {0.000100},                                          // tJ4   J4  -> J4o
+  {-1.287413,-0.322665},                               // tJJ   JJ  -> BB JJ | BB J4
+  {0.0},                                               // tBB   BB  -> M1
+  {0.0},                                               // tBT   BT  -> R
+  {-0.200740,-1.703336},                               // tM1   M1  ->  a M1 | F0
+  {-0.238413,-1.549648},                               // tR    R   ->  R  a | BB
+  {-1.016203,-1.729177,-1.500313,-1.435726}, // e1_1_0_0 
   {-6.260949,-6.374885,-5.756013,-1.954562,-6.362889,-6.862935,-1.357805,-6.824367,-6.111213,-1.149705,-6.503492,-2.358079,-2.026797,-6.304978,-3.198269,-5.933325}, // e1_2_0_0
   {-7.321742,-7.874012,-7.321742,-1.929221,-7.321742,-6.598601,-1.296629,-7.874012,-7.874012,-1.356878,-7.321742,-2.724212,-1.661460,-9.210340,-2.774637,-6.055880}, // e2_2_0_0
   { // e1_2_2_x
@@ -303,26 +307,30 @@ RBGMX_Create(int L, enum grammar_e G)
 
   rbgmx->G  = G;
   
-  rbgmx->S  = GMX_Create(L);
-  rbgmx->F0 = GMX_Create(L);
-  rbgmx->F5 = GMX_Create(L);
-  rbgmx->P  = GMX_Create(L);
-  rbgmx->ML = NULL;
-  rbgmx->MJ = NULL;
-  rbgmx->J3 = NULL;
-  rbgmx->J4 = NULL;
-  rbgmx->JJ = NULL;
-  rbgmx->BB = GMX_Create(L);
-  rbgmx->BT = GMX_Create(L);
-  rbgmx->R  = GMX_Create(L);
-  rbgmx->M1 = GMX_Create(L);
+  rbgmx->S   = GMX_Create(L);
+  rbgmx->F0  = GMX_Create(L);
+  rbgmx->F5  = GMX_Create(L);
+  rbgmx->P   = GMX_Create(L);
+  rbgmx->ML  = NULL;
+  rbgmx->MJ  = NULL;
+  rbgmx->J3  = NULL;
+  rbgmx->J3o = NULL;
+  rbgmx->J4  = NULL;
+  rbgmx->J4o = NULL;
+  rbgmx->JJ  = NULL;
+  rbgmx->BB  = GMX_Create(L);
+  rbgmx->BT  = GMX_Create(L);
+  rbgmx->R   = GMX_Create(L);
+  rbgmx->M1  = GMX_Create(L);
 
   if      (G == RBG)     { rbgmx->ML = GMX_Create(L); }
   else if (G == RBGJ3J4) {
-    rbgmx->MJ = GMX_Create(L);
-    rbgmx->J3 = GMX_Create(L);
-    rbgmx->J4 = GMX_Create(L);
-    rbgmx->JJ = GMX_Create(L);
+    rbgmx->MJ  = GMX_Create(L);
+    rbgmx->J3o = GMX_Create(L);
+    rbgmx->J3  = GMX_Create(L);
+    rbgmx->J4o = GMX_Create(L);
+    rbgmx->J4  = GMX_Create(L);
+    rbgmx->JJ  = GMX_Create(L);
   }
   
   return rbgmx;
@@ -369,19 +377,21 @@ void
 RBGMX_Destroy(RBG_MX *gmx)
 {
   if (gmx == NULL) return;
-  if (gmx->S)   GMX_Destroy(gmx->S);
-  if (gmx->F0)  GMX_Destroy(gmx->F0);
-  if (gmx->F5)  GMX_Destroy(gmx->F5);
-  if (gmx->P)   GMX_Destroy(gmx->P);
-  if (gmx->ML)  GMX_Destroy(gmx->ML);
-  if (gmx->MJ)  GMX_Destroy(gmx->MJ);
-  if (gmx->J3)  GMX_Destroy(gmx->J3);
-  if (gmx->J4)  GMX_Destroy(gmx->J4);
-  if (gmx->JJ)  GMX_Destroy(gmx->JJ);
-  if (gmx->BB)  GMX_Destroy(gmx->BB);
-  if (gmx->BT)  GMX_Destroy(gmx->BT);
-  if (gmx->R)   GMX_Destroy(gmx->R);
-  if (gmx->M1)  GMX_Destroy(gmx->M1);
+  if (gmx->S)    GMX_Destroy(gmx->S);
+  if (gmx->F0)   GMX_Destroy(gmx->F0);
+  if (gmx->F5)   GMX_Destroy(gmx->F5);
+  if (gmx->P)    GMX_Destroy(gmx->P);
+  if (gmx->ML)   GMX_Destroy(gmx->ML);
+  if (gmx->MJ)   GMX_Destroy(gmx->MJ);
+  if (gmx->J3)   GMX_Destroy(gmx->J3);
+  if (gmx->J3o)  GMX_Destroy(gmx->J3o);
+  if (gmx->J4)   GMX_Destroy(gmx->J4);
+  if (gmx->J4o)  GMX_Destroy(gmx->J4o);
+  if (gmx->JJ)   GMX_Destroy(gmx->JJ);
+  if (gmx->BB)   GMX_Destroy(gmx->BB);
+  if (gmx->BT)   GMX_Destroy(gmx->BT);
+  if (gmx->R)    GMX_Destroy(gmx->R);
+  if (gmx->M1)   GMX_Destroy(gmx->M1);
   free(gmx);
 }
 

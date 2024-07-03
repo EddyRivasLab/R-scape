@@ -29,7 +29,9 @@ static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verb
 static int   r2r_esl_msa_AppendGC       (ESL_MSA *msa, char *tag, char *value);
 static int   r2r_keep                   (ESL_MSA *msa, int r2rall);
 static int   r2r_pseudoknot_outline     (ESL_MSA *msa, CTLIST *ctlist);
-static int   r2r_pseudoknot_callout     (char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfiles, char *errbuf, int verbose);
+static int   r2r_RM_outline             (ESL_MSA *msa, CTLIST *ctlist);
+static int   r2r_pseudoknot_callout     (char *r2rfile, HITLIST *hitlist, int nct, CTLIST *ctlist, char **r2rpkfiles,
+					 char *errbuf, int verbose);
 static int   r2r_run_consensus_from_msa (ESL_MSA *msa, ESL_MSA **ret_r2rmsa, char *errbuf);
 static int   r2r_run_consensus_from_file(char *inmsafile, char *outmsafile, char *errbuf);
 static int   r2r_write_meta             (char *metafile, char *r2rfile, CTLIST *ctlist, char **r2rplfile, int pkcallout);
@@ -82,8 +84,12 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
   status = r2r_keep(r2rmsa, r2rall);
   if (status != eslOK) goto ERROR;
   
-  // add to r2rmsa the lines to draw outlines for the pseudoknots
+  // add to r2rmsa the lines to draw outlines for the pseudoknots and other base pairs
   status = r2r_pseudoknot_outline(r2rmsa, ctlist);
+  if (status != eslOK) goto ERROR;
+  
+  // add to r2rmsa the lines to draw outlines for the RNA motifs
+  status = r2r_RM_outline(r2rmsa, ctlist);
   if (status != eslOK) goto ERROR;
   
   // write the R2R annotated msa to PFAM format 
@@ -108,14 +114,21 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
   r2rpkfile[0] = NULL;
   for (s = 1; s < nct; s ++) {
     r2rpkfile[s] = NULL;
-    
-    if (ctlist->cttype[s] != CTTYPE_RM_HL &&
-	ctlist->cttype[s] != CTTYPE_RM_BL &&
-	ctlist->cttype[s] != CTTYPE_RM_IL   ) {
+   
+    if (ctlist->cttype[s] == CTTYPE_RM_HL ||
+	ctlist->cttype[s] == CTTYPE_RM_BL ||
+	ctlist->cttype[s] == CTTYPE_RM_IL ||
+	ctlist->cttype[s] == CTTYPE_RM_J3 ||
+	ctlist->cttype[s] == CTTYPE_RM_J4 ||
+	ctlist->cttype[s] == CTTYPE_RM_BS   ) {
+      continue;
+    }
+    else if (ctlist->cttype[s] != CTTYPE_NONE) {
       esl_sprintf(&r2rpkfile[s], "%s.%s.sto", filename, ctlist->ctname[s]);
     }
+    
   }
-  status = r2r_pseudoknot_callout(r2rfile, hitlist, nct, r2rpkfile, errbuf, verbose);
+  status = r2r_pseudoknot_callout(r2rfile, hitlist, nct, ctlist, r2rpkfile, errbuf, verbose);
   if (status != eslOK) goto ERROR;
     
   // the r2r_meta file including callouts
@@ -133,24 +146,27 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
     if (status != eslOK) goto ERROR;
   }
 
-  //for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
-  //remove(metafile);
+  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
+  remove(metafile);
   
-  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) free(r2rpkfile[s]);
-  free(metafile);
+  if (metafile) free(metafile);
   free(buf);
   free(args);
-  free(r2rpkfile);
+  if (r2rpkfile) {
+    for (s = 1; s < nct; s ++) if (r2rpkfile[s]) free(r2rpkfile[s]);
+    free(r2rpkfile);
+  }
   esl_msa_Destroy(r2rmsa);
   if (omsa->nseq > R2R_NSEQ_MAX) esl_msa_Destroy(msa);
   return eslOK;
 
  ERROR:
-  for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
-  remove(metafile);
   if (buf)       free(buf);
   if (args)      free(args);
-  if (r2rpkfile) free(r2rpkfile);
+  if (r2rpkfile) {
+    for (s = 1; s < nct; s ++) if (r2rpkfile[s]) free(r2rpkfile[s]);
+    free(r2rpkfile);
+  }
   if (metafile)  free(metafile);
   if (r2rmsa)    esl_msa_Destroy(r2rmsa);
   if (omsa->nseq > R2R_NSEQ_MAX) esl_msa_Destroy(msa);
@@ -211,14 +227,18 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_RM_HL:
     case CTTYPE_RM_BL:
     case CTTYPE_RM_IL:
-      continue;
+    case CTTYPE_RM_J3:
+    case CTTYPE_RM_J4:
+    case CTTYPE_RM_BS: esl_sprintf(&tag, "%s_rm%d_%s", sstag, s, ctlist->ctname[s]);
+      r2r_esl_msa_AppendGC(msa, tag, ss);
+      free(tag); tag = NULL;
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "Unknown cttype");
       break;
     }
     
-    if (verbose) printf("%s\n%s\n", tag, ss); 
+    if (verbose) printf("%d/%d %s\n%s\n", s, nct, tag, ss); 
   }
     
   free(ss);
@@ -325,7 +345,9 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
     case CTTYPE_RM_HL:
     case CTTYPE_RM_BL:
     case CTTYPE_RM_IL:
-      continue;
+    case CTTYPE_RM_J3:
+    case CTTYPE_RM_J4:
+    case CTTYPE_RM_BS: esl_sprintf(&covtag1, "%s_rm%d_%s", covtag, s, ctlist->ctname[s]);
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");
@@ -454,7 +476,10 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
     case CTTYPE_RM_HL:
     case CTTYPE_RM_BL:
     case CTTYPE_RM_IL:
-      continue;
+    case CTTYPE_RM_J3:
+    case CTTYPE_RM_J4:
+    case CTTYPE_RM_BS:
+      esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");
@@ -506,7 +531,7 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
 // we are adding a new tag, which is the case here.
 //
 // The proper esl_msa_AppenGC is more general and looks at the gc_idx hash table to figure out whether it's
-// a new tag or not. Because I have to first remove the given gc tags to add R-scapes's the hash table would have
+// a new tag or not. Because I have to first remove the given gc tags to add R-scape's the hash table would have
 // to be propertly
 //
 int
@@ -706,8 +731,11 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
   
   for (s = 1; s < nct; s ++) {
     if (ctlist->cttype[s] == CTTYPE_RM_HL ||
-	ctlist->cttype[s] == CTTYPE_RM_BL ||
-	ctlist->cttype[s] == CTTYPE_RM_IL   ) continue;
+    	ctlist->cttype[s] == CTTYPE_RM_BL ||
+    	ctlist->cttype[s] == CTTYPE_RM_IL ||
+    	ctlist->cttype[s] == CTTYPE_RM_J3 ||
+	ctlist->cttype[s] == CTTYPE_RM_J4 ||
+	ctlist->cttype[s] == CTTYPE_RM_BS   ) continue;
     
     esl_ct2wuss_er(ctlist->ct[s], L, ss);
 
@@ -717,7 +745,7 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
       ssi = ss[i-1];
       
       // mark the region. It should be a hairpin possibly with bulges and multiloops
-      // but no other structure is allowed 
+      // 
       if      (ssi == '<' ||  ssi == '>' ||  ssi == '-') new[i-1] = '.'; // a helix or bulge or internal loop
       else if (ssi == '_')                               new[i-1] = '-'; // the hairpin loop
       else if (ssi == ':')                               new[i-1] = '-'; // everything else should be unpaired
@@ -737,8 +765,11 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
     for (s2 = 1; s2 < nct; s2 ++) {
       if (ctlist->cttype[s2] == CTTYPE_RM_HL ||
 	  ctlist->cttype[s2] == CTTYPE_RM_BL ||
-	  ctlist->cttype[s2] == CTTYPE_RM_IL   ) continue;
-
+	  ctlist->cttype[s2] == CTTYPE_RM_IL ||
+	  ctlist->cttype[s2] == CTTYPE_RM_J3 ||
+	  ctlist->cttype[s2] == CTTYPE_RM_J4 ||
+	  ctlist->cttype[s2] == CTTYPE_RM_BS   ) continue;
+      
       if (s2 != s) {
 	esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss _%s", s, ctlist->ctname[s2]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
@@ -777,8 +808,93 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
   return status;
 }
 
+// R2R outline style for pseudoknots
+// (1) annotate the msa with the special syntax to display RMs
 static int
-r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfile, char *errbuf, int verbose)
+r2r_RM_outline(ESL_MSA *msa, CTLIST *ctlist)
+{
+  char       *ss    = NULL;
+  char       *rmss1 = NULL;
+  char       *rmss2 = NULL;
+  char       *tag   = NULL;
+  int         nct = ctlist->nct;
+  int         L = msa->alen;
+  int         i;
+  int         s;
+  int         s2;
+  int         status;
+
+  if (nct == 1) return eslOK;
+		
+  // s = 0 correspond to the main nested structure, all the other
+  // we annotate a pseudoknots
+  s = 0;
+  
+  /* Initialization */
+  ESL_ALLOC(ss,    sizeof(char) * (L+1));
+  ESL_ALLOC(rmss1, sizeof(char) * (L+1));
+  ESL_ALLOC(rmss2, sizeof(char) * (L+1));
+
+  for (s = 1; s < nct; s ++) {
+      
+    if (ctlist->cttype[s] == CTTYPE_RM_HL ||
+    	ctlist->cttype[s] == CTTYPE_RM_BL ||
+    	ctlist->cttype[s] == CTTYPE_RM_IL ||
+    	ctlist->cttype[s] == CTTYPE_RM_J3 ||
+    	ctlist->cttype[s] == CTTYPE_RM_J4 ||
+  	ctlist->cttype[s] == CTTYPE_RM_BS   )
+      {
+	esl_ct2wuss_er(ctlist->ct[s], L, ss);
+
+	for (i = 0; i < L; i ++) rmss1[i] = rmss2[i] = '-';
+	rmss1[L] = rmss2[L] = '\0';
+	
+	// mark the whole region to form a callout
+	
+	// mark the RM motif (xxx)
+	//
+	for (i = 0; i < L; i ++) {
+	  if (ss[i] == 'x') rmss1[i] = 'x'; // an RM motif
+	}
+	
+	// mark a tick for the RM motif (xxx)
+	//
+	for (i = 0; i < L-1; i ++) {
+	  if (ss[i] == 'x' && ss[i+1] == ':')             rmss2[i] = 'x'; // an RM motif
+	  if (ss[i] == 'x' && ss[i-1] == ':' && i == L-1) rmss2[i] = 'x'; // an RM motif
+	  if (ss[i] == 'z' && ss[i+1] == 'z')             rmss2[i] = 'x'; // mark as a tick,
+	}
+	    
+	// markups necessary for r2r to outline the RMs
+	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s", s, ctlist->ctname[s]);
+	r2r_esl_msa_AppendGC(msa, tag, rmss1); free(tag); tag = NULL;
+	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s_tick", s, ctlist->ctname[s]);
+	r2r_esl_msa_AppendGC(msa, tag, rmss2); free(tag); tag = NULL;
+
+	esl_sprintf(&tag, "R2R outline_nuc rm%d_%s:x", s, ctlist->ctname[s]);
+	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+	esl_sprintf(&tag, "R2R tick_label rm%d_%s_tick:x rm%d_%s", s, ctlist->ctname[s], s, ctlist->ctname[s]);
+	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+      }
+  }
+
+  free(ss);
+  free(rmss1);
+  free(rmss2);
+  if (tag) free(tag);
+  
+  return eslOK;
+  
+ ERROR:
+  if (ss)    free(ss);
+  if (rmss1) free(rmss1);
+  if (rmss2) free(rmss2);
+  if (tag)   free(tag);
+  return status;
+}
+
+static int
+r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, CTLIST *ctlist, char **r2rpkfile, char *errbuf, int verbose)
 {
   char        *cmd  = NULL;
   char        *args = NULL;
@@ -796,7 +912,14 @@ r2r_pseudoknot_callout(char *r2rfile, HITLIST *hitlist, int nct, char **r2rpkfil
   //
   for (s = 1; s < nct; s ++) {
     if (!r2rpkfile[s]) continue;
-    
+
+    if (ctlist->cttype[s] == CTTYPE_RM_HL ||
+    	ctlist->cttype[s] == CTTYPE_RM_BL ||
+    	ctlist->cttype[s] == CTTYPE_RM_IL ||
+    	ctlist->cttype[s] == CTTYPE_RM_J3 ||
+    	ctlist->cttype[s] == CTTYPE_RM_J4 ||
+  	ctlist->cttype[s] == CTTYPE_RM_BS   ) continue;
+  
     esl_sprintf(&cmd, "%s/SelectSubFamilyFromStockholm.pl", RSCAPE_BIN);
     esl_sprintf(&args, "%s %s pknot%d > %s", cmd, r2rfile, s, r2rpkfile[s]);
     if (verbose) printf("%s\n", args);

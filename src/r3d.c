@@ -183,6 +183,9 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   if (status != eslEOF) esl_fatal("file %s: expected EOF, got code %d", bf->filename, status);
   esl_buffer_Close(bf);
 
+  // HL motifs: nothing to rotate
+  r3d->nHL_total = r3d->nHL;
+  
   // Add the rotated BLs
   r3d->nBL_total = r3d->nBL;
   for (k = 0; k < r3d->nBL; k ++) {
@@ -223,7 +226,7 @@ R3D_Read(char *r3dfile, ESL_ALPHABET *abc, char *errbuf, int verbose)
   }
   
   // Finally create the HMMs
-  for (k = 0; k < r3d->nHL; k ++) {
+  for (k = 0; k < r3d->nHL_total; k ++) {
     status = R3D_HL_HMMCreate(r3d->HL[k], &r3d->maxM, errbuf, verbose);
     if (status != eslOK) esl_fatal("R3D_HL_HMMCreate() failed with error code %d", status);
   }
@@ -706,7 +709,7 @@ R3D_Destroy(R3D *r3d)
   int i;
   int j;
   
-  if (r3d->HL) { for (h = 0; h < r3d->nHL;       h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
+  if (r3d->HL) { for (h = 0; h < r3d->nHL_total; h ++) if (r3d->HL[h]) R3D_HL_Destroy(r3d->HL[h]); free(r3d->HL); }
   if (r3d->BL) { for (b = 0; b < r3d->nBL_total; b ++) if (r3d->BL[b]) R3D_BL_Destroy(r3d->BL[b]); free(r3d->BL); }
   if (r3d->IL) { for (i = 0; i < r3d->nIL_total; i ++) if (r3d->IL[i]) R3D_IL_Destroy(r3d->IL[i]); free(r3d->IL); }
   if (r3d->J3) { for (j = 0; j < r3d->nJ3_total; j ++) if (r3d->J3[j]) R3D_J3_Destroy(r3d->J3[j]); free(r3d->J3); }
@@ -919,8 +922,8 @@ R3D_Write(FILE *fp, R3D *r3d, int verbose)
   if (!r3d) return;
   
   fprintf(fp, "R3D\n");
-  fprintf(fp, "HL %d\n", r3d->nHL);
-  for (h = 0; h < r3d->nHL; h ++)
+  fprintf(fp, "HL %d\n", r3d->nHL_total);
+  for (h = 0; h < r3d->nHL_total; h ++)
     r3d_write_HL(fp, r3d->HL[h], verbose);
     
   fprintf(fp, "BL %d/%d\n", r3d->nBL, r3d->nBL_total);
@@ -939,8 +942,8 @@ R3D_Write(FILE *fp, R3D *r3d, int verbose)
   for (i = 0; i < r3d->nJ4_total; i ++) 
     r3d_write_J4(fp, r3d->J4[i], verbose);
 
-  fprintf(fp, "BS %d\n", r3d->nBS);
-  for (h = 0; h < r3d->nBS; h ++)
+  fprintf(fp, "BS %d\n", r3d->nBS_total);
+  for (h = 0; h < r3d->nBS_total; h ++)
     r3d_write_BS(fp, r3d->BS[h], verbose);
 }
 
@@ -1063,8 +1066,8 @@ R3D_MX_Create(int L, R3D *r3d)
   int     status;
 
   ESL_ALLOC(r3dmx, sizeof(R3D));
-  r3dmx->nHL  = r3d->nHL;
-  r3dmx->nBL  = r3d->nBL;
+  r3dmx->nHL  = r3d->nHL_total;
+  r3dmx->nBL  = r3d->nBL_total;
   r3dmx->nIL  = r3d->nIL_total;
   r3dmx->nJ3  = r3d->nJ3_total;
   r3dmx->nJ4  = r3d->nJ4_total;
@@ -1787,7 +1790,7 @@ r3d_add_rotatedJ3(int k, int which, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newJ3, sizeof(R3D_J3));
   newJ3->abc = J3->abc;
  
-  esl_sprintf(&newJ3->name,  "%s.rot-%d", J3->name, which);
+  esl_sprintf(&newJ3->name,  "%s.rot-%dS", J3->name, which);
   if (which == 1) {
     esl_sprintf(&newJ3->J3_S2, "%s",     J3->J3_S1); // S1 -> S2
     esl_sprintf(&newJ3->J3_S3, "%s",     J3->J3_S2); // S2 -> S3
@@ -1841,7 +1844,7 @@ r3d_add_rotatedJ4(int k, int which, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newJ4, sizeof(R3D_J4));
   newJ4->abc = J4->abc;
  
-  esl_sprintf(&newJ4->name,  "%s.rot-%d", J4->name, which);
+  esl_sprintf(&newJ4->name,  "%s.rot-%dS", J4->name, which);
   if (which == 1) {
     esl_sprintf(&newJ4->J4_S2, "%s",     J4->J4_S1); // S1 -> S2
     esl_sprintf(&newJ4->J4_S3, "%s",     J4->J4_S2); // S2 -> S3
@@ -2142,29 +2145,29 @@ R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
 
   switch(type) {
   case R3D_TP_HL:
-    if (m >= r3d->nHL) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
+    if (m >= r3d->nHL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
     idx = -(m + 1);
     break;
   case R3D_TP_BL:
     if (m >= r3d->nBL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + 1 + r3d->nHL);
+    idx = -(m + 1 + r3d->nHL_total);
     break;
   case R3D_TP_ILo:
   case R3D_TP_ILi:
     if (m >= r3d->nIL_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + 1 + r3d->nHL + r3d->nBL_total);
+    idx = -(m + 1 + r3d->nHL_total + r3d->nBL_total);
     break;
   case R3D_TP_J3:
     if (m >= r3d->nJ3_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total);
+    idx = -(m + 1 + r3d->nHL_total + r3d->nBL_total + r3d->nIL_total);
     break;
    case R3D_TP_J4:
     if (m >= r3d->nJ4_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total);
+    idx = -(m + 1 + r3d->nHL_total + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total);
     break;
     case R3D_TP_BS:
-    if (m >= r3d->nBS) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
-    idx = -(m + 1 + r3d->nHL + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total + r3d->nJ4_total);
+    if (m >= r3d->nBS_total) ESL_XFAIL(eslFAIL, errbuf, "cannot recognize RM %m for R3D type %d\n", m, type);
+    idx = -(m + 1 + r3d->nHL_total + r3d->nBL_total + r3d->nIL_total + r3d->nJ3_total + r3d->nJ4_total);
     break;
   default:
     ESL_XFAIL(eslFAIL, errbuf, "cannot recognize R3D type %d\n", m);
@@ -2178,20 +2181,31 @@ R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf)
   return status;
 }
 
-
-// a ct can have negative values. Those indicate residues involved in RNA modules described by the R3D grammar
+// ct for RMs other than wc base pairs, have negative values and can also have positive values
+//
+// negative values indicate residues involved in RNA modules described by the R3D grammar
 // add those to the RMlist
 //
-//  0000000xxxxxx00000000xxxxxx000000000000000000000000000000000000000
+//  example of a J3 with the last segment having no resideues
+//
+//  0000000xxxxxx00000000xxxxxx000000000000000000yy0000000000000000000
 //
 //  x < 0 and 
 // -x is the index of the RM
+//  y=-x > 0 there is always two continuous and indicate a place of a J3 or J4 with no residues
+//
+//
+// for instance a J4    (G(___)(_______)(__)G)
+//                      0x0000yy0000000yy000x0
+//
+// y is the number of the J4 RM
+// x = -y
 //
 extern int
 R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
 {
   R3D_TYPE type;
-  int      cum_HL = r3d->nHL;
+  int      cum_HL =          r3d->nHL_total;
   int      cum_BL = cum_HL + r3d->nBL_total;
   int      cum_IL = cum_BL + r3d->nIL_total;
   int      cum_J3 = cum_IL + r3d->nJ3_total;
@@ -2219,11 +2233,12 @@ R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf)
   return status;
 }
 
-extern void
+extern int
 R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss)
 {
   int j;
-  
+  int status = eslOK;
+
  /* init ss[] to single stranded */
   for (j = 1; j <= n; j ++) { ss[j-1] = ':'; }  
   ss[n] = '\0'; 
@@ -2237,5 +2252,10 @@ R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss)
 	else if (covct[j] == 2) ss[j-1] = 'Y';
       }
     }
+    if (ct[j] > 0) { // z's always in pairs, "zz" means a 0 length segment of a J3 or J4  motif is between those two positions
+      ss[j-1] = 'z'; 
+    }
   }
+
+  return status;
 }

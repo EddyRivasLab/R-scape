@@ -17,7 +17,7 @@
 #include "r3d_hmm.h"
 
                             //     m..m      |      HL
-#define pRM    0.40         //  tP[0](1-pRM) | tP[0] * pRM
+#define pRM    0.20         //  tP[0](1-pRM) | tP[0] * pRM
                             //    m..m F0    |    BL F0
                             //  tP[1](1-pRM) | tP[1] * pRM
                             //    F0 m..m    |    F0 BL
@@ -25,13 +25,13 @@
                             //  m..m F0 m..m |      IL
                             //  tP[3](1-pRM) | tP[3] * pRM
 
-#define pRM_J3 0.40         // J3 ->    J30    |   J3_1    | .. |    J3_M
+#define pRM_J3 0.20         // J3 ->    J30    |   J3_1    | .. |    J3_M
                             //       1-pRM_J3    pRM_J3/M          pRM_J3/M
 
-#define pRM_J4 0.40         // J4 ->    J40    |   J4_1    | .. |    J4_M
+#define pRM_J4 0.20         // J4 ->    J40    |   J4_1    | .. |    J4_M
                             //       1-pRM_J4    pRM_J4/M          pRM_J4/M
 
-#define pRM_BS 0.40         // BB ->    M1     |   BS_1 H   | .. |    BS_M H
+#define pRM_BS 0.20         // BB ->    M1     |   BS_1 H   | .. |    BS_M H
                             //       1-pRM_BS    pRM_BS/M          pRM_BS/M
 
                             // BT ->    R      |   H BS_1   | .. |    H BS_M
@@ -190,6 +190,7 @@ typedef struct {
 
 typedef struct {
   int      nHL;
+  int      nHL_total;
   R3D_HL **HL;
   
   int      nBL;
@@ -361,6 +362,6 @@ extern void       R3D_BSMX_Destroy(R3D_BSMX *BSmx);
 extern void       R3D_MX_Destroy  (R3D_MX   *r3dmx);
 extern int        R3D_RMtoCTidx(R3D *r3d, R3D_TYPE type, int m, int *ret_idx, char *errbuf);
 extern int        R3D_CTidxtoRM(R3D *r3d, int ctval, R3D_TYPE *ret_type, int *ret_m, char *errbuf);
-extern void       R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss);
+extern int        R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss);
 #endif
 

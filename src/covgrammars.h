@@ -48,20 +48,22 @@ enum grammar_e {
 #define G6X_NR   9
 
 /* RBG nonterminals */
-#define RBG_S  0
-#define RBG_F0 1
-#define RBG_F5 2
-#define RBG_P  3
-#define RBG_ML 4
-#define RBG_MJ 5
-#define RBG_J3 6
-#define RBG_J4 7
-#define RBG_JJ 8
-#define RBG_BB 9
-#define RBG_BT 10
-#define RBG_R  11
-#define RBG_M1 12
-#define RBG_NT 13
+#define RBG_S   0
+#define RBG_F0  1
+#define RBG_F5  2
+#define RBG_P   3
+#define RBG_ML  4
+#define RBG_MJ  5
+#define RBG_J3  6
+#define RBG_J3o 7
+#define RBG_J4  8
+#define RBG_J4o 9
+#define RBG_JJ  10
+#define RBG_BB  11
+#define RBG_BT  12
+#define RBG_R   13
+#define RBG_M1  14
+#define RBG_NT  15
 
 /* RBG rules */
 #define RBG_S_1     0
@@ -89,19 +91,21 @@ enum grammar_e {
 #define RBG_MJ_3    22
 #define RBG_J3_1    23
 #define RBG_J3_RM   24
-#define RBG_J4_1    25
-#define RBG_J4_RM   26
-#define RBG_JJ_1    27
-#define RBG_JJ_2    28
-#define RBG_M1_1    29
-#define RBG_M1_2    30
+#define RBG_J3o_1   25
+#define RBG_J4_1    26
+#define RBG_J4_RM   27
+#define RBG_J4o_1   28
+#define RBG_JJ_1    29
+#define RBG_JJ_2    30
 #define RBG_BB_1    31
 #define RBG_BB_RM   32
-#define RBG_R_1     33
-#define RBG_R_2     34
-#define RBG_BT_1    35
-#define RBG_BT_RM   36
-#define RBG_NR      37
+#define RBG_BT_1    33
+#define RBG_BT_RM   34
+#define RBG_R_1     35
+#define RBG_R_2     36
+#define RBG_M1_1    37
+#define RBG_M1_2    38
+#define RBG_NR      39
 
 
 typedef float SCVAL;
@@ -129,18 +133,20 @@ typedef struct {
   enum grammar_e G;  // RBG or RBGJ3J4
 
   SCVAL tP[5];       // P  -> m..m | m..m F0 | F0 m..m | d..d F0 d..d | (ML or MJ)
-  SCVAL tS[3];       // S  -> a s | F0 S | epsilon
-  SCVAL tF0[3];      // F0 -> a F5 a' | a P a' | a a'  
-  SCVAL tF5[3];      // F5 -> a F5 a' | a P a' | a a'
-  SCVAL tML[2];      // ML -> M1 ML | M1 R            (RBG only)
-  SCVAL tMJ[3];      // MJ -> J3 | J4 | JJ            (RBGJ3J4 only)
-  SCVAL tJ3[1];      // J3 -> BB BT                   (RBGJ3J4 only)
-  SCVAL tJ4[1];      // J4 -> BB J3                   (RBGJ3J4 only)
-  SCVAL tJJ[2];      // JJ -> BB JJ | BB J4           (RBGJ3J4 only)
-  SCVAL tBB[1];      // BB -> M1
-  SCVAL tBT[1];      // BT -> R
-  SCVAL tM1[2];      // M1 -> a M1  | F0
-  SCVAL tR[2];       // R  ->   R a | BB
+  SCVAL tS[3];       // S    -> a s | F0 S | epsilon
+  SCVAL tF0[3];      // F0  -> a F5 a' | a P a' | a a'  
+  SCVAL tF5[3];      // F5  -> a F5 a' | a P a' | a a'
+  SCVAL tML[2];      // ML  -> BB ML | BB BT           (RBG only)
+  SCVAL tMJ[3];      // MJ  -> J3 | J4 | JJ            (RBGJ3J4 only)
+  SCVAL tJ3o[1];     // J3o -> BB BT                   (RBGJ3J4 only)
+  SCVAL tJ3[1];      // J3  -> J3o | J3k(r3d)          (RBGJ3J4 only)
+  SCVAL tJ4o[1];     // J4o -> BB J3                   (RBGJ3J4 only)
+  SCVAL tJ4[1];      // J4  -> J4o | J4k (r3d)         (RBGJ3J4 only)
+  SCVAL tJJ[2];      // JJ  -> BB JJ | BB J4           (RBGJ3J4 only)
+  SCVAL tBB[1];      // BB  -> M1
+  SCVAL tBT[1];      // BT  -> R
+  SCVAL tM1[2];      // M1  -> a M1  | F0
+  SCVAL tR[2];       // R   ->   R a | BB
 
   SCVAL e_sing[NB];
   SCVAL e_pair1[NP];
@@ -186,11 +192,13 @@ typedef struct {
   GMX  *F0;
   GMX  *F5;
   GMX  *P;
-  GMX  *ML; // RBG only
-  GMX  *MJ; // RBG_J3J4 only
-  GMX  *J3; // RBG_J3J4 only
-  GMX  *J4; // RBG_J3J4 only
-  GMX  *JJ; // RBG_J3J4 only
+  GMX  *ML;  // RBG only
+  GMX  *MJ;  // RBGJ3J4 only
+  GMX  *J3o; // RBGJ3J4 only
+  GMX  *J3;  // RBGJ3J4 only
+  GMX  *J4o; // RBGJ3J4 only
+  GMX  *J4;  // RBGJ3J4 only
+  GMX  *JJ;  // RBGJ3J4 only
   GMX  *BB;
   GMX  *BT;
   GMX  *R;

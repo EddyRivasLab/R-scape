@@ -34,38 +34,30 @@
  *  F0 -> a F5 a' | a P a'  | aa'
  *  F5 -> a F5 a' | a P a'  | aa'
  *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
- *  ML -> M1 ML   | M1 R
- *  R  ->    R a  | M1
- *  M1 -> a M1    | F0
- *
- *
- * RBGJ3 grammar
- *-----------------------------------------------------------
- *  S  -> a S     | F0 S    | e
- *  F0 -> a F5 a' | a P a'  | aa'
- *  F5 -> a F5 a' | a P a'  | aa'
- *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
- *  ML -> J3      | JJ
- *  J3 -> M1 R
- *  JJ => M1 JJ   | M1 J3
- *  R  ->    R a  | M1
- *  M1 -> a M1    | F0
- *
-*
- * RBGJ3J4 grammar
- *-----------------------------------------------------------
- *  S  -> a S     | F0 S    | e
- *  F0 -> a F5 a' | a P a'  | aa'
- *  F5 -> a F5 a' | a P a'  | aa'
- *  P  -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | ML
- *  ML -> J3 | J4 | JJ
- *  J3 -> BB BT
- *  J3 -> BB J3
- *  JJ -> BB JJ   | BB J4
+ *  ML -> BB ML   | BB BT
  *  BB -> M1
  *  BT -> R
  *  R  ->    R a  | BB
  *  M1 -> a M1    | F0
+ *
+ *
+ *
+ * RBGJ3J4 grammar
+ *-----------------------------------------------------------
+ *  S   -> a S     | F0 S    | e
+ *  F0  -> a F5 a' | a P a'  | aa'
+ *  F5  -> a F5 a' | a P a'  | aa'
+ *  P   -> m..m    | m..m F0 | F0 m..m | m..m F0 m..m | MJ
+ *  MJ  -> J3 | J4 | JJ
+ *  J3  -> J3o
+ *  J3o -> BB BT
+ *  J4  -> J4o
+ *  J4o -> BB J3o
+ *  JJ  -> BB JJ   | BB J4o
+ *  BB  -> M1
+ *  BT  -> R
+ *  R   ->    R a  | BB
+ *  M1  -> a M1    | F0
  *
  */
 
@@ -187,6 +179,9 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   p->tMJ[1] = RBG_PRELOADS_TrATrBTrB.tMJ[1];
   p->tMJ[2] = RBG_PRELOADS_TrATrBTrB.tMJ[2];
 
+  p->tJ3o[0] = RBG_PRELOADS_TrATrBTrB.tJ3o[0];
+  p->tJ4o[0] = RBG_PRELOADS_TrATrBTrB.tJ4o[0];
+  
   p->tJ3[0] = RBG_PRELOADS_TrATrBTrB.tJ3[0];
   p->tJ4[0] = RBG_PRELOADS_TrATrBTrB.tJ4[0];
   
@@ -232,6 +227,8 @@ CACO_RBG_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   vec_SCVAL_LogNorm(p->tF5, 3);
   vec_SCVAL_LogNorm(p->tP,  5);
   vec_SCVAL_LogNorm(p->tML, 2);
+  vec_SCVAL_LogNorm(p->tBB, 1);
+  vec_SCVAL_LogNorm(p->tBT, 1);
   vec_SCVAL_LogNorm(p->tR,  2);
   vec_SCVAL_LogNorm(p->tM1, 2);
   vec_SCVAL_LogNorm(p->e_sing,    NB);
@@ -295,6 +292,9 @@ CACO_RBGJ3J4_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
   p->tMJ[1] = RBGJ3J4_PRELOADS_TrATrBTrB.tMJ[1];
   p->tMJ[2] = RBGJ3J4_PRELOADS_TrATrBTrB.tMJ[2];
 
+  p->tJ3o[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ3o[0];
+  p->tJ4o[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ4o[0];
+  
   p->tJ3[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ3[0];
   p->tJ4[0] = RBGJ3J4_PRELOADS_TrATrBTrB.tJ4[0];
   
@@ -335,17 +335,21 @@ CACO_RBGJ3J4_GetParam(RBGparam **ret_p, char *errbuf, int verbose)
       p->l3[l1][l2] = RBGJ3J4_PRELOADS_TrATrBTrB.l3[l1][l2];
 
   // renormalize, just in case
-  vec_SCVAL_LogNorm(p->tS,  3);
-  vec_SCVAL_LogNorm(p->tF0, 3);
+  vec_SCVAL_LogNorm(p->tS,   3);
+  vec_SCVAL_LogNorm(p->tF0,  3);
 
-  vec_SCVAL_LogNorm(p->tF5, 3);
-  vec_SCVAL_LogNorm(p->tP,  5);
-  vec_SCVAL_LogNorm(p->tMJ, 3);
-  vec_SCVAL_LogNorm(p->tJ3, 1);
-  vec_SCVAL_LogNorm(p->tJ4, 1);
-  vec_SCVAL_LogNorm(p->tJJ, 2);
-  vec_SCVAL_LogNorm(p->tR,  2);
-  vec_SCVAL_LogNorm(p->tM1, 2);
+  vec_SCVAL_LogNorm(p->tF5,  3);
+  vec_SCVAL_LogNorm(p->tP,   5);
+  vec_SCVAL_LogNorm(p->tMJ,  3);
+  vec_SCVAL_LogNorm(p->tJ3o, 1);
+  vec_SCVAL_LogNorm(p->tJ3,  1);
+  vec_SCVAL_LogNorm(p->tJ4o, 1);
+  vec_SCVAL_LogNorm(p->tJ4,  1);
+  vec_SCVAL_LogNorm(p->tJJ,  2);
+  vec_SCVAL_LogNorm(p->tBB,  1);
+  vec_SCVAL_LogNorm(p->tBT,  1);
+  vec_SCVAL_LogNorm(p->tR,   2);
+  vec_SCVAL_LogNorm(p->tM1,  2);
   vec_SCVAL_LogNorm(p->e_sing,    NB);
   vec_SCVAL_LogNorm(p->e_sing_l1, NB);
   vec_SCVAL_LogNorm(p->e_sing_l2, NB);
@@ -413,30 +417,116 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
     r3dp->ILp->pIL += tP3 - log(r3d->nIL_total);
   }
   
+ // modify the  J3 -> J3o
+  //  to
+  //             J3 -> (1-pJ3)  J3o  | pJ3/nJ3  J3_1  | ... | pJ3/nJ3  J3_{nJ3}  
+  if (r3d->nJ3_total > 0) {
+    printf("cannot use J3 motifs with the RBG grammar"); status = eslFAIL; goto ERROR;
+    goto ERROR;
+  }
+  
+  // modify the  J4 -> J4o
+  //  to
+  //             J4 -> (1-pJ4)  J4o  | pJ4/nJ4  J4_1  | ... | pJ4/nJ4  J4_{nJ4}  
+  if (r3d->nJ4_total > 0) {
+    printf("cannot use J4 motifs with the RBG grammar"); status = eslFAIL; goto ERROR;
+ }
+
+  // modify the  BB -> M1
+  //  to
+  //             BB -> (1-pBS)  M1   | pBS/nBS  BB_1  | ... | pBS/nBS  BB_{nBS}  
+  if (r3d->nBS_total > 0) {
+    rbgp->tBB[0]    = log(1.0 - exp(r3dp->BSp->pBS));
+    r3dp->BSp->pBS -= log(r3d->nBS_total);
+  }
+
+  // modify the  BT -> R
+  //  to
+  //             BT -> (1-pBS)  M1   | pBS/nBS  BT_1  | ... | pBS/nBS  BT_{nBS}  
+  if (r3d->nBS_total > 0) {
+    rbgp->tBT[0]    = log(1.0 - exp(r3dp->BSp->pBS));
+  }
+
   if (verbose) {
     printf("RBG_R3D Param\n");
     printf("P0 %f to %f rest %f\n", tP0, rbgp->tP[0], r3dp->HLp->pHL);
     printf("P1 %f to %f rest %f\n", tP1, rbgp->tP[1], r3dp->BLp->pBL5);
     printf("P2 %f to %f rest %f\n", tP2, rbgp->tP[2], r3dp->BLp->pBL3);
     printf("P3 %f to %f rest %f\n", tP3, rbgp->tP[3], r3dp->ILp->pIL);
+    printf("BB %f rest %f\n", rbgp->tBB[0], r3dp->BSp->pBS);
+    printf("BT %f rest %f\n", rbgp->tBT[0], r3dp->BSp->pBS);
   }
   
-  // modify the  J3 -> M1 R
+ 
+  *ret_rbgp = rbgp;
+  *ret_r3dp = r3dp;
+  return status;
+
+ ERROR:
+  if (rbgp) free(rbgp);
+  if (r3dp) R3D_Param_Destroy(r3dp);
+
+  return status;
+}
+
+int
+CACO_RBGJ3J4_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *errbuf, int verbose)
+{
+  RBGparam *rbgp = NULL;
+  R3Dparam *r3dp = NULL;
+  SCVAL     tP0;
+  SCVAL     tP1;
+  SCVAL     tP2;
+  SCVAL     tP3;
+  int       status;
+  
+  status = CACO_RBGJ3J4_GetParam(&rbgp, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+  
+  status = R3D_GetParam(&r3dp, errbuf, verbose);
+  if (status != eslOK) goto ERROR;
+
+  // modify the  P -> t[0] m...m | t[1] m...m F0 | t[2] F0 m...m | t[3] m...m F0 m...m
   //  to
-  //             J3 -> (1-pJ3)  M1 R  | pJ3/nJ3  J3_1  | ... | pJ3/nJ3  J3_{nJ3}  
+  //             P -> t[0]*(1-pHL)  HL_0  | t[0]*pHL/nHL  HL_1  | ... | t[0]*pHL/nHL  HL_{nHL}  
+  //             P -> t[1]*(1-pBL5) BL_0  | t[1]*pBL5/nBL BL_1  | ... | t[1]*pBL5/nBL BL_{nBL}  
+  //             P -> t[2]*(1-pBL3) BL_0  | t[2]*pBL3/nBL BL_1  | ... | t[2]*pBL3/nBL BL_{nBL}  
+  //             P -> t[3]*(1-pIL)  IL_0  | t[3]*pHL/nIL  IL_1  | ... | t[3]*pHL/nIL  IL_{nIL}  
+
+  if (r3d->nHL > 0) {
+    tP0 = rbgp->tP[0];
+    rbgp->tP[0]     = tP0 + log(1.0 - exp(r3dp->HLp->pHL));
+    r3dp->HLp->pHL += tP0 - log(r3d->nHL);
+  }
+  if (r3d->nBL > 0) {
+    tP1 = rbgp->tP[1];
+    tP2 = rbgp->tP[2];
+    rbgp->tP[1]      = tP1 + log(1.0 - exp(r3dp->BLp->pBL5));
+    rbgp->tP[2]      = tP2 + log(1.0 - exp(r3dp->BLp->pBL3));
+    r3dp->BLp->pBL5 += tP1 - log(r3d->nBL);
+    r3dp->BLp->pBL3 += tP2 - log(r3d->nBL);
+  }
+  if (r3d->nIL_total > 0) {
+    tP3 = rbgp->tP[3];
+    rbgp->tP[3]     = tP3 + log(1.0 - exp(r3dp->ILp->pIL));
+    r3dp->ILp->pIL += tP3 - log(r3d->nIL_total);
+  }
+  
+  
+  // modify the  J3 -> J3o
+  //  to
+  //             J3 -> (1-pJ3)  J3o  | pJ3/nJ3  J3_1  | ... | pJ3/nJ3  J3_{nJ3}  
   if (r3d->nJ3_total > 0) {
     rbgp->tJ3[0]    = log(1.0 - exp(r3dp->J3p->pJ3));
     r3dp->J3p->pJ3 -= log(r3d->nJ3_total);
-    if (verbose) printf("J3 %f rest %f\n", rbgp->tJ3[0], r3dp->J3p->pJ3);
   }
   
-  // modify the  J4 -> M1 J3
+  // modify the  J4 -> J4o
   //  to
-  //             J4 -> (1-pJ4)  M1 J3  | pJ4/nJ4  J4_1  | ... | pJ4/nJ4  J4_{nJ4}  
+  //             J4 -> (1-pJ4)  BJ4o | pJ4/nJ4  J4_1  | ... | pJ4/nJ4  J4_{nJ4}  
   if (r3d->nJ4_total > 0) {
     rbgp->tJ4[0]    = log(1.0 - exp(r3dp->J4p->pJ4));
     r3dp->J4p->pJ4 -= log(r3d->nJ4_total);
-    if (verbose) printf("J4 %f rest %f\n", rbgp->tJ4[0], r3dp->J4p->pJ4);
   }
 
   // modify the  BB -> M1
@@ -445,7 +535,6 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
   if (r3d->nBS_total > 0) {
     rbgp->tBB[0]    = log(1.0 - exp(r3dp->BSp->pBS));
     r3dp->BSp->pBS -= log(r3d->nBS_total);
-    if (verbose) printf("BB %f rest %f\n", rbgp->tBB[0], r3dp->BSp->pBS);
   }
 
   // modify the  BT -> R
@@ -453,7 +542,18 @@ CACO_RBG_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, char *
   //             BT -> (1-pBS)  M1   | pBS/nBS  BT_1  | ... | pBS/nBS  BT_{nBS}  
   if (r3d->nBS_total > 0) {
     rbgp->tBT[0]    = log(1.0 - exp(r3dp->BSp->pBS));
-    if (verbose) printf("BT %f rest %f\n", rbgp->tBT[0], r3dp->BSp->pBS);
+  }
+
+    if (verbose) {
+    printf("RBGJ3J3_R3D Param\n");
+    printf("P0 %f to %f rest %f\n", tP0, rbgp->tP[0], r3dp->HLp->pHL);
+    printf("P1 %f to %f rest %f\n", tP1, rbgp->tP[1], r3dp->BLp->pBL5);
+    printf("P2 %f to %f rest %f\n", tP2, rbgp->tP[2], r3dp->BLp->pBL3);
+    printf("P3 %f to %f rest %f\n", tP3, rbgp->tP[3], r3dp->ILp->pIL);
+    printf("J3 %f rest %f\n", rbgp->tJ3[0], r3dp->J3p->pJ3);
+    printf("J4 %f rest %f\n", rbgp->tJ4[0], r3dp->J4p->pJ4);
+    printf("BB %f rest %f\n", rbgp->tBB[0], r3dp->BSp->pBS);
+    printf("BT %f rest %f\n", rbgp->tBT[0], r3dp->BSp->pBS);
   }
 
   *ret_rbgp = rbgp;

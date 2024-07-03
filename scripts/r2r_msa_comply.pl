@@ -33,7 +33,8 @@ if ($msafile =~ /pk/ ||  # pk            = does not overlap with  nested ss
     $msafile =~ /tr/ ||  # triplet       = overlaps with  nested ss
     $msafile =~ /nc/ ||  # non-canonical = nonWWC in pdbfile
     $msafile =~ /sc/ ||  # side-covariation
-    $msafile =~ /xc/     # cross-covariation
+    $msafile =~ /xc/ ||  # cross-covariation
+    $msafile =~ /rm/     # a R3D RM
     ) 
 { $is_callout = 1; }
 

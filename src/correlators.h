@@ -203,6 +203,7 @@ enum RMtype_e {
   RMTYPE_RM_IL,
   RMTYPE_RM_J3,
   RMTYPE_RM_J4,
+  RMTYPE_RM_BS,
   RMTYPE_UNKNOWN,
 };
 
@@ -324,10 +325,11 @@ typedef struct RM_s {
   
   int             nbp;          // Total number of pairs
   int             nbp_cov;      // Covarying pairs
-  int             i, j;         // The RNAmotif extends: HL 5'-i..j-3'                                               (i < j)
-  int             k1, l1;       //                       IL 5'-i..k1-3' ^ 5'-l1..j-3'                                (i < k1 < l1 < j)
-  int             k2, l2;       //                       J3 5'-i..k1-3' ^ 5'-l1..k2-3' ^ 5'-l2..j-3'                 (i < k1 < l1 < k2 < l2 < j)
-  int             k3, l3;       //                       J4 5'-i..k1-3' ^ 5'-l1..k2-3' ^ 5'-l2..k3-3' ^ 5'-l3..j-3'  (i < k1 < l1 < k2 < l2 < k3 < l3 < j)
+  int             i, j;         // The RNAmotif extends: HL 5'-i..j-3'                                               (i <= j)
+                                //                       BS 5'-i..j-3'                                               (i <= j)
+  int             k1, l1;       //                       IL 5'-i..k1-3' ^ 5'-l1..j-3'                                (i <= k1 < l1 <= j)
+  int             k2, l2;       //                       J3 5'-i..k1-3' ^ 5'-l1..k2-3' ^ 5'-l2..j-3'                 (i <= k1 < l1 <= k2 < l2 <= j)
+  int             k3, l3;       //                       J4 5'-i..k1-3' ^ 5'-l1..k2-3' ^ 5'-l2..k3-3' ^ 5'-l3..j-3'  (i <= k1 < l1 <= k2 < l2 <= k3 < l3 <= j)
   CTLIST         *ctlist;       // ctlist per RNAmotif. A WC helix requires only one ct, a NOWC motif may require several.
   double         *pvals;        // list of pvals to aggregate per RNAmotif.
 

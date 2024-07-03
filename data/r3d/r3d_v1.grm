@@ -16,13 +16,16 @@
 #HL  5'-L Loop R
 #HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
 #------------------------------------------------------------------------------------------------------------------
-HL   GNRA         -         -          GNRA-tetraloop
+HL   URA           -	     -	        U-turn
+HL   GNRA          -         -          GNRA-tetraloop
 #HL   N            G         RA         GNRA-tetraloop
  HL   UNCG         -         -          UNCG-tetraloop  
  HL   ANYA         -         -          ANYA-tetraloop  
  HL   CUYG         -   	     -          CUYG-tetraloop  
  HL   YGNN         -   	     -          YGNN-tetraloop  
  HL   UKNRW        -         -          T-loop
+ HL   UAACR        -   	     -          L8_RNaseP_bact_a
+ HL   AG           UAGUACG   AGACC      Sarcin-ricin_loop
  
 
 #BL  5'-L Loop R  F0  
@@ -44,9 +47,7 @@ HL   GNRA         -         -          GNRA-tetraloop
 #IL   GUA           -              G,G,A          G,A,A          -            -             K-turn-RMDetect              
 #IL   RNN           -              N,G,A          N,A,G          -            -             K-turn               
 #IL   RNN           -              N,G,A          N,A,A          -            -             Reverse_K-turn               
-#IL   GAMU          RUGA           -              -              -            -             Loop-E
  IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
-#IL   -             -              R,A,R,R,R,U,A  A,U,R,R,N,A,R  -            -             Loop-E
  IL   UAAG          UAU            C,C            G,G            -            -             GAAA_Tetraloop-receptor
  IL   CVC           V              -              -              -            -             C-loop
  IL   G             -              G,A            A,A            U,A          A,G           G-bulge
@@ -55,6 +56,11 @@ HL   GNRA         -         -          GNRA-tetraloop
  IL   YCC           AAC            -              -              -            -             Twisted-up
  IL   YAA           RAN            -              -              -            -             UAA_GAN
  IL   AGARA         GGUGRAA        -              -              -            -             Docking-elbow
+ IL   RRA           YNR            -              -              -            -             J4a/4b
+ IL   AA            AA             -              -              -            -             J4/5-IL
+ IL   GUA           GG             -              -              -            -             GUA^GG_RRE
+
+ 
 
 
 #J3   S1(5'-3')   S2(5'-3')  S3(5'-3')                  name
@@ -63,14 +69,18 @@ J3	NN  	  NNNNNN     NN	                        J3_typeA
 J3	NNNN  	  NNNN	     NNNN	                J3_typeB
 J3	NN  	  NNN	     NNNNNN	                J3_typeC
 J3	UA	  GUYUCUAC   AC				J3_purine
-J3	N	  CUGAUGA    GAA			J3_hammerhead
+J3	N	  CUGA	     A		  		J3_hammerhead
+J3      -	  UGAGA	     -				J3_TPP #Breaker
 
 #J4   S1(5'-3')   S2(5'-3')  S3(5'-3')   S4(5'-3')     name
 #------------------------------------------------------------------------------------------------------------------
 J4	N  	   -	      NNN	  -	        J4_tRNA
 J4	N  	   N	      NN	  -	        J4_manA
+J4	R  	   -	      -		  R	        J4_U1RNA
 
 #BB  5'- Loop 
 #HL  Loop(5'-3')  name
 #------------------------------------------------------------------------------------------------------------------
-BB	 UKNRW	T-loop
+BS	 UKNRW	T-loop
+BS	 RRGU	LoopE-a
+BS	 RARR	LoopE-b

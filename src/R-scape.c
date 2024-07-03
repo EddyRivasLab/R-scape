@@ -405,7 +405,7 @@ static ESL_OPTIONS options[] = {
   { "--E_neg",        eslARG_REAL,      "1.0",   NULL,      "x>=0",  NULL,"--cacofold", NULL,             "Evalue thresholds for negative pairs. Negative pairs require eval > <x>",                  1 },
   /* R3D */
   { "--RBG",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", NULL,             "TRUE: use grammar RBG, default is RBGJ3J4",                                                1 },
-  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", "--decoding",     "TRUE: use grammar RBG_R3D",                                                                1 },
+  { "--r3d",          eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold", "--decoding",     "TRUE: use grammar R3D",                                                                1 },
   { "--r3dfile",    eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,     "--r3d", NULL,             "read r3d grammar from file <f>",                                                           1 },
 /* other options */  
   { "--tol",          eslARG_REAL,    "1e-6",    NULL,       NULL,   NULL,    NULL,     NULL,             "tolerance",                                                                                1 },
@@ -666,7 +666,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   // The grammars used
-  cfg.foldparam->G0 = (esl_opt_IsOn(go, "--r3d"))? RBG_R3D : ( (esl_opt_IsOn(go, "--RBG"))? RBG : RBGJ3J4 );
+  if (esl_opt_IsOn(go, "--r3d")) cfg.foldparam->G0 = (esl_opt_IsOn(go, "--RBG"))? RBG_R3D :  RBGJ3J4_R3D;
+  else                           cfg.foldparam->G0 = (esl_opt_IsOn(go, "--RBG"))? RBG     : RBGJ3J4;
   cfg.foldparam->GP = G6X;
 
   if      (esl_opt_GetBoolean(go, "--cyk"))      cfg.foldparam->F = CYK;
@@ -2513,8 +2514,8 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump (rmlist, cfg->msamap, cfg->firstpos); 
-      struct_rmlist_Write(cfg->ofile.helixcovfile, rmlist, cfg->msamap, cfg->firstpos);
+      struct_rmlist_Dump (msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose); 
+      struct_rmlist_Write(cfg->ofile.helixcovfile, msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
     }
 
     if (cfg->verbose) {
@@ -2543,11 +2544,11 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-    
+
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump(foldrmlist, cfg->msamap, cfg->firstpos);
-      struct_rmlist_Write(cfg->ofile.helixcovfoldfile, foldrmlist, cfg->msamap, cfg->firstpos);
+      struct_rmlist_Dump(msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
+      struct_rmlist_Write(cfg->ofile.helixcovfoldfile, msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
     }
  
     status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);
@@ -2807,7 +2808,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   //
   // SS_cons_xx is not orthodox stockholm format.
   //
-  status = struct_ctlist_MAP(L, foldctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
+  status = struct_ctlist_MAP(L, foldctlist, OL, cfg->msamap, cfg->firstpos, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
   
@@ -2879,7 +2880,7 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
   // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
   //
   // SS_cons_xx is not orthodox stockholm format.
-  status = struct_ctlist_MAP(L, ctlist, OL, cfg->msamap, &octlist, &osslist, NULL, cfg->errbuf, verbose);
+  status = struct_ctlist_MAP(L, ctlist, OL, cfg->msamap, cfg->firstpos, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
 

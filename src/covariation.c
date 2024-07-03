@@ -949,7 +949,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   
   if (data->ctlist) {
     fprintf(stdout, "\n# The given structure\n");
-    status = struct_ctlist_MAP(data->mi->alen, data->ctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
+    status = struct_ctlist_MAP(data->mi->alen, data->ctlist, data->OL, data->msamap, data->firstpos, NULL, NULL, NULL, data->errbuf, data->verbose);
     if (status != eslOK) goto ERROR;
   }
   
@@ -1088,7 +1088,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   }
 
   fprintf(stdout, "\n# The predicted CaCoFold structure\n");
-  status = struct_ctlist_MAP(data->mi->alen, foldctlist, data->OL, data->msamap, NULL, NULL, NULL, data->errbuf, TRUE);
+  status = struct_ctlist_MAP(data->mi->alen, foldctlist, data->OL, data->msamap, data->firstpos, NULL, NULL, NULL, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
   // write the power file output
