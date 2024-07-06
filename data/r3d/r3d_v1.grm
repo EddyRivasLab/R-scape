@@ -16,16 +16,19 @@
 #HL  5'-L Loop R
 #HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
 #------------------------------------------------------------------------------------------------------------------
-HL   URA           -	     -	        U-turn
-HL   GNRA          -         -          GNRA-tetraloop
+ HL   URA          -	     -	        U-turn
+ HL   GNRA         -         -          GNRA-tetraloop
 #HL   N            G         RA         GNRA-tetraloop
  HL   UNCG         -         -          UNCG-tetraloop  
  HL   ANYA         -         -          ANYA-tetraloop  
  HL   CUYG         -   	     -          CUYG-tetraloop  
  HL   YGNN         -   	     -          YGNN-tetraloop  
- HL   UKNRW        -         -          T-loop
+ HL   URRR         -         -          T-loop-tetraloop
  HL   UAACR        -   	     -          L8_RNaseP_bact_a
  HL   AG           UAGUACG   AGACC      Sarcin-ricin_loop
+ HL   AGGAY        -         -          CsrA_binding
+ HL   GAGUA        -         -          GAGUA_pentaloop
+ HL   AA           -         -          AA-5S
  
 
 #BL  5'-L Loop R  F0  
@@ -34,7 +37,9 @@ HL   GNRA          -         -          GNRA-tetraloop
 #BL   Loop(5'-3')  L(5'-3')  R(5'-3')  name        
 #------------------------------------------------------------------------------------------------------------------
  BL   AA           -         -         AA-bulge    
- BL   G            -         -         bulged-G    
+ BL   G            -         -         bulged-G
+ BL   UGRAA        -         -         Docking-elbow
+
 
 
 #IL  5'-L-o Loop-L L-i  F0  5'-R-i Loop-R R-o
@@ -55,10 +60,13 @@ HL   GNRA          -         -          GNRA-tetraloop
  IL   -             -              G,A            A,G            -            -             Tandem-GA
  IL   YCC           AAC            -              -              -            -             Twisted-up
  IL   YAA           RAN            -              -              -            -             UAA_GAN
- IL   AGARA         GGUGRAA        -              -              -            -             Docking-elbow
  IL   RRA           YNR            -              -              -            -             J4a/4b
  IL   AA            AA             -              -              -            -             J4/5-IL
  IL   GUA           GG             -              -              -            -             GUA^GG_RRE
+ IL   CAGG          AGCA           -              -              -            -             S_domain
+ IL   GAAC          CUAG           -              -              -            -             Hook-turn
+ IL   UGRAA         -              -              -              -            -             Docking-elbow
+ IL   UU	    AUU		   -		  -		 -	      -		    pK-turn
 
  
 
@@ -68,9 +76,10 @@ HL   GNRA          -         -          GNRA-tetraloop
 J3	NN  	  NNNNNN     NN	                        J3_typeA
 J3	NNNN  	  NNNN	     NNNN	                J3_typeB
 J3	NN  	  NNN	     NNNNNN	                J3_typeC
-J3	UA	  GUYUCUAC   AC				J3_purine
+J3	U	  YUCUAC     AC				J3_purine
 J3	N	  CUGA	     A		  		J3_hammerhead
 J3      -	  UGAGA	     -				J3_TPP #Breaker
+
 
 #J4   S1(5'-3')   S2(5'-3')  S3(5'-3')   S4(5'-3')     name
 #------------------------------------------------------------------------------------------------------------------
@@ -78,9 +87,12 @@ J4	N  	   -	      NNN	  -	        J4_tRNA
 J4	N  	   N	      NN	  -	        J4_manA
 J4	R  	   -	      -		  R	        J4_U1RNA
 
-#BB  5'- Loop 
-#HL  Loop(5'-3')  name
+
+
+#BS  Loop(5'-3')  name
 #------------------------------------------------------------------------------------------------------------------
-BS	 UKNRW	T-loop
-BS	 RRGU	LoopE-a
-BS	 RARR	LoopE-b
+BS	 UKNRW	          T-loop
+BS	 RRGU	          LoopE-a
+BS	 RARR	          LoopE-b
+BS       AAYAARAACAANARR  CRC_binding
+

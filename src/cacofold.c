@@ -4471,7 +4471,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     /* w=3 rule13: P -> F0 m..m */
     for (d2 = 1; d2 <= d; d2++) {
       status = dp_recursion_rbg_score_P_B3_plain(allow, foldparam, p, psq, mi, covct, cyk, j, d, d2, &sc, &bl_allow, errbuf, verbose);
-      if (!bl_allow) break;
+      if (!bl_allow) continue;
 
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -4511,7 +4511,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     for (d1 = 1; d1 <= d; d1++) {
       for (d2 = 1; d2 <= d-d1; d2++) {
 	status = dp_recursion_rbg_score_P_IL_plain(allow, foldparam, p, psq, mi, covct, cyk, j, d, d1, d2, &sc, &il_allow, errbuf, verbose);
-	if (!il_allow) break;
+	if (!il_allow) continue;
 	    
 	if (sc >= bestsc) {
 	  if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
@@ -5179,7 +5179,7 @@ dp_recursion_rbg_inside(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *ps
     d2 = 0;
     for (d1 = 1; d1 <= d; d1++) {
       dp_recursion_rbg_score_P_B5_plain(allow, foldparam, p, psq, mi, covct, imx, j, d, d1, &sc, &bl_allow, errbuf, verbose);
-      if (!bl_allow) break;
+      if (!bl_allow) continue;
       
       sumsc = e2_FLogsum(sumsc, sc); 
     }
@@ -5194,7 +5194,7 @@ dp_recursion_rbg_inside(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *ps
     d1 = 0;
     for (d2 = 1; d2 <= d; d2++) {
       dp_recursion_rbg_score_P_B3_plain(allow, foldparam, p, psq, mi, covct, imx, j, d, d2, &sc, &bl_allow, errbuf, verbose);
-      if (!bl_allow) break;
+      if (!bl_allow) continue;
       
       sumsc = e2_FLogsum(sumsc, sc); 
     }
@@ -5211,7 +5211,7 @@ dp_recursion_rbg_inside(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, PSQ *ps
 	
 	if (d1 + d2 > MAXLOOP_I) break;
 	dp_recursion_rbg_score_P_IL_plain(allow, foldparam, p, psq, mi, covct, imx, j, d, d1, d2, &sc, &il_allow, errbuf, verbose);
-	if (!il_allow) break;
+	if (!il_allow) continue;
 
 	sumsc = e2_FLogsum(sumsc, sc); 
       }
@@ -6514,7 +6514,7 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       //
       M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
       if (n == HL->nB-1 && !allow_HMM(k+1,l-1,L,covct)) M_allow = FALSE;
-      if (!M_allow) break;
+      if (!M_allow) continue;
       
       if (n == HL->nB-1) {
 	sc = t_loop_M
@@ -6560,7 +6560,7 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //
     L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
     if (n == HL->nB-1 && !allow_HMM(k+1,j,L,covct)) L_allow = FALSE;
-    if (!L_allow) break;
+    if (!L_allow) continue;
     
     if (n == HL->nB-1) {
       sc = t_loop_L
@@ -6603,7 +6603,7 @@ dp_recursion_r3d_cyk_HL(R3D_HL *HL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //
     R_allow = (l > 0 && allow_HMM(l,j,L,covct))? TRUE : FALSE;
     if (n == HL->nB-1 && !allow_HMM(i,l-1,L,covct)) R_allow = FALSE;
-    if (!R_allow) break;
+    if (!R_allow) continue;
 
     if (n == HL->nB-1) {
       sc = t_loop_R
@@ -6734,7 +6734,7 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
       //
       M_allow = (l > 0 && allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
       if (n == BL->nB-1 && !allow_HMM(k+1,l-1,L,covct)) M_allow = FALSE;
-      if (!M_allow) break;
+      if (!M_allow) continue;
 
       if (n == BL->nB-1) {
 	sc = t_loop_M
@@ -6780,7 +6780,7 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //
     L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
     if (n == BL->nB-1 && !allow_HMM(k+1,j,L,covct)) L_allow = FALSE;
-    if (!L_allow) break;
+    if (!L_allow) continue;
     
     if (n == BL->nB-1) {
       sc = t_loop_L
@@ -6823,7 +6823,7 @@ dp_recursion_r3d_cyk_BL(R3D_BL *BL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *
     //
     R_allow = (l > 0 && allow_HMM(l,j,L,covct))? TRUE : FALSE;
     if (n == BL->nB-1 && !allow_HMM(i,l-1,L,covct)) R_allow = FALSE;
-    if (!R_allow) break;
+    if (!R_allow) continue;
 
     if (n == BL->nB-1) {
       sc = t_loop_R
@@ -6951,7 +6951,7 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
       //             ILi^{n}
       //
       M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
-      if (!M_allow) break;
+      if (!M_allow) continue;
       
       if (n == IL->nBi-1) {
 	sc = t_loop_M
@@ -6996,7 +6996,7 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //        ILi^{n}
     //
     L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
-    if (!L_allow) break;
+    if (!L_allow) continue;
    
     if (n == IL->nBi-1) {
       sc = t_loop_L
@@ -7038,7 +7038,7 @@ dp_recursion_r3d_cyk_ILi(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //       ILi^{n}
     //
     R_allow = (allow_HMM(l,j,L,covct))? TRUE : FALSE;
-    if (!R_allow) break;
+    if (!R_allow) continue;
       
      if (n == IL->nBi-1) {
       sc = t_loop_R
@@ -7169,7 +7169,7 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
       //             ILo^{n}
       //
       M_allow = (allow_HMM(i,k,L,covct) && allow_HMM(l,j,L,covct))? TRUE : FALSE;
-      if (!M_allow) break;
+      if (!M_allow) continue;
       
       if (n == IL->nBo) {
 	sc = t_loop_M
@@ -7214,7 +7214,7 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //        ILo^{n}
     //
     L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
-    if (!L_allow) break;
+    if (!L_allow) continue;
       
     if (n == IL->nBo) {
       sc = t_loop_L
@@ -7255,7 +7255,7 @@ dp_recursion_r3d_cyk_ILo(R3D_IL *IL, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     //       ILo^{n}
     //
     R_allow = (allow_HMM(l,j,L,covct))? TRUE : FALSE;
-    if (!R_allow) break;
+    if (!R_allow) continue;
     
     if (n == IL->nBo) {
       sc = t_loop_R
@@ -7348,12 +7348,13 @@ dp_recursion_r3d_cyk_J3J(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
   //             J3J^{n}
   //
   for (d1 = d; d1 >= 0; d1--) {
+    
     if (n == 1 && d-d1 > maxLS3) break;
  
     k = i + d1 - 1;
     
-    if (n == 1) J3J_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
-    if (!J3J_allow) break;
+    if (n == 1) J3J_allow = (allow_HMM(k+1,j,L,covct))? TRUE : FALSE;
+    if (!J3J_allow) continue;
 
     if      (n == 0) { sc = J3mx->mxL->mx[n]->dp[k][d1] + J3mx->mxJ->mx[n+1]->dp[j][d-d1]; }
     else if (n == 1) { sc = J3mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J3->HMMJ3_S3,fwd,errbuf); }
@@ -7414,7 +7415,7 @@ dp_recursion_r3d_cyk_J3L(R3D_J3 *J3, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     if (n == 1 && d1 > maxLS2) break;
 
     J3L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
-    if (!J3L_allow) break;
+    if (!J3L_allow) continue;
 
     if      (n == 0) sc = R3D_hmm_Forward(i,k,mi->pm,J3->HMMJ3_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
     else if (n == 1) sc = R3D_hmm_Forward(i,k,mi->pm,J3->HMMJ3_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
@@ -7481,7 +7482,7 @@ dp_recursion_r3d_cyk_J4J(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
     if (n == 2 && d-d1 > maxLS4) break;
 
     if (n == 2) J4J_allow = (allow_HMM(k+1,j,L,covct))? TRUE : FALSE;
-    if (!J4J_allow) break;
+    if (!J4J_allow) continue;
 
     if      (n <  2) { sc = J4mx->mxL->mx[n]->dp[k][d1] + J4mx->mxJ->mx[n+1]->dp[j][d-d1]; }
     else if (n == 2) { sc = J4mx->mxL->mx[n]->dp[k][d1] + R3D_hmm_Forward(k+1,j,mi->pm,J4->HMMJ4_S4,fwd,errbuf); }
@@ -7545,7 +7546,7 @@ dp_recursion_r3d_cyk_J4L(R3D_J4 *J4, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ 
    if (n == 2 && d1 > maxLS3) break;
 
    J4L_allow = (allow_HMM(i,k,L,covct))? TRUE : FALSE;
-   if (!J4L_allow) break;
+   if (!J4L_allow) continue;
    
    if      (n == 0) sc = R3D_hmm_Forward(i,k,mi->pm,J4->HMMJ4_S1,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 
    else if (n == 1) sc = R3D_hmm_Forward(i,k,mi->pm,J4->HMMJ4_S2,fwd,errbuf) + cyk->F0->dp[j][d-d1]; 

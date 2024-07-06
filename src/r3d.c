@@ -48,17 +48,17 @@ static void r3d_write_J4(FILE *fp, R3D_J4 *J4, int verbose);
 static void r3d_write_BS(FILE *fp, R3D_BS *BS, int verbose);
 
 const R3D_HLparam R3D_HL_PRELOADS = {
-  pRM,
+  pRM_HL,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
 const R3D_BLparam R3D_BL_PRELOADS = {
-  pRM, pRM,
+  pRM_BL, pRM_BL,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };
 const R3D_ILparam R3D_IL_PRELOADS = {
-  pRM,
+  pRM_IL,
   {pRM_LR,    pRM_LoR,   pRM_LoR,   pRM_E},
   {pRM_Loop2, pRM_Loop1, pRM_Loop1, pRM_Loop0},
 };

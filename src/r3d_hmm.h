@@ -21,7 +21,7 @@
 
 #define HMM_tB   0.99999
 #define HMM_uL   0.10           // average length of an insert
-#define HMM_tM   0.99999         // 0 <= tM <= 1
+#define HMM_tM   0.99999        // 0 <= tM <= 1
 
                                 // tMI_frac + tD_frac + tDI_frac = 1
 #define HMM_tMI_frac  0.49      // tMI = (1-tM) * tMI_frac

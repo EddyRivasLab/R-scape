@@ -16,14 +16,16 @@
 #include "covgrammars.h"
 #include "r3d_hmm.h"
 
-                            //     m..m      |      HL
-#define pRM    0.20         //  tP[0](1-pRM) | tP[0] * pRM
-                            //    m..m F0    |    BL F0
-                            //  tP[1](1-pRM) | tP[1] * pRM
-                            //    F0 m..m    |    F0 BL
-                            //  tP[2](1-pRM) | tP[2] * pRM
-                            //  m..m F0 m..m |      IL
-                            //  tP[3](1-pRM) | tP[3] * pRM
+                            //        m..m      |      HL
+#define pRM_HL 0.40         //  tP[0](1-pRM_HL) | tP[0] * pRM_HL
+
+                            //       m..m F0    |    BL F0
+#define pRM_BL 0.40         //  tP[1](1-pRM_BL) | tP[1] * pRM_BL
+                            //       F0 m..m    |    F0 BL
+                            //  tP[2](1-pRM_BL) | tP[2] * pRM_BL
+
+#define pRM_IL 0.40         //   m..m F0 m..m   |      IL
+                            //  tP[3](1-pRM_IL) | tP[3] * pRM_IL
 
 #define pRM_J3 0.20         // J3 ->    J30    |   J3_1    | .. |    J3_M
                             //       1-pRM_J3    pRM_J3/M          pRM_J3/M
