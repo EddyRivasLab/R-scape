@@ -238,9 +238,11 @@ e2_FLogdiffvalExact(float a, float b)
 {
   const float max = ESL_MAX(a, b);
   const float min = ESL_MIN(a, b);
-  double       val;
+  double val;
 
-  val = (min == -eslINFINITY || (max-min) >= 15.7f) ? max : (fabs(min) > 20 && fabs(max-min)/fabs(max) < 1e-6)? -eslINFINITY : max + log(1-exp(min-max));
+  val =
+    (min == -eslINFINITY || (max-min) >= 15.7f) ? max :
+    (fabs(min) > 20 && fabs(max-min)/fabs(max) < 1e-6)? -eslINFINITY : max + log(1-exp(min-max));
   
   return val;
 }

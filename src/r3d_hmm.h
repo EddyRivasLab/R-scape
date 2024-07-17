@@ -19,16 +19,18 @@
 #define EPSILON  1e-4          // emission probability for non matching options.
                                // example: R match, p[1]=p[3]=epsilon, p[0]=p[2]=(1 - 2*epsilon)/2
 
-#define HMM_tB   0.99999
-#define HMM_uL   0.10           // average length of an insert
-#define HMM_tM   0.99999        // 0 <= tM <= 1
+#define HMM_tB    0.91
+#define HMM_uLb   0.20           // average length of an insert at the begining of the motif
+#define HMM_uLe   0.20           // average length of an insert at the end of the motif
+#define HMM_uL    0.10           // average length of an insert withing the motif
+#define HMM_tM    0.99999        // 0 <= tM <= 1
 
                                 // tMI_frac + tD_frac + tDI_frac = 1
 #define HMM_tMI_frac  0.49      // tMI = (1-tM) * tMI_frac
 #define HMM_tD_frac   0.50      // tD  = (1-tM) * tD_frac
 #define HMM_tDI_frac  0.01      // tDI = (1-tM) * tDI_frac
 
-#define HMM_maxL_add 1.5        // DP search up to a len == HMM_avglen + HMM_maxL_add
+#define HMM_maxL_add  1.5       // DP search up to a len == HMM_avglen + HMM_maxL_add
 
 // For an HMM of M states and a sequence of length L
 //
@@ -41,20 +43,29 @@
 //             tS[0]        tS[1]     tS[2]     tS[3]
 //             tM           tMI       tD        tDI
 //
-//
-//   I^{k} --> x I^{k} | S^{k+1} ,, k in [0..M-1]
-//   I^{M} --> x I^{M} | e      
+//   I^{k} --> x I^{k} | S^{k+1} ,, k in [1..M-1]
 //              tI[0]    tI[1]
 //              tI       1-tI
 //
+// Then first and last inserts are special
+//
+//   I^{0} --> x I^{M}  | e          
+//              tIe[0]    tIe[1]
+//              tIe       1-tIe
+//   I^{M} --> x I^{M}  | e          
+//              tIe[0]    tIe[1]
+//              tIe       1-tIe
+//
 //
 typedef struct {
-  int      M;                    /* number of states in the model                    */
-  int      K;                    /* size of alphabet (redundant w/ abc->K)           */
-  SCVAL   tB[2];                 /* transition probabilities for Begin S[0] state    */
-  SCVAL   tS[4];                 /* transition probabilities for all [1..M] S states */
-  SCVAL   tI[2];                 /* transition probabilities for all [0..M] I states */
-  SCVAL **e;                     /* [M+1]xK        emission probabilities            */
+  int      M;                    /* number of states in the model                      */
+  int      K;                    /* size of alphabet (redundant w/ abc->K)             */
+  SCVAL   tB[2];                 /* transition probabilities for Begin S[0] state      */
+  SCVAL   tS[4];                 /* transition probabilities for all [1..M] S states   */
+  SCVAL   tI[2];                 /* transition probabilities for all [1..M-1] I states */
+  SCVAL   tIb[2];                /* transition probabilities for the I[0] state        */
+  SCVAL   tIe[2];                /* transition probabilities for the I[M] state        */
+  SCVAL **e;                     /* [M+1]xK        emission probabilities              */
                                  // e[0]     inset emission probabilities
                                  // e[1...M] match emission probabilities
   float   avglen;                // expected length

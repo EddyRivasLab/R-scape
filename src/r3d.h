@@ -16,24 +16,37 @@
 #include "covgrammars.h"
 #include "r3d_hmm.h"
 
+#define R3D_DELTA 0.10      // pRM_o exp(-frac/deta / (1-frac/delta) ) + pMR [1-exp(-frac/deta / (1-frac/delta))]  if frac <  delta
+                            // pRM                                                                                 if frac >= delta
+
                             //        m..m      |      HL
-#define pRM_HL 0.40         //  tP[0](1-pRM_HL) | tP[0] * pRM_HL
+#define pRM_HL_o 1e-10       //
+#define pRM_HL   0.40       //  tP[0](1-pRM_HL) | tP[0] * pRM_HL
 
                             //       m..m F0    |    BL F0
-#define pRM_BL 0.40         //  tP[1](1-pRM_BL) | tP[1] * pRM_BL
+#define pRM_BL_o 1e-10       //
+#define pRM_BL   0.40       //  tP[1](1-pRM_BL) | tP[1] * pRM_BL
                             //       F0 m..m    |    F0 BL
                             //  tP[2](1-pRM_BL) | tP[2] * pRM_BL
 
-#define pRM_IL 0.40         //   m..m F0 m..m   |      IL
+
+#define pRM_IL_o 1e-10
+#define pRM_IL   0.50       //   m..m F0 m..m   |      IL
                             //  tP[3](1-pRM_IL) | tP[3] * pRM_IL
 
-#define pRM_J3 0.20         // J3 ->    J30    |   J3_1    | .. |    J3_M
+
+#define pRM_J3_o 1e-10
+#define pRM_J3   0.20       // J3 ->    J30    |   J3_1    | .. |    J3_M
                             //       1-pRM_J3    pRM_J3/M          pRM_J3/M
 
-#define pRM_J4 0.20         // J4 ->    J40    |   J4_1    | .. |    J4_M
+
+#define pRM_J4_o 1e-10
+#define pRM_J4   0.20       // J4 ->    J40    |   J4_1    | .. |    J4_M
                             //       1-pRM_J4    pRM_J4/M          pRM_J4/M
 
-#define pRM_BS 0.20         // BB ->    M1     |   BS_1 H   | .. |    BS_M H
+
+#define pRM_BS_o 1e-10
+#define pRM_BS   0.20       // BB ->    M1     |   BS_1 H   | .. |    BS_M H
                             //       1-pRM_BS    pRM_BS/M          pRM_BS/M
 
                             // BT ->    R      |   H BS_1   | .. |    H BS_M

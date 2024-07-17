@@ -40,7 +40,7 @@ static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_M
 static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
 				      CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
-static int   ct_add_if_nested(int *ct, int *ctmain, int L);
+static int   ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L);
 static int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
 static int   ct_count_bpairs(int L, int *ct);
 static void  ct_dump(int L, int *ct);
@@ -1102,7 +1102,7 @@ struct_ctlist_MAP(int L, CTLIST *ctlist, int OL, int *msamap, int firstpos, CTLI
 	if (ct[i+1]    > 0) oct[msamap[i]+firstpos]    = msamap[ct[i+1]-1]    + firstpos;
  	if (covct[i+1] > 0) ocovct[msamap[i]+firstpos] = msamap[covct[i+1]-1] + firstpos;
       }
-    }
+   }
     
     // the structure in the coordenates of the original alignment
     if (octlist->cttype[s] == CTTYPE_RM_HL ||
@@ -2093,7 +2093,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 
       if (verbose) printf("r3d trimming %s (%d/%d) howmany? %d\n", r3dlist->ctname[s], s+1, r3dlist->nct, howmany);
       
-      if (howmany > 0) {
+      if (howmany >= 0) {
 	struct_ctlist_Realloc(ctlist, ctlist->nct+1);
  
 	idx = ctlist->nct - 1;
@@ -2279,7 +2279,7 @@ struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist)
 // if ct is nested relative to ctmain,
 // add ct to ctmain, otherwise leave unchanged
 static int
-ct_add_if_nested(int *ct, int *ctmain, int L)
+ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L)
 {
   ESL_STACK *pda    = NULL;         /* stack for "main" secondary structure */
   int       *ctjoin = NULL;
@@ -2290,7 +2290,11 @@ ct_add_if_nested(int *ct, int *ctmain, int L)
 
   // (1) is it a triplet?
   for (i = 1; i <= L; i ++) 
-    if (ct[i] > 0 && ctmain[i] > 0 && ct[i] != ctmain[i]) return isnested;
+    if (ct[i] > 0 && ctmain[i] > 0 && ct[i] != ctmain[i]) return FALSE;
+
+  // check also with the covctmain which many include more pairs than ctmain
+  for (i = 1; i <= L; i ++) 
+    if (ct[i] > 0 && covctmain[i] > 0 && ct[i] != covctmain[i]) return FALSE;
 
   // not a triplet make the join ct
   ESL_ALLOC(ctjoin, sizeof(int) * (L+1));
@@ -3362,6 +3366,7 @@ ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbu
       idx ++;
     }
   }
+
   *ret_ctlist = ctnew;
 
   struct_ctlist_Destroy(ctlist);
@@ -3401,10 +3406,10 @@ ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose)
   esl_vec_ICopy(ctlist->ct[0],    L+1, newlist->ct[0]);
   esl_vec_ICopy(ctlist->covct[0], L+1, newlist->covct[0]);
 
-  // check if the helices are nested with the s=0 structure
+  // check if the helices are nested with the s=0 structure, and compatible with the covct too
   // if they are, just add to it.
   for (s = 1; s < nct; s ++) {
-    if (!ct_add_if_nested(ctlist->ct[s], newlist->ct[0], L)) {
+    if (!ct_add_if_nested(ctlist->ct[s], newlist->ct[0], newlist->covct[0], L) ) {
       struct_ctlist_Realloc(newlist, newlist->nct+1);
       esl_vec_ICopy(ctlist->ct[s],    L+1, newlist->ct[newlist->nct-1]);
       esl_vec_ICopy(ctlist->covct[s], L+1, newlist->covct[newlist->nct-1]);

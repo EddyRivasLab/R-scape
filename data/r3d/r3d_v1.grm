@@ -17,18 +17,21 @@
 #HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
 #------------------------------------------------------------------------------------------------------------------
  HL   URA          -	     -	        U-turn
- HL   GNRA         -         -          GNRA-tetraloop
-#HL   N            G         RA         GNRA-tetraloop
+#HL   GNRA         -         -          GNRA-tetraloop
+ HL   N            G         RA         GNRA-tetraloop
  HL   UNCG         -         -          UNCG-tetraloop  
  HL   ANYA         -         -          ANYA-tetraloop  
  HL   CUYG         -   	     -          CUYG-tetraloop  
- HL   YGNN         -   	     -          YGNN-tetraloop  
+ HL   YGNN         -   	     -          YGNN-tetraloop
+ HL   GANC         -         -          GANC-tetraloop
+ HL   UNAC         -         -          UNAC-tetraloop
  HL   URRR         -         -          T-loop-tetraloop
  HL   UAACR        -   	     -          L8_RNaseP_bact_a
  HL   AG           UAGUACG   AGACC      Sarcin-ricin_loop
  HL   AGGAY        -         -          CsrA_binding
  HL   GAGUA        -         -          GAGUA_pentaloop
- HL   AA           -         -          AA-5S
+ HL   AA           -         -          AA-5SrRNA
+ HL   GCRYA        -         -          U6-loop
  
 
 #BL  5'-L Loop R  F0  
@@ -59,9 +62,9 @@
  IL   G             -              U,A            C,C            U,A          A,G           G-bulge_Das
  IL   -             -              G,A            A,G            -            -             Tandem-GA
  IL   YCC           AAC            -              -              -            -             Twisted-up
- IL   YAA           RAN            -              -              -            -             UAA_GAN
- IL   RRA           YNR            -              -              -            -             J4a/4b
- IL   AA            AA             -              -              -            -             J4/5-IL
+ IL   YAA           RAN            -              -              -            -             UAA_GAN  # 23S rRNA, RNase P
+ IL   RRRA          YYNR           -              -              -            -             J4a/4b   # riboswitch
+ IL   AA            AA             -              -              -            -             J4/5-IL  # ribozyme
  IL   GUA           GG             -              -              -            -             GUA^GG_RRE
  IL   CAGG          AGCA           -              -              -            -             S_domain
  IL   GAAC          CUAG           -              -              -            -             Hook-turn

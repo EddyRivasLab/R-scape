@@ -80,35 +80,72 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
   //              tI[0]     tI[1]
   //
   // set tI so that the expected length of an insert is HMM_uL
+  //
+  // <n> =    (1-tB) * \sum_n n * tIb^(n-1) * (1-tIb) =    (1-tB)  * 1/(1-tIb)
+  // <n> = (tMI+tDI) * \sum_n n * tI^(n-1)  * (1-tI)  = (tMI+tDI)  * 1/(1-tI)
+  // <n> = (tMI+tDI) * \sum_n n * tIe^(n-1) * (1-tIe)  = (tMI+tDI) * 1/(1-tIe)
+  //
   // then
-  // 1-tI[0] = tI[1] = (1-tB)/uL      for M = 0
-  // 1-tI[0] = tI[1] = (tMI+tDI)/uL   for M > 0
+  //
+  // M > 0:
+  // 1-tIb[0] = tIb[1] = (1-tB)/uLb   
+  // 1-tIe[0] = tIe[1] = (tMI+tDI)/uLe   
+  // 1-tI[0]  = tI[1]  = (tMI+tDI)/uL   
+  //
+  // M == 0:
+  // 1-tIb[0] = tIb[1]  = (1-tB)/uLb   
+  // 1-tIe[0] = tIe[1]   = tIb[1]    
+  // 1-tI[0]  = tI[1]    = tIb[1]    
   //
   log_tMtMI  = e2_FLogsumExact(hmm->tS[0], hmm->tS[1]);
   log_tMItDI = e2_FLogsumExact(hmm->tS[1], hmm->tS[3]);
   
   if (M == 0) {
-    if (exp(hmm->tB[1]) > HMM_uL) { printf("1-tB has to be smaller than %f, but it is %f\n", HMM_uL, exp(hmm->tB[1])); goto ERROR; }
-    hmm->tI[1] = hmm->tB[1] - log(HMM_uL);
+    if (exp(hmm->tB[1]) > HMM_uLb) { printf("1-tB has to be smaller than %f, but it is %f\n", HMM_uLb, exp(hmm->tB[1])); goto ERROR; }
+    hmm->tIb[1] = hmm->tB[1] - log(HMM_uLe);
+    hmm->tIe[1] = hmm->tIb[1];
+    hmm->tI[1]  = hmm->tIb[1];
   }
-  else {
-    if (exp(log_tMItDI) > HMM_uL) { printf("tMI+tDI has to be smaller than %f, but it is %f\n", HMM_uL, exp(log_tMItDI)); goto ERROR; }
+  else { // M > 0
+    if (exp(hmm->tB[1]) >= HMM_uLb) { printf("1-tB has to be smaller than %f, but it is %f\n", HMM_uLb, exp(hmm->tB[1])); goto ERROR; }
+    hmm->tIb[1] = hmm->tB[1] - log(HMM_uLb);
+
+    if (exp(hmm->tB[1]) >= HMM_uLe) { printf("1-tB has to be smaller than %f, but it is %f\n", HMM_uLe, exp(hmm->tB[1])); goto ERROR; }
+    hmm->tIe[1] = log_tMItDI - log(HMM_uLe);
+
+    if (exp(log_tMItDI) >= HMM_uL) { printf("tMI+tDI has to be smaller than %f, but it is %f\n", HMM_uL, exp(log_tMItDI)); goto ERROR; }
     hmm->tI[1] = log_tMItDI - log(HMM_uL);
   }
-  hmm->tI[0] = e2_FLogdiffvalExact(0.0, hmm->tI[1]);
-
+  hmm->tIb[0] = e2_FLogdiffvalExact(0.0, hmm->tIb[1]);
+  hmm->tIe[0] = e2_FLogdiffvalExact(0.0, hmm->tIe[1]);
+  hmm->tI[0]  = e2_FLogdiffvalExact(0.0, hmm->tI[1]);
+  
   if (hmm->tI[1] > 0.) {
     printf("R3D hmm(\"%s\"): 1-tI should be between 0..1 but it is %f\n", RMmotif, exp(hmm->tI[1]));
+    goto ERROR;
+  }
+  if (hmm->tIb[1] > 0.) {
+    printf("R3D hmm(\"%s\"): 1-tIe should be between 0..1 but it is %f\n", RMmotif, exp(hmm->tIb[1]));
+    goto ERROR;
+  }
+  if (hmm->tIe[1] > 0.) {
+    printf("R3D hmm(\"%s\"): 1-tIe should be between 0..1 but it is %f\n", RMmotif, exp(hmm->tIe[1]));
     goto ERROR;
   }
 
   // avglen
   //
-  // M * (tM + tMI) + (M+1) * (tMI + tDI) /(1-tI)
+  // M*(tM + tMI) + (M-1)*(tMI + tDI)/(1-tI) + (tMI + tDI)/(1-tIe) + (1-tB)/(1-tIb)
   //
-  // (1-tB)/(1-tI) for M = 0
+  // (1-tB)/(1-tIe\b) for M = 0
   //
-  hmm->avglen = (M > 0)? M * (exp(log_tMtMI)) + (M+1) * exp(log_tMItDI - hmm->tI[1]) : exp(hmm->tB[1] - hmm->tI[1]);
+  hmm->avglen = (M > 0)?
+    M * (exp(log_tMtMI)) +
+    (M-1) * exp(log_tMItDI - hmm->tI[1]) +
+    exp(log_tMItDI - hmm->tIe[1]) +
+    exp(hmm->tB[1] - hmm->tIb[1])
+    :
+    exp(hmm->tB[1] - hmm->tIb[1]);
   
   // Emission probabilities (profiled)
   //
@@ -242,9 +279,11 @@ R3D_hmm_Write(FILE *fp, R3D_HMM *hmm)
   if (!hmm) return eslOK;
 
   fprintf(fp, "\tHMM %s\n\tM = %d\n\tavglen %.2f\n", hmm->name, hmm->M, hmm->avglen);
-  fprintf(fp, "\ttB = %f %f\n", exp(hmm->tB[0]), exp(hmm->tB[1]));
-  fprintf(fp, "\ttI = %f %f\n", exp(hmm->tI[0]), exp(hmm->tI[1]));
-  fprintf(fp, "\ttS = (M) %f (MI) %f (D) %f (DI) %f\n", exp(hmm->tS[0]), exp(hmm->tS[1]), exp(hmm->tS[2]), exp(hmm->tS[3]));
+  fprintf(fp, "\ttB  = %f %f\n", exp(hmm->tB[0]),  exp(hmm->tB[1]));
+  fprintf(fp, "\ttIb = %f %f\n", exp(hmm->tIb[0]), exp(hmm->tIb[1]));
+  fprintf(fp, "\ttIe = %f %f\n", exp(hmm->tIe[0]), exp(hmm->tIe[1]));
+  fprintf(fp, "\ttI  = %f %f\n", exp(hmm->tI[0]),  exp(hmm->tI[1]));
+  fprintf(fp, "\ttS  = (M) %f (MI) %f (D) %f (DI) %f\n", exp(hmm->tS[0]), exp(hmm->tS[1]), exp(hmm->tS[2]), exp(hmm->tS[3]));
   fprintf(fp, "\tInsert emissions\n");
   fprintf(fp, "\t%d: ", k);    
   for (i = 0; i < hmm->abc->K; i ++)

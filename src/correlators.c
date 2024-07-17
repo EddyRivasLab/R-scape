@@ -66,6 +66,9 @@ corr_CalculateCHI(COVCLASS covclass, struct data_s *data)
     else
       status = corr_CalculateCHI_C16(mi, verbose, errbuf);
     break;
+  default:
+     ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateCHI() CWC not implemented\n");
+     break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateCHI() error\n");
   
@@ -198,6 +201,9 @@ corr_CalculateOMES(COVCLASS covclass, struct data_s *data)
     else
       status = corr_CalculateOMES_C16(mi, verbose, errbuf);
     break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateOMES() CWC not implemented\n");
+    break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateOMES() error\n");
   
@@ -321,6 +327,9 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data)
   case C2:
     status = corr_CalculateGT_C2  (mi, data->allowpair, verbose, errbuf);
     break;
+  case CWC:
+    status = corr_CalculateGT_CWC (mi, data->allowpair, verbose, errbuf);
+    break;
   case CSELECT:
     if (mi->nseq <= mi->nseqthresh || mi->alen <= mi->alenthresh) {
       status = corr_CalculateGT_C2(mi, data->allowpair, verbose, errbuf);
@@ -331,7 +340,7 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data)
     break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateGT() error\n");
-    
+
   if (verbose) {
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
@@ -372,6 +381,45 @@ corr_CalculateGT_C16(struct mutual_s *mi, int verbose, char *errbuf)
 	  exp = mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
 	  obs = mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
 	  gt += (exp > 0. && obs > 0.) ? obs * log (obs / exp) : 0.0;
+	}	  
+      gt *= 2.0;
+
+      mi->COV->mx[i][j] = mi->COV->mx[j][i] = gt;
+      if (gt < mi->minCOV) mi->minCOV = gt;
+      if (gt > mi->maxCOV) mi->maxCOV = gt;
+    }
+
+   return status;
+}
+
+int                 
+corr_CalculateGT_CWC(struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf)
+{
+  double gt;
+  double obs;
+  double exp;
+  int    i, j;
+  int    x, y;
+#if GAPASCHAR
+  int    K = mi->abc->K+1;
+#else
+  int    K = mi->abc->K;
+#endif
+  int    status = eslOK;
+
+  corr_ReuseCOV(mi, GT, C16);
+  
+  // GT
+  for (i = 0; i < mi->alen-1; i++) 
+    for (j = i+1; j < mi->alen; j++) {
+      gt  = 0.0;
+      for (x = 0; x < K; x ++)
+	for (y = 0; y < K; y ++) {
+	   if (is_allowed_pair(x,y,allowpair)) {
+	     exp = mi->nseff[i][j] * mi->pm[i][x] * mi->pm[j][y];
+	     obs = mi->nseff[i][j] * mi->pp[i][j][IDX(x,y,K)];
+	     gt += (exp > 0. && obs > 0.) ? obs * log (obs / exp) : 0.0;
+	   }
 	}	  
       gt *= 2.0;
 
@@ -461,6 +509,9 @@ corr_CalculateMI(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateMI_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = corr_CalculateMI_C16(mi, verbose, errbuf);
+    break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMI() CWC not implemented\n");
     break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMI() error\n");
@@ -583,6 +634,9 @@ corr_CalculateMIr(COVCLASS covclass, struct data_s *data)
     else
       status = corr_CalculateMIr_C16(mi, verbose, errbuf);
     break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIr() CWC not implemented\n");
+     break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIr() error\n");
   
@@ -710,6 +764,9 @@ corr_CalculateMIg(COVCLASS covclass, struct data_s *data)
       status = corr_CalculateMIg_C2 (mi, data->allowpair, verbose, errbuf);
     else
       status = corr_CalculateMIg_C16(mi, verbose, errbuf);
+    break;
+  default:
+    ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIg() CWC not implemented\n");
     break;
   }
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "corr_CalculateMIg() error\n");
@@ -910,7 +967,7 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
     printf("RAFS[%f,%f]\n", mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	if (i==5&&j==118) printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
   
@@ -1063,7 +1120,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int shiftnonneg)
 
       if (isnan(mi->COV->mx[i][j])) ESL_XFAIL(eslFAIL, errbuf, "bad covariation\n");
 
-      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j];
+      if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j]; 
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
     }
 
@@ -1177,7 +1234,7 @@ corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
     for (j = 0; j < mi->alen; j++) {
       mi->nseff[i][j] = 0.;
       mi->ngap[i][j]  = 0.;
-      esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
+      esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
     }
   }
 
@@ -1186,14 +1243,15 @@ corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
   return eslOK;
 }
 
+
 int
 corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS miclass)
 {
   mi->type  = mitype;
   mi->class = miclass;
 
-  if (mi->COV)  esl_dmatrix_SetZero(mi->COV);
-  if (mi->Eval) esl_dmatrix_Set(mi->Eval, eslINFINITY);
+  if (mi->COV)  esl_dmatrix_Set(mi->COV,  -eslINFINITY);
+  if (mi->Eval) esl_dmatrix_Set(mi->Eval,  eslINFINITY);
 
   mi->besthreshCOV = -eslINFINITY;
   mi->minCOV       =  eslINFINITY;

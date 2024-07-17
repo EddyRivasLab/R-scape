@@ -142,6 +142,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
     status = corr_CalculateGT          (covclass, data);
     if (status != eslOK) goto ERROR;
     break;
+
   case MIa: 
     status = corr_CalculateMI          (covclass, data);
     if (status != eslOK) goto ERROR;
@@ -262,9 +263,8 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->verbose) {
     for (i = 0; i < data->mi->alen-1; i++) 
       for (j = i+1; j < data->mi->alen; j++) {
-	if ((data->msamap[i]+data->firstpos==29&&data->msamap[j]+data->firstpos==79)||
-	    (data->msamap[i]+data->firstpos==22&&data->msamap[j]+data->firstpos==36)
-	    ) printf("COV[%d][%d] = %f\n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, data->mi->COV->mx[i][j]);
+	if ((data->msamap[i]+data->firstpos==29&&data->msamap[j]+data->firstpos==79))
+	  printf("COV[%d][%d] = %f\n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, data->mi->COV->mx[i][j]);
       } 
   }
 
@@ -443,16 +443,17 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 
   /* Histogram and Fit */
   if (data->ranklist_null && data->mode == GIVSS) {
+
     if (data->ranklist_null->ha->nb < ranklist->ha->nb) {
       ESL_REALLOC(data->ranklist_null->ha->obs, sizeof(uint64_t) * ranklist->ha->nb);
       for (i = data->ranklist_null->ha->nb; i < ranklist->ha->nb; i++) data->ranklist_null->ha->obs[i] = 0;
       data->ranklist_null->ha->nb = ranklist->ha->nb;
     }
-    
+   
     /* censor the histogram and do an exponential fit to the tail */
     pmass = cov_histogram_pmass(data->ranklist_null->ha, data->pmass, data->fracfit);
     if (isnan(pmass)) ESL_XFAIL(eslFAIL, data->errbuf, "bad Null histogram fit, pmass is nan.");
-
+ 
     if (data->doexpfit) {
       status = cov_NullFitExponential(data->ranklist_null->ha, &data->ranklist_null->survfit, pmass,
 				      &newmass, &data->mu, &data->lambda, data->verbose, data->errbuf);

@@ -29,8 +29,13 @@
 #
 
 
-
-#BS  5'- Loop 
-#HL  Loop(5'-3')  name
+#IL  5'-L-o Loop-L L-i  F0  5'-R-i Loop-R R-o
+#IL  5'-R-i Loop-R R-o  F0  5'-L-o Loop-L L-i
+#
+#IL   Loop-L(5'-3') Loop-R(5'-3')  L-o(5'-3')     R-o(5'-3')     L-i(5'-3')   R-i(5'-3')    name
 #------------------------------------------------------------------------------------------------------------------
-IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
+ 
+ HL   AGGAY        -         -          CsrA_binding
+ IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
+IL   G             -              G,A            A,A            U,A          A,G           G-bulge
+ 

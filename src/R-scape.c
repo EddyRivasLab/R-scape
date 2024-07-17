@@ -52,7 +52,7 @@
 --RAFS,--RAFSa,--RAFSp,\
 --CCF,--CCFp,--CCFa"
 #define POTTSCOVOPTS "--PTFp,--PTAp,--PTDp"
-#define COVCLASSOPTS "--C16,--C2,--CSELECT"
+#define COVCLASSOPTS "--C16,--C2,--CSELECT,--CWC"
 
 #define SAMPLEOPTS   "--samplecontacts,--samplebp,--samplewc"
 
@@ -78,6 +78,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   ESL_RANDOMNESS  *r;	               /* random numbers */
   ESL_ALPHABET    *abc;                /* the alphabet */
   int              abcisRNA;
+
+  int              seed;               /* save the seed to renitialize for each new msa */
   
   double           fragfrac;	       /* seqs less than x*avg length are removed from alignment  */
   double           idthresh;	       /* fractional identity threshold for selecting subset of sequences */
@@ -328,6 +330,7 @@ static ESL_OPTIONS options[] = {
   /* covariation class */
   { "--C16",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 16 covariation classes",                                                                1 },
   { "--C2",          eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use 2 covariation classes",                                                                 1 }, 
+  { "--CWC",         eslARG_NONE,      FALSE,    NULL,       NULL,COVCLASSOPTS,"--GTp",  NULL,           "use only pairs the appear to be Watson-Crick",                                              1 }, 
   { "--CSELECT",     eslARG_NONE,     "TRUE",    NULL,       NULL,COVCLASSOPTS,NULL,  NULL,              "use C2 if nseq <= nseqthresh otherwise use C16",                                            1 },
   { "--nseqthresh",  eslARG_INT,         "8",    NULL,      "n>=0",    NULL,   NULL,"--C2--C16",         "nseqthresh is <n>",                                                                         0 },   
   { "--alenthresh",  eslARG_INT,        "50",    NULL,      "n>0",     NULL,   NULL,"--C2--C16",         "alenthresh is <n>",                                                                         0 },   
@@ -488,7 +491,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
  
   if ((cfg.msafile  = esl_opt_GetArg(go, 1)) == NULL) { 
     if (puts("Failed to get <seqfile> argument on command line") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
-  cfg.r = esl_randomness_CreateFast(esl_opt_GetInteger(go, "--seed"));
+  cfg.seed = esl_opt_GetInteger(go, "--seed");
+  cfg.r    = esl_randomness_Create(cfg.seed);
 
   /* find gnuplot */
   cfg.gnuplot = NULL;
@@ -788,6 +792,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   
   if      (esl_opt_GetBoolean(go, "--C16"))   cfg.covclass = C16;
   else if (esl_opt_GetBoolean(go, "--C2"))    cfg.covclass = C2;
+  else if (esl_opt_GetBoolean(go, "--CWC"))   cfg.covclass = CWC;
   else                                        cfg.covclass = CSELECT;  
 
   /* POTTS model */
@@ -1085,6 +1090,9 @@ main(int argc, char **argv)
     if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
 
+    // reseed so that results are reproducible
+    esl_randomness_Init(cfg.r, cfg.seed);
+    
     original_msa_doctor_names(&msa); 
 
     // reset the histogram step for each msa
@@ -1132,7 +1140,7 @@ main(int argc, char **argv)
       //cfg.foldparam->neg_eval_thresh *= cfg.omsa->alen;
     //}
 
-    /* C16/C2 applies only for RNA covariations; 
+    /* C16/C2/CWC applies only for RNA covariations; 
      * C16 means all letters in the given alphabet
      */
     if (!cfg.abcisRNA) cfg.covclass = C16;
@@ -1299,6 +1307,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.clist            = cfg->clist;
   data.msa2pdb          = cfg->msa2pdb;
   data.msamap           = cfg->msamap;
+  data.firstpos         = cfg->firstpos;
   data.bmin             = cfg->bmin;
   data.w                = cfg->w;
   data.fracfit          = cfg->fracfit;
@@ -1319,7 +1328,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   w_new = (mi->maxCOV - ESL_MAX(data.bmin,mi->minCOV)) / (double) cfg->hpts;
   cfg->w = ESL_MIN(w_old, w_new);
   if (cfg->w < cfg->tol) cfg->w = 0.0; // this is too small variabilty no need to analyzed any further
-  
+
   if (cfg->verbose) printf("w %f minCOV %f bmin %f maxCOV %f tol %f\n", cfg->w, mi->minCOV, data.bmin, mi->maxCOV, cfg->tol);
   
   if (cfg->pt == NULL) potts_Destroy(ptlocal);
@@ -1884,6 +1893,8 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = msa->name; (p = strchr(p, '\'')); ++p) 
       *p = '_';
+    for (p = msa->name; (p = strchr(p, '.'));  ++p) 
+      *p = '_';
     
     (*omsa)->name = msa->name;
   }
@@ -1900,9 +1911,9 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = sqname; (p = strchr(p, '%'));  ++p) 
       *p = '_';
-    for (p = sqname; (p = strchr(p, '\'')); ++p) 
+    for (p = sqname; (p = strchr(p, ','));  ++p) 
       *p = '_';
-      
+          
     (*omsa)->sqname[s] = sqname;
   }
   
@@ -2259,7 +2270,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     (cfg->pdbchain)? esl_sprintf(&outname, "%s.%s.%s",
 				 cfg->msaname, cfg->pdbname, cfg->pdbchain) : esl_sprintf(&outname, "%s.%s", cfg->msaname, cfg->pdbname);
   else
-    esl_sprintf(&outname, "%s",    cfg->msaname);
+    esl_sprintf(&outname, "%s", cfg->msaname);
 
   // the output files
   outfile_create(cfg, outname, &cfg->ofile);
@@ -2309,7 +2320,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   /* create the MI structure */
   cfg->mi = corr_Create(msa->alen, msa->nseq, (cfg->mode == RANSS)? TRUE : FALSE, cfg->nseqthresh, cfg->alenthresh, cfg->abc, cfg->covclass);
   if (cfg->mi == NULL) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to create mutual_s", cfg->errbuf);
-  
+ 
   // If testing the Yule-Simpson effect, shuffle the alignment by rows,
   // while maintaing the gap structure
   if (cfg->YSeffect) {
@@ -2322,6 +2333,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   
   /* the null model first */
   if (cfg->statsmethod == NULLPHYLO) {
+    cfg->pmass = esl_opt_GetReal(go, "--pmass"); // reasign for a new msa
+  
     nshuffle = cfg->nshuffle;
     if (nshuffle < 0) { // set the number of shuffled alignments based on alignment length
       nshuffle = 20;
@@ -2330,6 +2343,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (msa->alen < 40)            { nshuffle = 300; }
       if (msa->nseq < 4)             { nshuffle = 300; if (cfg->mstat->avgid > 0.80) cfg->pmass = 1e-9; }
     }
+
+    cfg->fracfit  = esl_opt_GetReal(go, "--fracfit"); //reasign for a new msa
     if (msa->nseq*msa->alen < 1e3) { cfg->fracfit = 0.3; }
 
     cfg->mode = RANSS;
@@ -2356,7 +2371,6 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (cfg->verbose) esl_histogram_Write(stdout, ranklist_null->ha);
     }
   }
-
   
   if (cfg->ofile.allbranchfile) {
     status = run_allbranch(go, cfg, msa, cfg->T[0], &ranklist_allbranch);

@@ -33,7 +33,8 @@ typedef enum {
 typedef enum {
   C16      = 0,
   C2       = 1,
-  CSELECT  = 2,
+  CWC      = 2,
+  CSELECT  = 3,
 } COVCLASS;
 
 typedef enum {
@@ -430,6 +431,7 @@ extern int              corr_CalculateOMES_C2 (struct mutual_s *mi, ESL_DMATRIX 
 extern int              corr_CalculateGT      (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateGT_C16  (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateGT_C2   (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
+extern int              corr_CalculateGT_CWC  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
 extern int              corr_CalculateMI      (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateMI_C16  (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateMI_C2   (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);

@@ -180,6 +180,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   char *ss       = NULL;
   char *tag      = NULL;
   int   nct      = ctlist->nct;
+  int   n_rm     = 0;  // number of RMs
   int   tagidx;
   int   idx;
   int   s;
@@ -229,7 +230,9 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_RM_IL:
     case CTTYPE_RM_J3:
     case CTTYPE_RM_J4:
-    case CTTYPE_RM_BS: esl_sprintf(&tag, "%s_rm%d_%s", sstag, s, ctlist->ctname[s]);
+    case CTTYPE_RM_BS:
+      n_rm ++;
+      esl_sprintf(&tag, "%s_rm%d_%s", sstag, n_rm, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
       free(tag); tag = NULL;
       break;
@@ -261,6 +264,7 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
   char  *tag        = NULL;
   char  *covtag1    = NULL;
   int    nct        = ctlist->nct;
+  int    n_rm       = 0; // number of RMs
   int    tagidx;
   int    idx;
   int    found;
@@ -347,7 +351,9 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
     case CTTYPE_RM_IL:
     case CTTYPE_RM_J3:
     case CTTYPE_RM_J4:
-    case CTTYPE_RM_BS: esl_sprintf(&covtag1, "%s_rm%d_%s", covtag, s, ctlist->ctname[s]);
+    case CTTYPE_RM_BS:
+      n_rm ++;
+      esl_sprintf(&covtag1, "%s_rm%d_%s", covtag, n_rm, ctlist->ctname[s]);
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");
@@ -752,7 +758,7 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
       else  status = eslFAIL;
     }
     
-    // other markups necessary for r2r to plot the pseudokntos
+    // other markups necessary for r2r to plot the pseudoknots
     esl_sprintf(&tag, "R2R ignore_ss_except_for_pairs _%s outline-no-bpannot", ctlist->ctname[s]);
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
 
@@ -818,6 +824,7 @@ r2r_RM_outline(ESL_MSA *msa, CTLIST *ctlist)
   char       *rmss2 = NULL;
   char       *tag   = NULL;
   int         nct = ctlist->nct;
+  int         n_rm = 0; // number of RMs
   int         L = msa->alen;
   int         i;
   int         s;
@@ -844,6 +851,7 @@ r2r_RM_outline(ESL_MSA *msa, CTLIST *ctlist)
     	ctlist->cttype[s] == CTTYPE_RM_J4 ||
   	ctlist->cttype[s] == CTTYPE_RM_BS   )
       {
+	n_rm ++;
 	esl_ct2wuss_er(ctlist->ct[s], L, ss);
 
 	for (i = 0; i < L; i ++) rmss1[i] = rmss2[i] = '-';
@@ -866,14 +874,17 @@ r2r_RM_outline(ESL_MSA *msa, CTLIST *ctlist)
 	}
 	    
 	// markups necessary for r2r to outline the RMs
-	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s", s, ctlist->ctname[s]);
+	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s", n_rm, ctlist->ctname[s]);
 	r2r_esl_msa_AppendGC(msa, tag, rmss1); free(tag); tag = NULL;
-	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s_tick", s, ctlist->ctname[s]);
+	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s_tick", n_rm, ctlist->ctname[s]);
 	r2r_esl_msa_AppendGC(msa, tag, rmss2); free(tag); tag = NULL;
 
-	esl_sprintf(&tag, "R2R outline_nuc rm%d_%s:x", s, ctlist->ctname[s]);
+	esl_sprintf(&tag, "R2R keep rm%d_%s:x", n_rm, ctlist->ctname[s]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
-	esl_sprintf(&tag, "R2R tick_label rm%d_%s_tick:x rm%d_%s", s, ctlist->ctname[s], s, ctlist->ctname[s]);
+	
+	esl_sprintf(&tag, "R2R outline_nuc rm%d_%s:x", n_rm, ctlist->ctname[s]);
+	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
+	esl_sprintf(&tag, "R2R tick_label rm%d_%s_tick:x rm%d_%s", n_rm, ctlist->ctname[s], n_rm, ctlist->ctname[s]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
       }
   }
