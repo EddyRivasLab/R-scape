@@ -40,6 +40,8 @@ static int    is_allowed_pair(int x, int y, ESL_DMATRIX *allowpair);
 static int    number_pairs(int L, int *ct);
 static int    mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
 				double tol, int verbose, char *errbuf);
+static int    mutual_naive_psi(ESL_RANDOMNESS *r, int i, ESL_MSA *msa, struct mutual_s *mi,
+			       double tol, int verbose, char *errbuf);
 static int    mutual_postorder_ppij(int i, int j, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi,
 				    ESL_DMATRIX **CL, ESL_DMATRIX **CR, double tol, int verbose, char *errbuf);
 static int    shuffle_col(ESL_RANDOMNESS *r, int nseq, int *useme, int *col, int **ret_shcol, char *errbuf);
@@ -344,7 +346,7 @@ corr_CalculateGT(COVCLASS covclass, struct data_s *data)
   if (verbose) {
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	printf("GT[%d][%d] = %f \n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, mi->COV->mx[i][j]);
+	  printf("GT[%d][%d] = %f \n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, mi->COV->mx[i][j]);
       } 
   }
 
@@ -954,7 +956,7 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
       
       bijs = 2.0 * bij->mx[i][j];
       if (i > 0 && j < mi->alen-1) bijs += bij->mx[i-1][j+1];
-      if (j > 0 && i < mi->alen-1) bijs += bij->mx[i+1][j-1];
+      if (j > 0 && i < mi->alen-1 && i < j-2) bijs += bij->mx[i+1][j-1];
       bijs *= 0.25;
 
       mi->COV->mx[i][j] = mi->COV->mx[j][i] = bijs;     
@@ -967,7 +969,7 @@ corr_CalculateRAFS(COVCLASS covclass, struct data_s *data, ESL_MSA *msa)
     printf("RAFS[%f,%f]\n", mi->minCOV, mi->maxCOV);
     for (i = 0; i < mi->alen-1; i++) 
       for (j = i+1; j < mi->alen; j++) {
-	printf("RAF[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
+	printf("RAFS[%d][%d] = %f \n", i, j, mi->COV->mx[i][j]);
       } 
   }
   
@@ -1089,8 +1091,9 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int shiftnonneg)
  
   // COVavg
   for (i = 0; i < L-1; i++) 
-    for (j = i+1; j < L; j++) 
+    for (j = i+1; j < L; j++) {
       COVavg += COV->mx[i][j];
+    }
   if (L > 1) COVavg /= (double)L * ((double)L-1.);
   COVavg *= 2.;
 
@@ -1118,7 +1121,7 @@ corr_CalculateCOVCorrected(ACTYPE actype, struct data_s *data, int shiftnonneg)
       else 
 	ESL_XFAIL(eslFAIL, errbuf, "wrong correction type\n");
 
-      if (isnan(mi->COV->mx[i][j])) ESL_XFAIL(eslFAIL, errbuf, "bad covariation\n");
+      if (isnan(mi->COV->mx[i][j])) ESL_XFAIL(eslFAIL, errbuf, "bad covariation COVavg %f\n", COVavg);
 
       if (mi->COV->mx[i][j] < mi->minCOV) mi->minCOV = mi->COV->mx[i][j]; 
       if (mi->COV->mx[i][j] > mi->maxCOV) mi->maxCOV = mi->COV->mx[i][j];
@@ -1179,11 +1182,13 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
   ESL_ALLOC(mi->nseff,               sizeof(double  *) * alen);
   ESL_ALLOC(mi->ngap,                sizeof(double  *) * alen);
   ESL_ALLOC(mi->pm,                  sizeof(double  *) * alen);
+  ESL_ALLOC(mi->ps,                  sizeof(double  *) * alen);
   for (i = 0; i < alen; i++) {
     ESL_ALLOC(mi->pp[i],             sizeof(double  *) * alen);
     ESL_ALLOC(mi->nseff[i],          sizeof(double   ) * alen);
     ESL_ALLOC(mi->ngap[i],           sizeof(double   ) * alen);
     ESL_ALLOC(mi->pm[i],             sizeof(double   ) * K);
+    ESL_ALLOC(mi->ps[i],             sizeof(double   ) * (abc->K+1));
     for (j = 0; j < alen; j++) {
        ESL_ALLOC(mi->pp[i][j],       sizeof(double  ) * K2);
     }
@@ -1194,12 +1199,13 @@ corr_Create(int64_t alen, int64_t nseq, int ishuffled, int nseqthresh, int alent
  
   /* initialize for adding counts */
   for (i = 0; i < alen; i++) {
-    esl_vec_DSet(mi->pm[i], K, 0.0); 
+    esl_vec_DSet(mi->pm[i], K,        0.0); 
+    esl_vec_DSet(mi->ps[i], abc->K+1, 0.0); 
  
     for (j = 0; j < alen; j++) {
       mi->nseff[i][j] = 0.;
       mi->ngap[i][j]  = 0.;
-      esl_vec_DSet(mi->pp[i][j],       K2, 0.0); 
+      esl_vec_DSet(mi->pp[i][j], K2, 0.0); 
     }
   }
 
@@ -1229,7 +1235,8 @@ corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE mitype, COVCLASS miclass)
 
   /* initialize for adding counts */
   for (i = 0; i < mi->alen; i++) {
-    esl_vec_DSet(mi->pm[i], K, 0.0); 
+    esl_vec_DSet(mi->pm[i], K,            0.0); 
+    esl_vec_DSet(mi->ps[i], mi->abc->K+1, 0.0); 
     
     for (j = 0; j < mi->alen; j++) {
       mi->nseff[i][j] = 0.;
@@ -1275,6 +1282,7 @@ corr_Destroy(struct mutual_s *mi)
       free(mi->ngap[i]);
       free(mi->pp[i]);
       free(mi->pm[i]);
+      free(mi->ps[i]);
     }
 
     if (mi->COV)  esl_dmatrix_Destroy(mi->COV);
@@ -1283,6 +1291,7 @@ corr_Destroy(struct mutual_s *mi)
     free(mi->ngap);
     free(mi->pp);
     free(mi->pm);
+    free(mi->ps);
     free(mi);
   }
 }
@@ -1307,6 +1316,24 @@ corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, i
   return status;
 }
 
+int 
+corr_NaivePS(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+  int64_t alen = msa->alen;
+  int     i;
+  int     status;
+
+  for (i = 0; i < alen; i ++) {
+      status = mutual_naive_psi(r, i, msa, mi, tol, verbose, errbuf);
+      if (status != eslOK) goto ERROR;
+  }
+  
+  return eslOK;
+
+ ERROR:
+  return status;
+}
+
 int
 corr_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
@@ -1323,11 +1350,13 @@ corr_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf)
   for (i = 0; i < mi->alen; i ++) {
     esl_vec_DSet(mi->pm[i], K, 0.0);
 
-    for (j = 0; j < mi->alen; j ++)     
-      for (x = 0; x < K; x ++) {
-	for (y = 0; y < K; y ++) mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
+    for (x = 0; x < K; x ++) {
+      for (j = 0; j < mi->alen; j ++)     
+	for (y = 0; y < K; y ++) {
+	  if (mi->nseff[i][j] > 0) mi->pm[i][x] += mi->pp[i][j][IDX(x,y,K)];
+	}
       }
-
+    
     // normalized
     esl_vec_DNorm(mi->pm[i], K);              
   
@@ -1417,6 +1446,9 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
   default: ESL_XFAIL(eslFAIL, errbuf, "bad method option");
   } 
 
+  status = corr_NaivePS(r, msa, mi, tol, verbose, errbuf);
+  if (status != eslOK) goto ERROR;
+  
   status = corr_Marginals(mi, tol, verbose, errbuf);
   if (status != eslOK) goto ERROR;    
 
@@ -1463,7 +1495,7 @@ corr_Probs(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ri
 
 }
 
-
+ 
 int 
 corr_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
@@ -1493,6 +1525,16 @@ corr_ValidateProbs(struct mutual_s *mi, double tol, int verbose, char *errbuf)
       printf("pm[%d]\n", i);
       esl_vec_DDump(stdout, mi->pm[i], K, NULL);
       ESL_XFAIL(eslFAIL, errbuf, "pm validation failed");
+    }
+  }
+  
+  /* ps validation */
+  for (i = 0; i < mi->alen; i ++) {
+    status = esl_vec_DValidate(mi->ps[i], mi->abc->K+1, tol, errbuf);
+    if (status != eslOK) {
+      printf("ps[%d]\n", i);
+      esl_vec_DDump(stdout, mi->ps[i], mi->abc->K+1, NULL);
+      ESL_XFAIL(eslFAIL, errbuf, "ps validation failed");
     }
   }
   
@@ -1651,8 +1693,7 @@ number_pairs(int L, int *ct)
 
 
 static int    
-mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi,
-		  double tol, int verbose, char *errbuf)
+mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
 {
   int    *coli   = NULL;
   int    *colj   = NULL;
@@ -1664,13 +1705,12 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   int     K = mi->abc->K;
 #endif
   int     K2 = K*K;
-  int     occ = 0;
   int     s;
   int     resi, resj;
   int     x, y;
   int     status;
 
-  esl_vec_DSet(mi->pp[i][j], K2, 1e-5); //some prior to avoid zeros
+  esl_vec_DSet(mi->pp[i][j], K2, 1e-10); //some prior to avoid zeros
   mi->nseff[i][j] = 0.;
 
   ESL_ALLOC(coli, sizeof(int) * msa->nseq);
@@ -1686,7 +1726,6 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
     resj = colj[s];
     
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
-      occ ++;
       mi->nseff[i][j]                += msa->wgt[s];
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s];
     }
@@ -1708,12 +1747,13 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   }
 
   // normalize
-  esl_vec_DNorm(mi->pp[i][j], K2);             
-
+  esl_vec_DNorm(mi->pp[i][j], K2);
+    
   /* symmetrize */
   for (x = 0; x < K; x ++)
     for (y = 0; y < K; y ++) 
       mi->pp[j][i][IDX(y,x,K)] = mi->pp[i][j][IDX(x,y,K)];
+
   mi->nseff[j][i] = mi->nseff[i][j];
   
   free(coli);
@@ -1727,6 +1767,43 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   if (colj)   free(colj);
   if (shcoli) free(shcoli);
   if (shcolj) free(shcolj);
+
+  return status;
+}
+
+static int    
+mutual_naive_psi(ESL_RANDOMNESS *r, int i,  ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf)
+{
+  int    *coli   = NULL;
+  int    *shcoli = NULL;
+  int     K = mi->abc->K+1;
+  int     s;
+  int     resi;
+  int     status;
+
+  esl_vec_DSet(mi->ps[i], K, 1e-5); //some prior to avoid zeros
+
+  ESL_ALLOC(coli, sizeof(int) * msa->nseq);
+  for (s = 0; s < msa->nseq; s ++) 
+    coli[s] = msa->ax[s][i+1];
+
+  /* consider gaps too */
+  for (s = 0; s < msa->nseq; s ++) {
+    resi = coli[s];
+    if (resi < K) mi->ps[i][resi] += msa->wgt[s];
+  }
+
+  // normalize
+  esl_vec_DNorm(mi->ps[i], K);
+  status = esl_vec_DValidate(mi->ps[i], K, tol, errbuf);
+
+  free(coli);
+  if (shcoli) free(shcoli);
+  return eslOK;
+
+ ERROR:
+  if (coli)   free(coli);
+  if (shcoli) free(shcoli);
 
   return status;
 }

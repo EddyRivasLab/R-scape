@@ -107,7 +107,7 @@ ContactMap(char *cmapfile, char *pdbfile, char *pdbchain, char *msafile, char *g
   }
   
   if (ret_ctlist)  *ret_ctlist  = ctlist;  else struct_ctlist_Destroy(ctlist);
-  if (ret_clist)   *ret_clist   = clist;   else free(clist);
+  if (ret_clist)   *ret_clist   = clist;   else CMAP_FreeCList(clist);
   if (ret_msa2pdb) *ret_msa2pdb = msa2pdb; else free(msa2pdb);
 
 
@@ -222,34 +222,34 @@ ContactMap_FromPDB(char *pdbfile, char *pdbchain, char *msafile, ESL_MSA *msa, i
   if (abcisRNA)  {// run rnaview as well
     if (pdbchain) {
       if (noss)
-	esl_sprintf(&args, "%s -N -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s > /dev/null",
+	esl_sprintf(&args, "%s -N -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s > /dev/null 2>&1",
 		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
        else 
-	esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
+	esl_sprintf(&args, "%s -c %s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null 2>&1",
 		    cmd, pdbchain, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     }
     else {
       if (noss)
-	esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
+	esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null 2>&1",
 		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
       else
-	esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null",
+	esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -R -S %s %s %s  > /dev/null 2>&1",
 		    cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     }
   }
   else {
     if (noss)
-      esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null",
+      esl_sprintf(&args, "%s -N -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null 2>&1",
 		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
     else 
-      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null",
+      esl_sprintf(&args, "%s -D %f -L %d -W MIN -C %s -M %s -S %s %s %s  > /dev/null 2>&1",
 		  cmd, cntmaxD, cntmind, tmpmapfile, tmpcfile, pdbfile, msafile, RSCAPE_BIN);
   }
   
   if (1||verbose) printf("%s\n", args);
   status = system(args);
   if (status == -1) ESL_XFAIL(status, errbuf, "Failed to run pdb_parse.pl\n");
-
+  
   status = read_pdbmap(tmpmapfile, L, msa2pdb, omsa2msa, &(clist->pdblen), errbuf);
   if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Failed reading pdbmap", errbuf);
   remove(tmpmapfile);
@@ -303,15 +303,16 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
   for (c = 0; c < nchain; c ++) {
 
     if (!mapfile[c]) continue;
+    
     if (esl_fileparser_Open(mapfile[c], NULL, &efp) != eslOK)  ESL_XFAIL(eslFAIL, errbuf, "file open failed");
-     esl_fileparser_SetCommentChar(efp, '#');
+    esl_fileparser_SetCommentChar(efp, '#');
     while (esl_fileparser_NextLine(efp) == eslOK)
       {
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
 	pdbi = atoi(tok);
 	if (esl_fileparser_GetTokenOnLine(efp, &tok, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse token from file %s", mapfile[c]);
 	posi = atoi(tok);
-	
+
 	if (posi > 0) {
 	  if (pdbi < pdb_min) pdb_min = pdbi;
 	  if (pdbi > pdb_max) pdb_max = pdbi;
@@ -319,21 +320,23 @@ read_pdbmap(char *pdbmapfile, int L, int *msa2pdb, int *omsa2msa, int *ret_pdble
 	  if (i > 0) msa2pdb[i-1] = pdbi-1;
 	}
       }
-       
-    remove(mapfile[c]);
-
+    
     if (efp) esl_fileparser_Close(efp); efp = NULL;
-    if (mapfile[c]) free(mapfile[c]);
   }
  
   *ret_pdblen = pdb_max - pdb_min + 1;
   
-  if (mapfile) free(mapfile);
+  if (mapfile) {
+    for (c = 0; c < nchain; c++) { if (mapfile[c]) { remove(mapfile[c]); free(mapfile[c]); }}
+    free(mapfile);
+  }
   return eslOK;
 
  ERROR:
-  for (c = 0; c < nchain; c++) { if (mapfile[c]) free(mapfile[c]); }
-  if (mapfile) free(mapfile);
+  if (mapfile) {
+    for (c = 0; c < nchain; c++) { if (mapfile[c]) free(mapfile[c]); }
+    free(mapfile);
+  }
   return status;
 }
 

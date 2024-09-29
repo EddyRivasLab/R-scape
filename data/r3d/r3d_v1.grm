@@ -13,12 +13,12 @@
 # N = A/C/G/U
 #
 
-#HL  5'-L Loop R
+
 #HL   Loop(5'-3')  L(5'-3')  R(5'-3')   name
 #------------------------------------------------------------------------------------------------------------------
+ HL   N            G         RA         GNRA-tetraloop
  HL   URA          -	     -	        U-turn
 #HL   GNRA         -         -          GNRA-tetraloop
- HL   N            G         RA         GNRA-tetraloop
  HL   UNCG         -         -          UNCG-tetraloop  
  HL   ANYA         -         -          ANYA-tetraloop  
  HL   CUYG         -   	     -          CUYG-tetraloop  
@@ -27,7 +27,7 @@
  HL   UNAC         -         -          UNAC-tetraloop
  HL   URRR         -         -          T-loop-tetraloop
  HL   UAACR        -   	     -          L8_RNaseP_bact_a
- HL   AG           UAGUACG   AGACC      Sarcin-ricin_loop
+ HL   AG           UAGUACG   AGGACC     Sarcin-ricin_loop
  HL   AGGAY        -         -          CsrA_binding
  HL   GAGUA        -         -          GAGUA_pentaloop
  HL   AA           -         -          AA-5SrRNA
@@ -39,9 +39,9 @@
 #
 #BL   Loop(5'-3')  L(5'-3')  R(5'-3')  name        
 #------------------------------------------------------------------------------------------------------------------
+ BL   UGRAA        -         -         Docking-elbow
  BL   AA           -         -         AA-bulge    
  BL   G            -         -         bulged-G
- BL   UGRAA        -         -         Docking-elbow
 
 
 
@@ -76,16 +76,18 @@
 
 #J3   S1(5'-3')   S2(5'-3')  S3(5'-3')                  name
 #------------------------------------------------------------------------------------------------------------------
+#J3	C	  CUGAGUA    GAA		  	J3_hammerhead-b
+J3	N	  CUGA	     A		  		J3_hammerhead
+J3	U	  YUCUAC     AC				J3_purine
 J3	NN  	  NNNNNN     NN	                        J3_typeA
 J3	NNNN  	  NNNN	     NNNN	                J3_typeB
 J3	NN  	  NNN	     NNNNNN	                J3_typeC
-J3	U	  YUCUAC     AC				J3_purine
-J3	N	  CUGA	     A		  		J3_hammerhead
 J3      -	  UGAGA	     -				J3_TPP #Breaker
 
 
 #J4   S1(5'-3')   S2(5'-3')  S3(5'-3')   S4(5'-3')     name
 #------------------------------------------------------------------------------------------------------------------
+J4	-  	   AA	      -  	  U	        J4_HCV_IRES
 J4	N  	   -	      NNN	  -	        J4_tRNA
 J4	N  	   N	      NN	  -	        J4_manA
 J4	R  	   -	      -		  R	        J4_U1RNA
@@ -98,4 +100,5 @@ BS	 UKNRW	          T-loop
 BS	 RRGU	          LoopE-a
 BS	 RARR	          LoopE-b
 BS       AAYAARAACAANARR  CRC_binding
+
 

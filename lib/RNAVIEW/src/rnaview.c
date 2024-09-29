@@ -607,12 +607,12 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   fprintf(stdout, "# PDB_file %s\n",           pdbfile);
   fprintf(fout,   "PDB data file name: %s\n",  pdbfile);
   num = read_pdb(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
+  if (num == 0) { printf("pdfile %s has no residues (1)\n", pdbfile); exit(1); }
 
   /* get the numbering information of each residue.
      seidx[i][j]; i = 1-num_residue  j=1,2
   */
   seidx = residue_idx(num, ResSeq, Miscs, ChainID, ResName, &num_residue);
-  if (num_residue == 0) { printf("pdfile %s has no residues\n", pdbfile); exit(1); }
 
   if (CHAIN == 1){
     esl_sprintf(&user_chain, ARGV[2]);
@@ -688,11 +688,11 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
    
    bseq[j] --> the sigle letter name for each residue. j = 1 - num_residue.
   */
+  if (bs_atoms == 0) { printf("pdfile %s has no residues (2)\n", pdbfile); exit(1); }
   
   bseq = cvector(1, num_residue);
   nres = 0;
   seidx = residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);
-  if (nres == 0) { printf("pdfile %s has no residues\n", pdbfile); exit(1); }
 
   nchain = nchain_tot;
   chain_idx = lmatrix(1, 500 ,1, 2);  /* # of chains max = 200 */    
@@ -726,9 +726,10 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 
     }
   }
+  if (bs_atoms == 0) { printf("pdfile %s has no residues (3)\n", pdbfile); exit(1); }
+  
   nres = 0;    
   seidx = residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);
-  if (nres == 0) { printf("pdfile %s has no residues\n", pdbfile); exit(1); }
   
   RY = lvector(1, num_residue);
   modify_idx = lvector(1, num_residue);    
@@ -775,7 +776,7 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
 		long num_modify, long *modify_idx, 
                 long *type_stat,long **pair_stat)
 {    
-  long **bs_pairs_tot, num_pair_tot=0, num_single_base=0,*single_base, ntot;
+  long **bs_pairs_tot, num_pair_tot=0, num_single_base=0,*single_base, ntot=0;
   long *sugar_syn;
   double BPRS[7];
   char **pair_type;

@@ -83,16 +83,13 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 	   data->covtype == RAFS || data->covtype == RAFSp || data->covtype == RAFSa ) ) {
       status = corr_Probs(data->r, msa, data->T, data->ribosum, data->mi, data->covmethod, data->tol, data->verbose, data->errbuf);
       if (data->verbose) {
-	for (i = 0; i < data->mi->alen-1; i ++) {
-	  for (j = i+1; j < data->mi->alen; j ++) {
-	    for (x = 0; x < K; x ++) {
-	      sum = 0.0;
-	      for (y = 0; y < K; y ++) sum += data->mi->pp[i][j][IDX(x,y,K)];
-	      for (y = 0; y < K; y ++) printf(" %f ", data->mi->pp[i][j][IDX(x,y,K)]/sum);
-		printf("| marg %f coli %f colj %f\n", sum, data->mi->pm[i][x], data->mi->pm[j][x]);
-	    }
-	  }
-	}
+	for (i = 0; i < data->mi->alen-1; i ++) 
+	  for (j = i+1; j < data->mi->alen; j ++) 
+	    for (x = 0; x < K; x ++) 
+	      for (y = 0; y < K; y ++) {
+		printf("pp %f ", data->mi->pp[i][j][IDX(x,y,K)]);
+		printf("| pm coli %f colj %f\n", data->mi->pm[i][x], data->mi->pm[j][y]);
+	      }
       }
       
       if (status != eslOK) goto ERROR;
@@ -263,8 +260,8 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   if (data->verbose) {
     for (i = 0; i < data->mi->alen-1; i++) 
       for (j = i+1; j < data->mi->alen; j++) {
-	if ((data->msamap[i]+data->firstpos==29&&data->msamap[j]+data->firstpos==79))
-	  printf("COV[%d][%d] = %f\n", data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, data->mi->COV->mx[i][j]);
+	if ((data->msamap[i]+data->firstpos==273&&data->msamap[j]+data->firstpos==302))
+	  printf("i %d j %d COV[%d][%d] = %f\n", i, j, data->msamap[i]+data->firstpos, data->msamap[j]+data->firstpos, data->mi->COV->mx[i][j]);
       } 
   }
 

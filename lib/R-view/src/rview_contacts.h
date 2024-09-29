@@ -94,8 +94,8 @@ typedef struct clist_s {
   
   int      ncnt;     // total number of contacts (includes nbps which include nwwc)
   int      nbps;     // total number of basepairs (all 12 types) (RNA only) nbps \in(subset of) ncnt
-  int      nwwc;     // total number of WWc basepairs            (RNA only) nwwc \in(subset of)  nbps
-  int      npks;     // total number of WWc basepairs in pks      (RNA only) npk  \in(subset of)  nwwc
+  int      nwwc;     // total number of WWc basepairs            (RNA only) nwwc \in(subset of) nbps
+  int      npks;     // total number of WWc basepairs in pks     (RNA only) npk  \in(subset of) nwwc
 
                      // conditions to annotate a pair as "contact"
   double   maxD;     // maximum Eucledian distance 

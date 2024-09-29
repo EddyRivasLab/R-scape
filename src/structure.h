@@ -18,7 +18,7 @@
 // folding parameters
 //
 // power threshold
-#define POWER_THRESH 0.95
+#define POWER_THRESH 0.75 // it was 0.95 in previouse version with a more laxed power curve
 
 // parameters for the main nested structure
 #define HLOOP_MIN 3                  // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-j is minhloop = j-i-1 = 2
@@ -31,14 +31,14 @@
 #define  OVERLAPFRAC       0.51      // max fraction of paired residues that overlap with another existing helix in order to be removed
 #define  MINHELIX          15        // min length to be reported
 
-// special parameter for selecting helxices with covariations
+// special parameter for selecting helices with covariations
 //
 // use these setting for maximal display of basepairing even if overlaping or contiguous
 // COV_MIN_DIST       1
 // HELIX_OVERLAP_TRIM 0
 //
-#define COV_MIN_DIST       2       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
-#define HELIX_OVERLAP_TRIM 1       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
+#define COV_MIN_DIST       1       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
+#define HELIX_OVERLAP_TRIM 0       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
 
 
 typedef struct cov_s {

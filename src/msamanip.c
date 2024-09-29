@@ -1462,7 +1462,8 @@ msamanip_ShuffleTreeSubstitutions(ESL_RANDOMNESS  *r, ESL_TREE *T, ESL_MSA *msa,
   if (shallmsa == NULL) ESL_XFAIL(eslFAIL, errbuf, "bad shuffled msa");
 
   if (verbose) {
-      esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
+    printf("sh_allmsa\n");
+    esl_msafile_Write(stdout, shallmsa, eslMSAFILE_STOCKHOLM); 
   }
 
   /* vector to mark residues in a column */
@@ -1633,20 +1634,20 @@ shuffle_tree_substitutions(ESL_RANDOMNESS *r, int aidx, int didx, ESL_DSQ *axa, 
   for (n = 1; n <= L; n++) {
     if (usecol[n]                         &&
 	axa[n] != axd[n]                  &&
-	esl_abc_XIsCanonical(abc, axa[n]) && 
-	esl_abc_XIsCanonical(abc, axd[n])    )
-	{
-	  nsub[axa[n]*K+axd[n]] ++;
-	  nsubs ++;
-	}
-
-    // assign sh-descendant as the sh-ascendent, except for gaps that we keep the original ones.
-    dxash[n] = (esl_abc_XIsGap(abc, axd[n]))? axd[n] : axash[n];
+	(esl_abc_XIsCanonical(abc, axa[n]) || esl_abc_XIsGap(abc, axa[n])) && 
+	(esl_abc_XIsCanonical(abc, axd[n]) || esl_abc_XIsGap(abc, axd[n])) 
+	)
+      {
+	nsub[axa[n]*K+axd[n]] ++;
+	nsubs ++;
+      }
+    // assign sh-descendant as the sh-ascendent
+    dxash[n] = axash[n];
   }
   
 #if 0
   int x;
-  if (1||verbose) {
+  if (verbose) {
     printf("nsub %d\n", nsubs);
     for (x = 0; x < K; x ++)
       printf("%d %d %d %d %d\n", nsub[x*K+0], nsub[x*K+1], nsub[x*K+2], nsub[x*K+3], nsub[x*K+4]);

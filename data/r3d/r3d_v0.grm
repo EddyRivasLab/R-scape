@@ -36,6 +36,6 @@
 #------------------------------------------------------------------------------------------------------------------
  
  HL   AGGAY        -         -          CsrA_binding
- IL   N             -              R,A,R,R        A,U,R,R        -            -             Loop-E
-IL   G             -              G,A            A,A            U,A          A,G           G-bulge
+ IL   N            -              R,A,R,R        A,U,R,R        -            -             Loop-E
+ IL   G            -              G,A            A,A            U,A          A,G           G-bulge
  

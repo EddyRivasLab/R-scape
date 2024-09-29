@@ -52,6 +52,7 @@ get_reference_pdb(char *BDIR)
   long     i,j,k,snum;
   double **sx;
   
+
   sAtomName = cmatrix(1, 20, 0, 4);
   sx = dmatrix(1, 20, 1, 3);
 
@@ -523,7 +524,7 @@ long **residue_idx(long num, long *ResSeq, char **Miscs, char *ChainID,
   long  *temp;
   long   i;
   long   n;
-  
+
   bidx = cmatrix(1, num, 0, 12);        /* normally 9 */
   temp = lvector(1, num);
 

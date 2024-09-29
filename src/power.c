@@ -78,10 +78,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   
   if (ret_spair == NULL) return eslOK;
 
-  if (!nsubs && !ndouble && !njoin)           esl_fatal("need some kind of substitutions!");
-  if (!nsubs   && power->type == SINGLE_SUBS) esl_fatal("you need single_subs");
-  if (!njoin   && power->type == JOIN_SUBS)   esl_fatal("you need join_subs");
-  if (!ndouble && power->type == DOUBLE_SUBS) esl_fatal("you need double_subs");
+  if (!nsubs && !ndouble && !njoin) esl_fatal("need some kind of substitutions!");
   
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 
@@ -93,14 +90,14 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
       spair[n].j      = j;
 
       spair[n].nseff        = mi->nseff[i][j];
-      spair[n].powertype    = power->type;
+      spair[n].powertype    = (ndouble)? DOUBLE_SUBS : ( (njoin)? JOIN_SUBS : SINGLE_SUBS );
       spair[n].nsubs        = (nsubs)?   nsubs[i] + nsubs[j] : 0;
-      spair[n].power        = -1.;
+      spair[n].power        = 0.;
       spair[n].nsubs_join   = (njoin)?   njoin[i*alen+j]     : 0;
       spair[n].power_join   = -1.;
       spair[n].nsubs_double = (ndouble)? ndouble[i*alen+j]   : 0;
       spair[n].power_double = -1.;
-      
+
       spair[n].covary = FALSE;
       spair[n].sc     = -1.;
       spair[n].Pval   = -1.;
@@ -233,16 +230,19 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   if (fp == NULL) return;
 	
   powertype = spair[0].powertype;
-
+  
   if (in_given) fprintf(fp, "\n# Power analysis of given structure \n#\n");
   else          fprintf(fp, "\n# Power analysis of CaCoFold structure \n#\n");
+  
   switch(powertype) {
   case SINGLE_SUBS:
     fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
     fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
     fprintf(fp, "#----------------------------------------------------------------\n");
     for (n = 0; n < dim; n ++) {
-      if (spair[n].powertype != powertype) esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype. n=%d found %d and %d", n, spair[n].powertype, powertype);
+      if (spair[n].powertype != powertype)
+	esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype. n=%d found %d and %d",
+		  n, spair[n].powertype, powertype);
       
       if ( ( in_given && spair[n].bptype_given == WWc) ||
 	   (!in_given && spair[n].bptype_caco  == WWc)   ) {
@@ -278,7 +278,7 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
     break;
     
   case DOUBLE_SUBS:
-	   fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
+	   fprintf(fp, "# Powertype = DOUBLE SUBSTITUTIONS\n");
 	   fprintf(fp, "# covary  left_pos      right_pos    subs_double     power_double\n");
     fprintf(fp, "#----------------------------------------------------------------\n");
     for (n = 0; n < dim; n ++) {

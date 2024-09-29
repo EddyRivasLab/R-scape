@@ -110,6 +110,7 @@ struct mutual_s {
   double       ***pp;          // joint probability of two position [0,alen-1][0.alen-1][0..K*K-1]
   double        **pm;          // marginal probabilities [0,alen-1][0..K-1]
   double        **nseff;       // effective number of sequences  [0,alen-1][0,alen-1]
+  double        **ps;          // single probabilities [0,alen-1][0..K]
   double        **ngap;        // number of gaps  [0,alen-1][0,alen-1]
 
   COVTYPE         type;
@@ -425,7 +426,7 @@ struct data_s {
 extern int              corr_CalculateCHI     (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateCHI_C16 (struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateCHI_C2  (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
-;extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data);
+extern int              corr_CalculateOMES    (COVCLASS covclass, struct data_s *data);
 extern int              corr_CalculateOMES_C16(struct mutual_s *mi,                         int verbose, char *errbuf);
 extern int              corr_CalculateOMES_C2 (struct mutual_s *mi, ESL_DMATRIX *allowpair, int verbose, char *errbuf);
 extern int              corr_CalculateGT      (COVCLASS covclass, struct data_s *data);
@@ -451,6 +452,7 @@ extern int              corr_Reuse(struct mutual_s *mi, int ishuffled, COVTYPE m
 extern int              corr_ReuseCOV(struct mutual_s *mi, COVTYPE mitype, COVCLASS covclass);
 extern void             corr_Destroy(struct mutual_s *mi);
 extern int              corr_NaivePP(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
+extern int              corr_NaivePS(ESL_RANDOMNESS *r, ESL_MSA *msa, struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              corr_Marginals(struct mutual_s *mi, double tol, int verbose, char *errbuf);
 extern int              corr_PostOrderPP(ESL_MSA *msa, ESL_TREE *T, struct ribomatrix_s *ribosum, struct mutual_s *mi, 
 					double tol, int verbose, char *errbuf);

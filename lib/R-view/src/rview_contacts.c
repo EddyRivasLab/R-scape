@@ -38,7 +38,7 @@ rview_CreateContacts(FILE *fp, PDBX *pdbx, double maxD, int minL, DISTTYPE distt
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "error in rview_RNABasepairs()");
     
     if (tmp->ncnt > 0) { // tmp clist has contacts, add to clist array
-      if (1||verbose) { printf("\nnew list: %d\n", ncl+1); CMAP_Dump(stdout, tmp, TRUE); }
+      if (verbose) { printf("\nnew list: %d\n", ncl+1); CMAP_Dump(stdout, tmp, TRUE); }
       CMAP_AddClist(ncl++, clist, tmp, errbuf);
     }
     CMAP_ReuseCList(tmp);
@@ -450,7 +450,7 @@ int
 CMAP_DumpShort(FILE *fp, CLIST *clist)
 {
   if (clist->pdbname == NULL) {
-    fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs (%d pk))\n", clist->ncnt, clist->nbps, clist->nwwc, clist->npks);
+    fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
     return eslOK;
   }
   
@@ -468,7 +468,7 @@ CMAP_DumpShort(FILE *fp, CLIST *clist)
     fprintf(fp, "# seq2:     (%ld)\n",  clist->len2);
     //fprintf(fp, "# %s\n",                clist->ch2seq);
   }
-  fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs (%d pk))\n", clist->ncnt, clist->nbps, clist->nwwc, clist->npks);
+  fprintf(fp, "# contacts  %d (%d bpairs %d wc bpairs)\n", clist->ncnt, clist->nbps, clist->nwwc);
   if (clist->maxD   > 0)           fprintf(fp, "# maxD      %.2f\n", clist->maxD);
   if (clist->mind   > 0)           fprintf(fp, "# mind      %.d\n",  clist->mind);
   if (clist->disttype == DIST_MIN) fprintf(fp, "# distance  MIN\n");

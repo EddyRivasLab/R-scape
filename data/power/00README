@@ -1,149 +1,4 @@
-ER, Sat Jul 28 13:11:50 CEST 2018
-
-detection power file for R-scape
-R-scape.power.csv
-
-to create a power file
-
-cd data/power
-~/src/src/mysource/bin/R-scape -s --power Rfam.13.0.ss.power.1    ~/projects/R-scape/data/rfam/rfam13.0/Rfam.seed > Rfam.13.0.seed.ss.out
-~/src/src/mysource/bin/R-scape    --power Rfam.13.0.noss,power.1  ~/projects/R-scape/data/rfam/rfam13.0/Rfam.seed > Rfam.13.0.seed.noss.out
-
-
-~/src/src/mysource/scripts/rank_by_F.pl  Rfam.13.0.seed.ss.out >  Rfam.13.0.seed.ss.rank
-
-
-
-Rfam.13.0.power.1 // using a histogram bin = 1 (substituions)
-Rfam.13.0.power.5 // using a histogram bin = 5 (subsitutions)
-
-
-FI
----
-python script:                ~/src/src/myource/R-scape_power.ipynb
-fits:                         data/power/Rfam.13.0.power.1
-to a polynomial to create:    data/power/R-scape.power.csv
-
-
-
-investigating outlayers in data/power/Rfam.13.0.power.1
---------------------------------------------------------
-
-basepair with many substitutions but low R-scape significance
-
-
----------------------------------------------------------------------------------
-Rfam14.0
-    87 families with crystal structure: Rfam14.0.3D.families
-					Rfam14.0.3D.families.acc
-					Rfam.14.0.seed.3D.sto
----------------------------------------------------------------------------------
-~/projects/R-scape/data/rfam/rfam14.0/Rfam14.0.3D.families
-
-~/src/src/mysource/lib/hmmer/easel/miniapps/esl-afetch -f ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed Rfam14.0.3D.families.acc > Rfam.14.0.seed.3D.sto
-
-cd ~/src/src/mysource/data/power
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D                --nofigures Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.subs.rscape
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed                   --nofigures ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.subs.rscape
-
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed.3D --doublesubs   --nofigures Rfam.14.0.seed.3D.sto                           > Rfam.14.0.seed.3D.double.rscape
-~/src/src/mysource/bin/R-scape -s --power Rfam.14.0.seed    --doublesubs   --nofigures ~/projects/R-scape/data/rfam/rfam14.0/Rfam.seed > Rfam.14.0.seed.double.rscape
-
-
-
-----------------------------------------------------------------------------
-FIT
-R-scape.power.csv used by R-scape 
-----------------------------------------------------------------------------
-python script:                ~/src/src/myource/R-scape_power.ipynb
-
-fits:                         data/power/Rfam.14.0.seed.power.subs
-			      data/power/Rfam.14.0.seed.power.double
-                              data/power/Rfam.14.0.seed.3D.power.subs
-                              data/power/Rfam.14.0.seed.3D.power.double
-			      
-to a polynomial to create:    data/power/Rfam.14.0.seed.power.subs.csv
-                              data/power/Rfam.14.0.seed.power.double.csv
-                              data/power/Rfam.14.0.seed.3D.power.subs.csv
-			      data/power/Rfam.14.0.seed.3D.power.double.csv
-
-# set the power file for R-scape default
-#
-cd ~/src/src/mysource/data/power
-rm R-scape.power.double.csv
-ln -s Rfam.14.0.seed.3D.power.double.csv R-scape.power.double.csv
-
-rm R-scape.power.subs.csv
-ln -s Rfam.14.0.seed.3D.power.subs.csv   R-scape.power.subs.csv
-
-
-
----------------------------------------------------------------------------------------
-14 AUG 2019
-new method
-------------------------------------------------------------------------------------------
-~/src/src/mysource/scripts/power_by_equal_size_bin.pl ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs > ~/src/src/mysource/data/power/Rfam.14.0.seed.3D.power.subs.bin
-
-same python script produces new power figure:
-
-open Rfam.14.0.seed.3D.power.subs.pdf
-
-
-
----------------------------------------------------------------------------------------------------------------------------------------------
-21 July 2020
-update
-             recalculating after fixing bug in function Tree_Substitutions() in msatree.c
-
-also added option --powergaps to either count res->gap as changes or not
-----------------------------------------------------------------------------------------------------------------------------------------------
-cd ~/src/Mysrc/R-scape/data/power
-~/src/Mysrc/R-scape/bin/R-scape -s --power             Rfam.14.0.seed.3D              --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power             Rfam.14.0.seed.3D --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power --powergaps Rfam.14.0.seed.3D              --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power --powergaps Rfam.14.0.seed.3D --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.rscape
-
---------------------------------------------------------------------------------------------------------------------------------------------------
-FIT
-R-scape.power.csv used by R-scape 
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs          > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.bin
-~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps.bin
-
-----------------------------------------------------------------------------
-FIT
-R-scape.power.csv used by R-scape 
-----------------------------------------------------------------------------
-python script:                ~/src/Mysrc/R-scape/R-scape_power.ipynb
-
-fits:                         data/power/Rfam.14.0.seed.3D.power.subs
-                              data/power/Rfam.14.0.seed.3D.power.double
-			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps
-                              data/power/Rfam.14.0.seed.3D.power.double.withgaps
-			      
-to a polynomial to create:    data/power/Rfam.14.0.seed.3D.power.subs.csv
-			      data/power/Rfam.14.0.seed.3D.power.double.csv
-			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps.csv
-                              data/power/Rfam.14.0.seed.3D.power.double.withgaps.csb
-			      
-			      
-# set the power file for R-scape default
-#
-cd ~/src/src/mysource/data/power
-
-rm R-scape.power.double.csv
-ln -s Rfam.14.0.seed.3D.power.double.csv          R-scape.power.double.csv
-
-rm R-scape.power.double.withgaps.csv
-ln -s Rfam.14.0.seed.3D.power.double.withgaps.csv R-scape.power.double.withgaps.csv
-
-rm R-scape.power.subs.csv
-ln -s Rfam.14.0.seed.3D.power.subs.csv            R-scape.power.subs.csv
-
-rm R-scape.power.subs.withgaps.csv
-ln -s Rfam.14.0.seed.3D.power.subs.withgaps.csv   R-scape.power.subs.withgaps.csv
-
-
+Wed Sep  4 17:15:52 EDT 2024
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 12 July 2022
@@ -151,68 +6,77 @@ update
              recalculating after changing function Tree_Substitutions() in msatree.c
 
 also added option --joinsubs
-----------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+4 Sep 2024
+                the changes to Tree_Substitutions() in msatree.c have been reverted.
+---------------------------------------------------------------------------------------------------------------------------------------------
+       
+
 cd ~/src/Mysrc/R-scape/data/power
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D                          --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D             --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D             --joinsubs   --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.join.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps              --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.subs.withgaps.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps --doublesubs --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.double.withgaps.rscape
-~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps --joinsubs   --nofigures Rfam.14.0.seed.3D.sto  > Rfam.14.0.seed.3D.join.withgaps.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D                          --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.subs.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D             --doublesubs --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.double.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D             --joinsubs   --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.join.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D --powergaps              --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.subs.withgaps.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D --powergaps --doublesubs --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.double.withgaps.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.15.0.seed.3D --powergaps --joinsubs   --nofigures --outdir R-scape Rfam.15.0.seed.3D.sto  > R-scape/Rfam.15.0.seed.3D.join.withgaps.rscape
+
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D                          --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.subs.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D             --doublesubs --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.double.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D             --joinsubs   --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.join.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps              --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.subs.withgaps.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps --doublesubs --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.double.withgaps.rscape
+~/src/Mysrc/R-scape/bin/R-scape -s --power Rfam.14.0.seed.3D --powergaps --joinsubs   --nofigures --outdir R-scape_14.0 Rfam.14.0.seed.3D.sto  > R-scape_14.0/Rfam.14.0.seed.3D.join.withgaps.rscape
+cd ../../
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 FIT
 R-scape.power.csv used by R-scape 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
-~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs          > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.bin
-~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps > ~/src/Mysrc/R-scape/data/power/Rfam.14.0.seed.3D.power.subs.withgaps.bin
+~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.15.0.seed.3D.power.subs          > ~/src/Mysrc/R-scape/data/power/Rfam.15.0.seed.3D.power.subs.bin
+~/src/Mysrc/R-scape/scripts/power_by_equal_size_bin.pl ~/src/Mysrc/R-scape/data/power/Rfam.15.0.seed.3D.power.subs.withgaps > ~/src/Mysrc/R-scape/data/power/Rfam.15.0.seed.3D.power.subs.withgaps.bin
 
 ----------------------------------------------------------------------------
 FIT
 R-scape.power.csv used by R-scape 
 ----------------------------------------------------------------------------
-python script:                ~/src/Mysrc/R-scape/R-scape_power.ipynb
+python script:                ~/src/Mysrc/R-scape/python/R-scape_power.ipynb
 
-cd ~/src/src/mysource/data/power
+cd ~/src/Mysrc/R-scape
 jupyter notebook python/R-scape_power.ipynb
 
 
-fits:                         data/power/Rfam.14.0.seed.3D.power.subs
-                              data/power/Rfam.14.0.seed.3D.power.double
-                              data/power/Rfam.14.0.seed.3D.power.join
-			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps
-                              data/power/Rfam.14.0.seed.3D.power.double.withgaps
-                              data/power/Rfam.14.0.seed.3D.power.join.withgaps
+fits:                         data/power/Rfam.15.0.seed.3D.power.subs
+                              data/power/Rfam.15.0.seed.3D.power.double
+                              data/power/Rfam.15.0.seed.3D.power.join
+			      data/power/Rfam.15.0.seed.3D.power.subs.withgaps
+                              data/power/Rfam.15.0.seed.3D.power.double.withgaps
+                              data/power/Rfam.15.0.seed.3D.power.join.withgaps
 			      
-to a polynomial to create:    data/power/Rfam.14.0.seed.3D.power.subs.csv
-			      data/power/Rfam.14.0.seed.3D.power.double.csv
-			      data/power/Rfam.14.0.seed.3D.power.join.csv
-			      data/power/Rfam.14.0.seed.3D.power.subs.withgaps.csv
-                              data/power/Rfam.14.0.seed.3D.power.double.withgaps.cvs
-                              data/power/Rfam.14.0.seed.3D.power.join.withgaps.cvs
+to a polynomial to create:    data/power/Rfam.15.0.seed.3D.power.subs.csv
+			      data/power/Rfam.15.0.seed.3D.power.double.csv
+			      data/power/Rfam.15.0.seed.3D.power.join.csv
+			      data/power/Rfam.15.0.seed.3D.power.subs.withgaps.csv
+                              data/power/Rfam.15.0.seed.3D.power.double.withgaps.cvs
+                              data/power/Rfam.15.0.seed.3D.power.join.withgaps.cvs
 			      
 			      
 # set the power file for R-scape default
 #
-cd ~/src/src/mysource/data/power
-
+cd ~/src/Mysrc/R-scape/data/power
 rm R-scape.power.subs.csv
-ln -s Rfam.14.0.seed.3D.power.subs.csv            R-scape.power.subs.csv
-
+ln -s Rfam.15.0.seed.3D.power.subs.csv            R-scape.power.subs.csv
 rm R-scape.power.subs.withgaps.csv
-ln -s Rfam.14.0.seed.3D.power.subs.withgaps.csv   R-scape.power.subs.withgaps.csv
-
+ln -s Rfam.15.0.seed.3D.power.subs.withgaps.csv   R-scape.power.subs.withgaps.csv
 rm R-scape.power.double.csv
-ln -s Rfam.14.0.seed.3D.power.double.csv          R-scape.power.double.csv
-
+ln -s Rfam.15.0.seed.3D.power.double.csv          R-scape.power.double.csv
 rm R-scape.power.double.withgaps.csv
-ln -s Rfam.14.0.seed.3D.power.double.withgaps.csv R-scape.power.double.withgaps.csv
-
+ln -s Rfam.15.0.seed.3D.power.double.withgaps.csv R-scape.power.double.withgaps.csv
 rm R-scape.power.join.csv
-ln -s Rfam.14.0.seed.3D.power.join.csv            R-scape.power.join.csv
-
+ln -s Rfam.15.0.seed.3D.power.join.csv            R-scape.power.join.csv
 rm R-scape.power.join.withgaps.csv
-ln -s Rfam.14.0.seed.3D.power.join.withgaps.csv   R-scape.power.join.withgaps.csv
-
+ln -s Rfam.15.0.seed.3D.power.join.withgaps.csv   R-scape.power.join.withgaps.csv
+cd ../../
 

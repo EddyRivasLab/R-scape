@@ -156,6 +156,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              submsa;              /* set to the number of random seqs taken from original msa.
 					 * Set to 0 if we are taking all */
   int              cshuffle;            /* shuffle the columns of the alignment before analysis */
+  int              cushuffle;           /* shuffle the unpaired columns of the alignment before analysis */
   int              vshuffle;            /* shuffle the residues in a column */
   
   MSA_STAT        *omstat;              /* statistics of the original alignment */
@@ -284,6 +285,7 @@ static ESL_OPTIONS options[] = {
   { "--ntree",         eslARG_INT,       "1",    NULL,      "n>0",   NULL,    NULL,"--treefile",         "number of trees obtained by sequence rearrangements. Default is one from msa as is",        1 },
   { "--vshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the residues in a column",                                                          1 },
   { "--cshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the columns of the alignment",                                                      1 },
+  { "--cushuffle",    eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the unpaired columns of the alignment",                                             1 },
   /* Control of pdb contacts */
   { "--cntmaxD",      eslARG_REAL,     "8.0",    NULL,      "x>0",   NULL,    NULL,  NULL,               "max distance for contact definition",                                                       1 },
   { "--pdb",        eslARG_INFILE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "read pdb structure from file <f>",                                                          1 },
@@ -573,6 +575,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.consensus   = esl_opt_IsOn(go, "--consensus")?                                   TRUE : FALSE;
   cfg.vshuffle    = esl_opt_IsOn(go, "--vshuffle")?                                    TRUE : FALSE;
   cfg.cshuffle    = esl_opt_IsOn(go, "--cshuffle")?                                    TRUE : FALSE;
+  cfg.cushuffle   = esl_opt_IsOn(go, "--cushuffle")?                                   TRUE : FALSE;
   cfg.maxsq_gsc   = 1000;
   cfg.nshuffle    = esl_opt_IsOn(go, "--nshuffle")?   esl_opt_GetInteger(go, "--nshuffle")  : -1.0;
   cfg.nseqthresh  = esl_opt_GetInteger(go, "--nseqthresh");
@@ -670,7 +673,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   }
   
   // The grammars used
-  if (esl_opt_IsOn(go, "--r3d")) cfg.foldparam->G0 = (esl_opt_IsOn(go, "--RBG"))? RBG_R3D :  RBGJ3J4_R3D;
+  if (esl_opt_IsOn(go, "--r3d")) cfg.foldparam->G0 = (esl_opt_IsOn(go, "--RBG"))? RBG_R3D : RBGJ3J4_R3D;
   else                           cfg.foldparam->G0 = (esl_opt_IsOn(go, "--RBG"))? RBG     : RBGJ3J4;
   cfg.foldparam->GP = G6X;
 
@@ -985,8 +988,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 	esl_sprintf(&cfg.powerfile,    "%s.power.double",    esl_opt_GetString(go, "--power"));
 	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.double", esl_opt_GetString(go, "--power"));
       }
-      if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.double   file %s", cfg.powerfile);
-      if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.double file %s", cfg.powerhisfile);
     }
     else if (cfg.powerjoin) { // create the power file using join substitutions
       if (cfg.power_includegaps) {
@@ -997,8 +998,6 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 	esl_sprintf(&cfg.powerfile,    "%s.power.join",    esl_opt_GetString(go, "--power"));
 	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.join", esl_opt_GetString(go, "--power"));
       }
-      if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power.join   file %s", cfg.powerfile);
-      if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open poerhis.join file %s", cfg.powerhisfile);
     }
     else { // create the power file using single substitutions
       if (cfg.power_includegaps) {
@@ -1009,10 +1008,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 	esl_sprintf(&cfg.powerfile,    "%s.power.subs",             esl_opt_GetString(go, "--power"));
 	esl_sprintf(&cfg.powerhisfile, "%s.powerhis.subs",          esl_opt_GetString(go, "--power"));
       }
-      
-      if ((cfg.powerfp    = fopen(cfg.powerfile,     "w")) == NULL) esl_fatal("Failed to open power.subs    file %s", cfg.powerfile);
-      if ((cfg.powerhisfp = fopen(cfg.powerhisfile,  "w")) == NULL) esl_fatal("Failed to open powerhis.subs file %s", cfg.powerhisfile);
     }
+    if ((cfg.powerfp    = fopen(cfg.powerfile,    "w")) == NULL) esl_fatal("Failed to open power    file %s", cfg.powerfile);
+    if ((cfg.powerhisfp = fopen(cfg.powerhisfile, "w")) == NULL) esl_fatal("Failed to open powerhis file %s", cfg.powerhisfile);
 
     // histograms for substitutions in basepairs and significantly covarying basepairs
     cfg.powerhis = power_Histogram_Create(0.0, 10000, 1.0);
@@ -1036,7 +1034,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
 
     power_Read(cfg.powerfile, cfg.powerdouble, cfg.powerjoin, cfg.power_includegaps, &cfg.power, cfg.errbuf, cfg.verbose);
   }
-  
+ 
   *ret_go  = go;
   *ret_cfg = cfg;
 
@@ -1702,12 +1700,14 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   char    *type       = NULL;
   char    *tok        = NULL;
   int     *useme      = NULL;
+  int     *ct         = NULL;
   int      alen = msa->alen;
   int64_t  tstart, tend;
   int64_t  startpos, endpos;
   int      seq_cons_len = 0;
   int      nremoved = 0;	  /* # of identical sequences removed */
   int      nfrags = 0;	          /* # of fragments removed */
+  int      i;
   int      status;
 
   /* stats of the original alignment */
@@ -1815,10 +1815,28 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     status = msamanip_ShuffleWithinColumn(cfg->r, msa, omsa, cfg->errbuf, cfg->verbose);
     msa = *omsa;
   }
+  
   // Shuffle the columns of the alignment 
   if (cfg->cshuffle) {
     ESL_ALLOC(useme, sizeof(int) * msa->alen);
     esl_vec_ISet(useme, msa->alen, 1);
+    status = msamanip_ShuffleColumns(cfg->r, msa, omsa, useme, cfg->errbuf, cfg->verbose);
+    free(useme); useme = NULL;
+    msa = *omsa;
+  }
+  
+  // Shuffle the unpaired columns of the alignment 
+  if (cfg->cushuffle) {
+    ESL_ALLOC(ct, sizeof(int) * (msa->alen+1));
+    if (msa->ss_cons) esl_wuss2ct(msa->ss_cons, msa->alen, ct);
+    else              esl_vec_ISet(ct, msa->alen+1, 0);
+
+    // shuffle only the unpaired positions
+    ESL_ALLOC(useme, sizeof(int) * msa->alen);
+    esl_vec_ISet(useme, msa->alen, 0); 
+    for (i = 0; i < msa->alen; i ++)
+      if (ct[i+1] == 0) useme[i] = 1;
+   
     status = msamanip_ShuffleColumns(cfg->r, msa, omsa, useme, cfg->errbuf, cfg->verbose);
     free(useme); useme = NULL;
     msa = *omsa;
@@ -1861,6 +1879,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (type) free(type);
   if (submsaname) free(submsaname);
   if (useme) free(useme);
+  if (ct) free(ct);
   return eslOK;
 
  ERROR:
@@ -1868,6 +1887,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (type) free(type);
   if (submsaname) free(submsaname);
   if (useme) free(useme);
+  if (ct) free(ct);
   return status;
 }
 
@@ -2286,11 +2306,11 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   status = ContactMap(cfg->ofile.cmapfile, cfg->pdbfile, cfg->pdbchain, cfg->msafile, cfg->gnuplot, msa, cfg->omsa->alen, cfg->msamap, cfg->msarevmap, cfg->abcisRNA,
 		      NULL, &cfg->nbpairs, &cfg->clist, &cfg->msa2pdb, cfg->cntmaxD, cfg->cntmind, cfg->onlypdb, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s.\nFailed to run find_contacts", cfg->errbuf);
+
   
   if (cfg->abcisRNA) {
     cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
-    
      
     // write the original alignment with a PDB structure 
     if (cfg->pdbfile) {
@@ -2330,7 +2350,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
     msa      = YSmsa;
     *ret_msa = YSmsa;
   }
-  
+
   /* the null model first */
   if (cfg->statsmethod == NULLPHYLO) {
     cfg->pmass = esl_opt_GetReal(go, "--pmass"); // reasign for a new msa
@@ -2547,7 +2567,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
       printf("# Number of covarying pairs = %d\n\n", hitlist->nhit);
     }
 
-    if (cfg->power_train) 
+    if (cfg->power_train)
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
  
@@ -2630,7 +2650,7 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
   int       *nsubs     = NULL;
   int       *njoin     = NULL;
   int       *ndouble   = NULL;
-  POWERTYPE  powertype = power->type;
+  POWERTYPE  powertype = (cfg->powerdouble)? DOUBLE_SUBS : ((cfg->powerjoin)? JOIN_SUBS : SINGLE_SUBS);
   SPAIR     *spair;
   double     avgsubs   = 0.;
   double     avgjoin   = 0.;
@@ -2664,7 +2684,7 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
     }
     
     if (cfg->verbose) {
-      printf("avgsubs %f\n", avgsubs);
+      printf("avgsubs %f include gaps? %d\n", avgsubs, cfg->power_includegaps);
       for (i = 0; i < msa->alen; i ++) 
 	if (nsubs[i] > 0) printf("%d nsubs %d\n", cfg->msamap[i]+1, nsubs[i]);
     }    
@@ -2736,31 +2756,67 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
   // histograms of nsubs for paired/unpaired residues
   if (cfg->power_train && clist) {
     
-    for (i = 0; i < msa->alen; i ++) {      
-      ipos = cfg->msamap[i]+1;
-      for (c = 0; c < clist->ncnt; c++) {
-	if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) {
-	  if      (powertype == SINGLE_SUBS) {
+    switch(powertype) {
+    case SINGLE_SUBS:
+      for (i = 0; i < msa->alen; i ++) {      
+	ipos = cfg->msamap[i]+1;
+	for (c = 0; c < clist->ncnt; c++) {
+	  if (ipos == clist->cnt[c].posi || ipos == clist->cnt[c].posj) {
 	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(nsubs[i]+1));
 	  }
-	  else if (powertype == JOIN_SUBS)   {
-	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(njoin[idx]+1));
-	    if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(njoin[idx]+1));
+	  else {
+	    esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(nsubs[i]+1)); 
 	  }
-	  else if (powertype == DOUBLE_SUBS) {
-	    esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
-	    if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(ndouble[idx]+1));
-	  }
-	}
-	else {
-	  if      (powertype == SINGLE_SUBS) esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(nsubs[i]+1));
-	  else if (powertype == JOIN_SUBS)   esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(njoin[idx]+1));    
-	  else if (powertype == DOUBLE_SUBS) esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(ndouble[idx]+1));    
-	}
-      }      
-    }    
-  }
+	}      
+      }   
+      break;
+      
+    case JOIN_SUBS:
+      for (i = 0; i < msa->alen; i ++) {
+	ipos = cfg->msamap[i]+1;
 
+	for (j = i+1; j < msa->alen; j ++) {
+	  jpos = cfg->msamap[j]+1;
+
+	  idx = i * msa->alen + j;
+		  
+	  for (c = 0; c < clist->ncnt; c++) {
+	    if (ipos == clist->cnt[c].posi && jpos == clist->cnt[c].posj) {
+	      if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(njoin[idx]+1));
+	    }
+	    else {
+	      esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(njoin[idx]+1)); 
+	    }
+	  }      
+	}
+      }
+      break;
+       
+    case DOUBLE_SUBS:
+      for (i = 0; i < msa->alen; i ++) {
+	  ipos = cfg->msamap[i]+1;
+	
+	  for (j = i+1; j < msa->alen; j ++) {
+	    jpos = cfg->msamap[j]+1;
+	    
+	    idx = i * msa->alen + j;
+	    for (c = 0; c < clist->ncnt; c++) {
+	      if (ipos == clist->cnt[c].posi && jpos == clist->cnt[c].posj) {
+		if (clist->cnt[c].bptype == WWc) esl_histogram_Add(cfg->powerhis->hsubs_pr, (double)(ndouble[idx]+1));
+	      }
+	      else {
+		esl_histogram_Add(cfg->powerhis->hsubs_ur, (double)(ndouble[idx]+1)); 
+	      }
+	    }      
+	  }
+      }
+      break;
+      
+   default:
+    esl_fatal("substitutions() powertype not found");
+    }
+  }
+  
   // Create SPAIR adding all information about subs/power
   //
   status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, cfg->mi, power, clist, ctlist, nsubs, njoin, ndouble, cfg->errbuf, cfg->verbose);
@@ -2769,7 +2825,21 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
   if (cfg->power_train) {
     spair = *ret_spair;
     for (p = 0; p < np; p ++) {
-      if (spair[p].bptype_given == WWc) esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+      if (spair[p].bptype_given == WWc) {
+	switch(spair[p].powertype) {
+	case SINGLE_SUBS:
+	  esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs+1));
+	  break;
+	case JOIN_SUBS:
+	  esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs_join+1));
+	  break;
+	case DOUBLE_SUBS:
+	  esl_histogram_Add(cfg->powerhis->hsubs_bp, (double)(spair[p].nsubs_double+1));
+	  break;
+	default:
+	  esl_fatal("substitutions() powertype not found");
+	}
+      }
     }
   }
 

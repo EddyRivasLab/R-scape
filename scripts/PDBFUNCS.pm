@@ -2420,8 +2420,8 @@ sub contacts_from_pdb {
     my $rnaoutfile  = "$pdbfile.out";
     my $rnaoutfile2 = "$pdbfile"."_tmp.pdb";
     
-    #system("/bin/rm $rnaoutfile\n");
-    #system("/bin/rm $rnaoutfile2\n");
+    unlink $rnaoutfile;
+    unlink $rnaoutfile2;
 }
 
 sub coordtrans_seq2asq{
@@ -2628,10 +2628,10 @@ sub find_pdbsq_in_ali {
     system ("          $hmmsearch -E $eval --max          $hmm  $pdbsqfile     >  $hmmout\n");
     #system("more $hmmout\n");
     if (hmmout_has_hit($hmmout) == 0) {
-	system("/bin/rm $pdbsqfile\n");
-	system("/bin/rm $allsqfile\n");
-	system("/bin/rm $hmmout\n");
-	system("/bin/rm $hmmali\n");
+	unlink $pdbsqfile;
+	unlink $allsqfile;
+	unlink $hmmout;
+	unlink $hmmali;
 	return 0; 
     }
     print "$pdbname chain $chain found by homology\n";
@@ -2677,10 +2677,10 @@ sub find_pdbsq_in_ali {
 
     $$ret_nsq = $nsq;
   
-    system("/bin/rm $pdbsqfile\n");
-    system("/bin/rm $allsqfile\n");
-    system("/bin/rm $hmmout\n");
-    system("/bin/rm $hmmali\n");
+    unlink $pdbsqfile;
+    unlink $allsqfile;
+    unlink $hmmout;
+    unlink $hmmali;
 
     my $len = ($nsq > 0)? length($asq_ref->[0]) : 0;
     return $len;
@@ -3056,8 +3056,8 @@ sub pdb_atoms {
  	elsif ($s1 eq $s2) { $atommap[$l+1] = $y+1; $l ++; $y ++; }
        else { print "mapping $s1 and $s2  ??\n"; return; }
     }
-    system("/bin/rm $seqresfile\n");
-    system("/bin/rm $bothsqfile\n");
+    unlink $seqresfile;
+    unlink $bothsqfile;
 
     #check
     for (my $l = 0; $l < $len; $l ++) {
@@ -3100,9 +3100,9 @@ sub pdb_atoms {
 	}
     }
 
-    system("/bin/rm $hmm\n");
-    system("/bin/rm $hmmali\n");
-    system("/bin/rm $hmmaliafa\n");
+    unlink $hmm;
+    unlink $hmmali;
+    unlink $hmmaliafa;
 }
 
 sub hmmout_has_hit {
@@ -3851,9 +3851,9 @@ sub pdb_contact_map {
  
     my $alen = pdbseq_map($rscapebin, $currdir, $hmm, $cm, $thissto, $pdbname, $famname, $chain, $chsq, $map_ref, $revmap_ref, $isrna);
     if ($alen == 0) {
-	system("/bin/rm $thissto\n");
-	system("/bin/rm $hmm\n");
-	if ($isrna) { system("/bin/rm $cm\n"); }
+	unlink $thissto;
+	unlink $hmm;
+	if ($isrna) { unlink $cm; }
 	return $alen; 
     }
     
@@ -3967,9 +3967,9 @@ sub pdb_contact_map {
 	contactlist_print(\*MAP1,   $ncnt, \@cnt, 0);
     }
 
-    system("/bin/rm $thissto\n");
-    system("/bin/rm $hmm\n");
-    if ($isrna) { system("/bin/rm $cm\n"); }
+    unlink $thissto;
+    unlink $hmm;
+    if ($isrna) { unlink $cm; }
 
     return $alen;
 }
@@ -4087,8 +4087,8 @@ sub run_rnaview {
     }
     close(RF);   
     
-    system("/bin/rm $rnaviewfile\n");
-    system("/bin/rm base_pair_statistics.out\n");
+    unlink $rnaviewfile;
+    unlink 'base_pair_statistics.out';
     
     $$ret_ncnt = $ncnt;
 }

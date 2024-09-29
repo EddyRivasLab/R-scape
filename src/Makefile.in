@@ -129,11 +129,12 @@ OBJS     = e1_bg.o\
 	   correlators.o\
 	   covgrammars.o\
 	   covariation.o\
-	   maxcov.o\
+	   evohmmer.o\
 	   fastsp.o\
 	   fetchpfamdb.o\
 	   homology.o\
 	   logsum.o\
+	   maxcov.o\
 	   minimize.o\
 	   miscellaneous.o\
 	   msatree.o\

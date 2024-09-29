@@ -1466,6 +1466,7 @@ Tree_Substitutions(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_TREE *T, int **ret_nsubs
 
 	  if (includegaps) {
 	    if (axl[i+1] != ax[i+1]) { nsubs[i] ++; } // a single substitution
+	    if (axr[i+1] != ax[i+1]) { nsubs[i] ++; } // a single substitution
 	  }
 	  else {
 	    if (ax[i+1] < msa->abc->K) {
@@ -1770,7 +1771,7 @@ tree_fitch_column(int c, ESL_RANDOMNESS *r, ESL_TREE *T, ESL_MSA *allmsa, float 
 			    idxr, S[idxr][0], S[idxr][1], S[idxr][2], S[idxr][3], S[idxr][4], S[idxr][5]);
 	status = tree_fitch_upwards(dim, S[idxl], S[idxr], S[idx], &sc, errbuf); 
 	if (verbose) printf("S[%d] %d %d %d %d %d %d | sc %d\n", idx, S[idx][0], S[idx][1], S[idx][2], S[idx][3], S[idx][4], S[idx][5], sc);
-	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Fitchm Algorithm upwards failed at c=%d v=%d", errbuf, c, v);
+	if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. Fitch Algorithm upwards failed at c=%d v=%d", errbuf, c, v);
 	
 	if (v > 0) esl_stack_IPush(vs, T->parent[v]);
       }

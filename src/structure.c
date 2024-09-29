@@ -850,6 +850,7 @@ struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, cha
     
   // follow with the rest of the nonWC basepairs
   if (draw_nonWC && n_oth > 0) {
+
     ESL_REALLOC(useme, sizeof(int) * n_oth);
     esl_vec_ISet(useme, n_oth, TRUE);
 
@@ -3751,7 +3752,7 @@ ctlist_tricov(CTLIST *ctlist, int verbose)
 
   L   = ctlist->L;
   nct = ctlist->nct;
-  
+
   for (s = 1; s < nct; s ++) {
     
     cttype = ctlist->cttype[s];
