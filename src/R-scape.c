@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "esl_getopts.h"
 #include "esl_distance.h"
@@ -688,7 +689,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     if ( esl_opt_IsOn(go, "--r3dfile") ) 
       esl_sprintf(&cfg.r3dfile, "%s", esl_opt_GetString(go, "--r3dfile"));	  
     else 
-      esl_sprintf(&cfg.r3dfile, "data/r3d/R3D.grm");
+      esl_sprintf(&cfg.r3dfile, "%s/r3d/R3D.grm", RSCAPE_DATA);
 
     if (cfg.abc == NULL) { cfg.abc = esl_alphabet_Create(eslRNA); cfg.abcisRNA = TRUE; }
     else if (cfg.abcisRNA == FALSE) esl_fatal("alphabet type should be RNA or DNA\n");
@@ -1073,6 +1074,8 @@ main(int argc, char **argv)
   int              i;
   int              status = eslOK;
   int              hstatus = eslOK;
+  clock_t          begin, end;
+  double           time_spent;
 
   /* Initializations */
   process_commandline(argc, argv, &go, &cfg);    
@@ -1085,6 +1088,8 @@ main(int argc, char **argv)
 
   /* read the MSA */
   while ((hstatus = esl_msafile_Read(afp, &msa)) != eslEOF) {
+    begin = clock();
+
     if (hstatus != eslOK) { esl_fatal("%s\n", afp->errmsg) ; }
     cfg.nmsa ++;
 
@@ -1190,6 +1195,10 @@ main(int argc, char **argv)
       if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to run R-scape"); }
     }
 
+    end = clock();
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("# MSA %s alen=%d nseq=%d time=%.2f secs\n\n", msa->name, msa->alen, msa->nseq, time_spent);
+    
     if (omsaname) free(omsaname); 
     if (useme) free(useme); 
     if (msa) esl_msa_Destroy(msa); 
@@ -1197,7 +1206,7 @@ main(int argc, char **argv)
     if (cfg.msamap) free(cfg.msamap); 
     if (cfg.msarevmap) free(cfg.msarevmap); 
     if (cfg.omstat) free(cfg.omstat); 
-    if (cfg.mstat) free(cfg.mstat); 
+    if (cfg.mstat) free(cfg.mstat);
   }
 
   // the substitution histograms
@@ -2877,6 +2886,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   char    **osslist = NULL;
   char     *tag;
   int       remove_overlap = FALSE;
+  int       is_RM = FALSE;
   int       OL = omsa->alen;
   int       s;
   int       i;
@@ -2895,10 +2905,12 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   status = struct_ctlist_MAP(L, foldctlist, OL, cfg->msamap, cfg->firstpos, &octlist, &osslist, NULL, cfg->errbuf, verbose);
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
-  
+
   // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
   for (s = 1; s < foldctlist->nct; s ++) {
 
+    if (esl_vec_IMin(octlist->ct[s], OL+1) < 0) is_RM = TRUE; // an RM
+    
     // these are the extra GC lines.
     //
     esl_sprintf(&tag, "SS_cons_%d", s);
@@ -2906,16 +2918,16 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
     free(tag); tag = NULL;
   
     for (i = 1; i <= OL; i ++) {      
-      if (remove_overlap) {
+      if (!is_RM && remove_overlap) {
 	if (no_overlap(i, octlist->ct[s][i], OL, octlist->ct[0]))  {
-	  octlist->ct[0][i]                 = octlist->ct[s][i];
+	  octlist->ct[0][i] = octlist->ct[s][i];
 	  octlist->ct[0][octlist->ct[s][i]] = i;
 	}
       }
       else {
 	if (octlist->ct[s][i] > 0) {
-	  octlist->ct[0][i]                 = octlist->ct[s][i];
-	  octlist->ct[0][octlist->ct[s][i]] = i;
+	  octlist->ct[0][i] = octlist->ct[s][i];
+	  if (!is_RM) octlist->ct[0][octlist->ct[s][i]] = i;
 	}
 	else {
 	  octlist->ct[0][i] = octlist->ct[s][i];

@@ -20,6 +20,7 @@
 #undef RSCAPE_HOME   
 #undef RSCAPE_BIN   
 #undef RSCAPE_SHARE
+#undef RSCAPE_DATA
 
 /* Large file support
  * Must precede any header file inclusion.

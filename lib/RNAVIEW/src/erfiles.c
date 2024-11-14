@@ -145,7 +145,7 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
   *ret_to   = to;
   *ret_sq   = sq;
   *ret_ismissing = ismissing;
-  
+    
   return eslOK;
 
  ERROR:
@@ -235,7 +235,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
   nchain ++;
 
   for (c = 0; c < nchain; c ++){
-    
+   
     ib = chain_f[c];
     ie = chain_t[c];
 
@@ -276,7 +276,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     fprintf(stdout, "# seq_%c ", ChainID[rb]);
     fprintf(stdout, "%s\n", sq);
     
-    // this is terrible re-using chain_f chain_t for later
+    // this is terrible: re-using chain_f and chain_t for later
     chain_f[c]    = from;
     chain_t[c]    = to;
     chain_name[c] = ChainID[rb];

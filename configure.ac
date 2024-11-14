@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.0.5.a], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.5.0], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -117,7 +117,7 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="September 2024"
+RSCAPE_DATE="December 2024"
 RSCAPE_COPYRIGHT="Copyright (C) 2017-2024 Elena Rivas, Harvard University."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -153,6 +153,12 @@ if  test "$prefix" = NONE ; then
   RSCAPE_SHARE="`pwd`/share"
 else
   RSCAPE_SHARE=${prefix}/share
+fi
+
+if  test "$prefix" = NONE ; then 
+  RSCAPE_DATA="`pwd`/data"
+else
+  RSCAPE_DATA=${prefix}/data
 fi
 
 E2MSA_HOME="`pwd`"        #magic to get full path to current directory
@@ -209,6 +215,7 @@ AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
 AC_SUBST(RSCAPE_SHARE)
+AC_SUBST(RSCAPE_DATA)
 
 AC_SUBST(RVIEW_NAME)
 AC_SUBST(RVIEW_DATE)
@@ -237,6 +244,7 @@ AC_DEFINE_UNQUOTED(RSCAPE_URL,       "$RSCAPE_URL")
 AC_DEFINE_UNQUOTED(RSCAPE_HOME,      "$RSCAPE_HOME")
 AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
 AC_DEFINE_UNQUOTED(RSCAPE_SHARE,     "$RSCAPE_SHARE")
+AC_DEFINE_UNQUOTED(RSCAPE_DATA,      "$RSCAPE_DATA")
 
 AC_DEFINE_UNQUOTED(RVIEW_NAME,      "$RVIEW_NAME")
 AC_DEFINE_UNQUOTED(RVIEW_DATE,      "$RVIEW_DATE")

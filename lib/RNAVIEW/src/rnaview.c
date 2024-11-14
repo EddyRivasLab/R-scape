@@ -607,7 +607,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   fprintf(stdout, "# PDB_file %s\n",           pdbfile);
   fprintf(fout,   "PDB data file name: %s\n",  pdbfile);
   num = read_pdb(pdbfile, AtomName, ResName, ChainID, AtomNum, ResSeq, xyz, Miscs, ALT_LIST);
-  if (num == 0) { printf("pdfile %s has no residues (1)\n", pdbfile); exit(1); }
+  if (num == 0) { printf("pdfile %s has no residues (case #1)\n", pdbfile); exit(1); }
 
   /* get the numbering information of each residue.
      seidx[i][j]; i = 1-num_residue  j=1,2
@@ -616,7 +616,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 
   if (CHAIN == 1){
     esl_sprintf(&user_chain, ARGV[2]);
-    upperstr(user_chain);
+    //upperstr(user_chain); ER: wrong to assume that names of chains use all capital letters. They don't have to, exammple: 8cgv has chaisn a,b,c,d...
   }
 
   if (er_PrintChainSeqs(pdbfile, user_chain, ChainID, num_residue, seidx, ResName,
@@ -626,7 +626,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
     exit(1);
   }
    
-  /* Below is only for nucleic acids ie RY >= 0*/  
+  /* Below is only for nucleic acids ie RY >= 0 */  
   bs_atoms = 0;
   for (i = 1; i <= num_residue; i++){
     ib = seidx[i][1];
@@ -652,7 +652,8 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 	  }
 	}
 	else { /* user select chainID */
-	  if (!strchr(user_chain, toupper(ChainID[j]) )) continue;
+	  // if (!strchr(user_chain, toupper(ChainID[j]) )) continue; ER: wrong, cannot assume chain names use only capital letters
+	  if (!strchr(user_chain, ChainID[j] )) continue;
 	  
 	  bs_atoms++;
 	  
@@ -679,7 +680,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
   }
   /*    fclose(prot_out);*/
 
-  /* get the new  numbering information of each residue */
+  /* get the new numbering information of each residue */
   
   /* get base sequence, RY identification */
   /* identifying a residue as follows:  RY[j]
@@ -688,7 +689,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
    
    bseq[j] --> the sigle letter name for each residue. j = 1 - num_residue.
   */
-  if (bs_atoms == 0) { printf("pdfile %s has no residues (2)\n", pdbfile); exit(1); }
+  if (bs_atoms == 0) { printf("pdfile %s has no residues (case #2)\n", pdbfile); exit(1); }
   
   bseq = cvector(1, num_residue);
   nres = 0;
@@ -726,7 +727,7 @@ void rna(char *pdbfile, long *type_stat, long **pair_stat, long *bs_all)
 
     }
   }
-  if (bs_atoms == 0) { printf("pdfile %s has no residues (3)\n", pdbfile); exit(1); }
+  if (bs_atoms == 0) { printf("pdfile %s has no residues (case #3)\n", pdbfile); exit(1); }
   
   nres = 0;    
   seidx = residue_idx(bs_atoms, ResSeq, Miscs, ChainID, ResName, &nres);

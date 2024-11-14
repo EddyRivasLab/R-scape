@@ -232,7 +232,8 @@ long read_pdb(char *pdbfile, char **AtomName, char **ResName, char *ChainID,
   
   n = 1;
   while (fgets(str, sizeof str, fp) != NULL) {
-    nlen = upperstr(str);
+    // nlen = upperstr(str); ER: why upperstr?? this is wrong
+    nlen = strlen(str);
     if (!strncmp(str+17, "HOH", 3) || !strncmp(str+17, "WAT", 3))
       continue; /*get ride of WATER */
     

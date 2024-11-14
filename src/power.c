@@ -25,7 +25,7 @@
 #include "plot.h"
 #include "power.h"
 
-#define BPONEHOT 13
+#define BPONEHOT 12
 
 static int bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT]);
 
@@ -315,16 +315,14 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   int           *mask = NULL;
   int            bp_onehot[BPONEHOT];
   BPTYPE         bptype;
-  enum cttype_e  cttype;
+  double         Eval_max = 10.0;
+  double         Evalue;
   double         Eval_fake  = -1.;
   double         power_fake = -1.;
   int64_t        iabs, jabs;
-  int64_t        curri, currj;
-  int64_t        prvi = 0;
-  int64_t        prvj = 1;
   int64_t        n;
   int64_t        l;
-  int            x;
+  int64_t        x;
   int            status;
 
   if (!prepfile) return eslOK;
@@ -342,13 +340,10 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   if (onehot) fprintf(fp, "# i j E-value power ctype bptype_onehot\n#\n");
   else        fprintf(fp, "# i j E-value power ctype bptype\n#\n");
   fprintf(fp, "# 1 < i < j < alignment length=%lld\n", Labs);
-  fprintf(fp, "# E-value [0,infity), provided by R-scape.\n");
+  fprintf(fp, "# E-value [0,%.1f), provided by R-scape.\n", Eval_max);
   fprintf(fp, "# power[0,1], provided by R-scape\n");
-  fprintf(fp, "# CTTYPE:\n");
-  fprintf(fp, "# CTTYPE_NESTED=0, CTTYPE_PK=1, CTTYPE_NONWC=2, CTTYPE_TRI=3, CTTYPE_SCOV=4, CTTYPE_XCOV=5,\n");
-  fprintf(fp, "# CTTYPE_RM_HL=6, CTTYPE_RM_BL=7, CTTYPE_RM_IL=8, CTTYPE_NONE=9\n");
   if (onehot) {
-    fprintf(fp, "# BYTPYE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT BPNONE]\n");
+    fprintf(fp, "# BPTPYE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT]\n");
   }
   else {
     fprintf(fp, "# BYTPYE: \n");
@@ -356,91 +351,57 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
     fprintf(fp, "# HWc=10, HWt=11, HHc=12, HHt=13, HSc=14, HSt=15, Hxc=16, Hxt=17, xHc=18, xHt=19,\n");
     fprintf(fp, "# SWc=20, SWt=21, SHc=22, SHt=23, SSc=24, SSt=25, Sxc=26, Sxt=27, xSc=28, xSt=29,\n");
     fprintf(fp, "# xxc=30, xxt=31,\n");
-    fprintf(fp, "# STACKED=32, CONTACT=33, BPNONE=34\n");
+    fprintf(fp, "# STACKED=32, CONTACT=33\n");
   }
   fprintf(fp, "#MASK:");
   for (l = 0; l < Labs; l ++) fprintf(fp, "%d", mask[l]);
   fprintf(fp, "\n");
-  
-  for (n = 0; n < dim; n ++) {
-    if (spair[n].powertype != powertype) esl_fatal("power_PREP_Write(): all pairs should use the same powertype");
 
-    iabs = spair[n].iabs;
-    jabs = spair[n].jabs;
-
-    currj = prvj + 1;
-    while (iabs == prvi && currj < jabs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, currj, Eval_fake, power_fake, CTTYPE_NONE);
-      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
-      else        fprintf(fp, "%d\n", BPNONE);
+  for (iabs = 1; iabs <= Labs-1; iabs ++)
+    for (jabs = iabs+1; jabs <= Labs; jabs ++) {
       
-      currj ++;
-    }      
+      for (n = 0; n < dim; n ++) {
+	if (iabs == spair[n].iabs && jabs == spair[n].jabs) {
+	  
+	  bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
+	  bptype2onehot(bptype, bp_onehot);
 
-    curri = prvi + 1;
-    while (curri < iabs) {
-      currj = curri + 1;
-      while (currj <= Labs) {
-	fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
-	if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
-	else        fprintf(fp, "%d\n", BPNONE);
-	currj ++;
-      }      
-      curri ++;
+	  Evalue = (spair[n].Eval < Eval_max)? spair[n].Eval : Eval_max;
+	  
+	  switch(powertype) {
+	  case SINGLE_SUBS:
+	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power);
+	    break;
+	  case JOIN_SUBS:
+	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power_join);
+	    break;
+	  case DOUBLE_SUBS:
+	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power_double);
+	    break; 
+	  }
+	  if (onehot) {
+	    for (x = 0; x < BPONEHOT; x ++) 
+	      fprintf(fp, "%d\t", bp_onehot[x]);
+	    fprintf(fp, "\n");      
+	  }
+	  else 
+	    fprintf(fp, "%d\n", bptype);
+	  
+	  break;
+	}
+      }
+      
+      if (n == dim) {
+	fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Eval_fake, power_fake);
+	if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\n");
+	else        fprintf(fp, "\n");
+      }
     }
-
-    currj = curri + 1;
-    while (curri == iabs && currj < jabs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
-      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
-      else        fprintf(fp, "%d\n", BPNONE);
-      currj ++;
-    }
-
-    cttype = (in_given)? spair[n].cttype_given : spair[n].cttype_caco;
-    bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
-    bptype2onehot(bptype, bp_onehot);
-
-    switch(powertype) {
-    case SINGLE_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power,        cttype);
-      break;
-    case JOIN_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power_join,   cttype);
-      break;
-    case DOUBLE_SUBS:
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", iabs, jabs, spair[n].Eval, spair[n].power_double, cttype);
-      break; 
-    }
-    if (onehot) {
-      for (x = 0; x < BPONEHOT; x ++) 
-	fprintf(fp, "%d\t", bp_onehot[x]);
-      fprintf(fp, "\n");      
-    }
-    else 
-      fprintf(fp, "%d\n", bptype);
-
-    prvi = iabs;
-    prvj = jabs;
-
-  }
-
-  curri ++;
-  while (curri < Labs) {
-    currj = curri + 1;
-    while (currj <= Labs) {
-      fprintf(fp, "%lld\t%lld\t%g\t%g\t%d\t", curri, currj, Eval_fake, power_fake, CTTYPE_NONE);
-      if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\n");
-      else        fprintf(fp, "%d\n", BPNONE);
-      currj ++;
-    }      
-    curri ++;
-  }
-
+  
   fclose(fp);
   free(mask);
   return eslOK;
-
+  
  ERROR:
   if (mask) free(mask);
   return status;
@@ -680,8 +641,8 @@ power_PlotHistograms(char *gnuplot, char *powerhisfile, FILE *powerhisfp, POWERH
 // (28)xSc,(29)xSt,(30)xxc,(31)xxt,
 // (32)STACKED,(33)CONTACT,(34)BPNONE
 //
-//  0 1 2 3   4 5 6 7   8 9   10 11 12
-// [W H S X] [W H S X] [C T] [S  C  N]
+//  0 1 2 3   4 5 6 7   8 9   10 11 
+// [W H S X] [W H S X] [C T] [S  C ]
 //
 static int
 bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT])
@@ -725,7 +686,7 @@ bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT])
   else if (bptype == 26) { bp_onehot[2] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // Sxc
   else if (bptype == 27) { bp_onehot[2] = 1; bp_onehot[7] = 1; bp_onehot[9] = 1; } // SXt
   
-  else if (bptype == 28) { bp_onehot[3] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1; } // xSc
+  else if (bptype == 28) { bp_onehot[3] = 1; bp_onehot[6] = 1; bp_onehot[8] = 1;} // xSc
   else if (bptype == 29) { bp_onehot[3] = 1; bp_onehot[6] = 1; bp_onehot[9] = 1; } // xSt
   
   else if (bptype == 30) { bp_onehot[3] = 1; bp_onehot[7] = 1; bp_onehot[8] = 1; } // xxc
@@ -733,8 +694,8 @@ bptype2onehot(BPTYPE bptype, int bp_onehot[BPONEHOT])
   
   else if (bptype == 32) { bp_onehot[10] = 1; } // STACKED
   else if (bptype == 33) { bp_onehot[11] = 1; } // CONTACT
-  else if (bptype == 34) { bp_onehot[12] = 1; } // BPNONE
-  else esl_fatal("BP onehot failed");
+  else if (bptype == 34) { }                    // BPNONE all zeros
+  else esl_fatal("BP onehot failed bptype %d does not exist", bptype);
 
   return eslOK;
   

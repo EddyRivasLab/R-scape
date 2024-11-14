@@ -1906,7 +1906,7 @@ r3d_add_rotatedBS(int k, R3D *r3d, char *errbuf, int verbose)
   ESL_ALLOC(newBS, sizeof(R3D_BS));
   newBS->abc = BS->abc;
   
-  esl_sprintf(&newBS->name, "%s.rot", BS->name);
+  esl_sprintf(&newBS->name, "%s.rev", BS->name);
   esl_sprintf(&newBS->Loop, "%s",     BS->Loop);
   newBS->HMMLoop = NULL;
 
@@ -2132,6 +2132,7 @@ r3d_write_BS(FILE *fp, R3D_BS *BS, int verbose)
   int n;
   
   fprintf(fp, "BS Loop: %s", BS->Loop);
+  fprintf(fp, "\t\tname: %s\n", BS->name);
 
   if (verbose) 
     R3D_hmm_Write(fp, BS->HMMLoop);
@@ -2252,8 +2253,13 @@ R3D_RMCTtoSS(int *ct, int *covct, int n, char *ss)
 	else if (covct[j] == 2) ss[j-1] = 'Y';
       }
     }
-    if (ct[j] > 0) { // z's always in pairs, "zz" means a 0 length segment of a J3 or J4  motif is between those two positions
+    if (ct[j] > 0) { // z's always in pairs, "zz" means a 0 length segment of a BL, J3 or J4  motif is between those two positions
       ss[j-1] = 'z'; 
+
+      if (covct) {
+	if      (covct[j] == 1) ss[j-1] = 'Z';
+	else if (covct[j] == 2) ss[j-1] = 'W';
+      }
     }
   }
 

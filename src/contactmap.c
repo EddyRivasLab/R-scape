@@ -144,13 +144,16 @@ ContactMap_FromCTList(CLIST *clist, CTLIST *ctlist, int cntmind, int *msa2omsa, 
 int
 ContactMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int *msa2pdb, int ispk)
 {
-  int    ncnt = clist->ncnt;
+  int    ncnt  = clist->ncnt;
+  int    is_RM = FALSE;
   int    i;
   int    ii, jj;
   int    posi, posj;
   BPTYPE bptype;
   int    status;
 
+  if (esl_vec_IMin(ct, L+1) < 0) is_RM = TRUE; // an RM
+  
   clist->mind = cntmind;
 
   for (i = 0; i < L; i ++) {
@@ -164,10 +167,13 @@ ContactMap_FromCT(CLIST *clist, int L, int *ct, int cntmind, int *msa2omsa, int 
     }
 
     ii     = i+1;
-    jj     = ct[ii];
     posi   = msa2omsa[i]+1;
-    posj   = (jj>0)? msa2omsa[jj-1]+1 : 0;
-    bptype = WWc;
+    if (!is_RM) {
+      jj   = ct[ii];
+      posj = (jj>0)? msa2omsa[jj-1]+1 : 0;
+    
+      bptype = WWc;
+    }
     if (jj > ii && jj - ii >= cntmind && CMAP_IsNewContact(posi, posj, -1, -1, bptype, clist) )  {
       
       /* assign */

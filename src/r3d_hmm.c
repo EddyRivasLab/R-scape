@@ -49,7 +49,7 @@ R3D_hmm_Create(const ESL_ALPHABET *abc, char *RMmotif, char *name, char *errbuf,
 
   M = (float)strlen(RMmotif);
   if (RMmotif[0] == '-') M = 0.0;
-  
+ 
   ESL_ALLOC(hmm, sizeof(R3D_HMM));
   
   hmm->name = NULL;

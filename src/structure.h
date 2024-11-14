@@ -160,7 +160,7 @@ extern int       struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose);
 extern RMLIST   *struct_rmlist_Create(int nrm, int L, int nagg, enum agg_e *agg_method);
 extern void      struct_rmlist_Destroy(RMLIST *rmlist);
 extern void      struct_rmlist_Dump(int L, RMLIST *rmlistt, int OL, int *msamap, int firstpos, char *errbuf, int verbose);
-extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, char *errbuf, int verbose);
+extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, int add_bounds, char *errbuf, int verbose);
 extern int       struct_rmlist_Stats(RMLIST *rmlist);
 extern void      struct_rmlist_Write(char *rmlistfile, int L, RMLIST *rmlist, int OL, int *msamap, int firstpos, char *errbuf, int verbose);
 extern PAIRLIST *struct_pairlist_Create(int n);

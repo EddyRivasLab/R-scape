@@ -342,6 +342,9 @@ typedef struct RM_s {
   double         *Eval;         // the aggreated Evalue of the RNA motif
   int            *covary;       // TRUE if the helix covaries
 
+  int             nhl_b;        // how many of the bounding helices have covariation support (at least one cov pair)
+  int             nhl_b_cov;    // how many of the bounding helices have covariation support (at least one cov pair)
+
 } RM;
 
 typedef struct RMlist_s {
