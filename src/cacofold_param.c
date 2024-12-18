@@ -621,14 +621,14 @@ CACO_RBGJ3J4_R3D_GetParam(R3D *r3d, RBGparam **ret_rbgp, R3Dparam **ret_r3dp, do
   
   if (verbose) {
     printf("RBGJ3J3_R3D Param\n");
-    printf("P0 %f to %f rest %f\n", tP0, rbgp->tP[0], r3dp->HLp->pHL);
-    printf("P1 %f to %f rest %f\n", tP1, rbgp->tP[1], r3dp->BLp->pBL5);
-    printf("P2 %f to %f rest %f\n", tP2, rbgp->tP[2], r3dp->BLp->pBL3);
-    printf("P3 %f to %f rest %f\n", tP3, rbgp->tP[3], r3dp->ILp->pIL);
-    printf("J3 %f rest %f\n", rbgp->tJ3[0], r3dp->J3p->pJ3);
-    printf("J4 %f rest %f\n", rbgp->tJ4[0], r3dp->J4p->pJ4);
-    printf("BB %f rest %f\n", rbgp->tBB[0], r3dp->BSp->pBS);
-    printf("BT %f rest %f\n", rbgp->tBT[0], r3dp->BSp->pBS);
+    printf("P0 %f to %f rest[%d] %f\n", exp(tP0), exp(rbgp->tP[0]), r3d->nHL, exp(r3dp->HLp->pHL));
+    printf("P1 %f to %f rest[%d] %f\n", exp(tP1), exp(rbgp->tP[1]), r3d->nBL, exp(r3dp->BLp->pBL5));
+    printf("P2 %f to %f rest[%d] %f\n", exp(tP2), exp(rbgp->tP[2]), r3d->nBL, exp(r3dp->BLp->pBL3));
+    printf("P3 %f to %f rest[%d] %f\n", exp(tP3), exp(rbgp->tP[3]), r3d->nIL, exp(r3dp->ILp->pIL));
+    printf("J3 %f rest %f\n", exp(rbgp->tJ3[0]), exp(r3dp->J3p->pJ3));
+    printf("J4 %f rest %f\n", exp(rbgp->tJ4[0]), exp(r3dp->J4p->pJ4));
+    printf("BB %f rest %f\n", exp(rbgp->tBB[0]), exp(r3dp->BSp->pBS));
+    printf("BT %f rest %f\n", exp(rbgp->tBT[0]), exp(r3dp->BSp->pBS));
   }
 
   *ret_rbgp = rbgp;

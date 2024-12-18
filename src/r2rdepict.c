@@ -220,6 +220,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_TRI:
     case CTTYPE_SCOV:
     case CTTYPE_XCOV:
+    case CTTYPE_PC:
     case CTTYPE_NONE:
       esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
       r2r_esl_msa_AppendGC(msa, tag, ss);
@@ -343,6 +344,7 @@ r2r_Overwrite_cov_SS_cons(ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, char *
     case CTTYPE_TRI:
     case CTTYPE_SCOV:
     case CTTYPE_XCOV:
+    case CTTYPE_PC:
     case CTTYPE_NONE:
       esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
       break;
@@ -476,6 +478,7 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
     case CTTYPE_TRI:
     case CTTYPE_SCOV:
     case CTTYPE_XCOV:
+    case CTTYPE_PC:
     case CTTYPE_NONE:
       esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
       break;

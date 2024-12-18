@@ -41,6 +41,7 @@ static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *sp
 				      CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
 static int   struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose);
+static int   struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose);
 static int   struct_rm_add_helix_bounds_in (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
 static int   struct_rm_add_helix_bounds_out(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
 static int   struct_rm_add_helix_bounds_btw_btw  (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
@@ -65,11 +66,13 @@ static int   ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, ch
 static int   ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int   ctlist_helix_ncov(FOLDPARAM *foldparam, int L, int *ct, int *cov);
 static int   ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf);
-static int   ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, char *errbuf, int verbose);
+static int   ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, char *errbuf, int verbose);
 static int   ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose);
 static int   ctlist_sxcov(enum cttype_e *cttype, int *covct, CTLIST *ctlist, int verbose);
 static int   ctlist_tricov(CTLIST *ctlist, int verbose);
+static int   ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose);
 static int   ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static int   ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
 static int  *sorted_order(const int *vec, int n);
 static int   nonWC(int i, int j, int L, double *pp, double thresh);
 static int   islone(int i, int j, int L, int *ct, int *covct);
@@ -647,6 +650,7 @@ struct_ctlist_Dump(CTLIST *ctlist)
     else if (ctlist->cttype[s] == CTTYPE_SCOV)   printf("SCOV    %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_XCOV)   printf("XCOV    %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_PK)     printf("PK      %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_PC)     printf("PC      %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_RM_HL)  printf("RM_HL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_BL)  printf("RM_BL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_IL)  printf("RM_IL   %s %s\n", ss, ctlist->ctname[s]);
@@ -706,6 +710,7 @@ struct_ctlist_Write(FILE *fp, CTLIST *ctlist)
     else if (ctlist->cttype[s] == CTTYPE_SCOV)   fprintf(fp, "SCOV    %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_XCOV)   fprintf(fp, "XCOV    %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_PK)     fprintf(fp, "PK      %s\n        %s\n", ss, covss);
+    else if (ctlist->cttype[s] == CTTYPE_PC)     fprintf(fp, "PC      %s\n        %s\n", ss, covss);
     else if (ctlist->cttype[s] == CTTYPE_RM_HL)  fprintf(fp, "RM_HL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_BL)  fprintf(fp, "RM_BL   %s %s\n", ss, ctlist->ctname[s]);
     else if (ctlist->cttype[s] == CTTYPE_RM_IL)  fprintf(fp, "RM_IL   %s %s\n", ss, ctlist->ctname[s]);
@@ -727,7 +732,7 @@ struct_ctlist_Write(FILE *fp, CTLIST *ctlist)
 }
 
 RMLIST * 
-struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, int add_bounds, char *errbuf, int verbose)
+struct_rmlist_FromCTLIST(int helix_unpaired, int pc_codon_thresh, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, int add_bounds, char *errbuf, int verbose)
 {
   RMLIST        *rmlist = NULL;
   int           *ct;                             // the current structure
@@ -756,6 +761,11 @@ struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, C
     if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
   }
 
+  // go thru the rmlist to identify "helices" of
+  // only one contiguous base pair as a signal of protein-coding covariation
+  status = struct_rmlist_find_pccodon(rmlist, errbuf, verbose);
+  if (status != eslOK) { printf("%s\n", errbuf); goto ERROR; }
+    
   if (add_bounds) {
     // for the non-helical RMs, are they bound by covarying helices?
     status = struct_rmlist_add_helix_bounds(rmlist, errbuf, verbose);
@@ -769,7 +779,7 @@ struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, C
 }
 
 CTLIST *
-struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose)
+struct_ctlist_FromContacts(int helix_unpaired, int pc_codon_thresh, int draw_nonWC, CLIST *clist, char *errbuf, int verbose)
 {
   CTLIST *ctlist = NULL;
   CNT    *cnt;
@@ -828,8 +838,8 @@ struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, cha
       }
       
       // add to the ctlist
-      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
-      else         struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, pc_codon_thresh, ct, L, errbuf, verbose);
+      else         struct_ctlist_AddCT(helix_unpaired, pc_codon_thresh, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
     }
 
     // now the possible pks
@@ -860,12 +870,12 @@ struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, cha
 	  }
 	}
 	// add to the ctlist
-	struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
+	struct_ctlist_AddCT(helix_unpaired, pc_codon_thresh, ct, L, CTTYPE_PK, &ctlist, errbuf, verbose);
       }
     }
   }
   else { // no basepairs annotated
-    ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+    ctlist = struct_ctlist_SplitCT(helix_unpaired, pc_codon_thresh, ct, L, errbuf, verbose);
   }
     
   // follow with the rest of the nonWC basepairs
@@ -898,8 +908,8 @@ struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, cha
       }
       
       // add to the ctlist
-      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
-      else         struct_ctlist_AddCT(helix_unpaired, ct, L, CTTYPE_NONWC, &ctlist, errbuf, verbose);
+      if (!ctlist) ctlist = struct_ctlist_SplitCT(helix_unpaired, pc_codon_thresh, ct, L, errbuf, verbose);
+      else         struct_ctlist_AddCT(helix_unpaired, pc_codon_thresh, ct, L, CTTYPE_NONWC, &ctlist, errbuf, verbose);
     }
   }
     
@@ -1279,7 +1289,7 @@ struct_covlist_Realloc(COVLIST *covlist, int n)
 // each of the pseudoknots
 // if a ctlist already exist, it adds to it, otherwise it creates it
 CTLIST *
-struct_ctlist_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose)
+struct_ctlist_SplitCT(int helix_unpaired, int pc_codon_thresh, int *ct, int L, char *errbuf, int verbose)
 {
   CTLIST   *ctlist = NULL;
   char     *ss1    = NULL;  // the ct structure
@@ -1334,7 +1344,7 @@ struct_ctlist_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verb
   status = ctlist_break_in_helices(helix_unpaired, &ctlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
-  status = ctlist_assign_cttype(ctlist, helix_unpaired, errbuf, verbose);
+  status = ctlist_assign_cttype(ctlist, helix_unpaired, pc_codon_thresh, errbuf, verbose);
   if (status != eslOK) goto ERROR;
   
   if (verbose) {
@@ -1354,7 +1364,7 @@ struct_ctlist_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verb
 }
 
 int
-struct_ctlist_AddCT(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose)
+struct_ctlist_AddCT(int helix_unpaired, int pc_codon_thresh, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST *ctlist   = *ret_ctlist;
   CTLIST *minilist = NULL;
@@ -1370,7 +1380,7 @@ struct_ctlist_AddCT(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CT
   }
 
   // the ct may have pseudonots, split
-  minilist = struct_ctlist_SplitCT(helix_unpaired, ct, L, errbuf, verbose);
+  minilist = struct_ctlist_SplitCT(helix_unpaired, pc_codon_thresh, ct, L, errbuf, verbose);
   if (!minilist) return eslOK;
   
   // it is possible that the are nonWC basepairs and struct_ctlist_SplitCT() has not been used
@@ -1636,6 +1646,7 @@ struct_rm_Dump(int L, RM *rm, int OL, int *msamap, int firstpos, char *errbuf, i
     else if (rm->ctlist->cttype[0] == CTTYPE_SCOV)   esl_sprintf(&rm->name, "SCOV"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_XCOV)   esl_sprintf(&rm->name, "XCOV"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_PK)     esl_sprintf(&rm->name, "PK"); 
+    else if (rm->ctlist->cttype[0] == CTTYPE_PC)     esl_sprintf(&rm->name, "PC"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_HL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_BL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_IL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
@@ -1648,6 +1659,9 @@ struct_rm_Dump(int L, RM *rm, int OL, int *msamap, int firstpos, char *errbuf, i
   switch(rm->type) {
   case(RMTYPE_HELIX):
     fprintf(stdout, "\n# RM_HELIX %s %d-%d %d-%d, nbp = %d nbp_cov = %d\n", rm->name, i, k1, l1, j, rm->nbp, rm->nbp_cov);
+    break;
+  case(RMTYPE_PC_CODON):
+    fprintf(stdout, "\n# PC_CODON %s %d-%d %d-%d, nbp = %d nbp_cov = %d\n", rm->name, i, k1, l1, j, rm->nbp, rm->nbp_cov);
     break;
   case(RMTYPE_RM_HL):
     fprintf(stdout, "\n# RM_HL %s %d-%d, nbp = %d nbp_cov = %d nhl_b_cov %d/%d\n", rm->name, i, j, rm->nbp, rm->nbp_cov, rm->nhl_b_cov, rm->nhl_b);
@@ -1726,6 +1740,7 @@ struct_rm_Write(FILE *fp, int L, RM *rm, int OL, int *msamap, int firstpos, char
     else if (rm->ctlist->cttype[0] == CTTYPE_SCOV)   esl_sprintf(&rm->name, "SCOV"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_XCOV)   esl_sprintf(&rm->name, "XCOV"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_PK)     esl_sprintf(&rm->name, "PK"); 
+    else if (rm->ctlist->cttype[0] == CTTYPE_PC)     esl_sprintf(&rm->name, "PC"); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_HL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_BL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
     else if (rm->ctlist->cttype[0] == CTTYPE_RM_IL)  esl_sprintf(&rm->name, rm->ctlist->ctname[0]); 
@@ -1738,6 +1753,9 @@ struct_rm_Write(FILE *fp, int L, RM *rm, int OL, int *msamap, int firstpos, char
   switch(rm->type) {
   case(RMTYPE_HELIX):
     fprintf(fp, "\n# RM_HELIX %s %d-%d %d-%d, nbp = %d nbp_cov = %d\n", rm->name, i, k1, l1, j, rm->nbp, rm->nbp_cov);
+    break;
+  case(RMTYPE_PC_CODON):
+    fprintf(fp, "\n# PC_CODON %s %d-%d %d-%d, nbp = %d nbp_cov = %d\n", rm->name, i, k1, l1, j, rm->nbp, rm->nbp_cov);
     break;
   case(RMTYPE_RM_HL):
     fprintf(fp, "\n# RM_HL %s %d-%d, nbp = %d nbp_cov = %d nhl_b_cov %d/%d\n", rm->name, i, j, rm->nbp, rm->nbp_cov, rm->nhl_b_cov, rm->nhl_b);
@@ -2087,6 +2105,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   //       CTTYPE_TRI,      (involved in more than one basepairs)
   //       CTTYPE_SCOV,     (side covariations)
   //       CTTYPE_XCOV,     (cross covariations)
+  //       CTTYPE_PC,       (pc coding covariation)
   //       CTTYPE_RM_HL,    (RNA Module HL)
   //       CTTYPE_RM_BL,    (RNA Module BL)
   //       CTTYPE_RM_IL,    (RNA Module IL)
@@ -2106,11 +2125,16 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   //         (3) If i' and j' are     on the same  side  of Ho -> it is a side-covariation  (CTTYPE_SCOV)
   //                                  on different sides of Ho -> it is a cross-covariation (CTTYPE_XCOV)
   //
-  status = ctlist_assign_cttype(ctlist, foldparam->helix_unpaired, errbuf, verbose);
+  status = ctlist_assign_cttype(ctlist, foldparam->helix_unpaired, foldparam->pc_codon_thresh, errbuf, verbose);
   if (status != eslOK) goto ERROR;
 
   if (foldparam->Rfam) {
     status = ctlist_Rfam(foldparam, mi->pp, &ctlist, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+  }
+
+  if (foldparam->rmcoding) {
+    status = ctlist_rmcoding(foldparam, &ctlist, errbuf, verbose);
     if (status != eslOK) goto ERROR;
   }
   
@@ -2328,6 +2352,9 @@ struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose)
     case(RMTYPE_HELIX):
       status = eslOK;
       break;
+    case(RMTYPE_PC_CODON):
+      status = eslOK;
+      break;
     case(RMTYPE_RM_HL):
       status = struct_rm_add_helix_bounds_HL(rm, rmlist, errbuf, verbose);
       break;
@@ -2361,6 +2388,37 @@ struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose)
   
   return eslOK;
 }
+
+// rules to call a RMTYPE_HELIX rm protein coding
+//
+// only one base pair
+// contiguous i,i+1
+// covaries
+// 
+static int
+struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose)
+{
+  RM  *rm;
+  int  n;
+  int  c;
+ 
+  for (n = 0; n < rmlist->nrm; n ++) {    
+    rm = rmlist->rm[n];
+
+    if (rm->type != RMTYPE_HELIX) continue;
+
+    if (rm->nbp == 1 && rm->nbp_cov == 1) {
+      rm->type = RMTYPE_PC_CODON;
+
+      for (c = 0; c < rm->ctlist->nct; c ++)
+	rm->ctlist->cttype[c] = CTTYPE_PC;
+    }
+  }
+  
+  return eslOK;
+}
+
+
 
 //    h_k1               h_l1
 //       |    i     j    |
@@ -2911,7 +2969,7 @@ ct_dump(int L, int *ct)
 
 // split in helices
 static int
-ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method,enum cttype_e cttype,
+ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method, enum cttype_e cttype,
 		R3D *r3d, RMLIST **ret_rmlist, char *errbuf, int verbose)
 {
   ESL_STACK  *pda    = NULL;                // stack for secondary structure 
@@ -3022,7 +3080,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
 		      npairs_cov_rm = 0;
 		      struct_rmlist_AddRM(rmlist, errbuf, verbose);
 		      rm       = rmlist->rm[idx];
-		      rm->type = RMTYPE_HELIX;
+		      rm->type = (cttype == CTTYPE_PC)? RMTYPE_PC_CODON : RMTYPE_HELIX;
 		      ctlist   = rm->ctlist;
 		      esl_vec_ISet(ctlist->ct[0],    L+1, 0);
 		      esl_vec_ISet(ctlist->covct[0], L+1, 0);
@@ -3928,13 +3986,91 @@ ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbu
   // go through the non nested ct's and remove tr, xc, sc helixes
   new = nct;
   for (s = 1; s < nct; s ++) {
-    if (ctlist->cttype[s] == CTTYPE_NONWC  ||
-	ctlist->cttype[s] == CTTYPE_TRI    ||
-	ctlist->cttype[s] == CTTYPE_SCOV   ||
-	ctlist->cttype[s] == CTTYPE_XCOV     )
+    if (ctlist->cttype[s] == CTTYPE_NONWC ||
+	ctlist->cttype[s] == CTTYPE_TRI   ||
+	ctlist->cttype[s] == CTTYPE_SCOV  ||
+	ctlist->cttype[s] == CTTYPE_XCOV  ||
+	ctlist->cttype[s] == CTTYPE_PC      )
       {
 	useme[s] = FALSE; new --;
       }
+  }
+  
+  // Write the final set of structures to ctnew
+  ctnew = struct_ctlist_Create(new, L);
+  if (ctnew == NULL) ESL_XFAIL(eslFAIL, errbuf, "ctlist_Rfam() allocation error");
+
+  idx = 0;
+  for (s = 0; s < nct; s ++) {
+    if (useme[s]) {
+      esl_vec_ICopy(ctlist->ct[s],    L+1, ctnew->ct[idx]);
+      esl_vec_ICopy(ctlist->covct[s], L+1, ctnew->covct[idx]);
+      ctnew->cttype[idx] = ctlist->cttype[s];
+      esl_sprintf(&ctnew->ctname[idx], ctlist->ctname[s]);
+      idx ++;
+    }
+  }
+
+  *ret_ctlist = ctnew;
+
+  struct_ctlist_Destroy(ctlist);
+  free(useme);
+  return eslOK;
+  
+ ERROR:
+  if (ctnew)  struct_ctlist_Destroy(ctnew);
+  if (ctlist) struct_ctlist_Destroy(ctlist);
+  if (useme)  free(useme);
+  return status;
+}
+
+// Clean up the CaCoFold structure removing coding covariations
+// rules:
+
+// remove PC
+//
+static int
+ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose)
+{
+  CTLIST    *ctlist = *ret_ctlist;
+  CTLIST    *ctnew  = NULL;
+  int       *covct;
+  int       *ct;
+  int       *useme  = NULL;
+  int        nct;
+  int        L;
+  int        new = 1;
+  int        idx;
+  int        s;
+  int        i, j;
+  int        status;
+
+  if (!ctlist) return eslOK;
+
+  nct = ctlist->nct;
+  L   = ctlist->L;
+  if (nct == 0) return eslOK;
+  
+  // allocate
+  ESL_ALLOC(useme, sizeof(int) * nct);
+  // initialize
+  esl_vec_ISet(useme, nct, TRUE);                  // if TRUE structure will be selected
+
+  // go through the ct's and remove PC helices
+  new = nct;
+  for (s = 0; s < nct; s ++) {
+    if (ctlist->cttype[s] == CTTYPE_PC)
+      {
+	useme[s] = FALSE; new --;
+      }
+    else {
+      ct    = ctlist->ct[s];
+      covct = ctlist->covct[s];
+      for (i = 1; i <= L; i ++) {
+	j = covct[i];
+	if (j > i && j<=i+foldparam->pc_codon_thresh) { ct[i] = 0; ct[j] = 0; covct[i] = 0; covct[j] = 0; }
+      }
+    }
   }
   
   // Write the final set of structures to ctnew
@@ -4095,6 +4231,7 @@ ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf)
 //       CTTYPE_TRI,      (involved in more than one basepair)
 //       CTTYPE_SCOV,     (side covariations)
 //       CTTYPE_XCOV,     (cross covariations)
+//       CTTYPE_PC,       (pc coding covariatioin)
 //       CTTYPE_RM_HL,    (RNA Module HL)
 //       CTTYPE_RM_BL,    (RNA Module BL)
 //       CTTYPE_RM_IL,    (RNA Module IL)
@@ -4115,7 +4252,7 @@ ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf)
 //                                  on different sides of Ho -> it is a cross-covariation (CTTYPE_XCOV)
 //
 static int
-ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, char *errbuf, int verbose)
+ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, char *errbuf, int verbose)
 {
   CTLIST *ctmain  = NULL;
   CTLIST *cthelix = NULL;
@@ -4148,7 +4285,7 @@ ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, char *errbuf, int verbo
   // (2) for each helix do the XCOV test
   for (s = 1; s < nct; s ++) {
     status = ctlist_sxcov(&ctlist->cttype[s], ctlist->covct[s], ctmain, verbose);
-	  if (status != eslOK) goto ERROR;
+    if (status != eslOK) goto ERROR;
   }
 
   // (3) a PK could also have xcov
@@ -4168,11 +4305,15 @@ ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, char *errbuf, int verbo
       struct_ctlist_Destroy(cthelix); cthelix = NULL;
     }
   }
-
+  
   // PK could still be a base triplet (TRI)
   status = ctlist_tricov(ctlist, verbose);
   if (status != eslOK) goto ERROR;
 
+  // (4) identify cases of protein-coding covariation
+  status = ctlist_pccov(ctlist, pc_codon_thresh, verbose);
+  if (status != eslOK) goto ERROR;
+  
   // finally add the ctnames
   status = ctlist_assign_ctnames(ctlist, errbuf, verbose);
   if (status != eslOK) goto ERROR;
@@ -4197,6 +4338,7 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
   int ntri    = 0;
   int nscov   = 0;
   int nxcov   = 0;
+  int npc     = 0;
   int nrm_hl  = 0;
   int nrm_bl  = 0;
   int nrm_il  = 0;
@@ -4227,6 +4369,9 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
       break;
     case(CTTYPE_XCOV):
       esl_sprintf(&ctlist->ctname[s], "xc_%d",     ++nxcov);
+      break;
+   case(CTTYPE_PC):
+      esl_sprintf(&ctlist->ctname[s], "pc_%d",     ++npc);
       break;
     case(CTTYPE_RM_HL):
       esl_sprintf(&ctlist->ctname[s], "hl_%d",     ++nrm_hl);
@@ -4362,6 +4507,59 @@ ctlist_tricov(CTLIST *ctlist, int verbose)
      }
   }
 
+  return eslOK;
+}
+
+// identify covarying pairs that looks like protein coding
+//
+// intra_codon_cov
+// inter_codon_cov
+//
+static int
+ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose)
+{
+  int           *covct;
+  int           *ocovct;
+  int            L;
+  int            nct;
+  int            oi, oj;
+  int            s, ss;
+  int            i, j;
+  int            status;
+
+  if (!ctlist) return eslOK;
+  
+  L   = ctlist->L;
+  nct = ctlist->nct;
+
+  for (s = 1; s < nct; s ++) {
+    
+    covct = ctlist->covct[s];
+    for (i = 1; i < L; i ++) {
+      if (covct[i] > i) {
+	j = covct[i];
+	
+	// check if an intra-codon covariation
+	if (j - i + 1 <= pc_codon_thresh) { ctlist->cttype[s] = CTTYPE_PC; }
+	
+	// check if an inter-codon covariation
+	for (ss = 1; ss < nct; ss ++) {
+	  ocovct = ctlist->covct[ss];
+	  oi = ocovct[i];
+	  oj = ocovct[j];
+	  
+	  if ( (oj > oi) && ((oi - i + 1 <= pc_codon_thresh) || (oj - j + 1 <= pc_codon_thresh)))
+	    {
+	      ctlist->cttype[s] = CTTYPE_PC;
+	      
+	      // change the type of the other ct as well
+	      ctlist->cttype[ss] = CTTYPE_PC;
+	    }
+	}
+      }
+    }
+  }
+  
   return eslOK;
 }
 

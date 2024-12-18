@@ -126,6 +126,8 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              nagg;
   double           agg_Eval;           // Evalue target for helix significance
   enum agg_e      *agg_method;
+
+  int              pc_codon_thresh;    //i,i+a to identify pc coding covariations 
   
   int              nshuffle;
 
@@ -257,6 +259,7 @@ static ESL_OPTIONS options[] = {
   { "--samplewc",     eslARG_NONE,      FALSE,   NULL,       NULL,SAMPLEOPTS, "-s",  NULL,               "basepair-set sample size is WWc basepairs only",                                            1 },
   { "--cacofold",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "The CaCoFold structure including all covariation",                                          1 },
    { "--Rfam",        eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold",NULL,             "The CaCoFold structure w/o triplets/side/cross modules, overlaping or contiguou pairs",     1 },
+   { "--rmcoding",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--cacofold",NULL,             "The CaCoFold structure w/o pc_codon covariations",                                          1 },
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--outname",    eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a filename for all outputs",                                                        1 },
@@ -622,6 +625,9 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   // max number of unpaired residues in a non-nested helix. default 2
   cfg.helix_unpaired             = HELIX_UNPAIRED;     
   cfg.foldparam->helix_unpaired  = cfg.helix_unpaired;
+  
+  cfg.pc_codon_thresh            = PC_CODON_THRESH;     
+  cfg.foldparam->pc_codon_thresh = cfg.pc_codon_thresh;
 
   // aggregation method
   cfg.nagg = 0;
@@ -711,7 +717,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   //
   cfg.foldparam->draw_nonWC = (esl_opt_IsOn(go, "--draw_nonWC"))? TRUE : FALSE;
   // CaCoFoldForRfam
-  cfg.foldparam->Rfam = (esl_opt_IsOn(go, "--Rfam"))?  TRUE : FALSE;
+  cfg.foldparam->Rfam     = (esl_opt_IsOn(go, "--Rfam"))?  TRUE : FALSE;
+  cfg.foldparam->rmcoding = (esl_opt_IsOn(go, "--rmcoding"))?  TRUE : FALSE;
 
   // parameters for the main nested structure
   // minimum length of a hairpin loop. If i-j is the closing pair: i-x-x-x-j, minhloop = j-i-1 = 3
@@ -1306,6 +1313,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.spair            = NULL;
   data.power            = NULL;
   data.helix_unpaired   = cfg->helix_unpaired;
+  data.pc_codon_thresh  = cfg->pc_codon_thresh;
   data.nagg             = cfg->nagg;
   data.agg_Eval         = cfg->agg_Eval;
   data.agg_method       = cfg->agg_method;
@@ -2318,7 +2326,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   
   if (cfg->abcisRNA) {
-    cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
+    cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->pc_codon_thresh, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
      
     // write the original alignment with a PDB structure 
@@ -2524,6 +2532,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.njoin            = njoin;
   data.power            = cfg->power;
   data.helix_unpaired   = cfg->helix_unpaired;
+  data.pc_codon_thresh  = cfg->pc_codon_thresh;
   data.nagg             = cfg->nagg;
   data.agg_Eval         = cfg->agg_Eval;
   data.agg_method       = cfg->agg_method;

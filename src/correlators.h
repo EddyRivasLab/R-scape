@@ -189,6 +189,7 @@ enum cttype_e {
   CTTYPE_TRI,
   CTTYPE_SCOV,
   CTTYPE_XCOV,
+  CTTYPE_PC,
   CTTYPE_RM_HL,
   CTTYPE_RM_BL,
   CTTYPE_RM_IL,
@@ -206,6 +207,7 @@ enum RMtype_e {
   RMTYPE_RM_J3,
   RMTYPE_RM_J4,
   RMTYPE_RM_BS,
+  RMTYPE_PC_CODON,
   RMTYPE_UNKNOWN,
 };
 
@@ -396,6 +398,8 @@ struct data_s {
   int                  nagg;
   double               agg_Eval;
   enum agg_e          *agg_method;
+
+  int                 pc_codon_thresh;
   
   ESL_TREE            *T;
   struct ribomatrix_s *ribosum;

@@ -966,7 +966,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 
   // calculate aggregated p-values for the RNA motifs (rmlist)
   if (data->nseq > 1) {
-    status = agg_CalculatePvalues(data->spair, data->ctlist, &rmlist, data->helix_unpaired, data->r3d, data->nagg, data->agg_method, data->agg_Eval, data->errbuf, data->verbose);
+    status = agg_CalculatePvalues(data->spair, data->ctlist, &rmlist, data->helix_unpaired, data->pc_codon_thresh, data->r3d, data->nagg, data->agg_method, data->agg_Eval, data->errbuf, data->verbose);
     if (status != eslOK) goto ERROR;
   }
   
@@ -1089,17 +1089,18 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   status = struct_ctlist_MAP(data->mi->alen, foldctlist, data->OL, data->msamap, data->firstpos, NULL, NULL, NULL, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
 
+  // calculate aggregated p-values for the RNA motifs (rmlist)
+  if (data->nseq > 1) {
+    status = agg_CalculatePvalues(data->spair, foldctlist, &foldrmlist, data->helix_unpaired, data->pc_codon_thresh,
+				  r3d, data->nagg, data->agg_method, data->agg_Eval, data->errbuf, data->verbose);
+    if (status != eslOK) goto ERROR;
+  }
+
   // write the power file output
   power_SPAIR_Write(stdout,  dim, data->spair, FALSE);
   power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
   power_PREP_Write(data->ofile->outprepfoldfile, data->OL, dim, data->spair, FALSE, data->prep_onehot);
 
-  // calculate aggregated p-values for the RNA motifs (rmlist)
-  if (data->nseq > 1) {
-    status = agg_CalculatePvalues(data->spair, foldctlist, &foldrmlist, data->helix_unpaired, r3d, data->nagg, data->agg_method, data->agg_Eval, data->errbuf, data->verbose);
-    if (status != eslOK) goto ERROR;
-  }
-  
   fclose(covfp);
   fclose(covsrtfp);
   fclose(powerfp);

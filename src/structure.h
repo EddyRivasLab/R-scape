@@ -40,6 +40,8 @@
 #define COV_MIN_DIST       1       // min distance d = j-i between covarying residues to keep. default 1 (display contiguous covarying pairs)
 #define HELIX_OVERLAP_TRIM 0       // TRUE for trimming non-nested helices with covariations to remove ovelap with the main non-nested structure
 
+// codon covariations
+#define PC_CODON_THRESH 3 // i,i+a such that a <= PC_CODON_THRESH
 
 typedef struct cov_s {
   int64_t i;
@@ -114,6 +116,9 @@ typedef struct fold_s {
   int               cov_min_dist;
   int               helix_overlap_trim;
 
+  // when examining codon covariation i,i+a; a <= pc_codon_thresh
+  int pc_codon_thresh;
+
   // special parameter to make CaCoRfam structures
   //
   // (1) Hairpin loops have at least 3 nts (even if that requires ignoring covarying pairs)
@@ -121,7 +126,10 @@ typedef struct fold_s {
   // (3) no helix overlaps
   // (4) remove noWCs
   //
-  int Rfam;      
+  int Rfam;
+
+  // special to remove pc_coding covariation from the R2R picture
+  int rmcoding;
 
   // MEA
   double gamma;
@@ -145,12 +153,12 @@ extern CTLIST   *struct_ctlist_Create(int nct, int L);
 extern void      struct_ctlist_Destroy(CTLIST *ctlist);
 extern int       struct_ctlist_Dump(CTLIST *ctlist);
 extern int       struct_ctlist_Write(FILE *fp, CTLIST *ctlist);
-extern CTLIST   *struct_ctlist_FromContacts(int helix_unpaired, int draw_nonWC, CLIST *clist, char *errbuf, int verbose);
+extern CTLIST   *struct_ctlist_FromContacts(int helix_unpaired, int pc_codon_thresh, int draw_nonWC, CLIST *clist, char *errbuf, int verbose);
 extern int       struct_ctlist_HelixStats(FOLDPARAM *foldparam, CTLIST *ctlist, char *errbuf, int verbose);
 extern int       struct_ctlist_MAP(int L, CTLIST *ctlist, int OL, int *msamap, int firstpos, CTLIST **ret_octlist, char ***ret_sslist, FILE *fp, char *errbuf, int verbose);
 extern int       struct_ctlist_Realloc(CTLIST *ctlist, int nct);
-extern CTLIST   *struct_ctlist_SplitCT(int helix_unpaired, int *ct, int L, char *errbuf, int verbose);
-extern int       struct_ctlist_AddCT(int helix_unpaired, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
+extern CTLIST   *struct_ctlist_SplitCT(int helix_unpaired, int pc_codon_thresh, int *ct, int L, char *errbuf, int verbose);
+extern int       struct_ctlist_AddCT(int helix_unpaired, int pc_codon_thresh, int *ct, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
 extern CTLIST   *struct_wuss2CTList(char *ss, int L, char *errbuf, int verbose);
 extern RM       *struct_rm_Create(int nct, int L, int nagg, enum agg_e *agg_method);
 extern void      struct_rm_Destroy(RM *rm);
@@ -160,7 +168,7 @@ extern int       struct_rmlist_AddRM(RMLIST *rmlist, char *errbuf, int verbose);
 extern RMLIST   *struct_rmlist_Create(int nrm, int L, int nagg, enum agg_e *agg_method);
 extern void      struct_rmlist_Destroy(RMLIST *rmlist);
 extern void      struct_rmlist_Dump(int L, RMLIST *rmlistt, int OL, int *msamap, int firstpos, char *errbuf, int verbose);
-extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, int add_bounds, char *errbuf, int verbose);
+extern RMLIST   *struct_rmlist_FromCTLIST(int helix_unpaired, int pc_codon_thresh, int nagg, enum agg_e *agg_method, CTLIST *ctlist, R3D *r3d, int add_bounds, char *errbuf, int verbose);
 extern int       struct_rmlist_Stats(RMLIST *rmlist);
 extern void      struct_rmlist_Write(char *rmlistfile, int L, RMLIST *rmlist, int OL, int *msamap, int firstpos, char *errbuf, int verbose);
 extern PAIRLIST *struct_pairlist_Create(int n);

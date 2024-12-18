@@ -187,6 +187,13 @@ not covariation) from happening. The CaCoFold algorithm uses a
 recursive cascade of constrained foldings. The first fold uses the RBG probabilistic grammar, the rest use the G6X probabilistic grammar.
 
 \noindent
+To find secondary structure and RNA 3D motifs:
+
+\subsubsection{\prog{--cacofold --r3d}} to find the secondary structure and RNA 3D motifs.
+
+\subsubsection{\prog{--r3dfile <f>}}  provide a customized r3d file. The defaults file is at \prog{data/r3d/R3D.grm}
+
+\noindent
 Regarding the predicted structure, CaCoFold can use one two algorithms:
 
 \subsubsection{\prog{--cyk}}        Default option. Each folding reports the structure with the best probability using the CYK algorithm.
@@ -216,6 +223,8 @@ contiguous positions are reported.
 \subsubsection{\prog{--allow\_negatives}} This option (just for developers) allows all base pairs to form regardless of their power.
 
 \subsubsection{\prog{--Rfam}} This option is meant to be used by the Rfam curators when using CaCoFold to propose improved consensus structures for an Rfam family. It removes covariation that cannot be taking into account by the Rfam models. Thus, maybe missing important covariation information that is not compatible with RNA secondary structure.
+
+\subsubsection{\prog{--rmcoding}} This option removes from the R2R display the covariation that appears to be due to protein-coding codon signals instead of RNA structure. This affect only to the display figures not to anything in the analysis of covariation.
 
 \noindent
 Using options \prog{--cacofold --Rfam}, the CaCoFold structure is trimmed such that:

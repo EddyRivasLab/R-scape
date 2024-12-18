@@ -7667,17 +7667,17 @@ static inline int
 dp_recursion_r3d_cyk_BS(R3D_BS *BS, FOLDPARAM *foldparam, R3Dparam *r3d_p, PSQ *psq, struct mutual_s *mi, SPAIR *spair, int *covct, COVLIST *exclude,
 			R3D_BSMX *BSmx, R3D_HMX *fwd, int m, int n, int j, int d, SCVAL *ret_bestsc, ESL_STACK *alts, char *errbuf, int verbose)
 {
-  SCVAL bestsc = -eslINFINITY;  /* max score over possible rules */
-  int   L  = mi->alen;
-  int   maxLLoop;
-  int   i;
-  int   BS_allow;
-  int   status;
+  SCVAL  bestsc = -eslINFINITY;  /* max score over possible rules */
+  double maxLLoop;
+  int    L  = mi->alen;
+  int    i;
+  int    BS_allow;
+  int    status;
 
   if (alts) esl_stack_Reuse(alts);
 
-  maxLLoop = BS->HMMLoop->avglen + HMM_maxL_add;
-  if (j-d+1 > maxLLoop) { *ret_bestsc = bestsc; return eslOK; }
+  maxLLoop = BS->HMMLoop->avglen + HMM_maxL_add; 
+  if (d > maxLLoop) { *ret_bestsc = bestsc; return eslOK; }
 
   //
   // BS --> Loop

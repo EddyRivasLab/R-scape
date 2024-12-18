@@ -49,7 +49,10 @@ printf("BS $nmotif_BS\n");
 for (my $m = 0; $m < $nmotif; $m ++) {
     printf("%d %s %40s %s\n", $motif_idx{$motif_name[$m]}, $motif_type[$m], $motif_name[$m], $motif_value[$m]);
 }
-
+my $dir = "/Users/erivas/writing/papers/R3D/Tables";
+my $motifs_tbl = "$dir/Table_R3Dgrm.tex";
+motifs_table($motifs_tbl, $nmotif_HL, $nmotif_BL, $nmotif_IL, $nmotif_J3, $nmotif_J4, $nmotif_BS,
+	     $nmotif, \@motif_name, \@motif_value, \@motif_type, \%motif_idx);
 
 
 my $nhotif = 7;
@@ -88,6 +91,7 @@ parse_rscape($file_rscape, $opt_F,
 	     \%nfam_with_H_cov, \%nfam_with_H,
 	     \$F_with_M_cov_tot, \$F_with_M_tot,
 	     \%H_found_cov, \%H_found,
+	     1,
 	     $seeplots);
 
 my $motifsfile = ($opt_F)?  "$file_rscape.$opt_F.motifs" : "$file_rscape.motifs";
@@ -122,6 +126,7 @@ parse_rscape($file_rscape, $SSU,
 	     \%SSU_nfam_with_H_cov, \%SSU_nfam_with_H,
 	     \$SSU_F_with_M_cov_tot, \$SSU_F_with_M_tot,
 	     \%SSU_H_found_cov, \%SSU_H_found,
+	     0,
 	     $seeplots);
 
 my $LSU = "RF02543";
@@ -146,10 +151,12 @@ parse_rscape($file_rscape, $LSU,
 	     \%LSU_nfam_with_H_cov, \%LSU_nfam_with_H,
 	     \$LSU_F_with_M_cov_tot, \$LSU_F_with_M_tot,
 	     \%LSU_H_found_cov, \%LSU_H_found,
+	     0,
 	     $seeplots);
 
 $motifsfile = "$file_rscape.together.motifs";
 motifs_write_together($motifsfile,
+		      \@motif_type, \%motif_idx,
 		      \%M_found_cov, \%M_found,
 		      $M_found_cov_tot, $M_found_tot,
 		      \%nfam_with_M_cov, \%nfam_with_M,
@@ -174,6 +181,7 @@ sub parse_rscape{
 	$ref_nfam_with_H_cov, $ref_nfam_with_H,
 	$ret_F_with_M_cov_tot, $ret_F_with_M_tot,
 	$ref_H_found_cov, $ref_H_found,
+	$do_FamsPerMotif,
 	$seeplots) = @_;
 
     my @HbyF;
@@ -507,8 +515,8 @@ sub parse_rscape{
  	$H_per_fam_given{$fam}     = 0;
 	$H_per_fam_given_cov{$fam} = 0;
     }
-	
-    for (my $h = 0; $h < $nhotif; $h ++) {
+
+     for (my $h = 0; $h < $nhotif; $h ++) {
 	my $hotif = $$ref_hotif_name[$h];
 	
 	for (my $f = 0; $f < $n_rfam_done; $f ++) {
@@ -563,12 +571,29 @@ sub parse_rscape{
 	$M_per_fam_given{$fam}     = 0;
 	$M_per_fam_given_cov{$fam} = 0;
     }
-	
+
+    my $table_FamsPerMotif_file = "$rfile.FamsPerMotif.tbl";
+    if ($do_FamsPerMotif) {
+	open (TBL, ">$table_FamsPerMotif_file") || die;
+    }
+    my $whichmotif = "GAAA_Tetraloop-receptor";
+    my $thismotif;
     for (my $r = 0; $r < $nmotif; $r ++) {
 	my $motif = $$ref_motif_name[$r];
+	$thismotif = 0;
 	
+	if ($do_FamsPerMotif) { printf(TBL "\nFAMS for MOTIF %s:\n", $motif); }
+	
+	if ($motif =~ /^$whichmotif$/) {
+	    printf("\nFAMS for MOTIF %s:\n", $motif);
+	    $thismotif = 1;
+	}
+
 	for (my $f = 0; $f < $n_rfam_done; $f ++) {
 	    my $fam = $rfam_name[$f];
+
+	    if ($thismotif && $MbyF[$r][$f] > 0) { printf("%s %d(%d)\n", $fam, $MbyF_cov[$r][$f], $MbyF[$r][$f]); }
+	    if ($do_FamsPerMotif && $MbyF[$r][$f] > 0) { printf(TBL "%s %d(%d)\n", $fam, $MbyF_cov[$r][$f], $MbyF[$r][$f]); }
 
 	    $M_found{$motif}     += $MbyF[$r][$f];
 	    $M_found_cov{$motif} += $MbyF_cov[$r][$f];
@@ -585,8 +610,10 @@ sub parse_rscape{
 	    $M_per_fam_given{$fam}     += $MbyF_given[$r][$f];
 	    $M_per_fam_given_cov{$fam} += $MbyF_given_cov[$r][$f];
 	}
-   }
 
+    }
+    if ($do_FamsPerMotif) { close(TBL); }
+    
     my $M_found_tot      = 0;
     my $M_found_cov_tot  = 0;
     my $F_with_M_cov_tot = 0;
@@ -769,9 +796,9 @@ sub motifs_stats {
     foreach my $fam (reverse sort { $ref_M_per_fam->{$a} <=> $ref_M_per_fam->{$b} } keys %$ref_M_per_fam) {
 	printf("%30s #M %d/%d\n", $fam, $ref_M_per_fam->{$fam}, $ref_M_per_fam_cov->{$fam});
     }
-    foreach my $fam (reverse sort { $ref_M_per_fam_given->{$a} <=> $ref_M_per_fam_given->{$b} } keys %$ref_M_per_fam_given) {
-	printf("(given) %30s #M %d/%d\n", $fam, $ref_M_per_fam_given->{$fam}, $ref_M_per_fam_given_cov->{$fam});
-    }
+    #foreach my $fam (reverse sort { $ref_M_per_fam_given->{$a} <=> $ref_M_per_fam_given->{$b} } keys %$ref_M_per_fam_given) {
+    #	printf("(given) %30s #M %d/%d\n", $fam, $ref_M_per_fam_given->{$fam}, $ref_M_per_fam_given_cov->{$fam});
+    #}
 
 
     $$ret_M_found_tot      = $M_found_tot;
@@ -869,6 +896,7 @@ sub motifs_write {
 
 sub motifs_write_together {
     my ($file,
+	$ref_motif_type, $ref_motif_idx,
 	$ref_M_found_cov, $ref_M_found,
 	$M_found_cov_tot, $M_found_tot,
 	$ref_nfam_with_M_cov, $ref_nfam_with_M,
@@ -884,27 +912,35 @@ sub motifs_write_together {
     
     open (OUT, ">$file");
     foreach my $motif (reverse sort { $ref_M_found_cov->{$a} <=> $ref_M_found_cov->{$b} } keys %$ref_M_found_cov) {
+	my $name = $motif;
+	$name =~ s/\_/\\\_/g;
+	$name =~ s/\-/\\\_/g;
+	$name =~ s/\^/\\\_/g;
+	my $type = $ref_motif_type->[$ref_motif_idx->{$motif}];
+	
 	if ($ref_M_found->{$motif} > 0) {
-	    printf(    "%30s & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\ \n",
-		   $motif,
+	    printf(    "%s & %30s & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\ \n",
+		   $type, $name,
 		   $ref_M_found_cov->{$motif},     $ref_M_found->{$motif}, 
 		   $ref_nfam_with_M_cov->{$motif}, $ref_nfam_with_M->{$motif},
 		   $ref_SSU_M_found_cov->{$motif}, $ref_SSU_M_found->{$motif},
 		   $ref_LSU_M_found_cov->{$motif}, $ref_LSU_M_found->{$motif});
-	    printf(OUT "%30s & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\ \n",
-		   $motif,
+	    printf(OUT "%s & %30s & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\ \n",
+		   $type, $name,
 		   $ref_M_found_cov->{$motif},     $ref_M_found->{$motif}, 
 		   $ref_nfam_with_M_cov->{$motif}, $ref_nfam_with_M->{$motif},
 		   $ref_SSU_M_found_cov->{$motif}, $ref_SSU_M_found->{$motif},
 		   $ref_LSU_M_found_cov->{$motif}, $ref_LSU_M_found->{$motif});
 	}
     }
-    printf(    "\\textbf\{Motifs totals} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
+
+   
+    printf(    "\\multicolumn\{2\}\{|l|\}\{\\textbf\{3D Motifs all}\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
 	   $M_found_cov_tot,     $M_found_tot, 
 	   $F_with_M_cov_tot,    $F_with_M_tot,
 	   $SSU_M_found_cov_tot, $SSU_M_found_tot,
 	   $LSU_M_found_cov_tot, $LSU_M_found_tot);
-   printf(OUT "\\textbf\{Motifs totals\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
+   printf(OUT "\\multicolumn\{2\}\{|l|\}\{\\textbf\{3D Motifs all\}\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
 	   $M_found_cov_tot,     $M_found_tot, 
 	   $F_with_M_cov_tot,    $F_with_M_tot,
 	   $SSU_M_found_cov_tot, $SSU_M_found_tot,
@@ -912,24 +948,24 @@ sub motifs_write_together {
     
     foreach my $hotif (reverse sort { $ref_H_found_cov->{$a} <=> $ref_H_found_cov->{$b} } keys %$ref_H_found_cov) {
 	if ($hotif =~ /NESTED/) {
-	    printf(    "\\textbf\{Nested helices} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
+	    printf(    "\\multicolumn\{2\}\{|l|\}\{\\textbf\{Nested helices\}\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
 		   $ref_H_found_cov->{$hotif},     $ref_H_found->{$hotif}, 
 		   $ref_nfam_with_H_cov->{$hotif}, $ref_nfam_with_H->{$hotif},
 		   $ref_SSU_H_found_cov->{$hotif}, $ref_SSU_H_found->{$hotif},
 		   $ref_LSU_H_found_cov->{$hotif}, $ref_LSU_H_found->{$hotif});
-	    printf(OUT "\\textbf\{Nested helices\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
+	    printf(OUT "\\multicolumn\{2\}\{|l|\}\{\\textbf\{Nested helices\}\} & %d \(%d\) &  %d \(%d\) &  %d \(%d\) &  %d \(%d\)\\\\\n",
 		   $ref_H_found_cov->{$hotif},     $ref_H_found->{$hotif}, 
 		   $ref_nfam_with_H_cov->{$hotif}, $ref_nfam_with_H->{$hotif},
 		   $ref_SSU_H_found_cov->{$hotif}, $ref_SSU_H_found->{$hotif},
 		   $ref_LSU_H_found_cov->{$hotif}, $ref_LSU_H_found->{$hotif});
 	}
 	if ($hotif =~ /HIGHER/) {
-	    printf(    "\\textbf\{PK + higher order} & %d \(%d\) &  %d \(%d\)  &  %d \(%d\) &  %d \(%d\)\\\\\n",
+	    printf(    "\\multicolumn\{2\}\{|l|\}\{\\textbf\{PK + higher order\}\} & %d \(%d\) &  %d \(%d\)  &  %d \(%d\) &  %d \(%d\)\\\\\n",
 		   $ref_H_found_cov->{$hotif},     $ref_H_found->{$hotif}, 
 		   $ref_nfam_with_H_cov->{$hotif}, $ref_nfam_with_H->{$hotif},
 		   $ref_SSU_H_found_cov->{$hotif}, $ref_SSU_H_found->{$hotif},
 		   $ref_LSU_H_found_cov->{$hotif}, $ref_LSU_H_found->{$hotif});
-	    printf(OUT "\\textbf\{PK + higher order\} & %d \(%d\) &  %d \(%d\)  &  %d \(%d\) &  %d \(%d\)\\\\\n",
+	    printf(OUT "\\multicolumn\{2\}\{|l|\}\{\\textbf\{PK + higher order\}\} & %d \(%d\) &  %d \(%d\)  &  %d \(%d\) &  %d \(%d\)\\\\\n",
 		   $ref_H_found_cov->{$hotif},     $ref_H_found->{$hotif}, 
 		   $ref_nfam_with_H_cov->{$hotif}, $ref_nfam_with_H->{$hotif},
 		   $ref_SSU_H_found_cov->{$hotif}, $ref_SSU_H_found->{$hotif},
@@ -1101,4 +1137,47 @@ sub parse_motifs {
     $$ret_nmotif_J3 = $nmotif_J3;
     $$ret_nmotif_J4 = $nmotif_J4;
     $$ret_nmotif_BS = $nmotif_BS;
+}
+
+sub motifs_table {
+    my ($file, $nmotif_HL, $nmotif_BL, $nmotif_IL, $nmotif_J3, $nmotif_J4, $nmotif_BS,
+	$nmotif, $ref_motif_name, $ref_motif_value, $ref_motif_type, $ref_motif_idx) = @_;
+
+    open (TBL, ">$file") || die;
+
+    my $HL_header = "\\textbf\{\\#HL\} &  \\textbf\{Loop(5'-3')\} & \\textbf\{L(5'-3')\} & \\textbf\{R(5'-3')\} &&&& \\textbf\{\} \\\\";
+    my $BL_header = "\\textbf\{\\#BL\} &  \\textbf\{Loop(5'-3')\} & \\textbf\{L(5'-3')\} & \\textbf\{R(5'-3')\} &&&& \\textbf\{\} \\\\";
+    my $IL_header = "\\textbf\{\\#IL\} &  \\textbf\{Loop-L(5'-3')\} & \\textbf\{Loop-R(5'-3')\} & \\textbf\{L-o(5'-3')\} & \\textbf\{R-o(5'-3')\} & \\textbf\{L-i(5'-3')\} & \\textbf\{R-i(5'-3')\} & \\textbf\{\}\\\\";
+    my $J3_header = "\\textbf\{\\#J3\} &  \\textbf\{S1(5'-3')\} & \\textbf\{S2(5'-3')\} & \\textbf\{S3(5'-3')\} &&&& \\textbf\{\}\\\\";
+    my $J4_header = "\\textbf\{\\#J4\} &  \\textbf\{S1(5'-3')\} & \\textbf\{S2(5'-3')\} & \\textbf\{S3(5'-3')\} & \\textbf\{S4(5'-3')\} &&& \\textbf\{\}\\\\";
+    my $BS_header = "\\textbf\{\\#BS\} &  \\textbf\{S(5'-3')\} &&&&&& \\textbf\{\}\\\\";
+
+    print TBL "\\begin\{longtable\}\{|llllllll|\}\n";
+    print TBL "\\caption*\{\\footnotesize Table 3. \\texttt\{\\bf Motifs in CaCoFold-R3D.\} The descriptor file includes 56 different motif architectures, and a total of 96 variants. HL = Hairpin Loop, BL = Bulge Loop, IL=Internal Loop, J3 = 3-way Junction, J4 = 4-way Junction, BS = Branch Segment.\}\\\\";
+    print TBL "\\hline\n \\textbf\{Motif Type\} & \\multicolumn\{6\}\{c\}\{\\textbf\{Motif descriptor\}\} & \\textbf\{Motif Name\}\\\\\n"; 
+    print TBL "\\hline\n$HL_header\n\\hline\n"; 
+    for (my $m = 0; $m < $nmotif; $m ++) {
+	if    ($m == $nmotif_HL) { print TBL "\\hline\n$BL_header\n\\hline\n"; }
+	elsif ($m == $nmotif_HL+$nmotif_BL) { print TBL "\\hline\n$IL_header\n\\hline\n"; }
+	elsif ($m == $nmotif_HL+$nmotif_BL+$nmotif_IL) { print TBL "\\hline\n$J3_header\n\\hline\n"; }
+	elsif ($m == $nmotif_HL+$nmotif_BL+$nmotif_IL+$nmotif_J3) { print TBL "\\hline\n$J4_header\n\\hline\n"; }
+	elsif ($m == $nmotif_HL+$nmotif_BL+$nmotif_IL+$nmotif_J3+$nmotif_J4) { print TBL "\\hline\n$BS_header\n\\hline\n"; }
+
+	my $type  = $ref_motif_type->[$m];
+	my $name  = $ref_motif_name->[$m]; $name =~ s/\_/\\\_/g; $name =~ s/\-/\\\_/g;$name =~ s/\^/\\\^/g;
+	my $value = $ref_motif_value->[$m];
+
+	my @value = split ' ', $value;
+	my $len = $#value+1;
+	my $newvalue = "";
+	for (my $n = 0; $n < 6; $n ++) {
+	    if ($n < $len) { my $val = $value[$n]; $newvalue .= "$val & "; }
+	    else           { $newvalue .= " & "; }
+	}
+	print TBL "$type & $newvalue  $name\\\\\n";
+    }
+    print TBL "\\hline\n";
+    print TBL "\\end\{longtable\}\n";
+   
+    close(TBL);
 }
