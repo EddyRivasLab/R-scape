@@ -1634,7 +1634,7 @@ CACO_G6X_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
         printf("       rule(%d)\n", r);
       }
  
-      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2 && r != G6X_S_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6X_Traceback_CYK(): rule %d cannot appear with S", r);
+      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2)                  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6X_Traceback_CYK(): rule %d cannot appear with S", r);
       if (w == G6X_L && r != G6X_L_1 && r != G6X_L_2 && r != G6X_L_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6X_Traceback_CYK(): rule %d cannot appear with L", r);
       if (w == G6X_F && r != G6X_F_1 && r != G6X_F_2 && r != G6X_F_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6X_Traceback_CYK(): rule %d cannot appear with F", r);
       
@@ -1651,12 +1651,7 @@ CACO_G6X_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      case G6X_S_2: // S -> L
-	esl_stack_IPush(ns, G6X_L);
-	esl_stack_IPush(ns, i);
-	esl_stack_IPush(ns, j);
-	break;
-      case G6X_S_3: // S -> epsilon
+      case G6X_S_2: // S -> epsilon
 	break;
       case G6X_L_1: // L -> a F a'
 	esl_stack_IPush(ns, G6X_F);
@@ -1789,9 +1784,9 @@ CACO_G6XS_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam,
       esl_stack_IPop(alts, &d1);
       esl_stack_IPop(alts, &r);
       
-      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2 && r != G6X_S_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with S", r);
-      if (w == G6X_L && r != G6X_L_1 && r != G6X_L_2 && r != G6X_L_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with L", r);
-      if (w == G6X_F && r != G6X_F_1 && r != G6X_F_2 && r != G6X_F_3)  ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with F", r);
+      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2)                 ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with S", r);
+      if (w == G6X_L && r != G6X_L_1 && r != G6X_L_2 && r != G6X_L_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with L", r);
+      if (w == G6X_F && r != G6X_F_1 && r != G6X_F_2 && r != G6X_F_3) ESL_XFAIL(eslFAIL, errbuf, "CACO_G6XS_Traceback_CYK(): rule %d cannot appear with F", r);
       
       /* Now we know a best rule; figure out where we came from,
        * and push that info onto the <ns> stack.
@@ -1816,12 +1811,7 @@ CACO_G6XS_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam,
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      case G6X_S_2: // S -> L
-	esl_stack_IPush(ns, G6X_L);
-	esl_stack_IPush(ns, i);
-	esl_stack_IPush(ns, j);
-	break;
-     case G6X_S_3: // S -> epsilon
+      case G6X_S_2: // S -> epsilon
 	break;
       case G6X_L_1: // L -> a F a'
 	esl_stack_IPush(ns, G6X_F);
@@ -2828,7 +2818,7 @@ CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
         printf("       rule(%d)\n", r);
       }
  
-      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2 && r != G6X_S_3)  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with S", r);
+      if (w == G6X_S && r != G6X_S_1 && r != G6X_S_2 && r)             ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with S", r);
       if (w == G6X_L && r != G6X_L_1 && r != G6X_L_2 && r != G6X_L_3)  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with L", r);
       if (w == G6X_F && r != G6X_F_1 && r != G6X_F_2 && r != G6X_F_3)  ESL_XFAIL(eslFAIL, errbuf, "rule %d cannot appear with F", r);
       
@@ -2845,12 +2835,7 @@ CACO_MEA_Traceback_CYK(ESL_RANDOMNESS *rng, ALLOW *allow, FOLDPARAM *foldparam, 
 	esl_stack_IPush(ns, k+1);
 	esl_stack_IPush(ns, j);
 	break;
-      case G6X_S_2: // S -> L
-	esl_stack_IPush(ns, G6X_L);
-	esl_stack_IPush(ns, i);
-	esl_stack_IPush(ns, j);
-	break;
-      case G6X_S_3: // S -> epsilon
+      case G6X_S_2: // S -> epsilon
 	break;
       case G6X_L_1: // L -> a F a'
 	esl_stack_IPush(ns, G6X_F);
@@ -2952,32 +2937,17 @@ dp_recursion_mea_cyk(ALLOW *allow, FOLDPARAM *foldparam, G6Xparam *p, POST *post
       }
     }
     
-    /* rule1: S -> L */
-    d1 = 0;
-    sc = cyk->L->dp[j][d] + p->t1[1];
- 
-    if (sc >= bestsc) {
-      if (sc > bestsc) {   /* if an outright winner, clear/reinit the stack */
-	if (alts) esl_stack_Reuse(alts);
-	bestsc = sc;
-      }     
-      if (alts) {
-	esl_stack_IPush(alts, G6X_S_2);
-	esl_stack_IPush(alts, d1);
-      }
-    }
-    
-    /* rule2: S -> epsilon */
+    /* rule1: S -> epsilon */
     d1 = 0;
     if (d == 0) {
-      sc = p->t1[2];
+      sc = p->t1[1];
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, G6X_S_3);
+	  esl_stack_IPush(alts, G6X_S_2);
 	  esl_stack_IPush(alts, d1);
 	}
       }
@@ -3152,31 +3122,17 @@ dp_recursion_g6x_cyk(ALLOW *allow, FOLDPARAM *foldparam, G6Xparam *p, PSQ *psq, 
       }
     }
     
-    /* rule1: S -> L */
-    d1 = 0;
-    sc = cyk->L->dp[j][d] + p->t1[1];
-    if (sc >= bestsc) {
-      if (sc > bestsc) {   /* if an outright winner, clear/reinit the stack */
-	if (alts) esl_stack_Reuse(alts);
-	bestsc = sc;
-      }     
-      if (alts) {
-	esl_stack_IPush(alts, G6X_S_2);
-	esl_stack_IPush(alts, d1);
-      }
-    }
-    
-    /* rule2: S -> epsilon */
+    /* rule1: S -> epsilon */
     d1 = 0;
     if (d == 0) {
-      sc = p->t1[2];
+      sc = p->t1[1];
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, G6X_S_3);
+	  esl_stack_IPush(alts, G6X_S_2);
 	  esl_stack_IPush(alts, d1);
 	}
       }
@@ -3360,13 +3316,9 @@ dp_recursion_g6x_inside(ALLOW *allow, FOLDPARAM *foldparam, G6Xparam *p, PSQ *ps
       }
     }
     
-    /* rule1: S -> L */
-    sc    = imx->L->dp[j][d] + p->t1[1];
-    sumsc = e2_FLogsum(sumsc, sc);
-    
-    /* rule2: S -> epsilon */
+    /* rule1: S -> epsilon */
     if (d == 0) {
-      sc    = p->t1[2];
+      sc    = p->t1[1];
       sumsc = e2_FLogsum(sumsc, sc);
     }
     break;     
@@ -3509,10 +3461,6 @@ dp_recursion_g6x_outside(ALLOW *allow, FOLDPARAM *foldparam, G6Xparam *p, PSQ *p
       sumsc = e2_FLogsum(sumsc, sc);
 
      }
-    
-    // rule1: S -> L
-    sc    = omx->S->dp[j][d] + p->t1[1];
-    sumsc = e2_FLogsum(sumsc, sc);
     
     // rule8: F -> LS
     if (!force_bp) {
@@ -3715,31 +3663,17 @@ dp_recursion_g6xs_cyk(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ *psq
       }
     }
 
-    /* rule1: S -> L */
-    d1 = 0;
-    sc = cyk->L->dp[j][d] + p->t1[1];
-    if (sc >= bestsc) {
-      if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
-	if (alts) esl_stack_Reuse(alts);
-	bestsc = sc;
-      }     
-      if (alts) {
-	esl_stack_IPush(alts, G6X_S_2);
-	esl_stack_IPush(alts, d1);
-      }
-    }
-   
-    /* rule2: S -> epsilon */
+    /* rule1: S -> epsilon */
     d1 = 0;
     if (d == 0) {
-      sc = p->t1[2];
+      sc = p->t1[1];
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
 	  bestsc = sc;
 	}     
 	if (alts) {
-	  esl_stack_IPush(alts, G6X_S_3);
+	  esl_stack_IPush(alts, G6X_S_2);
 	  esl_stack_IPush(alts, d1);
 	}
       }
@@ -3921,13 +3855,9 @@ dp_recursion_g6xs_inside(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ *
       }
     }
     
-    /* rule1: S -> L */
-    sc    = imx->L->dp[j][d] + p->t1[1];
-    sumsc = e2_FLogsum(sumsc, sc);
-    
-    /* rule2: S -> epsilon */
+    /* rule1: S -> epsilon */
     if (d == 0) {
-      sc    = p->t1[2];
+      sc    = p->t1[1];
       sumsc = e2_FLogsum(sumsc, sc);
     }
     break;     
@@ -4072,10 +4002,6 @@ dp_recursion_g6xs_outside(ALLOW *allow, FOLDPARAM *foldparam, G6XSparam *p, PSQ 
       sumsc = e2_FLogsum(sumsc, sc);
 
      }
-    
-    // rule1: S -> L
-    sc    = omx->S->dp[j][d] + p->t1[1];
-    sumsc = e2_FLogsum(sumsc, sc);
     
     // rule8: F -> LS
     if (!force_bp) {

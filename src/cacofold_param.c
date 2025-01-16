@@ -23,7 +23,7 @@
 
 /* G6X/G6XS
  *----------------------------------------------------------
- *   S -> LS   | L   | epsilon
+ *   S -> LS   | epsilon
  *   L -> aFa' | aa' | a
  *   F -> aFa' | aa' | LS
  *
@@ -72,7 +72,6 @@ CACO_G6X_GetParam(G6Xparam **ret_p, char *errbuf, int verbose)
 
   p->t1[0] = G6X_PRELOADS_TrATrBTrB.t1[0];
   p->t1[1] = G6X_PRELOADS_TrATrBTrB.t1[1];
-  p->t1[2] = G6X_PRELOADS_TrATrBTrB.t1[2];
   p->t2[0] = G6X_PRELOADS_TrATrBTrB.t2[0];
   p->t2[1] = G6X_PRELOADS_TrATrBTrB.t2[1];
   p->t2[2] = G6X_PRELOADS_TrATrBTrB.t2[2];
@@ -84,7 +83,7 @@ CACO_G6X_GetParam(G6Xparam **ret_p, char *errbuf, int verbose)
   for (x = 0; x < NP; x ++) p->e_pair[x] = G6X_PRELOADS_TrATrBTrB.e_pair[x];
 
   // renormalize, just in case
-  vec_SCVAL_LogNorm(p->t1, 3);
+  vec_SCVAL_LogNorm(p->t1, 2);
   vec_SCVAL_LogNorm(p->t2, 3);
   vec_SCVAL_LogNorm(p->t3, 3);
   vec_SCVAL_LogNorm(p->e_sing, NB);
@@ -110,7 +109,6 @@ CACO_G6XS_GetParam(G6XSparam **ret_p, char *errbuf, int verbose)
 
   p->t1[0] = G6XS_PRELOADS_TrATrBTrB.t1[0];
   p->t1[1] = G6XS_PRELOADS_TrATrBTrB.t1[1];
-  p->t1[2] = G6XS_PRELOADS_TrATrBTrB.t1[2];
   p->t2[0] = G6XS_PRELOADS_TrATrBTrB.t2[0];
   p->t2[1] = G6XS_PRELOADS_TrATrBTrB.t2[1];
   p->t2[2] = G6XS_PRELOADS_TrATrBTrB.t2[2];
@@ -124,7 +122,7 @@ CACO_G6XS_GetParam(G6XSparam **ret_p, char *errbuf, int verbose)
     for (y = 0; y < NP; y ++) p->e_stck[x][y] = G6XS_PRELOADS_TrATrBTrB.e_stck[x][y];
 
   // renormalize, just in case
-  vec_SCVAL_LogNorm(p->t1, 3);
+  vec_SCVAL_LogNorm(p->t1, 2);
   vec_SCVAL_LogNorm(p->t2, 3);
   vec_SCVAL_LogNorm(p->t3, 3);
   vec_SCVAL_LogNorm(p->e_sing, NB);
@@ -654,7 +652,6 @@ CACO_G6X_MEA_GetParam(G6Xparam **ret_p, double gamma, char *errbuf, int verbose)
 
   p->t1[0] = 0.;
   p->t1[1] = 0.;
-  p->t1[2] = 0.;
   p->t2[0] = lg;
   p->t2[1] = lg;
   p->t2[2] = 0.;

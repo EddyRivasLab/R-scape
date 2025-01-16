@@ -38,14 +38,13 @@ enum grammar_e {
 /* G6X rules */
 #define G6X_S_1  0
 #define G6X_S_2  1
-#define G6X_S_3  2
-#define G6X_L_1  3
-#define G6X_L_2  4
-#define G6X_L_3  5
-#define G6X_F_1  6
-#define G6X_F_2  7
-#define G6X_F_3  8
-#define G6X_NR   9
+#define G6X_L_1  2
+#define G6X_L_2  3
+#define G6X_L_3  4
+#define G6X_F_1  5
+#define G6X_F_2  6
+#define G6X_F_3  7
+#define G6X_NR   8
 
 /* RBG nonterminals */
 #define RBG_S   0
@@ -111,7 +110,7 @@ enum grammar_e {
 typedef float SCVAL;
 
 typedef struct {
-  SCVAL  t1[3];  // S -> LS     | L    | epsilon
+  SCVAL  t1[2];  // S -> LS     | epsilon
   SCVAL  t2[3];  // L -> a F a' | a a' | a
   SCVAL  t3[3];  // F -> a F a' | a a' | LS
 
@@ -120,7 +119,7 @@ typedef struct {
 } G6Xparam;
 
 typedef struct {
-  SCVAL  t1[3];  // S -> LS     | L    | epsilon
+  SCVAL  t1[2];  // S -> LS     | epsilon
   SCVAL  t2[3];  // L -> a F a' | a a' | a
   SCVAL  t3[3];  // F -> a F a' | a a' | LS
 

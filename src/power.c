@@ -305,6 +305,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 
   // coding covariations
   for (n = 0; n < dim; n ++) {
+    if (!spair[n].covary) continue;
+    
     if ( ( in_given && spair[n].bptype_given == WWc) ||
 	 (!in_given && spair[n].bptype_caco  == WWc)) {
       if ( in_given && spair[n].cttype_given == CTTYPE_PC) ncv_pc ++;
@@ -316,7 +318,7 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
   fprintf(fp, "# BPAIRS expected to covary %.1f +/- %.1f\n", expect, exp_std);
   fprintf(fp, "# BPAIRS observed to covary %lld\n#\n", ncv);
-  if (ncv_pc > 0) fprintf(fp, "# BPAIRS observed to covary possibly coding %lld/%lld (%.2f%%)\n#\n", ncv_pc, ncv, (double)ncv_pc/(double)ncv);
+  if (ncv_pc > 0) fprintf(fp, "# BPAIRS observed to covary possibly coding %lld/%lld (%.2f%%)\n#\n", ncv_pc, ncv, (double)ncv_pc/(double)ncv*100.0);
 }
 
 int

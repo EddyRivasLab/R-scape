@@ -35,48 +35,49 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
-static int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
+static inline int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
 			     FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
-static int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
+static inline int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
 				      CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
-static int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
-static int   struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_in (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_out(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_btw_btw  (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_btw_left (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_btw_right(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_HL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_BL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_IL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_J3(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_J4(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   struct_rm_add_helix_bounds_BS(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
-static int   ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L);
-static int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
-static int   ct_count_bpairs(int L, int *ct);
-static void  ct_dump(int L, int *ct);
-static int   ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method, enum cttype_e cttype, R3D *r3d,
+static inline int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
+static inline int   struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_in (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_out(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_btw_btw  (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_btw_left (int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_btw_right(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_HL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_BL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_IL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_J3(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_J4(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   struct_rm_add_helix_bounds_BS(RM *hl, RMLIST *rmlist, char *errbuf, int verbose);
+static inline int   ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L);
+static inline int   ct_add_to_pairlist(int *ct, int L, PAIRLIST *list);
+static inline int   ct_count_bpairs(int L, int *ct);
+static inline void  ct_dump(int L, int *ct);
+static inline int   ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int   ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method, enum cttype_e cttype, R3D *r3d,
 			     RMLIST **ret_rmlist, char *errbuf, int verbose);
-static int   ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose);
-static int   ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ctlist_helix_ncov(FOLDPARAM *foldparam, int L, int *ct, int *cov);
-static int   ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf);
-static int   ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, char *errbuf, int verbose);
-static int   ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose);
-static int   ctlist_sxcov(enum cttype_e *cttype, int *covct, CTLIST *ctlist, int verbose);
-static int   ctlist_tricov(CTLIST *ctlist, int verbose);
-static int   ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose);
-static int   ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int   ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
-static int  *sorted_order(const int *vec, int n);
-static int   nonWC(int i, int j, int L, double *pp, double thresh);
-static int   islone(int i, int j, int L, int *ct, int *covct);
-static int   trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose);
+static inline int   ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose);
+static inline int   ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int   ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int   ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int   ctlist_helix_ncov(FOLDPARAM *foldparam, int L, int *ct, int *cov);
+static inline int   ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf);
+static inline int   ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, char *errbuf, int verbose);
+static inline int   ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose);
+static inline int   ctlist_sxcov(enum cttype_e *cttype, int *covct, CTLIST *ctlist, int verbose);
+static inline int   ctlist_tricov(CTLIST *ctlist, int verbose);
+static inline int   ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose);
+static inline int   ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int   ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose);
+static inline int  *sorted_order(const int *vec, int n);
+static inline int   nonWC(int i, int j, int L, double *pp, double thresh);
+static inline int   ct_is_empty(int L, int *ct);
+static inline int   islone(int i, int j, int L, int *ct, int *covct);
+static inline int   trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose);
 
 // cascade covariation/variation constrain folding algorithm (CaCoFold)
 //
@@ -286,7 +287,7 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
   isempty = TRUE;
   for (s = 0; s < ctlist->nct; s ++) {
     ct = ctlist->ct[s];
-    for (i = 1; i <= msa->alen; i ++) { if (ct[i] > 0) { isempty = FALSE; break; } }
+    isempty = ct_is_empty(msa->alen, ct);
     if (isempty == FALSE) break;
   }
   if (!isempty) {
@@ -1998,7 +1999,7 @@ struct_pairlist_Realloc(PAIRLIST *pairlist, int n)
 
 /*------------------------------ internal functions -----------------------------*/
 
-static int
+static inline int
 struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
 		FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
 {
@@ -2206,7 +2207,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
 
 // uses covct[] to fill ct[]
 //
-static int
+static inline int
 struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct, int *ct, double *ret_sc, COVLIST *exclude,
 			 CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose)
 {
@@ -2281,7 +2282,7 @@ struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct m
   return status;
 }
 
-static int
+static inline int
 struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist)
 {
   char  *buf;
@@ -2338,7 +2339,7 @@ struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist)
 
 
 // for a rmlist, add information about the covariation found in the bounding helices
-static int
+static inline int
 struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *rm;
@@ -2395,7 +2396,7 @@ struct_rmlist_add_helix_bounds(RMLIST *rmlist, char *errbuf, int verbose)
 // contiguous i,i+1
 // covaries
 // 
-static int
+static inline int
 struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *rm;
@@ -2407,7 +2408,7 @@ struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose)
 
     if (rm->type != RMTYPE_HELIX) continue;
 
-    if (rm->nbp == 1 && rm->nbp_cov == 1) {
+    if (rm->nbp == 1 && rm->nbp_cov == 1 && rm->j == rm->i+1) {
       rm->type = RMTYPE_PC_CODON;
 
       for (c = 0; c < rm->ctlist->nct; c ++)
@@ -2424,7 +2425,7 @@ struct_rmlist_find_pccodon(RMLIST *rmlist, char *errbuf, int verbose)
 //       |    i     j    |
 //  <<<<<<----xxxxxxx---->>>>>>
 //
-static int
+static inline int
 struct_rm_add_helix_bounds_out(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *hl;
@@ -2465,7 +2466,7 @@ struct_rm_add_helix_bounds_out(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, 
 //       i    |          |    j
 //  xxxxxx----<<<<---->>>>----xxxxx
 //
-static int
+static inline int
 struct_rm_add_helix_bounds_in(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *hl;
@@ -2503,7 +2504,7 @@ struct_rm_add_helix_bounds_in(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, c
 //             |     i    j     |    
 //          >>>>-----xxxxxx-----<<<<
 //
-static int
+static inline int
 struct_rm_add_helix_bounds_btw_btw(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *hl;
@@ -2554,7 +2555,7 @@ struct_rm_add_helix_bounds_btw_btw(int *ret_hl_b_cov, int i, int j, RMLIST *rmli
 //             |     i    j     |    
 //          <<<<-----xxxxxx-----<<<<
 //
-static int
+static inline int
 struct_rm_add_helix_bounds_btw_left(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *hl;
@@ -2606,7 +2607,7 @@ struct_rm_add_helix_bounds_btw_left(int *ret_hl_b_cov, int i, int j, RMLIST *rml
 //             |     i    j     |    
 //          >>>>-----xxxxxx----->>>>
 //
-static int
+static inline int
 struct_rm_add_helix_bounds_btw_right(int *ret_hl_b_cov, int i, int j, RMLIST *rmlist, char *errbuf, int verbose)
 {
   RM  *hl;
@@ -2658,7 +2659,7 @@ struct_rm_add_helix_bounds_btw_right(int *ret_hl_b_cov, int i, int j, RMLIST *rm
 //       hl               hl
 //        |    i    j     |
 //   <<<<<<----xxxxxx----->>>>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_HL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int hl_b_cov = 0;
@@ -2677,7 +2678,7 @@ struct_rm_add_helix_bounds_HL(RM *hl, RMLIST *rmlist, char *errbuf, int verbose)
 } 
 //     h1      i       k1      h2       l1      j       h1
 //   <<<<<<----xxxxxxxxxx--<<<<--->>>>--xxxxxxxxx----->>>>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_BL(RM *bl, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int hl1_b_cov = 0;
@@ -2704,7 +2705,7 @@ struct_rm_add_helix_bounds_BL(RM *bl, RMLIST *rmlist, char *errbuf, int verbose)
 }
 //             i       k1               l1      j
 //   <<<<<<----xxxxxxxxxx--<<<<--->>>>--xxxxxxxxx----->>>>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_IL(RM *il, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int hl1_b_cov = 0;
@@ -2732,7 +2733,7 @@ struct_rm_add_helix_bounds_IL(RM *il, RMLIST *rmlist, char *errbuf, int verbose)
 //      hl1                hl2     hl2              hl3        hl3               hl1
 //        |    i       k1  |         |  l1     k2   |            |   l2   j      |
 //   <<<<<<----xxxxxxxxxx--<<<<--->>>>--xxxxxxxxx---<<<<<<-->>>>>>---xxxxxx------>>>>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_J3(RM *j3, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int hl1_b_cov = 0;
@@ -2768,7 +2769,7 @@ struct_rm_add_helix_bounds_J3(RM *j3, RMLIST *rmlist, char *errbuf, int verbose)
 //       h1                h2       h2              h3  h3             h4         h4                   h1
 //        |    i       k1  |         |  l1     k2   |    |  l2   k3    |           |    l3     j       |
 //   <<<<<<----xxxxxxxxxx--<<<<--->>>>--xxxxxxxxx---<<-->>---xxxxxx----<<<<---->>>>>----xxxxxxxx------->>>>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_J4(RM *j4, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int hl1_b_cov = 0;
@@ -2828,7 +2829,7 @@ struct_rm_add_helix_bounds_J4(RM *j4, RMLIST *rmlist, char *errbuf, int verbose)
 //              h1              h2
 //               |  i       j   |
 //        ---->>>>--xxxxxxxxx--->>>>
-static int
+static inline int
 struct_rm_add_helix_bounds_BS(RM *bs, RMLIST *rmlist, char *errbuf, int verbose)
 {
   int x;
@@ -2853,7 +2854,7 @@ struct_rm_add_helix_bounds_BS(RM *bs, RMLIST *rmlist, char *errbuf, int verbose)
 
 // if ct is nested relative to ctmain,
 // add ct to ctmain, otherwise leave unchanged
-static int
+static inline int
 ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L)
 {
   ESL_STACK *pda    = NULL;         /* stack for "main" secondary structure */
@@ -2921,7 +2922,7 @@ ct_add_if_nested(int *ct, int *ctmain, int *covctmain, int L)
   return eslFAIL;
 }
 
-static int
+static inline int
 ct_add_to_pairlist(int *ct, int L, PAIRLIST *list)
 {
   int isnew;
@@ -2947,7 +2948,7 @@ ct_add_to_pairlist(int *ct, int L, PAIRLIST *list)
   return eslOK;
 }
 
-static int
+static inline int
 ct_count_bpairs(int L, int *ct)
 {
   int i;
@@ -2959,7 +2960,7 @@ ct_count_bpairs(int L, int *ct)
   return nbps;
 }
 
-static void
+static inline void
 ct_dump(int L, int *ct)
 {
   int i;
@@ -2968,7 +2969,7 @@ ct_dump(int L, int *ct)
 }
 
 // split in helices
-static int
+static inline int
 ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg_e *agg_method, enum cttype_e cttype,
 		R3D *r3d, RMLIST **ret_rmlist, char *errbuf, int verbose)
 {
@@ -3479,7 +3480,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
   }
   *ret_rmlist = rmlist;
 
-
+ 
   esl_stack_Destroy(pda);
   return eslOK;
   
@@ -3491,7 +3492,7 @@ ct_split_rmlist(int helix_unpaired, int *ct, int *cov, int L, int nagg, enum agg
   return status;
 }
 
-static int
+static inline int
 ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e cttype, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   ESL_STACK  *pda    = NULL;                // stack for secondary structure 
@@ -3627,7 +3628,7 @@ ct_split_helices(int helix_unpaired, int *ct, int *cov, int L, enum cttype_e ctt
 }
 
 // removes covariations that correspond to gap-gap in the RF sequence
-static int
+static inline int
 ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose)
 {
   int L = sq->n;
@@ -3646,7 +3647,7 @@ ct_remove_inconsistencies(ESL_SQ *sq, int *ct, int verbose)
   return eslOK;
 }
 
-static int
+static inline int
 ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST *ctlist = *ret_ctlist;
@@ -3742,7 +3743,7 @@ ctlist_break_in_helices(int helix_unpaired, CTLIST **ret_ctlist, char *errbuf, i
 //             ctlist    The current list of the structures.
 //             L         The length of the alignment
 //
-static int
+static inline int
 ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   char      *ssmain   = NULL;
@@ -3937,7 +3938,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
 // (2) remove tr, xc, sc
 // (3) no nonWc 
 //
-static int
+static inline int
 ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST    *ctlist = *ret_ctlist;
@@ -4029,7 +4030,7 @@ ctlist_Rfam(FOLDPARAM *foldparam, double ***pp, CTLIST **ret_ctlist, char *errbu
 
 // remove PC
 //
-static int
+static inline int
 ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST    *ctlist = *ret_ctlist;
@@ -4063,14 +4064,6 @@ ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int ver
       {
 	useme[s] = FALSE; new --;
       }
-    else {
-      ct    = ctlist->ct[s];
-      covct = ctlist->covct[s];
-      for (i = 1; i <= L; i ++) {
-	j = covct[i];
-	if (j > i && j<=i+foldparam->pc_codon_thresh) { ct[i] = 0; ct[j] = 0; covct[i] = 0; covct[j] = 0; }
-      }
-    }
   }
   
   // Write the final set of structures to ctnew
@@ -4105,7 +4098,7 @@ ctlist_rmcoding(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, int ver
 // finds helices that are nested relative to the main structure (s=0) and
 // adds it to the main, reducing the nct by one each time this happens,
 //
-static int
+static inline int
 ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose)
 {
   CTLIST  *newlist = NULL;
@@ -4148,7 +4141,7 @@ ctlist_helices_merge(CTLIST **ret_ctlist, char *errbuf, int verbose)
 }
 
 
-static int
+static inline int
 ctlist_helix_ncov(FOLDPARAM *foldparam, int L, int *ct, int *cov)
 {
   int  i, j;
@@ -4175,7 +4168,7 @@ ctlist_helix_ncov(FOLDPARAM *foldparam, int L, int *ct, int *cov)
 
 
 // order pseudoknots by increasing first paired position
-static int
+static inline int
 ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf)
 {
   CTLIST *ctlist = *ret_ctlist;
@@ -4251,7 +4244,7 @@ ctlist_pseudoknot_order(CTLIST **ret_ctlist, char *errbuf)
 //         (3) If i' and j' are     on the same  side  of Ho -> it is a side-covariation  (CTTYPE_SCOV)
 //                                  on different sides of Ho -> it is a cross-covariation (CTTYPE_XCOV)
 //
-static int
+static inline int
 ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, char *errbuf, int verbose)
 {
   CTLIST *ctmain  = NULL;
@@ -4328,7 +4321,7 @@ ctlist_assign_cttype(CTLIST *ctlist, int helix_unpaired, int pc_codon_thresh, ch
   return status;
 }
 
-static int
+static inline int
 ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
 {
   int nct     = ctlist->nct;
@@ -4418,7 +4411,7 @@ ctlist_assign_ctnames(CTLIST *ctlist, char *errbuf, int verbose)
 //         (3) If i' and j' are     on the same  side  of Ho -> it is a side-covariation  (CTTYPE_SCOV)
 //                                  on different sides of Ho -> it is a cross-covariation (CTTYPE_XCOV)
 //
-static int
+static inline int
 ctlist_sxcov(enum cttype_e *ret_cttype, int *covct, CTLIST *ctlist, int verbose)
 {
   int           *othercov;
@@ -4463,7 +4456,7 @@ ctlist_sxcov(enum cttype_e *ret_cttype, int *covct, CTLIST *ctlist, int verbose)
 // a extra helix H is classified as CTTYPE_TRI when one of the two residues
 // is involved in at least one other basepair
 //
-static int
+static inline int
 ctlist_tricov(CTLIST *ctlist, int verbose)
 {
   int           *ct;
@@ -4515,7 +4508,7 @@ ctlist_tricov(CTLIST *ctlist, int verbose)
 // intra_codon_cov
 // inter_codon_cov
 //
-static int
+static inline int
 ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose)
 {
   int           *covct;
@@ -4525,6 +4518,9 @@ ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose)
   int            oi, oj;
   int            s, ss;
   int            i, j;
+  int            n_intra_min = 2;
+  int            n_inter_min = 2;
+  int            n_intra, n_inter;
   int            status;
 
   if (!ctlist) return eslOK;
@@ -4535,35 +4531,39 @@ ctlist_pccov(CTLIST *ctlist, int pc_codon_thresh, int verbose)
   for (s = 1; s < nct; s ++) {
     
     covct = ctlist->covct[s];
+    n_intra = 0;
+    n_inter = 0;
+    
     for (i = 1; i < L; i ++) {
       if (covct[i] > i) {
 	j = covct[i];
 	
 	// check if an intra-codon covariation
-	if (j - i + 1 <= pc_codon_thresh) { ctlist->cttype[s] = CTTYPE_PC; }
+	if (j - i + 1 <=  pc_codon_thresh) { n_intra ++; }
 	
 	// check if an inter-codon covariation
 	for (ss = 1; ss < nct; ss ++) {
+	  if (ss == s) continue;
+	  
 	  ocovct = ctlist->covct[ss];
 	  oi = ocovct[i];
 	  oj = ocovct[j];
 	  
 	  if ( (oj > oi) && ((oi - i + 1 <= pc_codon_thresh) || (oj - j + 1 <= pc_codon_thresh)))
 	    {
-	      ctlist->cttype[s] = CTTYPE_PC;
-	      
-	      // change the type of the other ct as well
-	      ctlist->cttype[ss] = CTTYPE_PC;
+	      n_inter ++;
 	    }
 	}
       }
     }
+
+    if (n_intra >= n_intra_min || n_inter >= n_inter_min) ctlist->cttype[s] = CTTYPE_PC;
   }
   
   return eslOK;
 }
 
-static int *
+static inline int *
 sorted_order(const int *vec, int n)
 {
   int *idx = NULL;
@@ -4616,6 +4616,20 @@ int nonWC(int i, int j, int L, double *pp, double thresh)
 
 // is alone and not covarying
 static
+int ct_is_empty(int L, int *ct)
+{
+  int empty = TRUE;
+  int i;
+
+  for (i = 1; i <= L; i ++) {
+    if (ct[i] > 0) return FALSE;
+  }
+
+  return empty;
+}
+
+// is alone and not covarying
+static
 int islone(int i, int j, int L, int *ct, int *covct)
 {
   int islone = FALSE;
@@ -4648,7 +4662,7 @@ int islone(int i, int j, int L, int *ct, int *covct)
 // if the helix has covariations, but it isallowed = FALSE,
 // remove from overlap/no-covariation part 
 //          but only at the ends of the helix, passed the covarying basepairs
-static int
+static inline int
 trim_ovelap(int L, int *ct, int *cov, int *ctmain, int *covmain, int Rfammode, char *errbuf, int verbose)
 {
   int mincov_i, mincov_j;
