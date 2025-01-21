@@ -1908,6 +1908,9 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   return status;
 }
 
+// check the msa name does not include |, replace with _
+// both FastTree and R2R have isssues with | in the msa name
+//
 static int
 original_msa_doctor_names(ESL_MSA **omsa)
 {
@@ -1930,6 +1933,10 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = msa->name; (p = strchr(p, '\'')); ++p) 
       *p = '_';
+    for (p = msa->name; (p = strchr(p, ','));  ++p) 
+      *p = '_';
+    for (p = msa->name; (p = strchr(p, ';'));  ++p) 
+      *p = '_';
     for (p = msa->name; (p = strchr(p, '.'));  ++p) 
       *p = '_';
     
@@ -1948,7 +1955,13 @@ original_msa_doctor_names(ESL_MSA **omsa)
       *p = '_';
     for (p = sqname; (p = strchr(p, '%'));  ++p) 
       *p = '_';
+    for (p = sqname; (p = strchr(p, '\'')); ++p) 
+      *p = '_';
     for (p = sqname; (p = strchr(p, ','));  ++p) 
+      *p = '_';
+    for (p = sqname; (p = strchr(p, ';'));  ++p) 
+      *p = '_';
+    for (p = sqname; (p = strchr(p, '.'));  ++p) 
       *p = '_';
           
     (*omsa)->sqname[s] = sqname;

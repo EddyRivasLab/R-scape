@@ -327,9 +327,6 @@ msamanip_ConvertMissingNonresidue2Gap(ESL_MSA *msa)
   return eslOK;
 }
 
-// check the msa name does not include |, replace with _
-// both FastTree and R2R have isssues with | in the msa name
-//
 // check for sequence names that contain a parenthesis () or []
 // replace with curly brakckets
 int 
@@ -340,12 +337,13 @@ msamanip_DoctorSeqNames(const ESL_MSA *msa, char *errbuf)
   int   found = FALSE;
   int   i;
 
+  // remove 
   for (n = 0; n < msa->nseq; n ++) {
     if (strchr(msa->sqname[n], ')') || strchr(msa->sqname[n], '(') ||
 	strchr(msa->sqname[n], ']') || strchr(msa->sqname[n], '[')   )
       {
 	name = msa->sqname[n];
-
+	
 	i     = 0;
 	found = TRUE;
 	while (name[i] != '\0')
@@ -357,7 +355,9 @@ msamanip_DoctorSeqNames(const ESL_MSA *msa, char *errbuf)
 	  }
       }
   }
-  if (found) printf("Warning: sequence names include parenthesis '(' | '[' | ')' | ']'. incompatible with the program FastTree. Replaced with '{' | '}'.\n\n");
+  
+  if (found)
+    printf("Warning: sequence names include parenthesis '(' | '[' | ')' | ']'. incompatible with the program FastTree. Replaced with '{' | '}'.\n\n");
 
   return eslOK;
 }

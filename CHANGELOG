@@ -53,3 +53,7 @@ R-scape v2.5.5 Jan 2024
         bug fixed when identify protein-coding exons covariation
 R-scape v2.5.6 Jan 2024
         bug fixed when identify protein-coding exons covariation
+
+R-scape v2.5.7 February 2024
+        msa names and seqnames edited to identify more characters not recognized by Fasttree
+	added jax/python code to implement differentiable folding algorithms.
