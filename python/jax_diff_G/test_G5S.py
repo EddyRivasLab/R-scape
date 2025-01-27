@@ -38,6 +38,7 @@ def test_G5S_Inside_JAX(n: int, single_seq: int, verbose: int, K: int=4, min_hai
             n_sq = np.random.normal(size=(n, K))
             psq     = np.exp(n_sq) / np.sum(np.exp(n_sq), axis=1, keepdims=True)
             log_psq = np.log(psq)
+            mask = jnp.ones(psq.shape[0]) 
             print("The prob sequence", psq.shape)
             print(psq)
             
@@ -55,15 +56,16 @@ def test_G5S_Inside_JAX(n: int, single_seq: int, verbose: int, K: int=4, min_hai
             
             psq     = np.einsum('ijab->ia', psq2) / n
             log_psq = np.log(psq)
+            mask = jnp.ones(psq.shape[0]) 
             print("The marginal prob seq", psq.shape)
             print(psq)
 
-        p_inside_jax_scaled = g5s_inside_jax_scaled(psq, psq2, t, pe_single, pe_pair, pe_stck)                                 # scaled jax
-        logp_inside_std_scaled = G5S_Inside_std_scaled(psq, psq2, t, pe_single, pe_pair, pe_stck, scale, verbose, K, min_hairpin) # scaled standard
+        p_inside_jax_scaled = g5s_inside_jax_scaled(mask, psq, psq2, t, pe_single, pe_pair, pe_stck)                                 # scaled jax
+        logp_inside_std_scaled = G5S_Inside_std_scaled(mask, psq, psq2, t, pe_single, pe_pair, pe_stck, scale, verbose, K, min_hairpin) # scaled standard
         logp_inside_jax_scaled = np.log(p_inside_jax_scaled) - n * np.log(scale)
  
-        logp_inside_jax = g5s_inside_jax(log_psq, log_psq2, log_t, e_single, e_pair, e_stck)                          # logspace jax
-        logp_inside_std = G5S_Inside_std(log_psq, log_psq2, log_t, e_single, e_pair, e_stck, verbose, K, min_hairpin) # logspace standard
+        logp_inside_jax = g5s_inside_jax(mask, log_psq, log_psq2, log_t, e_single, e_pair, e_stck)                          # logspace jax
+        logp_inside_std = G5S_Inside_std(mask, log_psq, log_psq2, log_t, e_single, e_pair, e_stck, verbose, K, min_hairpin) # logspace standard
 
         # compare log_standared/scaled_standard
         assert np.allclose(
@@ -87,14 +89,14 @@ def test_G5S_Inside_JAX(n: int, single_seq: int, verbose: int, K: int=4, min_hai
    
         # gradients wrt parameters
         # jax_scaled
-        grad_g5s_inside_scaled = value_and_grad(g5s_inside_jax_scaled, argnums=(2,3,4,5))
-        p_inside_scaled, p_inside_grads_scaled = grad_g5s_inside_scaled(psq, psq2, t, pe_single, pe_pair, pe_stck)
+        grad_g5s_inside_scaled = value_and_grad(g5s_inside_jax_scaled, argnums=(3,4,5,6))
+        p_inside_scaled, p_inside_grads_scaled = grad_g5s_inside_scaled(mask, psq, psq2, t, pe_single, pe_pair, pe_stck)
         print("p_inside:", p_inside_scaled)
         print("p_inside_gradients:", p_inside_grads_scaled)
         
         # jax_log
-        grad_g5s_inside = value_and_grad(g5s_inside_jax, argnums=(2,3,4,5))
-        logp_inside, logp_inside_grads = grad_g5s_inside(log_psq, log_psq2, log_t, e_single, e_pair, e_stck)
+        grad_g5s_inside = value_and_grad(g5s_inside_jax, argnums=(3,4,5,6))
+        logp_inside, logp_inside_grads = grad_g5s_inside(mask, log_psq, log_psq2, log_t, e_single, e_pair, e_stck)
         print("logp_inside:", logp_inside)
         print("logp_inside_gradients:", logp_inside_grads)
 

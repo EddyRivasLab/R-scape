@@ -32,6 +32,7 @@ def test_G6XS_Inside_JAX(n: int, single_seq: int, verbose: int, min_hairpin: int
         n_sq = np.random.normal(size=(n, K))
         psq     = np.exp(n_sq) / np.sum(np.exp(n_sq), axis=1, keepdims=True)
         log_psq = np.log(psq)
+        mask = jnp.ones(psq.shape[0]) 
         print("The prob sequence", psq.shape)
         print(psq)
         
@@ -49,17 +50,18 @@ def test_G6XS_Inside_JAX(n: int, single_seq: int, verbose: int, min_hairpin: int
         
         psq     = np.einsum('ijab->ia', psq2) / n
         log_psq = np.log(psq)
+        mask = jnp.ones(psq.shape[0]) 
         print("The marginal prob seq", psq.shape)
         print(psq)
 
     g6xs_inside_jax_scaled = G6XS_Inside_JAX_scaled(scale, verbose, K, min_hairpin)
-    p_inside_jax_scaled    = g6xs_inside_jax_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck)                                 # scaled jax
-    logp_inside_std_scaled = G6XS_Inside_std_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck, scale, verbose, K, min_hairpin) # scaled standaar
+    p_inside_jax_scaled    = g6xs_inside_jax_scaled(mask, psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck)                                 # scaled jax
+    logp_inside_std_scaled = G6XS_Inside_std_scaled(mask, psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck, scale, verbose, K, min_hairpin) # scaled standaar
     logp_inside_jax_scaled = np.log(p_inside_jax_scaled) - n * np.log(scale)
 
     g6xs_inside_jax = G6XS_Inside_JAX(verbose, K, min_hairpin)
-    logp_inside_jax = g6xs_inside_jax(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck)                          # scaled jax
-    logp_inside_std = G6XS_Inside_std(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck, verbose, K, min_hairpin) # logspace standard
+    logp_inside_jax = g6xs_inside_jax(mask, log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck)                          # scaled jax
+    logp_inside_std = G6XS_Inside_std(mask, log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck, verbose, K, min_hairpin) # logspace standard
             
     # compare scaled_jax/log_jax
     assert np.allclose(
@@ -78,15 +80,15 @@ def test_G6XS_Inside_JAX(n: int, single_seq: int, verbose: int, min_hairpin: int
     
     # gradients wrt parameters
     # jax_scaled
-    g6xs_inside_grad_scaled = value_and_grad(g6xs_inside_jax_scaled, argnums=(2,3,4,5,6,7))
-    value_scaled, grads_scaled = g6xs_inside_grad_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck)
+    g6xs_inside_grad_scaled = value_and_grad(g6xs_inside_jax_scaled, argnums=(3,4,5,6,7,8))
+    value_scaled, grads_scaled = g6xs_inside_grad_scaled(mask, psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck)
     print("p_inside_g6xs:", value_scaled)
     print("p_inside_g6xs_grads:", grads_scaled)
 
     # gradients wrt parameters
     # jax_log
-    g6xs_inside_grad = value_and_grad(g6xs_inside_jax, argnums=(2,3,4,5,6,7))
-    value_log, grads_log = g6xs_inside_grad(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck)
+    g6xs_inside_grad = value_and_grad(g6xs_inside_jax, argnums=(3,4,5,6,7,8))
+    value_log, grads_log = g6xs_inside_grad(mask, log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck)
     print("logp_inside_g6xs:", value_log)
     print("logp_inside_g6xs_grads:", grads_log)
 

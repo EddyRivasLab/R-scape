@@ -20,7 +20,7 @@ else:
 def G6XS_Inside_JAX_scaled(scale, verbose, K: int = 4, min_hairpin: int = 0):
     
     @jax.jit
-    def g6xs_inside_jax_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck):
+    def g6xs_inside_jax_scaled(mask, psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck):
         n   = psq.shape[0]
         ns  = jnp.arange(n)
         ss  = jnp.arange(K)
@@ -86,14 +86,15 @@ def G6XS_Inside_JAX_scaled(scale, verbose, K: int = 4, min_hairpin: int = 0):
         ies = jnp.arange(n-1, -1, -1)
         (S, L, F, _, _, _, _, _, _, _, _), _ = scan(g6xs_fill, initial_carry, ies)
         
-        return S[0,n-1]
+        len = jnp.count_nonzero(mask)
+        return S[0,len-1]
                       
     return g6xs_inside_jax_scaled
 
 def G6XS_Inside_JAX(verbose, K: int = 4, min_hairpin: int = 0):
     
     @jax.jit
-    def g6xs_inside_jax(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck):
+    def g6xs_inside_jax(mask, log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck):
         n   = log_psq.shape[0]
         ns  = jnp.arange(n)
         ss  = jnp.arange(K)
@@ -155,7 +156,8 @@ def G6XS_Inside_JAX(verbose, K: int = 4, min_hairpin: int = 0):
         ies = jnp.arange(n-1, -1, -1)
         (logS, logL, logF, _, _, _, _, _, _, _, _), _ = scan(g6xs_fill, initial_carry, ies)
         
-        return logS[0,n-1]
+        len = jnp.count_nonzero(mask)
+        return logS[0,len-1]
                       
     return g6xs_inside_jax
     
@@ -378,10 +380,10 @@ def g6xs_F_ij_scaled(i: int, j: int, S, L, F, psq, psq2, t2, t0, pe_single, pe_p
     
     return F_ij_val
 
-def G6XS_Inside_std(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck, verbose, K: int=4, min_hairpin: int=0):
+def G6XS_Inside_std(mask, log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair, e_stck, verbose, K: int=4, min_hairpin: int=0):
     
     """Standard implementation of g6xs"""
-    n = len(log_psq)
+    n = log_psq.shape[0]
 
     print("G6XS param")
     print("     transistion S", log_t0)
@@ -456,12 +458,13 @@ def G6XS_Inside_std(log_psq, log_psq2, log_t0, log_t1, log_t2, e_single, e_pair,
                 
             if verbose: print("log_standard", "i", i, "j", j, "logL", logL[i][j], "logF", logF[i][j], "logS", logS[i][j])
             
-    return float(logS[0][n-1])
+    len = jnp.count_nonzero(mask)
+    return float(logS[0][len-1])
 
-def G6XS_Inside_std_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck, scale, verbose, K: int=4, min_hairpin: int=0):
+def G6XS_Inside_std_scaled(mask, psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck, scale, verbose, K: int=4, min_hairpin: int=0):
     
     """Standard implementation of g6xs"""
-    n = len(psq)
+    n = psq.shape[0]
 
     pe_single = pe_single * scale          # single emission probabilities
     pe_pair   = pe_pair   * scale * scale  # pair   emission probabilities
@@ -541,5 +544,6 @@ def G6XS_Inside_std_scaled(psq, psq2, t0, t1, t2, pe_single, pe_pair, pe_stck, s
             
     #print("standard", "L", L, "F", F, "S", S)
             
-    return (np.log(float(S[0][n-1])) - n * np.log(scale))
+    len = jnp.count_nonzero(mask)
+    return (np.log(float(S[0][len-1])) - len * np.log(scale))
 

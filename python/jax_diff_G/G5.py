@@ -23,7 +23,7 @@ def G5_Inside_JAX_scaled(scale, verbose, K: int, min_hairpin: int = 0):
     #MW = True
     
     @jax.jit
-    def g5_inside_jax_scaled(psq, psq2, t, pe_single, pe_pair):
+    def g5_inside_jax_scaled(mask, psq, psq2, t, pe_single, pe_pair):
         
         # G5 Grammar (Dowell & Eddy, BMC Bioinf 2004)
         #
@@ -33,10 +33,10 @@ def G5_Inside_JAX_scaled(scale, verbose, K: int, min_hairpin: int = 0):
         #
         # [change from Max's, it has a third rule, which allows a <> pair
         #
-        n   = len(psq)
-        ns  = jnp.arange(n)
-        ss  = jnp.arange(K)
-        ps  = jnp.arange(K*K)
+        n  = psq.shape[0]
+        ns = jnp.arange(n)
+        ss = jnp.arange(K)
+        ps = jnp.arange(K*K)
 
         pe_single = pe_single * scale         # single emission probabilities
         pe_pair   = pe_pair   * scale * scale # pair   emission probabilities
@@ -106,15 +106,16 @@ def G5_Inside_JAX_scaled(scale, verbose, K: int, min_hairpin: int = 0):
             ies = jnp.arange(n-1, -1, -1)
             (S, _, _, _, _, _), _ = scan(g5_fill, initial_carry, ies)
 
-        #return (np.log(S[0,n-1]) - n * np.log(scale))
-        return S[0,n-1]
+        len = jnp.count_nonzero(mask)
+        #return (jnp.log(S[0,len-1]) - len * np.log(scale))
+        return S[0,len-1]
                       
     return g5_inside_jax_scaled
 
 def G5_Inside_JAX(verbose, K: int, min_hairpin: int = 0):
     
     @jax.jit
-    def g5_inside_jax(log_psq, log_psq2, log_t, e_single, e_pair):
+    def g5_inside_jax(mask, log_psq, log_psq2, log_t, e_single, e_pair):
         
         # G5 Grammar (Dowell & Eddy, BMC Bioinf 2004)
         #
@@ -123,7 +124,7 @@ def G5_Inside_JAX(verbose, K: int, min_hairpin: int = 0):
         #
         # [change from Max's, it has a third rule, which allows a <> pair
         #
-        n  = len(log_psq)
+        n  = log_psq.shape[0]
         ns = jnp.arange(n)
         ss = jnp.arange(K)
         ps = jnp.arange(K*K)
@@ -147,13 +148,14 @@ def G5_Inside_JAX(verbose, K: int, min_hairpin: int = 0):
         ies = jnp.arange(n-1, -1, -1)
         (logS, _, _, _, _, _), _ = scan(g5_fill, initial_carry, ies)
         
-        return logS[0, n-1]
+        len = jnp.count_nonzero(mask)
+        return logS[0, len-1]
                       
     return g5_inside_jax
 
 def g5_S_ij_scaled(K: int, i: int, j: int, S, psq, psq2, t, pe_single, pe_pair, min_hairpin):
     """fills S[i,j]"""
-    n  = len(psq)
+    n  = psq.shape[0]
     ns = jnp.arange(n)
     ss = jnp.arange(K)
     ps = jnp.arange(K*K)
@@ -188,7 +190,7 @@ def g5_S_ij_scaled(K: int, i: int, j: int, S, psq, psq2, t, pe_single, pe_pair, 
 
 def g5_logS_ij(K: int, i: int, j: int, logS, log_psq, log_psq2, log_t, e_single, e_pair, min_hairpin):
     """fills S[i,j]"""
-    n  = len(log_psq)
+    n  = log_psq.shape[0]
     ns = jnp.arange(n)
     ss = jnp.arange(K)
     ps = jnp.arange(K*K)
@@ -221,9 +223,9 @@ def g5_logS_ij(K: int, i: int, j: int, logS, log_psq, log_psq2, log_t, e_single,
     logS_ij_val = jax.lax.select(j >= i, jsp.special.logsumexp(jnp.array([logS_rule1_val,logS_rule2_val])), np.log(1e-300))
     return logS_ij_val
 
-def G5_Inside_std(log_psq, log_psq2, log_t, e_single, e_pair, verbose,  K: int=4, min_hairpin: int = 0): 
+def G5_Inside_std(mask, log_psq, log_psq2, log_t, e_single, e_pair, verbose,  K: int=4, min_hairpin: int = 0): 
     """Standard implementation of G5"""
-    n = len(log_psq)
+    n = log_psq.shape[0]
 
     logS = [[-math.inf for _ in range(n)] for _ in range(n)]
     for i in range(n-1, -1, -1):
@@ -244,12 +246,13 @@ def G5_Inside_std(log_psq, log_psq2, log_t, e_single, e_pair, verbose,  K: int=4
                     logS[i][j] = logsumexp([logS[i][j], term])
 
             if verbose: print("log_std", "i", i, "j", j, "logS", logS[i][j], np.exp(logS[i][j]))
+            
+    len = jnp.count_nonzero(mask)
+    return float(logS[0][len-1])
 
-    return float(logS[0][n-1])
-
-def G5_Inside_std_scaled(psq, psq2, t, pe_single, pe_pair, scale, verbose, K: int=4, min_hairpin: int = 0): 
+def G5_Inside_std_scaled(mask, psq, psq2, t, pe_single, pe_pair, scale, verbose, K: int=4, min_hairpin: int = 0): 
     """Standard implementation of G5"""
-    n   = len(psq)
+    n = psq.shape[0]
 
     pe_single = pe_single * scale         # single emission probabilities
     pe_pair   = pe_pair   * scale * scale # pair   emission probabilities
@@ -271,7 +274,8 @@ def G5_Inside_std_scaled(psq, psq2, t, pe_single, pe_pair, scale, verbose, K: in
                     S[i][j] += psq2[i][k][ab//K][ab%K] * t[1] * pe_pair[ab] * nonterm_1 * nonterm_2
                     
             if verbose: print("sca_std", "i", i, "j", j, "S", S[i][j])
-
-    return (np.log(float(S[0][n-1])) - n * np.log(scale))
+            
+    len = jnp.count_nonzero(mask)
+    return (np.log(float(S[0][len-1])) - len * np.log(scale))
 
 
