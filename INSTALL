@@ -30,7 +30,7 @@ First you need to clone easel and hmmer too:
   cd lib
   git clone https://github.com/EddyRivasLab/infernal.git
   
-  git clone https://github.dom/EddyRivasLab/hmmer.git
+  git clone https://github.com/EddyRivasLab/hmmer.git
   git checkout develop
   cd hmmer/
   git clone https://github.dom/EddyRivasLab/easel.git
