@@ -29,15 +29,21 @@ def dsq_to_psq(dsq, K):
     
     return psq
 
-def pad_seq(sqs):
+def pad_seq(sqs, bymin=0):
+
     L_max = max(len(sq) for sq in sqs)
-        
+
     sq_padded = jnp.array([jnp.pad(sq,               ((0, L_max - len(sq)), (0,0)), mode='constant',constant_values=1/K) for sq in sqs])
     sq_mask   = jnp.array([jnp.pad(jnp.ones(len(sq)), (0, L_max - len(sq)),         mode='constant') for sq in sqs])
-    
+
+    if bymin:
+        L_min = min(len(sq) for sq in sqs)
+        sq_padded = sq_padded[...,0:L_min-1,:]
+        sq_mask   = sq_mask[...,0:L_min-1,:]
+   
     return sq_padded, sq_mask
 
-def read_fasta(filepath):
+def read_fasta(filepath,bymin):
     with open(filepath, 'r') as f:
         lines = f.readlines()
 
@@ -54,7 +60,7 @@ def read_fasta(filepath):
     psq = [dsq_to_psq(sq, K) for sq in dseq[:]]
 
     # pad the sequences
-    psq, mask = pad_seq(psq)
+    psq, mask = pad_seq(psq,bymin)
     log_psq = jnp.log(psq)
  
     return mask, psq, log_psq, name

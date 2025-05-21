@@ -411,6 +411,7 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
   char  *tag        = NULL;
   char  *covtag1    = NULL;
   RM    *rm;
+  int    n_rm       = 0; // number of RMs
   int    nct        = ctlist->nct;
   int    tagidx;
   int    idx;
@@ -488,7 +489,8 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
     case CTTYPE_RM_J3:
     case CTTYPE_RM_J4:
     case CTTYPE_RM_BS:
-      esl_sprintf(&covtag1, "%s_%s", covtag, ctlist->ctname[s]);
+      n_rm ++;
+      esl_sprintf(&covtag1, "%s_rm%d_%s", covtag, n_rm, ctlist->ctname[s]);
       break;
     default:
       ESL_XFAIL(eslFAIL, errbuf, "unknown cttype");

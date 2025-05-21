@@ -9,12 +9,14 @@ import functools
 from scipy.special import logsumexp
 
 # adapted from Ward et al. 2023
-from checkpoint import checkpoint_scan
+from lib.checkpoint import checkpoint_scan
+
 checkpoint_every = 1
 if checkpoint_every is None:
     scan = jax.lax.scan
 else:
     scan = functools.partial(checkpoint_scan, checkpoint_every=checkpoint_every)
+
 
 def G5S_Inside_JAX_scaled(scale, verbose, K: int, min_hairpin: int = 0):
     

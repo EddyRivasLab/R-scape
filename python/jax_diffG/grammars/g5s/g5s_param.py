@@ -7,11 +7,12 @@ import jax.nn as jnn
 import jax.scipy as jsp
 import functools
 
+import lib.probability as prob
 
 def G5S_param_tornado(verbose):
     
     # stacked emission probabilities 16x16 matrix
-    e_stck = np.array([
+    e_stck = jnp.array([
         [-5.889561,-6.689817,-3.975105,-1.811362,-5.543783,-7.639289,-1.273398,-8.143614,-6.037709,-1.321524,-8.143614,-2.890287,-2.010731,-8.143614,-2.675081,-5.889561], 
         [-5.490569,-6.541841,-5.770204,-1.782813,-6.541841,-6.541841,-1.622780,-9.210340,-6.159766,-1.018731,-7.167932,-2.252859,-2.364160,-9.210340,-2.862464,-5.490569],
         [-6.397135,-6.286043,-6.457681,-1.954350,-7.149487,-9.210340,-1.339152,-7.032002,-7.282636,-1.101842,-6.831765,-2.305014,-2.040920,-7.032002,-3.714073,-6.186067], 
@@ -28,22 +29,27 @@ def G5S_param_tornado(verbose):
         [-5.570176,-9.210340,-5.962602,-2.436269,-5.570176,-5.570176,-1.380142,-9.210340,-5.467443,-1.078322,-4.890240,-2.909361,-1.662245,-5.006361,-3.227127,-5.137762], 
         [-7.067816,-6.781893,-7.067816,-2.064928,-5.714927,-7.649996,-1.311748,-7.469774,-5.902604,-1.583151,-6.559806,-1.903714,-1.873881,-6.050673,-2.497797,-6.435140], 
         [-5.836650,-7.595602,-7.007227,-1.754224,-5.836650,-8.107308,-1.409310,-9.210340,-6.068511,-1.306053,-6.639277,-2.532961,-1.714310,-5.592979,-3.470399,-4.859999]])
+ 
+    K = e_stck.shape[0]
+    e_stck = jnp.array([prob.logpNorm(e_stck[ab])  for ab in range(K)])
     pe_stck = np.exp(e_stck)
-    print("stck shape", pe_stck.shape)
-
-    K = pe_stck.shape[0]
+ 
     # paired emission probabilities 4x4 matrix
-    pe_pair = np.einsum('pq->q', pe_stck) / (K*K)
-    e_pair = np.log(pe_pair)
+    pe_pair = jnp.einsum('pq->q', pe_stck) / (K*K)
+    e_pair = jnp.log(pe_pair)
+    e_pair = prob.logpNorm(e_pair);
+    pe_pair = jnp.exp(e_pair)
     print(pe_pair)
 
     # unpaired emission probabilities 4x1 matrix
     e_single = np.array([-1.012587,-1.753798,-1.518921,-1.406257]) # A, C, G, U
-    pe_single = np.exp(e_single)
+    e_single = prob.logpNorm(e_single);
+    pe_single = jnp.exp(e_single)
 
-    # transition probabilities (t1, t2, t3)
+     # transition probabilities (t1, t2, t3)
     log_t = np.array([-0.726176,-1.365860,-1.341766]) # aS | aSa'S | e
-    t = np.exp(log_t)
+    log_t = prob.logpNorm(log_t);   
+    t = jnp.exp(log_t)
 
     if verbose:
         print("G5S param tornado")
@@ -75,6 +81,9 @@ def G5S_param_uniform(K, verbose):
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val], 
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val],
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val]])
+    
+    K = e_stck.shape[0]
+    e_stck = jnp.array([prob.logpNorm(e_stck[ab])  for ab in range(K)])
     pe_stck = np.exp(e_stck)
     print(pe_stck)
     
@@ -84,17 +93,22 @@ def G5S_param_uniform(K, verbose):
                        log_val,log_val,log_val,log_val,
                        log_val,log_val,log_val,log_val,
                        log_val,log_val,log_val,log_val]) # UA, UC, UG, UU
-    pe_pair = np.exp(e_pair)
+    e_pair = prob.logpNorm(e_pair);
+    pe_pair = jnp.exp(e_pair)
+    print(pe_pair)
 
     # unpaired emission probabilities 4x1 matrix
     log_val = -np.log(K)
     e_single = np.array([log_val,log_val,log_val,log_val]) # A, C, G, U
-    pe_single = np.exp(e_single)
-
+    e_single = prob.logpNorm(e_single);
+    pe_single = jnp.exp(e_single)
+ 
     # transition probabilities (t1, t2, t3)
     log_val = -np.log(3.0)
     log_t = np.array([log_val,log_val,log_val]) # aS | aSa'S | e
-    t = np.exp(log_t)
+    log_t = prob.logpNorm(log_t);   
+    t = jnp.exp(log_t)
+
 
     if verbose:
         print("G5 param uniform")

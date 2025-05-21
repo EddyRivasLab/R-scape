@@ -2923,18 +2923,19 @@ sub write_species_file {
 
 sub write_stofile {
 
-    my ($stofile, $nasq, $asq_ref, $asqname_ref, $ss, $useme_ref) = @_;
+    my ($stofile, $nasq, $asq_ref, $asqname_ref, $ss, $useme_ref, $stoname, $append) = @_;
 
     my $id = $stofile;
     if ($id =~ /\/([^\/]+)$/) { $id = $1; }
     if ($id =~ /(\S+).sto/)   { $id = $1; }
+    if ($stoname) { $id .= ".$stoname"; }
     
     my $name;
     my $coords;
     my $block = 180;
     
     print "\nSTOFILE: $stofile\n";
-    open (STO, ">$stofile") || die;
+    if ($append) { open (STO, ">>$stofile") || die; } else { open (STO, ">$stofile") || die; }
     printf STO "\# STOCKHOLM 1.0\n";
     printf STO "\#=GF ID %s\n", $id;
 

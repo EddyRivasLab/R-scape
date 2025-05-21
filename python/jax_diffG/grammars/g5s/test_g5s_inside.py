@@ -8,13 +8,13 @@ import functools
 
 from jax import grad, value_and_grad
 
-from G5S import (
+from grammars.g5s.g5s_inside import (
     G5S_Inside_JAX,
     G5S_Inside_std,
     G5S_Inside_JAX_scaled,
     G5S_Inside_std_scaled,
 )
-from G5S_param import (
+from grammars.g5s.g5s_param import (
     G5S_param_tornado,
     G5S_param_uniform,
 )

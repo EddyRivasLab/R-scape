@@ -1,16 +1,18 @@
 import math
 import sys
 import numpy as np
+from scipy.special import logsumexp
+
 import jax
 import jax.numpy as jnp
-import jax.nn as jnn
+import jax.nn    as jnn
 import jax.scipy as jsp
 import functools
 
-from scipy.special import logsumexp
 
 # adapted from Ward et al. 2023
-from checkpoint import checkpoint_scan
+from lib.checkpoint import checkpoint_scan
+
 checkpoint_every = 1
 if checkpoint_every is None:
     scan = jax.lax.scan

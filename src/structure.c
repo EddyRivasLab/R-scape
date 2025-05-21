@@ -744,9 +744,6 @@ struct_rmlist_FromCTLIST(int helix_unpaired, int pc_codon_thresh, int nagg, enum
   int            s;
   int            status;
   
-  int n;
-  RM     *rm;
-  
   if (!ctlist) return eslOK;
   
   nct = ctlist->nct;
@@ -772,7 +769,7 @@ struct_rmlist_FromCTLIST(int helix_unpaired, int pc_codon_thresh, int nagg, enum
     status = struct_rmlist_add_helix_bounds(rmlist, errbuf, verbose);
     if (status != eslOK) { goto ERROR; }
   }
-  
+
   return rmlist;
   
  ERROR:
@@ -923,7 +920,7 @@ struct_ctlist_FromContacts(int helix_unpaired, int pc_codon_thresh, int draw_non
   if (status != eslOK) goto ERROR;
 
   if (verbose) struct_ctlist_Dump(ctlist);
-
+  
   if (ct)    free(ct);
   if (useme) free(useme);
   return ctlist;
@@ -1783,7 +1780,7 @@ struct_rm_Write(FILE *fp, int L, RM *rm, int OL, int *msamap, int firstpos, char
     break;
   }
     
-  if (rm->nbp > 0) {
+  if (rm->nbp > 0 && rm->pvals) {
     fprintf(fp, "# pvals: ");
     for (n = 0; n < rm->nbp-1; n ++) 
       fprintf(fp, "%g,", rm->pvals[n]);
@@ -2036,15 +2033,15 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   // LASTFOLD == TRUE :  Do one more folding in which we force all covarying pairs to not happen
   if (nct == 0) {
     struct_ctlist_Realloc(ctlist, nct+1);
-   
-      G = foldparam->G0;
-      exclude[nct] = struct_covlist_Create(0);
-      
-      // nothing is forced to basepair in this last/unique fold
-      // and covarying basepairs cannot be present
-      status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
-      if (status != eslOK) goto ERROR;
-      nct ++;
+    
+    G = foldparam->G0;
+    exclude[nct] = struct_covlist_Create(0);
+
+    // nothing is forced to basepair in this last/unique fold
+    // and covarying basepairs cannot be present
+    status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[nct], ctlist->ct[nct], &sc[nct], exclude[nct], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
+    if (status != eslOK) goto ERROR;
+    nct ++;
   }
   
   if (foldparam->lastfold) {

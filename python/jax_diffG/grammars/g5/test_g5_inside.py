@@ -8,18 +8,17 @@ import functools
 
 from jax import grad, value_and_grad
 
-from G5 import (
+import lib.seqio as seqio
+
+from  grammars.g5.g5_inside import (
     G5_Inside_JAX,
     G5_Inside_std,
     G5_Inside_JAX_scaled,
     G5_Inside_std_scaled,
 )
-from G5_param import (
+from  grammars.g5.g5_params import (
     G5_param_tornado,
     G5_param_uniform,
-)
-from seq_io import (
-    pad_seq,
 )
 
 

@@ -7,6 +7,7 @@ import jax.nn as jnn
 import jax.scipy as jsp
 import functools
 
+import lib.probability as prob
 
 def G6XS_param_tornado(verbose):
     # stacked emission probabilities 16x16 matrix
@@ -27,27 +28,35 @@ def G6XS_param_tornado(verbose):
         [-3.709481,-9.210340,-9.210340,-2.103314,-3.018377,-4.398553,-2.103314,-9.210340,-4.398553,-1.187515,-3.018377,-4.398553,-1.461849,-3.709481,-9.210340,-3.305377], 
         [-6.667551,-7.472327,-9.210340,-2.009016,-6.353806,-9.210340,-1.266804,-7.127274,-5.559987,-1.652739,-7.472327,-2.003788,-1.843556,-6.115344,-2.420239,-6.871223], 
         [-9.210340,-4.276363,-4.276363,-2.336641,-9.210340,-4.962338,-1.510545,-9.210340,-3.028754,-1.147777,-3.873300,-4.276363,-1.980277,-3.586821,-3.586821,-2.895481]])
+
+    K = e_stck.shape[0]
+    e_stck = jnp.array([prob.logpNorm(e_stck[ab])  for ab in range(K)])
     pe_stck = np.exp(e_stck)
-    print("stck shape", pe_stck.shape)
-    
+    print(pe_stck)
+
     # paired emission probabilities 4x4 matrix
     e_pair = np.array([-6.716494,-6.893637,-6.396199,-1.875715,  #AA AC AG AU
                        -6.556362,-7.468432,-1.316826,-6.944485,  #CA CC CG CU
                        -6.497039,-1.265024,-6.815633,-2.819071,  #GA GC GG GU
                        -1.796519,-6.921051,-2.806054,-6.366497]) #UA UC UG UU
+    e_pair = prob.logpNorm(e_pair);
+    e_pair = prob.logpNorm(e_pair);
+    pe_pair = jnp.exp(e_pair)
 
     # unpaired emission probabilities 4x1 matrix
     e_single = np.array([-1.013576,-1.753141,-1.518408,-1.405715]) # A, C, G, U
-
-    pe_single = jnn.softmax(e_single) # single emission probabilities
-    pe_pair   = jnn.softmax(e_pair)   # pair   emission probabilities
-    e_single  = np.log(pe_single)
-    e_pair    = np.log(pe_pair)
+    e_single = prob.logpNorm(e_single);
+    pe_single = jnp.exp(e_single)
 
     # transition probabilities (t0=tS[2],t1=tL[3],t2=tF[3])
     log_t0 = np.array([-0.293521,-1.368194]) # S -> LS | e
     log_t1 = np.array([-1.396876,-9.210340,-0.283914]) # L -> aFa' | aa' | a
     log_t2 = np.array([-0.984961,-9.210340,-0.467213]) # F -> aFa' | aa' | LS
+
+    log_t0 = prob.logpNorm(log_t0);   
+    log_t1 = prob.logpNorm(log_t1);   
+    log_t2 = prob.logpNorm(log_t2);   
+
     t0 = np.exp(log_t0)
     t1 = np.exp(log_t1)
     t2 = np.exp(log_t2)
@@ -83,6 +92,9 @@ def G6XS_param_uniform(K, verbose):
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val], 
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val],
         [log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val,log_val]])
+
+    K = e_stck.shape[0]
+    e_stck = jnp.array([prob.logpNorm(e_stck[ab])  for ab in range(K)])
     pe_stck = np.exp(e_stck)
     print(pe_stck)
 
@@ -92,26 +104,32 @@ def G6XS_param_uniform(K, verbose):
                        log_val,log_val,log_val,log_val,
                        log_val,log_val,log_val,log_val,
                        log_val,log_val,log_val,log_val]) # UA, UC, UG, UU
-    pe_pair = np.exp(e_pair)
+    e_pair = prob.logpNorm(e_pair);
+    pe_pair = jnp.exp(e_pair)
+
 
     # unpaired emission probabilities 4x1 matrix
-    log_val = -np.log(K)
-    e_single = np.array([log_val,log_val,log_val,log_val]) # A, C, G, U
-    pe_single = np.exp(e_single)
+    log_val = -jnp.log(K)
+    e_single = jnp.array([log_val,log_val,log_val,log_val]) # A, C, G, U
+    e_single = prob.logpNorm(e_single);
+    pe_single = jnp.exp(e_single)
 
     # transition probabilities S
     log_val = -np.log(2.0)
     log_t0 = np.array([log_val,log_val])         # S -> LS | end
+    log_t0 = prob.logpNorm(log_t0);   
     t0 = np.exp(log_t0)
     # transition probabilities L
     log_val = -np.log(3.0)
     log_t1 = np.array([log_val,log_val,log_val]) # L -> aFa' | aa' | a
+    log_t1 = prob.logpNorm(log_t1);   
     t1 = np.exp(log_t1)
     # transition probabilities F
     log_val = -np.log(3.0)
     log_t2 = np.array([log_val,log_val,log_val]) # F -> aFa' | aa' | LS
+    log_t2 = prob.logpNorm(log_t2);   
     t2 = np.exp(log_t2)
-
+ 
     if verbose:
         print("G6XS param uniform")
         print("     transitions S t0", t0)

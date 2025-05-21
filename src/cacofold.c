@@ -377,7 +377,11 @@ CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ *psq, st
     
     denom       = mi->alen/3;
     bp_cov_frac = (nbp_cov > 0)? nbp_cov/denom : 1e-6;
+
+    // hack for single-sequence analysis. a frac > 1 forces to use the whole R3D paramters
+    if (mi->nseq == 1) bp_cov_frac = 1.1;
   }
+  
   /* get the grammar parameters and run the corresponding CYK */
   switch(G) {
   case G6X:

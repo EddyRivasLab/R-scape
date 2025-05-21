@@ -5,18 +5,18 @@ testing differentiable probabilistic grammars for CaCoFold
 
 # compare INSIDE jax_scaled,jax_logsumexp to std_scaled,std_logsumpex
 #-------------------------------------------------------------------------
-python3 test_G5.py
-python3 test_G6X.py
+python3 test_g5_inside.py
+python3 test_g6x_inside.py
 
 
 
 # same comparison for grammars with stacking
 #-------------------------------------------------------------------------
-python3 test_G5S.py
+python3 test_g5s_inside.py
 
 
 
 
 # use the INSIDE jax_scaled,jax_logsumexp implementations to optimize the grammar prob parameters by backpropagation
 #-----------------------------------------------------------------------------------------------------------------------
-python3 optimize_param_G5.py
+time python3 -m experiments.g5_optimize_param g5_optimize_param_uniform --init_uniform

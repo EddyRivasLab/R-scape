@@ -2348,7 +2348,7 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
       if (status != eslOK) goto ERROR;
     }
   }
- 
+  
   /* produce a tree
    */
   if (cfg->covmethod == AKMAEV) {
@@ -2575,7 +2575,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
   if (cfg->mode == GIVSS && cfg->verbose) cov_DumpRankList(stdout, ranklist);
 
-  if (cfg->mode == GIVSS && ranklist) {
+  if (cfg->mode == GIVSS && rmlist) {
 
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
@@ -2583,28 +2583,35 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
       struct_rmlist_Write(cfg->ofile.helixcovfile, msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
     }
 
-    if (cfg->verbose) {
-      printf("score total distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f width %f\n",
-	     ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin, ranklist->ha->w);
-      printf("score truncated distribution\n");
-      printf("imin %d imax %d xmax %f xmin %f width %f\n",
-	     ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
+    if (ranklist) {
+      if (cfg->verbose) {
+	printf("score total distribution\n");
+	printf("imin %d imax %d xmax %f xmin %f width %f\n",
+	       ranklist->ha->imin, ranklist->ha->imax, ranklist->ha->xmax, ranklist->ha->xmin, ranklist->ha->w);
+	printf("score truncated distribution\n");
+	printf("imin %d imax %d xmax %f xmin %f width %f\n",
+	       ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
+      }
+      
+      status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->ofile.covhisfile, cfg->ofile.covqqfile, cfg->samplesize, ranklist, title);
+      if (status != eslOK) goto ERROR;
+      
+      if (1||cfg->verbose) {
+	printf("# Number of covarying pairs = %d\n\n", hitlist->nhit);
+      }
     }
-    status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->ofile.covhisfile, cfg->ofile.covqqfile, cfg->samplesize, ranklist, title);
-    if (status != eslOK) goto ERROR;
-
-    if (1||cfg->verbose) {
-      printf("# Number of covarying pairs = %d\n\n", hitlist->nhit);
+    else {
+	printf("# Number of covarying pairs = 0\n\n");
     }
-
+    
+  
     if (cfg->power_train)
       status = cov_Add2SubsHistogram(cfg->powerhis->hsubs_cv, hitlist, cfg->verbose);
   }
- 
+  
   // find the CaCoFold structure 
   if (cfg->dofold && cfg->mode != RANSS) {
-
+    
     data.mode = FOLDSS;
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);

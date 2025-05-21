@@ -293,7 +293,7 @@ psq_CreateFromMSA(ESL_MSA *msa, int verbose)
 
   /*  keep profile in logp */
   for (i = 0; i < psq->palloc; i ++)
-    esl_vec_FSet(psq->prof[i], psq->abc->K+1, 0.0);
+    esl_vec_FSet(psq->prof[i], psq->abc->K+1, 0.0); // prior (?)
 
   for (i = 1; i <= msa->alen; i ++) {
     

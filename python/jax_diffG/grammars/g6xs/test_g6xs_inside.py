@@ -8,14 +8,14 @@ import functools
 
 from jax import grad, value_and_grad
 
-from G6XS import (
+from grammars.g6xs.g6xs_inside import (
     G6XS_Inside_JAX,
     G6XS_Inside_std,
     G6XS_Inside_JAX_scaled,
     G6XS_Inside_std_scaled,
 )
 
-from G6XS_param import (
+from grammars.g6xs.g6xs_param import (
     G6XS_param_tornado,
     G6XS_param_uniform,
 )

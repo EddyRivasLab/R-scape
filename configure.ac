@@ -117,7 +117,7 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="February 2025"
+RSCAPE_DATE="March 2025"
 RSCAPE_COPYRIGHT="Copyright (C) 2017-2025 Elena Rivas, Harvard University."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
