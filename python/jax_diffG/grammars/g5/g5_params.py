@@ -12,20 +12,20 @@ import lib.probability as prob
 
 def G5_param_tornado(verbose):
     # paired emission probabilities 16x1 matrix
-    e_pair = np.array([-6.704189,-6.887298,-6.393479,-1.874734,
-                       -6.546295,-7.470841,-1.317225,-6.928318,
-                       -6.493723,-1.266180,-6.809987,-2.819615,
-                       -1.794874,-6.914457,-2.806629,-6.363942]) # UA, UC, UG, UU
+    e_pair = np.array([-6.625427,-6.793430,-6.335155,-1.874087,
+                       -6.478658,-7.308380,-1.316858,-6.830704, 
+                       -6.429442,-1.265831,-6.722807,-2.817939, 
+                       -1.794277,-6.818125,-2.804975,-6.307268]) # UA, UC, UG, UU
     e_pair = prob.logpNorm(e_pair);
     pe_pair = jnp.exp(e_pair)
 
     # unpaired emission probabilities 4x1 matrix
-    e_single = np.array([-1.012587,-1.753798,-1.518921,-1.406257]) # A, C, G, U
+    e_single = np.array([-1.012312,-1.753221,-1.518464,-1.405849]) # A, C, G, U
     e_single = prob.logpNorm(e_single);
     pe_single = jnp.exp(e_single)
 
     # transition probabilities (t1, t2, t3)
-    log_t = np.array([-0.726176,-1.365860,-1.341766]) # aS | aSa'S | e
+    log_t = np.array([-0.725970,-1.365468,-1.341384]) # aS | aSa'S | e
     log_t = prob.logpNorm(log_t);    
     t = jnp.exp(log_t)
 

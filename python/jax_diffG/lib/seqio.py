@@ -43,7 +43,7 @@ def pad_seq(sqs, bymin=0):
    
     return sq_padded, sq_mask
 
-def read_fasta(filepath,bymin):
+def read_fasta(filepath, bymin):
     with open(filepath, 'r') as f:
         lines = f.readlines()
 

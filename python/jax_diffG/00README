@@ -5,17 +5,15 @@ testing differentiable probabilistic grammars for CaCoFold
 
 # compare INSIDE jax_scaled,jax_logsumexp to std_scaled,std_logsumpex
 #-------------------------------------------------------------------------
-python3 test_g5_inside.py
-python3 test_g6x_inside.py
+python3 -m experiments.g5_inside_test
 
-
-
-# same comparison for grammars with stacking
+#
+# inside algo
 #-------------------------------------------------------------------------
-python3 test_g5s_inside.py
+time python3 -m experiments.g5_fold g5_fold --tornado > experiments/g5_fold/fold.out
 
-
-
+compare to:
+~/src/Mysrc/tornado/notebook/05-2025/g5/trna1415_annote_1of1_TORNADO_TORNADO_TrATrBTrB_g5.mea.out 
 
 # use the INSIDE jax_scaled,jax_logsumexp implementations to optimize the grammar prob parameters by backpropagation
 #-----------------------------------------------------------------------------------------------------------------------
