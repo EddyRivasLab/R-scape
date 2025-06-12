@@ -23,6 +23,7 @@ RNAVIEWDIR     = @RSCAPE_RNAVIEWDIR@
 ESLDIR         = @RSCAPE_ESLDIR@
 HMMERDIR       = @RSCAPE_HMMERDIR@
 INFERNALDIR    = @RSCAPE_INFERNALDIR@
+TORNADODIR     = @RSCAPE_TORNADODIR@
 RVIEWDIR       = @RVIEW_DIR@
 
 
@@ -103,6 +104,7 @@ all:
 	${QUIET_SUBDIR0}${SADIR}              ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${HMMERDIR}           ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} all
+	${QUIET_SUBDIR0}${TORNADODIR}         ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}src                   ${QUIET_SUBDIR1} all
 	${QUIET_SUBDIR0}${RNAVIEWDIR}         ${QUIET_SUBDIR1} all
@@ -142,6 +144,7 @@ clean:
 	${QUIET_SUBDIR0}${ESLDIR}           ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${SADIR}            ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${INFERNALDIR}      ${QUIET_SUBDIR1} clean
+	${QUIET_SUBDIR0}${TORNADODIR}       ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}${RVIEWDIR}         ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}src                 ${QUIET_SUBDIR1} clean
 	${QUIET_SUBDIR0}documentation       ${QUIET_SUBDIR1} clean
@@ -155,9 +158,8 @@ distclean:
 	${QUIET_SUBDIR0}${FASTTREEDIR}        ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${R2RDIR}             ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${HMMERDIR}           ${QUIET_SUBDIR1} distclean
-	${QUIET_SUBDIR0}${ESLDIR}             ${QUIET_SUBDIR1} distclean
-	${QUIET_SUBDIR0}${SADIR}              ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${INFERNALDIR}        ${QUIET_SUBDIR1} distclean
+	${QUIET_SUBDIR0}${TORNADODIR}         ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}${RVIEWDIR}           ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}src                   ${QUIET_SUBDIR1} distclean
 	${QUIET_SUBDIR0}documentation         ${QUIET_SUBDIR1} distclean

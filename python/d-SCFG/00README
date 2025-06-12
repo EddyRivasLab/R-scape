@@ -1,0 +1,110 @@
+ER, Sat Jan 18 07:55:28 EST 2025
+
+testing differentiable probabilistic grammars for CaCoFold
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cd ~/src/Mysrc/R-scape/python/d-SCFG
+
+cat data/TORNADO_TestATestB.sto | grep -v SS > data/TORNADO_TestATestB.noss.sto
+
+
+# compare INSIDE jax_scaled,jax_logsumexp to std_scaled,std_logsumpex
+#-------------------------------------------------------------------------
+for grm in g5 g6 g6x ; do \
+    python3 -m grammars."$grm"."$grm"_inside_test ;\
+done
+
+
+
+
+#
+# inside // compare tornado and jax implementations
+#-------------------------------------------------------------------------
+for name in DC5 ; do \
+for grm in g5 g6 g6x ; do \
+mkdir  experiments/"$grm"_fold ;\
+for train  in TORNADO_TrATrBTrB ; do \
+for test   in trna1415_annote_1of1 ; do \
+
+    time python3 -m grammars."$grm"."$grm"_fold "$grm"_fold --tornado > experiments/"$grm"_fold/"$test"_TORNADO_"$train"_"$grm".fold.jax  ;\
+
+    grep "inside" ~/src/Mysrc/tornado/notebook/05-2025/"$grm"/"$test"_TORNADO_"$train"_"$grm".mea.out > experiments/"$grm"_fold/"$test"_TORNADO_"$train"_"$grm".fold.tornado ;\
+
+    grep "$name" experiments/"$grm"_fold/"$test"_TORNADO_"$train"_"$grm".fold.tornado ;\
+    grep "$name" experiments/"$grm"_fold/"$test"_TORNADO_"$train"_"$grm".fold.jax ;\
+    
+done
+done
+done
+done
+
+
+
+# use the INSIDE jax_scaled,jax_logsumexp implementations to optimize the grammar prob parameters by backpropagation
+#-----------------------------------------------------------------------------------------------------------------------
+
+for grm in g6  ; do \
+for train in trna1415_annote_1of2 ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in random ; do \
+    python3 -m grammars."$grm"."$grm"_optimize_param "$grm"_optimize_param_"$train"_"$init" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto \
+    --grm_file     ../../lib/tornado/grammars/"$grm.grm" \
+    --postgrm_file ../../lib/tornado/grammars/"$grm.grm" \
+    --fold_method mea \
+    --init_"$init" ;\    
+done
+done
+done
+done
+
+for grm in g6  ; do \
+for train in trna1415_annote_1of2 ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in random ; do \
+    python3 -m grammars."$grm"."$grm"_optimize_param "$grm"_optimize_param_"$train"_"$init" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto \
+    --grm_file     ../../lib/tornado/grammars/"$grm.grm" \
+    --postgrm_file ../../lib/tornado/grammars/"$grm.grm" \
+    --fold_method mea \
+    --init_"$init" \
+    --shuffle ;\   
+done
+done
+done
+done
+
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_optimize_param "$grm"_optimize_param_"$train"_"$init" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto \
+    --grm_file     ../../lib/tornado/grammars/"$grm.grm" \
+    --postgrm_file ../../lib/tornado/grammars/"$grm.grm" \
+    --fold_method mea \
+    --init_"$init" ;\
+done
+done
+done
+done
+
+for grm in g6  ; do \
+for train in conus_rnabench_srp ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_optimize_param "$grm"_optimize_param_"$train"_"$init" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto \
+    --grm_file     ../../lib/tornado/grammars/"$grm.grm" \
+    --postgrm_file ../../lib/tornado/grammars/"$grm.grm" \
+    --fold_method mea \
+    --init_"$init" ;\
+done
+done
+done
+done
+

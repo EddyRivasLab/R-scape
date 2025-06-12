@@ -79,6 +79,7 @@ SUBDIRS     = ../src
 SCRIPTSDIR  = ../scripts
 R2RSRCDIR   = ../@RSCAPE_R2RDIR@/src
 EASELDIR    = ../@RSCAPE_ESLDIR@/miniapps
+TORNADODIR  = ../@RSCAPE_TORNADODIR@/src
 RIBOSUMDIR  = ../data/ribosum
 POWERDIR    = ../data/power
 EVOPARAMDIR = ../data/training/evoparam
@@ -166,6 +167,10 @@ EASEL     = \
 	esl-afetch \
 	esl-reformat \
 
+TORNADO  = \
+	grm-fold \
+	grm-train \
+
 SCRIPTS   = \
 	FUNCS.pm \
 	PDBFUNCS.pm \
@@ -219,6 +224,9 @@ install:
 	for file in ${EASEL}; do \
 	   cp ${EASELDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
 	done
+	for file in ${TORNADO}; do \
+	   cp ${TORNADODIR}/$$file ${DESTDIR}${bindir}/$$file ;\
+	done
 	for file in ${R2R}; do \
 	   cp ${R2RSRCDIR}/$$file ${DESTDIR}${bindir}/$$file ;\
 	done
@@ -240,6 +248,9 @@ uninstall:
 	   rm -f ${DESTDIR}${bindir}/$$file ;\
 	done
 	for file in ${EASEL}; do \
+	   rm -f ${DESTDIR}${bindir}/$$file ;\
+	done
+	for file in ${TORNADO}; do \
 	   rm -f ${DESTDIR}${bindir}/$$file ;\
 	done
 	for file in ${R2R}; do \

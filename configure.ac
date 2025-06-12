@@ -126,9 +126,10 @@ RSCAPE_URL="http://rivaslab.org/"
 RSCAPE_FASTTREEDIR="lib/FastTree/src"
 RSCAPE_R2RDIR="lib/R2R/R2R-current"
 RSCAPE_RNAVIEWDIR="lib/RNAVIEW/src"
-RSCAPE_HMMERDIR="lib/hmmer/src"
+RSCAPE_HMMERDIR="lib/hmmer"
 RSCAPE_ESLDIR="lib/hmmer/easel"
 RSCAPE_INFERNALDIR="lib/infernal"
+RSCAPE_TORNADODIR="lib/tornado"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
 
 RVIEW_NAME="R-view"
@@ -211,6 +212,7 @@ AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
 AC_SUBST(RSCAPE_INFERNALDIR)
+AC_SUBST(RSCAPE_TORNADODIR)
 AC_SUBST(RSCAPE_SADIR)
 AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
@@ -765,6 +767,7 @@ lib/RNAVIEW/src/rnaview_config.h
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/R2R/R2R-current)
 AC_CONFIG_SUBDIRS(lib/infernal)
+AC_CONFIG_SUBDIRS(lib/tornado)
 
 AC_CONFIG_FILES([
 Makefile
@@ -778,6 +781,8 @@ lib/FastTree/src/Makefile
 lib/hmmer/libdivsufsort/Makefile
 lib/hmmer/easel/Makefile
 lib/hmmer/Makefile
+lib/infernal/Makefile
+lib/tornado/Makefile
 lib/R-view/src/Makefile
 lib/RNAVIEW/src/Makefile
 ])
