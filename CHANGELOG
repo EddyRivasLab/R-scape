@@ -57,3 +57,7 @@ R-scape v2.5.6 Jan 2024
 R-scape v2.5.7 February 2024
         msa names and seqnames edited to identify more characters not recognized by Fasttree
 	added jax/python code to implement differentiable folding algorithms.
+	
+R-scape v2.5.9 July 2024
+	fixed an issue with R2R that failed compilation in some OSs.
+	

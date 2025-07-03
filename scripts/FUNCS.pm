@@ -1947,18 +1947,18 @@ sub parse_stofile {
     while (<FILE>) {
 	if (/# STO/) {
 	    $nali ++;
-	    if ($nali > $which) { last; }
+	    if ($which > 0 && $nali > $which) { last; }
 	}
 	elsif (/#=GC\s+SS_cons\s+(\S+)\s*$/) {
-	    if ($nali == $which) { $ss .= "$1"; }
+	    if ($which == 0 || $nali == $which) { $ss .= "$1"; }
 	}
 	elsif (/#=GC\s+RF\s+(\S+)\s*$/) {
-	    if ($nali == $which) { $rfsq .= "$1"; }
+	    if ($which == 0 || $nali == $which) { $rfsq .= "$1"; }
 	}
 	elsif (/^#/) {
 	}
 	elsif (/^$/) {
-	    if ($nali == $which) { 
+	    if ($which == 0 || $nali == $which) { 
 		$b ++;
 		$nsq_prv = $nsq;
 		$nsq = 0;
@@ -1967,7 +1967,7 @@ sub parse_stofile {
 	elsif (/^([^#]\S+)\s+(\S+)\s*$/) {
 	    my $name  = $1;
 	    my $sq    = $2;
-	    if ($nali == $which) {
+	    if ($which == 0 || $nali == $which) {
 		$name_ref->[$nsq]  = $name;
 		$sq_ref->[$nsq]   .= "$sq";
 		$nsq ++;
@@ -1976,7 +1976,7 @@ sub parse_stofile {
 	elsif ($nsq > 0 && /^([^#]\S+)\s+(\S+)\s*$/) {
 	    my $name  = $1;
 	    my $sq    = $2;
-	    if ($nali == $which) { 
+	    if ($which == 0 || $nali == $which) { 
 		if ($name =~ /^$name_ref->[$nsq]$/) {
 		    $sq_ref->[$nsq] .= "$sq";
 		    $nsq ++;

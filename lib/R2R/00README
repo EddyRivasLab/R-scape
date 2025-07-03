@@ -18,3 +18,17 @@ R2R.h
 R2R.cpp
 RnaDrawer.cpp
 ParseOneSchokholm.cpp
+
+-----------------------------------------------------------------------------------
+Thu Jul  3 13:25:08 EDT 2025
+
+fixed an error that appears only with some OS.
+
+in file
+
+R-scape/lib/R2R/R2R-1.0.7/multiDimVector.h
+
+line 232
+		this->Load(_s1,_s2,_s3);
+replaced with
+		this->Init(_s1,_s2,_s3);
