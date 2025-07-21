@@ -1,0 +1,1464 @@
+# STOCKHOLM 1.0
+
+#=GS AER.PER DE converted from Zweib's SRP dataset 
+
+AER.PER         CGCCCCCAGCCAUGGGGGCCCCGAAGGCGCCACGCGGGGGCCAGAAGAAC
+#=GR AER.PER SS [[[[[[[[[[[,<<<<--<<<<<______A__A_>>>>>----a--a-->
+
+AER.PER         CCGCCCCCAGAGCUUGAAGCAGGCCAGCAAGGGCCUGCAGGGUACAAUGA
+#=GR AER.PER SS >>>,(((-----(((((((((((((((--((((((((((((((-------
+
+AER.PER         ACCCCGUCCCGCGGGGCCGGCGGAGGCGGGCGGCCAGCCGGAGGGCCGGC
+#=GR AER.PER SS -(((--(((((((((((((-((<-<<<<<-<<<<<-<<<____>>>->>>
+
+AER.PER         CGAAGCCGCCGUAGCCGGGGCCACCCGGCGAGGCCCGGAAGGGAGCAGCC
+#=GR AER.PER SS >>--->>>>>->,,<<<<<<-----<<<<----<<<____>>>---->>>
+
+AER.PER         GACCCCGGCCGACCGGCGUUCGCGGGGGGAACGGGGGGAGAAGCCCUGCA
+#=GR AER.PER SS >->>>>>>,))-)-)))-)))))))))-----)))-------))))))))
+
+AER.PER         GGGUAACCCUCUGGCCUGCUUCAAACUCUGGGAGCGGGGGCUCGGGGGCG
+#=GR AER.PER SS ))----))))))))))))))))))-----)-----)))]]]]-]]]]]]]
+
+AER.PER         GGCC
+#=GR AER.PER SS ::::
+//
+# STOCKHOLM 1.0
+
+#=GS AGR.TUM DE converted from Zweib's SRP dataset 
+
+AGR.TUM         GGGAGGUUGGUGGUGGACGAGCCACUCGCCAACCGGGUCAGGUCCGGAAG
+#=GR AGR.TUM SS <<<<<<<<<<<<<<<<-<<-<<<-<<<<------<<<<----<<<____>
+
+AGR.TUM         GAAGCAGCCCUAACGAGCCAGGCACGGGUCGCCGUGCCAGCCUCCCACCU
+#=GR AGR.TUM SS >>---->>>>--->>>>--->>>->->->>>>>>>-->>>>>>>>>::::
+
+AGR.TUM         UUU
+#=GR AGR.TUM SS :::
+//
+# STOCKHOLM 1.0
+
+#=GS AQU.AEO DE converted from Zweib's SRP dataset 
+
+AQU.AEO         GCCCUGCGGCGGGACAGGGUGAACUCCCCCAGGCCCGAAAGGGAGCAAGG
+#=GR AQU.AEO SS <<<<<<<<<<<<<<<-<<<<-----<<<-----<<<____>>>----->>
+
+AQU.AEO         GUAAGCCCGCCGUCCCGUGCGCAGGGU
+#=GR AQU.AEO SS >--->>>>--->>>>>>>->>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS ARA.TH-A DE converted from Zweib's SRP dataset 
+
+ARA.TH-A         GUCGAGCUAAGUAACAAUAGCUUGUAACCCAUGUGGGGACAUUAAGAUGG
+#=GR ARA.TH-A SS (((<<<<<<_____AA_>>>>>>,,,,<<<<aa>>>>))):::(((((((
+
+ARA.TH-A         UGGGACACUGGUUCGGUUCCUCGGAUCGGUUCUGAUGUGGGCAUGUUUCU
+#=GR ARA.TH-A SS (((--((-(((((-((-((--(((-((((((((((----((-------((
+
+ARA.TH-A         GAGCUGCCCAGUCCAAGCUGUGAGUAAUUAGUGUUGAGUUGAGCGAAGGC
+#=GR ARA.TH-A SS ((((((-((-(((((-(((((((((<<<<-<---<<<<<<<<<<____>>
+
+ARA.TH-A         UUGGCUCAUGCAGGUUCUAGAGUCGGAGGGUAAUGCGUGAGGCUGGCUUC
+#=GR ARA.TH-A SS >>>>>>>>-->->>>><<__>>,,<<<<<------<<<----<<<_____
+
+ARA.TH-A         ACAGAGCAGCGACUACUUCCCGCUUACAGCAGUGGACGGAUCACGGUUUA
+#=GR ARA.TH-A SS _>>>---->>>---->>>>>,)))))))))--)))))))----)))))))
+
+ARA.TH-A         GCGUCGCUCAGAACCACUAUGGCCUGCUGGUCCGAUCUCAUAUGAACCAC
+#=GR ARA.TH-A SS )--))--))))))))-----))-)))--))))-)))--))--))--))))
+
+ARA.TH-A         CAUUUU
+#=GR ARA.TH-A SS ))))))
+//
+# STOCKHOLM 1.0
+
+#=GS ARA.TH-C DE converted from Zweib's SRP dataset 
+
+ARA.TH-C         GUCGAACUCAGUAACGCGGGCUUGUGAUCCAAGUGGAGACAAUAAGGGGA
+#=GR ARA.TH-C SS (((<<-<<<_____A__>>>->>,,,,<<<<_a>>>>))):::<<<<-<<
+
+ARA.TH-C         UGGGACGUUGGGUCGAUCUCAUUGGGCCGGGUUCGGGUUGGGCUAUAUUC
+#=GR ARA.TH-C SS <<<--<<<<<<<<-<--<<-<<<<<<-<<<-<<-<<---<<<-<<-----
+
+ARA.TH-C         UGGCCCGCCCAUUCCAAGUUGGGAGUUGAGGCAUGGGCUUCGAGCGAAGG
+#=GR ARA.TH-C SS <<<<<<<-<<-<<<<<-<<<<<<<<__BBBBBBBBBB_BBBBBBB____b
+
+ARA.TH-C         CUCGGGUCUCAUGUCUUCUAGAGUGGGGGAGACCGCGUGAGGCUGGUUUC
+#=GR ARA.TH-C SS bbbbbb_bbbbbbbbbbBB__bb_BBBBB_____BBBB____BBB_____
+
+ARA.TH-C         ACAGAGCAGCGUCCACCUCCCGCUCUUGACGGUGGAAGGAUUACGGGCCA
+#=GR ARA.TH-C SS _bbb____bbbb___bbbbb_>>>>>>>>>-->>>>>>>---->>>>>>>
+
+ARA.TH-C         UUGCCUUCCGAGCCCACUAUGACCCAAUAAGCCGCUCCGAUUGGACCAUC
+#=GR ARA.TH-C SS ->>>>>>>->>->>------>->>>>>>->>-->>>->>>->>-->>>>>
+
+ARA.TH-C         ACUUU
+#=GR ARA.TH-C SS ->>>>
+//
+# STOCKHOLM 1.0
+
+#=GS ARA.TH-G DE converted from Zweib's SRP dataset 
+
+ARA.TH-G         GUCGAGCUAUGUAACGAGAGCUUGUAACCCAAGUGGGGACUAUAAGAUGG
+#=GR ARA.TH-G SS (((<<<<<-<____A_>->>>>>,,,,<<<<_a>>>>)))::::((((((
+
+ARA.TH-G         UGGAACACUGGAUCGGCCCACGGGUCGGAUUUGUUGUUGGCAUAGGUCUG
+#=GR ARA.TH-G SS (((--((-((---(((-((-((((((((((((((---(((--------((
+
+ARA.TH-G         GACUGCCCAAUCCAAGCUGUGAGUGAACCGUAUGAACCAAGCGAAGGUUU
+#=GR ARA.TH-G SS (((((-((--((((-(((((((((<<<<<<<<<<-<-<<<<<____>>>>
+
+ARA.TH-G         GAUCCGUACGGUUGCUAAAGGUUGAGGGUAUUGCGUUAGGCUGGCUUCAC
+#=GR ARA.TH-G SS >->->>>>>>>>>><<__>>,,,<<<<------<<<----<<<______>
+
+ARA.TH-G         AGAGCAGCGACUACCUCCCGCUCUCAGCAGUGGACGGACAACGGUUCGAC
+#=GR ARA.TH-G SS >>---->>>---->>>>,,)))))))))--))))-))----)))))))--
+
+ARA.TH-G         GCCACACAAAUCCACUAUGGUCCGCUGGCUCGUAACCCGCUUGAACCACC
+#=GR ARA.TH-G SS -)))-))))))))-----))))))--))-)))-----))--))--)))))
+
+ARA.TH-G         AUUUU
+#=GR ARA.TH-G SS )))):
+//
+# STOCKHOLM 1.0
+
+#=GS ARC.FUL DE converted from Zweib's SRP dataset 
+
+ARC.FUL         GGUGGGCUAGGCCGGGGGGUUCGGCGUCCCCUGUAACCCGAAACCGCCGA
+#=GR ARC.FUL SS [[[[[[[,,((((<<<<<<_AAAAAA>>>>>>,,,,<<<<____aaaaaa
+
+ARC.FUL         UACGCGGGGGCCGAAGCCGAGGGGAGGCCUGUCAAGCGGGCGGCAGCGGU
+#=GR ARC.FUL SS ____>>>>)))),,,(((--((---((((((((--(((((((((---(((
+
+ARC.FUL         UCCAGGCACCGCAGAGUCCUCGUCCCGGAGGGCCGGCGGUUAUGGCCGGG
+#=GR ARC.FUL SS ((((((((((------(((((((((((((((((((-((<-<<<<<-<<<<
+
+ARC.FUL         CUGCCCGGAGGGGCUGUCCGCCAUAUUAGCCGGGGGGAACGGCCCAGGCC
+#=GR ARC.FUL SS <-<<<<____>>>>->>>>>>>>>>->,,<<<<<<-----<<<<----<<
+
+ARC.FUL         CGGAAGGGAGCAGGCUAACCCCGGACGACCGGCGCUUCCGGGGGUGCGGG
+#=GR ARC.FUL SS <____>>>---->>>>-->>>>>>,))-)-)))-)))))))))---))))
+
+ARC.FUL         GAGGAGGUGCCUGGGGCUUCAAGCCGCCCGUAAGGCAGGUCGACCCGAGG
+#=GR ARC.FUL SS ))---)))))))))))))----)))))))))--))))))))--))---))
+
+ARC.FUL         CGUGCCCACC
+#=GR ARC.FUL SS ),,]]]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS BAC.ALC DE converted from Zweib's SRP dataset 
+
+BAC.ALC         UUUGCCGUGCUAAGCGGGGAGGUAGCGGUGCCCUGUACUCGCAAUCCGCU
+#=GR BAC.ALC SS ::((((((((,,<<-AAAA-A-<<<<<<a-aaaa---<<-<<___>>>>>
+
+BAC.ALC         AUAGCAGGCUGAAUCCCUUCUAGAGGUUUUGUCACCGUAGGCUCUGCCCU
+#=GR BAC.ALC SS >-->>->>>>,,,,,<<<<<<---<<<<-<<<<<<--<-<<---<<-<<<
+
+BAC.ALC         AAGUAAGUGGUGUUGACGUUGGGUUCUACGCAACGAAAACCCACGAACCC
+#=GR BAC.ALC SS -<<<<-<<<<<------<<<<-<<<<<<<<<<<<<<<___BBBB_____B
+
+BAC.ALC         UGUCAGGUCCGGAAGGAAGCAGCAGUAAGUGGCCCCUUUCGUGUGCCGUA
+#=GR BAC.ALC SS BBB____BBB____bbb____bbbb___bbbb____>>>>>>->>>->>>
+
+BAC.ALC         GAGUCGCUGGGCCGAGCUAACUGCUCAGGUAACGCUAGGGUGGCAUGAUC
+#=GR BAC.ALC SS >>>--->>->->--->>>->>>>>>->>>--->>>>->->>>>>>->>>>
+
+BAC.ALC         GACAGAAGGUGCACGGUA
+#=GR BAC.ALC SS --->>>>>>,))))))))
+//
+# STOCKHOLM 1.0
+
+#=GS BAC.BRE DE converted from Zweib's SRP dataset 
+
+BAC.BRE         UCUACCGUGCUAGACGGGGAGGUAGCGGUGCCCUGUAACCUGCAAUCCGC
+#=GR BAC.BRE SS ::[[[[[[[[,(-((<<<<-<_A_AAAA>->>>>,,,,<--<____aaaa
+
+BAC.BRE         AAUAGCCCAGGUGUGAAUUCCUAUCCUAGGUUUUCUUAUGUGAGGCUGCC
+#=GR BAC.BRE SS _a____>-->))-),,,,,<<<<<<---<<<--<<<<<<-<<<<--<<--
+
+BAC.BRE         GUUGAUGGCGGCGGUGUUGAGGAGCGGGUCCUGUGCAACGCGAACCCAUG
+#=GR BAC.BRE SS <<<-<<<<-<<<<<<-----<<<<<<<<<<<<<<<<<<<<<<<<-<<<<-
+
+BAC.BRE         AACCUGGUCAGGUCCGGAAGGAAGCAGCCAUAAGUGGAUCAUCGCGUGUG
+#=GR BAC.BRE SS ----<<<<----<<<____>>>---->>>>--->>>>->-->>>>>>->>
+
+BAC.BRE         CCGCAGGGUAGCCUGCUCUGAGCUGCUACCAUAAGUAACGCUCGGAUAAG
+#=GR BAC.BRE SS >->>>>>>--->>>>>>>>-->>>>>>->>>>->>>-->>>>>>->>>>>
+
+BAC.BRE         GAUUAUCGAAGAUAGGUGCACGGUA
+#=GR BAC.BRE SS ->-->>>--->>>>>>,]]]]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS BOR.BUR DE converted from Zweib's SRP dataset 
+
+BOR.BUR         UGGGUUCGAAUCCCAUUCUCUCCGAUUCCUAGGACCCGUACUAUCAAGUA
+#=GR BOR.BUR SS ::::::::::::::::::<-<--<<<<<<<<<<<<-<<<<<<<<<<<<-<
+
+BOR.BUR         UUGCUGAAUCCCGUCAGGACUGGAAGGUAGCAGCGGUAAGCGAUUUUUUU
+#=GR BOR.BUR SS <<<<<-----<<<<----<<<____>>>---->>>>-->>>>>>--->>>
+
+BOR.BUR         GAUGAGUACGUAAGUCUUAGGUUUAAUUUUGAACCCAAAUGCAAUGUUUU
+#=GR BOR.BUR SS >>>->>>>>>--->>>>>>>>--->>>>-->->:::::::::::::::::
+
+BOR.BUR         GCUUU
+#=GR BOR.BUR SS :::::
+//
+# STOCKHOLM 1.0
+
+#=GS BUC.APH DE converted from Zweib's SRP dataset 
+
+BUC.APH         GGAGAUUUCUGUUAGUCCUAAACACUGUUAAAUUGAAUAAUUGGUCAGAU
+#=GR BUC.APH SS <<-<--<<<<<<<<<<<-<<<<<<<<<----<<<<<-----<<<<----<
+
+BUC.APH         CUGGAAAGAAGCAGCCAAAUCAAUCGAUACAGGUGUUUUGAUAUAGCUAA
+#=GR BUC.APH SS <<____>>>---->>>>-->>>>>----->>>->>>->>>---->>>>>>
+
+BUC.APH         CAGAAUCUCCUAUA
+#=GR BUC.APH SS >>>>>-->->>:::
+//
+# STOCKHOLM 1.0
+
+#=GS CAE.BRI DE converted from Zweib's SRP dataset 
+
+CAE.BRI         ACCGGGUGUCGUGGCGGGCGCCUGUGAGUCAGCUUCUUGACGGUAGACAA
+#=GR CAE.BRI SS (((<<<<<<<A_AAA_>>>>>>>,,,,<<<_aaa_a__>>>))):(((((
+
+CAE.BRI         GUGUGGAUGGAGUGAAGGGAGGAGUCCUGUGGGUGUUGUCGGCAACGGCG
+#=GR CAE.BRI SS (((----(((((---(((((((----(((((((((--((--(((((--(-
+
+CAE.BRI         ACCGAGCGUCCGUGCCAAGCGCUGCGUCGCCAGGGGUCUCCGGUCGGAAG
+#=GR CAE.BRI SS --(((((((((--((((-(((((((((<<<<-<<<<<<-<<<<<<____>
+
+CAE.BRI         GCUGGCGGUCCCGGGCGCAUAAGGAGUGGUGCACGGCUCAGGGCCGAAAG
+#=GR CAE.BRI SS >>>>>->>>>>>->>>><_____>,<<<<<-----<<<----<<<____>
+
+CAE.BRI         GCAGCAGGCAAAAGCCACCGCGCGGUGCAGUGGCCGGAUAGCGCUUGUGA
+#=GR CAE.BRI SS >>---->>>---->>>>>,)))))))))--))))-)))---))))))-)-
+
+CAE.BRI         GUUGUCGCUCGCCCACAGCCUCUCUGAUACCUUCAGACCACUUGUCAUU
+#=GR CAE.BRI SS )))))-))-))))))))))))))))-----)))))---)))))))):::
+//
+# STOCKHOLM 1.0
+
+#=GS CAM.JEJ DE converted from Zweib's SRP dataset 
+
+CAM.JEJ         AGCCUUUUCUUAGACCUGUGCAAUGCUAUUUUUAAGCACCGCUUCAGGGU
+#=GR CAM.JEJ SS <<<<<<<<<<<<<<-<<<<<<<<<<<<<---<<<<<----<<<<----<<
+
+CAM.JEJ         GGGAACACAGCAGAGCACUUGAUUUUAGUGUGUGCCGCAGUUAUCUGGGG
+#=GR CAM.JEJ SS <____>>>---->>>>->>>>>---->>>>>->>>>>>>>--->>>>>>>
+
+CAM.JEJ         AAGGGUUA
+#=GR CAM.JEJ SS >>>>>>>:
+//
+# STOCKHOLM 1.0
+
+#=GS CAN.SPE DE converted from Zweib's SRP dataset 
+
+CAN.SPE         GCCGGGCGCGGUGGCGCGCGCCUGUAGUCCCAGCUACUCGGGAGGCUGAG
+#=GR CAN.SPE SS (((<<<<<<<AAAAA_>>>>>>>,,,,<<<<_aaaaa__>>>>))):(((
+
+CAN.SPE         GCAGGAGGAUCGCUUGAGCCCAGGAGUUCUGGGCUGCAGUGCGCUAUGCC
+#=GR CAN.SPE SS ((-((----(((((---((-((((----(((((-(((((((-(((((--(
+
+CAN.SPE         GAUCGGGUGUCCGCACUAAGUUCGGCAUCAAUAUGGUGACCUCCCGGGAG
+#=GR CAN.SPE SS ---(((((((((-(((((-(-(((((((<<<<-<<<<<--<<<<<<____
+
+CAN.SPE         CGGGGGACCACCAGGUUGCCUAAGGAGGGGUGAACCGGCCCAGGUCGGAA
+#=GR CAN.SPE SS >>>>>>-->>>>>->>>><<___>>,<<<<<-----<<<<----<<<___
+
+CAN.SPE         ACGGAGCAGGUCAAAACUCCCGUGCUGAUCAGUAGUGGGAUCGCGCCUGU
+#=GR CAN.SPE SS _>>>---->>>>--->>>>>,)))))))-)--))))))))---))))))-
+
+CAN.SPE         GAAUAGCCACUGCACUCCAGCCUGUGCAACAUAGCGAGACCCCGUCUCU
+#=GR CAN.SPE SS )-))))))))))))-)))))))))-))-----)))))---))-))))):
+//
+# STOCKHOLM 1.0
+
+#=GS CAU.CRE DE converted from Zweib's SRP dataset 
+
+CAU.CRE         GGAGAUCGGCGCGGACGGAGUCCUCGCCAACCUGGUCAGGGCCGAGAGGC
+#=GR CAU.CRE SS <<<<<<<<<-<<<<-<<<<<--<<<<------<<<<----<<<____>>>
+
+CAU.CRE         AGCAGCCACAACGAGAUCACCUCUGGGUCGUCUGCCGGUCUCCACCUCAU
+#=GR CAU.CRE SS ---->>>>--->>>>----->>>>->->>>>--->>>>>>>>>:::::::
+
+CAU.CRE         UUUCCUCGAAAUU
+#=GR CAU.CRE SS :::::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS CHL.MUR DE converted from Zweib's SRP dataset 
+
+CHL.MUR         GUAAGUCGGGGACCUCUUAAGAUGAGAGACUUCUGAACCGGGUCAGGAUC
+#=GR CHL.MUR SS <<<<<<<<<<<<-<<<<<-<<<<<<<<<--<<<<-----<<<<----<<<
+
+CHL.MUR         GGAAGAUAGCAGCCCUAAGGAAAGGCCUUUUGUGCUAAGAGUCUUCUCUG
+#=GR CHL.MUR SS ____>>>---->>>>--->>>>---->>>>>>>->>>>>>>--->>>>>>
+
+CHL.MUR         ACUUAC
+#=GR CHL.MUR SS >>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS CHL.PNE DE converted from Zweib's SRP dataset 
+
+CHL.PNE         GUAAGUUGGGGGCCUUUUAAGAGAAGGAACCUGCGAAUCGGGUCAGGACU
+#=GR CHL.PNE SS <<<<<<<<<<<<-<<<<<-<<<<<<<<<<-<<-<-----<<<<----<<<
+
+CHL.PNE         GGAAGGUAGCAGCCCUAAGGAGAGUUUUCUUUUGCUAAAAGAAUGUUCUC
+#=GR CHL.PNE SS ____>>>---->>>>--->->>--->>>>>>>>->>>>>>>----->>>>
+
+CHL.PNE         CAACUUACUC
+#=GR CHL.PNE SS >>>>>>>>::
+//
+# STOCKHOLM 1.0
+
+#=GS CHL.TEP DE converted from Zweib's SRP dataset 
+
+CHL.TEP         GGAGAGUAAGUCCUAUACAGCAUUCUCUUGCCCAACCAUGUCAGGUCCGG
+#=GR CHL.TEP SS <<<<<<<<<<<-<<<<---<-<<-<-<<---<<----<<<<----<<<__
+
+CHL.TEP         AAGGAAGCAGCAUCCGGUAAUGUGAGUGCGUGAUAUAGUCAGCUUGCUCU
+#=GR CHL.TEP SS __>>>---->>>>-->>------->>->->>-->>>>>--->>>>>>>>>
+
+CHL.TEP         CCUUUU
+#=GR CHL.TEP SS >>::::
+//
+# STOCKHOLM 1.0
+
+#=GS CIN.HYB DE converted from Zweib's SRP dataset 
+
+CIN.HYB         ACCGGGCUUGGUAACGCUAGUCUAUAACUCAAGUGAGGGUAUCAAAGUGG
+#=GR CIN.HYB SS (((<<<<<-<____A_>->>>>>,,,,<<<<_a>>>>)))::::<<<<<<
+
+CIN.HYB         UUGAACUUUGAGCUUGGCUUAGCUAGUUGGGUCUGUAGACACCGCACCUG
+#=GR CIN.HYB SS -<<--<<<<<-<<<-<-<<<<<-------<<<<<<--<<<<<-----<<<
+
+CIN.HYB         GCUUGCCCGUUCCAAGUCGAGAGUGGGUUCAUGUUUCCUGAGCGAAGGCU
+#=GR CIN.HYB SS <<<<<-<<-<<<<<-<<<<<<<___BBBBBBBBBB_BBBBBBB____bbb
+
+CIN.HYB         CGGGUGAUGUGAGCUUUAGAAUCGGGGGGCAAUGCGUUAGGCUGGUUUCA
+#=GR CIN.HYB SS bbbb_bbbbbbbbbbBB__bb__BBBBB______BBB____BBB______
+
+CIN.HYB         CAGAGCUGCGAAAACCUCUACCUCUCGACUGUGGAAGGAUUACAAGCCGG
+#=GR CIN.HYB SS bbb____bbb____bbbbb__>>>>>>>>-->>>>>>>---->>>>>>>>
+
+CIN.HYB         AGUGUCUUAGGCUCAUAUAACCAGCCUGGCUAGCCCAACAGGACACCCAU
+#=GR CIN.HYB SS ->>>>>->>>>>>------------>>>>>->>>->>>->>-->>->>>>
+
+CIN.HYB         UU
+#=GR CIN.HYB SS >>
+//
+# STOCKHOLM 1.0
+
+#=GS CLO.ACE DE converted from Zweib's SRP dataset 
+
+CLO.ACE         GUGCUAGACGGGGAGUUAGCGGUGCCUUGUACCUGCAAUCCGCUGUAGCA
+#=GR CLO.ACE SS ((((,,<<<AAAA-A-<<<<<<a-aaaa---<<<<<___>>>>>>-->>>
+
+CLO.ACE         GGGUUGAAUUCCUUGUUUGAGGCUAUAAUUUGUGGGGUUUGCCUCAUCUU
+#=GR CLO.ACE SS >>>>>,,,,,<<<<<-----<<<-<<<<<<<<<<<<---<<-<<<<<<<-
+
+CLO.ACE         GGUCAAUGUUGAGAAUUGGGUCCCACGCAACGGAAAUUCAUGAACUCCGU
+#=GR CLO.ACE SS -<<<<<<-----<<<<<<<<--<<<<<<<<<<<<<-<<<<<-----<<<<
+
+CLO.ACE         CAGGUCCGGAAGGAAGCAGCGGUAAGUGAAAUCUUCCGUGUGCCGUGGAU
+#=GR CLO.ACE SS ----<<<____>>>---->>>>--->>>>>--->>>>>>->>>->>>>--
+
+CLO.ACE         AAAUCUGAUUUGAGUUGACCAGGUGAGUAACACUCAUAGAUUAUUGUCGA
+#=GR CLO.ACE SS --->>>>>>>>-->>>>>>->>>>>>>--->>>>>>>>>>>>>>->>>--
+
+CLO.ACE         UUCAAGGUGCAC
+#=GR CLO.ACE SS -->>>>>,))))
+//
+# STOCKHOLM 1.0
+
+#=GS CLO.PER DE converted from Zweib's SRP dataset 
+
+CLO.PER         GCCGUGCUAGAUGGGGAGUUAGCGGUGCCCUGUAACCUGCAAUCCGCUAC
+#=GR CLO.PER SS (((((((,,<<<AAAA-A-<<<<<<a-aaaa----<<<<<___>>>>>>-
+
+CLO.PER         AGCAGGAUCGAAGUCCUCAUAGAGGCUCUAACUUGUGGAGUCUGCCCUAU
+#=GR CLO.PER SS ->>>>>>>>,,,,,<<<<<<---<<<--<<<<<<<<<<<---<<-<<<<<
+
+CLO.PER         GUAAGUGGUGUUGAGAGUUGGGCCCCACGCAAUGGAAACCUGUGAACCUC
+#=GR CLO.PER SS <<<-<<<<<-----<<<<<<<<--<<<<<<<<<<<<<<-<<<<-----<<
+
+CLO.PER         GUCAGGUCCGGAAGGAAGCAGCGAUAAGCAGUCAUUUUCAUGUGCCGUGG
+#=GR CLO.PER SS <<----<<<____>>>---->>>>--->>>>--->>>>>>>->>>->>>>
+
+CLO.PER         AUACGUCUGGCUUGAGCUAACUGCAUAGGUAACGUUCAUAAGUUAUUGUC
+#=GR CLO.PER SS ----->>>>>>>>-->>>->>>>>>>>>>--->>>>>>>>>>>>>-->>>
+
+CLO.PER         GAAGUGAGGUGCACGGUU
+#=GR CLO.PER SS --->>>>>>,))))))):
+//
+# STOCKHOLM 1.0
+
+#=GS DEI.RAD DE converted from Zweib's SRP dataset 
+
+DEI.RAD         GCAUUGCUGGUGCAGCGCAGCGCGGACGCCCGAACCUGGUCAGAGCCGGA
+#=GR DEI.RAD SS <<<<<<<<<<-<<<<<<<<-<<<<<<--<<<-----<<<<----<<<___
+
+DEI.RAD         AGGCAGCAGCCAUAAGGGAUGCUUUGCGGGUGCCGUUGCCUUCCGGCAAU
+#=GR DEI.RAD SS _>>>---->>>>--->>>---->>>>>>-->>>->>>>>--->>>>>>>>
+
+DEI.RAD         GCUUUU
+#=GR DEI.RAD SS >>::::
+//
+# STOCKHOLM 1.0
+
+#=GS DRO.MEL DE converted from Zweib's SRP dataset 
+
+DRO.MEL         GACUGGAAGGUUGGCAGCUUCUGUAAUCACGCUUCUGUGAGGUCUGAUUG
+#=GR DRO.MEL SS (-(,<<<<<___AAA__>>>>>,,,,<<<_aaa____>>>)-)::(((((
+
+DRO.MEL         UGGGAUGGCCUGAGGCUGGGAUCUACUGCGUAGCGGACCAGCUCAUGUUG
+#=GR DRO.MEL SS (((--(((((---((-((((-----(((-((((((---(((-((((-((-
+
+DRO.MEL         ACGGAACGUCCGCACUAAGCUUGCCAUCAAUAUGGGUGCCAUGGAGGAGU
+#=GR DRO.MEL SS -(((-((((((-(((((-(((((((((<<<<-<<<<<<<<<<<<<____>
+
+DRO.MEL         CCGUGGCAUUCAGGUUGGCUAAGGAGGGAUGAACCGGGCCAGGGGUGAAA
+#=GR DRO.MEL SS >>>>>>>>>>>>->>>>,<___>,,<<<<<------<<<----<<<____
+
+DRO.MEL         ACCAGCAGCCAAGAGUUCCCGUGGUAGGCAGUAGUGGGAUAGCGUACCGG
+#=GR DRO.MEL SS >>>---->>>---->>>>>,)))))))))--))))))))---)))-))))
+
+DRO.MEL         AGUGGACUGCCGUUAUCAGCCCAACCGAUAUGGUUGGACCACAAUCUUU
+#=GR DRO.MEL SS )))))-)))-)))))))))))))-))-----)))))--)))))))):::
+//
+# STOCKHOLM 1.0
+
+#=GS ESC.COL DE converted from Zweib's SRP dataset 
+
+ESC.COL         GGGGGCUCUGUUGGUUCUCCCGCAACGCUACUCUGUUUACCAGGUCAGGU
+#=GR ESC.COL SS <<<<<<<<<<<<<<<<-<<<<<<<<<<<---<<<<<<-----<<<----<
+
+ESC.COL         CCGGAAGGAAGCAGCCAAGGCAGAUGACGCGUGUGCCGGGAUGUAGCUGG
+#=GR ESC.COL SS <<____>>>---->>>-->>>>>>---->>>>->>>->>>>--->>>>>>
+
+ESC.COL         CAGGGCCCCCACC
+#=GR ESC.COL SS >>>>>>>>>>:::
+//
+# STOCKHOLM 1.0
+
+#=GS FUS.NUC DE converted from Zweib's SRP dataset 
+
+FUS.NUC         GCCCUUAGGGGAUAUGAUAUAUUAUUGUCGAACCGUGUCAGAUCUGGAAG
+#=GR FUS.NUC SS <--<<<-<<<<<<<<<<<<<<<<---<<<-----<<<<----<<<____>
+
+FUS.NUC         GAAGCAGCACUAAGAUUUAUAGUAUAUGCAUGUCUUCCUAGGGGUAUCU
+#=GR FUS.NUC SS >>---->>>>--->>>---->>>>>>>->>>>>>>>>---->>>-->::
+//
+# STOCKHOLM 1.0
+
+#=GS GYN.AUR DE converted from Zweib's SRP dataset 
+
+GYN.AUR         ACCGGGCUUGGCAACGCUUGCCUAUAACUCAAGUGAGGGUAAGAAAAAGG
+#=GR GYN.AUR SS (((<<<<--<____A_>-->>>>,,,,<<<<_a>>>>)))::::::::::
+
+GYN.AUR         GUUGGAAUUGAAAGGG
+#=GR GYN.AUR SS ::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS HAE.DUC DE converted from Zweib's SRP dataset 
+
+HAE.DUC         GGGGUAUUAUUGGUUUCUCGCAGCAGAAUUCAGCUUACUUAGUCAGGGCC
+#=GR HAE.DUC SS <<<<<<<<<<<<<<<<<<<<<<-<<<<<<<<<<<<-----<<<-----<<
+
+HAE.DUC         GGAAGGAAGCAGCUUGGGUUGAAUUUCUGGGUGCCGGGAGUCGCUGGUAA
+#=GR HAE.DUC SS ____>>----->>>-->>>>>>>->>>>>-->>>->>>>>-->>>>>>>>
+
+HAE.DUC         UACCCCACCUUUUUGGUAAAAGGUAAUACCG
+#=GR HAE.DUC SS >>>>>>:::::::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS HAE.INF DE converted from Zweib's SRP dataset 
+
+HAE.INF         GGAAACCUUCUCGGUCUCUCGCAACGGUGUCUGGUUUACUCGGUCAGGUC
+#=GR HAE.INF SS <<<<<<<<<<<<<<<-<<<<<<<<<<<<<<<<<<<<-----<<<----<<
+
+HAE.INF         CGGAAGGAAGCAGCCAAAGUCGGAAUUACUGUGUGCCGAGAAGAAGCUGG
+#=GR HAE.INF SS <____>>>---->>>-->>>>>>>-->>>>>>->>>->>>>---->>>>>
+
+HAE.INF         GAAGGUUUCCGCC
+#=GR HAE.INF SS >>>>>>>>>>:::
+//
+# STOCKHOLM 1.0
+
+#=GS HAL.HAL DE converted from Zweib's SRP dataset 
+
+HAL.HAL         GGACUAGGCCGGGCGGUUUGGCUCCGCCCGACACCCGUGAGACAGUCAUC
+#=GR HAL.HAL SS [[[[,,((((<<<<<<__AAAAA>>>>>>,,,,<<<<<_____aaaaa__
+
+HAL.HAL         AGCGGGGGCCGAACACCGGGCGCGUCCGACCGCCGCGGUCGGCCCCGGAA
+#=GR HAL.HAL SS _>>>>>)))),,,,,,((((---(((((-(--((-(((((((-(((((--
+
+HAL.HAL         GCCAACGUGGAAGCCUCGUCCGUCGGGGACGGCGGUCCGCGGCGUGCGCC
+#=GR HAL.HAL SS (((--(------((((((((((((((((((((((<--<---<<<-<<<<<
+
+HAL.HAL         CGCAGGGGCGUUCCGUCGUGGUUCGACGGUGGCAACCCGCCAGGCACGGA
+#=GR HAL.HAL SS <____>>>>>>->->>---->-->,,<<<<<<----<<<<----<<<___
+
+HAL.HAL         AGUGAGCAGCGGACCACCGAACGCCCGUCGCUCGACGGGUCGCGGGGUGG
+#=GR HAL.HAL SS _>>>---->>>>->>>>>>,,))))-)))-)))))))))---))))))--
+
+HAL.HAL         AGAAGGCGACCGGGACUACCCGGCCGGGAACGCCGGGCUACCCCGACUGU
+#=GR HAL.HAL SS -)--)))--)))))-----)))))))))---)-)))))---)))),,,]]
+
+HAL.HAL         CCAC
+#=GR HAL.HAL SS ]]::
+//
+# STOCKHOLM 1.0
+
+#=GS HAL.VOL DE converted from Zweib's SRP dataset 
+
+HAL.VOL         GGACUAGGUCGGGCAGUUAGGCCCUGCUCUUCACCCGCGAAAUAGGUCUU
+#=GR HAL.VOL SS [[[[,,((((<<<<<<__AAAAA>>>>>>,,,,<<<<<______aaaaa_
+
+HAL.VOL         UAGCGGGGACCGAACACGGGCGCGUCCGGUCAGACCGGCGCGGGCCCCGG
+#=GR HAL.VOL SS __>>>>>)))),,,,,((((---(((((((----((((((--((-(((((
+
+HAL.VOL         AAGCCAACGUAGAAACCUCGUCCUUCGGGGACAGCGGUUCCGCGUACCCC
+#=GR HAL.VOL SS --(((--(------((((((((((((((((((-(((<--<<<<--<-<<<
+
+HAL.VOL         UUCCGCAGGGAAGGGUUCGCGCGGUUUAUCGGUGGUACCCCGCCAGGCGC
+#=GR HAL.VOL SS <<<<____>>>>>>>->--->>>>-->,<<<<<<<----<<<<----<<<
+
+HAL.VOL         GGAAGCGAGCAGCGGACCAUCGGACGUGCGUCGCUCGAGGGAUCGCGGGG
+#=GR HAL.VOL SS ____>>>---->>>>->>>>>>>,)))--)))-)))))))))---)))))
+
+HAL.VOL         UGGAGGAGGCAACCGGGAUUCCCCACGUCGGAACGCCGGGCAACCUCGCU
+#=GR HAL.VOL SS )---)--)))--)))))-----))-))))))---)))))))---)))),,
+
+HAL.VOL         GUCCAC
+#=GR HAL.VOL SS ]]]]::
+//
+# STOCKHOLM 1.0
+
+#=GS HEL.PY-A DE converted from Zweib's SRP dataset 
+
+HEL.PY-A         CUCUUAUUUAGACCUAUGCAAUAGGAUUUUAGGGUAACGCUUCAGGGUAG
+#=GR HEL.PY-A SS <<<<<<<<<<<<-<<<-<<<<<<<<<--<<<<<<----<<<<----<<<_
+
+HEL.PY-A         GAAUACAGCAGAGUCCCCUAAUUUCUUGUGUGCCUUAGCCAUCUGAAUAG
+#=GR HEL.PY-A SS ___>>>---->>>>->>>>>>-->>>>>>->>>-->>>--->>>>>>>>>
+
+HEL.PY-A         GAG
+#=GR HEL.PY-A SS >>>
+//
+# STOCKHOLM 1.0
+
+#=GS HUM.JA-A DE converted from Zweib's SRP dataset 
+
+HUM.JA-A         GGCCUAGCAACGUGGGCCUGUAACCCAAGUGGGGGCAUGUGGGAGAUGGG
+#=GR HUM.JA-A SS <<-<<<____A_>->>->>::::<<<<_a>>>>:::::(-(((((((((-
+
+HUM.JA-A         ACUUUGGGUCAGCCCAUUGGAUCGGGUCCAGUGUUAGCUGCUUGCUGGUC
+#=GR HUM.JA-A SS ---((((((--(--((-(((-((-(((((((---(((-((----((((((
+
+HUM.JA-A         UGCCCAUUCCAAGCCGAGAGUUGGGCUGUGUGAUCUGGGCGAAGGCUGGG
+#=GR HUM.JA-A SS ((-((-(((((-(((((((((,<<<<<<<<<<<<<<-<<<____>>>->>
+
+HUM.JA-A         GUCGCACAGCUCCUAAAGAGGAGGGCAAUGCGUGAGGCUGGUUUCACAGA
+#=GR HUM.JA-A SS >>>>>>>>>>>><<__>>,<<<<<------<<<----<<<______>>>-
+
+HUM.JA-A         GCAGCGACCACCUCCCGCUCUCGGCAGUGGAAGGAUAACGGGUCGGUGCU
+#=GR HUM.JA-A SS --->>>---->>>>>,)))))))))--)))))))----))))))))))))
+
+HUM.JA-A         ACUUGGGCCACCAUGGUCACUGCAUGCACUCUUAAUCAGACCAUCUCUUU
+#=GR HUM.JA-A SS )-)))))))-----)))))-))--)--)))--)))-----)))))))))-
+
+HUM.JA-A         U
+#=GR HUM.JA-A SS )
+//
+# STOCKHOLM 1.0
+
+#=GS LAC.LAC DE converted from Zweib's SRP dataset 
+
+LAC.LAC         GGAGCAAUAAGUUUCUUACGAAGCGUGUCAGGACCUGACGGUAGCAGCAC
+#=GR LAC.LAC SS <<<<<<<<<<<<<-<-<<<-----<<<<----<<<____>>>---->>>>
+
+LAC.LAC         UAAGUAUGGAGCUUAUGUGCUCUUUUU
+#=GR LAC.LAC SS --->>>->->>>>>>>->>>>>>::::
+//
+# STOCKHOLM 1.0
+
+#=GS LEG.PNE DE converted from Zweib's SRP dataset 
+
+LEG.PNE         GGUGACUCUAUUGGUCCCCUCGCGACGAUAGAUUGUGAACCCCGUCAGGC
+#=GR LEG.PNE SS <<<<<<<<<<--<<<<-<<<<<<--<<-<-<<<<<<-----<<<<----<
+
+LEG.PNE         CCGGAAGGGAGCAGCGGUAGCAGUUGAUGCGGGCGCCGGGGUGUGGCUCU
+#=GR LEG.PNE SS <<____>>>---->>>>-->>>>>>>->>----->>->>>>->-->>>--
+
+LEG.PNE         UAGAGUCGCCGCC
+#=GR LEG.PNE SS >>>>>>>>>>:::
+//
+# STOCKHOLM 1.0
+
+#=GS LEI.MAJ DE converted from Zweib's SRP dataset 
+
+LEI.MAJ         GCCGGAGCUCUGCUCUGUAACCUUCGGGGGCUAACCAGGCUUAGCGGGGA
+#=GR LEI.MAJ SS (-(<<<<<___>>>>>,,,,<<<___>>>)-)::::((((((-((((-(-
+
+LEI.MAJ         GGACGUGGACCAGCGAGGGUGAUUUGCUGCGUUGACGUGGUGCUCUGCUU
+#=GR LEI.MAJ SS ((-(((((----((--((((-----(((((-((--(((((((-(((((--
+
+LEI.MAJ         GGCUGUGUGUCGGUGUGGCUUGCCCCCCUGCAGAGGGUGGCGCGGGUCCG
+#=GR LEI.MAJ SS -((-((((((<<<-<<--<-<<<<-<<<<____>>>>->>>>->->>>>>
+
+LEI.MAJ         CCGUUGAAGCGAGGGAACCGGGUCAGGCCGGAAACGGAGCAGCCCACCCC
+#=GR LEI.MAJ SS ,,,,,,,,<---<<<----<<<<----<<<____>>>---->>>>->>>-
+
+LEI.MAJ         ACGCACGUCCGCCGUUGCAGAAUCACACCGCGGAGCAUGUCCGCACUUGA
+#=GR LEI.MAJ SS ->)))))-)-))----)))))----))))))))))))-)-)---))))--
+
+LEI.MAJ         GCCCCACGCUUCGUCGCGAAGCCUU
+#=GR LEI.MAJ SS ))-)))))-)))-))))-)))))):
+//
+# STOCKHOLM 1.0
+
+#=GS LEP.COL DE converted from Zweib's SRP dataset 
+
+LEP.COL         GCCGGAGCCUUGCUCUGUAACCUUCGGGGGCUUUCACCAGCUGAACAGGG
+#=GR LEP.COL SS (-(<<<<<___>>>>>,,,,<<<___>>>)-)::::::((((--(((((-
+
+LEP.COL         AGCUGUCUGGACCAGCAUAGGGUGCUUGCGGCGUUGACGUGGUGCUCUGC
+#=GR LEP.COL SS -(((----------((-(((---(-(-(((((-((--(((((((-(((((
+
+LEP.COL         UUGGCUGUGUGUCGGAGGCCUCCGGGUGCCCCCUUGCAGAAGGGGCGCGC
+#=GR LEP.COL SS ---((-((((((<<<<<<-----<<<<<<-<<<<<____>>>->>->>>>
+
+LEP.COL         CCCCUCCGUUAAAGUAGAGGAACUGGGUCAGGCCGGCAACGGAGCAGCCC
+#=GR LEP.COL SS >>>>>>>><___><<-<<<<----<<<<----<<<____>>>---->>>>
+
+LEP.COL         ACCUCGCGCACGUCUGCCGUUGCAGAACCACACCGCGGAGCCUGUCAUCA
+#=GR LEP.COL SS ->>>>>>)))))-)-))----)))))----))))))))))))-))-)-)-
+
+LEP.COL         CCUGCGCCCCAGGCGAUCCUGUGAAGCUUU
+#=GR LEP.COL SS -)))-))----)))---)))))--))))::
+//
+# STOCKHOLM 1.0
+
+#=GS LIS.INN DE converted from Zweib's SRP dataset 
+
+LIS.INN         UUUGUCGUGCUAGACGGGGAGGUAGCGGCGCCCUGUAACCCGCAAUCCGC
+#=GR LIS.INN SS ::[[[[[[[[,,(((<<<<-<__AAAAA>->>>>,,,,<<<<<___aaaa
+
+LIS.INN         UCUAGCGGGGUUGAAUUCCUCAUUUGAGGCAUCGUAAUUGUUUGGUCUGC
+#=GR LIS.INN SS a___>>>>>))),,,,,<<<<<<<---<<<<<--<<<<<<<<<<---<<-
+
+LIS.INN         CCUUGACAAGUGGUGUUGAAGGUUGGGUCUUGCGCAAUGGGAACCUGUGA
+#=GR LIS.INN SS <<<<<<-<-<<<<<------<<<<<<<<<<<<<<<<<<<<<<<-<<<---
+
+LIS.INN         ACCAUGUCAGGUCCGGAAGGAAGCAGCAUUAAUCAGUGCUUCUCAUGUGC
+#=GR LIS.INN SS ---<<<<----<<<____>>>---->>>>---->>>--->>>>>>>->>>
+
+LIS.INN         CGCGAGGUUGCCUGGCCCGAGCUAACUAUCAAGGUAACGCAGGUGAUUGC
+#=GR LIS.INN SS ->>>>>>--->>>>>>>--->>>->>>->>>>>>--->>>>>>>>>>>>-
+
+LIS.INN         AUGUCGAGGUGAGGUGCGCGACACUAA
+#=GR LIS.INN SS >>>>>-->>>>>>>,]]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS LYC.ES-A DE converted from Zweib's SRP dataset 
+
+LYC.ES-A         GGCGAGCUUAGUAACGUGGGCUUGUAAUCCAAGUGGAGACAUCAAAGUGG
+#=GR LYC.ES-A SS (-(<<<<<<<____A_>>>>>>>,,,,<<<<_a>>>>)-):::((-((((
+
+LYC.ES-A         UUGAAUAUUGGGCUUUACCAGAAGGUUGGGCUUGGUGGGCUUAGUUCUGG
+#=GR LYC.ES-A SS (((--((((((((--(-(((--((((-((((((((((((-(-----((((
+
+LYC.ES-A         CCUGCCCUGUCCAAGCACAGAGUUGGAUCUCGAGGCCCAAAUGAAAAUAU
+#=GR LYC.ES-A SS ((((-((--((((-(((((((((,<<<<<--<<<<<<<<-<<____>>->
+
+LYC.ES-A         GGGCUUCUUGAUUCCUAAAGUGGGGCGGACCGCAUGAGGCUGGCUUCACA
+#=GR LYC.ES-A SS >>>>>>>-->>>>><<__>>,<<<<<<-----<<<----<<<______>>
+
+LYC.ES-A         GAGCAGUGAACGCUCCCGCUCUGUGCAGUGGAAGGAUAAUGGGUCGGUGU
+#=GR LYC.ES-A SS >---->>>-->>>>>>,)))))))))--))))-))----))))))))-))
+
+LYC.ES-A         CUUAUCAAGUUCAGUAACGCCUAAUGGGUUGCUCCAAUAAACAACCACCU
+#=GR LYC.ES-A SS ))-)))))))))------))))--))))--)))-)))))--)))))))-)
+
+LYC.ES-A         UU
+#=GR LYC.ES-A SS ):
+//
+# STOCKHOLM 1.0
+
+#=GS LYC.ES-C DE converted from Zweib's SRP dataset 
+
+LYC.ES-C         GCCGAGCUCAGUAGCGUGGGCUUGUAACUCAAGUGAGGGCAUCAGUGUGG
+#=GR LYC.ES-C SS (((<<<<<<<____A_>>>>>>>,,,,<<<<_a>>>>))):::(((((((
+
+LYC.ES-C         UGGAAUGUUGAACAUGCCCAGAAGGUAGGGCUUGUGUGACAAUUCUCUGG
+#=GR LYC.ES-C SS (((--(((((((((---(((--(((((((((((((((((--(----((((
+
+LYC.ES-C         CCUGCCCUGUCCAAGCAAAGAGUUGGGUCUUGUGGGCCAAGCGAAGGCUU
+#=GR LYC.ES-C SS (-((-((--((((-(((-(((((,<<<<<<-<<<<-<<<<<<____>>>>
+
+LYC.ES-C         GGGCUGCUGGGCUCCUAAAGUGGGGUGGACUGCGUGAGGCUGGUUUCACA
+#=GR LYC.ES-C SS >>->>>>->>>>>><<__>>,<<<<<------<<<----<<<______>>
+
+LYC.ES-C         GAGCAACGAAUAGCUCCCGCUCUGUGCAGUGGAAGGAUAACGAGCCAGUG
+#=GR LYC.ES-C SS >---->>>---->>>>>,)))))-)))--))))-))----))-))))))-
+
+LYC.ES-C         UCAUAUAAGUUCAACGAAUGUCUGAUGGGCUGUUCUAGUUAAACUACCAC
+#=GR LYC.ES-C SS ))))))))))))------)))))--)))--))))-)))-))--)))))))
+
+LYC.ES-C         AUUU
+#=GR LYC.ES-C SS ))):
+//
+# STOCKHOLM 1.0
+
+#=GS LYC.ES-F DE converted from Zweib's SRP dataset 
+
+LYC.ES-F         GCCGAGCUUUGUAACGUGGGCUUGUAACCCGAGUGGGGGCAACAAUGUGG
+#=GR LYC.ES-F SS (((<<<<<<_____A__>>>>>>,,,,<<<<_a>>>>))):::((-((((
+
+LYC.ES-F         UGGAAUGUUGGGUCCAUCUUGAUGGAUGGGCUUGAAGGGCUAAUGUUCUG
+#=GR LYC.ES-F SS (((--((((((((----((----((-(-(((((((-(((-((-----(((
+
+LYC.ES-F         GCCUGCCCUGUCCAAGCACAGAGUUGGGUCAAGUGGUCUAUACGAAAGUA
+#=GR LYC.ES-F SS (((((-((--((((-(((((((((,<<<<<<<<<<<-<<<<<<____>>>
+
+LYC.ES-F         UAGCCACUUGGCCUUUAGAGUGGGAUGGACUGCGUGAGGCUGGUUUCACA
+#=GR LYC.ES-F SS >>>>>>>>>>>>>><<__>>,<<<<<------<<<----<<<______>>
+
+LYC.ES-F         GAGCAACGACUAGUCCCCGCUCUGUGCAGUGGAAGGAUCACGGGCUAGUG
+#=GR LYC.ES-F SS >---->>>---->>>>>,)))))))))--))))-))----))))))))))
+
+LYC.ES-F         CUCUUUGAGUCCUAACAAAAACCUGAUAGGUUGCCUAAUUAAACCAUCAC
+#=GR LYC.ES-F SS -))))))))))--------)-))----))---))))))-))--)))))))
+
+LYC.ES-F         UUUU
+#=GR LYC.ES-F SS -)):
+//
+# STOCKHOLM 1.0
+
+#=GS LYC.ES-L DE converted from Zweib's SRP dataset 
+
+LYC.ES-L         GUUGGGUUGACCCAGAUGGUUGGGUUCGGUAGGCUUAUAGUCUGGCCUGC
+#=GR LYC.ES-L SS (((((((-(--(((---(((--((((((-(-((-(------((((((((-
+
+LYC.ES-L         CCUCUCCAAGCAUGGAGUUGGAUCACGUGGCUUAGUCGAAAGACCUGGGU
+#=GR LYC.ES-L SS ((--((((-(((((((((,<<<<<<-<<<<<<<<<<<____>>>->>>>>
+
+LYC.ES-L         UGCUUGAUUCCUAAAGUGGGGUGGACUGCGUGAGGCUGGUUUCACAGAGC
+#=GR LYC.ES-L SS >>>->>>>>><<__>>,<<<<<------<<<----<<<______>>>---
+
+LYC.ES-L         AACGAACAGCUUCCGCUCUGUGCAGUGGAAGGAUAACGGGUCAGUGCUCA
+#=GR LYC.ES-L SS ->>>---->>>>>,)))))))))--))))-))----))))))))-)))-)
+
+LYC.ES-L         GCGAGUCCAGUUAACGCCCUGAUGGGCUGCUCCAACUAAACCACCACUUU
+#=GR LYC.ES-L SS -))))))--------)))----)))-)-)))-))))::::::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS MET.ACE DE converted from Zweib's SRP dataset 
+
+MET.ACE         UGAUGAGCUAGUCCGGGUAGCCCGGCGUUACCUGUAACCCGAAAUCGCCG
+#=GR MET.ACE SS [[[[[[[[,,((((<<<<<<__AAAAA>>>>>>,,,,<<<<____aaaaa
+
+MET.ACE         AUAUGCGGGGGACGAAGCCAAUGGAAGAUGCGUCAAAGGGAUUCCAGCCU
+#=GR MET.ACE SS _____>>>>)))),,,(((---((--(-((-(((---((((((-(((-((
+
+MET.ACE         GUGAUCUCAACUGAGAAACCCCGUCCUGCUUGGAUGAUGCAGGUAUGUGG
+#=GR MET.ACE SS (-((((((--((-----((((((((((((--(((((-((,,<<<<<<-<<
+
+MET.ACE         ACUUGCUGGAAAACAGGUCCUCAUACCCUAACUGCGGAAACCGGUCGAGG
+#=GR MET.ACE SS <<<<<-<____>->>>>>>>->>>>>>,,,,<<<<<<-----<<<<----
+
+MET.ACE         CCCGGAAGGGAGCAGACUCACUGUGGGCAACCGUCGCUUGCGGGGUCGCG
+#=GR MET.ACE SS <<<____>>>---->>>>-->>>>>>,))-)-)))-)--))))))---))
+
+MET.ACE         GGGUGGAGAAGAGAUUCCAGUCUACUGAAAUCUCCCAGAUACAACGACCU
+#=GR MET.ACE SS ))))--))--))))))-)))----)))-))))))---)))-))-)--))-
+
+MET.ACE         GCGGUGUGCUCAUCA
+#=GR MET.ACE SS --))),,]]]]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS MET.FER DE converted from Zweib's SRP dataset 
+
+MET.FER         AGGCUAGGCCGGGGGGUUAGGGGUCCCCUGUAAGCGCAAAUCCCCUAUAU
+#=GR MET.FER SS [[[[,,((((<<<<<<_AAAAAA>>>>>>,,,,<<<<____aaaaaa___
+
+MET.FER         GGCGCGGCCGAAGCCCAGGAGGCGGCAAGACCGCCAGACAUCGGCCUGAG
+#=GR MET.FER SS _>>>>)))),,,(((((((((--(((((((((((((((((((((-(((((
+
+MET.FER         GGUUAAACAAUGAAGCCUCGUCCCACAGGGCCACCGGUGGCGAGGGUCCA
+#=GR MET.FER SS (((((((-(-(---((((((-(((((((((((((((<<<<<<<<<<<<<<
+
+MET.FER         GCUGGAGGGCUGGACCUAAUCGCCUUUGCUGCGGGAACGGGUCAGGCCCG
+#=GR MET.FER SS <<<____>>>>>>>>>>-->>>>>>>,,<<<<<<<---<<<<----<<<_
+
+MET.FER         GAAGGGAGCAGCCCUACCGCAGACGGAUGGUGCUUGUGGGUCAACGGGGU
+#=GR MET.FER SS ___>>>---->>>>->>>>>>>,)))-))))-))))))))----))))))
+
+MET.FER         GGAGUCUAUAACCCUCAGAUCACCGGUGUCUGGUGGUCUUGUCCACUCCU
+#=GR MET.FER SS --)-)-))))))))))))---))))))))))))-)))))))))--)))))
+
+MET.FER         GGGCGUGCCU
+#=GR MET.FER SS )))),,]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS MET.JAN DE converted from Zweib's SRP dataset 
+
+MET.JAN         GGUGUGCAUGGCUAGGCCGGGGGGUUGGGCGUCCCCUGUAACCCGAAAUC
+#=GR MET.JAN SS [[[[[[[[[[[[[,((((<<<<<<__AAAAA>>>>>>,,,,<<<<____a
+
+MET.JAN         GCCCUUAUGCGGGGGCCGAAAACUUGGGGGCGGCAUGUCCUCCAGUCCUU
+#=GR MET.JAN SS aaaa_____>>>>)))),,,,,(((((((--((((((((((-((((((((
+
+MET.JAN         CCUUCCCAGACUCCUCGAUGAGGUCUCGUCCCGUGGGGCUCGGCGGUGGG
+#=GR MET.JAN SS ((((((((((-((((-------(((((((((((((((((-(((((<-<<<
+
+MET.JAN         GGAGCAUCUCCUGUAGGGGAGAUGUAACCCCCUUUACCUGCCGAACCCCG
+#=GR MET.JAN SS <<-<<<<<<<<<____>>>>>>>>>--->>>>>->,<<<<<<-----<<<
+
+MET.JAN         CCAGGCCCGGAAGGGAGCAACGGUAGGCAGGACGUCGGCGCUCACGGGGG
+#=GR MET.JAN SS -----<<<____>>>----->>>-->>>>>>,,))))))-)))))))))-
+
+MET.JAN         UGCGGGACGGAGAAGGAAUCUGGGGGCGAGGGAGGACUGGAGGACAUGCC
+#=GR MET.JAN SS --))))))---)-))))-)))))))---)))))))))))-))))))))))
+
+MET.JAN         CACCCCAAGGAAGCCAUGCACACCACUUUU
+#=GR MET.JAN SS --))))))),,]]]]]]]]]]]]]::::::
+//
+# STOCKHOLM 1.0
+
+#=GS MET.KAN DE converted from Zweib's SRP dataset 
+
+MET.KAN         GGGCUAGGCCGGCGGGCUGGCGGUCCGCUGUAACCCGAAAUCCGCCUCAU
+#=GR MET.KAN SS [[[[,,((((<<<<<<__AAAAA>>>>>>,,,,<<<<____aaaaa____
+
+MET.KAN         GCGGGGGCCGAAGCCGAGGGGGCGGCCCGGUCCCCCGGAGUACCGGCCCC
+#=GR MET.KAN SS _>>>>)))),,,<<<<<<<<<--<<<<<<<<<--<<<<<<<-<<<<---<
+
+MET.KAN         CCGGACCCGACCGAUGACCCUCCGGCCCCCCGGGGGCCCGGGGUGGCGGG
+#=GR MET.KAN SS <<----<<<<<<--<--<<-<<-<<<<<<-<<<<<<<<--<_B_BBBBBB
+
+MET.KAN         GCCGCCGCCGGAGGGCGGCGCGCCACCGCCUUUGCCGGGGCACCGGGUCA
+#=GR MET.KAN SS __BBBBBBB____bbbbbbb__b__bbbbb_b__BBBBBB____BBBB__
+
+MET.KAN         GGCCCGAGAGGGAGCAGCCCACCCCGGACCCGCGGCCGCUCGGGGGUCGC
+#=GR MET.KAN SS __BBB____bbb____bbbb_bbbbbb__>>-->>>>->>>>>>>>>-->
+
+MET.KAN         CGGAGGCAGGUCGGCCGGGGGAGUACCGGGCUCCGGGGGCCGGGUCCACC
+#=GR MET.KAN SS ->>->>-->>>>>>---->>>---->>>>>>>>>>>->>>>>>>>>-->>
+
+MET.KAN         CCUCGGCGCGCCC
+#=GR MET.KAN SS >>>>>>>,,]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS MET.TH-A DE converted from Zweib's SRP dataset 
+
+MET.TH-A         UGGGCUAGACCGGAGGGUUAGGGGUCCUCUGUAAGCGCAAAUCCCCUAUA
+#=GR MET.TH-A SS [[[[[,,((((<<<<<<_AAAAAA>>>>>>,,,,<<<<____aaaaaa__
+
+MET.TH-A         CGGCGCGGUCGAAGUUCAGGGGACGGCUGAUCGACUGUUUAUCGGCCCUG
+#=GR MET.TH-A SS __>>>>)))),,,(((((((((--(((-((((--(((((((((((-((((
+
+MET.TH-A         CUGAUUGGUGUCGAAGCCUCGUCCCGCAGGAUCAGUGGUGAUGGGGCCCU
+#=GR MET.TH-A SS (((((((((------((((((--((((((((((((((<-<<<<<-<<<<<
+
+MET.TH-A         GACUGGAGGGUCAGGGUAAACCAUCUUAGUCAUGGGAACGGGUCAGGCCU
+#=GR MET.TH-A SS <<<<____>>>>>>>>>--->>>>>->,,<<<<<<----<<<<----<<<
+
+MET.TH-A         GGAAAGGAGCAGCCCUACCAUGGACAGCUGAUGCUUGCGGAUUAACGGGG
+#=GR MET.TH-A SS ____>>>---->>>>-->>>>>>,))-)))))-)))))))-----)))))
+
+MET.TH-A         UGGAGCCAGUCAGCGGGAUCACCGGUAAAUGGAAGGUCUGUCAACCCCUG
+#=GR MET.TH-A SS )---)))))))))))))----)))))))))))--))))-)))--))))))
+
+MET.TH-A         AACGUGCCCA
+#=GR MET.TH-A SS ))),,]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS MET.VOL DE converted from Zweib's SRP dataset 
+
+MET.VOL         UGGCUAGGCUGGGAGGUUAGGCGUCUCCUGUAACUUGAAAUCGCCUUUGC
+#=GR MET.VOL SS [[[[[,((((<<<<<<__AAAAA>>>>>>,,,,<<<<____aaaaa___>
+
+MET.VOL         GAGAGCCGAAAACUUGGGGGCGGCAUAAGUUCCCAAAUUUCAUUCUUAAU
+#=GR MET.VOL SS >>>)))),,,,,(((((((--((((-((((--((((((((((((((((((
+
+MET.VOL         UAGUAUGUCGACGUUUCGUCCUUUGGGGUAAGAUGGUAAGAGACUCUCUU
+#=GR MET.VOL SS ((((((------(((((((((((((((((--((-(<-<<<<<---<<<<<
+
+MET.VOL         UCUUAAGAAAGAGUCAAACUCUUUUCGUAUUUCGAAACCCGCCAGGCCCG
+#=GR MET.VOL SS <<____>>>>>>>----->>>>>->,,,<-<<<-----<<<-----<<<_
+
+MET.VOL         GAAGGGAGCAACGGUAGAAUUUACUUCGACGCUCAAGGGGUAGCGGGGCU
+#=GR MET.VOL SS ___>>>----->>>-->>>->,,)-))-))-)))))))))---))))))-
+
+MET.VOL         GAGUACUAAUUAAGGCAAAAUGAGAUUUGGUGCUUUUGUCCACCCCAAGG
+#=GR MET.VOL SS --)))))))))))))----)))))))))))-))))-))))--))))))),
+
+MET.VOL         AAGCCA
+#=GR MET.VOL SS ,]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS MIC.LUT DE converted from Zweib's SRP dataset 
+
+MIC.LUT         GGCCCCUACGUGGUGUCAUCUCGCUGAACUUCCCCCAGGACCGGAAGGUA
+#=GR MIC.LUT SS <<<<<-<<<<<<-<<<<<-<<<<<<------<<<-----<<<____>>>-
+
+MIC.LUT         GCAAGGGUAGGUGGGCUCUGGCAGGUGCGUGAGGGGUCUUCACGUUU
+#=GR MIC.LUT SS ---->>>-->>>>>>--->>>>>-->>>>>>->>>->>:::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS MUS.MU-B DE converted from Zweib's SRP dataset 
+
+MUS.MU-B         GAGCCGGGUGUGGUGGCGCACACCUUUAAUCCCAGCACUCGGGAGGCAGA
+#=GR MUS.MU-B SS ::(((<<<<<<<AA_AA_>>>>>>>,,,,<<<<_aaaa__>>>>))):<<
+
+MUS.MU-B         GGCAGGCGGAUUUCUGAGUUCGAGGCCAGCCUGGUCUACAAAGUGAGCUC
+#=GR MUS.MU-B SS <<<<<<----<<<<<-<<<<<--<-----<----<_______________
+
+MUS.MU-B         CAGGACAGCCAGGGCUACACAGAGAAACCCUGUCUC
+#=GR MUS.MU-B SS __>---->>-->>>>>---->>>>>--->>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS MYC.CAP DE converted from Zweib's SRP dataset 
+
+MYC.CAP         AGCCGCGAUAAGAAUAACAUCUGAAUGAGUUAGGACCGGAAGGUAGCAGC
+#=GR MYC.CAP SS <<<<<<<<<<<<<<<<--<<<<<---<<<<----<<<____>>>---->>
+
+MYC.CAP         UAUAAGGAAAAGUGUUCUGUAUUGCGGUU
+#=GR MYC.CAP SS >>-->>>>>--->>>>>>->>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS MYC.GEN DE converted from Zweib's SRP dataset 
+
+MYC.GEN         AGAACCAUCACAUCAUUAGAGUCGAAUCAUGUCAGGCCAGAAAUGGAGCA
+#=GR MYC.GEN SS <<<<<<<<<<<<<<<<<-<<<<<-----<<<<----<<<____>>>----
+
+MYC.GEN         GCAUUAAGACUUGUCAGUGAGUGUGAUGGUUUU
+#=GR MYC.GEN SS >>>>--->>>>>--->>>>>->>>>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS MYC.LEP DE converted from Zweib's SRP dataset 
+
+MYC.LEP         GGACCCCGCGCGGCGUCUAUCCUGUGAACUCCCCUAGGGCCGGAAGGCAG
+#=GR MYC.LEP SS <<<<<<<<<<<<<<<-----<<<<<-----<<<-----<<<____>>>--
+
+MYC.LEP         CAAGGGUCAAUGGGCUCUGUCGGGUGCGCGGGGUCC
+#=GR MYC.LEP SS --->>>--->>>>>--->>>>>---->>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS MYC.PUL DE converted from Zweib's SRP dataset 
+
+MYC.PUL         GCCUUUAGAACAAUAACCUCAUAACCCGGUCAGGACAGAAAUGGAGCAUC
+#=GR MYC.PUL SS <<<<--<<<<<<<<<--<<<<-----<<<-----<<<____>>>----->
+
+MYC.PUL         CGCAUUGAGAAGUGUUGUGUCUUUAGGUCUUUU
+#=GR MYC.PUL SS >>--->>>>--->>>>>>->>>-->>>>:::::
+//
+# STOCKHOLM 1.0
+
+#=GS NEI.GON DE converted from Zweib's SRP dataset 
+
+NEI.GON         GCGGGUCUCCCCGCAUGGCAAAUCGGAACACCGGGUCAGGGGCGGAAGCC
+#=GR NEI.GON SS <<<<<<<<<<<<<<<<<<<--<<<<<<-----<<<<----<<<____>>>
+
+NEI.GON         AGCAGCCCACUCCGAUGCGCCAGUGCCGGGGGUUUGGUCCGC
+#=GR NEI.GON SS ---->>>>-->>>>>>-->>>>->>>->>>>>--->>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS NOS.SPE DE converted from Zweib's SRP dataset 
+
+NOS.SPE         GACCUGGAUCUAUGCGACUGCAACGCCUAAACCUUGUCAGGACCGGAAGG
+#=GR NOS.SPE SS <<<<<<<<-<<<<<<-<<<<<<<--<<<-----<<<<----<<<____>>
+
+NOS.SPE         UAGCAGCAACACAGGAUGCUUGUGGUAGGCGUAGUCUCCGGGUCGCCCUA
+#=GR NOS.SPE SS >---->>>>--->>>---->>>>>>>-->>>>>>-->>>>>>>>::::::
+
+NOS.SPE         UU
+#=GR NOS.SPE SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS ORY.SA-A DE converted from Zweib's SRP dataset 
+
+ORY.SA-A         GCCGAGCUCAGUAGCGAGAGCCUGUAACCCAAGCGGGGGCACUAAAGGUG
+#=GR ORY.SA-A SS (((<-<<<<_____A__>>>>->,,,,<<<__a_>>>))):::(((((((
+
+ORY.SA-A         GCUGCGGAUGUUUGGUGUGGAUUCUGAUCCUGGGCCCCAUGUUGUUGUAA
+#=GR ORY.SA-A SS (--(----((-(((----(((-----((-(((((((-----(((------
+
+ORY.SA-A         UCUUGCUGGCUUGCCCGUUCCAAGUUGCGUAGUGGGCCGGAGGGGCUUUG
+#=GR ORY.SA-A SS ------(((((((----(((((-(-((-(-(((<<<--<<-<<<<<---<
+
+ORY.SA-A         GCGAAGGCCUUUGCUUUGCUUCUCCGGCCCUAAAGUGGCAGGCACAGCGU
+#=GR ORY.SA-A SS <<____>>>--->>>>>->>-->>>,,,,<<__>>,<<<<<------<<<
+
+ORY.SA-A         GAGGCUGGCUUCACAGAGCAGCGAUCACUGCCCGCUUCCAUCGGUGGAAG
+#=GR ORY.SA-A SS ----<<<______>>>---->>>---->>>>>,<>)-)))-)--))))))
+
+ORY.SA-A         GAUAACAGGCUGCUGCACCUUGGGCCCGCUUCUGGCCCAGAGUCCCUCUA
+#=GR ORY.SA-A SS )----)))))))--------)))----------)))))))-))---)))-
+
+ORY.SA-A         CAACAGACCACCAUCUUU
+#=GR ORY.SA-A SS )))))--)--))))))))
+//
+# STOCKHOLM 1.0
+
+#=GS ORY.SA-B DE converted from Zweib's SRP dataset 
+
+ORY.SA-B         GCCGAGCCAGGUAGCGUUGGCUUGUCACCCGAGCGGGGGCAAUAAGGUGG
+#=GR ORY.SA-B SS (((<<<<<<<____A_>>>>>>>,,,,<<<<_a>>>>))):::(((((((
+
+ORY.SA-B         UGUUGGAUGCCUGGUCGUUUGCGCUUGGGGUCUGCGCCUGUGGUUUGCAC
+#=GR ORY.SA-B SS ((-----((((-----(---((-(((-(((((-(-(((-(----(((---
+
+ORY.SA-B         UAUGCGGCCCGCCCGUUCCAAGUUGCGUAGCGUGUGUGGGGCGCCUGGGC
+#=GR ORY.SA-B SS ---((((((((----(((((-((((-(-(((,,<<<<<<<<<<<-<<<<<
+
+ORY.SA-B         GAAGGCUCGAGCGUCCCUGCACCUAGAGUGGCGGGUAUUGCGUGAGGCUG
+#=GR ORY.SA-B SS ____>>>>>->>>>>>->>>>><<__>>,<<<<<------<<<----<<<
+
+ORY.SA-B         GUUUCACAGAGCAGCGAGUACCGCCCGCUUCCAACGGUGGAAGGAUAACG
+#=GR ORY.SA-B SS ______>>>---->>>---->>>>>,<>)-)))))--)))))))----))
+
+ORY.SA-B         GGCCGCUGCAGCCCUGGCCCGCUUCCGGCCCAAGUGCCUUCCAUGGCAGA
+#=GR ORY.SA-B SS ))))))--)))--)-)))-)------))))))))-))---)---))))--
+
+ORY.SA-B         CCACCACCUUU
+#=GR ORY.SA-B SS -))))))))):
+//
+# STOCKHOLM 1.0
+
+#=GS PER.AME DE converted from Zweib's SRP dataset 
+
+PER.AME         GAUCCGUAACGCGAGCUUAUAACUCGAGCGGGGGCUAUAAAGGUGGUGUG
+#=GR PER.AME SS <-<<_____A__>>->::::::<<<<_a>>>>::::::::::::::::::
+
+PER.AME         GAACGAGCUGACUCGACCUGCCGGGUUGGGCCAGGGACUGCGGUGCUGGC
+#=GR PER.AME SS ::::::::::::::::::::::::::::::::::::::::::::::::::
+
+PER.AME         UCGCCCGUUCCAAGUCGGGUAGUGGGCCAUGUGGCUUGGGCGAAGGCCUG
+#=GR PER.AME SS ::::::::::::::::::::::::<<<<<-<-<<<<<<<<<____>>>>>
+
+PER.AME         GGUUUCUUGGCC
+#=GR PER.AME SS >>->>->>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS PRO.MA-A DE converted from Zweib's SRP dataset 
+
+PRO.MA-A         GACUCGGGCCCAUGCGGCUUCGACGCCUAAAUCUGGUCAGGACCGGAAGG
+#=GR PRO.MA-A SS <<<<<<<<-<<<<<<<<-<<<<<--<<<-----<<<<----<<<____>>
+
+PRO.MA-A         UAGCAGCCACAAGGGAUGCUUGAAUCUGGCGUGGAUUCCGGGUCACCUAA
+#=GR PRO.MA-A SS >---->>>>--->>>---->>>>>->>->>>>>>-->>>>>>>>::::::
+
+PRO.MA-A         A
+#=GR PRO.MA-A SS :
+//
+# STOCKHOLM 1.0
+
+#=GS PSE.AER DE converted from Zweib's SRP dataset 
+
+PSE.AER         GGUGGCCCUGUCGGUCCCCCCGCAACGAUUACCCGUCAACCUGGUCAGGU
+#=GR PSE.AER SS <<<<<<<<<<<<<<<<-<<<<<<<<<<<<--<<<<<-----<<<<----<
+
+PSE.AER         CCGGAAGGAAGCAGCCACAGCGGGAACAUCGUGUGCCGGGGUGUGGCUGG
+#=GR PSE.AER SS <<____>>>---->>>>-->>>>>--->>>>>->>>->>>>->-->>>>>
+
+PSE.AER         CGGGGCCGCCUCC
+#=GR PSE.AER SS >>>>>>>>>>:::
+//
+# STOCKHOLM 1.0
+
+#=GS PYR.ABY DE converted from Zweib's SRP dataset 
+
+PYR.ABY         CGUCCCCUGUAACCGGAAACCGCCGAUAUGCCGGGGCCGAAGCCCGAGGG
+#=GR PYR.ABY SS AA::::::::::<<<<____aa________>>>>:::::::(((((((((
+
+PYR.ABY         GCGGUUCCCGAAGCCGCCUCCGGAAGCCAGGGCCGAACGAUGAGUCCUCG
+#=GR PYR.ABY SS --((--(((---(((((((((----(((((((((-(-(-----(((((((
+
+PYR.ABY         UCCCGCGGGGUGCCCGGUGGGGGAGGCACGGCUGAAGGGCCGUGCUAACC
+#=GR PYR.ABY SS ((((((((((((((((<-<<<<<-<<<<<<<<<____>>>>>>>>>-->>
+
+PYR.ABY         CCCUUUAGGCCCCAAACCCCGCAAGGCCCGGAAGGGAGCAGCGGUAGGGG
+#=GR PYR.ABY SS >>>->,,<<<<<<-----<<<<----<<<____>>>---->>>>-->>>>
+
+PYR.ABY         CCACGGAGCACGCUCGCGGGGGUGCGGGGAUGAGGUAGGCCCUGGUGAAA
+#=GR PYR.ABY SS >>,)))-))))-)))))))))---)))))))--)-)-)))))))))----
+
+PYR.ABY         GGAGGCGGUGGAGGGUUCCCACCCUCGGGCGUGCCCGCCGCCGCUAG
+#=GR PYR.ABY SS )))))))))---)))--))--))))))))):::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS PYR.OCC DE converted from Zweib's SRP dataset 
+
+PYR.OCC         CGGGUAGGGCCGGGGGCUCGCCCUCCCCCGAGCCCCGAAAUGGGCGUAAU
+#=GR PYR.OCC SS [[[,,,,((((<<<<<__AAAAA>>>>>,,,,,<<<<____aaaaa____
+
+PYR.OCC         GCGGGGGCCAGUAACCCGCACGUCGGCCGUAGUGGUCCAGGGCAGACCCG
+#=GR PYR.OCC SS _>>>>)))),,,,,((((((((((((((((((-((((((((((((-((((
+
+PYR.OCC         GCCGACCCAUGACCCCCGUCCCGCGGGGCCGGCGGCGCGGAGCCCCCUCC
+#=GR PYR.OCC SS ((((--((---(((((-(((((((((((((((((<-<<<<<<<<<<<<<<
+
+PYR.OCC         GGAGGGAGGGAGGCUACCGCCCUUACCGGGGGAACCAGGCCAGGCCCGGA
+#=GR PYR.OCC SS ____>>>>>>->>>>->>>>-->,,<<<<<<-----<<<-----<<<___
+
+PYR.OCC         AGGGAGCAACCUAACCCCGGACGCCCGGCGUUCGCGGGGCCACGGGGUGA
+#=GR PYR.OCC SS _>>>----->>>-->>>>>>,))))-)))-)))))))))---))))))--
+
+PYR.OCC         GGCAACGGCCGGGCCCCCUGCCCUGGGCCCCUACGGCUGGCGUGCGGGGG
+#=GR PYR.OCC SS ))---))))))))----))))))))))))-)))))))))))))))))),,
+
+PYR.OCC         CCGC
+#=GR PYR.OCC SS ]]]:
+//
+# STOCKHOLM 1.0
+
+#=GS RAS.SOL DE converted from Zweib's SRP dataset 
+
+RAS.SOL         GACGGGCCUCCUCGCAUGGUGGCGCGGUCAACCUGGUCAGGUCGGGAACG
+#=GR RAS.SOL SS <<<<<<<<<<<<<<<<<<<<<<-<<<<<-----<<<<----<<<____>>
+
+RAS.SOL         AAGCAGCCACAGCCGUUUUCCGCCAGUGCCGAGGGUCAGGCUCGUCCCCC
+#=GR RAS.SOL SS >---->>>>-->>>>>--->>>>>>->>>->>>>>--->>>>>>>>::::
+
+RAS.SOL         UUCU
+#=GR RAS.SOL SS ::::
+//
+# STOCKHOLM 1.0
+
+#=GS RIC.CON DE converted from Zweib's SRP dataset 
+
+RIC.CON         GCUAGUAGUGGGCAUUGUACCUGUUUAGUCGGUCAGGUCUGAAAGGAAGC
+#=GR RIC.CON SS :<<<<<<<<<<-<<<<<--<<<<<<-----<<<----<<<____>>>---
+
+RIC.CON         AGCCAGAGUGGGAUUCGAUGGGUCAUUACUAG
+#=GR RIC.CON SS ->>>-->>>>>>--->>>>->->>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS RIC.PRO DE converted from Zweib's SRP dataset 
+
+RIC.PRO         GCUAGUAGUGGGCAUUGCUCUUGCUUAGUUGGUCAGGUCUGAAAAGAAGC
+#=GR RIC.PRO SS <<<<<<<<<<<-<<<-<-<<<<<<<----<<<<----<<<____>>>---
+
+RIC.PRO         AGCCAGGGUAAGAUUCUGUGGGUCAUUACUAGU
+#=GR RIC.PRO SS ->>>>->>>>>>>-->->>>-->>>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS SCH.POM DE converted from Zweib's SRP dataset 
+
+SCH.POM         CGCUGUAAUGGCUUGGUCGAAGUGUUUAGUACUCCCAAUAGUGCAUGUUC
+#=GR SCH.POM SS :::::::::::::((((((--((((((-(((((-((----((((((((((
+
+SCH.POM         GGUGGUCUCGGGUUCGAGUCUCGCUUUCGAUCCCUCGAUCUGCCACGUCU
+#=GR SCH.POM SS -((((----((((--((((((((((-((((-(((--((((<<<<<--<-<
+
+SCH.POM         GUUCGAAGAGUAGUCUUCGUGGCAACUGGCAGUUAAACCGUGUAGUACCG
+#=GR SCH.POM SS -<-<<<<<<____>>>>>>->>->-->>>>><<___>><-<<<<<----<
+
+SCH.POM         AUGGAGGUUGGAAACAAUGCACAUCACUACCGGGUCUUGGGCAGUGCGAU
+#=GR SCH.POM SS <<<----<<<____>>>---->>>>->>>>>->)))--)))---)-)))-
+
+SCH.POM         AGCGAUGGGAUUCACCUUCGCAGGAUGUGCAUGGAAGUAUAAACACAACG
+#=GR SCH.POM SS ))))-)-))))))))))))))-))))))))))))-)))))))))))--))
+
+SCH.POM         GUCGUU
+#=GR SCH.POM SS ))))::
+//
+# STOCKHOLM 1.0
+
+#=GS STA.AUR DE converted from Zweib's SRP dataset 
+
+STA.AUR         CCGUGCUAGGUGGGGAGGUAGCGGUUCCCUGUACUCGAAAUCCGCUUUAU
+#=GR STA.AUR SS [[[[[[,((((<<<<<<__AAAAA>>>>>>,,,<<<<____aaaaa____
+
+STA.AUR         GCGAGGCUUAAUUCCUUUGUUGAGGCCGUAUUUUUGCGAAGUCUGCCCAA
+#=GR STA.AUR SS _>>>>)))),,,,<<<--<<---<<-<<<---<<<<<<<<---<<-<<<<
+
+STA.AUR         AGCACGUAGUGUUUGAAGAUUUCGGUCCUAUGCAAUAUGAACCCAUGAAC
+#=GR STA.AUR SS <<---<<<<<-----<<<-<<<-<-<<<<<<<<<<<<<<<<-<<<<----
+
+STA.AUR         CAUGUCAGGUCCUGACGGAAGCAGCAUUAAGUGGAUCAUCAUAUGUGCCG
+#=GR STA.AUR SS -<<<<----<<<____>>>---->>>>--->>>>->-->>>>>>->>>->
+
+STA.AUR         UAGGGUAGCCGAGAUUUAGCUAACGACUUUGGUUACGUUCGUGAAUUACG
+#=GR STA.AUR SS >>>>>--->->>>->>>->>>->>-->>>>>>--->>>>>>>>>>-->>>
+
+STA.AUR         UUCGAUGCUUAGGUGCACGG
+#=GR STA.AUR SS ->>--->>-->>>,]]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS STR.MUT DE converted from Zweib's SRP dataset 
+
+STR.MUT         GGAGCAACAGCUUUGCGUGAAGCGGGUCAGGGGAGGAAUCCAGCAGCCCU
+#=GR STR.MUT SS <<<<<<<<<<<<<<<<<<-----<<<<----<<<____>>>---->>>>-
+
+STR.MUT         AAGCGAUGUAAGCUGUGUGCUCU
+#=GR STR.MUT SS -->>>->>->>>>>>>->>>>>>
+//
+# STOCKHOLM 1.0
+
+#=GS SUL.SO-A DE converted from Zweib's SRP dataset 
+
+SUL.SO-A         AUGGUCAGGUAGGGUGGAGGGUCUCGCCAGCCCUUAUACCCACAUGGCGC
+#=GR SUL.SO-A SS [[[[[[[[,,,,((((<<<<<<__AAAAA>>>>>>,,,<<<<<_aaaaa_
+
+SUL.SO-A         AACGUGGGCACCAGUAACUCCUAUGCUAUAAUACCUGCUCUUCGAGAUCC
+#=GR SUL.SO-A SS ___>>>>>)))),,,,,(((((((((((((((-(-(((((((((((-(((
+
+SUL.SO-A         CAGUCUAACUAUGAUCAUCGCCCGACGGGGCGAGAUAGUCGUGGGUUCCC
+#=GR SUL.SO-A SS ((((((--((----(-((((-(((((((((((-((((<-<<<<<<<<<<<
+
+SUL.SO-A         UUUCUGGAGGGAGAGGGAAUUCCACGUUGACCGGGGGAACCGGCCAGGCC
+#=GR SUL.SO-A SS <<<<<____>>>>>>>>>>>->>>>>->,,<<<-<<----<<<-----<<
+
+SUL.SO-A         CGGAAGGGAGCAACCGUGCCCGGCUAUCCGCGUUCGUCGGUCUCCGAUAG
+#=GR SUL.SO-A SS <____>>>----->>>-->>>>>,)))))))-))))))))----)))))-
+
+SUL.SO-A         GAGGAAGACUGGGGGUAAAUCUCGGGGAGUAAGGGUUAUGGCAUAGGGGA
+#=GR SUL.SO-A SS --))-)))))))))------)))))))))))-)-))))))))))))))),
+
+SUL.SO-A         GCUGACCAU
+#=GR SUL.SO-A SS ,]]]]]]]]
+//
+# STOCKHOLM 1.0
+
+#=GS SUL.SO-B DE converted from Zweib's SRP dataset 
+
+SUL.SO-B         GGGGUCAGGGAGGGUGGGGGAUCUCGCCAAUCCCUAUUACCCGCAAGGCG
+#=GR SUL.SO-B SS [[[[[[[[[,,,((((<<<<<<__AAAA_>>>>>>,,,,<<<<<__aaaa
+
+SUL.SO-B         UAAUGCGGGCACCAGUAACUCCUACCCUAUGGUGUCUCCUAUCUGUAGGU
+#=GR SUL.SO-B SS ____>>>>>)))),,,,,(((((((((((((((-(--(((((((((((((
+
+SUL.SO-B         CCCAGUGGAGCGAUGAAGCCUGCCCAGCGGGGCUUGGCGGUCAUGGGCUU
+#=GR SUL.SO-B SS ((((((---(-------(-(((-(((((((((((-((((<<<<<<<<<<<
+
+SUL.SO-B         UCUCUCCGGAGGGAGAGAAAGUACCAUGAUAGCUGGGGGAAUCGGCGAGG
+#=GR SUL.SO-B SS <<<<<<<____>>>>>>>>>>>->>>>>>>,,<<<-<<----<<<<----
+
+SUL.SO-B         CCCGGAAGGGAGCAGCCGUGCCUGGACGCCAGCGUUCGCUGGUCAACAGC
+#=GR SUL.SO-B SS <<<____>>>---->>>>-->>>>>,)))))))-))))))))----)))-
+
+SUL.SO-B         CAGAGUGAAACUGGGGUAAACCUAUAGAUAGGUAGGCCAUGGGGUAGGGG
+#=GR SUL.SO-B SS )----)---))))))))----)))))))))))-)-)))))))))))))))
+
+SUL.SO-B         GUCUGGCCCCAU
+#=GR SUL.SO-B SS ,]]]]]]]]]::
+//
+# STOCKHOLM 1.0
+
+#=GS SUL.TOC DE converted from Zweib's SRP dataset 
+
+SUL.TOC         GGGUCGGGUAGGGUGGGGAGUCUCGCCAGCUCCUGUAACCCCGUGGCGUA
+#=GR SUL.TOC SS [[[[[[[,,,,((((<<<<<<__AAAAA>>>>>>,,,,<<<<_aaaaa__
+
+SUL.TOC         AUGGGGCACCAGUAACCCUUAUGCCAUGAUACCUACCUCUCUAGAUCCCA
+#=GR SUL.TOC SS __>>>>)))),,,,,(((((((((((((((-(-(-(((((((((-(((((
+
+SUL.TOC         GCUGAACGAUGAGCACCGCCCGGUGGGGCGAGACGGACGCGAAUCUCCUC
+#=GR SUL.TOC SS (((---------((((((-(((((((((((-((((<<<<<<<<<<<<<<<
+
+SUL.TOC         UCUGGAGGGAGAGGGGAUAUCGCGUCAACCGGAGGAAUCGGCCAGGUCCG
+#=GR SUL.TOC SS <<<____>>>>>>>>>>>->>>>>>>,,<<<<<-----<<<-----<<<_
+
+SUL.TOC         GAAGGGAGCAACCGUGUCCGGCCGUCCGCGUUCACCGGUCACCGGUGUGA
+#=GR SUL.TOC SS ___>>>----->>>-->>>>>,)))))))-))))))))----))))))--
+
+SUL.TOC         GAAAGGCUGGGGGUAAAUCUAGAGAGGAAAGGAUCAUGGCAUAAGGGGGC
+#=GR SUL.TOC SS ----))))))))------)))))))))-)-)-))))))))))))))),,]
+
+SUL.TOC         CGACCCAU
+#=GR SUL.TOC SS ]]]]]]::
+//
+# STOCKHOLM 1.0
+
+#=GS TET.ROS DE converted from Zweib's SRP dataset 
+
+TET.ROS         GCCAGGGUAGCAAUGCCUGUGACCUCGUGUGGCAUAAACAAUGUAGUUAG
+#=GR TET.ROS SS (((,<<<<<____>>>>>,,,,,<____>,)))::::::(-(((-(((((
+
+TET.ROS         AAUAGUCAGAGUAUGAGAGUUUGAUGAGACAGUUUGCUAAGAGUGUGCCC
+#=GR TET.ROS SS (((((-((((((-((-(-(-(------(((((((-(-(--(((((((-((
+
+TET.ROS         GUUCCAAACAGUGAGUUGCUAUGGUGGAAACCUAGUAAUAGGACUUCACC
+#=GR TET.ROS SS -(((((-(((((((((<<<<-<<<<<<<--<<<<____>>>>-->>>>>>
+
+TET.ROS         AGGGCAUUAAAGAGCUGAGGAACCGCCUCAGGCUGGCAACAGAACAGGGA
+#=GR TET.ROS SS >->>>><<___>><-<<<<------<<<----<<<____>>>---->>>-
+
+TET.ROS         AAACUUGCCGCUUAUUGUGGUGGAAGGAUAACAUACUCAUUAACUGUCAA
+#=GR TET.ROS SS --->>>>->)))))))))--)))))))----)))))))))-)))))))--
+
+TET.ROS         GCUAAUCGGUUCUGCUAUUCUGAUCAGACACU
+#=GR TET.ROS SS )-)--)))))))))))))))))))---)))-)
+//
+# STOCKHOLM 1.0
+
+#=GS THE.ACI DE converted from Zweib's SRP dataset 
+
+THE.ACI         UAUUGCCAGACUUGGCCGGGGGGUUAGGCGUCCCCUGUACCCGAAGUCUA
+#=GR THE.ACI SS ::::[[[[[[[,(-(((<<<<<<_AAAAA_>>>>>>,,,<<<<__aaaaa
+
+THE.ACI         GAUGCGGGGGCGACAGCCCGGUGAGACCACCUGGGUUUCUGCCAGGCCCU
+#=GR THE.ACI SS ____>>>>)))-),,(((((((--(--(---(((--(((((-((((((((
+
+THE.ACI         GCGGAAUCAAUGAUCUCCUGUCCCUCUGGAUCGGAGGCCCAUGGACACGA
+#=GR THE.ACI SS ------((------((((((((((((((((((((((<-<<<<<<-<-<<-
+
+THE.ACI         UCUCAAAGGAGAACGCGCCCAUGGCUUGCCAGGGGAACGCGCCAGGCCCG
+#=GR THE.ACI SS <<<<____>>>>->>->->>>>>>->,,<<<<<<-----<<-----<<<_
+
+THE.ACI         GAAGGGAGCAACGACACCCUGGACUCUCGAUGCUGGAGGGGUGCGGGGGU
+#=GR THE.ACI SS ___>>>----->>--->>>>>>,))))-)))-)))))))))--))))))-
+
+THE.ACI         GAGAGGAAACAGGGGGUACCUGACAGGACGCCCAGACCGAACCGGGUGUG
+#=GR THE.ACI SS --))-------))))---))))-)))))---))))--)--))))))),,]
+
+THE.ACI         UCUGGCUUCUGAUCGGC
+#=GR THE.ACI SS ]]]]]]:::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS THE.THE DE converted from Zweib's SRP dataset 
+
+THE.THE         AGCCCCCGGUCCAGCGCGGCGGGCCAGGCGUGAACCGGGUCAGGUCCGGA
+#=GR THE.THE SS :<<<<<<<<<<<<<<<<<-<<<<<<<<<<<<-----<<<<----<<<___
+
+THE.THE         AGGAAGCAGCCCUAAGCGCCUCGGUCCGGGCGCCGCUGGGAAGCCGGGGG
+#=GR THE.THE SS _>>>---->>>>--->>>>>>->>>>>>-->>>->>>>>--->>>>>>>>
+
+THE.THE         CGCUU
+#=GR THE.THE SS >::::
+//
+# STOCKHOLM 1.0
+
+#=GS TRE.PAL DE converted from Zweib's SRP dataset 
+
+TRE.PAL         CCGGGGCCGCCCACGAAAUAUCCCCCAAACCCCGCUAGGUCCGGAAGGAA
+#=GR TRE.PAL SS :::<<<-<<<---<<<<-<-<<<<<<-----<<<-----<<<____>>>-
+
+TRE.PAL         GCAACGGUAGGGGGACGCUUCGGUGCGCGAUCCGCCCCGG
+#=GR TRE.PAL SS ---->>>-->>>>>>->->>>>---->>>->>>:::::::
+//
+# STOCKHOLM 1.0
+
+#=GS TRY.BR-A DE converted from Zweib's SRP dataset 
+
+TRY.BR-A         AGCCGGAGCGCAUUGCUCUGUAACCUUCGGGGGCUGAUCCCGCUUAGCGG
+#=GR TRY.BR-A SS (((,<<<<<<___>>>>>>,,,,<<<___>>>)))::::((((((-((((
+
+TRY.BR-A         GGACGUCUUGGACAAGCGGGGGUUCUGUUGCGUUGACUUGGUGUUCUGCU
+#=GR TRY.BR-A SS -((((-(((((----(((-((((((((-(((-((--(((((((((((---
+
+TRY.BR-A         UGGUUGCGUGUCGGUGUUGAGGUCGCCACUGUAGAGAGGCGUUCUCGCGC
+#=GR TRY.BR-A SS --(--((((((<<<<<<-<<<<-<<<<-<<____>>->>>>->>>>>>>>
+
+TRY.BR-A         CGUUAAAGUGGGGGGAACGGGUCAGGCCGGUGACGGAGCAGCCCACCUUG
+#=GR TRY.BR-A SS >><___><<-<<<<----<<<<----<<<____>>>---->>>>->>>>>
+
+TRY.BR-A         CGCACGUUCCCGUUCGAGAAGCACACCGAGGAGCAUCUCAGGACUUUGCG
+#=GR TRY.BR-A SS >)))))-)--)-----))))---))))))))))))---))))))-))-))
+
+TRY.BR-A         CCCCAAGUGUCGUCGCGAGGCGG
+#=GR TRY.BR-A SS )-)))))))))-))))-))))))
+//
+# STOCKHOLM 1.0
+
+#=GS URE.URE DE converted from Zweib's SRP dataset 
+
+URE.URE         UUAUAAUAUAUAUGUCAUUACAAUAUUAAGUAGCGAACCUUGUCAGGCCA
+#=GR URE.URE SS :::::::<<<<<<<<<<<<<<<<<<--<<<<-<<-----<<<<----<<<
+
+URE.URE         GAGAUGGAGCAGCAAUAGCAAUAUCUUUUUAUGUGUGAUGACAUAUAUUA
+#=GR URE.URE SS ____>>>---->>>>-->>->>--->>-->>>->>>>>>>>>>>>>>>::
+
+URE.URE         A
+#=GR URE.URE SS :
+//
+# STOCKHOLM 1.0
+
+#=GS VIB.CHO DE converted from Zweib's SRP dataset 
+
+VIB.CHO         GGGGGCCCUGGUCCUCCCGCAACACUAGUUCGUGAACCUGGUCAGAUCCG
+#=GR VIB.CHO SS <<<<<<<<<<<<<-<<<<<<<<<<<--<<<<<<-----<<<<----<<<_
+
+VIB.CHO         GAAGGAAGCAGCCACAGCGGAUGAUGUGUGUGCCGGGAUGUGGCUGGGGU
+#=GR VIB.CHO SS ___>>>---->>>>-->>>>>>--->>>>->>>->>>>--->>>>>>>>>
+
+VIB.CHO         CUCC
+#=GR VIB.CHO SS >>>>
+//
+# STOCKHOLM 1.0
+
+#=GS XAN.AXO DE converted from Zweib's SRP dataset 
+
+XAN.AXO         GGUGGCCCCGUCGGUCCCUCGCGACGCUAGAUCGAAAAUCCCGCCAGGGC
+#=GR XAN.AXO SS :::::<<<<<<<<<<-<<<<<<<-<<<--<<<<<<-----<<<-----<<
+
+XAN.AXO         CGGAAGGCAGCAACGGUAUCGAUUGAUGCGGGCGCCGAGGUCAACCGGCG
+#=GR XAN.AXO SS <____>>>----->>>-->>>>>>--->>>-->>>->>>>--->>>>>>>
+
+XAN.AXO         GGG
+#=GR XAN.AXO SS >>>
+//
+# STOCKHOLM 1.0
+
+#=GS YAR.LI-A DE converted from Zweib's SRP dataset 
+
+YAR.LI-A         CUUAGCUGUAAUGGCAUUUUGUCGGAGUGGUAAAUCGUCUUCUUGUUGUG
+#=GR YAR.LI-A SS ::<--<______>>::::::((((-(((-((((((-(((((((----(((
+
+YAR.LI-A         CGUUCGAGUCUUGGGCUCUGCACUUGGCCAUUUGGUUGUCCUUUCCGAAU
+#=GR YAR.LI-A SS ((---(((((---((((((((((-(-(((((<<<<<<<<-<<>->>>---
+
+YAR.LI-A         UCUGCGGUUGAUGGGCGUCUCGGUCUGAGUAAUCGGCUUUGAGAUUUCCG
+#=GR YAR.LI-A SS >>>>>>,,,,<<<<<-<<<<<<<-<<<<____>>>>->->>>>>>->>>>
+
+YAR.LI-A         UUCUAAGAUUAACUGGGAAACUUCAGUGGAGCAAUCCAGCAGAGAUCCAG
+#=GR YAR.LI-A SS ><<___>>,<<<<<<-----<<<----<<<____>>>---->>>--->>>
+
+YAR.LI-A         UUGCCGUGGGUAUGGCGGUGGGAUCGCAACCAAGUGGUAUAUGUUAUGGA
+#=GR YAR.LI-A SS >>>,))))))-----)))-)))---))))))))))))))--------)))
+
+YAR.LI-A         AGAUAUUUACGAUCACGAUU
+#=GR YAR.LI-A SS ))))))))))-)))-)))):
+//
+# STOCKHOLM 1.0
+
+#=GS ZYM.MOB DE converted from Zweib's SRP dataset 
+
+ZYM.MOB         GUCGGGCGGACGGUGCUGUCGCCAACCCGGUCAGGUCCGGAAGGAAGCAG
+#=GR ZYM.MOB SS <<<<<<<<<-<<<<<---<<<------<<<<----<<<____>>>---->
+
+ZYM.MOB         CCGUAACGAAUUUUUAUCGGGUCGUUCCGGC
+#=GR ZYM.MOB SS >>>--->>>----->>>>->->>>>>>->>>
+//

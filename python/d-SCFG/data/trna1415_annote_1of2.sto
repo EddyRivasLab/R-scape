@@ -1,0 +1,6372 @@
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4300         GGCUAGGUAACAUAAUGGAAAUGUAUCGGACUGCAAAUCCUGGAAUGACG
+#=GR DC4300 SS (((((((,,<<<<_______>>>>,<-<<<_______>>>->,,,,<<<<
+
+DC4300         GUUCGACCCCGUCCUUGGCCU
+#=GR DC4300 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH0260         GUGGCUAUAUCAUAAUUGGUUAAUGGUCCUGAUUGUGAAUCAGGCCUAUG
+#=GR DH0260 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DH0260         UGGAUUCGAAUUCCACUAGCCACCCCA
+#=GR DH0260 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0440         GCAGGGAUAGCCAAGUUUGGCCAACGGCGCAGCGUUCAGGGCGCUGUCCC
+#=GR DL0440 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,<<<
+
+DL0440         GUAGGGGUCCGCAGGUUCAAAUCCUGCUCCCUGCA
+#=GR DL0440 SS ____>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4050         GAGAAUAUUGUUUAAUGGUAAAACAGUUGCCUUUUAAGCAUCCCAUGUUU
+#=GR DK4050 SS (((((((,,<<<<_______>>>>,<-<<<_______>>>->,,,,,,<<
+
+DK4050         GGUUCGAUUCCAACUAUUCUUA
+#=GR DK4050 SS <<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS3960         GGAAAAGUUGCCAUAGGUAAGGUAAGAUAUUUGCUAAAUAUUGUGUUUAA
+#=GR DS3960 SS (((((((,<<<<________>>>>,<<<<<_______>>>>>,,<<____
+
+DS3960         GCACCUAGGUGUUCGAGUCACCUCUUUUCCG
+#=GR DS3960 SS __>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1260         GGCACUAUAGCCAAGGUGGCUAAGGCAUGGGACUGCAACUCCCCGAUCGU
+#=GR DC1260 SS (((((((,,<<<___________>>>,,<<<<_______>>>>,,,,,<<
+
+DC1260         CGGUUCGAAUCCGACUAGUGCCUCCA
+#=GR DC1260 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD5360         GAGGUGUUAGUAAAACAUUAUAUAAUUUUGUCAAAGUUAAGUUACAAGUG
+#=GR DD5360 SS (((((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<-<__
+
+DD5360         AAAGUCCUGUACACCUCA
+#=GR DD5360 SS _____>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1544         GCGGGUGUGGCGGAAUUGGCAGACGCGCUAGACUUAGGAUCUAGUGUCUU
+#=GR DL1544 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL1544         UAUGACGUGGGGGUUCAAGUCCCUUCACCCGCA
+#=GR DL1544 SS ___>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4241         GGAUGGAUGUCUGAGCGGUUGAAAGAGUCGGUCUUGAAAACCGAAGUAUU
+#=GR DS4241 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4241         UCUAGGAAUACCGGGGGUUCGAAUCCCUCUCCAUCCG
+#=GR DS4241 SS <____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL3400         GGGGAUAUGGCGAAAUCGGUAGACGCUACGGACUUAAAAUCCGUCGACUU
+#=GR DL3400 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DL3400         UAUAAGUCGUGAGGGUUCAAGUCCCUCUAUCCCCA
+#=GR DL3400 SS ___>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2701         GCGAGCGUAGUUCAAUGGUAAAACAUCUCCUUGCCAAGGAGAAGAUACGG
+#=GR DG2701 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG2701         GUUCGAUUCCCGCCGCUCGCC
+#=GR DG2701 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5160         GGAAGCGUGCCUGAAAGUUAAGGACCUCCUUGAUAGGGAGGCUUAUAGGG
+#=GR DI5160 SS (((((-(,,<<<________>>>,<<<<<_______>>>>>,,,,,<<<<
+
+DI5160         GUUCAAACCCCCUCACUUCCU
+#=GR DI5160 SS <_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1200         GCGAGUAUAGUUUAGUGGUAGAACAUCAGUCUUCCAAGCUGAUCGUGUCG
+#=GR DG1200 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG1200         GUUCGAUUCCGAUUACUCGCUCCA
+#=GR DG1200 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW2920         GCGCUCUUAGUUCAGUUCGGUAGAACGUGGGUCUCCAAAACCCGAUGUCG
+#=GR DW2920 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DW2920         UAGGUUCAAAUCCUACAGAGCGUG
+#=GR DW2920 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5100         GUAGAUUUAGUUUAACCAAGACAUUAGAUUGUGAUUCUAAAAAUAGAGGU
+#=GR DH5100 SS ((-((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DH5100         UAAACCCCUCUAAUCCACC
+#=GR DH5100 SS ______>>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC6280         GCUCGUAUGGCGCAGUGGUAGCGCAGCAGAUUGCAAAUCUGUUGGUCCUU
+#=GR DC6280 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DC6280         AGUUCGAUCCUGAGUGCGAGCU
+#=GR DC6280 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP8041         GGCUCGUUGGUCUAGGGGUAUGAUUCUCGCUUCGGGUGCGAGAGGUCCCG
+#=GR DP8041 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP8041         GGUUCAAAUCCCGGACGAGCCC
+#=GR DP8041 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2921         GCCCUUUUAACUCAGUGGUAGAGUAACGCCAUGGUAAGGCGUAAGUCAUC
+#=GR DT2921 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT2921         GGUUCAAAUCCGAUAAGGGGCU
+#=GR DT2921 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM3280         ACCUACUUAACUCAGCGGUUAGAGUAUUGCUUUCAUACGGCGGGAGUCAU
+#=GR DM3280 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM3280         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM3280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4760         AGUUAAUUAGCUUAAGAAAAGCAAAUGUUUUGAAAACAUAAGAAAAGAAG
+#=GR DS4760 SS (((((((,,<<<<_____>>>>,,<<<<_______>>>>,,,,,,<<<<<
+
+DS4760         UUCAAUUCUUCUAUUAACUU
+#=GR DS4760 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5280         GGUAAAAUGGCUGAGUAAGCAUUAGACUGUAAAUCUAAAGACAGGGGUUG
+#=GR DY5280 SS (((((((,,<<<_____>>>,<<<<<_______>>>>>,,,,<<<<<___
+
+DY5280         AGCCCCCUUUUUACCA
+#=GR DY5280 SS ___>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX0860         GGGCCCGUAGCUUAGCCCGGUAGAGCGCCCGGCUCAUAACCGGGUGGUCC
+#=GR DX0860 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX0860         GGGGUUCAAGUCCCCGCGGGCCCA
+#=GR DX0860 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM1750         GGCUACGUAGCUCAGUUGGUUAGAGCACAUCACUCAUAAUGAUGGGGUCA
+#=GR DM1750 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM1750         CAGGUUCGAAUCCCGUCGUAGCCACCA
+#=GR DM1750 SS <-<<_______>>->>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX3880         AGCGGGUUGAUGUAAUAGUAACAUAUAUGGCUCAUGCCCAUAAUAUUUAG
+#=GR DX3880 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DX3880         GUGCAACUCCUAAAUCCGCUA
+#=GR DX3880 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1821         GCUCAUGUAGCUCAGUUGGUAGAGCACACCCUUGGUAAGGGUGAGGUCAG
+#=GR DT1821 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1821         CGGUUCAAAUCCGCUCAUGAGCUCCA
+#=GR DT1821 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF4700         GAUACGGUAGCUUAAUUAAAGCGUCUCAUUGAAAAUGAGGAAGAUGGUAC
+#=GR DF4700 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,,<<<<<
+
+DF4700         UUUAGUACCUUGUGUCA
+#=GR DF4700 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2640         GGAGAGAUGGCUGAGUGGUUGAUAGCUCCGGUCUUGAAAACCGGUAUAGU
+#=GR DS2640 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<<
+
+DS2640         UCUAGGAACUAUCGAGGGUUCGAAUCCCUCUCUCUCCU
+#=GR DS2640 SS <<___>>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN1350         UCCUCGGUAGCUCAAUUGGCAGAGCAGCCGGCUGUUAACCGGCAGGUUAC
+#=GR DN1350 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DN1350         UGGUUCGAGUCCAGUCCGGGGAG
+#=GR DN1350 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ0260         UGGGGAUUAGCUUAGCUUGGCCUAAAGCUUCGGCCUUUGAAGUCGAGAUC
+#=GR DQ0260 SS :((((((,,<<<<___________>>>>,<<<<<_______>>>>>,,,,
+
+DQ0260         AUUGGUUCAAAUCCAAUAUCCCCUGCCA
+#=GR DQ0260 SS <<<<<_______>>>>>)))))):::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM1541         GGCGGUGUAGCUCAGCUGGCUAGAGCGUACGGUUCAUACCCGUGAGGUNG
+#=GR DM1541 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM1541         GGGGUUCGAUCCCCUCCGCCGCUACCA
+#=GR DM1541 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN4880         UUAAUUGAAGCCAAAAAGAGGCGUAUCACUGUUAAUGAUAUAAUUGAGUA
+#=GR DN4880 SS (((((((,,<<<_______>>>,<<<<<_______>>>>>,,,,,<<<<_
+
+DN4880         UAAACUCCAAUUAAG
+#=GR DN4880 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE1340         GCCCCCGUUGUGUAGCGGCCUAGCACGCCGCCCUCUCAAGGCGGUAGCGC
+#=GR DE1340 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE1340         CGGUUCGAAUCCGGUCGGGGGUA
+#=GR DE1340 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE1500         NNCCCGUUGGUCAAGUGGUUAAGACACCGCCCUUUCACGGCGGUAACAUG
+#=GR DE1500 SS ::(((((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DE1500         GGUUCAAAUCCCGUACGGGUNN
+#=GR DE1500 SS <<_______>>>>>))))):::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4360         GGGUGUAUAGCUCAGUUGGUAGAGCAGUGGGCUUUUAACCUACUGGUCGC
+#=GR DL4360 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DL4360         AGGUUCAAGUCCUGCUAUACCCA
+#=GR DL4360 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5680         GUAAAUAUAGUUUAAAAAAACACUAGAUUGUGAAUCCAGAAAUAGAAGCU
+#=GR DH5680 SS (((((((,,<<<<____>>>>,<<-<<_______>>->>,,,,<<<<<__
+
+DH5680         CAAACCUUCUUAUUUACC
+#=GR DH5680 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6240         GUCAGCAUGGCAGAGUGGUCUAAUGCGUUAGACUUGAAAUCUAAUUCCUU
+#=GR DS6240 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DS6240         CGGGAGCGUAGGUUCGAACCCUACUGCUGACG
+#=GR DS6240 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5000         ACCAAAGUAGUUUAAAAAAAACAUUAAUUUGUGGCAUUAGAAUUACCAGU
+#=GR DH5000 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DH5000         UAAAACCUGGUCUCUGGUC
+#=GR DH5000 SS ______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP9161         GGCUCGUUGGUCUAGGGGUAUGAUUCUCGCUUAGGGUGCGAGAGGUCCUG
+#=GR DP9161 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP9161         GGUUCAAAUCCCGGACGAGCCC
+#=GR DP9161 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR7740         GGUCCUGUGGCGCAAUGGAUAACGCGUCUGACUACGGAUCAGAAGAUUCC
+#=GR DR7740 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DR7740         AGGUUCGACUCCUGGCAGGAUCG
+#=GR DR7740 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5080         GUGGUUUUAGUUUAAUUGAAAAACGUUUGCUUUGCAAGCAAAAGUUCUAA
+#=GR DA5080 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DA5080         GUUAAAGUCUUAGAAGCUACA
+#=GR DA5080 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW4620         AGUGAUCUAGGUUAUUUUGGACUGUCUGUUUUCAAAACAGGAGGUGGCUU
+#=GR DW4620 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<__
+
+DW4620         UGGUCGGUUGCUG
+#=GR DW4620 SS __>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6161         GCCCGUUUAGCAAAGUUGGAAUUGCGGCAGCCUUCUAAGCUGCAGGUCGU
+#=GR DR6161 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DR6161         GGGAUCGAGACCCACAAUGGGUG
+#=GR DR6161 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3360         GGGUCGAUGCCCGAGCGGUUAAUGGGGACGGACUGUAAAUUCGUUGGCAA
+#=GR DY3360 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<_
+
+DY3360         UAUGUCUACGCUGGUUCAAAUCCAGCUCGGCCCA
+#=GR DY3360 SS __>>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3800         GGUGGAUAUAGCUCAAUCGGUAGAGCGUUAGAUUGUGGAUCUAAAGGUCG
+#=GR DH3800 SS :(((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<
+
+DH3800         CGGGUUCGAUUCCUGCUAUUUACC
+#=GR DH3800 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2701         GGAGAGAUGGCCGAGCGGUUCAAGGCGUAGCAUUGGAACUGCUAUGUAGA
+#=GR DS2701 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2701         CUUUUGUUUACCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS2701 SS <____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE9162         UCGCUGGUGGUCUAGUGGUUAGGAUUCGGCGCUCUCACCGCCGCGGCCCG
+#=GR DE9162 SS ((-((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE9162         GGUUCGAUUCCCGGUCAGGGAA
+#=GR DE9162 SS <<_______>>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5040         ACCUUGAAGGCUCAAUAGUUAGAGCGCCAAGUCUUGUAAACUUGGAGAGA
+#=GR DT5040 SS :((((((,,<<<<________>>>>,,<<<<<_______>>>>>,,,,<<
+
+DT5040         GGGUUAAAGUCCCUCUCAAGGCU
+#=GR DT5040 SS <<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR3920         UUCUCAUUAGCUCAAAGGAAGAGCAGGAUACUUCUAAUAUUCCGAUUUUA
+#=GR DR3920 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DR3920         GUUCGAAUCUAAAAUGAGAAU
+#=GR DR3920 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1661         GCGGGAGUGGCGAAAUUGGUAGACGCACCAGAUUUAGGUUCUGGCGCCGC
+#=GR DL1661 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL1661         AAGGUGUGCGAGUUCAAGUCUCGCCUCCCGCACCA
+#=GR DL1661 SS __>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP4060         CAGAUUGUCUCGUAAUUGGUUAUCGAGCCUACAUUGGGUGUAGGAUUUUG
+#=GR DP4060 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DP4060         AGGGUUCAAGUCCUUCCAAUCUGA
+#=GR DP4060 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD9160         UCCUCGUUAGUAUAGUGGUGAGUAUCCCCGCCUGUCACGCGGGAGACCGG
+#=GR DD9160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD9160         GGUUCGAUUCCCCGACGGGGAG
+#=GR DD9160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2521         GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCAAGGCAGAUGUCAG
+#=GR DA2521 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2521         CGGUUCGAGUCCGCUUUAUCUCCA
+#=GR DA2521 SS <<<_______>>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5320         CAAGAAGUAGUUUAAUUAGAAUACCAGCUUUGGGUGCUGGUGGUGGGGAG
+#=GR DP5320 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DP5320         UAGCUCCUUCUUCUUGA
+#=GR DP5320 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS3881         GGGAAAGUUUCCAUGGGUAGGGUAAGAUAUUUGCUAAAUAUUGUGCGUUU
+#=GR DS3881 SS (((((((,<-<<________>>->,<<<<<_______>>>>>,<<-<___
+
+DS3881         GCACAUAGAUGUUCGAAUCAUCUCUUUCCCG
+#=GR DS3881 SS _>->>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK3880         GAGACUUUAGUUUAAUGGUAAAACAUAUGACUUUUAAUCAUUCUACUAUA
+#=GR DK3880 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DK3880         GGUUCGAGUCCUAUAAGUCUUA
+#=GR DK3880 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DZ8040         GCCCGGAUGACCCUCAGUGGUCUGGGGUGCAGGCUUCAAACCUGUAGCUG
+#=GR DZ8040 SS (((((((,,,,<<<<________>>>>,<<<<<_______>>>>>,<-<<
+
+DZ8040         UCUAGCGACAGAGUGGUUCAAUUCCACCUUUCGGGCG
+#=GR DZ8040 SS <___>>>->,,<<<<<_______>>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2400         GGGCUAUUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGCCC
+#=GR DI2400 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2400         CUGGUUCGAAUCCAGGAUGGCCCA
+#=GR DI2400 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ5320         UAGGAUAAGGUGUUUAGGUGCACGGAGAAAUUUUGAAUUCUUAAGUGUAG
+#=GR DQ5320 SS (((((((,,,<<<________>>>,<<-<<_______>>->>,,,,<<<<
+
+DQ5320         GUUCAAUUCCUAUUGUCCUAG
+#=GR DQ5320 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP2920         AGGGAUGUGGCGCAGCUUGGUAGCGCGUUUGUUUUGGGUACAAAAUGUCA
+#=GR DP2920 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP2920         CAGGUUCAAAUCCUGUCAUCCCUA
+#=GR DP2920 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2720         GCCCACUUAGCUCAGAGGUUAGAGCAUCGCAUUUGUAAUGGGAGGGUCAU
+#=GR DT2720 SS (((-(((,,<<<<________>>>>,<<-<<_______>>->>,,,,,<<
+
+DT2720         CGGUUCAAAUCCGAUAGUCGGCU
+#=GR DT2720 SS <<<_______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN3960         GCCCCUAUAGCUCAAUGGUAGAGCAUAAUACUGUUAAUAUUAUGAUAGAU
+#=GR DN3960 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DN3960         GUUCGAUUCAUCUUGGGGGCU
+#=GR DN3960 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5220         CAGAGAGUAGUUUAUUUGAAAAUACCAGCUUUGGGAGCUGGAGAUGGAGG
+#=GR DP5220 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DP5220         UUUGAGCCCUCCUUUUCUGA
+#=GR DP5220 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5120         GGAAAUGUGCCCGAAAGUAGGGAUCACUUUGAUAGAGUGAAAUAUAUGGG
+#=GR DI5120 SS (((-(((,,<<<_______>>>,<<<<<_______>>>>>,,,,,<<<<<
+
+DI5120         UUCAAACCCCAUCAUCUCCU
+#=GR DI5120 SS _______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4000         GGAGAUGUUGUUUUAAGGUUAAACUAUUAGAUUGCAAAUCUACUUAUUAA
+#=GR DC4000 SS (((((((,,<<<<_______>>>>,,,<<<<_______>>>>,,,,,,<<
+
+DC4000         GAGUUCGAUUCUCUUCAUCUCUU
+#=GR DC4000 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2702         GCCUUGAUGGUGAAAUGGUAGACACGCGAGACUCAAAAUCUCGUGCUAAA
+#=GR DL2702 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<___
+
+DL2702         GAGCGUGGAGGUUCGAGUCCUCUUCAAGGCA
+#=GR DL2702 SS _>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4701         GGUAAAGUGGUCUAAUAUUAGGAUAUAGGGCUCAUGCCCCUAAGGCGCCA
+#=GR DM4701 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DM4701         CGCGUAAUGGCCUUUAUCU
+#=GR DM4701 SS _______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1541         GCGGAAGUAGUUCAGUGGGAGAACACCACCUUGCCAAGGUGGGGGUCGCG
+#=GR DG1541 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG1541         GGUUCGAAUCCCGUCUUCCGCUCCA
+#=GR DG1541 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP7740         GGCUCAAUGGUCUAGGGGUAUGAUUCUCGCUUUGGGUGCGAGAGGUCCCG
+#=GR DP7740 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP7740         GGUUCAAAUCCCGGUUGAGCCC
+#=GR DP7740 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4000         GCUUGUAUAGUUUAAUUGGUUAAAACAUUUGUCUCAUAAAUAAAUAAUGU
+#=GR DM4000 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,,
+
+DM4000         AAGGUUCAAUUCCUUCUACAAGUA
+#=GR DM4000 SS <<<<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4700         UAAGCUAAAGCUUUGAAGAAGCGUUAAACUUUUAAUUUAAUGAACUUGUA
+#=GR DK4700 SS :((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DK4700         UAAUGCGCAAGUAGCUUUU
+#=GR DK4700 SS ______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2720         AGGGCUAUAGCUCAGUUCGGUAGAGCAACUCGUUUACACCGAGAAGGUCU
+#=GR DV2720 SS (((((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,,<
+
+DV2720         ACGGUUCGAAUCCGUAUAGCCCUA
+#=GR DV2720 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS0680         GCCGGGGUGGCCCAGCCUGGUAGGGCGUCGGCCUGCUAAGCCGAUGAUCC
+#=GR DS0680 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<<
+
+DS0680         GUUAAGGAUCGCGCGGGUUCAAAUCCCGUCCCCGGCG
+#=GR DS0680 SS _____>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM6160         AGCUUCUUAACUCAGGGGUAGAGUGCGAGGCCCAUAACCUCGAGGUCCUA
+#=GR DM6160 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DM6160         GGAUCGAAACCUAGAGAAGCUA
+#=GR DM6160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6742         GUGGACGUGCCGGAGUGGUUAUCGGGAAUGACUAGAAAUCAUGGAGGCUU
+#=GR DS6742 SS (((((((,,<<<<________>>>>,,<<<<_______>>>>,,,<<<__
+
+DS6742         UGCCCGCGCACGUUUGAAUCUUGCCGUUUACG
+#=GR DS6742 SS _>>>,,,<<<-<_______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD5281         GAGAUAUUAGUAAAAUAAUUACAUAACCUUGUCAAGGUUAAGUUAUAGAC
+#=GR DD5281 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DD5281         CUAAGCUCUAUAUAUCUUA
+#=GR DD5281 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4440         GGGAGAGUGGCCGAGCGGUCAAAAGCGACAGACUGUAAAUCUGUUGAAGG
+#=GR DY4440 SS (((((((,,<<_____________>>,<<<<<_______>>>>>,<<<__
+
+DY4440         UUUUCUACGUAGGUUCGAAUCCUGCCUCUCCCA
+#=GR DY4440 SS __>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2701         GGGCUAUUAGCUCAGUGGUAGAGCGCGCCCCUGAUAAGGGCGAGGUCUCU
+#=GR DI2701 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI2701         GGUUCAAGUCCAGGAUGGCCCA
+#=GR DI2701 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6281         GCUCGCGUGGCGUAAUGGCAACGCGUCUGACUUCUAAUCAGAAGAUUAUG
+#=GR DR6281 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DR6281         GGUUCGACCCCCAUCGUGAGUG
+#=GR DR6281 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT6160         GGCUCCUUAGCAUAGUGGUAUUGCGUUUCCCUAGUAAGGAAGAGGUCAUG
+#=GR DT6160 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT6160         AGUUCGAUCCUCAUAGGAGCCU
+#=GR DT6160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE0660         GCUCCGGUGGUGUAGUCCGGCCAAUCAUGCUGGCCUUUCGAGCCAGCGAC
+#=GR DE0660 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,,,,
+
+DE0660         UCGGGUUCAAAUCCCGGCCGGAGCA
+#=GR DE0660 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1664         GCCCGGAUGGUGGAAUCGGUAGACACAAGGGAUUUAAAAUCCCUCGGCGU
+#=GR DL1664 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1664         UCGCGCUGUGCGGGUUCAAGUCCCGCUCCGGGUACCA
+#=GR DL1664 SS ___>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1660         GCUGAUAUGGCUCAGUUGGUAGAGCGCACCCUUGGUAGGGGUGGGGUCCC
+#=GR DT1660 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1660         CAGUUCGACUCUGGGUAUCAGCACCA
+#=GR DT1660 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY7921         CCUUCGAUAGCUCAGCUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCGC
+#=GR DY7921 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY7921         UGGUUCAAUUCCGGCUCGAAGGA
+#=GR DY7921 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH6320         GCUCACAUGGUCCAGUGGUUAAGACUCAUCGUUGUGGCCGAUGCGACCCA
+#=GR DH6320 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DH6320         GGUUCGAUUCCUGGUGUGGGCA
+#=GR DH6320 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5880         CAGAGAAUAGUUUAAAUUAGAAUCUUAGCUUUGGGUGCUAAUGGUGGAGU
+#=GR DP5880 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DP5880         UAAAGACUUUUUCUCUGA
+#=GR DP5880 SS ______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW8040         GACCUCGUGGCGCAACGGUAGCGCGUCUGACUCCAGAUCAGAAGGCUGCG
+#=GR DW8040 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DW8040         UGUUCGAAUCACGUCGGGGUCA
+#=GR DW8040 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0860         GCGGGGGUGCCCGAGCAAGGUCAAAGGGGUCGGGCUCAGGCCCCGAUGGU
+#=GR DL0860 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,<<<
+
+DL0860         GUAGGCCUGCGUGGGUUCAAAUCCCACCCCCCGCA
+#=GR DL0860 SS ____>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2720         GGGGAUAUAGCUCAGUUGGUAGAGCUCCGCUCUUGCAUGGCGGAUGUCAG
+#=GR DA2720 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2720         CGGUUCGAGUCCGCUUAUCUCCA
+#=GR DA2720 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2521         GGAGAGGUGUCUGAGUGGUUUAAAGUACUGGUCUUGAAAACCAGCGUAGU
+#=GR DS2521 SS (((((((,,,<<___________>>,,<<<<<_______>>>>>,<<<<<
+
+DS2521         UUUUGCUACCGAGGGUUCGAAUCCCUCCUUCUCCG
+#=GR DS2521 SS ____>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2701         GGGCCUGUAGCUCAGAGGAUUAGAGCACGUGGCUACGAACCACGGUGUCG
+#=GR DR2701 SS ((((--(,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR2701         GGGGUUCGAAUCCCUCCUCGCCCA
+#=GR DR2701 SS <<<<_______>>>>>)--)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1541         GCCGGUGUAGCUCAAUUGGUAGAGCAACUGACUUGUAAUCAGUAGGUUGG
+#=GR DT1541 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1541         GGGUUCAAGUCCUCUUGCCGGCA
+#=GR DT1541 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1230         GCAUCCAUAGCUCAGUUGGUAGAGCAACAGACUCUUAAUCUGUGGGUCCA
+#=GR DC1230 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DC1230         CGGUUCGAGCCCGUGUGGGUGUACCA
+#=GR DC1230 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC0380         GCCAAGGUGGCAGAGUUCGGCCUAACGCGGCGGCCUGCAGAGCCGCUCAU
+#=GR DC0380 SS (((((((,,<<_______________>>,<<<<<_______>>>>>,,,,
+
+DC0380         CGCCGGUUCAAAUCCGGCCCUUGGCU
+#=GR DC0380 SS ,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV9991         GUUUCCGUAGUGUAGUGGUUAUCACGUUCGCCUCACACGCGAAAGGUCCC
+#=GR DV9991 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DV9991         CGGUUCGAAACCGGGCGGAAACA
+#=GR DV9991 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI3080         GCAUCCAUGGCUGAAUGGUUAAAGCGCCCAACUCAUAAUUGGUAAAUUUG
+#=GR DI3080 SS (((((((,,<<<__________>>>,,<<<<_______>>>>,,,,,,,<
+
+DI3080         CGGGUUCAAUUCCUGCUGGAUGCA
+#=GR DI3080 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX5880         AGUAAGGUCAGCUAAAUAAGCUAUCGGGCCCAUACCCCGAAAAUGUUGGU
+#=GR DX5880 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<--<<_
+
+DX5880         UAUACCCUUCCCGUACUA
+#=GR DX5880 SS _____>>-->))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4620         CUGGGGGUAGCUUAAGAUUAAAGUUUGGAAUUCUUACUUCUAAGAUAUCU
+#=GR DK4620 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DK4620         GGUUUGGAUUCUUCAGG
+#=GR DK4620 SS <___>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP8101         GGCUCGUUGGUCUAGGGGUAUGAUUCUCGCUUAGGGUGCGAGAGGUCCCG
+#=GR DP8101 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP8101         GGUUCAAAUCCCGGACGAGCCC
+#=GR DP8101 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4080         GGAGGGAUUUCCAAUGUUGGUAAUUGGAGUUGAGCUGUAAACUCAAUGAU
+#=GR DY4080 SS (((((((,,<<<<___________>>>>,<<<<<_______>>>>>,<<<
+
+DY4080         UAUAUAUCUUCAUAGGUUCAAUUCCUAUUCCCUUCA
+#=GR DY4080 SS _____>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2600         ACCUACUUAACUCAGUGGUUUAGAGUAUCGCUUUCAUACGGCGAGAGUCA
+#=GR DM2600 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM2600         UUGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM2600 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ5080         UAAGGAUUAGUUUAAUUGGAAAAACGAAGAGCUUUGACUUCUUCUGCUUG
+#=GR DQ5080 SS ((((((,,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DQ5080         GGUCCAUUCCCCACUCCUUAA
+#=GR DQ5080 SS <<_______>>>>,)))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV4070         GGAAAAUUGAUCAUCGGCAAGAUAAGUUAUUUACUAAAUAAUAGGAUUUA
+#=GR DV4070 SS (((((((,,<<<________>>>,,<<<<<_______>>>>>,<<--<__
+
+DV4070         AUAACCUGGUGAGUUCGAAUCUCACAUUUUCCG
+#=GR DV4070 SS __>->>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT7740         GGCGCCGUGGCUUAGUUGGUUAAAGCGCCUGUCUAGUAAACAGGAGAUCG
+#=GR DT7740 SS (((-(((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DT7740         UGAGUUCGAAUCUCGCCGGGGCCU
+#=GR DT7740 SS <<<<_______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1660         CGGCGAGUAGCGCAGCUUGGUAGCGCAACUGGUUUGGGACCAGUGGGUCG
+#=GR DP1660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1660         GAGGUUCGAAUCCUCUCUCGCCGACCA
+#=GR DP1660 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1180         GCGCCCGUAGAUCAAUUGGAUAGAUCGCUUGACUACGGAUCAAAAGGUUG
+#=GR DR1180 SS (((((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,,<
+
+DR1180         GGGGUUCGAGUCCCUCCGGGCGCACCA
+#=GR DR1180 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4080         GGAGGUGUUGUUUAAAGGUUAAGCUAUUAGAUUGCAGAUCUACUUAUUAA
+#=GR DC4080 SS (((((((,,<-<<________>>->,,<<<<_______>>>>,,,,,,<<
+
+DC4080         GAGUUCGAUUCUCUUCAUCUCUU
+#=GR DC4080 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK1350         GCGCCGCUAGCUCAGUUGGUUAGAGCAGCUGACUCUUAAUCAGCGGGUCC
+#=GR DK1350 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DK1350         GGGGUUCGAGUCCCUGGCGGCGCA
+#=GR DK1350 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI4320         GGGCUUAUAGUUUAAUUGGUUGAAACGUACCGCUCAUAACGGUGAUAUUG
+#=GR DI4320 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI4320         UAGGUUCGAGCCCUACUAAGCCUACCA
+#=GR DI4320 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0940         GGGCCGGUAGCUCAGCCUGGGAGAGCGUCGGCUUUGCAAGCCGAAGGCCC
+#=GR DA0940 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DA0940         CGGGUUCGAAUCCCGGCCGGUCCACCA
+#=GR DA0940 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD2680         GGGAUUGUAGUUCAAUUGGUCAGAGCACCGCCCUGUCAAGGCGGAAGCUG
+#=GR DD2680 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD2680         CGGGUUCGAGCCCCGUCAGUCCCG
+#=GR DD2680 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5360         AGAAAUAUGUCUGACAAAAGAGUUACUUUGAUAGAGUAAAUAAUAGAGCU
+#=GR DI5360 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,,<<<<__
+
+DI5360         UCAAACCCUCUUAUUUCUA
+#=GR DI5360 SS _______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2590         GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCAAGGCAGUGGUCAG
+#=GR DA2590 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2590         CGGUUCGAGUCCGCUUACCUCCA
+#=GR DA2590 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5950         GUUAAUGUAGCUUAAACUAAAGCAAGGCACUGAAAAUGCCUAGAUGGGUA
+#=GR DF5950 SS (((-(((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DF5950         UUUAACUCCAUAAACA
+#=GR DF5950 SS ____>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY1540         GGAGGGGUAGCGAAGUGGCUAAACGCGGCGGACUGUAAAUCCGCUCCCUC
+#=GR DY1540 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DY1540         AGGGUUCGGCAGUUCGAAUCUGCCCCCCUCCACCA
+#=GR DY1540 SS _>>>,,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT9990         GGCUCCAUAGCUCAGGGGUUAGAGCACUGGUCUUGUAAACCAGGGGUCGC
+#=GR DT9990 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT9990         GAGUUCAAUUCUCGCUGGGGCUU
+#=GR DT9990 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV3240         AGGGAUAUAACUCAGCGGUAGAGUGUCACCUUGACGUGGUGGAAGUCAUC
+#=GR DV3240 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DV3240         AGUUCGAGCCUGAUUAUCCCUA
+#=GR DV3240 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4000         GGAAAAUUAACUAUAGGUAAAGUGGAUUAUUUGCUAAGUAAUUGAAUUGU
+#=GR DS4000 SS (((((((,,<<<________>>>,,<<<<<_______>>>>>,<<<<<__
+
+DS4000         AAAUUCUUAUGAGUUCGAAUCUCAUAUUUUCCG
+#=GR DS4000 SS _>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE3280         GCCCCCAUCGUCUAGCGGUUCAGGACAUCUCUCUUUCAAGGAGACAACGG
+#=GR DE3280 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE3280         GGAUUCGACUUCCCCUGGGGGUA
+#=GR DE3280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4921         ACUAUUUUGGCAGAUUAGUGCAAUAAAUUUAGAAUUUAUAUAUGUAAUUU
+#=GR DL4921 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,<<<<<__
+
+DL4921         UUAUUACAAAUAGUA
+#=GR DL4921 SS __>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP9990         GGCUCGUUGGUCUAGGGGUAUGAUUCUCGCUUAGGGUGCGAGAGGUCCCG
+#=GR DP9990 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP9990         GGUUCAAAUCCCGGACGAGCCC
+#=GR DP9990 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD3200         GGGAUUGUAGUUCAAUUGGUCAGAGCACCGCCCUGUCAAGGCGGAAGCUG
+#=GR DD3200 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD3200         CGGGUUCGAGUCCCGUCAGUCCCG
+#=GR DD3200 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE5280         GUUUCUAUAGUUGAAUUACAACGAUGAUUUUUCAUGUCAUUAGUCACAGU
+#=GR DE5280 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<-<_
+
+DE5280         UAAAUGCCGUGUAGAAAUA
+#=GR DE5280 SS ______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG0260         GCGGUUAAGCACACGGGUUGUGUCGCAGGCCUUCCAAGCCUCGCUGAGUA
+#=GR DG0260 SS (((((((,,,<<<_______>>>,,,<<<<_______>>>>,,,,,,,,<
+
+DG0260         GGGUUCGAUUCCCUCUAGCCGCUCCA
+#=GR DG0260 SS <<<_______>>>>,)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3360         GCGGAUGUAGCCAAGUGGAUCAAGGCAGUGGAUUGUGAAUCCACCAUGCG
+#=GR DH3360 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DH3360         CGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH3360 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR4500         GUGCUUGUAGCUCAAUUGGAUAGAGCACCAAACUACGGAUUUGGGGGUUG
+#=GR DR4500 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR4500         AGAGUUCAAAUCUUUCCAAGCAUG
+#=GR DR4500 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5320         GGUAAAAUGGCUGAGUAAGCAUUAGACUGUAAAUCUAAACACAGAGGUUU
+#=GR DY5320 SS (((((((,,<<<_____>>>,<<<<<_______>>>>>,,,,<<<<<___
+
+DY5320         AAAUCCUCUUUUUACCA
+#=GR DY5320 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV4800         CAAUUUAAAGCUUAAUUAGUAAAGUAUUUCAUUUACAUUGAAAAGAAAUU
+#=GR DV4800 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<-<
+
+DV4800         UGUGCAAAUCAAUUUAAAUUGA
+#=GR DV4800 SS <<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN6050         UCCUCCCUGGCGCAGUCGGCAGCGCGUUAGGCUGUUAACCUACAGGUCGU
+#=GR DN6050 SS (((((((,,<<<<________>>>>,,<<<<_______>>>>,,,,,,<<
+
+DN6050         UGGUUCGAAUCCAACGGGAGGAG
+#=GR DN6050 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0620         GGGCCCGUAGCUCAGACUGGGAGAGCGCCGCCCUUGCAAGGCGGAGGCCC
+#=GR DA0620 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DA0620         CGGGUUCAAAUCCCGGUGGGUCCA
+#=GR DA0620 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5970         GUUCAUGUAGCUUAAAACCAAAGCAAGGCAUUGAAAAUGCCUAGAUGAGU
+#=GR DF5970 SS (((-(((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5970         AUAUUAACUCCAUAAACA
+#=GR DF5970 SS ______>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI3280         GCAUCCAUGGCUGAAUGGUUAAAGCGCCCAACUCAUAAUUGGCGAAUUCG
+#=GR DI3280 SS (((((((,,<<<__________>>>,<<<<<_______>>>>->,,,,,<
+
+DI3280         UAGGUUCAAUUCCUACUGGAUGCA
+#=GR DI3280 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP2600         CGGAGUAUAGUNNNNUUNGGUAGUGUAUCAUCUUGGGGUGAUGAAAGUCG
+#=GR DP2600 SS ::(((((,,<<_____________>>,<<<<<_______>>>>>,,,,,<
+
+DP2600         UGGGUUCAAAUCCCGCUACUCAAA
+#=GR DP2600 SS <<<<_______>>>>>))))):::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR7741         GACCGUGUGGCCUAAUGGAUAAGGCGUCGGACUUCGGAUCCGAAGAUUGC
+#=GR DR7741 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DR7741         AGGUUCGAAUCCUGUCACGGUCG
+#=GR DR7741 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1180         CGGGAAGUGGCUCAGUUUGGUAGAGCAUUCGGUUUGGGACCGAAGGGUCG
+#=GR DP1180 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1180         CAGGUUCAAAUCCUGUCUUCCCGACCA
+#=GR DP1180 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK1660         GGGUCGUUAGCUCAGUUGGUAGAGCAGUUGACUUUUAAUCAAUUGGUCGC
+#=GR DK1660 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK1660         AGGUUCGAAUCCUGCACGACCCACCA
+#=GR DK1660 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD6900         GUCGUUGUAGUAUAGUGGUAAGUAUUCCCGCCUGUCACGCGGGUGACCCG
+#=GR DD6900 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD6900         GGUUCGAUCCCCGGCAACGGCG
+#=GR DD6900 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5221         GCUAGCGUGGCAGAGCUCGGCAAAUGCAAAAGGCUUAAGCCCUUUAUCCA
+#=GR DL5221 SS (((((-(,,<<<____________>>>,<<<<<_______>>>>>,,,,<
+
+DL5221         GAGGUUCAAAUCCUCUCCCUAGCU
+#=GR DL5221 SS <<<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA6320         GGGCAUGUGGUGUAGAUGGUUAUCACGCUUCCUUAGCAUGGAAGAGGUCC
+#=GR DA6320 SS (((((-(,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DA6320         CAGAUUCGAGUUCUGGCUUGUCCA
+#=GR DA6320 SS <<<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4760         ACUAUUUUGGCAGAUAAGUGCAAUGAAUUUAGAAUUCAUUUAUGUAGAUU
+#=GR DL4760 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,<<<<<__
+
+DL4760         UUUUUCUACAAAUAGUA
+#=GR DL4760 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5220         AGAAACUUAGGAUUAACUGUCACCAAACCAAAGGCCUUCAAAGCCUUAAA
+#=GR DW5220 SS (((((((,,<<-<____________>->>,<<<<<_______>>>>>,,,
+
+DW5220         UAAGAGUUAAACUCUCUUAGUUUCUG
+#=GR DW5220 SS ,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN6280         GACUCCAUGGCCAAGUUGGUUAAGGCGUGCGACUGUUAAUCGCAAGAUCG
+#=GR DN6280 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DN6280         UGAGUUCAACCCUCACUGGGGUCG
+#=GR DN6280 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6160         GGGACUAUAGUUUAGUUGGAUAUAACGACCGGCUACGAACCGGUAGGUCU
+#=GR DR6160 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DR6160         CAGGUUCGACCCCUGAUGGUCUCG
+#=GR DR6160 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5360         UAGAUUGAAGCCAGUUAGCUAGGGUGUUUAGCUGUUAACUAAAGUUUCGU
+#=GR DN5360 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DN5360         GGGGGUGGAGCCCACCAGUCUAG
+#=GR DN5360 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK5320         CACUAUGAAGCUAAGAGCGUUAACCUUUUAAGUUAAAGUUAGAGACCUUA
+#=GR DK5320 SS (((((((,,<<<___>>>,<<<<<_______>>>>>,,,,,<<<<_____
+
+DK5320         AAAUCUCCAUAGUGA
+#=GR DK5320 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2520         GCAGAUGUAGCUCAGUGGUAGAGCGCAACCUUGCCAAGGUUGAUGCCAUG
+#=GR DG2520 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG2520         GGUUCGAGUCCCAUUAUCUGCU
+#=GR DG2520 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5220         ACUUUUAAAGGAUAAGAGCAAUCCGUUGGUCUUAGGAACCACCUAUCUUG
+#=GR DL5220 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DL5220         GUGCAAAUCCAAGUAAAAGUA
+#=GR DL5220 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2722         GGAGAGAUGGCUGAGUGGACUAAAGCGGCGGAUUGCUAAUCCGUUGUACA
+#=GR DS2722 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2722         AUUUUUUUGUACCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS2722 SS <_____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4481         GGAUGGAUGUCUGAGCGGUUGAAAGAGUCGGUCUUGAAAACCGAAGUAUU
+#=GR DS4481 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4481         GAUAGGAAUACCGGGGGUUCGAAUCCCUCUCCAUCCG
+#=GR DS4481 SS ______>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5320         ACUUUUAUAGGAUAAUAGUAAUCCAUUGGUCUUAGGAACCAAAAACCUUG
+#=GR DL5320 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DL5320         GUGCAAAUCCAAAUAAAAGUA
+#=GR DL5320 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1663         GCAUCCGUAGCUCAGCUGGAUAGAGUACUCGGCUACGAACCGAGCGGUCG
+#=GR DR1663 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1663         GAGGUUCGAAUCCUCCCGGAUGCACCA
+#=GR DR1663 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD5280         GAGAUAUUAGUAAAAUAAUUACAUAACCUUGUCAAGGUUAAGUUAUAGAC
+#=GR DD5280 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DD5280         UUAAAUCUAUAUAUCUUA
+#=GR DD5280 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK5281         CAUUGCGAAGCUUAGAGCGUUAACCUUUUAAGUUAAAGUUAGAGACAACA
+#=GR DK5281 SS (((((-(,,<<<<_>>>>,<<<<<_______>>>>>,,,,,<<<<_____
+
+DK5281         AAUCUCCACAAUGA
+#=GR DK5281 SS __>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5000         GAUUGGGUGGCAGAUAGGGAUGCACUAGAUUGUAAAUCUAGGUAGGAAGG
+#=GR DY5000 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DY5000         UUCAAGUCCUUUCCUGGUCA
+#=GR DY5000 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK2580         GGGUUGCUAACUCAAUGGUAGAGUACUCGGCUUUUAACCGAUUAGUUCCG
+#=GR DK2580 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DK2580         GGUUCGAGUCCCGGGCAACCCA
+#=GR DK2580 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE8100         UCCCUGGUGGUCUAGUGGUUAGGAUUCGGCGCUCUCACCGCCGCGGCCCG
+#=GR DE8100 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE8100         GGUUCGAUUCUCGGUCAGGGAA
+#=GR DE8100 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1581         GCUCGCGUAGCUCAGCAGGUAGAGCACACCCUUGGUAAGGGUGAGGUCGC
+#=GR DT1581 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1581         CGGUUCGAGCCCGGCCGCGAGCUCCA
+#=GR DT1581 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF6200         GCGGGUUUAGCUCAGUUGGGAGAGCGUCAGACUGAAGAUCUGAAGGUCGU
+#=GR DF6200 SS ((((-((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF6200         GUGUUCGAUCCACACAAACCGCA
+#=GR DF6200 SS <<<_______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI6320         GGUCGCAUAUGUAGUCGGUUAUCAUGUCGAUCUAAUAAGUCGAAUGUCGC
+#=GR DI6320 SS (((((((,<<<___________>>>,<<<<<_______>>>>>,,,,,<<
+
+DI6320         CGGUUCGAACCCGGCUGUGACCA
+#=GR DI6320 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5910         CAAGAUAUAGCUUAAACAAAGCAUCUAGUUUACACCUAGAAGAUUUCACA
+#=GR DV5910 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DV5910         UACGAUGAAUGUCUUGA
+#=GR DV5910 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD3280         GGGAUUGUAGUUCAAUUGGUUAGAGCACCGCCCUGUCAAGGCGGAAGCUG
+#=GR DD3280 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD3280         CGGGUUCGAGCCCCGUCAGUCCCG
+#=GR DD3280 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2680         GCGAGCGUAGUUCAAUGGUAAAAUAUCUCCUUGCCAAGGAGAAGAUACGG
+#=GR DG2680 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG2680         GUUCGAUUCCCGCCGCUCGCC
+#=GR DG2680 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ5120         UAGGAAGUGGUAUAGGGGAGUACGGAGGGUUUUGAUCUCUCAGGUGCAGG
+#=GR DQ5120 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DQ5120         UUCAAUUCCUGUCUUUCUAA
+#=GR DQ5120 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4442         GGAGAGAUGGCCGAGUGGUUCAAGGCGUAGCAUUGGAACUGCUAUGUAGG
+#=GR DS4442 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4442         CUUUUGUUUACCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS4442 SS <____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2521         GCCUUCGUGGUGAAAUGGUAGACACUCAUGACUUAAAAUCAUGUGCUUAU
+#=GR DL2521 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DL2521         AAAGCGUACCGGUUCAACUCCGGUCGAAGGUA
+#=GR DL2521 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN1660         UCCUCUGUAGUUCAGUCGGUAGAACGGCGGACUGUUAAUCCGUAUGUCAC
+#=GR DN1660 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DN1660         UGGUUCGAGUCCAGUCAGAGGAGCCA
+#=GR DN1660 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2600         GCGGGUAUAGUUUAAUGGUAAAAUUCCUCCUUGCCAAGGAGAAUAUGCGG
+#=GR DG2600 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DG2600         GUUCGAUUCCCGCUACCCGCC
+#=GR DG2600 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE2180         GCCCCAUCGUCUAGAGGCCUAGGACACCUCCCUUUCACGGAGGCGACGGG
+#=GR DE2180 SS :(((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE2180         GAUUCGAAUUCCCCUGGGGGUA
+#=GR DE2180 SS <<_______>>>>>))))):::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ6160         GGUUUUAUAGUGUAAUUGGUUAGCACCCAGGACUUUGAAUCCUGUAAUCU
+#=GR DQ6160 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DQ6160         GAGUUCGAGUCUCAGUAGAACCA
+#=GR DQ6160 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5090         CAGAGAAUAGUUUAAUGUAGAAUCUUAGCUUUGGGAGUUAAGGGUGAGAG
+#=GR DP5090 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DP5090         UUGAAUUCUCUUUUCUCUGA
+#=GR DP5090 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG5000         GUUUCAUGAGUAUAGCAGUACAUUCGGCUUCCAACCGAAAGGUUUUUGUA
+#=GR DG5000 SS (((((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,,<<<___
+
+DG5000         AACAACCAAAAAUGAAAUA
+#=GR DG5000 SS ________>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA6160         GGGGAAGUAGCUCAGAUGGUAGAGCGCUCGCUUAGCAUGCGAGAGGUAAA
+#=GR DA6160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA6160         GGGUUCGAUACCCUUCUUCCUCA
+#=GR DA6160 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2922         GCCUUGGUGGUGAAAUGGUAGACACGCGAGACUCAAAAUCUCGUGCUAAA
+#=GR DL2922 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DL2922         UAGCGUGGAGGUUCGAGUCCUCUUCAAGGCA
+#=GR DL2922 SS >>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY0740         CCCGCGAUAGUUCAGACUGGUAGAACGGCGGACUGUAGAUCCGCAUGUCG
+#=GR DY0740 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DY0740         CUGGUUCAAAUCCGGCUCGCGGGA
+#=GR DY0740 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5090         GCCCUAGUAGCUUAGACAUCAAAGCACCGGUCUUGUAAACCGAAGAUCGA
+#=GR DT5090 SS ((-((((,,<<<<________>>>>,,<<<<_______>>>>,,,,,,<<
+
+DT5090         AGGUUAAAAUCCUUCCUAGCGCC
+#=GR DT5090 SS <<<_______>>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1620         GGGCCUAUAGCUCAGCUGGCUAGAGCACACGCCUGAUAAGCGUGAGGUCA
+#=GR DI1620 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1620         GUGGUUCGAGUCCACUUGGGCCCACCA
+#=GR DI1620 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN9990         GUCUCUGUGGCGCAAUGGGUUAGCGCGUUCGGCUGUUAACCGAAAGGUUG
+#=GR DN9990 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DN9990         GUGGUUCGAGCCCAUCCAGGGACG
+#=GR DN9990 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1860         GGGCCUAUAGCUCAGCUGGUUAGAGUGCACCCCUGAUAAGGGUGAGGUCA
+#=GR DI1860 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1860         CAAGUUCAAGUCUUGUUAGGCCCACCA
+#=GR DI1860 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6052         GCCCUUCUAGCUCAGUCGGUAGAGCGCACGGCUCUUAACCGUGUGGUCGU
+#=GR DK6052 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK6052         GGGUUCGAGCCCCACGGGGGGUG
+#=GR DK6052 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2480         GGAGUGAUGUCUGAGUGGCCGAAAGAGCUCGAUUGCUAAUCGAGUAUACA
+#=GR DS2480 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,<<<<
+
+DS2480         GCUUCCUGUACCGAGGGUUCGAAUCCCUCUCACUCCG
+#=GR DS2480 SS <____>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY6050         CCUUCUGUAGCUCAAUUGGUAGAGCAUGUGACUGUAGAGUAUGCGGGUAU
+#=GR DY6050 SS (((((((,,<<<<________>>>>,<<<<_________>>>>,,,,,,,
+
+DY6050         CACAGGGUCGCUGGUUCGAUUCCGGCCGGAAGG
+#=GR DY6050 SS ,,,,,,,,,<<<<<_______>>>>>)))))))
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1540         GGGCCUGUAGCUCAGCUGGUUAGAGCGCACGCCUGAUAAGCGUGAGGUCG
+#=GR DI1540 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1540         GUGGUUCGAGUCCACUCAGGCCCACCA
+#=GR DI1540 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2920         GGAGAGAUGGCUGAGUGGACUAAAGCGGCGGAUUGCUAAUCCGUUGUACG
+#=GR DS2920 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2920         AGUUAAUCGUACCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS2920 SS <_____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1664         GGUGAGGUGUCCGAGUGGCUGAAGGAGCACGCCUGGAAAGUGUGUAUACG
+#=GR DS1664 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS1664         GCAACGUAUCGGGGGUUCGAAUCCCCCCCUCACCGCCA
+#=GR DS1664 SS ____>>>>>,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW1250         AGGGGUAUAGUUCAAUCGGUAGAACACCGGACUUCAAAUCCGGGUGUUGU
+#=GR DW1250 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DW1250         GGGUUCAAGUCCUGCUACCCCUGCCA
+#=GR DW1250 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE5080         GCCCCUAUAGUUGAAACACAACCAAGAGCUUUUCACGCUCUUAAGUUUGA
+#=GR DE5080 SS ((-((((,,<-<________>->,<<<<<_______>>>>>,,,,,<<<<
+
+DE5080         GUUAAAAUCUCAAUAGGAGCU
+#=GR DE5080 SS <_______>>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE5360         GUUCUUGUAGUUGAAUGACAACGAUGGUUUUUCAUAUCAUUAGUCAUGGU
+#=GR DE5360 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DE5360         UAGAUUCCAUGUAAGAAUA
+#=GR DE5360 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2640         GCCCUUUUAACUCAGUGGUAGAGUAAUGCCAUGGUAAGGCAUAAGUCAUC
+#=GR DT2640 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT2640         GGUUCAAAUCCGAUAAAGGGCU
+#=GR DT2640 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4980         GGUUUUGUAGUGUAAUAAACAUAUUAGAUUGCAAAUCUACAGAUGCGGUU
+#=GR DC4980 SS (((((((,,<<<<_____>>>>,,<<<<_______>>>>,,,,,<<<<<_
+
+DC4980         AUAAUUGUCGCCAAAACUU
+#=GR DC4980 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD2600         GGGAUUGUAGUUCAAUUGGUUAGAGUACCGCCCUGUCAAGACGGAAGUUG
+#=GR DD2600 SS (((((((,,<<<<_________>>>>,<<<-<_______>->>>,,,,,<
+
+DD2600         CGGGUUCGAGCCCCGUCAAUCCCG
+#=GR DD2600 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1661         CGGUGAUUGGCGCAGCCUGGUAGCGCACUUCGUUCGGGACGAAGGGGUCG
+#=GR DP1661 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1661         GAGGUUCGAAUCCUCUAUCACCGACCA
+#=GR DP1661 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR0660         GGGCCCGUGGCCUAGUCUGGAUACGGCACCGGCCUUCUAAGCCGGGGAUC
+#=GR DR0660 SS (((((((,,<<<____________>>>,<<<<<_______>>>>>,,,,,
+
+DR0660         GGGGGUUCAAAUCCCUCCGGGUCCG
+#=GR DR0660 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4840         AAAAAAUUAGUUAAAAUCAUAACAUUAGUAUGUCAAACUAAAAUUAUUAA
+#=GR DD4840 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DD4840         AUAAUUAAUAUUUUUUA
+#=GR DD4840 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4030         GAGAGUAUUGUUUAAUGGUAAAACAUUCUGUCUUUUAAGCAGUCUAUAGU
+#=GR DK4030 SS (((((((,<<<<_________>>>>,,<<<<_______>>>>,,,,,<<<
+
+DK4030         GGUUCGAUUCCACUUAUUCUCA
+#=GR DK4030 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5720         ACUUUUAAAGGAUAACAGCCAUCCGUUGGUCUUAGGCCCCAAAAAUUUUG
+#=GR DL5720 SS (((((((,,<<<<_______>>>>,<<<<_________>>>>,,,,<<<<
+
+DL5720         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5720 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW1141         AGGAGAGUAGUUCAAUGGUAGAACGUCGGUCUCCAAAACCGAGCGUUGAG
+#=GR DW1141 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DW1141         GGUUCGAUUCCUUUCUCUCCUGCCA
+#=GR DW1141 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX2640         AGCGGAGUAGAGCAGUUUGGUAGCUCACGAGGCUCAUAACCUUGAGGUCA
+#=GR DX2640 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX2640         CGGGUUCGAUUCCCGUCUCCGCAC
+#=GR DX2640 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2720         GGGCCUGUAGCUCAGAGGAUUAGAGCACGUGGCUACGAACCACGGUGUCG
+#=GR DR2720 SS ((((--(,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR2720         GGGGUUCGAAUCCCUCCUCGCCCA
+#=GR DR2720 SS <<<<_______>>>>>)--)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5080         AAGGACUUAAGUUAAAUAAACUGAAAGCCUUCAAAGCUUUAACAAAGAAU
+#=GR DW5080 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DW5080         UGGAAACUUCUUAGUCCUUG
+#=GR DW5080 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV1180         GGAGUGUUAGCUCAGCUGGGAGAGCUCCUGCCUUACAAGCAGGCGGUCAU
+#=GR DV1180 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DV1180         AGGUUCAAGUCCUAUACACUCCACCA
+#=GR DV1180 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1661         GGAAGUGUGGCCGAGCGGUUGAAGGCACCGGUCUUGAAAACCGGCGACCC
+#=GR DS1661 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS1661         GAAAGGGUUCCAGAGUUCGAAUCUCUGCGCUUCCGCCA
+#=GR DS1661 SS ____>>>>>,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5020         GGCAGGGUGGCAGAAAGUCAAUGCGCUAAAUUGUAAAUUUAUAAAAAAAG
+#=GR DY5020 SS (((((((,,<<<_________>>>,,<<<<_______>>>>,,,,,<<<<
+
+DY5020         GUUUAAUUCCUUUCUUUGCCA
+#=GR DY5020 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV4500         GGGUAAUUAGCUCAGUUGGUAGAGUGCCUCGUUUACACCGAGAGAGUCAG
+#=GR DV4500 SS (((((((,,<<<<________>>>>,,<<<<_______>>>>,,,,,,<<
+
+DV4500         CGGUUCAAGUCCGUUAUUACCCA
+#=GR DV4500 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW4700         AAGAAAGUAAUUUAAGUUAAAAUAUUUUGUUUCAAACAUAACUAUAGGUA
+#=GR DW4700 SS (((((((,,<<<<______>>>>,<<-<<_______>>->>,,,,<<<<<
+
+DW4700         GUCAUUACCUCUUUCUUG
+#=GR DW4700 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1940         GCCCAGAUGGCGGAAUUGGUAGACGCGCCAGCUUCAGGUGCUGGUACUCG
+#=GR DL1940 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1940         AAAGGGUGUGGAGGUUCGAGUCCUCUUCUGGGCACCA
+#=GR DL1940 SS ___>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1360         CGGGGUGUGGCGCAGCUUGGUAGCGCGCUUCGUUCGGGACGAAGAGGUCG
+#=GR DP1360 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1360         UGGGUUCAAAUCCCGCCACCCCGA
+#=GR DP1360 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1141         GGGUUAAUACUCAAGUUGGUGAAGAGGACACCCUGCUAAGGUGUUAGGUC
+#=GR DS1141 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,<<<
+
+DS1141         GGUCUCCGGCGCGAGGGUUCGAGUCCCUCUUAACCCGCCA
+#=GR DS1141 SS <<___>>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2000         GCCCGAGUGGUGGAAUCGGUAGACACAAGGGAUUUAAAAUCCCUCGCCUU
+#=GR DL2000 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<-<_
+
+DL2000         UCGACGCGUGCCAGUUCAAGUCUGGCUUCGGGCACCA
+#=GR DL2000 SS ___>->>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK1200         GACUCACUAGCUCAGCGGUAGAGCAUUUGACUUUUAAUCAAAGGGUCCCG
+#=GR DK1200 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DK1200         AGUUCGAUCCUCGGGUGAGUCACCA
+#=GR DK1200 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6161         GCCCGGCUAGCUCAGUCGGUAGAGCGCCAGACUCUUAAUCUGGUGGUCGG
+#=GR DK6161 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK6161         GGGUUCGAGCCCCCCGUUGGGCG
+#=GR DK6161 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5320         GAGGUCUUAGCUUAAUUAAAGCAAUUGAUUUGCAUUCAAUAGAUGUAGGA
+#=GR DA5320 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DA5320         UGAAGUCUUACAGUCCUUA
+#=GR DA5320 SS ______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5040         CAAGACAUAGCUAGUUAGUAAGUUCCUCUUUUACACGGAGGUCACACUCG
+#=GR DV5040 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DV5040         UGCAAUUCGGGUUGUCUUGA
+#=GR DV5040 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT3360         GCCCUUUUAACUCAGUGGUAGAGUAACGCCAUGGUAAGGCGUAAGUCAUC
+#=GR DT3360 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT3360         GGUUCAAAUCCGAUAAGGGGCU
+#=GR DT3360 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4480         GGGGAAAUAGCUCAGUUGGUUAGAGUGCUGGUCUGUCACGCCAGAAGUCG
+#=GR DD4480 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD4480         CGGGUUCGAACCCCGUUUUCCCCG
+#=GR DD4480 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1250         GGAAGUAUACCCAAGUCUCGGUUGAAGGGGGCGGUCUCGAAAACCGUUAG
+#=GR DS1250 SS (((((((,,<<<______________>>>,<<<<<_______>>>>>,,,
+
+DS1250         AUGGAGUAAUCCAUGCAAGAGUUCGAAUCUCUUUACUUCCGCCA
+#=GR DS1250 SS <<<<<____>>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2641         GCGGGUAUAGUUUAGUGGUAAAACCCUAGCCUUCCAAGCUAACGAUGCGG
+#=GR DG2641 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DG2641         GUUCGAUUCCCGCUACCCGCU
+#=GR DG2641 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1542         GCCGGGGUGGUGGAAUUGGCAGACACACAGGACUUAAAAUCCUGCGGUAG
+#=GR DL1542 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DL1542         GUGACUACCGUGCCGGUUCAAGUCCGGCCCUCGGCACCA
+#=GR DL1542 SS ____>>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX4080         UGUAAUAUGAUGUAAUUGGUUAACAUAUUAGGUUCAUGACCUAAUUAUAU
+#=GR DX4080 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DX4080         ACGUUCAAAUCGUAUUAUUGCUA
+#=GR DX4080 SS <<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1350         GGUGGAGUGGCCGAGAGGCGAGGCAACGGCCUGCAAAGCCGUCUACACGG
+#=GR DC1350 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DC1350         GUUCAAAUCCCGUCUCCACCUCCA
+#=GR DC1350 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY6741         CCGACCUUAGCUCAGUUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCAU
+#=GR DY6741 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<-
+
+DY6741         UGGUUCGAAUCCGCUAGGUCGGA
+#=GR DY6741 SS <<<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5280         ACUUUUAUAGGAUAGAAGUAAUCCAUUGGUCUUAGGAACCAAAAACCUUG
+#=GR DL5280 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DL5280         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5280 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2400         GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCAAGGCAGAUGUCAG
+#=GR DA2400 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2400         CGGUUCGAGUCCGCUUACCUCCA
+#=GR DA2400 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1664         GUCCUCUUAGUUAAAUGGAUAUAACGAGCCCCUCCUAAGGGCUAAUUGCA
+#=GR DR1664 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DR1664         GGUUCGAUUCCUGCAGGGGACACCA
+#=GR DR1664 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX2600         CGCGGAGUAGAGCAGUCUGGUAGCUCGCAAGGCUCAUAACCUUGAGGUCA
+#=GR DX2600 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX2600         UAGGUUCAAAUCCUGUCUCCGCCA
+#=GR DX2600 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK2920         GGGUUGCUAACUCAACGGUAGAGUACUCGGCUUUUAACCGACUAGUUCCG
+#=GR DK2920 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DK2920         GGUUCGAAUCCCGGGCAACCCA
+#=GR DK2920 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1660         GCGAAGGUGGCGGAAUUGGUAGACGCGCUAGCUUCAGGUGUUAGUGUCCU
+#=GR DL1660 SS ((((-((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1660         UACGGACGUGGGGGUUCAAGUCCCCCCCCUCGCACCA
+#=GR DL1660 SS ___>>>>,,<<<<<_______>>>>>))-))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4000         GGAUCUGUAGCUUAAUAGUAAAGUACCAUUUUGUCAUAAUGGAGGAUGUC
+#=GR DD4000 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DD4000         AGUGCAAAUCUGAUUAGAUUCG
+#=GR DD4000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW2700         GCGCUCUUAGUUCAGUUCGGUAGAACGCGGGUCUCCAAAACCCGAUGUCG
+#=GR DW2700 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DW2700         UAGGUUCAAAUCCUACAGAGCGUG
+#=GR DW2700 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK7741         GCCCGGAUAGCUCAGUCGGUAGAGCAUUGGACUUUUAAUCCAAGGGUCCA
+#=GR DK7741 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK7741         GGGUUCAAGUCCCUGUUCGGGCG
+#=GR DK7741 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC5281         AGCCUUAAGGUGAUUAUCAUGUCGAAUUGCAAAUUCGAAGGUGUAGAGAA
+#=GR DC5281 SS (((((((,,<<<<___>>>>,<<<<<_______>>>>>,,,,<<<<<___
+
+DC5281         UCUCCUCUACUAAGGCUU
+#=GR DC5281 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5160         UAGAAUGAAGCUCGCUGGAUAGAGUGUUUAGCUGUUAACUAAAAUAUUAC
+#=GR DN5160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DN5160         GGGAUCGAGGCCCGUCAUUCUAG
+#=GR DN5160 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK0660         GGGCCCGUAGCUUAGUCUGGUAGAGCGCCUGACUUUUAAUCAGGCGGUCG
+#=GR DK0660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DK0660         AGGGUUCGAAUCCCUUCGGGCCCG
+#=GR DK0660 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2640         GCCUACUUAACUCAGUGGUUAGAGUAUUGCUUUCAUACGGCGGGUGUCAU
+#=GR DM2640 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM2640         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM2640 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1140         GCUGACUUAGCUCAGUUGGUAGAGCAAUUGACUAGUAAUCAAUAGGUCGA
+#=GR DT1140 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1140         AGGUUCAAAUCCUUUAGUCAGCACCA
+#=GR DT1140 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN2520         UCCUUAAUAGCUCAGUGGUAGAGCAAUCGGCUGUUAACCGAUCGGUCGUA
+#=GR DN2520 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN2520         GGUUCGAAUCCUACUUAAGGAG
+#=GR DN2520 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0980         GGGCCGGUAGUCUAGCGGAAGGACGCCCGCCUUGCGCGCGGGAGAUCCCG
+#=GR DA0980 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DA0980         GGUUCGAAUCCCGGCCGGUCCA
+#=GR DA0980 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2410         GGGCUAUUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGGCC
+#=GR DI2410 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2410         CUGGUUCAAAUCCAGGAUGGCCCA
+#=GR DI2410 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW4980         AGAGAUUUAAGUUAAUAAAACUGAAAACCUUCAAAGUUUUAAAUAAGAGU
+#=GR DW4980 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DW4980         GGAACUCUCUUAGUCUUUA
+#=GR DW4980 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF1260         GGUUCAGUAGCUCAGUUGGUAGAGCAUUUGAUUGAAGCUCAAAGUGUCGG
+#=GR DF1260 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF1260         CAGUUCAAUUCUGUCCUGAACCACCA
+#=GR DF1260 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4070         GAUCUUAUAGUUAAAUGGUUAUAACACCAUCCCUUCACGAUGGGAGUACC
+#=GR DE4070 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE4070         AGUUCGNUUCUGGUUGAGAUUA
+#=GR DE4070 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC0500         GCCAAGGUGGCAGAGUUCGGCCCAACGCAUCCGCCUGCAGAGCGGAACCC
+#=GR DC0500 SS (((((((,,<<_______________>>,<<<<<_______>>>>>,,,,
+
+DC0500         CCGCCGGUUCAAAUCCGGCCCUUGGCUCCA
+#=GR DC0500 SS ,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5940         GUUAAUGUAGCUUAAAUCCAAAGCAAGGUACUGAAAAUGCCUAGAUGAGU
+#=GR DF5940 SS (((-(((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5940         UUAUUAACUCCAUAAACA
+#=GR DF5940 SS <____>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1140         GGACCUUUAGCUCAGUUGGUUAGAGCAUCCGGCUCAUAACCGGACGGUCA
+#=GR DI1140 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1140         UUGGUUCAAGUCCAAUAAGGUCCACCA
+#=GR DI1140 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY0660         CCCGCGAUAGUUCAGAUUGGUAGAACGGCGGACUGUAGAUCCGCAUGUCG
+#=GR DY0660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DY0660         CUGGUUCAAAUCCGGCUCGCGGGA
+#=GR DY0660 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT6050         GGCCGCUUAGCACAUGGCAGUGCACCACUCUCGUAAAGUGGGGGUCGCGA
+#=GR DT6050 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,,<<<<
+
+DT6050         GUUCGAUUCUCGCAGUGGCCU
+#=GR DT6050 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP6280         GGGCGUGUGGUCUAGUGGUAUGAUUCUCGCUUUGGGUGCGAGAGGCCCUG
+#=GR DP6280 SS (((((-(,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP6280         GGUUCAAUUCCCAGCUCGCCCC
+#=GR DP6280 SS <<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2800         GCCUUGGUGGUGAAAUGGUAGACACGCGAGACUCAAAAUCUCGUGCUAAA
+#=GR DL2800 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<___
+
+DL2800         AAGCGUGGAGGUUCGAGUCCUCUUCAAGGCA
+#=GR DL2800 SS _>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5120         GCUAGCGUGGCAGAGCCUGGCUAAUGCGAAAGACCUAAGCUCUUUUUAUC
+#=GR DL5120 SS (-(((((,,<<<____________>>>,<<<<<_______>>>>>,,,,,
+
+DL5120         AGGGGUUCAAAUCCCCUCGCUAACU
+#=GR DL5120 SS <<<<<_______>>>>>)))))-):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6281         GUCCCAGUGGCCGAGUGGUUAAGGCGAUGCCCUGCUAAGGCAUUGGGUUU
+#=GR DS6281 SS (((-(((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DS6281         UACCUGCGCAGGUUCGAAUCCUGUCUGUGACG
+#=GR DS6281 SS _>>>>,,<<<<<_______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4280         ACCUACUUGACUCAGCGGUUAGAGUAUCGCUUUCAUACGGCGAGAGUCAU
+#=GR DM4280 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM4280         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM4280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT0660         GCCUCGGUGGCUCAGCCUGGUAGAGCGCCUGACUUGUAAUCAGGUGGUCG
+#=GR DT0660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DT0660         GGGGUUCGAAUCCCCCCCGAGGCU
+#=GR DT0660 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4880         GAUUAAGUGGCUGAAGUUUAGGCGAUAGAUUGUAAAUCUAUUUAUAAGAA
+#=GR DY4880 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DY4880         UUAUUCUUCUUAAUCA
+#=GR DY4880 SS ____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF6320         GUCGCAAUGGUGUAGUUGGGAGCAUGACAGACUGAAGAUCUGUUGGUCAU
+#=GR DF6320 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF6320         CGGUUCGAUCCCGGUUUGUGACA
+#=GR DF6320 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2600         GGGUUUGUAGCUCAGAGGAUUAGAGCACGUGGCUACGAACCACGGUGUCG
+#=GR DR2600 SS ((((--(,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR2600         GGGGUUCGAAUCCCUCCUUGCCCA
+#=GR DR2600 SS <<<<_______>>>>>)--)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2922         GCAUCCAUGGCUGAAUGGUUAAAGCGCCCAACUCAUAAUUGGCGAAUUCG
+#=GR DI2922 SS (((((((,,<<<__________>>>,,<<<<_______>>>>,,,,,,,<
+
+DI2922         UAGGUUCAAUUCCUACUGGAUGCA
+#=GR DI2922 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS0261         GGAAAAGCAAAUAGACUGGCGACUAAACCCGAUUGGAAAUCGGUUGAGUA
+#=GR DS0261 SS (((((((,,,,<<<________>>>,,,<<<<_______>>>>,,<-<<<
+
+DS0261         AUAGCAAUAUUGCCUUAUGGGUUCAACUCCCAUCUUUUCCGCCA
+#=GR DS0261 SS <<______>>>>>->,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS0860         GCCGGGGUGCCCGAGCGGACCAAGGGGGUAGGCUCGAGACCUACUGCCUC
+#=GR DS0860 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS0860         UCCGAGGCACGCGGGUUCAAAUCCCGCCCCCGGCG
+#=GR DS0860 SS ___>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX1180         CGCGGGGUAGAGCAGUUGGUAGCUCGCCGGGCUCAUAACCCGGAGGCCGC
+#=GR DX1180 SS :((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DX1180         AGGUUCGAGUCCUGCCCCCGCAACCA
+#=GR DX1180 SS <<<_______>>>>>)))))):::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4000         GAGAAUAUUGUUUAAUGGUAAAACAGUUGUCUUUUAAGCAACCCAUGCUU
+#=GR DK4000 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<-
+
+DK4000         GGUUCAACUCCAGCUAUUCUCA
+#=GR DK4000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4081         GGAAAAUUCACCAUAGGUAAGGUAAAUUAUUUGCUAUGUAAUUGAAUUUA
+#=GR DS4081 SS (((((((,,<<<________>>>,,<<<<<_______>>>>>,<<<<___
+
+DS4081         UUAUUCUUAUGAGUUCGAAUCUCAUAUUUUCCG
+#=GR DS4081 SS __>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5200         GUCUUUGUAGUAUAACAAAAUACCCCGGUCUUGUAAACCGGAAAAGGAGA
+#=GR DT5200 SS (((((-(,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DT5200         ACCCCAUUCCUCCCUAAGACU
+#=GR DT5200 SS _______>>->>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW6280         GAAGCGGUGGCUCAAUGGUAGAGCUUUCGACUCCAAAUCGAAGGGUUGCA
+#=GR DW6280 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DW6280         GGUUCAAUUCCUGUCCGUUUCA
+#=GR DW6280 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD2520         GGGAUUGUAGUUUAAUGGUUAGAGCACCGCCCUGUCACGGCGGAAGUUGC
+#=GR DD2520 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DD2520         GGGUUCGAGUCCCGUCAGUCCCG
+#=GR DD2520 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2100         GGGCUAUUAGCUCAGGUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCC
+#=GR DI2100 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2100         CUGGUUCAAGUCCAGGAUGGCCCA
+#=GR DI2100 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4001         GUUAUAUUAGCUUAAUUGGUAGAGCAUUCGUUUUGUAAUCGAAAGGUUUG
+#=GR DT4001 SS (((((((,,<<<<________>>>>,<<<<_________>>>>,,,,,<<
+
+DT4001         GGGUUCAAAUCCCUAAUAUAACA
+#=GR DT4001 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ5000         UAGAAAGUAGUAUAACGGUAAAACCAAGAAUUUUGAUUUCUUAAAUAUAA
+#=GR DQ5000 SS (((((((,,<<-<_______>->>,<<<<<_______>>>>>,,,,<<<<
+
+DQ5000         GUUCAACUCUUAUCUUUCUAA
+#=GR DQ5000 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE2920         GCCCCCAUCGUCUAGUGGUUUAGGACAUCUCUCUUUCAAGGAGGCAGCGG
+#=GR DE2920 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE2920         GGAUUCGAAUUCCCCUGGGGGUA
+#=GR DE2920 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT0260         GCUCCUAAAGCAUUGUUGGUGAUGCAGUUGCCUUGUAAGCAUCUGAACCG
+#=GR DT0260 SS (((((((,,<<<<________>>>>,<-<<<_______>>>->,,,,<-<
+
+DT0260         GGUUCGAUUCCUAGUGGGAGCACCA
+#=GR DT0260 SS <<_______>>>->)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW1140         AGGGGCAUAGUUCAGUAGGUAGAACAUCGGUCUUCAAAACCGAGUGUCAC
+#=GR DW1140 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DW1140         GAGUUCGAGUCUUGUUGCCCCUGCCA
+#=GR DW1140 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2920         ACCUACUUAACUCAGUGGUUAGAGUACUGCUUUCAUACGGCGGGAGUCAU
+#=GR DM2920 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM2920         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM2920 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4000         GGAGGGAUUUUCAAUGUUGGUAGUUGGAGUUGAGCUGUAAACUCAAUGAC
+#=GR DY4000 SS (((((((,,<<<<___________>>>>,<<<<<_______>>>>>,<<<
+
+DY4000         UUAGGUCUUCAUAGGUUCAAUUCCUAUUCCCUUCA
+#=GR DY4000 SS <__>>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0780         GGGCUCGUAGCUCAGCUGGAAGAGCGCGGCGUUUGCAACGCCGAGGCCUG
+#=GR DA0780 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA0780         GGGUUCAAAUCCCCACGGGUCCA
+#=GR DA0780 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5020         GUGAAUUUAGUUUAAUAGAAAAAACAUUUGCUUUGCAAGCAGACUUUGAA
+#=GR DA5020 SS (((-(((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DA5020         AGUUUAACUCCUUCAAUACACA
+#=GR DA5020 SS -<_______>->>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3230         GCGGACGUAGCCAAGUGGACCAAGGCAGUGGAUUGUGAAUCCACCACGCG
+#=GR DH3230 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DH3230         CGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH3230 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4501         GUCGGAAUAGUUUAGUAGGGUAGAACAGCGGGAUCAUAAUUCGCACACGG
+#=GR DM4501 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DM4501         GGGUUCAAAUCCCUCUUCCGAUA
+#=GR DM4501 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI3281         GGGCUAUUAGCUCAGUGGUAGAGCGCGCCCCUGAUACGGGCGAGGUCUCU
+#=GR DI3281 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI3281         GGUUCAAGUCCAGGAUGGCCCA
+#=GR DI3281 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2601         AGGGCUAUAGCUCAGCGGUAGAGCGCCUCGUUUACACCGAGAAUGUCUAC
+#=GR DV2601 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DV2601         GGUUCAAAUCCGUAUAGCCCUA
+#=GR DV2601 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL3880         AUCCGAGUGCUGGAAUUGGUAGACAGUCUUAGCUUAAGUUUAAGUGACGC
+#=GR DL3880 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL3880         AAGUCGUAAACGUUCGAAUCGUUUCUCGGAUA
+#=GR DL3880 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV9990         GUUUCCGUAGUGUAGUGGUUAUCACGUUCGCCUAACACGCGAAAGGUCCC
+#=GR DV9990 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DV9990         CGGUUCGAAACCGGGCGGAAACA
+#=GR DV9990 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4700         GCUUUAAAAGCUUUGCUGAAGCAACGGCCUUGUAAGUCGUAGAAAACUAU
+#=GR DT4700 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<___
+
+DT4700         ACGUUUUAAAGCU
+#=GR DT4700 SS __>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5160         AGAAACUUAGGCUAGCACAGACCAAAGGCCUUCAAAGCCUUAAGCGGAGG
+#=GR DW5160 SS (((((((,,<<-<______>->>,<<<<<_______>>>>>,,,,<<<<<
+
+DW5160         UUAAACUCCUUCAGUUUCUG
+#=GR DW5160 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2180         GGAGAGAUGGCCGAGUGGUUGAAGGCGCAGCACUGGAAAUGCUGUUUAAG
+#=GR DS2180 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2180         GUUUUCCCUUAACGAGGGUUCGAAUCCCUCUCUCUCCG
+#=GR DS2180 SS <_____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4000         GCUAUUUUGGUGGAAUUGGUAGACACGAUACUCUUAAGAUGUAUUACUUU
+#=GR DL4000 SS (((((((,,<<<___________>>>,<<<<_________>>>>,<<<__
+
+DL4000         ACAGUAUGAAGGUUCAAGUCCUUUAAAUAGCA
+#=GR DL4000 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX7560         AGCAGCGUGGCGCAGUGGAAGCGUGCUGGGCCCAUAACCCAGAGGUCGGU
+#=GR DX7560 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX7560         GGAUCGAAACCACUCGCUGCUACCA
+#=GR DX7560 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2920         AGGGAUAUAACUCAGCGGUAGAGUGUCACCUUGACGUGGUGGAAGUCAUC
+#=GR DV2920 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DV2920         AGUUCGAGCCUGAUUAUCCCUA
+#=GR DV2920 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW6161         GACUCCUUAGCAUAGUGGUUUAUUGUAAUUGUCUCCAAAGCAGUUGGUCC
+#=GR DW6161 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DW6161         AGGGUUCAACUCCCUGAGGGGUCU
+#=GR DW6161 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1231         GGAGGAAUACCCAAGAGGCUGAAGGGAUCGGUCUUGAAAACCGACAGGGU
+#=GR DS1231 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,<<-<
+
+DS1231         GUAAAAGCCGCGGGGGUUCAAAUCCCUCUUCCUCCGCCA
+#=GR DS1231 SS _____>->>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF0660         GCCAAGGUAGUUCAGCCUGGGAGAACGCUGGACUGAAGAUCCAGUUGUCG
+#=GR DF0660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DF0660         GGUGUUCGAAUCACCCCCUUGGCA
+#=GR DF0660 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1180         GGCCCCAUAGCGAACGUUGGUUAUCGCGCCUCCCUGUCACGGAGGAGAUC
+#=GR DD1180 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DD1180         ACGGGUUCGAGUCCCGUUGGGGUCGCCA
+#=GR DD1180 SS <<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1663         GCCGAGGUGGUGGAAUUGGUAGACACGCUACCUUGAGGUGGUAGUGCCCA
+#=GR DL1663 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1663         AUAGGGCUUACGGGUUCAAGUCCCGUCCUCGGUACCA
+#=GR DL1663 SS ___>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2701         AGCGGAGUAGAGCAGUUUGGUAGCUCACGAGGCUCAUAACCUUGAGGUCA
+#=GR DM2701 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM2701         CGGGUUCGAUUCCCGUCUCCGCAC
+#=GR DM2701 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK1140         GACUCGUUAGCUCAGCCGGUAGAGCAACUGGCUUUUAACCAGUGGGUCCG
+#=GR DK1140 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK1140         GGGUUCGAAUCCCCGACGAGUCACCA
+#=GR DK1140 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5080         CAAGGCAUAGCUAGUUAGUAAGUUUCUCCUUUACACGGAGACCACACUCG
+#=GR DV5080 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DV5080         UGCAAUUCGAGUUGUUUUGA
+#=GR DV5080 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN0680         GCCGCCGUAGCUCAGUAGGUAGGAGCGCUCGGCUGUUAACCGAGUGGUCG
+#=GR DN0680 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DN0680         CAGGUUCGAGUCCUGCCGGCGGCG
+#=GR DN0680 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW2440         ACGUCCUUAGUUCAGUCGGUAGAACGCAGGUUUCCAAAACCUGAUGUCGU
+#=GR DW2440 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DW2440         GGGUUCAAUUCCUACAGGGCGUG
+#=GR DW2440 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI4080         GAAACUAUAAUUCAAUUGGUUAGAAUAGUAUUUUGAUAAGGUACCAAUAU
+#=GR DI4080 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DI4080         AGGUUCGAUUCCUGUUAGUUUCA
+#=GR DI4080 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5000         AGGGGUUUAAGUUAAUCUAAACUAAAAGCCUUCAAAGCUUUAAAUAAGAA
+#=GR DW5000 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DW5000         UGGGAAUUUUUUAACCUCUG
+#=GR DW5000 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5040         AGAGCUUGCUCCCAAAGCUUGGGUGUCUAGCUGAUAAUUAGACUAUCAAG
+#=GR DI5040 SS (((((((,,,<<<_______>>>,,<<<<<_______>>>>>,,,,,<<<
+
+DI5040         GGUUAAAUUCCCUUCAAGCUCUA
+#=GR DI5040 SS <<_______>>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2440         GGGCUAUUAGCUCAGUUGGUUAGAGCGUUGCUUUGAUAAGGCAAAAGUCG
+#=GR DI2440 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2440         AAAGUUCAAAUCUUUCAUAGCCCA
+#=GR DI2440 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1581         GCGGGAGUAGCUCAGUUGGUAGAGCAUCGGCUUCCCAAGCCGAGGGUCGC
+#=GR DG1581 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DG1581         GGGUUCGAGUCCCGUCUCCCGCUCCA
+#=GR DG1581 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2520         GCAGGCAUGGCGGAAUUUGGUAGACGCGCAGGAUUUAGGUUCCUGUGUCU
+#=GR DL2520 SS (((((((,,<<<____________>>>,<<<<<_______>>>>>,<<<_
+
+DL2520         UUAUGAUGUGAGAGUUCGAGUCUCUCUGCCUGUA
+#=GR DL2520 SS ____>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6060         GACAAUUUGUCCGAGUGGUUAAGGAGGAAGACUAGAAAUCUUUUGGGUUU
+#=GR DS6060 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DS6060         ACCCGCGCAGGUUCGAAUCCUGCAGUUGUCG
+#=GR DS6060 SS >>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2520         GGCUCAGUAGCUCAGAGGAUAGAGCAGGGGAUUCAUAAGCCCUUGGUCAC
+#=GR DM2520 SS (((((((,,<<<<________>>>>,<<<<_________>>>>,,,,,<<
+
+DM2520         AGGUUCAAAUCUUGUCUGAGCCA
+#=GR DM2520 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3880         GGUGGGUGUAGUUCAAAGGUAGAACAGCUGUAUGUGGCAUAGUAUAUCCU
+#=GR DH3880 SS :(((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<
+
+DH3880         AGUUCAAUUCUAGGUAUCCACC
+#=GR DH3880 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE9160         UCCUUGGUGGUCUAGUGGUUAGGAUUCGGCGCUCUCACCGCCGCGGCCCG
+#=GR DE9160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE9160         GGUUCGAUUCCCGGUCAGGGAA
+#=GR DE9160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ0220         UGGGAAUUAGCCAAGUUGGUAAGGCAUAGCACUUUGACUGCUAGAUGCAA
+#=GR DQ0220 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DQ0220         AGGUUCGAGUCCUUUAUUCCCAG
+#=GR DQ0220 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5880         CAGAGUGUAGCUUAACACAAAGCACCCAACUUACACUUAGGAGAUUUCAA
+#=GR DV5880 SS (((((((,,<<<<______>>>>,<<-<<_______>>->>,,,,,<<<<
+
+DV5880         CUUAACUUGACCGCUCUGA
+#=GR DV5880 SS ______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF7920         GCCGAAAUAGCUCAGUUGGGAGAGCGUUAGACUGAAGAUCUAAAGGUCCC
+#=GR DF7920 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF7920         UGGUUCGAUCCCGGGUUUCGGCA
+#=GR DF7920 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6320         UCCCGAGUGGCUCAAUCGGUUUAGAGCGUCUGACUCUUAAUCAGAAGGUU
+#=GR DK6320 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DK6320         GCGAGUUCGAGUCUCGCCUUGGGAG
+#=GR DK6320 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5321         AUUAGGGUGGCAGAGCCAGGAAAUUGCGUAAGACUUAAAACCUUGUUCCC
+#=GR DL5321 SS (((((((,,<<<<__________>>>>,<<<<_________>>>>,,,,,
+
+DL5321         AGAGGUUCAAAUCCUCUCCCUAAUA
+#=GR DL5321 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4501         ACUCGCUUGGUGGAACGGCAAACACGGCAGACUCAAAAUCUGUUUCUAAU
+#=GR DL4501 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<___
+
+DL4501         GGAAUAUCGGUUCGAAUCCGAUAGCGAGUA
+#=GR DL4501 SS >>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5060         CAGAGGGUAGUUUAAUUUAGAAUCUUAGCUUUGGGAGUUAAGGGUGGGAG
+#=GR DP5060 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DP5060         UUAAAAUCUCCUCUCUCUGA
+#=GR DP5060 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2540         GGGCUAUUAGCUCGCUGGUUGAGCACACCCCUGAUAAGGGUGAGGCCUCU
+#=GR DI2540 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI2540         GGUUCAAAGUCCAGAAUAGCCCA
+#=GR DI2540 SS <<________>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR4000         GCUCUCUUAGCUUAAUGGUUAAAGCAUAAUACUUCUAAUAUUAAUAUUCC
+#=GR DR4000 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DR4000         AUGUUCAAAUCAUGGAGAGAGUA
+#=GR DR4000 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4010         AGUAAUAUGAUGUAAUUGGUUAACAUAUUAGGCUCAUGACUUAAUUAUAU
+#=GR DM4010 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DM4010         ACGUUCAAAUCGUGUUAUUGCUA
+#=GR DM4010 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2580         GGGGGUAUAGCUUAGUUGGUAGAGCGCUGCUUUUGCAAGGCAGAUGUCAG
+#=GR DA2580 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2580         CGGUUCGAAUCCGCUUACCUCCA
+#=GR DA2580 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DZ7920         GCCCGGAUGACCCUCAGUGGUCUGGGGUGCAGGCUUCAAACCUGUAGCUG
+#=GR DZ7920 SS (((((((,,,,<<<<________>>>>,<<<<<_______>>>>>,<-<<
+
+DZ7920         UCUAGCGACAGAGUGGUUCAAUUCCACCUUUCGGGCG
+#=GR DZ7920 SS <___>>>->,,<<<<<_______>>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2440         GAGCUUGUAGCUCAGUGGACUAGAGCACAUGGCUACGAACCAUGGGGUCG
+#=GR DR2440 SS (((((-(,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR2440         GGGGUUCGAAACCCUCCUGGCUCG
+#=GR DR2440 SS <<<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF4440         GUCAGGAUAGCUCAGUUGGUAGAGCAGAGGAUUGAAAAUCCUCGUGUCAC
+#=GR DF4440 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF4440         CAGUUCAAAUCUGGUUCCUGGCA
+#=GR DF4440 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5000         GUGGACUUAGUUUAAAAGAUAAAACAAUUGAUUUGCAAUCAGUAACUCCA
+#=GR DA5000 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<-
+
+DA5000         AGUUUAACUCUCGGAGUCCACA
+#=GR DA5000 SS <<_______>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH2720         GGCGGAUGUAGCCAAGUGGAUCAAGGCAGUGGAUUGUGAAUCCACCAUGC
+#=GR DH2720 SS :(((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,
+
+DH2720         CGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH2720 SS <<<<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI0260         ACUUCGGUAGCUUAGCGAUCUAAAGCACUCGGCUGAUAACCGAGAGAUCG
+#=GR DI0260 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI0260         GGGGUUUAAAUCCCUCCCGGAGUACCA
+#=GR DI0260 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX0260         UGCGGGUUAGAUCUCUCUGGUAGAGAUCGCUAGUCUCAUAAGCUAGAAAG
+#=GR DX0260 SS :((((((,,<<<<___________>>>>,<<<<<_______>>>>>,,,,
+
+DX0260         AGGUAGGUUCGAUUCCUGCACCCGCUUCCA
+#=GR DX0260 SS ,,<<<<<_______>>>>>)))))):::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK2000         GGGUCGUUAGCUCAGACGGUAGAGCAGCGGACUUUUAAUCCGUUGGUCGA
+#=GR DK2000 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK2000         AGGUUCGAAUCCUUCACGACCCACCA
+#=GR DK2000 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR3880         UUCUUAUUAGCUCAAUGGUAGAGCAAAAUACUUCUAAUAUUUUGAUCUAA
+#=GR DR3880 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DR3880         GUUCGAGUCUUAGAUAAGAAG
+#=GR DR3880 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG5880         ACUCUUUUAGUAUAAAUAGUACCGUUAACUUCCAAUUAACUAGUUUUGAC
+#=GR DG5880 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DG5880         AACAUUCAAAAAAGAGUA
+#=GR DG5880 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV1351         GCGCGAUUAGCUCAGCGGGAGAGCGCUUCCCUGACACGGAAGAGGUCACU
+#=GR DV1351 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DV1351         GGUUCAAUCCCAGUAUCGCGCA
+#=GR DV1351 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD0740         GCCCUGGUGGUGUAGCUCGGCCUAUCAUACAGGACUGUCACUCCUGUGAC
+#=GR DD0740 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,,,,
+
+DD0740         UCGGGUUCAAAUCCCGGCCAGGGCG
+#=GR DD0740 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1230         GUCCGAAUAGCUCAGCUGGAUAGAGCAAUAGCCUUCUAAGCUAUCGGUCG
+#=GR DR1230 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1230         GGGGUUCGAAUCCCUCUUCGGACGCCA
+#=GR DR1230 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4481         ACCUACUUGACUCAGCGGUUAGAGUAUCGCCUUCAUACGGCGAGAGUCAU
+#=GR DM4481 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM4481         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM4481 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ1230         AGGCCCAUAGCCAAGCGGUAAGGCAACGGACUUUGACUCCGUCACUCGUA
+#=GR DQ1230 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DQ1230         GGUUCAAAUCCUGCUGGGCCUGCCA
+#=GR DQ1230 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD0660         GCCCUGGUGGUGUAGCUCGGCCUAUCAUACAGGACUGUCACUCCUGUGAC
+#=GR DD0660 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,,,,
+
+DD0660         UCGGGUUCAAAUCCCGGCCAGGGCG
+#=GR DD0660 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD7740         UCCUCGAUAGUAUAGUGGUUAGUAUCCCCGCCUGUCACGCGGGAGACCGG
+#=GR DD7740 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD7740         GGUUCAAUUCCCCGUCGGGGAG
+#=GR DD7740 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM6280         GCUUCAGUAGCUCAGUAGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGA
+#=GR DM6280 SS (((((((,,<<<<________>>>>,<<<<_________>>>>,,,,,<<
+
+DM6280         GAGUUCGAACCUCUCCUGGAGCA
+#=GR DM6280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5000         UGGGUUGUAGCCUAAUGGAAAGGCAAUUGGCCGUUAACCAGGAGAUAACA
+#=GR DN5000 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DN5000         AGAUCAAUACUUGUCAACUCAG
+#=GR DN5000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2601         GCGGGUAUAGUUUAGUGGUAAAACCUUAGCCUUCCAAGCUAACGAUGCGG
+#=GR DG2601 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG2601         GUUCGAUUCCCGCUACCCGCU
+#=GR DG2601 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK5880         CACUGUAAAGCUAACUUAGCAUUAACCUUUUAAGUUAAAGAUUAAGAGAA
+#=GR DK5880 SS (((((((,,<<<<___>>>>,<<<<<_______>>>>>,,,,,<<<<<__
+
+DK5880         CCAACACCUCUUUACAGUGA
+#=GR DK5880 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE2680         GCCCCUAUCGUCUAGUGGUUCAGGACAUCUCUCUUUCAAGGAGGCAGCGG
+#=GR DE2680 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE2680         GGAUUCGACUUCCCCUGGGGGUA
+#=GR DE2680 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP0220         CUCCGUGUAGCUCAGUUUGGUAGAGCGCCUGAUUUGGGAUCAGGAGGUCC
+#=GR DP0220 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP0220         AAGGUUCAAAUCCUUGUAUGGAGA
+#=GR DP0220 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1400         CGGGGUGUGGCGCAGCUUGGUAGCGCGCUUCGUUCGGGACGAAGAGGCCG
+#=GR DP1400 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1400         UGGGUUCAAAUCCCGCCACCCCGA
+#=GR DP1400 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP4030         CAGAUAAAAGCCAACCGGUGAGGCGCUUUCUUUGGGAGAAAGAGUUAGUU
+#=GR DP4030 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP4030         AGUUCGAUUCUAGCUUAUCUGA
+#=GR DP4030 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2590         GGGCUAUUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCU
+#=GR DI2590 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2590         CUGGUUCAAAUCCAGAAUGGCCCA
+#=GR DI2590 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY9990         CCUUCGAUAGCUCAGCUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCGC
+#=GR DY9990 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY9990         UGGUUCAAUUCCGGCUCGAAGGA
+#=GR DY9990 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5220         ACUCUAAUAGUUUAUGAAAAACAUUGGUCUUGUAAACCAAAAACUGAAGA
+#=GR DT5220 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,,<<<<_
+
+DT5220         CUCCACCCUUCUUAGAGUA
+#=GR DT5220 SS _______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4700         UAUAAAGAAGUAUUGUGGUACGUAGGACUUUGAUCCCUAAAGAGAAAGUU
+#=GR DQ4700 SS (((((((,,<<<<____>>>>,<<<<_________>>>>,,,,<<<<<__
+
+DQ4700         AAAGCUUUUCUUUAUAA
+#=GR DQ4700 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC3280         GGCGGCAUGGCCGAGUGGUAAGGCGGAGGACUGCAAAUCCUUGUUCCCCA
+#=GR DC3280 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<-
+
+DC3280         GUUCAAAUCCGGGUGUCGCCU
+#=GR DC3280 SS <_______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5520         GUAAAUAUAGUUUAACUAAAACAUUAGAUUGUGAAUCUAACUAUAGAGGC
+#=GR DH5520 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DH5520         CUACCACUUCUUAUUUACC
+#=GR DH5520 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX9990         AGCAGAGUGGCGCAGCGGAAGCGUGCUGGGCCCAUAACCCAGAGGUCGAU
+#=GR DX9990 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX9990         GGAUCGAAACCAUCCUCUGCUA
+#=GR DX9990 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3770         AGGGGAGUAGUUCAACGGAAAAACUUUAGUCUUCAAAACUGACAUCGUGG
+#=GR DW3770 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DW3770         GUUCGACUCCCGCCUCCCUUG
+#=GR DW3770 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4080         GCUAUUUUGGUGGAAUUGGUAGACACGAUACUCUUAAGAUGUAUUACUUU
+#=GR DL4080 SS (((((((,,<<<___________>>>,<<<<_________>>>>,<<<__
+
+DL4080         AUAGUAUGAAGGUUCAAAUCCUUCAAAUAGCA
+#=GR DL4080 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3760         AGGGGAGUAGUUGAACGGGAAAACUUUAGUCUUCAAAACUGACAUCGUGG
+#=GR DW3760 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DW3760         GUUCGACUCCCGCCUCCCUUG
+#=GR DW3760 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4880         AAAAAAUUAGUUAAAUUAUAUAACAUUAGUAUGUCAAACUAAAAUUAUUA
+#=GR DD4880 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DD4880         AAUUAUUAAUAUUUUUUA
+#=GR DD4880 SS <____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC5220         GACUCUGUAGUGAAGUUCAUAAUGAGUUGCAAACUCGUUGAUGUACACUA
+#=GR DC5220 SS (((((((,,<<<<___>>>>,<<<<<_______>>>>>,,,,<<<<<___
+
+DC5220         AAGUGUGCCGGGGUCU
+#=GR DC5220 SS ___>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2720         GGGGAUAUGGCGAAAUCGGUAGACGCUACGGACUUAAAAUCCGUCGACUU
+#=GR DL2720 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DL2720         UAUAAGUCGUGAGGGUUCAAGUCCCUCUAUCCCCA
+#=GR DL2720 SS ___>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2220         GGGGGUAUAGCUCAGUUGGUAGAGCGUUGCUUUUGCAUAGCAGACGUCAG
+#=GR DA2220 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2220         CAGUUCGAGUCUGCUUAUCUCCA
+#=GR DA2220 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD9161         UCCUCGUUAGUAUAGUGGUGAGUAUCCCCGCCUGUCACGCGGGAGACCGG
+#=GR DD9161 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD9161         GGUUCGAUUCCCCGACGGGGAC
+#=GR DD9161 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5320         UAGAUUGAAGCCAGUAAUAGGGUAUUUAGCUGUUAACUAAAUUUUCGUAG
+#=GR DN5320 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,,<<<<
+
+DN5320         GUUUAAUUCCUGCCAAUCUAG
+#=GR DN5320 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5000         CCUGGCGGAGCUUGAUAGUUAAGCAUCUCUUUUACACAGAGCUGAUAUUU
+#=GR DV5000 SS (--((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DV5000         GUGCAAAUCAAAUUGCCUUGA
+#=GR DV5000 SS <_______>>>>>))))--):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI4880         AAUGAAUUGCCUGAUAAAAAGGGUUACCUUGAUAGGGUAAAUUAUGCAGU
+#=GR DI4880 SS (((((((,,<<<_______>>>,<<<<<_______>>>>>,,,,,<<<<_
+
+DI4880         UUUCUGCAUUCAUUG
+#=GR DI4880 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD0680         GCCCUGGUGGUGUAGUGGCUAUCAUGCGGGCCUGUCGAGCCCGCGACUCG
+#=GR DD0680 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DD0680         GGUUCAAUUCCCGGCCAGGGCG
+#=GR DD0680 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5080         GCAAAGGUAGCUUAACGGAUUAAAGCACAGCACUGAAAAUGCUUCAAAGG
+#=GR DF5080 SS ((-((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,<<
+
+DF5080         GAGUUAAAGUCCCUCCCUUAGCA
+#=GR DF5080 SS <-<_______>->>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF6740         GCGGGGAUAGCUCAGUUGGGAGAGCGUCAGACUGAAGAUCUGAAGGUCGC
+#=GR DF6740 SS ((((-((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF6740         GUGUUCGAUCCACGCUCACCGCA
+#=GR DF6740 SS <<<_______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP4080         CAGAUAGAAGCCAAAAGGUCAGGCGCUUUCUUUGGGUGAAAGAUCUAGUU
+#=GR DP4080 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<-<
+
+DP4080         AGUUCGAGUCUAUCCUAUCUGA
+#=GR DP4080 SS <<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3960         AAGAGUAUAGUUUAAAGGUAAAACAGAAAGCUUCAACCUUUAAUUUCUUA
+#=GR DW3960 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DW3960         GUUCGAGUCUAAGUGCUCUUG
+#=GR DW3960 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR0220         GUCCCGCUGGUGUAAUGGAUAGCAUACGAUCCUUCUAAGUUUGCGGUCCU
+#=GR DR0220 SS (((((((,,<<<<________>>>>,<<<-<_______>->>>,,,,<<<
+
+DR0220         GGUUCGAUCCCAGGGCGGGAUACCA
+#=GR DR0220 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV4000         AGGAGAUUAGCUUAAUUGGUAUAGCAUUCGUUUUACACACGAAAGAUUAU
+#=GR DV4000 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DV4000         AGGUUCGACCUAUAUUUCCUA
+#=GR DV4000 SS <<<_____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK2600         GGGUUGCUAACUCAAUGGUAGAGUACUCGGCUUUUAACCGACGAGUUCCG
+#=GR DK2600 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,,<<<
+
+DK2600         GGUUCGAGCCCCGGGCAACCCA
+#=GR DK2600 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0260         GGGGCUAUGCUGGAACUGGUAGACAAUACGGCCUUAGAUUCCGUAGCUUA
+#=GR DL0260 SS (((((((,,,<<___________>>,,<<<<_________>>>>,<<___
+
+DL0260         AAUGCGUGGGAGUUCGAGUCUCCCUAGCCCCACCA
+#=GR DL0260 SS ___>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1500         GGAGAGUUGGCAGAGCGGUAAUGCAGCGGACUCGAAAUCCGCCGAACCAA
+#=GR DS1500 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,<<<<<
+
+DS1500         UGUUGAAUUGGUGCGCAGGUUCAAAUCCUGUACUCUCCU
+#=GR DS1500 SS <_____>>>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4840         GAUUAAGUGGCUGAAGUUUAGGCGAUAGAUUGUAAAUCUAUAUAUAAGAU
+#=GR DY4840 SS (((((((,,<<<________>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DY4840         UUAUUCUUCUUAAUCA
+#=GR DY4840 SS ____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DZ7742         GCCCCACUGAACUUCGGUGGUCCGGGGUGCGGACUUCAAAUCCGUAGUCG
+#=GR DZ7742 SS (((((-(,,,,<<<<________>>>>,<<<<<_______>>>>>,<-<<
+
+DZ7742         AUUUGCGUCGAAGUGGUUCGAUUCCACCUGGGGGGCG
+#=GR DZ7742 SS _____>>->,,<<<<<_______>>>>->)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4000         GACCUUAUCGUCUAAUGGUUACGACAUCACCUCUUCAUGUUGAUAAUAUC
+#=GR DE4000 SS (((((((,,<<<__________>>>,<<<-<_______>->>>,,,,<<<
+
+DE4000         GGUUCGAUUCCGAUUAAGGUUA
+#=GR DE4000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2920         GGGCUAUUAGCUCAGUGGUAGAGCGCGCCCCUGAUACGGGCGAGGUCUCU
+#=GR DI2920 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI2920         GGUUCAAGUCCAGGAUGGCCCA
+#=GR DI2920 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1230         GUCGGUGUCGUAUAUGGUUAUUACAGGCCUUGCCAAGGCUUAGACGGCAG
+#=GR DG1230 SS (((((((,,<<<_________>>><<<<<_______>>>>>,,,,<<<<<
+
+DG1230         UUCGAUCCUGCUCACCGGCUCCA
+#=GR DG1230 SS _______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5970         CAAAACAUAGCUUAAACAAAAGCAUCUAGUUUACACCUAGAAGAUUCACA
+#=GR DV5970 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,<<<<__
+
+DV5970         UAUCAUGAAUGUUUUGA
+#=GR DV5970 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2180         GGGGAUGUGGUGGAAUUGGUAGACGCAACGGACUUAAAAUCCGUCGAUUG
+#=GR DL2180 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL2180         UAUAGAUCGUGAGGGUUCAAGUCCCUCCGUCCCCA
+#=GR DL2180 SS ____>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE1570         GGCCCUGUGGUCAAGUGGUUAAGACACCGCCCUUUCACGGCGGUAACACG
+#=GR DE1570 SS (((((--(,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DE1570         GGUUCGAAUCCGUACGGGUCA
+#=GR DE1570 SS <<______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ6051         GGGCGUGUAGCUCAGUGGUAGAGCGCCCUGUUUUGCAUACGGAGGCCUAG
+#=GR DQ6051 SS (((((-(,,<<<<_______>>>>,<<-<<_______>>->>,,,,,<<<
+
+DQ6051         GGUUCAAACCCCUACUCGUCCA
+#=GR DQ6051 SS <<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP2520         CGGGAUGUAGCGCAGUUUGGUAGCGCAUUGCAUUUGGGAUGCAAGGGUCG
+#=GR DP2520 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP2520         CAGGUUCGAAUCCUGUCAUCCCGA
+#=GR DP2520 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2922         GGAGAGAUGGCUGAGCGGUUGAUAGCCCCGGUCUUGAAAACCGGUAUAGU
+#=GR DS2922 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,<<<<
+
+DS2922         UUUAACAAAGAAUCUACGAGGGUUCGAAUCCCUCUCUCUCCU
+#=GR DS2922 SS <<<_____>>>>->>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1660         GGAGCGGUAGUUCAGUCGGUUAGAAUACCUGCCUGUCACGCAGGGGGUCG
+#=GR DD1660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD1660         CGGGUUCGAGUCCCGUCCGUUCCGCCA
+#=GR DD1660 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4080         GAGAGUAUUGUUUAAAGGUAAAACAGUUGUCUUUUAAGCAACCCAUGCUG
+#=GR DK4080 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DK4080         GUUCGAAUCCAGCUAUUCUCA
+#=GR DK4080 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK1230         GCAUCCAUAGCUCAGUUGGUAGAGCAACAGACUCUUAAUCUGUGGGUCCA
+#=GR DK1230 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK1230         CGGUUCGAGCCCGUGUGGGUGUACCA
+#=GR DK1230 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK3200         GGGUUGCUAACUCAAUGGUAGAGUACUCGGCUUUUAACCGACAGUUCCGG
+#=GR DK3200 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DK3200         GUUCGAGUCCCGGGCAACCCACCA
+#=GR DK3200 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5360         CAAGAUAUAGCUUAAACAAAGCAUCCAGUUUACACCUAGAAGACUUCAUU
+#=GR DV5360 SS (((((((,,<<<<_____>>>>,<<-<<_______>>->>,,,,<<<<__
+
+DV5360         CAUUAUGAAUAUCUUGA
+#=GR DV5360 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1260         GGUCUUGUAGUGAAGUUGGUUAUCAUGCCUCUCUGUCACAGAGGAGAUCG
+#=GR DD1260 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD1260         CGGGUUCAAGUCCCGUCAAGACCGCCA
+#=GR DD1260 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF4800         AUUUAAAUAGCUUAUAAUUAGAGCAUAACAUUGAAGAUGUUGGGGAAAUU
+#=GR DF4800 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF4800         AUUUUAAUUUUUAAAUA
+#=GR DF4800 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2601         GGAGAGAUGGCCGAGUGGACGAAAGCGGCGGAUUGCUAAUCCGUUGUACA
+#=GR DS2601 SS (((((((,,<<_____________>>,<<<<<_______>>>>>,<<<<<
+
+DS2601         AGCUUUUUGUACCGAGGGUUCGAAUCCCUCUCUCUCCG
+#=GR DS2601 SS <<___>>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ3880         UAUGUUGUCGACUAAUCGGUAAGUCAUAAAUUUUUGGUAUUUAUAUUGGG
+#=GR DQ3880 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DQ3880         UGUUCGAGUCGCCCCAACAUAA
+#=GR DQ3880 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV6320         GGUCGUGUGGUUUAGAUGGUUAUAAUUUCUGCUUAACACGCAGACGGUCC
+#=GR DV6320 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DV6320         CAAGUUCGAGUCUUGGCACGAUCA
+#=GR DV6320 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2701         AGGGAUAUAACUCAGCGGUAGAGUGUCACCUUGACGUGGUGGAAGUCAUC
+#=GR DV2701 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DV2701         AGUUCGAGCCUGAUUAUCCCUA
+#=GR DV2701 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2700         GCCGCCAUGGUGAAAUUGGUAGACACGCUGCUCUUAGGAAGCAGUGCUCA
+#=GR DL2700 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL2700         AGCAUCUCGGUUCGAGUCCGAGUGGCGGCA
+#=GR DL2700 SS >>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD5320         AAGAUAUUAGUAAAAUCAAUUACAUAACUUUGUCAAAGUUAAAUUAUAGA
+#=GR DD5320 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DD5320         UCAAUAAUCUAUAUAUCUUA
+#=GR DD5320 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2921         GGAGAGAUGGCCGAGUGGUUGAAGGCGUAGCAUUGGAACUGCUAUGUAGG
+#=GR DS2921 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2921         CUUUUGUUUACCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS2921 SS <____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC5360         AGCCCUGUGGUGAAUUUACACGUUGAAUUGCAAAUUCAGAGAAGCAGCUU
+#=GR DC5360 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DC5360         CAAUUCUGCCGGGGCUU
+#=GR DC5360 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ1660         UGGGGUAUCGCCAAGCGGUAAGGCACCGGUUUUUGAUACCGGCAUUCCCU
+#=GR DQ1660 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DQ1660         GGUUCGAAUCCAGGUACCCCAGCCA
+#=GR DQ1660 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1542         GGAGAAGUACUCAAGUGGCUGAAGAGGCGCCCCUGCUAAGGGUGUAGGUC
+#=GR DS1542 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,<<<
+
+DS1542         GUGUAAGCGGCGCGAGGGUUCAAAUCCCUCCUUCUCCGCCA
+#=GR DS1542 SS <<____>>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX3800         GCUGCUUGAAUGGUUUCAGUGUGGGCUCAUUUCCCAUUACUAUAAAGUUC
+#=GR DX3800 SS (((((((,,,<<<__>>>,,<<<<<_______>>>>>,,,,,<<<<<___
+
+DX3800         GAUUCUUUAAAGCGGCC
+#=GR DX3800 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5360         GAGGAUUUAGCUUAAUUAAAGUGGUUGAUUUGCAUUCAAUUGAUGUAAGG
+#=GR DA5360 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DA5360         UGUAGUCUUGCAAUCCUUA
+#=GR DA5360 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5020         AGAGAUUUAAGUUAAUAACUAAAACCUUCAAAGUUUUCAAUAGAGAGUGA
+#=GR DW5020 SS (((((((,,<<<<___>>>>,<<<<_______>->>>,,,,,<<<<<___
+
+DW5020         AACCCUCUUAAUCUUUA
+#=GR DW5020 SS ____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5640         ACUUUUAAAGGAUAGAAGUAAUCCAUCGGUCUUAGGAACCGAAAAAUUGG
+#=GR DL5640 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DL5640         UGCAACUCCAAAUAAAAGUA
+#=GR DL5640 SS _______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE7680         UCCCGUAUGGUCUAGUGGUUAGGAUACCUGGCUUUCACCCAGGAGGCUCG
+#=GR DE7680 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE7680         GGUUCGAUUCCCGGUACGGGAA
+#=GR DE7680 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG5320         ACUCCCUUAGUAUAAUUAAUAUAACUGACUUCCAAUUAGUAGAUUCUGAA
+#=GR DG5320 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DG5320         UAAACCCAGAAGAGAGUA
+#=GR DG5320 SS ______>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4980         AAGAAAUUAGUUAAACCUAAUAACAUUGGGAUUGUCAGACCAAAGUUACU
+#=GR DD4980 SS (((((((,,<<<<_______>>>>,<<<<__________>>>>,,,,<<<
+
+DD4980         GGUAAUCAACCCAGUAUUUCUUA
+#=GR DD4980 SS <<________>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0981         GCGGGGGUGCCCGAGCCAGGUAAAGGGGCAGGGUUCAGGUCCCUGUGGCG
+#=GR DL0981 SS (((((((,,<<<____________>>>,<<<<<_______>>>>>,<<<_
+
+DL0981         UAGGCCUGCGUGGGUUCAAAUCCCACCCCCCGCA
+#=GR DL0981 SS ___>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG5360         AUUCUUUUAGUAUUAACUAGUACAGCUGACUUCCAAUCAGCUAGUUUCGG
+#=GR DG5360 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DG5360         UCUAGUCCGAAAAAGAAUA
+#=GR DG5360 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3280         GGGUCGAUGCCCGAGCGGUUAAUGGGGACGGACUGUAAAUUCGUUGGCAA
+#=GR DY3280 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<_
+
+DY3280         UAUGUCUACGCUGGUUCAAAUCCAGCUCGGCCCA
+#=GR DY3280 SS __>>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS7240         GGAUGGAUGUCUGAGCGGUUGAAAGAGUCGGUCUUGAAAACCGAAGUAUU
+#=GR DS7240 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS7240         GAUAGGAAUACCGGGGGUUCGAAUCCCUCUCCAUCCG
+#=GR DS7240 SS ______>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX1140         CGCGGGGUAGAGCAGUUGGUAGCUCGCCGGGCUCAUAACCCGGAGGUCGC
+#=GR DX1140 SS :((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DX1140         AGGUUCGAGUCCUGCCCCCGCAACCA
+#=GR DX1140 SS <<<_______>>>>>)))))):::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT0680         GCCUCGGUAGCUCAGCUGGUAGAGCGCGAGACUUGUAAUCUCGUGGUCGC
+#=GR DT0680 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT0680         GGGUUCAAAUCCCGCCCGAGGCU
+#=GR DT0680 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5120         CAAAGUAUAGCUUAACCAAAGCCUUUCGCUUACACCGAAACAAUAUCUGU
+#=GR DV5120 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DV5120         UAAACCCGGAUUACUUUGA
+#=GR DV5120 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1141         GCUGACUUAGCUCAGCAGGCAGAGCAACUGACUUGUAAUCAGUAGGUCGU
+#=GR DT1141 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1141         AGGUUCGAUUCCUAUAGUCAGCACCA
+#=GR DT1141 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4700         GCUUAAGUAGUUUAGGGAAAACAUAAGAUUUUCAUUCUUAAGUCAGAAAG
+#=GR DE4700 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DE4700         CAGUUCUCUUAAGUU
+#=GR DE4700 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI7740         GGCCCAUUAGCUCAGUUGGUUAGAGCGUCGUGCUAAUAACGCGAAGGUCG
+#=GR DI7740 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI7740         CGGGUUCGAUCCCCUCAUGGGCCA
+#=GR DI7740 SS -<<<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1230         CCCCGUGUGGCGAAAUGGUAGACGCGCUUGACUCAAAAUCAAGUAGUGAA
+#=GR DL1230 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<___
+
+DL1230         GACUGUGCUGGUUCGAGUCCGGUCACGGGGACCA
+#=GR DL1230 SS _>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1180         GCUGACUUAGCUCAGCAGGCAGAGCAACUGACUUGUAAUCAGUAGGUCGU
+#=GR DT1180 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1180         AGGUUCGAUUCCUAUAGUCAGCACCA
+#=GR DT1180 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX9991         AGCAGAGUGGCGCAGCGGAAGCGUGCUGGGCCCAUAACCCAGAGGUCGAU
+#=GR DX9991 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX9991         GGAUCUAAACCAUCCUCUGCUA
+#=GR DX9991 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS9991         GUAGUCGUGGCCGAGUGGUUAAGGCGAUGGACUAGAAAUCCAUUGGGGUU
+#=GR DS9991 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DS9991         UCCCCACGCAGGUUCGAAUCCUGCCGACUACG
+#=GR DS9991 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6741         GUGGACGUGCCGGAGUGGUUAUCGGGCAUGACUAGAAAUCAUGUGGGUUU
+#=GR DS6741 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,<<<<__
+
+DS6741         UGCCCGCGCAGGUUCGAAUCCUGCCGUUCACG
+#=GR DS6741 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR5880         UGGUAUAUAGUUUAAACAAAACGAAUGAUUUCGACUCAUUAAAUUAUGAU
+#=GR DR5880 SS (((((-(,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DR5880         AAUCAUAUUUACCAA
+#=GR DR5880 SS ___>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW4840         AAGGCUUUAAGUUAAUAAAACUAAUAACCUUCAAAGCUAUAAAUAAAGAA
+#=GR DW4840 SS (((((((,,<<<<_____>>>>,<<<-<_______>->>>,,,,<<<<__
+
+DW4840         AUUUCUUUAAGCCUUA
+#=GR DW4840 SS ____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG8100         GCGUUGGUGGUAUAGUGGUGAGCAUAGCUGCCUUCCAAGCAGUUGACCCG
+#=GR DG8100 SS (((((((,,<<-<________>->>,<<<<<_______>>>>>,,,,<<<
+
+DG8100         GGUUCGAUUCCCGGCCAACGCA
+#=GR DG8100 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6281         GCCUUGUUGGCGCAAUCGGUAGCGCGUAUGACUCUUAAUCAUAAGGUUAG
+#=GR DK6281 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK6281         GGGUUCGAGCCCCCUACAGGGCU
+#=GR DK6281 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2610         ACCUACUUAACUCAGUGGUUAGAGUACUGCUUUCAUACGGCGGGAGGCAU
+#=GR DM2610 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM2610         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM2610 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH1740         GGUGGCUAUAGCUCAGUUGGUAGAGUCCCGGAUUGUGAUUCCGGUUGUCG
+#=GR DH1740 SS :(((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<
+
+DH1740         CGAGUUCAAGCCUCGUUAGCCACCCCA
+#=GR DH1740 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS0220         GGAGGCGUGGCAGAGUGGUUUAAUGCACCGGUCUUGAAAACCGGCAGUCG
+#=GR DS0220 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS0220         CUCCGGCGACUCAUAGGUUCAAAUCCUAUCGCCUCCG
+#=GR DS0220 SS <<__>>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2600         GGAGAGAUGGCCGAGUGGUUUAUGGCGUCGGUCUUGAAAACCGAUAUAGU
+#=GR DS2600 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<<
+
+DS2600         UUUUAAGAUUAUCGAGGGUUCAAAUCCCUCUCUCUCCU
+#=GR DS2600 SS <<___>>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4980         CCUUAAAGCUACAAAAAGCAGACAAUCUUGUAAAUUGUAAGAUAAAAGGU
+#=GR DT4980 SS (((((((,,<-<_____>->,<<<<<_______>>>>>,,,,,<<--<__
+
+DT4980         UUAAGUCCUUUUUAAGGU
+#=GR DT4980 SS _____>-->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL9991         GGUAGCGUGGCCGAGCGGUCUAAGGCGCUGGAUUAAGGCUCCAGUCUCUU
+#=GR DL9991 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL9991         CGGGGGCGUGGGUUCGAAUCCCACCGCUGCCA
+#=GR DL9991 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5361         ACUUUUAAAGGAUAGUAGUUUAUCCGUUGGUCUUAGGAACCAAAAAAUUG
+#=GR DL5361 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DL5361         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5361 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR5320         UGGUAAUUAGUUUAAAAAAAAUUAAUGAUUUCGACUCAUUAGAUUAUGAU
+#=GR DR5320 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DR5320         GCUGUUCAUAAUUACCAA
+#=GR DR5320 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM4080         ACUUGUAUAGUUUAAAUGGUUAAAACAUUUGUCUCAUAAACAAAUAAUGU
+#=GR DM4080 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,,
+
+DM4080         AAGGUUCAAAUCCUUCUACAAGUA
+#=GR DM4080 SS <<<<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA3280         GGGGAUAUAGCUCAGUUGGUAGAGCGCCGCUCUUGCAUGGCGGAUGUCAG
+#=GR DA3280 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA3280         CGGUUCGAGUCCGCUUAUCUCCA
+#=GR DA3280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL6281         GGAGGGUUGGCCGAGCGGUCUAAGGCGGCAGACUUAAGAUCUGUUGGACG
+#=GR DL6281 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL6281         GUUGUCCGCGCGAGUUCGAACCUCGCAUCCUUCA
+#=GR DL6281 SS ___>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5160         GGUAAAGUGGCCGAGCAGGCGGCGAAUUGUAGCUUCGAAGACAGAGGUUU
+#=GR DY5160 SS (((((((,,<<<_____>>>,,<<<<_______>>>>,,,,,<<-<<___
+
+DY5160         GAGUCCCCUCUUUACCA
+#=GR DY5160 SS ____>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC2920         GGCGACAUGGCCGAGUGGUAAGGCAGAGGACUGCAAAUCCUUUUUUCCCC
+#=GR DC2920 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DC2920         AGUUCAAAUCCGGGUGUCGCCU
+#=GR DC2920 SS -<_______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6321         GGUCUCGUGGCCCAAUGGUUAAGGCGCUUGACUACGGAUCAAGAGAUUCC
+#=GR DR6321 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DR6321         AGGUUCGACUCCUGGCGGGAUCG
+#=GR DR6321 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1260         CGGAAAGUAGCUUAGCUUGGUAGAGCACUCGGUUUGGGACCGAGGGGUCG
+#=GR DP1260 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1260         CAGGUUCGAAUCCUGUCUUUCCGACCA
+#=GR DP1260 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1660         AGGCUUGUAGCUCAGGUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCG
+#=GR DI1660 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1660         GUGGUUCAAGUCCACUCAGGCCUACCA
+#=GR DI1660 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY7200         CCGACCUUAGCUCAGUUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCAC
+#=GR DY7200 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY7200         UGGUUCGAAUCCGGUAGGUCGGA
+#=GR DY7200 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL7920         GUCAGGAUGGCCGAGCGGUCUAAGGCGCUGCGUUCAGGUCGCAGUCUCCC
+#=GR DL7920 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL7920         CUGGAGGCGUGGGUUCGAAUCCCACUUCUGACA
+#=GR DL7920 SS __>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5280         GUCCCGAUAGUAUAAAAAUUACUCUGGUCUUGUAAACCAAAAAUGAAGAG
+#=GR DT5280 SS ((((-((,,<<<_______>>>,,<<<<_______>>>>,,,,,<<<<<_
+
+DT5280         UCAGUCUUCUCAGGACA
+#=GR DT5280 SS ____>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0380         GGGCCCAUAGCUCAGUGGUAGAGUGCCUCCUUUGCAAGGAGGAUGCCCUG
+#=GR DA0380 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DA0380         GGUUCGAAUCCCAGUGGGUCCA
+#=GR DA0380 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM2840         ACCUACUUAACUCAGUGGUUAGAGUAUUGCUUUCAUACGGCGGGAGUCAU
+#=GR DM2840 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DM2840         UGGUUCAAAUCCAAUAGUAGGUA
+#=GR DM2840 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG6280         GCGCAAGUGGUUUAGUGGUAAAAUCCAACGUUGCCAUCGUUGGGCCCCCG
+#=GR DG6280 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG6280         GUUCGAUUCCGGGCUUGCGCA
+#=GR DG6280 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4040         UGGGUUGUUGACUAAUAGGUAAGUCCCUGAAAUUUGACUUCAGUCUAUGU
+#=GR DQ4040 SS ((((-((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DQ4040         AAGUUCGAAUCUUACCAUCCCAU
+#=GR DQ4040 SS <<<_______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5280         GUAGAUAUAGUUUACAAAAAACAUUAGACUGUGAAUCUAACAACAGGAAA
+#=GR DH5280 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DH5280         UCAAAUUCCUUAUUUACC
+#=GR DH5280 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV7740         GUUUCCGUGGUGUAGUGGUUAUCACAUCCGCCUAACACGCGGAAGGCCCC
+#=GR DV7740 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DV7740         CGGUUCAAUCCCGGGCGGAAACA
+#=GR DV7740 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH4500         GGCGGAUAUAACUUAGGGGUUAAAGUUGCAGAUUGUGGCUCUGAAAACAC
+#=GR DH4500 SS :(((((((,,<<<<________>>>>,,<<<<_______>>>>,,,,,<<
+
+DH4500         GGGUUCGAAUCCCGUUAUUCGCC
+#=GR DH4500 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT1664         GCUGAUAUGGCUCAGUUGGUAGAGCGCACCCUUGGUAAGGGUGAGGUCCC
+#=GR DT1664 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT1664         CAGUUCGACUCUGGGUAUCAGCACCA
+#=GR DT1664 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6241         GGCGCGAUGGCAGAGUGGUCUAAUGCGUGAGACUUGAAAUCUCAUUUCUU
+#=GR DS6241 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DS6241         CGGAAGCGUCGGUUCAAAUCCGGCUCGCGUCG
+#=GR DS6241 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1540         GCGCCCGUAGCUCAAUUGGAUAGAGCGUUUGACUACGGAUCAAAAGGUUA
+#=GR DR1540 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1540         GGGGUUCGACUCCUCUCGGGCGCGCCA
+#=GR DR1540 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE6281         UCCGAUGUAGUGUAACGGCUAUCACAUCACGUUCUCACCGUGGAGACCGG
+#=GR DE6281 SS (((((-(,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DE6281         GGUUCGACUCCCCGCUUCGGAG
+#=GR DE6281 SS <<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4362         GGAGGUAUGGCUGAGUGGCUUAAGGCAUUGGUUUGCUAAAUCGACAUACA
+#=GR DS4362 SS (((((-(,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4362         AUAAGAUUGUAUCAUGGGUUCGAAUCCCAUUUCCUCCG
+#=GR DS4362 SS <<___>>>>>>>,<<<<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2540         GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCACGGCAGAUGUCAG
+#=GR DA2540 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2540         GGGUUCGAGUCCCCUUACCUCCA
+#=GR DA2540 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0980         GCGGGGGUGCCCGAGCCAGGUAAAGGGGCAGGGCUCAAGACCCUGUGGCG
+#=GR DL0980 SS (((((((,,<<<____________>>>,<<<<<_______>>>>>,<<<_
+
+DL0980         UAGGCCUGCGUGGGUUCGAAUCCCACCCCCCGCA
+#=GR DL0980 SS ___>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1662         CGGCACGUAGCGCAGCCUGGUAGCGCACCGUCAUGGGGUGUCGGGGGUCG
+#=GR DP1662 SS (((((((,,<<<<_________>>>>,<<<-<_______>->>>,,,,,<
+
+DP1662         GAGGUUCAAAUCCUCUCGUGCCGACCA
+#=GR DP1662 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR5360         UGGUACUUAGUUUAAAAUAAAAUAAAUGAUUUCGACUCAUUAGAUUAUGA
+#=GR DR5360 SS (((((-(,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DR5360         UUUAAUUCAUAAUUACCAA
+#=GR DR5360 SS ______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN6160         GCCUGGAUGGCUAAAUGGCAGAGCGAGCGGCUGUUAACCGCUAGGUCCAU
+#=GR DN6160 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN6160         GGUUCGAUCCCAUGUCUAGGCA
+#=GR DN6160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV6280         GGUUUCGUGGUCUAGUCGGUUAUGGCAUCUGCUUAACACGCAGAACGUCC
+#=GR DV6280 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DV6280         CCAGUUCGAUCCUGGGCGAAAUCA
+#=GR DV6280 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5020         GCUUGAGUAGCAAAGCGGUUAAUGCUUGAGAUUUAGGUUCUCACAUCAAA
+#=GR DL5020 SS (((-(((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DL5020         GGUUCAAGCCCUUUCUCUAGUU
+#=GR DL5020 SS <<_______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG4980         CUUUAUUAGUAUAAUUAGUAUAUUUGAUUUCCAAUCAAAAGGGCUUUGUU
+#=GR DG4980 SS ((((((,,,<<<<_____>>>><<<<<_______>>>>>,,,,<<<<<__
+
+DG4980         AAGAAUCAAAGAUGGAGU
+#=GR DG4980 SS ______>>>>>)))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC5080         GGUUUUGUAGUGUAUCAUUUCGGAUUGCAAAUCCUAGAUGCAACUAGGAC
+#=GR DC5080 SS (((((((,,<<<___>>>,<-<<<_______>>>->,,,<<<<<______
+
+DC5080         GUUGCCAAAGCUU
+#=GR DC5080 SS >>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ1140         UGGGCUAUAGCCAAGCGGUAAGGCAAGGGACUUUGACUCCCUCAUGCGCC
+#=GR DQ1140 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<-
+
+DQ1140         GGUUCGAAUCCUGCUAGCCCAACCA
+#=GR DQ1140 SS <<_______>>->>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI0660         GGGCUCGUAGCUCAGGCUGGUUAGAGUGCUCGGCUCAUAACCGAGUGGUC
+#=GR DI0660 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DI0660         AUGGGUUCAAAUCCCAUCGGGCCCA
+#=GR DI0660 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG7741         GCAUCGGUGGUUCAGUGGUAGAAUGCUCGCCUGCCACGCGGGCGGCCCGG
+#=GR DG7741 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG7741         GUUCGAUUCCCGACCGAUGCA
+#=GR DG7741 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG4360         GCGGAAAUAGCUUAAUGGUAGAGCGUAGCCUUGCCAAGGCUGAGGUUGAG
+#=GR DG4360 SS ((((((,,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG4360         GGUUCAAGUCCCUCCUUCCGCU
+#=GR DG4360 SS <<_______>>>>>,)))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH2520         GGUGGGUGUAGCCAAGUGGUAAGGCAAAGGACUGUGACUCCUUCAUUCGC
+#=GR DH2520 SS :(((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<
+
+DH2520         GGGUUCGAUCCCCGUCAUUCACC
+#=GR DH2520 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT0220         GCUGAUUUAGCUCAGUAGGUAGAGCACCUCACUUGUAAUGAGGAUGUCGG
+#=GR DT0220 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT0220         CGGUUCGAUUCCGUCAAUCAGCACCA
+#=GR DT0220 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2220         GGGCUAUUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGGCC
+#=GR DI2220 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2220         CUGGUUCAAAUCCAGGAUGGCCCA
+#=GR DI2220 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV0860         GGGCCCGUCGUCUAGCCUGGUUAGGACGCUGCCCUGACGCGGCAGAAAUC
+#=GR DV0860 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DV0860         CUGGGUUCAAGUCCCAGCGGGCCCA
+#=GR DV0860 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT5281         GUCCCGAUAGUAUAAAAAUUACUCUGGUCUUGUAAGCCAAAAAUGAAGAG
+#=GR DT5281 SS (((((((,,<<<_______>>>,,<<<<_______>>>>,,,,,<<<<<_
+
+DT5281         UCAGCUCUUCUCGGGACA
+#=GR DT5281 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3200         GGGUCGAUGCCCGAGCGGUUAAUGGGGACGGACUGUAAAUUCGUUGGCAA
+#=GR DY3200 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,<<<<_
+
+DY3200         UAUGUCUACGCUGGUUCAAAUCCAGCUCGGCCCA
+#=GR DY3200 SS __>>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5080         GCUGAAGUAGCAAAAGUGGUUAUGCAAAAGACUUAGGAUCUUUUAACGAG
+#=GR DL5080 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DL5080         GGUUCAACUCCUUCUUUCAGCU
+#=GR DL5080 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5560         ACUUUUAAAGGAUAACAGCUAUCCAUUGGCCUUAGGAGUCAAAAAUAUUG
+#=GR DL5560 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DL5560         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5560 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2410         GGGGGUAUAGCUCAGUUGGUAGAGCGUUGCUUUUGCAUAGCAGACGUCAG
+#=GR DA2410 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2410         CAGUUCGAGUCUGCUUAUCUCCA
+#=GR DA2410 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN7100         UCCUCAGUAGCUCAGUGGUAGAGCGGUCGGCUGUUAACCGAUUGGUCGUA
+#=GR DN7100 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN7100         GGUUCGAAUCCUACUUGGGGAG
+#=GR DN7100 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5840         GCUUUUAAAGGAUAACAGCUAUCCCUUGGUCUUAGGAUCCAAAAAUUUUG
+#=GR DL5840 SS (((((((,,<<<<_______>>>>,<<<<_________>>>>,,,,<<<<
+
+DL5840         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5840 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4880         AUUUAUAUAGUUUAAAAUAAAACCUUACAUUUUCAUUGUAAUAAUAAAAU
+#=GR DE4880 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<<
+
+DE4880         AAUUUAUUUUUAUAAAUU
+#=GR DE4880 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2440         GCGGAUGUAACUCAAUCGGUAGAGUGCGAUCCUUCCAAGUUCGAGGUUGU
+#=GR DG2440 SS (((((((,,<<<<________>>>>,<<<-<_______>->>>,,,,,<<
+
+DG2440         GGGUUCGAGUCCCAUCAUCCGCU
+#=GR DG2440 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1570         GGUCCCGUAGUGUAGUGGUUAACAUGCCUGCCUGUCACGCAGGAGAUCGC
+#=GR DD1570 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DD1570         GGGUUCGAUGCCGUCGGGACCGCCA
+#=GR DD1570 SS <<________>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5000         CAGAAAAUAGUUUAGUGAGAAUGAUAGCUUUGGGAGCUGUUGGUGUAAGU
+#=GR DP5000 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DP5000         AUAAAGUCUUGCUUUUCUGA
+#=GR DP5000 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP6980         GGGCAUUUGGUCUAGUGGUAUGAUUCUCGCUUUGGGUGCGAGAGGUCCCG
+#=GR DP6980 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP6980         AGUUCGAUUCUCGGAAUGCCCC
+#=GR DP6980 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI6281         GCUCGUGUAGCUCAGUGGUUAGAGCUUCGUGCUUAUAACGCGACCGUCGU
+#=GR DI6281 SS (((((-(,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DI6281         GGGUUCAAUCCCCACCUCGAGCA
+#=GR DI6281 SS <<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH1540         GGCGGUUGUGGCGAAGUGGUUAACGCACCAGAUUGUGGCUCUGGCACUCG
+#=GR DH1540 SS :(((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<
+
+DH1540         UGGGUUCGAUUCCCAUCAAUCGCCCCA
+#=GR DH1540 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN1570         UCCGCAGUAGCUCAGUGGUAGAGCAAUCGGCUGUUAACCGAUUGGUCGCA
+#=GR DN1570 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN1570         GGUUCGAAUCCUGCCUGCGGAGCCA
+#=GR DN1570 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX5080         AGUAGAGUAAGCUAAGUGCUAAGCUUUUGGGCUCAUACCCCAGGAAUGAA
+#=GR DX5080 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<-<
+
+DX5080         GGAUAAAAACCUCCCUCUACUU
+#=GR DX5080 SS <<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR4880         GAAUAUGAAGCGAUUAAUUGCAGUUAGUUUCGACCUAACCUUAGGUAUUA
+#=GR DR4880 SS (((((-(,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DR4880         UAUACCCUUAUUUU
+#=GR DR4880 SS __>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2520         GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCAAGGCAGAUGUCAG
+#=GR DA2520 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2520         CGGUUCGAGUCCGCUUAUCUCCA
+#=GR DA2520 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA0670         GGGCUUGUAGCUCAGCUGGUAGAGCGCCGCCUUUGCAAGGCGGAGGCCCU
+#=GR DA0670 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA0670         GGGUCCGAAUCCCAGCAAGUCCA
+#=GR DA0670 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA4000         GGGGUUAUAGUUAAAUUUGGUAGAACGACUGCGUUGCAUGCAUUUAAUAU
+#=GR DA4000 SS (((((((,,<<<___________>>>,<-<<<_______>>>->,,,,<<
+
+DA4000         GAGUUCAAGUCUCAUUAACUCCA
+#=GR DA4000 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX7921         AGCAGAGUGGCGCAGCGGAAGCGUGCUGGGCCCAUAACCCAGAGGUCGAU
+#=GR DX7921 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX7921         GGAUCGAAACCAUCCUCUGCUA
+#=GR DX7921 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2920         GGGGAUAUAGCUCAGUUGGUAGAGCUCCGCUCUUGCACGGCGGAUGUCAG
+#=GR DA2920 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA2920         CGGUUCGAGUCCGCUUAUCUCCA
+#=GR DA2920 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6743         GUGGACAUGCCGGAGUGGUGUUAUCGGGCAUAACUAGAAAUCAUGUGGGC
+#=GR DS6743 SS ((((((,,,<<<<__________>>>>,,<<-<_______>->>,,<<<<
+
+DS6743         UUUGCCCGCGCAGGUUCGAAUCAUGCCGUUUACG
+#=GR DS6743 SS ___>>>>,,<<<-<_______>->>>,)))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ9990         GGUUCCAUGGUGUAAUGGUUAGCACUCUGGACUCUGAAUCCAGCGAUCCG
+#=GR DQ9990 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DQ9990         AGUUCAAAUCUCGGUGGAACCU
+#=GR DQ9990 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4880         CAUUAGAUGACUGAAAGCAAGUACUGGUCUCUUAAACCAUUUUAUAGUAA
+#=GR DK4880 SS (((((((,,<<<_______>>>,,<<<<_______>>>>,,,,,,<<<<<
+
+DK4880         AUUAGCACUUACUUCUAAUGA
+#=GR DK4880 SS ________>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4000         GUAAAUAUAAUUUAAUGGUAAAAUGUAUGUUUUUAGGUGCAUAUUAUCUA
+#=GR DT4000 SS (((((((,,<<<<_______>>>>,<<<<<________>>>>>,,,,<<<
+
+DT4000         AGUUCAAAUCUUAGUAUUUACA
+#=GR DT4000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN2740         UCCUCAGUAGCUCAGUGGUAGAGUGGUCGGCUGUUAACCGAUUGGCCGUA
+#=GR DN2740 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN2740         GGUUCGACUCCUACUUGAGGAG
+#=GR DN2740 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6160         GCCCAGAUAGCUCAGUCGGUAGAGCGCAAGGCUUUUAACCUUGUGGUCGG
+#=GR DK6160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK6160         GGGUUCGAGCCCCCCUUUGGGCG
+#=GR DK6160 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY5220         GGUAAGAUGGCUGAGUGUUGAAGCGUUAGGCUGUAGUCCUUUUUACAGAG
+#=GR DY5220 SS (((((((,,<<<_________>>>,,,<<<_______>>>,,,,,,<<<<
+
+DY5220         GUUCAAUUCCUCUUCUUAUCG
+#=GR DY5220 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4030         UGAAUUGUAGACUAAUAGGUAGUCCCCAAAAUUUGAGUUUGGCUUUAGGU
+#=GR DQ4030 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,,<-
+
+DQ4030         GUGUUCGAGUCACCCCAAUUCAA
+#=GR DQ4030 SS <<<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK9991         GCCCGGCUAGCUCAGUCGGUAGAGCAUGAGACUCUUAAUCUCAGGGUCGU
+#=GR DK9991 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK9991         GGGUUCGAGCCCCACGUUGGGCG
+#=GR DK9991 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4720         AUUUAUAUAGUAUUUAAUACAAUGCAUUUUCAAUGCAUAAAUGGAUAAAU
+#=GR DE4720 SS (((((-(,,<<<<___>>>>,<<<<<_______>>>>>,,,,<<<<____
+
+DE4720         AUCCUUUAAAUA
+#=GR DE4720 SS >>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3880         AGGAAGGGUCCGUAUGUUGGUUUACGGGUUGAGCUGUAAACUCAAUGGCU
+#=GR DY3880 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,<<<<
+
+DY3880         AUGAGGCCGUCGAAGGUUCGAUUCCUUUUCUUCCUA
+#=GR DY3880 SS ____>>>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM3640         AGACACGUAGCUUAGUGGUAAAGCACUGGUCUCAUAAGCCAGCUAUCGCA
+#=GR DM3640 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<-
+
+DM3640         AGUUCGAAUCUCGCCGUGUCUA
+#=GR DM3640 SS <<_______>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE6160         UCCUCAUUGGUGUAGUCGGUAACACUCUAGUCUUUCACACUGGUACCUCG
+#=GR DE6160 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE6160         GGUUCGAUUCCCGAAUGGGGAG
+#=GR DE6160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW1540         AGGGGCAUAGUUUAACGGUAGAACAGAGGUCUCCAAAACCUCCGGUGUGG
+#=GR DW1540 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DW1540         GUUCGAUUCCUACUGCCCCUGCCA
+#=GR DW1540 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6744         GUGGACGUGCCGGAGUGGUUAUCGGGCAUAACUAGAAAUCAUGUGGGCUU
+#=GR DS6744 SS (((((((,,<<<<________>>>>,<<<-<_______>->>>,<<<<__
+
+DS6744         UGCCCGCGCAGGUUCGAAUCCUGCCGUUCACG
+#=GR DS6744 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ1341         AUGGGCUAUGGUGUAAUUGGCAGCACGAGUGAUUCUGGUUCAUUUAGUCU
+#=GR DQ1341 SS :(((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<
+
+DQ1341         AGGUUCGAGUCCUGGUAGCCCAG
+#=GR DQ1341 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4441         UGGAGUAUAGCCAAGUGGUAAGGCAUCGGUUUUUGGUACCGGCAUGCAAA
+#=GR DQ4441 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DQ4441         GGUUCGAAUCCUUUUACUCCAG
+#=GR DQ4441 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW0500         GGGGCUGUGGCCAAGCCCGGCAUGGCGACUGACUCCAGAUCAGUCGAUCG
+#=GR DW0500 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DW0500         GGGGUUCAAAUCCCUCCGGCCCCA
+#=GR DW0500 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA2620         GGGGUAUAGCUCAGUGGUAGAGCGCCGUCCUUGCAAGGCGGACGUCACGG
+#=GR DA2620 SS ((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<--<
+
+DA2620         GUUCAAGUCCGCUUACCUCCA
+#=GR DA2620 SS <_______>>-->))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4050         GGAAAUGUUGUUUAAAGGUUAAACUGUUAGAUUGCAAAUCUACACAUUUA
+#=GR DC4050 SS (((((((,,<-<<________>>->,,<<<<_______>>>>,,,,,,,<
+
+DC4050         GAGUUCGAUUCUCUUCAUUUCUU
+#=GR DC4050 SS <<<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3880         AAGAGUAUAGUUUAAUGGUAAAACUGUAAGCUUCAACCUUAUAUUUCUUA
+#=GR DW3880 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DW3880         GUUCAAAUCUAAGUACUCUUG
+#=GR DW3880 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV5900         CAAGAUAUAGCUUAAACAAAGUAUCUAGUUUACACCUAGAAGAUUUCAUA
+#=GR DV5900 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DV5900         CACAUGAAUAUCUUGA
+#=GR DV5900 SS ___>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1660         GGCGCGUUAACAAAGCGGUUAUGUAGCGGAUUGCAAAUCCGUCUAGUCCG
+#=GR DC1660 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DC1660         GUUCGACUCCGGAACGCGCCUCCA
+#=GR DC1660 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0220         GCGAGAAUGGUCAAAUUGGUAAAGGCACAGCACUUAAAAUGCUGCGGAAU
+#=GR DL0220 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL0220         GAUUUCCUUGUGGGUUCGAGUCCCACUUCUCGCACCA
+#=GR DL0220 SS ___>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA7740         GGGGAUGUAGCUCAGAUGGUAGAGCGCUCGCUUAGCAUGUGAGAGGUACG
+#=GR DA7740 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA7740         GGGAUCGAUGCCCCGCAUCUCCA
+#=GR DA7740 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN6060         GCUCGAUUAGCUCAGCUGGUUAGAGCAUGCGGCUGUUAACCGCAAGGUCG
+#=GR DN6060 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DN6060         UAGGUUCGAUCCCUACAUCGAGCG
+#=GR DN6060 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6284         GGCUACAUGGCCGAGUGGUUAAGGCGAGAGACUCGAAAUCUCUGGGCUCU
+#=GR DS6284 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<____
+
+DS6284         GCCCGCGCUGGUUCAAUCCCUGCUGUGGUCG
+#=GR DS6284 SS __>>,,<<-<<_______>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH1700         GGUGGCUAUAGCUCAGUUGGUAGAGCCCUGGAUUGUGAUUCCAGUUGUCG
+#=GR DH1700 SS :(((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<
+
+DH1700         UGGGUUCGAAUCCCAUUAGCCACCCCA
+#=GR DH1700 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM0900         AGCGGGGUGGGGUAGUCAGGAAAUCCGAUGGGCUCAUAACCCGUAGAUCG
+#=GR DM0900 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM0900         AUGGUUCAAAUCCAUCCCCCGCUA
+#=GR DM0900 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5280         AGAAGUUUAGGAUAUACAGUCCAAGAGCCUUCAAAGCCCUUAGAAAACAA
+#=GR DW5280 SS (((((((,,<<<<_____>>>>,<<-<<_______>>->>,,,,<<<<__
+
+DW5280         ACAAGUUUAACUUCUG
+#=GR DW5280 SS ____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW1230         GGGGGCAUGGUGUCAACGGUAGCACACAGGUCUCCAAAACCUUUAGUGUG
+#=GR DW1230 SS (((((((,,<<<<________>>>>,,<<<<_______>>>>,,,,,<<<
+
+DW1230         GGUUCGAAUCCUGCUGCCCUCGCCA
+#=GR DW1230 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY7060         CCGACCUUAGCUCAGUUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCAC
+#=GR DY7060 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY7060         UGGUUCGAAUCCGGUAGGUCGGA
+#=GR DY7060 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF6281         GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCU
+#=GR DF6281 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF6281         GUGUUCGAUCCACAGAGUUCGCA
+#=GR DF6281 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX6900         AUCAGAGUGGCGCAGCGGAAGCGUGGUGGGCCCAUAACCCACAGGUCCCA
+#=GR DX6900 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX6900         GGAUCGAAACCUGGCUCUGAUA
+#=GR DX6900 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX6320         UGCGCGGUAGGAGAGUGGAACUCCGACGGGCUCAUAACCCGUAGGUCCCA
+#=GR DX6320 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX6320         GGAUCGAAACCUGGCCGCGCAA
+#=GR DX6320 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS3240         GGAGAGAUGGCUGAGUGGACUAAAGCGUUGGAUUGCUAAUCCAUUGUACG
+#=GR DS3240 SS (((((((,,<<<___________>>>,,<<<<_______>>>>,,<<<<<
+
+DS3240         AGUUAAUCGUACCGAGGGUUCGAAUCCCUCUCUUUCCC
+#=GR DS3240 SS <_____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3720         GAAGUAAUGGCUGAGUGGUUAAAGCGGCAGACUGUAAAUCUGUUGGUAGU
+#=GR DY3720 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<___
+
+DY3720         ACCGUCGUUGGUUCGAAUCCAACUUACUUCA
+#=GR DY3720 SS >>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1540         GCGGGUGUAGUUUAGUGGUAAAACCUCAGCCUUCCAAGCUGAUGUCGUGG
+#=GR DG1540 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG1540         GUUCGAUUCCCAUCACCCGCUCCA
+#=GR DG1540 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4070         UGAAUUGUAGACUAAUAGGUAAGUCCCCAAAAUUUGAGUUUGGCUUUAGG
+#=GR DQ4070 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,,<
+
+DQ4070         UGUGUUCGAAUCACCCCAAUUCAA
+#=GR DQ4070 SS -<<<_______>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY1661         GGUGGGGUUCCCGAGCGGCCAAAGGGAGCAGACUCUAAAUCUGCCGUCAU
+#=GR DY1661 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DY1661         CGACUUCGAAGGUUCGAAUCCUUCCCCCACCACCA
+#=GR DY1661 SS _>>>,,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5800         GUAAAUAUAGUUUAACCAAAACAUCAGAUUGUGAAUCUGAUAACAGAGGC
+#=GR DH5800 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<-<<_
+
+DH5800         UCACAACCCCUUAUUUACC
+#=GR DH5800 SS ______>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE3200         GCCCCCAUCGUCUAGCGGUUUAGGACAUCUCUCUUUCAAGGAGGCAACGG
+#=GR DE3200 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE3200         GGAUUCGACUUCCCCUGGGGGUA
+#=GR DE3200 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4081         GUAGAUAUAAUUUAAUCGGUAAAAUGUAUGUUUUUAGGGUACAUAUUAUC
+#=GR DT4081 SS (((((((,,<<<<________>>>>,,<<<<_________>>>>,,,,,<
+
+DT4081         UAAGUUCAAAUCUUAGUAUUUACA
+#=GR DT4081 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG5120         ACUUUCUUAGUAUUAACCAGUACACGUGACUUCCAAUCACAAAGUCUUAG
+#=GR DG5120 SS (((((((,,<<<<______>>>>,,<<<<_______>>>>,,,,,<<<<<
+
+DG5120         UAGAAUCUAAGAGAAAGUA
+#=GR DG5120 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG2681         GCGGGUAUAGUUUAGUGGUAAAACCCUAGCCUUCCAAGCUAACGAUGCGG
+#=GR DG2681 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DG2681         GUUCGAUUCCCGCUACCCGCU
+#=GR DG2681 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5280         AGAAAUAUGUCUGACAAAAGAGUUACUUUGAUAGAGUAAAUAAUAGAGGU
+#=GR DI5280 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,,<<<<<_
+
+DI5280         UUAAAUCCUCUUAUUUCUA
+#=GR DI5280 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD6280         UCCGUGAUAGUUUAAUGGUCAGAAUGGGCGCUUGUCGCGUGCCAGAUCGG
+#=GR DD6280 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD6280         GGUUCAAUUCCCCGUCGCGGAG
+#=GR DD6280 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH2920         GGCGGAUGUAGCCAAGUGGAUCAAGGCAGUGGAUUGUGAAUCCACCAUGC
+#=GR DH2920 SS :(((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,
+
+DH2920         GCGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH2920 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5120         GCUUACGUAGCUUAAGUAAAGCACAGCACUGAAGAUGCUGAGAUGAGCCC
+#=GR DF5120 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DF5120         UAGAAAGCUCCGAAAGCA
+#=GR DF5120 SS ______>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN4620         GUGCGUGUAGAUUAUAUUUGGUAAAAUCGUAAGGCUGUUAACUUUGAGAU
+#=GR DN4620 SS ((-((((,,<<<<___________>>>>,<<<<<_______>>>>>,,,,
+
+DN4620         GGUGUGUUUGCCCGCGGACG
+#=GR DN4620 SS <<<<____>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL6160         GCAAGGGUAGGAAAGUCUGGUUAAAUCCGUGUGACUUAAGAUCUCAUCCA
+#=GR DL6160 SS (((((((,,<<<_____________>>>,<<-<<_______>>->>,<<_
+
+DL6160         UUCGGUUCGCGAGUUCGAAUCUCGCCUCUUGCA
+#=GR DL6160 SS ___>>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1260         GGAAGAUUACCCAAGUCUGGUUGAAGGGAUCGGUCUUGAAAAUUGACAGG
+#=GR DS1260 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,,,<
+
+DS1260         CGGUGAAAGCCGCGCGGGGGUUCGAAUCCCUCAUCUUCCGCCA
+#=GR DS1260 SS <<<<____>>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK5220         CAUUAAGAAGCUAUGCACCAGCACUAGCCUUUUAAGCUAGAGAGAGGGGA
+#=GR DK5220 SS (((((((,,<<<_______>>>,<<<<<_______>>>>>,,,,,<<<<_
+
+DK5220         CACCCUCCCCCUUAAUGA
+#=GR DK5220 SS ______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6160         GACAUCGUAGCGAAGUGGUCUAACGCGUUUGACUUGAAAUCAAAUCUCCU
+#=GR DS6160 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DS6160         AGGAGGCGCAGGUUCGAACCCUGCCGAUGUCG
+#=GR DS6160 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4760         AAGGAGUUAGUUAAAAUAUAACAUUAGAAUGUCAAUCUAAAAUAACUAAA
+#=GR DD4760 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DD4760         AAUAGUACACCUUG
+#=GR DD4760 SS __>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2602         GGAAAGAUGGUUGAGUGGUUUAAGGCGUAGCAUUGGAAAUGCUAUGUAGG
+#=GR DS2602 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS2602         CUUUUGGUCUAUCGAGGGUUCGAAUCCCUCUCUUUCCG
+#=GR DS2602 SS <<___>>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX4360         AGCGGGGUAGAGGAUUUGGUAAACUCAUCAGGCUCAUGACCUGAAGACAG
+#=GR DX4360 SS :((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DX4360         CAGGUUCGAAUCCUGUCCCCGCCU
+#=GR DX4360 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1900         AGGCCUGUAGCUCAGGUGGUUAGAGCGUACGCCUGAUAAGCGUAAGGUCG
+#=GR DI1900 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1900         GCAGUUCGAGUCUGCCUAGGCCUACCA
+#=GR DI1900 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4400         GGAGGUAUGGCUGAGUGGCUUAAGGCAUUGGUUUGCUAAAUCGACAUACA
+#=GR DS4400 SS (((((-(,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4400         AGAAGAUUGUAUCAUGGGUUCGAAUCCCAUUUCCUCCG
+#=GR DS4400 SS <_____>>>>>>,<<<<<_______>>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3640         AGAGGUGUAGCUUAGUUGGUUAAAGCGCAAGAUUCCAAAUCUUGAAAUCG
+#=GR DW3640 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DW3640         AGGGUUCGAGUCCUUUCAUCUCUG
+#=GR DW3640 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4840         GGUCUUAUAGUCAAUAAUGAUAUCAAACUGCAAUUUUGAAGGAGUAAGUU
+#=GR DC4840 SS (((((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DC4840         UUACUAAGGCUU
+#=GR DC4840 SS >>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1141         GCCCAUGUAGCUCAGUAGGAUAGAGCACGCGCCUUCUAAGCGUGAGGUCG
+#=GR DR1141 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1141         GAAGUUCGAGCCUUCUCGUGGGCACCA
+#=GR DR1141 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4000         UGAGUCGUAGACAAUAGGUAAGUUACCAAAAUUUGAGUUUGGAGUUCUUU
+#=GR DQ4000 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DQ4000         GUUCGAAUCAAAGCGAUUCAA
+#=GR DQ4000 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH1230         GCGGUUGUGGCGAAGUGGUUAACGCAUCGGCUUGUGGCGCCGACACUCGG
+#=GR DH1230 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DH1230         GGGUUCAAUUCCCCUCGGCCGCCCCA
+#=GR DH1230 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2520         GCCUUUUUAGCUCAGUGGUAGAGCAUUGUAUUUGUAAUGCGGUGGUCGUC
+#=GR DT2520 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT2520         GGUUCGAAUCCGACAAAAGGCU
+#=GR DT2520 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2580         GGGUUAUUAGCUCAGUUGGUUAGAGCACACCCCUGAUAAGGGUGAGGUCC
+#=GR DI2580 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2580         CUGGUUCAAAUCCAGGAUAACCCA
+#=GR DI2580 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG9991         GCAUUGGUGGUUCAGUGGUAGAAUUCUCGCCUCCCACGCGGGAGACCCGG
+#=GR DG9991 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG9991         GUUCAAUUCCCGGCCAAUGCA
+#=GR DG9991 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF4000         GCUUUUAUAGCUUAGUGGUAAAGCGAUAAAUUGAAGAUUUAUUUACAUGU
+#=GR DF4000 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<-
+
+DF4000         AGUUCGAUUCUCAUUAAGGGCA
+#=GR DF4000 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL0680         GCGGGGGUGCCCGAGUGGUCAAAGGGGACAGGCUUAGGACCUGUUGGCGU
+#=GR DL0680 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL0680         UAGGCUUCCAGGGUUCGAAUCCCUGCCCCCGCA
+#=GR DL0680 SS ___>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6051         GCCUUCCUAGCUCAGUGGUAGAGCGCACGGCUUUUAACCGUGUGGUCGUG
+#=GR DK6051 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DK6051         GGUUCGAUCCCCACGGAAGGCG
+#=GR DK6051 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM0960         GCCGGGGUCGCCUAGCCUGGUCAAGGGCGCCGGACUCAUAAUCCGGUCUU
+#=GR DM0960 SS (((((((,,<<<<___________>>>>,<<<<<_______>>>>>,,,,
+
+DM0960         CCCGGGUUCGAAUCCCGGCCCCGGCACCA
+#=GR DM0960 SS ,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH0680         GGCCGGGGUGGGGUAGUUGGCCAUCCUUCGGGACUGUGGAUCCCGCGACU
+#=GR DH0680 SS :(((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,<
+
+DH0680         CGGGUUCAAAUCCCGGCCCUGGCCU
+#=GR DH0680 SS <<<<_______>>>>>)))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1500         GGUCCAUUGGAGCAGUGGUCUAUCUCGCCUCCCUGUCACGGAGGAGAUCG
+#=GR DD1500 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,<
+
+DD1500         CGGGUUCAAAUCCCGCAUGGACC
+#=GR DD1500 SS <<<<_______>>>>>)))))))
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DZ7560         GCCCGGAUGAACCAUGGCGGUCUGUGGUGCAGACUUCAAAUCUGUAGGCG
+#=GR DZ7560 SS (((((((,,,,<<<<________>>>>,<<<<<_______>>>>>,<<<<
+
+DZ7560         GUUAGCGCCGCAGUGGUUCGACUCCACCUUUCGGGUG
+#=GR DZ7560 SS _____>>>>,,<<<<<_______>>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX1341         CGCGGGGUGGAGCAGCUCGGUAGCUCGCUGGGCUCAUAACCCAGAGGUCG
+#=GR DX1341 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX1341         CAGGUUCAAAUUCUGUCCCCGCUA
+#=GR DX1341 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH1780         GGUGGCUGUAGCUCAGUUGGUAGAGUCCCGGAUUGUGAUUCCGGUUGUCG
+#=GR DH1780 SS :(((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<
+
+DH1780         UGGGUUCGAGCCCCAUCAGCCACCCCA
+#=GR DH1780 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE1180         GGCCUGUUGGUGAAGCGGUUAACACACACGGUUUUCAUCCGUGGACACAC
+#=GR DE1180 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DE1180         GGGUUCGAACCCCGUACAGGCUACCA
+#=GR DE1180 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5280         UAGAUUGAAGCCAGUAAGUAGGGUAUUUAGCUGUUAACUAAAUUUUCGUA
+#=GR DN5280 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<-<
+
+DN5280         GGAAUUUGAUUCCUUCCAAUCUAG
+#=GR DN5280 SS <<_________>>>->))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS2520         GGAGAAGUGUCUGAGUGGUCGAAAGAGCUCGAUUGCUAAUCGAGUGUGUC
+#=GR DS2520 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<-
+
+DS2520         UAAUAAACACCGAGGGUUCAAAUCCCUUCUUCUCCU
+#=GR DS2520 SS <___>->>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE7742         UCCCAUAUGGUCUAGUGGCUAGGAUAUCUGGCUUUCACCCAGAAGGCCCG
+#=GR DE7742 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DE7742         GGUUCGAUUCCCGGUAUGGGAA
+#=GR DE7742 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2921         GCGUCCAUUGUCUAAUGGAUAGGACAGAGGUCUUCUAAACCUUUGGUAUA
+#=GR DR2921 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DR2921         GGUUCAAAUCCUAUUGGACGCA
+#=GR DR2921 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL3840         ACUUAUGUGGCGGAAUAGGUAGACGCGUGGGACUUAAAAUCUCAUUCCUA
+#=GR DL3840 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL3840         CGGAGUGCCGGUUCGACCCCGGUCAUAAGUA
+#=GR DL3840 SS _>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR5080         NAAGAGUUAGUUUAAGGAGAACCUCUGAUUUCGGCUCAGAGGGUUUUGGU
+#=GR DR5080 SS :((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DR5080         UCAACCCCAAAACUCUUGN
+#=GR DR5080 SS ______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM3880         GCCAAAGUAGUUUAAUGGUAGAACAAUAAUUUCAUGAAUUAAGAAUGAGA
+#=GR DM3880 SS (((((((,,<<<<_______>>>>,,<<<<_______>>>>,,,,,<<<<
+
+DM3880         AUUCGAUUUUCUCCUUUGGCU
+#=GR DM3880 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI4960         AAUGAAUUGCCUGAUAAAAGGGUUAUCUUGAUAGGGUAAAUUAUGUAGGA
+#=GR DI4960 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,,<<<<__
+
+DI4960         UUCUACAUUCAUUG
+#=GR DI4960 SS __>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR5220         AGAAAGUUAGUCUAACUAAGACAGCUGGUUUCGACCCAGCAAAUUAUAGA
+#=GR DR5220 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DR5220         CCCACCUAUAACUUUCUU
+#=GR DR5220 SS _____>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV7741         GUUUUCGUAGUGUAGUGGUUAUCACGUGUGCUUCACACGCACAAGGUCCC
+#=GR DV7741 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DV7741         CGGUUCGAACCCGGGCGAAAACA
+#=GR DV7741 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA4880         AGGGUUGUAGUUAAUUAUAACAUUUGAUUUGCAUUCAAAAAGUAUUGAAU
+#=GR DA4880 SS (((((-(,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DA4880         AUUCAAUCUACCUUA
+#=GR DA4880 SS ___>>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5880         AGAAAUAUGUCUGAUAAAAGAGUUACUUUGAUAGAGUAAAUAAUAGGAGC
+#=GR DI5880 SS (((((((,,<<<______>>>,<<<<<_______>>>>>,,,,,<<<-<_
+
+DI5880         UUAAACCCCCUUAUUUCUA
+#=GR DI5880 SS ______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5220         GCCCCCAUAGCUUAACCCACAAAGCAUGGCACUGAAGAUGCCAAGAUGGU
+#=GR DF5220 SS ((((-((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DF5220         ACCUACUAUACCUGUGGGCA
+#=GR DF5220 SS <_______>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP1540         CGGGAAGUAGCUCAGCUUGGUAGAGCACAUGGUUUGGGACCAUGGGGUCG
+#=GR DP1540 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP1540         CAGGUUCGAAUCCUGUCUUCCCGACCA
+#=GR DP1540 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY6742         CCGACCUUAGCUCUGUUGGUAUAGCGGAGGACUGUAGAUCCUUAGGUCAC
+#=GR DY6742 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DY6742         UGGUUCGAAUUCGGUAGGUCGGA
+#=GR DY6742 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG3200         GCGGAUAUAGUUGAAUGGUAUAAUUUCUCUUUGCCAAGGAGAAGACGCGG
+#=GR DG3200 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG3200         GUUCAAUUCCCGCUAUCCGCC
+#=GR DG3200 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI4620         CCGGUAGGGCUGCGUUAGCAGGUUACUGUGAUAUAGUAAUAGUGAGAGUU
+#=GR DI4620 SS (((((-(,,<<<<____>>>>,<<<<<_______>>>>>,,,,,<<<___
+
+DI4620         UUCUUCGUCGGU
+#=GR DI4620 SS _>>>)-))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA6280         GGGCACAUGGCGCAGUUGGUAGCGCGCUUCCCUUGCAAGGAAGAGGUCAU
+#=GR DA6280 SS ((((-((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA6280         CGGUUCGAUUCCGGUUGCGUCCA
+#=GR DA6280 SS <<<_______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE6280         UCCGAUAUAGUGUAACGGCUAUCACAUCACGCUUUCACCGUGGAGACCGG
+#=GR DE6280 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,<<<
+
+DE6280         GGUUCGACUCCCCGUAUCGGAG
+#=GR DE6280 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DZ1662         GGAAGAUCGUCGUCUCCGGUGAGGCGGCUGGACUUCAAAUCCAGUUGGGG
+#=GR DZ1662 SS ((((((((,,<<<<________>>>>,<<<<<_______>>>>>,<<<<<
+
+DZ1662         CCGCCAGCGGUCCCGGGCAGGUUCGACUCCUGUGAUCUUCCGCCA
+#=GR DZ1662 SS <<______>>>>>>>,<<<<<_______>>>>>))))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR2920         GGGCCUGUAGCUCAGAGGAUUAGAGCACGUGGCUACGAACCACGGUGUCG
+#=GR DR2920 SS ((((--(,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR2920         GGGGUUCGAAUCCCUCCUCGCCCA
+#=GR DR2920 SS <<<<_______>>>>>)--)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA4620         GACGGUAUAGUUUAAGUUGAGAUGUGUGCUCUGCGAGCAUUCGGUAGAGG
+#=GR DA4620 SS (((((((,,<<<<______>>>>,,<<<<_______>>>>,,,,,<<<__
+
+DA4620         UUUCUUGCCGUUG
+#=GR DA4620 SS __>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN2700         UCCUCAGUAGCUCAGUGGUAGAGCGGUCGGCUGUUAACUGACUGGUCGUA
+#=GR DN2700 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DN2700         GGUUCGAAUCCUACUUGGGGA
+#=GR DN2700 SS <<_______>>>>>)))))))
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1750         GCGGAAGUGGCGGAAUUGGUAGACGCACUAGAUUUAGGUUCAUGCGCCUG
+#=GR DL1750 SS (((((((,,<<<___________>>>,<--<<_______>>-->,<<<<_
+
+DL1750         UAAGGUGUGAGAGUUCAAGUCUCUCCUUCCGCACCA
+#=GR DL1750 SS __>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1180         GGACCUUUAGCUCAGUUGGUUAGAGCAUCCGGCUCAUAACCGGACGGUCA
+#=GR DI1180 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1180         UUGGUUCAAGUCCAAUAAGGUCCACCA
+#=GR DI1180 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ3240         UGGGGCGUAGCCAAGCGGUAAGGCAACGGGUUUUGGUCCCGCUAUUCGGA
+#=GR DQ3240 SS (((((((,,<<<_________>>>,,<<<<_______>>>>,,,,,,<<<
+
+DQ3240         GGUUCGAAUCCUUCCGUCCCAG
+#=GR DQ3240 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC5000         GGUUUUGUAGUGUAAUUAACAUUUUAGAUUGCAAAUCUAUAGAUGCGGGU
+#=GR DC5000 SS (((((((,,<<<<_____>>>>,,<<<<_______>>>>,,,,,<<<<__
+
+DC5000         AAUCUCCGUCAAAACUU
+#=GR DC5000 SS _____>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV1662         GCGUUCAUAGCUCAGUUGGUUAGAGCACCACCUUGACAUGGUGGGGGUCG
+#=GR DV1662 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DV1662         UUGGUUCGAGUCCAAUUGAACGCACCA
+#=GR DV1662 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5120         GUAGAUAUAGUUUAAUAAAACACUAGAUUGUGAUUCUAGAGUCAGAGGUU
+#=GR DH5120 SS ((-((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<<__
+
+DH5120         AAACCCCUCUUAUCAACC
+#=GR DH5120 SS _____>>>>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4070         GUUGCAUUAGCUCAAUUGGUAGAGCGUUUGUUUUGUAAUCAAAAGGUUUA
+#=GR DT4070 SS (-(((((,,<<<<________>>>>,<<<<_________>>>>,,,,,<<
+
+DT4070         GAGUUCAACUCUCUAAUGCANUN
+#=GR DT4070 SS <<<_______>>>>>)))))-):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX8100         AGCAGAGUGGCGCAGCGGAAGCGUGCUGGGCCCAUAACCCAGAGGUCGAU
+#=GR DX8100 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX8100         GGAUCGAAACCAUCCUCUGCUA
+#=GR DX8100 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY1200         GGACAGGUAGCGAAGUGGCUAAACGCUUCUGACUGUAGAUCAGACACCUU
+#=GR DY1200 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DY1200         CAUGGUUUCGGGAGUUCGAAUCUCUCCCUGUCCACCA
+#=GR DY1200 SS ___>>>,,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2840         GGGCUAUUAGCUCAGUGGUAGAGCGCGCCCCUGAUAAGGGCGAGGUCUCU
+#=GR DI2840 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI2840         GGUUCAAGUCCAGGAUGGCCCACCA
+#=GR DI2840 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1820         GGGUCUGUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCG
+#=GR DI1820 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1820         GCAGUUCGAAUCUGCCCAGACCCACCA
+#=GR DI1820 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG4040         GCAGAUAUAAGUCAAUUGGCAGACCUUCUGAUUUCCACUUAGAUUAUGUU
+#=GR DG4040 SS (((((((,,,<<<________>>>,,<<<<<_______>>>>>,,,,<<<
+
+DG4040         CGUUCGAAUCGGACUAUCUGCA
+#=GR DG4040 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2720         GGGCUAUUAGCUCAGUGGUAGAGCGCGCCCCUGAUAAGGGCGAGGUCUCU
+#=GR DI2720 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DI2720         GGUUCAAGUCCAGGAUGGCCCA
+#=GR DI2720 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK4340         GGGUGUAUAGCUCAGUUGGUAGAGCAUUGGGCUUUUAACCUAAUGGUCGC
+#=GR DK4340 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK4340         AGGUUCAAGUCCUGCUAUACCCA
+#=GR DK4340 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN4700         GGCCAAAUAGUUUAACUUAAAACGUUGAGCUGUUAAUUCAAAAUUGCAGU
+#=GR DN4700 SS (((((((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DN4700         AAUUUGCUUUGGCUU
+#=GR DN4700 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP2601         AGGGAUGUAGCGCAGUUUGGUAGCGCGUUUGUUUUGGGUACAAAAUGUCG
+#=GR DP2601 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP2601         CAGGUUCGAAUCCUGUCAUCCCUA
+#=GR DP2601 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL9990         GGUAGCGUGGCCGAGCGGUCUAAGGCGCUGGAUUUAGGCUCCAGUCUCUU
+#=GR DL9990 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<__
+
+DL9990         CGGAGGCGUGGGUUCGAAUCCCACCGCUGCCA
+#=GR DL9990 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI1542         GGACCUUUAGCUCAGUUGGUUAGAGCAGACGGCUCAUAACCGUCCGGUCG
+#=GR DI1542 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI1542         UAGGUUCGAGUCCUACAAGGUCCACCA
+#=GR DI1542 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM1140         GGCGGGGUAGCUCAGUUGGUUAGAGCGUUCGGUUCAUACCCGAAAGGUCG
+#=GR DM1140 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DM1140         AGAGUUCAAAUCUCUCCCCCGCUACCA
+#=GR DM1140 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5040         GCAAAGGUAGCUUAACAGAUUAAAGCAUAGCACUGAAAAUGCUUCAAAGA
+#=GR DF5040 SS ((-((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,<<
+
+DF5040         GAGUUAAAGUCCCUCCCUUAGCA
+#=GR DF5040 SS <-<_______>->>>))))-)):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5160         GCUUUUAAAGGAAAAGAGCCCUCCACUGGUCUUAGGCGCCAGCAUCUCUU
+#=GR DL5160 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DL5160         GGUGCAAGUCCAAGUAAAAGCU
+#=GR DL5160 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL2921         GGGGAUAUGGCGAAAUCGGUAGACGCUACGGACUUAAAAUCCGUCGACUU
+#=GR DL2921 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<-<<
+
+DL2921         UAAAAAUCGUGAGGGUUCAAGUCCCUCUAUCCCCA
+#=GR DL2921 SS ___>>->>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN5080         UGGGCUGUAGCUAAAUGUAAAAAGCGCUUGGCCGUUAACCAAGAAAUAAU
+#=GR DN5080 SS ((((--(,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DN5080         AGGAUAAAUACCUAUCUUCCCAG
+#=GR DN5080 SS <<<_______>>>>>)--)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP3000         AGGGAUGUAGCGCAGCUUGGUAGCGCGUUUGUUUUGGGUACAAAAUGUCA
+#=GR DP3000 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DP3000         CGGGUUCAAAUCCUGUCAUCCCUA
+#=GR DP3000 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR7560         GGCCGCGUGGCGCAAUGGAUAACGCGUCUGCCUACGGAGCAGAAGAUUGC
+#=GR DR7560 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DR7560         AGGUUCGAAUCCUGCCGUGGUCG
+#=GR DR7560 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY3840         GAGGUGGUGGCUGAAUGGUUAAAGCGGUAGACUGUAAAUCUAUUGGGAUU
+#=GR DY3840 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<__>
+
+DY3840         CCGUCGCCGGUUCGAUUCCGGUCCACCUCA
+#=GR DY3840 SS >>,,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5160         ACUCUUAUAGCUUAAUAUUAAAGUAUAGCGCUGAAAACGCUAAGAUGAAC
+#=GR DF5160 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5160         CCUAAAAAGUUCUAGGGGUA
+#=GR DF5160 SS ________>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2700         GCCCACUUAGCUCAGAGGUUAGAGCAUCGCAUUUGUAAUGCGAGGGUCAU
+#=GR DT2700 SS (((-(((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DT2700         CGGUUCAAAUCCGAUAGUCGGCU
+#=GR DT2700 SS <<<_______>>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2921         GCAUCCAUGGCUGAAUGGUUAAAGCGCCCAACUCAUAAUUGGCGAAUUCG
+#=GR DI2921 SS (((((((,,<<<__________>>>,<<<<<_______>>>>->,,,,,<
+
+DI2921         UAGGUUCAAUUCCUACUGGAUGCA
+#=GR DI2921 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI3880         GGUUCUUUAACUUAACCGGUAAAGUGUGUUCUUGAUAAGGAUAUGUUCAG
+#=GR DI3880 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DI3880         UGUUCGAGUCACUGAAGAAUCA
+#=GR DI3880 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5280         GUUAAUGUAGCUUAUAAUAAAGCAAAGCACUGAAAAUGCUUAGAUGGAUU
+#=GR DF5280 SS (((-(((,,<<<<______>>>>,<<<<<_______>>>>>,,,,<<<<_
+
+DF5280         CAAAAAUCCCAUAAACA
+#=GR DF5280 SS _____>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD2440         GCCCCCAUCGUCUAGAGGCCUAGGACACCUCCCUUUCACGGAGAAAACGC
+#=GR DD2440 SS (((((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,<<
+
+DD2440         GGAUUCGAAUUCCGCUGGGGGUA
+#=GR DD2440 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI8100         GGCCGGUUAGCUCAGUUGGUUAGAGCGUGGUGCUAAUAACGCCAAGGUCG
+#=GR DI8100 SS ((((-((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI8100         CGGGUUCGAUCCCCGUACGGGCCA
+#=GR DI8100 SS <<<<_______>>>>>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1700         GCGAAGGUGGCGGAAUUGGUAGACGCGCUAGCUUCAGGUGUUAGUGUCCU
+#=GR DL1700 SS ((((-((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1700         UACGGACGUGGGGGUUCAAGUCCCCCCCCUCGCACCA
+#=GR DL1700 SS ___>>>>,,<<<<<_______>>>>>))-))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS0440         GUCGUGGUAGCCAAGCCUGGCCCAAGGCGCAGGGUUGCUAACUCUGUGGC
+#=GR DS0440 SS (((((((,,<<<_____________>>>,<<<<<_______>>>>>,<<<
+
+DS0440         GUACAGCCUCCGGGGUUCGAAUCCCCGCCACGACG
+#=GR DS0440 SS _____>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR4800         AAAUAUGAAGCGAUUUAUUGCAAUUAGUUUCGACCUAAUCUUAGGUGAAA
+#=GR DR4800 SS (((((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DR4800         UUCACCCCAUAUUUU
+#=GR DR4800 SS __>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1140         GGCAACAUGGCCAAGCGGCUAAGGCAUGGGUCUGCAACACCCUGAUCAUC
+#=GR DC1140 SS (((((((,,<<<__________>>>,,<<<<_______>>>>,,,,,<<<
+
+DC1140         GGUUCGAAUCCGAUUGUUGCCUCCA
+#=GR DC1140 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5100         GCUAUCGUAGCUUAAUUAAAGUUUAAUACUGAAGAUAUUAGGAUGGACCC
+#=GR DF5100 SS (((-(((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DF5100         UAGAAAGUCCCGAAAGCA
+#=GR DF5100 SS ______>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP5160         CAGGAUAUAGUUUAGGUAGAAUGCCGGUUUUGGGGACCGGUGGUAAAGGU
+#=GR DP5160 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DP5160         UAAAGUCCUUUUAUCCUGA
+#=GR DP5160 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA1820         GGGGCCAUAGCUCAGCUGGGAGAGCGCCUGCUUUGCACGCAGGAGGUCAG
+#=GR DA1820 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA1820         GAGUUCGAUCCUCCUUGGCUCCACCA
+#=GR DA1820 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5600         ACUUUUAAAGGAUAGUAGUUAUCCAUUGGUCUUAGGAGCCAAAAACAUUG
+#=GR DL5600 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DL5600         GUGCAACUCCAAAUAAAAGUA
+#=GR DL5600 SS <_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2700         AGGGCUAUAGCUCAGUUCGGUAGAGCAACUCGUUUACACCGAGAAGGUCU
+#=GR DV2700 SS (((((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,,<
+
+DV2700         ACGGUUCGAAUCCGUAUAGCCCUA
+#=GR DV2700 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6051         GCUCCAGUGGCCUAAUGGAUAUGGCUUUGGACUUCUAAUCCAAAGGUUGC
+#=GR DR6051 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DR6051         GGGUUCGAGUCCCGUCUGGAGUA
+#=GR DR6051 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX1660         CGCGGGGUGGAGCAGCCUGGUAGCUCGUCGGGCUCAUAACCCGAAGAUCG
+#=GR DX1660 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX1660         UCGGUUCAAAUCCGGCCCCCGCAACCA
+#=GR DX1660 SS <<<<_______>>>>>)))))):::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1542         GCGGAAGUAGUUCAGUGGUUGAACACCACCUUGCCAAGGUGGGGGUCGCG
+#=GR DG1542 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DG1542         GGUUCGAAUCCCGUCUUCCGCUCCA
+#=GR DG1542 SS <<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH4040         GGUGAUUGUAAUUCAAUGGUAGAAUGCUUAUUUGUGGCAUAAGAAGUUCU
+#=GR DH4040 SS :(((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<
+
+DH4040         UGGUUCGAUUCCAAGUAAUCACC
+#=GR DH4040 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA1543         GGGGCCUUAGCUCAGCUGGGAGAGCGCCUGCUUUGCACGCAGGAGGUCAG
+#=GR DA1543 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DA1543         CGGUCGACCCGCUAGGCUCCACCA
+#=GR DA1543 SS <<<_____>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4500         GCCCGCGUAGCUCAGAUGGUAGAGCAUUCCCAUGGUAAGGGAAAGGCCUC
+#=GR DT4500 SS (((-(((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,,<
+
+DT4500         CGGUUCAAGUCCGGUCGUAGGCU
+#=GR DT4500 SS <<<_______>>>>,)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT4880         GUUUUAAUAGUUUAAUAAAAACAUUGGUCUUGUAAAUCAAAAAUAAGAUU
+#=GR DT4880 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<__
+
+DT4880         AUUUCUUUUAAAACU
+#=GR DT4880 SS ___>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DN6051         UCCUCCCUGGCGCAGUCGGCAGCGCGUUAGGCUGUUAACCAUCAGGUGUU
+#=GR DN6051 SS (((((((,,<<<<________>>>>,,,,<<_______>>,,,,,,,<<<
+
+DN6051         GGUUCGAAUCCAACGGGAGGAG
+#=GR DN6051 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD4440         GGGGAAAUAGCUCAGUUGGUUAGAGUGCUGGUCUGUCACGCCAGAAGUCG
+#=GR DD4440 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD4440         CGGGUUCGAACCCCGUUUUCCCCG
+#=GR DD4440 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY4240         AAGUGGUUACGCUCAGCUGGGUUAGAGCAAAGGACUGUAAAUCCUUGUGU
+#=GR DY4240 SS (((((((,,,<<<<__________>>>>,<<<<<_______>>>>>,,,,
+
+DY4240         CAGUGGUUCGAAUCCACAACCACUUC
+#=GR DY4240 SS ,,<<<<_______>>>>,))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL5360         GUUAAGGUGGCAGAGCCCGGUAAUUGCAUAAAACUUAAACUUUUAUAUCC
+#=GR DL5360 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DL5360         AGAGAUUCAAAUCCUCUCCUUAACA
+#=GR DL5360 SS <<<<_________>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1181         GCCCAUGUAGCUCAGUAGGAUAGAGCACGCGCCUUCUAAGCGUGAGGUCG
+#=GR DR1181 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1181         GAAGUUCGAGCCUUCUCGUGGGCACCA
+#=GR DR1181 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX6321         UGCGCGGUAGGAGAGUGGAACUCCGACGGGCUCAUAACCCGUAGGUCCCA
+#=GR DX6321 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DX6321         GGAUCGAAACCUGGCCGCGCAA
+#=GR DX6321 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DM5220         AGUAAGGUCAGCUAACUAAGCUAUCGGGCCCAUACCCCGAAAAUGAUGGU
+#=GR DM5220 SS ((((-((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<-<<_
+
+DM5220         UUAACCCCUUCCCCUACUA
+#=GR DM5220 SS ______>>->>))-)))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5880         GUUUAUGUAGCUUACCUCCUCAAAGCAAUACACUGAAAAUGUUUAGACGG
+#=GR DF5880 SS (((((((,,<<<<_________>>>>,<-<<<_______>>>->,,,,<<
+
+DF5880         GCUCACAUCACCCCAUAAACA
+#=GR DF5880 SS <_________>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6745         GUGGACGUGCCGGAGUGGUUAUCGGGCAUGACUAGAAAUCAUGUGGGCUU
+#=GR DS6745 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,<<<<__
+
+DS6745         UGCCCGCGCACGUUCGAAUCCUGCCGUUCACG
+#=GR DS6745 SS _>>>>,,<<<-<_______>->>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL1540         GCGGAUGUGGCGGAAUUGGCAGACGCGCUAGAAUCAGGCUCUAGUGUCUU
+#=GR DL1540 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<_
+
+DL1540         UACAGACGUGGGGGUUCAAGUCCCUUCAUCCGCACCA
+#=GR DL1540 SS ___>>>>,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT2600         GCCCUUUUAACUCAGUGGUAGAGUAACGCCAUGGUAGGGCGUAAGUCAUC
+#=GR DT2600 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DT2600         GGUUCAAAUCUGAUAAAGGGCU
+#=GR DT2600 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR6282         GUUCCGUUGGCGUAAUGGUAACGCGUCUCCCUCCUAAGGAGAAGACUGCG
+#=GR DR6282 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,,<<<
+
+DR6282         GGUUCGAGUCCCGUACGGAACG
+#=GR DR6282 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1500         GCACCCAUAGCGCAACUGGAUAGAGUGUCUGACUACGAAUCAGAAGGUUG
+#=GR DR1500 SS (((((((,,<<-<_________>->>,<<<<<_______>>>>>,,,,,<
+
+DR1500         UAGGUUCAAGUCCUACUGGGUGCA
+#=GR DR1500 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP4440         CGAGGUGUAGCGCAGUCUGGUCAGCGCAUCUGUUUUGGGUACAGAGGGCC
+#=GR DP4440 SS (((((((,,<<<<__________>>>>,<<<<<_______>>>>>,,,,,
+
+DP4440         AUAGGUUCGAAUCCUGUCACCUUGA
+#=GR DP4440 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH8100         GCCGUGAUCGUAUAGGGGUUAGUACUCUGCGUUGUGGCCGCAGCAACCUC
+#=GR DH8100 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DH8100         GGUUCGAAUCCGAGUCACGGCA
+#=GR DH8100 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF1660         GCCCGGAUAGCUCAGUCGGUAGAGCAGGGGAUUGAAAAUCCCCGUGUCCU
+#=GR DF1660 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF1660         UGGUUCGAUUCCGAGUCCGGGCACCA
+#=GR DF1660 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DQ4050         UGAAUCGUAGACUAAUAGGUAAGUCACCAAAAUUUGAGUUUGGAAUUUGU
+#=GR DQ4050 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DQ4050         UUGUUCGAAUCAAACCGGUUCAA
+#=GR DQ4050 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW3000         GCGCUCUUAGUUCAGUUCGGUAGAACGCGGGUCUCCAAAACCCGAUGUCG
+#=GR DW3000 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DW3000         UAGGUUCAAAUCCUACAGAGCGUG
+#=GR DW3000 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4440         GGAUGGAUGUCUGAGCGGUUGAAAGAGUCGGUCUUGAAAACCGAAGUAUU
+#=GR DS4440 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4440         GAUAGGAAUACCGGGGGUUCGAAUCCCUCUCCAUCCG
+#=GR DS4440 SS ______>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI5080         GAGCUUGCCCCUAAAGUUAAGGUGUCUAGCUGAUAAUUAGAUUUAAGGGU
+#=GR DI5080 SS (((((((,,<<<_______>>>,,<<<<<_______>>>>>,,,<<<<<_
+
+DI5080         UAAAUUCCCUUCAAGCUCU
+#=GR DI5080 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX4880         AAAAAGAUAAGCUAAUUAAGCUACUGGGUUCAUACCCCAUUUAUAAAGGU
+#=GR DX4880 SS (((((((,,<<<<_____>>>>,,<<<<_______>>>>,,,,,<<<<<_
+
+DX4880         UAUAAUCCUUUUCUUUUUA
+#=GR DX4880 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD1140         GGCCCCAUAGCGAAGUUGGUUAUCGCGCCUCCCUGUCACGGAGGAGAUCA
+#=GR DD1140 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD1140         CGGGUUCGAGUCCCGUUGGGGUCGCCA
+#=GR DD1140 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DP3880         CAGGUUAGAGCCAGGUGGUUAGGCGUCUUGUUUGGGUCAAGAAAUUGUUA
+#=GR DP3880 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,,<<<
+
+DP3880         UGUUCGAAUCAUAAUAACCUGA
+#=GR DP3880 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DA5280         GAGGAUUUAGCUUAAUUAAAGCAGUUGAUUUGCAUUUAACAGAUGUAAGA
+#=GR DA5280 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DA5280         UAUAGUCUUACAGUCCUUA
+#=GR DA5280 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC8101         GCGGGUAUAGCUCAGGGGUAGAAUAUUUGACUGCAGAUCAAGAGGUCCCU
+#=GR DC8101 SS (-(((((,,<-<<_______>>->,<<<<<_______>>>>>,,,,,<<<
+
+DC8101         UGUUCGAAUUCAGGUGCCCUCU
+#=GR DC8101 SS -<_______>->>>)))))-):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5980         GUUGAUGUAGCUUAAAACCAAAGCAAGGCGCUGAAAAUGCCUAGAUGAGU
+#=GR DF5980 SS (((-(((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5980         AUAUGAACUCCAUAAACA
+#=GR DF5980 SS ______>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD5120         GAGAUGUUAGUAAAACAAUUAGCACGCCUUGUCAAGGCGAAAUAGCUGGU
+#=GR DD5120 SS (((((((,,,<<<_____>>>,,,<<<<_______>>>>,,,,,<<<<<_
+
+DD5120         UAGACUCCGGCACAUCUCA
+#=GR DD5120 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5880         GUAAAUAUAGUUUAACCAAAACAUCAGAUUGUGAAUCUGACAACAGAGGC
+#=GR DH5880 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<-<<_
+
+DH5880         UUACGACCCCUUAUUUACC
+#=GR DH5880 SS ______>>->>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE4500         GUCCCUUUCGUCUAGGGGUAUAGGACAUCGUCUUUUCAUGUCGAAAACAC
+#=GR DE4500 SS (((((((,,<<<<_________>>>>,<<<-<_______>->>>,,,,<<
+
+DE4500         GGGUUCAAAUCCCGUAAGGGAUA
+#=GR DE4500 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK0740         GGGCCCGUAGCUUAGUCUGGUAGAGCGCCUGGCUUUUAAUCAGGCGGUCG
+#=GR DK0740 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DK0740         AGGGUUCGAAUCCCUUCGGGCCCG
+#=GR DK0740 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC2700         GGCGGCAUGGCCAAGCGGUAAGGCAGGGGACUGCAAAUCCUUUAUCCCCA
+#=GR DC2700 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DC2700         GUUCAAAUCUGGGUGCCGCCU
+#=GR DC2700 SS <_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3200         GGCGGAUGUAGCCAAGUGGAUCAAGGCAGUGGAUUGUGAAUCCACCAUGC
+#=GR DH3200 SS :(((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,,
+
+DH3200         GCGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH3200 SS <<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5880         AGAAAUUUAGGUUAAAUACAGACCAAGAGCCUUCAAAGCCCUCAGUAAGU
+#=GR DW5880 SS (((((((,,<<<<_______>>>>,<<-<<_______>>->>,,,,<<<<
+
+DW5880         UGCAAUACUUAAUUUCUG
+#=GR DW5880 SS ______>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DT6280         GCUUCUAUGGCCAAGUUGGUAAGGCGCCACACUAGUAAUGUGGAGAUCAU
+#=GR DT6280 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,,,,,<<
+
+DT6280         CGGUUCAAAUCCGAUUGGAAGCA
+#=GR DT6280 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD7560         UCCUCGGUAGUAUAGUGGUGAGUAUCCGCGUCUGUCACAUGCGAGACCCG
+#=GR DD7560 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<
+
+DD7560         GGUUCAAUUCCCGGCCGGGGAG
+#=GR DD7560 SS <<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK6050         GCCCUUCUAGCUCAGUCGGUAGGGCGCACGGCUCUUAACCGUGUGGUCGU
+#=GR DK6050 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK6050         GGGUUCGAGCCCACGGGGGGUG
+#=GR DK6050 SS <<<______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS4240         GGAGGGAUGGCUGAGUGGCUUAAGGCAUUGGUUUGCUAAAUCGACAUACA
+#=GR DS4240 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS4240         AGAAGAUUGUAUCAUGGGUUCGAAUCCCAUUUCCUCCG
+#=GR DS4240 SS <_____>>>>>>,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX3200         CGCGGAGUAGAGCAACUUGGUAGCUCGCAAGGCUCAUAACCUUGAGGUUA
+#=GR DX3200 SS :((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DX3200         CGGGUUCAAAUCCCGUCUCCGCAC
+#=GR DX3200 SS <<<<_______>>>>>))))))::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DR1780         GCGCCCGUAGCUCAGCUGGAUAGAGCGCUGCCCUCCGGAGGCAGAGGUCA
+#=GR DR1780 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DR1780         CAGGUUCGAAUCCUGUCGGGCGCACCA
+#=GR DR1780 SS <<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK7680         GCCCGGCUAGCUCAGUCGGUAGAGCAUGAGACUCUUAAUCUCAGGGUCGU
+#=GR DK7680 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DK7680         GGGUUCGAGCCCCACGUUGGGCG
+#=GR DK7680 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DW5100         AGGGGCUUAGGAUAAACUAGACCAAGGGCCUUCAAAGCCCUCAGCGGAGG
+#=GR DW5100 SS (((((((,,<<-<______>->>,<<<<<_______>>>>>,,,,<<<<<
+
+DW5100         UGAAAAUCCUCCAGCCCCUG
+#=GR DW5100 SS _______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY6743         CCGACCUUAGCUCAGUUGGUAGAGCGGAGGACUGUAGAUCCUUAGGUCAC
+#=GR DY6743 SS (-(((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY6743         UGGUUCGAAUCUGGUAGGUUUGA
+#=GR DY6743 SS <<<_______>>>>>)))))-):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH3240         GGCGGAUGUAGCCAAGUGGAUUAAGGCAGUGGAUUGUGAAUUCACCAUCG
+#=GR DH3240 SS :(((((((,,<<<___________>>>,<<<<<_______>>>>>,,,,<
+
+DH3240         CGGGUUCAAUUCCCGUCGUUCGCC
+#=GR DH3240 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5900         GUUAAUGUAGCUUAAAAUUAAAGCAAGGCACUGAAAAUGCCUAGAUGAGU
+#=GR DF5900 SS (((-(((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5900         AUAUUAACUCCAUAAACA
+#=GR DF5900 SS ______>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF1540         GGCUCGGUAGCUCAGUUGGUAGAGCAACGGACUGAAAAUCCGUGUGUCGG
+#=GR DF1540 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF1540         CGGUUCGAUUCCGUCCCGAGCCACCA
+#=GR DF1540 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF5960         GUUAAUGUAGCUUAAAUCUAAAGCAAGGCACUGAAAAUGCCUAGAUGAGU
+#=GR DF5960 SS (((-(((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DF5960         GCACUAACUCCAUAAACA
+#=GR DF5960 SS ______>>>>)))-))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1570         GGAGAGCUGUCCGAGUGGUCGAAGGAGCACGAUUGGAAAUCGUGUAGGCG
+#=GR DS1570 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS1570         UGAAUAGCGCCUCAAGGGUUCGAAUCCCUUGCUCUCCGCCA
+#=GR DS1570 SS <_____>>>>>>,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DE2520         GCCCCCAUCGUCUAGAGGCCUAGGACAUCUCCCUUUCACGGAGGCAACGG
+#=GR DE2520 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,<<
+
+DE2520         GGAUUCGAAUUCCCCUGGGGGUA
+#=GR DE2520 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DK0260         GGGUUGCUAGCUCAACUGGUUUAGAGCACUGGUCUUUUAAACCAUAGGUU
+#=GR DK0260 SS (((((((,,<<<<__________>>>>,,<<<<_______>>>>,,,,,,
+
+DK0260         ACAGGUUCGAGUCCUGUGCAACCCACCA
+#=GR DK0260 SS <<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC1540         GGCGGCAUAGCCAAGUGGUAAGGCAGAGGUCUGCAAAACCUUUAUCCCCG
+#=GR DC1540 SS (((((((,,<<<_________>>>,<<<<<_______>>>>>,,,,<<<<
+
+DC1540         GUUCGAAUCCGGGUGUCGCCUCCA
+#=GR DC1540 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1350         GCGGACGUAGCUCAGUUGGUAGAGCGCAACCUUGCCAAGGUUGAGGUCGC
+#=GR DG1350 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DG1350         GAGUUCGAGCCUCGUCGUCCGCU
+#=GR DG1350 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG4760         AUUUUUCUAGUAUAAUUAGUACAUUUGACUUCCAAUCAAAAGAUUGAAAU
+#=GR DG4760 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,<<<<___
+
+DG4760         AUCAAGAAAAAUA
+#=GR DG4760 SS _>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DI2570         GGGCUAUUAGCUCAGUUGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCC
+#=GR DI2570 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DI2570         CUGGUUCAAAUCCAGGAUGGCCCA
+#=GR DI2570 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DF1140         GGUCGUGUAGCUCAGUCGGUAGAGCAGCAGACUGAAGCUCUGCGUGUCGG
+#=GR DF1140 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DF1140         CGGUUCAAUUCCGUCCACGACCACCA
+#=GR DF1140 SS <<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS1660         GGAGAGAUGCCGGAGCGGCUGAACGGACCGGUCUCGAAAACCGGAGUAGG
+#=GR DS1660 SS (((((((,,<<<___________>>>,<<<<<_______>>>>>,<<<<<
+
+DS1660         GGCAACUCUACCGGGGGUUCAAAUCCCCCUCUCUCCGCCA
+#=GR DS1660 SS <____>>>>>>,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL3881         AUGGGUAUGCUGAAAUAAGGUAAACAGGUUCCGCUUAGGACGGAAUAGUC
+#=GR DL3881 SS (((((((,,<<<____________>>>,<<<<<_______>>>>>,<<<_
+
+DL3881         AAACUUUGCAAGUUCAAGUCUUGUUACCCGUA
+#=GR DL3881 SS __>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DH5560         GUAAAUAUAGUUUAAUUAAAACAUUAGACUGUGAAUCUAACUAUAGAAGC
+#=GR DH5560 SS (((((((,,<<<<_____>>>>,<<<<<_______>>>>>,,,,<<<<<_
+
+DH5560         UUACCACUUCUUAUUUACC
+#=GR DH5560 SS ______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6322         GUCACUAUGUCCGAGUGGUUAAGGAGUUAGACUCGAAAUCUAAUGGGCUC
+#=GR DS6322 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DS6322         UGCCCGCGCAGGUUCAAAUCCUGCUGGUGACG
+#=GR DS6322 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DG1180         GCAGGUGUAGUUUAAUGGCAGAACUUCAGCCUUCCAAGCUGAUUGUGAGG
+#=GR DG1180 SS (((((((,,<<<<_______>>>>,<<<<<_______>>>>>,,,,<<<<
+
+DG1180         GUUCGAUUCCCUUCACCUGCUCCA
+#=GR DG1180 SS <_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DD2920         GGGAUUGUAGUUCAAUUGGUCAGAGCACCGCCCUGUCAAGGCGGAAGCUG
+#=GR DD2920 SS (((((((,,<<<<_________>>>>,<<<<<_______>>>>>,,,,,<
+
+DD2920         CGGGUUCGAGCCCCGUCAGUCCCG
+#=GR DD2920 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DC4880         GGUCUUAUAGUCAAUAAUGAUAUCAAACUGCAAUUUUGAAGGAGUAAAUU
+#=GR DC4880 SS (((((((,,<<<<____>>>>,<<<<<_______>>>>>,,,,<<<<___
+
+DC4880         UUUACUAAGACUU
+#=GR DC4880 SS _>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV2640         AGGGCUAUAGCUCAGUUCGGUAGAGCAACUCGUUUACACCGAGAAGGUCU
+#=GR DV2640 SS (((((((,,<<<<_________>>>>,,<<<<_______>>>>,,,,,,<
+
+DV2640         ACGGUUCGAGUCCGUAUAGCCCUA
+#=GR DV2640 SS <<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DY7740         CCUUCGAUAGCUCAGUUGGUAGAGCGGUGGACUGUAGAUCCAUAGGUCGC
+#=GR DY7740 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DY7740         UGGUUCAAAUCCGGCUCGAAGGA
+#=GR DY7740 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DX4980         GUAAAGUAAGCUAAAUGUUAAGCUUUUGGGUUCAUACCUCAAGAAUAGAA
+#=GR DX4980 SS ((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,<<<-
+
+DX4980         GGAUAAAAACCUCUCUUUAUC
+#=GR DX4980 SS <<_______>>>>>)))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DS6280         GGCAACUUGGCCGAGUGGUUAAGGCGAAAGAUUAGAAAUCUUUUGGGCUU
+#=GR DS6280 SS (((((((,,<<<__________>>>,<<<<<_______>>>>>,<<<<__
+
+DS6280         UGCCCGCGCAGGUUCGAGUCCUGCAGUUGUCG
+#=GR DS6280 SS _>>>>,,<<<<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DV1500         GGAGGAUUAGCUCAGCUGGGAGAGCAUCUGCCUUACAAGCAGAGGGUCAC
+#=GR DV1500 SS (((((((,,<<<<________>>>>,<<<<<_______>>>>>,,,,,<<
+
+DV1500         AGGUUCGAGCCCUGUAUCCUCCA
+#=GR DV1500 SS <<<_______>>>>>))))))):
+//
+# STOCKHOLM 1.0
+#=GF AU Koala
+
+DL4050         GCUACUUUGGUGGAAAUGGUAGACACGACACUCUUAAGAUGUGUUAUCGC
+#=GR DL4050 SS (((((((,,<<<___________>>>,<<<<_________>>>>,<<<__
+
+DL4050         AAGAUAUGAAGGUUCAAAUCCUUUAAGUAGUA
+#=GR DL4050 SS __>>>,,<<<<<_______>>>>>))))))):
+//

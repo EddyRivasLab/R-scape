@@ -1,0 +1,2591 @@
+# STOCKHOLM 1.0
+
+#=GS Acid.ferr.-1 DE converted from Zweib's tmRNA dataset 
+
+Acid.ferr.-1         GGGGGCGACCGGCUUCGACGCAGGUCGCGAAGCCUUCGGUGCAUGCAGAG
+#=GR Acid.ferr.-1 SS {{{{{{{,,,,,,,,,,,[[[[[--[-----[[[-[[[[-[[[[[[AAAA
+
+Acid.ferr.-1         CUGCGGUUCGCUCUUAAAACUGGUCGCAGAUUCAUAAUUGCCAACGACAG
+#=GR Acid.ferr.-1 SS A,<<<<<<_aaaaa_______>>>>>>,,,,,,,,,,,,,,,,,,,,,,,
+
+Acid.ferr.-1         CAAUUACGCUCUCGCUGCUUAAGCAGUGAGCCCUCUGCCCGGAUUUGUCU
+#=GR Acid.ferr.-1 SS ,,,,,,,,,,<<<<<<<______>>>>>>>(((((((-(<<<<<<__BBB
+
+Acid.ferr.-1         GUGGAUCCGGAGCCGAAAGGCGCGCGGAGGGUCAUGAAACACGGAAUCGU
+#=GR Acid.ferr.-1 SS BBB>>>>>>,,<<<____>>>)--))))))),,,,,,,,bbbbbb,,,<<
+
+Acid.ferr.-1         GCGCAUUCUAGUCUGUGGGAUGCGCGCUAAAUUAAAGCAGAAUCGCCAUG
+#=GR Acid.ferr.-1 SS <<<<<<<<<<_CCCC>>>>>>>>>>>>,,,,,,,,,,cccc,,,<<<-<<
+
+Acid.ferr.-1         UCGUCAUCCUGUCUGUCGGAGGGCGGUGCGGUUAAAGCCAAAAGACAAAC
+#=GR Acid.ferr.-1 SS <<<<--<<<_DD_DDDD>>>-->>>>>>->>>,,,,,,,,,,,dddd,dd
+
+Acid.ferr.-1         UACGCAUGUAGAUCCGGUGGUCUAGGUACUGCGGACGCGGGUUCAAUUCC
+#=GR Acid.ferr.-1 SS ,,,]]]]]]----]]]]-]]]----]--]]]]],,,<<<<<_______>>
+
+Acid.ferr.-1         CGCCGCCUCCACCA
+#=GR Acid.ferr.-1 SS >>>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Acin.ADP1 DE converted from Zweib's tmRNA dataset 
+
+Acin.ADP1         GGGGAUGUUAUUGGCUUCGACGCUGGUGAUGAAGCUCAUAGAUGCAUGCC
+#=GR Acin.ADP1 SS [[[[[[[,,,,,,,,,,,,,((((((((------(((---(((((((((<
+
+Acin.ADP1         GAGAGCGCAUUUUCUCUCGUAAAUAAAAUUUGCAUUUUAAUAGUCGCAAA
+#=GR Acin.ADP1 SS <<<<__AAA__AA_>>>>>,,,,,,,aa,,aaa,,,,,,,,,,,,,,,,,
+
+Acin.ADP1         CGACGAAACUUACGCUCUAGCUGCCUAAGGGCAGUUUGUCCGCUUCCUAG
+#=GR Acin.ADP1 SS ,,,,,,,,,,,<<<--<<-<<<_______>>>>>-->>>,<<<<-<-<-<
+
+Acin.ADP1         AAUACUUGUGGUUUAGGAACCCGACCGUAGCGCACGCACACAAGUCCGUA
+#=GR Acin.ADP1 SS --<-<<<<__BB_>>>>->-->->-->->>>>,bb,,,,,,<<<<<<<--
+
+Acin.ADP1         UAGAGUCAAGCCUCGGGGCUUUAUACCAAACUUAGAGGAUCGCAUCUUGU
+#=GR Acin.ADP1 SS <____CC_C>-->->>>->>>,,,,,,,,,,,c,cc,,,,,<<<<<<-<<
+
+Acin.ADP1         ACCCUGUUCGUCGGGUCACUGGGUGUUAAAACAAUAGACGAUAUCUAAGC
+#=GR Acin.ADP1 SS -<<<_D_D_DDD>>>-->>->>>>>>,,,,,,,,,,ddd,,,d,d,,,))
+
+Acin.ADP1         AUGUAGUAUUCUCGAGUGUAGUGCUGGCGGACGCGGGUUCAACUCCCGCC
+#=GR Acin.ADP1 SS ))))---)))---)))-----)))))))),,,<<<<<_______>>>>>]
+
+Acin.ADP1         AUCUCCACCA
+#=GR Acin.ADP1 SS ]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Acti.acti DE converted from Zweib's tmRNA dataset 
+
+Acti.acti         GGGGCUGAUUCUGGAUUCGACGGGAUUAGCGAAGCCCGAAGUGCACGUCG
+#=GR Acti.acti SS [[[[[[[,,,,,,,,,,,,,(((((((------(((---(((((((((<<
+
+Acti.acti         AGGUGCGGUAGGCCUCGUAAAUAAACCGCAAAAAAAUAGUCGCAAACGAC
+#=GR Acti.acti SS <<<_AAAAA___>>>>>,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,
+
+Acti.acti         GAACAAUACGCUUUAGCAGCUUAAUAACCUGCCUUUAGCCUUCGCUCCCC
+#=GR Acti.acti SS ,,,,,,,,,<<<--<<<<<_________>>>>->-->>><<<<<<<<<<<
+
+Acti.acti         AGCUUCCGCUCGUAAGACGGGGAUAAAGCGGAGUCAAACCAAAACGAGAU
+#=GR Acti.acti SS --<<<___BBBBB>>>-->>>>---->>>>>>>,,,,,,,,,,bbbbb,,
+
+Acti.acti         CGUGUGGAAGCCACCGUUUGAGGAUCGAAGCAUUAAAUUAAAUCAAAGUA
+#=GR Acti.acti SS ,<<<<---<-<<____CCCCC>>->---->>>>,,,,,,,,,ccccc,,,
+
+Acti.acti         GCUUAAUUGUCGCGUGUCCGUCAGCAGGAUUAAGUGAAUUUAAAGACCGG
+#=GR Acti.acti SS <<<<<<<<-<-<<__DDDDDDD_>>>->>>>>>>>,,,,,,,,,ddd,dd
+
+Acti.acti         ACUAAACGUGUAGUGCUAACGGCAGAGGAAUUUCGGACGGGGGUUCAACU
+#=GR Acti.acti SS dd,,,))))))---)))---)))-----))))))),,,<<<<<_______
+
+Acti.acti         CCCCCCAGCUCCACCA
+#=GR Acti.acti SS >>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Agro.tume DE converted from Zweib's tmRNA dataset 
+
+Agro.tume         GGGGGCGAAAUAGGAUCGACAAGGGCGUAAAGAUCGAACUUUUGCUCGGC
+#=GR Agro.tume SS [[[[[[[,,,,,,,,,,,,((((((-------((((-(((-(((((,AAA
+
+Agro.tume         AUGAUACCGCCGUUAUCGGGUCACAAGUGUAGUUGCAAAUGACAACAACG
+#=GR Agro.tume SS ,,<<<-<<<__aaa__>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Agro.tume         CUAAGGAAUACGCUCUCGCUGCCUAAUGGCGGUGCGGGAAUUCCGCUCUA
+#=GR Agro.tume SS ,,,,,,,,<-<--<-<<<<<<_____>>>>>>->-->>,,,,,,,,,BBB
+
+Agro.tume         AGUCCUUACGGUUAGCCCCGUAAGGCGGGGUUCGGAGGUACCUGGCAACA
+#=GR Agro.tume SS B,,,,<<<<<<bbbb__>>>>>>,<<-<<<<__CCCCCC>>>>->>,,,,
+
+Agro.tume         GAAACCUCCACCUGCCGGGGCAACCCGGCUAUGGCGAUAAACGGUCGGUG
+#=GR Agro.tume SS ,,,cccccc,,,D<<<<<<__d_>>>>>>,,,)))))-----)))))))-
+
+Agro.tume         UAAUAAACCUAUUGGACCCGGGGGCGGUACCCGGCGCCUCCACCA
+#=GR Agro.tume SS -------)))-))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Alca.eutr DE converted from Zweib's tmRNA dataset 
+
+Alca.eutr         UGGGCCGACCUGGUUUCGACGUGGUUACAAAGCAGUGAGGCAUACCGAGG
+#=GR Alca.eutr SS :{{{{{{,,,,,,,,,,,,[[[[[[[-----[[[[-[[[[[[[[[<<<<<
+
+Alca.eutr         ACCCGUCACCUCGUUAAUCAAUGGAAUGCAAUAACUGCUAACGACGAACG
+#=GR Alca.eutr SS __AAAA__>>>>>,,,,,,,aaaa,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Alca.eutr         UUACGCACUCGCUUAAUUGCGGCCGUCCUCGCACUGGCUCGCUGACGGGC
+#=GR Alca.eutr SS ,,,,<<--<<<________>>>-->>((((((,<<<<<<__BBBBBB>>>
+
+Alca.eutr         UAGGGUCGCAAGACCACGCGAGGUAUUUACGUCAGAUAAGCUCCGGAAGG
+#=GR Alca.eutr SS >>><<<<____>>>>,,)))))),,,,,,bbbbbb,,,,<<<<<<<____
+
+Alca.eutr         GUCACGAAGCCGGGGACGAAAACCUAGUGACUCGCCGUCGUAGAGCGUGU
+#=GR Alca.eutr SS CCCCC____>>>>>>->,,,,,,,,,ccccc,,<<<<-<<<<---<<_DD
+
+Alca.eutr         UCGUCCGAUGCGCCGGUUAAAUCAAAUGACAGAACUAAGUAUGUAGAACU
+#=GR Alca.eutr SS DDDDD>>->>>>->>>>,,,,,,,,,,ddd,dddd,,,]]]]]]----]]
+
+Alca.eutr         CUCUGUGGAGGGCUUACGGACGCGGGUUCGAUUCCCGCCGGCUCCACCA
+#=GR Alca.eutr SS ]-]]]]----]]-]]]]],,,<<<<<_______>>>>>}}}}}}:::::
+//
+# STOCKHOLM 1.0
+
+#=GS Anab.spec DE converted from Zweib's tmRNA dataset 
+
+Anab.spec         GGGUCCGUCGGUUUCGACAGGUUGGCGAACGCUACUCUGUGAUUCAGGUC
+#=GR Anab.spec SS [[[[[-[,,,,,,,,,,((((((((-----(((-((((((----(((((A
+
+Anab.spec         GAGAGUGAGUCUCCUCUGCAAAUCAAGGCUCAAAACAAAAGUAAAUGCGA
+#=GR Anab.spec SS ,AAA,<<<<<<<__aaaa_______>>>>>>>,,,,,,,,,,,,,,,,,,
+
+Anab.spec         AUAACAUCGUUAAAUUUGCUCGUAAGGACGCUCUAGUAGCUGCCUAAAUA
+#=GR Anab.spec SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<--<<-<<<<<______>>
+
+Anab.spec         GCCUCUUUCAGGUUCGAGCGUCUUCGGUUUGACUCCGUUAAGGACUGAAG
+#=GR Anab.spec SS >>->->>-->>,,,,,,,,<<<<<<<<<<<___BBBBBB__>>>>>>>>>
+
+Anab.spec         ACCAACCCCCAACGGAUGCUCUAGCAAUGUUCUCUGGUUGGCUUGCUAGC
+#=GR Anab.spec SS >>,,,,,,,,bbbbbb,,,,<<<<<<<-<<<CCCCCCCC>>>>>>>>>>,
+
+Anab.spec         UAAGAUUUAAUCAGAGCAUCCUACGUUCGGGAUAAUGAACGAUUCCCGCC
+#=GR Anab.spec SS ,,,,,,,,cccccccc,<<<<<_DDDDD>>>>>,,,dddddEEEE,,<<<
+
+Anab.spec         UUGAGGGUCAGAAAGGCUAAACCUGUGAAUGAGCGGGGGGUCAAUACCCA
+#=GR Anab.spec SS <<__eeee____>>>>>,,,)))))-------)))))))))------)))
+
+Anab.spec         AUUUGGACAGCAGUUCGACUCUGCUCGAUCCACCA
+#=GR Anab.spec SS ))))),,,<<<<<_______>>>>>]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Aqui.aeol DE converted from Zweib's tmRNA dataset 
+
+Aqui.aeol         GGGGGCGGAAAGGAUUCGACGGGGACAGGCGGUCCCCGAGGAGCAGGCCG
+#=GR Aqui.aeol SS [[[[[[[,,,,,,,,,,,,(((((((-----((((--((((-((((((AA
+
+Aqui.aeol         GGUGGCUCCCGUAACAGCCGCUAAAACAGCUCCCGAAGCUGAACUCGCUC
+#=GR Aqui.aeol SS AA<<<<<aaaa____>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Aqui.aeol         UCGCUGCCUAAUUAAACGGCAGCGCGUCCCCGGUAGGUUUGCGGGUGGCC
+#=GR Aqui.aeol SS ,<<<<<_____________>>>>><<<<<<<<<<<<<<<_BBBBBB>>>>
+
+Aqui.aeol         UACCGGAGGGCGUCAGAGACACCCGCUCGGGCUACUCGGUCGCACGGGGC
+#=GR Aqui.aeol SS >>>>>>->>>>>,,,,,,,,bbbbbb,,,<<<<<<<<<<<_CCCCCCC>>
+
+Aqui.aeol         UGAGUAGCUGACACCUAACCCGUGCUACCCUCGGGGAGCUUGCCCGUGGG
+#=GR Aqui.aeol SS >>>>>>>>>,,,,,,,,,ccccccc<-<<<<<<<<--<<<_DDDDDDD>>
+
+Aqui.aeol         CGACCCGAGGGGAAAUCCUGAACACGGGCUAAGCCUGUAGAGCCUCGGAU
+#=GR Aqui.aeol SS >-->>>>>>>>->,,,,,,,,,ddddddd,,,))))))----))))))))
+
+Aqui.aeol         GUGGCCGCCGUCCUCGGACGCGGGUUCGAUUCCCGCCGCCUCCACCA
+#=GR Aqui.aeol SS ---------))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Azot.vine DE converted from Zweib's tmRNA dataset 
+
+Azot.vine         GGGGCCGAUUAGGAUUCGACGCCGGUAACGAAACUUGAGGGGCAUGCCGA
+#=GR Azot.vine SS [[[[[[[,,,,,,,,,,,,(((((((--------(((-((-((((((AAA
+
+Azot.vine         GUUGGUGGCAGAACUCGUAAAUCCACUGCUACAAACUCAUAGUUGCCAAC
+#=GR Azot.vine SS AA,,<<<<<<<_aaaaa________>>>>>>>,,,,,,,,,,,,,,,,,,
+
+Azot.vine         GACGACAACUACGCUCUGGCGGCUUAAUGCCCCAGCAGUCUCCAGGGGAU
+#=GR Azot.vine SS ,,,,,,,,,,,,,,,<<<<-<<_______>>>>>><<<<<<<---<<<-<
+
+Azot.vine         GCCUGUAAACCCGAAGAGACUGUCAGAUAGAACAGGAUCGCCGCCAAGUU
+#=GR Azot.vine SS _BBBBB_>->>>--->>>>>>>,,,,,,,,,bbbbb,,,<<<<--<-<<<
+
+Azot.vine         CGCUGUAGACGUAACGGCUAAAACUCAUACAGCUCGCCCAAAGCACCCUG
+#=GR Azot.vine SS _CCCCCC>>>->-->>>>,,,,,,,,,cccccc,,<<<<<--<<-<<<_D
+
+Azot.vine         CCCGUCGGGCCGCAAUGGGUUAACUCAAUAGACAGGGCUAAGCAUGUAGA
+#=GR Azot.vine SS DDDDDD>>>-->>-->>>>>,,,,,,,,,,ddd,dddd,,,))))))---
+
+Azot.vine         ACCGAUAGCGGAGAGCUGGCGGACGGGGGUUCAAAUCCCCCCGGCUCCAC
+#=GR Azot.vine SS -))--)))------))))))),,,<<<<<_______>>>>>]]]]]]]::
+
+Azot.vine         CA
+#=GR Azot.vine SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Baci.anth DE converted from Zweib's tmRNA dataset 
+
+Baci.anth         GGGGACGUUACGGAUUCGACAGGGAUAGUUCGAGCUUAGGUUGCGAGUCG
+#=GR Baci.anth SS [[[[[[[,,,,,,,,,,,,((((((((------(((((((((((((((<<
+
+Baci.anth         AGGGGAUCGGCCUCGUUAAAACGUCAAAGCCUAUAAUUGGCAAACAAAAC
+#=GR Baci.anth SS <<<AA__AA_>>>>>,,,,,,aaaa,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Baci.anth         AAUCUUUCUUUAGCUGCUUAAUUGCACUAAAGGUUCCUCCCUCCAUCGUC
+#=GR Baci.anth SS ,,,,,,,<<<<-<-<<________>>->>>>><<<<<<<<<<<<<<_BBB
+
+Baci.anth         CAUGUGGUAGGGUAAGGGACUCAAACUAAGUGGACUACGCCGGAGUUCGC
+#=GR Baci.anth SS BBB>>>>->>>>-->>>>>>,,,,,,,,,bbbbbb,,,,<<---<<<<__
+
+Baci.anth         CGUCUGAGGACAAAGGAAGAGAACAACCAGACUAGCAACUUGGAAGCCUG
+#=GR Baci.anth SS _CCCCC_>>>>--->>,,,,,,,,,,,ccccc,,<<-<-<<----<<<_D
+
+Baci.anth         UCGAUAGGCCGAAGAGUUCGCGAAAUGCUAAUAUAUCGACUACACUCGUA
+#=GR Baci.anth SS DDDDDD>>>---->>-->->>,,,,,,,,,,,,ddddddd,,,))))))-
+
+Baci.anth         GAAGCUUAAGUGCCGAUAUUUUUGGACGUGGGUUCGACUCCCACCGUCUC
+#=GR Baci.anth SS --)))))))))-----)))))))),,,<<<<<_______>>>>>]]]]]]
+
+Baci.anth         CACCA
+#=GR Baci.anth SS ]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Baci.halo DE converted from Zweib's tmRNA dataset 
+
+Baci.halo         GGGGACGUUACGGAUUCGACAGGGAUGGAUCGAGCUUAAGUGGCGAGCCG
+#=GR Baci.halo SS [[[[[[[,,,,,,,,,,,,((((((((------((((((((-((((((AA
+
+Baci.halo         AGGUGGCGAACUCGUUAAAACGCCAUCGCCAAUAACUGGCAAAGAAAACA
+#=GR Baci.halo SS AA,<<<<<__aaaa______>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Baci.halo         ACAACUUCGCAUUAGCUGCCUAAGCUAGCAAAUGCGGUUCCGCCCUCCAU
+#=GR Baci.halo SS ,,,,,,<<<<<<<-<<<<_______>>>>->>>>>>>,<<<<-<-<<<<<
+
+Baci.halo         CGCCCAUGUGGUAGGUGUCGGGACUCACUUUUAGUGGGCUACGCCUCUCA
+#=GR Baci.halo SS _BBBBBB>>>>->--->->>>>,,,,,,,,,,,bbbbbb,,,,<<<-<-<
+
+Baci.halo         CCCUCCGUCUGUGGGUGAAGGAAGAGAUUUAUCAGACUAGCCUUACGGAA
+#=GR Baci.halo SS <<<___CCCCC_>>>>>->>>,,,,,,,,,,,ccccc,,<<<-<<<----
+
+Baci.halo         GCCUGUCGCUGGGCUGAAGUAACGGCGAAAUGCGAAUACAGUGACUACGC
+#=GR Baci.halo SS <<<_DDDDDDD>>>---->>->->>>,,,,,,,,,,,,ddddddd,,,))
+
+Baci.halo         UCGUAGAAGCUUAAGUACUCGUUAUUUCUGGACGUGGGUUCGAUUCCCAC
+#=GR Baci.halo SS ))))----))))))))------)))))))),,,<<<<<_______>>>>>
+
+Baci.halo         CGUCUCCACCA
+#=GR Baci.halo SS ]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Baci.stea DE converted from Zweib's tmRNA dataset 
+
+Baci.stea         GGGGACGAUCCGGAUUCGACAGGGGUAGGUCGAGCUUAAGCGGCGAGCCG
+#=GR Baci.stea SS [[[[[[[,,,,,,,,,,,,((((((((------(((((((((((((((<<
+
+Baci.stea         AGGGGGACGUCCUCGUAAAAACGUCACCUAAAGAUAACUGGCAAACAAAA
+#=GR Baci.stea SS <<<__AAAA_>>>>>,,,,,,aaaa,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Baci.stea         CUACGCUUUAGCUGCCUAAUUGCUGCAGCUAGCUCCUCCCGCCAUCGCCC
+#=GR Baci.stea SS ,,,,<--<<<<<<<___________>>>>>>>-->,,<<<-<-<----<_
+
+Baci.stea         GCGUGGCGUUCGAGGGGCUCAUAUGAAGCGGGCUACGCCCAAAUCCGCCG
+#=GR Baci.stea SS BB_BB__>->->->>>,,,,,,,,,,,,bb,bb,,,,<<<--<<<<___C
+
+Baci.stea         CCUGAGGAUGAGGGAAGAGAUGAACCAGGCUAGCCGCCGGGAGGCCUGUC
+#=GR Baci.stea SS CCCC_>>>>-->>>,,,,,,,,,,,ccccc,,<<<<--<----<<<_DDD
+
+Baci.stea         GGUAGGCGGAACGGACGGCGAAGCGAAAUAUACCGACUACGCUCGUAGAU
+#=GR Baci.stea SS DDDD>>>---->--->>>>,,,,,,,,,,,ddddddd,,,))))))---)
+
+Baci.stea         GCUUAAGUGGCGAUGCCUCUGGACGUGGGUUCGACUCCCACCGUCUCCAC
+#=GR Baci.stea SS ))))))))-----)))))))),,,<<<<<_______>>>>>]]]]]]]::
+
+Baci.stea         CA
+#=GR Baci.stea SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Baci.subt DE converted from Zweib's tmRNA dataset 
+
+Baci.subt         GGGGACGUUACGGAUUCGACAGGGAUGGAUCGAGCUUGAGCUGCGAGCCG
+#=GR Baci.subt SS [[[[[[[,,,,,,,,,,,,((((((((------((((((((--(((((<<
+
+Baci.subt         AGAGGCGAUCUCGUAAACACGCACUUAAAUAUAACUGGCAAAACUAACAG
+#=GR Baci.subt SS <<<_AAA_>>>>>,,,,,,aaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Baci.subt         UUUUAACCAAAACGUAGCAUUAGCUGCCUAAUAAGCGCAGCGAGACUCUU
+#=GR Baci.subt SS ,,,,,,,,,,,,,,,,,,,<<-<<<<___________>>>>->>,<<<<<
+
+Baci.subt         CCUGACAUUGCCUAUGUGUCUGUGAAGAGCACAUCCAAGUAGGCUACGCU
+#=GR Baci.subt SS <--<<<<<_BBBBBB>>>>>--->>>>>>,,,,,,,,,bbbbbb,,,,<<
+
+Baci.subt         UGCGUUCCCGUCUGAGAACGUAAGAAGAGAUGAACAGACUAGCUCUCGGA
+#=GR Baci.subt SS <<<<<<<__CCCCC_>>>>>>>>>,,,,,,,,,,ccccc,,<<<<-<---
+
+Baci.subt         AGGCCCGCCCGCAGGCAAGAAGAUGAGUGAAACCAUAAAUAUGCAGGCUA
+#=GR Baci.subt SS --<<<_DDD_DDD>>>----->-->>>>,,,,,,,,,,,,,ddd,ddd,,
+
+Baci.subt         CGCUCGAGACGCUUAAGUUAAUCGAUGUUUCUGGACGUGGGUUCGACUCC
+#=GR Baci.subt SS ,)))))----))))))))-------)))))))),,,<<<<<_______>>
+
+Baci.subt         CACCGUCUCCACCA
+#=GR Baci.subt SS >>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Bact.fors DE converted from Zweib's tmRNA dataset 
+
+Bact.fors         GGGGCUGACCGGUUUUGACAGCGGGCAGAAGUGGUUUGUAAGCAUGCAGU
+#=GR Bact.fors SS [[[[[[[,,,,,,,,,,,(((((((------((((((((--((((((AAA
+
+Bact.fors         GCGUCGUUGGCCGGCACUUUAAUCUCGGUUGAUCCAAUUUUAACUGGCGA
+#=GR Bact.fors SS AA,,,<<<<<<<_aaaaa________>>>>>>>,,,,,,,,,,,,,,,,,
+
+Bact.fors         AAAUAACUACGCUCUCGCUGCUUAAUCGAAGCACAGUAGAUUGAAGCUUA
+#=GR Bact.fors SS ,,,,,,,,,<<-<<<-<<<<_____________>>>>>>>->>,,,,,,,
+
+Bact.fors         AUCCUUACACAAGGUGUUUGGACGAGACAUCACCCGGAAGCCGUGGCUUC
+#=GR Bact.fors SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,<--<<<<<<<<-<<<____BBBB
+
+Bact.fors         GAGGCAAUCCGAACCGGUGGUGCAGAAAUGUCGGAGAUAGCUUGACGGAU
+#=GR Bact.fors SS BB>>>-->>>>------->>>>-->,,,,,bbbbbb,,,<<<<<-<<-<<
+
+Bact.fors         GUCCCGUACGGCAAGUGAAAAUUCAGGGAAUAAGGUUGCGGUGGGUGGCU
+#=GR Bact.fors SS _CCCC>>->>->>>>>,,,,,,,,,cccc,,,,,<<<<<<<<----<<DD
+
+Bact.fors         UCGGUCUUGCCGCAGCACGAAAAUGAAGGCGAAGAUAAGCAUGUAGAAAG
+#=GR Bact.fors SS DDD_D>>->>>>>>>>,,,,,,,,,,,d,ddddd,,,,))))))-----)
+
+Bact.fors         CAAAUUAGUUCCUCGUUUGGACGAGAGUUCGAAUCUCUCCAGCUCCACCA
+#=GR Bact.fors SS )))))))----)))))-)),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Bact.frag DE converted from Zweib's tmRNA dataset 
+
+Bact.frag         GGGGUUGACUGGUUUUGACAGCGGGCAGAAAUGGUGGGUAAGCAUGCAGU
+#=GR Bact.frag SS [[[[[[[,,,,,,,,,,,(((((((-----((-((((((--((((((AAA
+
+Bact.frag         GCGUCGGUGAUUUGCACUUUAAUCUCAGUUAUCAAAAUUUUAUCUGGCGA
+#=GR Bact.frag SS AA,,,<<<<<<<_aaaaa________>>>>>>>,,,,,,,,,,,,,,,,,
+
+Bact.frag         AACUAAUUACGCUCUUGCUGCUUAAUCGAAUCAUAGUAGAUUAGCUUAAU
+#=GR Bact.frag SS ,,,,,,,,,,<-<<<-<<<<_____________>>>>>>>->,,,,,,,,
+
+Bact.frag         CCAGGCACCAGGUGCCAGGACGAGACAUCACUCGGAAGCUGUUGCUCCGA
+#=GR Bact.frag SS ,,,,,,,,,,,,,,,,,,,,,,,,,<--<<<<<<<<<<<<____BBBBBB
+
+Bact.frag         AGCAUUCCGGUUCAGUGGUGCAGUUACAUCGGGGAUAGUCAGAAGUGGCC
+#=GR Bact.frag SS >>>->>>>>------->>>>-->,,,,,bbbbbb,,,<<<<<<<<<__CC
+
+Bact.frag         UUGCGCUUCUGAUGAAACUUUAAAGGAUAAGGCAGGAAUUGAUGGCUUUG
+#=GR Bact.frag SS CC__>>>>>>>>>,,,,,,,,,cccc,,,,,<<<<<<-<----<<DDDDD
+
+Bact.frag         GUUCUGCUCCUGCACGAAAAACUUAGGCAAAGAUAAGCAUGUAGAAAGCU
+#=GR Bact.frag SS _D>>->->>>>>>,,,,,,,,,,,,d,ddddd,,,,))))))-----)))
+
+Bact.frag         UAUGAUUUCCUCGUUUGGACGAGGGUUCGAAUCCCUCCAGCUCCACCA
+#=GR Bact.frag SS )))-))---)))))-)),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Borr.burg DE converted from Zweib's tmRNA dataset 
+
+Borr.burg         GGGGAUGUUUUGGAUUUGACUGAAAAUGUUAAUAUUGUAAGUUGCAGGCA
+#=GR Borr.burg SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((((-((((((<
+
+Borr.burg         GAGGGAAUCUCUUAAAACUUCUAAAAUAAAUGCAAAAAAUAAUAACUUUA
+#=GR Borr.burg SS <<<<AAA>>>>>,,,,,,aaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Borr.burg         CAAGCUCAAAUCUUGUAAUGGCUGCUUAAGUUAGCAGAGGGUUUUGUUGA
+#=GR Borr.burg SS ,,,,,,,,,,,,,,,,,,,,<<<<_______>>>><<<<<<<---<-<<<
+
+Borr.burg         AUUUGGCUUUGAGGUUCACUUAUACUCUUUUCGACAUCAAAGCUUGCUUA
+#=GR Borr.burg SS <<<<_BBBBBB>>>>>>>->--->>>>>>>,,,,,,,bbbbbb,,,<<<<
+
+Borr.burg         AAAAUGUUUUCAAGUUGAUUUUUAGGGACUUUUAUACUUGAGAGCAAUUU
+#=GR Borr.burg SS <<<--<<<_CCCCCC_>>>>>>>>>>,,,,,,,,,cccccc,,<<<<<-<
+
+Borr.burg         GGUGGUUUGCUAGUAUUUCCAAACCAUAUUGCUUAAUAAAAUACUAGAUA
+#=GR Borr.burg SS <<<<<____DDDDDDD_>>--->>>>->>>>>,,,,,,,,ddddddd,,,
+
+Borr.burg         AGCUUGUAGAAGCUUAUAGUAUUAUUUUUAGGACGCGGGUUCAAUUCCCG
+#=GR Borr.burg SS ,))))))----))))))))))--)))))))),,,<<<<<_______>>>>
+
+Borr.burg         CCAUCUCCACCA
+#=GR Borr.burg SS >]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Brad.japo DE converted from Zweib's tmRNA dataset 
+
+Brad.japo         GGGGGCGAAAUAGGAUCGACGAGGGCGUAAAGGGCGUGCUUUUUCCCGGU
+#=GR Brad.japo SS [[[[[[[,,,,,,,,,,,,((((((-------((((-(((-(((((,AAA
+
+Brad.japo         AUUGUUCCGCCGUUAUCGGGCUACUGCAAUAGUUGCCAACGACAACUUUG
+#=GR Brad.japo SS ,,,<<-<<<__aaa__>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Brad.japo         CUCCGGUUGCUCAGGCUGCGUAACGCAGUUUGAAAGACCAUCUUAAAGUC
+#=GR Brad.japo SS ,,,,,,<<--<<<<<<<<_______>>>>>>>>-->>,,,,<<<<<---<
+
+Brad.japo         CUAACGGGUUAAGCUCCGUUAGGCGGGGUUCGGAGGCACCUGGCAACAGA
+#=GR Brad.japo SS _BBBBBB>>>>>>,,bbbbbb,<<-<<<<__CCCCCC>>>>->>,,,,,,
+
+Brad.japo         AGCCUCCACUUGCCGGUUCGCCGGCUAUGGAAAUAAACGGUCGUCGUAAU
+#=GR Brad.japo SS ,cccccc,,,,<<<<<<__>>>>>>,,,)))))-----)))))))-----
+
+Brad.japo         AAACCAUUCGGACCCGGGGGCGGUACCCGGCGCCUCCACCA
+#=GR Brad.japo SS ---))-)))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Buch.APS- DE converted from Zweib's tmRNA dataset 
+
+Buch.APS-         GGGGCUGUUUUUGGAUUUGACAAAAUUAUCAACAAAGUAAAGUGCAUGCC
+#=GR Buch.APS- SS [[[[[[[,,,,,,,,,,,,,(((((((--------((((((((((((((A
+
+Buch.APS-         GAGGAACGGUUUGCCUCGAUAAAAGCCGUAAAAAAAUAAUUGCAAAUAAU
+#=GR Buch.APS- SS AAAA,<<<<<<<_aaaaa____>>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Buch.APS-         AAACAAAACUACGCUUUAGCAGCUUAAAAAACUGAAUAAAGCCCUUCCUU
+#=GR Buch.APS- SS ,,,,,,,,,,,,<<<<<<-<<<_________>>>-->>>>>><<<<<<<<
+
+Buch.APS-         CUUAUCCUCCUUCUCUUAGGAUGAGAAAACAGGAAGGUCAGAAAAAGAGA
+#=GR Buch.APS- SS <<<<<<<<___BBBBBB>>>>>>>>>---->>>>>>>,,,,,,,bbbbbb
+
+Buch.APS-         AAAACGUGGAUAUCAAGCUUGACGAUAACACGAAGUAGUUUUUUCAAGCU
+#=GR Buch.APS- SS ,,,,<<<<--<<<<__CCCCCC_>>>>->>>>,,,,,,,,,,,cccccc,
+
+Buch.APS-         AUAUACCUAAUAUGUGUUUUUCCAAAUUAGGUAAUGAAUUCAAUAAAGAA
+#=GR Buch.APS- SS ,,,<<<<<<<<-<<_DDDDDDD>>->>>>>>>>,,,,,,,,,,,,,,ddd
+
+Buch.APS-         AAAACUAAGCAUGUAGGGCUUUAUUAGUAGAAAUUUUGGACGCGGGUUCG
+#=GR Buch.APS- SS ,dddd,,,))))))---))))))))------))))))),,,<<<<<____
+
+Buch.APS-         AAUCCCGCCAGCUCCACCA
+#=GR Buch.APS- SS ___>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Burk.cepa DE converted from Zweib's tmRNA dataset 
+
+Burk.cepa         GGGGGCGACCUGGUUUCGACAGGGGUUGUGAAGCGGCUAGGGCAUGUCGA
+#=GR Burk.cepa SS {{{{{{{,,,,,,,,,,,,[[[[[[[------[[[[[[[[-[[[[[[<<<
+
+Burk.cepa         GGACCCGUCACCUCGUUAAUCAAUGGGAAAAUCGUAACUGCAAACGACGA
+#=GR Burk.cepa SS <<_AAAAA__>>>>>,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,,,
+
+Burk.cepa         UACGUUCGCACUGGCAGCCUAAGGGCCGCCGUCCUCUGCCUAGUUCACUG
+#=GR Burk.cepa SS ,,,,,,,,,,,<<<<-<________>->>>>,((((((,<<<<<<__BBB
+
+Burk.cepa         ACGGGCUAGUGUCGCAAGACCGGUAGCAAUACCGACAGAGGUCAUUUACG
+#=GR Burk.cepa SS BBB>>>>>>,,,,,,,,,,,,<<<<____>>>>,,)))))),,,,,,,bb
+
+Burk.cepa         UCAGUUAAGCCCUGUCGGCGUCGCGACGCCAGGGUCGAAAAUCUAGCGAA
+#=GR Burk.cepa SS bbbb,,,,<<<<<<-<<___CCCC__>>->>>>>->,,,,,,,,,cccc,
+
+Burk.cepa         UCGCCGUAGUGCAGCGUGUUCGUCCGCGUCGCUGCGGUUAAAUCAAAAGA
+#=GR Burk.cepa SS ,,<<<<<<<<<--<<<_DDDDDDD>>>-->>>>>>>>>,,,,,,,,,,dd
+
+Burk.cepa         CUGGACUAAACAUGUAGAACUAGUCGUGGAGCGCUUCUGGACGCGGGUUC
+#=GR Burk.cepa SS d,dddd,,,]]]]]]----]]]]]]]]-----]]]]]]],,,<<<<<___
+
+Burk.cepa         GAUUCCCGCCGCCUCCACCA
+#=GR Burk.cepa SS ____>>>>>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Camp.jeju DE converted from Zweib's tmRNA dataset 
+
+Camp.jeju         GGGAGCGACUUGGCUUCGACAGGAGUAAGUCUGCUUAGAUGGCAUGUCGC
+#=GR Camp.jeju SS [[[[[[[,,,,,,,,,,,,((((((((------(((((((-((((((<<<
+
+Camp.jeju         UUUGGGCAAAGCGUAAAAAGCCCAAAUAAAAUUAAACGCAAACAACGUUA
+#=GR Camp.jeju SS <<AAAAA_>>>>>,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Camp.jeju         AAUUCGCUCCUGCUUACGCUAAAGCUGCGUAAGUUCAGUUGAGCCUGAAA
+#=GR Camp.jeju SS ,,,,,,,,,,,,,,,,,,,<--<<<<<________>>>>>-->,<<<<<<
+
+Camp.jeju         UUUAAGUCAUACUAUCUAGCUUAAUUUUCGGUCAUUUUUGAUAGUGUAGC
+#=GR Camp.jeju SS -<<<<<<-<_BBBBBB>->>>>>>->>>>>>,,,,,,,,bbbbbb,,,<<
+
+Camp.jeju         CUUGCGUUUGACAAGCGUUGAGGUGAAAUAAAGUCUUAGCCUUGCUUUUG
+#=GR Camp.jeju SS <<<<-<<-<CCC__>->>>>>>>>,,,,,,,,ccc,,,<<<<<<<<<<--
+
+Camp.jeju         AGUUUUGGAAGAUGAGCGAAGUAGGGUGAAGUAGUCAUCUUUGCUAAGCA
+#=GR Camp.jeju SS -<<<___D_DDDDD>>>>>>>>>>>>>,,,,,,,,ddd,,dd,d,,,)))
+
+Camp.jeju         UGUAGAGGUCUUUGUGGGAUUAUUUUUGGACAGGGGUUCGAUUCCCCUCG
+#=GR Camp.jeju SS )))----)))----))))--)))))))),,,<<<<<_______>>>>>]]
+
+Camp.jeju         CUUCCACCA
+#=GR Camp.jeju SS ]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Carb.hydr DE converted from Zweib's tmRNA dataset 
+
+Carb.hydr         GGGGGCGUAAAGGGUUCGACGGGGGAGCGAAGGGCCGAAAGUAGCGAGGC
+#=GR Carb.hydr SS [[[[[[[,,,,,,,,,,,,(((((--((---(((((--((((--(((((A
+
+Carb.hydr         GAGGACCCCAUCUUACCUCGUUAAAAAUGGUGGGAAAAGAUAACUGCCAA
+#=GR Carb.hydr SS AAAA,,<<<<<<___aaaaa________>>>>>>,,,,,,,,,,,,,,,,
+
+Carb.hydr         CGAAAACUACGCUUUAGCUGCUUAAUAACGCAGCUACGUCCUGACGGAAG
+#=GR Carb.hydr SS ,,,,,,,,,,<--<<-<<-<________>>>>>->,<<<<<<<<<<<<<<
+
+Carb.hydr         CUUGCCCGGGGCUUCUGUCGGGGCGUGACCGGACCGGGCUGGCUUAUGAA
+#=GR Carb.hydr SS <<_BBBBBB>>>>>>>>>>>>>>>>,,,,,,,,bbbbbb,,<<<<<<<<<
+
+Carb.hydr         GGGUGUCCCGGCUCUUCAUAAGCGAGAUUUUACGGGAUAGCCCGAUUGUG
+#=GR Carb.hydr SS <<<<CCCCCC>>>>>>>>>>>>>,,,,,,,,,cccccc,,<<<<<<<<-<
+
+Carb.hydr         GCCUGCCGGUAGGCACCAAUCGGGUGAAAGCAAAAAUACCGGCUGCCCUC
+#=GR Carb.hydr SS <<<_DDDDDDD>>>->>>>>>>>>,,,,,,,,,,,,ddddddd,,,))))
+
+Carb.hydr         GGAGAAGCUUUCGGUUCUUGUCCUCCGGACGGUGGGUUCGAUUCCCCCCG
+#=GR Carb.hydr SS )-----))))--)))))--))-))))),,,,<-<<<_______>>>->]]
+
+Carb.hydr         CCUCCACCA
+#=GR Carb.hydr SS ]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Caul.cres DE converted from Zweib's tmRNA dataset 
+
+Caul.cres         GGGGCCGAUCAGCAUCGACAGACGUGUAAAGGUGUCUGCUUUCUCUCGGC
+#=GR Caul.cres SS [[[[[[[,,,,,,,,,,,(((-(((------((((-(((--(((((,AAA
+
+Caul.cres         UUGGCCCACCGUUUCGGGCCUUUAUCUAAAUGCGAACGAUAACUUCGCUG
+#=GR Caul.cres SS ,,<<<<<___aaa__>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Caul.cres         AAGAGUUCGCCGUCGCUGCGUAAUGCGGUGCAGGUGAAUUCGCCUCUUAA
+#=GR Caul.cres SS ,,,,,<<<<<<--<<<<<_______>>>>>-->>>>>>,,,,,,,BB,BB
+
+Caul.cres         GUCCUAGGGGUUCAGAUCCCUAGGCGGGGCCCGGAGGGAGCCUGCCAACA
+#=GR Caul.cres SS ,,,,<<<<<<bb_bb_>>>>>>,C,,CCCC,,<<<<<<<cccc__c____
+
+Caul.cres         GAAUCCCUCCACCUGUCCGGCUUCGGCCGAACUAUGGGGAUAAACGCGCA
+#=GR Caul.cres SS ___>>>>>>>,,,,<<-<<<<____>>>>->>,,,)))))-----)))-)
+
+Caul.cres         CGUAAUAAGCGGACUGGACCCGGGUGCGAUUCCCGGCGGCUCCACCA
+#=GR Caul.cres SS )))-----)))--))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Chla.abor DE converted from Zweib's tmRNA dataset 
+
+Chla.abor         GGGGGUGUAUAGGUUUCGACUUAGGAAUGAAGUGUUAAUCGCAUGCGGAG
+#=GR Chla.abor SS [[[[[[[,,,,,,,,,,,,(((((-((-----(((((((-((((((AAAA
+
+Chla.abor         GGCGUUGGCUGGCCUCCUAAAAAGCCGACAAAACAAUAAAUGCCGAACCU
+#=GR Chla.abor SS A,,<<<<<<<__aaaaa_____>>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Chla.abor         AAGGCUAAAUGCGAAAUUAUCAGUUUCUCUGAACUCUCUGAGCAAAGAUU
+#=GR Chla.abor SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<-<
+
+Chla.abor         AGCUGCUUAAUUAGCAAAAGUUGUUAUUUAGAUAACCUCUAGAUAACCCG
+#=GR Chla.abor SS <<<<______________>>>>>->->>>,,,,,,,,,,,,,,,,,,,<<
+
+Chla.abor         GUCUUCAUGGACUCUACCAGAGGUUUGUGAAGUACCGUCAUCUAUCUGGU
+#=GR Chla.abor SS <<-<<<<<<<<<<__BBBBBB>>>>>>>>>->->>>>,,,,,,,bbbbbb
+
+Chla.abor         UGGAAUCUACCUCCUCUAAUUCUCAAGGGGGUUUAUUCGAGAUUAUUGAG
+#=GR Chla.abor SS ,,<<<<--<<<<<<<___CCCCCCC>>>>>>>-->>>>,,,,,,,,cccc
+
+Chla.abor         AAUCGUUGGUUUCCAUAGAUGUUCUUAGCUGAGGAAAUGCAACGUUAGAC
+#=GR Chla.abor SS ccc<<<<<<<<<<--<<<___DDDDDDD>>>-->>>>>->>>>>,,,,,,
+
+Chla.abor         UACUAGGGACUAAGCAUGUAGAAGUUAGCAGGGAGUUUACUAAGGACGAG
+#=GR Chla.abor SS ,,ddddddd,,,,))))))----)))))))------))-))))),,,<<<
+
+Chla.abor         AGUUCGAGUCUCUCCACCUCCACCA
+#=GR Chla.abor SS <<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Chlo.tepi DE converted from Zweib's tmRNA dataset 
+
+Chlo.tepi         GGGGAUGACAGGCUAUCGACAGGAUAGGUGUGAGAUGUCGUUGCACUCCG
+#=GR Chlo.tepi SS [[[[[[[,,,,,,,,,,,,(((((((-------(((((-(((((((((AA
+
+Chlo.tepi         AGUUUCAGCAUGGACGGACUCGUUAAACAAGUCUAUGUACCAAUAGAUGC
+#=GR Chlo.tepi SS AAA,,,,,<<<<<<<__aaaaa________>>>>>>>,,,,,,,,,,,,,
+
+Chlo.tepi         AGACGAUUAUUCGUAUGCAAUGGCUGCCUGAUUAGCACAAGUUAAUUCAG
+#=GR Chlo.tepi SS ,,,,,,,,,,,,,,,,<-<<<-<<<______________>>>-->>>>,,
+
+Chlo.tepi         AAGCCAUCGUCCUGCGGUGAAUGCGCUUACUCUGAAGCCGCCGGAUGGCA
+#=GR Chlo.tepi SS ,,,,,,,,,,,,,,,,,,,,,<<-<<<<--<-<<<<<<<<__B__>>>>-
+
+Chlo.tepi         UAACCCGCGCUUGAGCCUACGGGUUCGCGCAAGUAAGCUCCGUACAUUCA
+#=GR Chlo.tepi SS >--------->>>->----->>>>->>,,,,,,b,,,,<<<<<<<<<<<-
+
+Chlo.tepi         UGCCCGAGGGGGUGUGCGGGUAACCAAUCGGGAUAAGGGGACGAACGCUG
+#=GR Chlo.tepi SS <_CCCCC>->>>>>>>>>>>,,,,,,,ccccc,,,,,DD,,DDD,,,,D,
+
+Chlo.tepi         CUGGCGGUGUAAUCGGACCACGAAAAACCAACCACCAGAGAUGAGUGUGG
+#=GR Chlo.tepi SS <<<<-<<<d___ddd__dd___________>>>->>>>,,,,))))))--
+
+Chlo.tepi         UAACUGCAUCGAGCAGUGUCCUGGACGCGGGUUCAAGUCCCGCCAUCUCC
+#=GR Chlo.tepi SS -)))-)))))------))))))),,,<<<<<_______>>>>>]]]]]]]
+
+Chlo.tepi         ACCA
+#=GR Chlo.tepi SS ::::
+//
+# STOCKHOLM 1.0
+
+#=GS Clos.acet.-1.pa DE converted from Zweib's tmRNA dataset 
+
+Clos.acet.-1.pa         AAUCUGGCGUCGAGAGCGGGGAAACGAGCCUUACAAAGCUUUGAGUAAGG
+#=GR Clos.acet.-1.pa SS ::::::::::::::::::::::::<<--<<<<<<__AAAAAA__>>>>>>
+
+Clos.acet.-1.pa         AACGGAAUUUAUGAAGCUACUGAAGUGAAAAGCUUGUUUGUAGGCGUUUC
+#=GR Clos.acet.-1.pa SS -->>::::::::aaaaaa::<---<<<<<<-<<<_BBBBBBB>>>->>>>
+
+Clos.acet.-1.pa         AUGGAGGGAAUGUUAAAAUACAAACUGCACUCGGAGAUGCUUAAAUGAAA
+#=GR Clos.acet.-1.pa SS >>--->::::::::::::bbbbbbb:::::::::::::::::::::::::
+
+Clos.acet.-1.pa         CCAUUUUCGGACAGGGGUUCGAUUCCCCUCGCCUCCACCA
+#=GR Clos.acet.-1.pa SS ::::::::::::<<<<<_______>>>>>:::::::::::
+//
+# STOCKHOLM 1.0
+
+#=GS Clos.botu DE converted from Zweib's tmRNA dataset 
+
+Clos.botu         GGGGGCGCAAUGGUUUCGACGGGGGCAAAUUGCUCCUGGGAAGCGAGUCG
+#=GR Clos.botu SS [[[[[[[,,,,,,,,,,,,((((((((------(((((((-(-(((((AA
+
+Clos.botu         AAGGGAUCCUGUACCUGCGUUAAAAAACUGGGAACUUAAAUAUAAUUGCA
+#=GR Clos.botu SS ,AA,,,<<<-<<__aa_aa_______>>->>>,,,,,,,,,,,,,,,,,,
+
+Clos.botu         AACGAUAAUUUUGCAUUAGCUGCCUAAUAGUUGCAGCUCGUCAGCCUAAG
+#=GR Clos.botu SS ,,,,,,,,,,,<<-<<-<<<<<___________>>>>>->>>><<<<<<<
+
+Clos.botu         AGUCCCACGACUUAGGGUCUGGCGUCGACAGUGGGGAACCGAGUCUUACA
+#=GR Clos.botu SS __BBBBBB__>>>>>------>>,,,,,,,bbbbbb,,<<<--<<<<<<_
+
+Clos.botu         AAGCUUUGAGUAAGGAACGGAAUUAAUGAAGCUACUGAAUCUAGGAGCCU
+#=GR Clos.botu SS _CCCCCC__>>>>>>-->>>,,,,,,,cccccc,<<---<<<<<--<<<_
+
+Clos.botu         GUUUAUCGGCGCUUAGAGGAGGGAAUGUAAAAGGAUAAACUGCACUCGGA
+#=GR Clos.botu SS DDDDDDD>>>-->>>>>--->>,,,,,,,,,,,ddddddd,,,)))))--
+
+Clos.botu         GAUGCCCAGGGGUUGCUGCUUUCGGACAGGGGUUCGAUUCCCCUCGCCUC
+#=GR Clos.botu SS --)-)))))))-----)))))))),,,<<<<<_______>>>>>]]]]]]
+
+Clos.botu         CACCA
+#=GR Clos.botu SS ]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Clos.diff DE converted from Zweib's tmRNA dataset 
+
+Clos.diff         GGGGCGUAAAGGUUUCGACGUGGGUUUGGAACUUGAGGCUGCAUGUCGUG
+#=GR Clos.diff SS [[[[[[,,,,,,,,,,,,((((((((-----((((--((-((((((AAAA
+
+Clos.diff         UUACUCUGGGUCACGUAAAAACUGGGGAACUUUAAAAUAAACGCAGACGA
+#=GR Clos.diff SS ,,,<<<<<<__aaaa______>>>>>>,,,,,,,,,,,,,,,,,,,,,,,
+
+Clos.diff         UAAUUUCGCGAUAGCAGCCUAGUUGCUGCUCGUCCCUCUUAGUCCUCCUG
+#=GR Clos.diff SS ,,,,,,,,,<-<<<<<<_____>>>>>>-><<<<<-<<<<<<<<_BBBBB
+
+Clos.diff         CCGACUAAGACUGGACGUCAUUAUGCAGGGAACUACUUUAGGGGUGUCUC
+#=GR Clos.diff SS B_>>>>>>>>-->>>>>,,,,,,,bbbbbb,,<<<<<<<<<<___CCCCC
+
+Clos.diff         GACUUGAAGUAGAUUAAUUGGGACUGGCUAAGCAUAGAGCCUGCCACUUG
+#=GR Clos.diff SS __>>>>>>>>>>,,,,,,,ccccc,,,<<--<<<<<<-<<<_DDDDDDD>
+
+Clos.diff         GCGCUAUGUGAGGUGAGAUAUUAGUGAAGUUGGCUAAGCAUGUAGAUGCA
+#=GR Clos.diff SS >>->>>>>>-->>,,,,,,,,,,,,,ddd,dddd,,,))))))----))-
+
+Clos.diff         GCAAGGAAAAGAUUUGCGGACAGGGGUUCGACUCCCCUCGUCUCCACCA
+#=GR Clos.diff SS -))))-----)))))))),,,<<<<<_______>>>>>]]-]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Clos.perf DE converted from Zweib's tmRNA dataset 
+
+Clos.perf         GGGGGCGUUUUGGCUUCGACGGGGGUAAGAUGGGUUUGAUAAGCGAGUCG
+#=GR Clos.perf SS [[[[[[[,,,,,,,,,,,,((((((((-(-(((----(((--((((((AA
+
+Clos.perf         AGGGAAGCAUGGUGCCUCGAUAAUAAAGUAUGCAUUAAAGAUAAACGCAG
+#=GR Clos.perf SS AAA,,,<<<<<-<_aaaaa_______>->>>>>,,,,,,,,,,,,,,,,,
+
+Clos.perf         AAGAUAAUUUUGCAUUAGCAGCUUAAUUUAGCGCUGCUCAUCCUUCCUCA
+#=GR Clos.perf SS ,,,,,,,,,,,<-<<-<<<<<____________>>>>>->>>,<<<<<<<
+
+Clos.perf         AUUGCCCACGGUUGAGAGUAAGGGUGUCAUUUAAAAGUGGGGAACCGAGC
+#=GR Clos.perf SS <<__BBBBB_>>>>>>----->>>,,,,,,,,,,,,bbbbb,,,<<<--<
+
+Clos.perf         CUAGCAAAGCUUUGAGCUAGGAACGGAAUUUAUGAAGCUUACCAAAGAGG
+#=GR Clos.perf SS <<<<<__CCCCCC__>>>>>>-->>>,,,,,,,cccccc<--<<-<<<<-
+
+Clos.perf         AAGUUUGUCUGUGGACGUUCUCUGAGGGAAUUUUAAAACACAAGACUACA
+#=GR Clos.perf SS --<<__DDDDDDD_>>->>>>->>-->,,,,,,,,,,,ddd,dddd,,,)
+
+Clos.perf         CUCGUAGAAAGUCUUACUGGUCUGCUUUCGGACACGGGUUCGACACCCGU
+#=GR Clos.perf SS )))))-----))))))-)----)))))))),,,<<<<<_______>>>>>
+
+Clos.perf         CGCCUCCACCA
+#=GR Clos.perf SS ]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Clos.ther DE converted from Zweib's tmRNA dataset 
+
+Clos.ther         GGGGGCGUAUUGGUUUCGACGGGAUUGUUGAAGCUUGAGUAGCGGGUAGA
+#=GR Clos.ther SS [[[[[[[,,,,,,,,,,,,((((((((-------((((((--(((((AAA
+
+Clos.ther         GGAUUCUCGUUGGCCUCUUUAAAAAACGAGAAACUAAAAUAAACGCUAAC
+#=GR Clos.ther SS AA,<<<<<<<___aaaaa_______>>>>>>>,,,,,,,,,,,,,,,,,,
+
+Clos.ther         GAAGAUAAUUACGCUUUAGCUGCUGCCUAAUAUAGGCAGCCCGUCAGUCC
+#=GR Clos.ther SS ,,,,,,,,,,,,,,,<<-<<-<<<<___________>>>>-->>->>,,<
+
+Clos.ther         AGGGUUCCUGCGCCUUGGGUAGCUGGCGUCAUUAAGUCAGGCCUUUUGAG
+#=GR Clos.ther SS <<<<-------<<<<<<<<____BBBB__>->>>---->>>>->>>>>,,
+
+Clos.ther         UGGGAAGGUUAAACUCUAGAACUGUCACAGUGGUAGCCUUGAGCUGUGAU
+#=GR Clos.ther SS ,,,,,,,bbbb,,,,,,,,,,<<<<<<<<<<_CCCCCCCC_>->>>>>>>
+
+Clos.ther         GGAUUUUAAAGGCUACUGAUAUCCAAAGCCUGCCCAUGGGCGUUGGGUUG
+#=GR Clos.ther SS >>,,,,,,cccccccc<--<<<<<<----<__DDDDD__>--->>>>>->
+
+Clos.ther         AGGGAAUUUUUAAAACAUGGGCUGCACCCGGAGAAGCUCUUGUGGAUACG
+#=GR Clos.ther SS -->,,,,,,,,,,,d,,dddd,,,,)))))-----)))----)))---))
+
+Clos.ther         AUUUCGGACAGGGGUUCGACUCCCCUCGCCUCCACCA
+#=GR Clos.ther SS )))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Colw.spec DE converted from Zweib's tmRNA dataset 
+
+Colw.spec         GGGGCGGAUCUAGGAUUCGACAAGAUUCAUGAAACUCAAGGUGCAUGCCC
+#=GR Colw.spec SS [[[[[[[,,,,,,,,,,,,,(((((--(-------((--(((((((((AA
+
+Colw.spec         AGGGGCGGUUUGCCUGGUAAAAAGCCGCAAAACUAUAAUUGCUAACGACG
+#=GR Colw.spec SS AAA,<<<<<<<_aaaaa____>>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Colw.spec         AUACGUUCGCACUAGCCGCUUAGGCUAGCCAUCGCCUUGAAAUCUCUCCU
+#=GR Colw.spec SS ,,,,,,,,,,,<-<<<-<_____________>->>->->,,,<<--<___
+
+Colw.spec         AUUGGUUAGAGGAUCGAUGGUCACCCCAAAUAGGAUAGCGAGGGAAGCAC
+#=GR Colw.spec SS _____BB_B______>-->>,,,,,,,,,,b,bb,,,<<<-----<<<__
+
+Colw.spec         GCUUGAGGCUGAACCGCGAAAUAGUAUCAAGCUCACCAUGACGAAGCCUG
+#=GR Colw.spec SS CCCCCC_>>>---->>>,,,,,,,,,cccccc,,,,<--<--<-<<<<_D
+
+Colw.spec         UCGCUUGGCGUCUAAUUGGUUAAAUAAAUGAGCGACUAAGCAUGUAGUAC
+#=GR Colw.spec SS DDDDDD>>>->->-->-->,,,,,,,,,,ddddddd,,,))))))---))
+
+Colw.spec         CGAGAACGUAGGCUUUUUGGACGGGGGUUCGAUUCCCCCCCGCUCCACCA
+#=GR Colw.spec SS )--))------)--))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Coma.test DE converted from Zweib's tmRNA dataset 
+
+Coma.test         GGGGCCGAUUCUGGAUUCGACGUGGGUUCGGGACCGGUGCGGUGCAUGUC
+#=GR Coma.test SS {{{{{{{,,,,,,,,,,,,,[[[[[[[[-----[[[[-[[[[-[[[[[[<
+
+Coma.test         GAGCUUGAGUGACGCUCGUAAAUCUCCAUUCAAAAAACUAACUGCAAACG
+#=GR Coma.test SS <<<<__AAAAA__>>>>>,,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,
+
+Coma.test         ACGAACGUUUCGCACUCGCCGCUUAAUCCGGUGAGCCUUGCAACAGCACG
+#=GR Coma.test SS ,,,,,,,,,,,,,,<<<<<<<_______>>>>>>>(((((((,<<<<___
+
+Coma.test         CUAGUGGGCUGGGCAAGGGGGUAGCAAUACCUCCCGGCUGCAAGGGAAUU
+#=GR Coma.test SS BBBBBB_>>>>,,,,,,,,<<<<____>>>>,,,,,,,))))))),,,,,
+
+Coma.test         UUCAUUAGCUGGCUGGAUACCGGGCUUCUUGGUAUUUGGCGAGAUUUUAG
+#=GR Coma.test SS ,,bbbbbb<<-<<<<<<<<<<<_CCCCCC>>>>>>>>>>>->>,,,,,,c
+
+Coma.test         GAAGCUGGCUACCCAAGCAGCGUGUGCCUGCGGGGUUUGGGUGGUGAGAU
+#=GR Coma.test SS ccccc,,<<<<<<<<<<---<<_DDDDDDD>>--->>>>>>>>>>,,,,,
+
+Coma.test         UUAAAACAGAGCACUAAACAUGUAGAUCUGUCCGGCGAAGGCUUACGGAC
+#=GR Coma.test SS ,,,,,,ddd,dddd,,,]]]]]]----]]]]]]]]----]]]]]]]],,,
+
+Coma.test         GCGGGUUCAAUUCCCGCCGGCUCCACCA
+#=GR Coma.test SS <<<<<_______>>>>>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Cory.diph DE converted from Zweib's tmRNA dataset 
+
+Cory.diph         GGGGCUGAUUUUGGUUUCGACUGCGUGCAUUAAGCUAGGGGAAGCGUGCC
+#=GR Cory.diph SS [[[[[[[,,,,,,,,,,,,,(((((--((----(((((-((---(((((<
+
+Cory.diph         GGUGCAGGCUAGAGACCACCGAUUUUAAGCGUCGUAGCAAAUAUAUAAGC
+#=GR Cory.diph SS <<<<___AAAA__A__>>>>>,,,,,,,,,,a,,aaaa,,,,,,,,,,,,
+
+Cory.diph         GCAGAGAACACUCAGCGCGACUACGCCCUCGCUGCCUAAUUUGCAGCGAC
+#=GR Cory.diph SS ,,,,,,,,,,,,,,,,,,,,,,,,<<-<<-<-<<____________>>->
+
+Cory.diph         CUGCGUGUCUGUCAGCCUAGAUUCGUCUCUGGUUUAGUGUCUGGCAUCGA
+#=GR Cory.diph SS -->->->>,<<<<<<-<<<<<<<_BBBBBB>>>>>>>--->>>>>>,,,,
+
+Cory.diph         UUAAGAGACUUGCUGGUUUGUUGUGUCAACGGGGCAAACUGGGACUUUCA
+#=GR Cory.diph SS ,,,bbbbbb,,,<<<<<<<<<<__CCCC_CCC>>>>>>>>>>,,,,,,,,
+
+Cory.diph         CCGAUGACUGGGCUCAUCAUCCGGGUGUGUUCGUCCAAGCCGGAGAGCCG
+#=GR Cory.diph SS ccc,cccc,,<<<<<-<<-----<____DDDDDD_>----->>->>>>>,
+
+Cory.diph         AGUAGAGAUCCACGCGCGAACUGCGCACGGAGAAGCCCUAGCGAGGUGAC
+#=GR Cory.diph SS ,,,,,,,,,,,,,,,dddddd,,,)))))------)))))))----))-)
+
+Cory.diph         GUAGGACCCGGGUUCAAUUCCCGGCAGCUCCACCA
+#=GR Cory.diph SS )))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Coxi.burn DE converted from Zweib's tmRNA dataset 
+
+Coxi.burn         GGGGGCGACCAGGCUUCGACGUGGAUCCUGAAACCCGAGACGCAUGUCGA
+#=GR Coxi.burn SS [[[[[[[,,,,,,,,,,,,((((((((------((---(((((((((<<<
+
+Coxi.burn         GCCGGCAACGAAGGCUCGUAAAUCCAUCAGUUGCAAACAGAUAGUUGCAA
+#=GR Coxi.burn SS <<__AAAAA____>>>>>,,,,,,,,,,,aaaaa,,,,,,,,,,,,,,,,
+
+Coxi.burn         ACGAUAGUAAUUAUCUCCAAGAAGCUUACGCAUAAAGCUUCUUCCGUUGC
+#=GR Coxi.burn SS ,,,,,,,,,,,,,,,,,,,,,,,,<<<<-<<<_______________>>>
+
+Coxi.burn         UGGGAUUCGCUUAUAGAUCCCUACCAACGGCCAUAGCAUAUAAGCUCGCC
+#=GR Coxi.burn SS >>>>,,,,<<<<<<---<__________BBBBBB>---->>>>>>,,,,,
+
+Coxi.burn         CUCAAGCAUGGCUCAUGACUUGAAGGUUAAACAGAAGAGCUCGCAGUCAA
+#=GR Coxi.burn SS ,,,,,,,bbbbbb,,<<<<<<__>>>>>>,,,,,,,,,,,,,<<<<<<<<
+
+Coxi.burn         UUUCCCCUGCACGUCGGGCGAUUGACUGUUAAAUCAUAGACGAUGCUAAG
+#=GR Coxi.burn SS <<--<<<_CCC_CCC>>>->>>>>>>>>>,,,,,,,,,ccc,,ccc,,,)
+
+Coxi.burn         CAUGUAGUGUCAACGGCGGAUGAUUUACGGACGCGGGUUCAAUUCCCGCC
+#=GR Coxi.burn SS )))))---)))---))-----)))))))),,,<<<<<_______>>>>>]
+
+Coxi.burn         GCCUCCACCA
+#=GR Coxi.burn SS ]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Cyan.para.cy DE converted from Zweib's tmRNA dataset 
+
+Cyan.para.cy         GGGGCUGUUUAGGUUUCGACGUUUUUUUCUAAUUAUGUUUGUUAAGCAAG
+#=GR Cyan.para.cy SS [[[[[[[,,,,,,,,,,,,((((((((----(((((-(((((---(((((
+
+Cyan.para.cy         UCGAGGAUUUGUUCUAUCUCGAAAAUCAAGAACUCUCAAAAUUUAAACGC
+#=GR Cyan.para.cy SS (<<<<<__AA_AA___>>>>>,,,,,,aa,aa,,,,,,,,,,,,,,,,,,
+
+Cyan.para.cy         AACUAAUAUUGUACGUUUUAACCGUAAAGCAGCUUUCGCUGUUUAAUAAU
+#=GR Cyan.para.cy SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<-<<<--<<<_________
+
+Cyan.para.cy         UACUUUUAAUUUAAAAACCUAAUUUUUUUAGGAAUUUAUUUAUUUAUUGU
+#=GR Cyan.para.cy SS ____________________________>>>>>>->>,,,,<<<<<<<<-
+
+Cyan.para.cy         UUAUCCUGCUUAAUGAAUUAAAAAAAGCUAUACUUGUGAAUAAACGCAUA
+#=GR Cyan.para.cy SS -<<___>>-->>>>>>>>,,,,,,,,,,,,,))))))--)))))---)))
+
+Cyan.para.cy         AUUUAAAAAAACGGACGUGGGUUCAAAUCCCACCAGCUCCACCA
+#=GR Cyan.para.cy SS ))---)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Cyto.hutc DE converted from Zweib's tmRNA dataset 
+
+Cyto.hutc         GGGGUCGACAGGAAUUGACAGGUUGAGUGAUUACGUGUGUAAGCAUGCAG
+#=GR Cyto.hutc SS [[[[[[[,,,,,,,,,,,((((--(((-----(((((-((--((((((AA
+
+Cyto.hutc         GCUCAUGGGAUGAGAGCCUUAAAAGAUAGUUCCGAACAAUAAUUGGCGAA
+#=GR Cyto.hutc SS AAA,,<<<<<<___aaaaa_________>>>>>>,,,,,,,,,,,,,,,,
+
+Cyto.hutc         GAAUCUUACGCCAUGGCUGCUUAAUUACGAACUAAGUUUGUAAUAAUGAG
+#=GR Cyto.hutc SS ,,,,,,,,,<--<<<<<<________________>>>->>>-->,,,,,,
+
+Cyto.hutc         CGUUGAGUGGAGCUGUUAAGAACAGCACCCGGCCACAUCUCACACGGCUU
+#=GR Cyto.hutc SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<<<-<<<<<<<<
+
+Cyto.hutc         CUGUUCUGCGGGCUGUGAACUGAGAUGUCGAACAGCAGGACUAGGGGAGU
+#=GR Cyto.hutc SS ___BBBBB_>>>>>>>>---->>>>>>>,,,,,,,,,,,,,bbbbb,,<<
+
+Cyto.hutc         ACAAGUUGCGGGUGCUUCGCGAAAUUAAGUAACUAAGGUUAUAGUUGGGU
+#=GR Cyto.hutc SS --<<<<___C__C>>>>->>,,,,,,c,,c,,,,,,<<<<-<<<<--<<<
+
+Cyto.hutc         GCCGGUGACCUGCUACAGCUCGAAAAUGAACAUCCGGCUAAGCAUGUAGA
+#=GR Cyto.hutc SS DDDDDDD>>>->>>>->>>>,,,,,,,,,,ddd,dddd,,,))))))---
+
+Cyto.hutc         AGAUUCGAUAGUGGCCUUCUCUGGACGAGAGUUCGAAUCUCUCCGACUCC
+#=GR Cyto.hutc SS --))-)-))-))---)))-)))),,,<<<<<_______>>>>>]]]]]]]
+
+Cyto.hutc         ACCA
+#=GR Cyto.hutc SS ::::
+//
+# STOCKHOLM 1.0
+
+#=GS Deha.ethe DE converted from Zweib's tmRNA dataset 
+
+Deha.ethe         GGGGACGCGUGGUUUCGACAGGGAAGGUAGGCUACUGGAUUGCAGGCUGA
+#=GR Deha.ethe SS [[[[[[[,,,,,,,,,,,(((((-(((--((((---(((((((-(,,AAA
+
+Deha.ethe         GGUGCCAUCCACCUCAUUAAACAGGUGGCAAAAAACAACUGGCGAACGUG
+#=GR Deha.ethe SS AA,<<<<<<__aaaaa_______>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Deha.ethe         AACUCGUUCUUGCUGGCUAAAUAAGACAGCACAUCCUGCUUGGCCCCACC
+#=GR Deha.ethe SS ,,,,,,<<---<--<<<<<_____________________>>>>->-->-
+
+Deha.ethe         UCAACGGGUCAGGUUUGGGUGCCGAUUAGUUGAGGUGCCGUUUCCCCAAC
+#=GR Deha.ethe SS -->>,,,,,,,,,<<<<-<<<--<---<<_____BB_BB__>>--->-->
+
+Deha.ethe         GCCGAUGAGGGGGACGAAAGAAAUAUCGGCUGGUUUGGCUAAAUUAGGCC
+#=GR Deha.ethe SS >->-->>>>,bb,bb,,,,,,,,,,,,,,,,,,,,,<-<<---<<<-<<_
+
+Deha.ethe         GGCAAAAGCUAGCCAGACAAGAUUAAAUAGACGGAUAAUCCUGUAGUAGA
+#=GR Deha.ethe SS C_C____>>>>>-->>->,,,,,,,,,,,,,,,c,c,,,,,,,)-))-))
+
+Deha.ethe         UCCUGGGUCACCUUUUCUGGACGGGGAGUUCGACCCUCCCCCGUCUCCAC
+#=GR Deha.ethe SS )))--))))--)))))))),,,,<<<<<_______>>>>>,]]]]]]]::
+
+Deha.ethe         CA
+#=GR Deha.ethe SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Dein.radi DE converted from Zweib's tmRNA dataset 
+
+Dein.radi         GGGGGUGACCCGGUUUCGACAGGGGAACUGAAGGUGAUGUUGCGUGUCGA
+#=GR Dein.radi SS [[[[[[[,,,,,,,,,,,,((((((-------((((-(((-((((((AAA
+
+Dein.radi         GGUGCCGUUGGCCUCGUAAACAAACGGCAAAGCCAUUUAACUGGCAACCA
+#=GR Dein.radi SS AA,<<<<<<__aaaaa______>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Dein.radi         GAACUACGCUCUCGCUGCUUAAGUGAGAUGACGACCGUGCAGCCCGGCCU
+#=GR Dein.radi SS ,,,,,,,,,<<<<<<<_____>>>>>>><<--<<<<<<<-<<<<__BBBB
+
+Dein.radi         UUGGCGUCGCGGAAGUCACUAAAAAAGAAGGCUAGCCCAGGCGAUUCUCC
+#=GR Dein.radi SS BB>>>->>>>>--->>>-->>,,,,,bbbbbb,,CCC,,CCC,,,,<<<<
+
+Dein.radi         AUAGCCGACGGCGAAACUUUAUGGAGCUACGGCCUGCGAGAACCUGCCCA
+#=GR Dein.radi SS <<<ccc___ccc_______>>>>>>>,,,,<<<<-<<<---<<<__DDDD
+
+Dein.radi         CUGGUGAGCGCCGGCCCGACAAUCAAACAGUGGGAUACACACGUAGACGC
+#=GR Dein.radi SS DD>>>--->>>->>>>,,,,,,,,,,,,dddddd,,,,))))))----))
+
+Dein.radi         ACGCUGGACGGACCUUUGGACGGCGGUUCGACUCCGCCCACCUCCACCA
+#=GR Dein.radi SS )))))-------)))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Desu.hafn DE converted from Zweib's tmRNA dataset 
+
+Desu.hafn         GGGGGUGCACUGGCUUCGACGGGGGUCGCAAAAUCGCUUGGCGCAUGCCG
+#=GR Desu.hafn SS [[[[[[[,,,,,,,,,,,,(((((--((-----((-((((((((((((AA
+
+Desu.hafn         AGGGGUAGCUUUCCUCGUAAAACAGCUGCAAAACUCUAGUUGCCAACGAC
+#=GR Desu.hafn SS AAA,<<<<<<__aaaaa______>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Desu.hafn         GACAACUACGCUCUCGCCGCUUAAGGCGUAAGCCCCGAAACUGCUUGUGU
+#=GR Desu.hafn SS ,,,,,,,,,<<-<--<<-<_____________________>->>-->->>
+
+Desu.hafn         CCGUGCUCGCAGCGUAGGGUCACUAUCACGGAAUCGCCGGGAGCGGCCGC
+#=GR Desu.hafn SS ,,,,,<<<<--<<<<-<<BBB_BB_>>>>>---->-->>>>bb,bbb,<<
+
+Desu.hafn         CUGCCAGCUCCCGUUCAACCUAUAGCAGGCUGGUCCUUGGAUGCGCUUCG
+#=GR Desu.hafn SS <-<<<______________________>>>->>>,,,,<--<--<-<-<<
+
+Desu.hafn         CGCGCCGUGCUGUCCCGGGACGAGAUCUAACGGAGCGCUAAGCAUGUAGU
+#=GR Desu.hafn SS <CCCCC>>>-->->--->-->,,,,,,,,,,cc,,ccc,,,))))))---
+
+Desu.hafn         GCCGGGGAUGGAGUGCCUUCGGACGGCGGUUCGAUUCCGCCCACCUCCAC
+#=GR Desu.hafn SS ))))))))-----))-))))),,,<<<<<_______>>>>>]]]]]]]::
+
+Desu.hafn         CA
+#=GR Desu.hafn SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Desu.vulg DE converted from Zweib's tmRNA dataset 
+
+Desu.vulg         GGGGGCGCACUGGUUUCGACGGGGACGUAGAAGCCGGAGUUGCAGGCCGA
+#=GR Desu.vulg SS [[[[[[[,,,,,,,,,,,,((((((-(-----(-((((((-((((((AAA
+
+Desu.vulg         GGCGCCGCUGGCCUCGUAAAAAGCGGCACAAAAGUAAUUGCCAACAAUUA
+#=GR Desu.vulg SS AA,<<<<<<__aaaaa_____>>>>>>,,,,,,,,,,,,,,,,,,,,,,,
+
+Desu.vulg         CGACUACGCUCUGGCUGCUUAAUUGACGGCCACGUCGAACCGGUUCACGC
+#=GR Desu.vulg SS ,,,,,,,,,<-<<<<<<_________>>>>>>->,<<---<-<<<---<B
+
+Desu.vulg         CUGAUAGACCGGUGAGACGUAACUUCAUCAGGCUGGCAUCUGACGGCGCU
+#=GR Desu.vulg SS BBBBB___>->>>>--->>,,,,,,,bbbbbb,,,<<<<<<--<<__CCC
+
+Desu.vulg         CGCCGCGAAGGGUGCGAGAAAAACAGGUGAGCUGGUCGAAGGUUGCCUGG
+#=GR Desu.vulg SS CCCC_>>-->>>>>>,,,,,,,,,,ccccccc<-<<<--<<<----<__D
+
+Desu.vulg         UCGGGGGCGAAACCUGAGAUGACGAUUGUACUCGACCUAAGCCUGUAGAC
+#=GR Desu.vulg SS DDDD_D>----->>>-->>>->,,,,,,d,d,dddd,,,,))))))----
+
+Desu.vulg         GCUUCGUGUGGAACAUUCUCGGACGCGGGUUCGAUUCCCGCCGCCUCCAC
+#=GR Desu.vulg SS )))))))------)-)))))),,,<<<<<_______>>>>>]]]]]]]::
+
+Desu.vulg         CA
+#=GR Desu.vulg SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Ehrl.chaf DE converted from Zweib's tmRNA dataset 
+
+Ehrl.chaf         GGGGAUGAAACAGGAUCGACAUGCAUAGUAAAGGGGAUAGUUUUUGCUCG
+#=GR Ehrl.chaf SS [[[[[[[,,,,,,,,,,,,(((((((-------((((--(((((((((<<
+
+Ehrl.chaf         GUGAGAAAACAGCCGUUUAAAUGCUCAAAAUUUAUAAGUGCAAACGAUAA
+#=GR Ehrl.chaf SS <<__AA__A__>>>>,,,,,,a,,aa,,,,,,,,,,,,,,,,,,,,,,,,
+
+Ehrl.chaf         UUUCGUUUUUGCUAAUGAUAAUAAUAGCAGUGCUAACUUAGUAGCUGCUU
+#=GR Ehrl.chaf SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<<-<<___
+
+Ehrl.chaf         AGUUUUAUUAUUAGCGCGGUUUUUUUAAGGGUUUUCCGGGCAACAGAAAA
+#=GR Ehrl.chaf SS _____>>>>>>>><<-<<<_______BBBBB____>>>->>,,,,,,,,,
+
+Ehrl.chaf         ACCCUUUUUUGUGCUUUUAGCACUAUGGCAAUAAAGGCAUCUUAAAAUAG
+#=GR Ehrl.chaf SS ,bbbbb,,,,<<<<_____>>>>,,,)))))---))))-))))-------
+
+Ehrl.chaf         AUGUAUUGGACCCGAGGGCAGUGCUCGGCAUCUCCACCA
+#=GR Ehrl.chaf SS ))))))-),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Ente.faec.-1 DE converted from Zweib's tmRNA dataset 
+
+Ente.faec.-1         GGGGGCGUUACGGAUUCGACAGGCAUAGUUGAGCUUGAAUUGCGUUUCGU
+#=GR Ente.faec.-1 SS [[[[[[[,,,,,,,,,,,,((((((((-----(((((((((((((((<<<
+
+Ente.faec.-1         AGGUUACGGCUACGUUAAAACGUUACAGUUAAAUAUAACUGCUAAAAACG
+#=GR Ente.faec.-1 SS <<AA_AAA_>>>>>,,,,,,aaa,aa,,,,,,,,,,,,,,,,,,,,,,,,
+
+Ente.faec.-1         AAAACAAUUCUUUCGCUUUAGCUGCCUAAAAACCAGCUAGCGAAGAUCCU
+#=GR Ente.faec.-1 SS ,,,,,,,,,,,<<<<<<---<<<<_________>>>>->>>>>><<<<<<
+
+Ente.faec.-1         CCCGGCAUCGCCCAUGUGCUCGGGUCAGGGUCCUAAUCGAAGUGGGAUAC
+#=GR Ente.faec.-1 SS <<<<<<<<__BBBBB>>>>>->>>-->>>>>>,,,,,,,,,bbbbb,,,,
+
+Ente.faec.-1         GCUAAAUUUUUCCGUCUGUAAAAUUUAGAGGAGCUUACCAGACUAGCAAU
+#=GR Ente.faec.-1 SS ,<<<<<<<<<___CCCCC_>>>>>>>>>,,,,,,,,,,ccccc,,<<--<
+
+Ente.faec.-1         ACAGAAUGCCUGUCACUCGGCACGCUGUAAAGCGAACCUUUAAAUGAGUG
+#=GR Ente.faec.-1 SS <<<<---<<<_D_DDDDD>>>--->>>>>-->>,,,,,,,,,,,,ddddd
+
+Ente.faec.-1         UCUAUGAACGUAGAGAUUUAAGUGGCAAUAUGUUUGGACGCGGGUUCGAC
+#=GR Ente.faec.-1 SS ,d,,,))))))---)))))))))-----)))))))),,,<<<<<______
+
+Ente.faec.-1         UCCCGCCGUCUCCACCA
+#=GR Ente.faec.-1 SS _>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Erwi.caro DE converted from Zweib's tmRNA dataset 
+
+Erwi.caro         GGGGCUGAUUCUGGAUUCGACGGGAUUUGCAAAGCCCAAGGUGCAUGCCG
+#=GR Erwi.caro SS [[[[[[[,,,,,,,,,,,,,(((((((------(((---(((((((((AA
+
+Erwi.caro         AGGGGCGGUUUGCCUCGUAAAAAGCCGCAAAAAAAUAGUCGCAAACGACG
+#=GR Erwi.caro SS AAA,<<<<<<<_aaaaa____>>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Erwi.caro         AAAACUACGCUUUAGCAGCUUAAUAACCUGCUAAGAGCCCUCUCUCCCUA
+#=GR Erwi.caro SS ,,,,,,,,<<<<<-<<<<_________>>>>-->>>>><<<<<<<<<<<-
+
+Erwi.caro         GCCUCCGCUCUUAGGACGGGGAUCAAGAGAGGUCAAACCCAAAAGAGAUC
+#=GR Erwi.caro SS -<<<___BBBBB>>>-->>>>---->>>>>>>,,,,,,,,,,bbbbb,,,
+
+Erwi.caro         GCGUGGAUGCCCUGCCUGGGGUUGAAGGGCUAAAUCUAAUCAGGCUAGUU
+#=GR Erwi.caro SS <<-<----<<<__CCCCCC>>>---->->>,,,,,,,,,cccccc,,<<<
+
+Erwi.caro         UGUUAGUGGCGUGUCUGUCCGCAGCUGGCAAGCGAAUGUAAAGACUGACU
+#=GR Erwi.caro SS <<<<<<<-<<<_DDD_DDD>>>->>>>>>>>>>,,,,,,,,,ddd,ddd,
+
+Erwi.caro         AAGCAUGUAGUACCGACGGUAGAGUAGUUCCGGACGGGGGUUCAAAUCCC
+#=GR Erwi.caro SS ,,))))))---)))---)))-----))))))),,,<<<<<_______>>>
+
+Erwi.caro         CCCAGCUCCACCA
+#=GR Erwi.caro SS >>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Fibb.succ DE converted from Zweib's tmRNA dataset 
+
+Fibb.succ         GGGGGUGCUCUGGUUUCGACAGGGUUACCGAAGUGUUAGUUGCAAGUCGA
+#=GR Fibb.succ SS [[[[[[[,,,,,,,,,,,,((((((((-----((-((---(((----(((
+
+Fibb.succ         GGUCUCAGACGAGGGCAACUCGUUAAAAAGUCUGAAAAAAAAUAAGUGCU
+#=GR Fibb.succ SS (,,,A,A,,,,<<<-<___a_a_______>>>>,,,,,,,,,,,,,,,,,
+
+Fibb.succ         GACGAAAACUACGCACUCGCUGCCUAAUUAACGGCAACGCCGGGCCUCAU
+#=GR Fibb.succ SS ,,,,,,,,,,,,,,,,<<<-<<______>>->>>,,,,,<<<<<<--<<<
+
+Fibb.succ         UCCGCUCCCAUCGGGAUGUACGUCCGGACGCAAUAUGGGAUAGGGAAGUG
+#=GR Fibb.succ SS <<<<_BBBBBB>>>>>>>--->>>>>>,,,,,,,bbbbbb,,,<<-<<--
+
+Fibb.succ         UCAUGCCUGGGGGCAUCUCCCGAGAUUUACUAGGCUGGUCAAACUCCGCG
+#=GR Fibb.succ SS --<<<<CCCC_C>>>>>>->>,,,,,,,,,c,,,cccc,,,,,,<<<<<<
+
+Fibb.succ         CCGACCUUCUUGGGCGUGGAUAAGACGAGAUCUUAAAUACGAAGGGAACA
+#=GR Fibb.succ SS <<____DDDDDD>>>>>>>>,,,,,,,,,,,,,,,,,dd,,,dddd,,,,
+
+Fibb.succ         CUUGUAGGAACGUACAUGGACGUGAUUUUGGACAGGGGUUCGACUCCCCU
+#=GR Fibb.succ SS ))))-------)))---))))-)))))))),,,<<<<<_______>>>>>
+
+Fibb.succ         CACCUCCACCA
+#=GR Fibb.succ SS ]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Fran.tula DE converted from Zweib's tmRNA dataset 
+
+Fran.tula         GGGGGCGAAUAUGGUUUCGACAUGAAUGUCAAAAUCUAAGGUGCAUGCCG
+#=GR Fran.tula SS {{{{{{{,,,,,,,,,,,,,[[[[[[[------[[[[--[[-[[[[[[AA
+
+Fran.tula         AGGAAGUACCGUAACCUCGUUAAUAACAGUACAAAUGCCAAUAAUAACUG
+#=GR Fran.tula SS AAA,,<<<<-<<__aaaaa______>>->>>>,,,,,,,,,,,,,,,,,,
+
+Fran.tula         GCAACAAAAAAGCAAACCGCGUAGCGGCUAACGACAGCAACUUUGCUGCU
+#=GR Fran.tula SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Fran.tula         GUUGCUAAAGCUGCCUAGUCUAGCUUAAUAAUCUAGAUGCGCACGGAUAU
+#=GR Fran.tula SS ,,,,,<-<<<<<<_______>>>>>>->,,,,,,,((((-(-(((((<<<
+
+Fran.tula         GAUAGUCUUUCUUAUGACACUAUCUAUACAUCCGUUCAUAUUCCGCAUAA
+#=GR Fran.tula SS <<__BBBBB__>>>>>,,,,<<____>>,,)))))-)-)))),,,,,,bb
+
+Fran.tula         GACGGUCUUUGCUUUUUGUCUGGGAGUUAAGGCUGUAUUUAACAGACUCG
+#=GR Fran.tula SS bbb,,,,<<-<<<<<<<CCCCC>>>>---->>>->->,,,,,ccccc,,<
+
+Fran.tula         CUAACUAUUACCCUGGCUAAUUGGGGAAUAGUCAAGCUAAACUCAAAUAG
+#=GR Fran.tula SS <<--<<<<<-<<<_DDDD_DDD>>>->>>>>--->>>,,,,,,,,,,,,d
+
+Fran.tula         AUUAGCCUAAGCAUGUAGAUCCAAAGAUCUAGAGUUUGUGGACGCGGGUU
+#=GR Fran.tula SS dd,dddd,,,]]]]]]----]]--]]]]-----]]]]]]],,,<<<<<__
+
+Fran.tula         CAAAUCCCGCCGCCUCCACCA
+#=GR Fran.tula SS _____>>>>>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Fuso.nucl.-1 DE converted from Zweib's tmRNA dataset 
+
+Fuso.nucl.-1         GGGGAUGCAAAGGUUUCGACGGGGUUGUGAGGUUAUAGGUAGCAAGUCAG
+#=GR Fuso.nucl.-1 SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((-((((((AAA
+
+Fuso.nucl.-1         GCUUGUCGCUGUGAGAGACUAAACACAUCUUUUAGAUGGAAACAAAGAUU
+#=GR Fuso.nucl.-1 SS ,A<<<<<aaaa_____>>>->>,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Fuso.nucl.-1         ACGCUUUAGCUGCUUAGUUCAGCUACACCUUGGAUAACUUAUUCUAUACG
+#=GR Fuso.nucl.-1 SS ,,<-<-<<<<<<_______>>>>>>->->,,,,,,,,,,,,<<-<<<-<<
+
+Fuso.nucl.-1         GGUUUUUCAAAGGUGUUGACUAGUAUAGAUCACCAUAAAUGAUUUCUCUA
+#=GR Fuso.nucl.-1 SS <-<-<_BBB___>->>>>---->>>->>,,,,,,,,,,,bbb,,,,,CCC
+
+Fuso.nucl.-1         AGUUUAUGGGACAUUUUAGAGGAUAGUUUUAGUUAGCCCUGUUUACGGGA
+#=GR Fuso.nucl.-1 SS ,,<<<<ccc_______>>>>,<<<<<<<-<------<___DDDDDD>---
+
+Fuso.nucl.-1         GUAAUUAUUACGAAAUUUAAUAGUAAACUAAACUUGUAGAAGCUUAUGGU
+#=GR Fuso.nucl.-1 SS >->>>>>>>,,,,,,,,,,,,,dddddd,,,))))))----))))))))-
+
+Fuso.nucl.-1         CAUUAUGAUUUCGGACACGAGUUCGACUCUCGUCAUCUCCACCA
+#=GR Fuso.nucl.-1 SS -----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Geob.meta DE converted from Zweib's tmRNA dataset 
+
+Geob.meta         GGGGGUGUACAGGUUUCGACGGGGAUAGGAAACUAAAGGUUGCAUGCCGA
+#=GR Geob.meta SS [[[[[[[,,,,,,,,,,,,(((((((-----((--(-(((-((((((AAA
+
+Geob.meta         GGUCCGGGCUGGCCUCGUUAAAAAGCCCGGGGCGAAUUACACGCCGAUAA
+#=GR Geob.meta SS AA,<<<<<<<__aaaaa______>>>>>>>,,,,,,,,,,,,,,,,,,,,
+
+Geob.meta         UUACGACUACGCCGUAGCAGCUUAAUACCCUGCUACCGAUCCGCCGAGCC
+#=GR Geob.meta SS ,,,,,,,,,,,,,<<<<<<<_________>>>>>>><<<<<<<<---<<<
+
+Geob.meta         UCUCCCACGGGUGAAGAUGGAUCGUUAUUUCAGUGGGAUAGUCAAGGGGA
+#=GR Geob.meta SS <__BBBBB>>>>--->->>>>>>>,,,,,,,,bbbbb,,,<<<--<<<<_
+
+Geob.meta         GUGCCCGCGGCCCCAAGGCGAAACUUUAGCAGGAUCGCUUCCCGGAAAUC
+#=GR Geob.meta SS C__CCC____>>>>-->>>,,,,,,,,,c,,cc,,c,,,,,<<<---<<<
+
+Geob.meta         CCUGCCAGGGGAGAGUCGGGCGGCUAAAUCAAAUCCUGGCAUAAGCAUGU
+#=GR Geob.meta SS -<_DDDDDDD>->->>---->>>,,,,,,,,,,ddddddd,,,,))))))
+
+Geob.meta         AGACGCCUUCUGUGUAUGAUCUUCGGACGCGGGUUCGACUCCCGCCACCU
+#=GR Geob.meta SS ----)))-)--))-----))))))),,,<<<<<_______>>>>>]]]]]
+
+Geob.meta         CCACCA
+#=GR Geob.meta SS ]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Guil.thet.cl DE converted from Zweib's tmRNA dataset 
+
+Guil.thet.cl         GGGGCUGAUUUGGAUUCGACAUAUAAAUUUGCGUGUUUCAUUAUGAAGCA
+#=GR Guil.thet.cl SS [[[[[[[,,,,,,,,,,,,(((---((-------(-((((((((---(((
+
+Guil.thet.cl         AGUCAAGUUUAAUGAUCUUGUAAAAAACAUUAAAGUACAAAUAAAUGCAA
+#=GR Guil.thet.cl SS (((AAAA<<<<<<<__aaaa_______>>>>>>>,,,,,,,,,,,,,,,,
+
+Guil.thet.cl         GCAAUAUAGUUUCAUUUAGUUCAAAACGUUUAGUCUCUUUUGCAUAAGCA
+#=GR Guil.thet.cl SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<-<-<<<<<______>>
+
+Guil.thet.cl         AAAUGUGUUAAUAACUUUCUUAGUAGAAAUUGGAGAAGUUUACUAAGAUU
+#=GR Guil.thet.cl SS >>>->->>>>>,,,,,,,,,,<<<<-<<<<<<<-<_BBBB>->>>>-->>
+
+Guil.thet.cl         UAUAUUUACUCCAUAAUUAUUUUAAAGAUGGUAAAAAGGUGAUUCAUCAU
+#=GR Guil.thet.cl SS >->>>>,,,,,,,,bbbb,,,,,,,,,,,,,,,,CC<<<<<<cc______
+
+Guil.thet.cl         UUGUAUGUUUCUAAACUUUGUGAAAGAAUAGUGGGCUCCAUUUAUAAUGA
+#=GR Guil.thet.cl SS _>->-->>>>,,,,)))-)))------))))))))-)----))---))),
+
+Guil.thet.cl         ACGUGGGUUCAAAUCCCACCAGCUCCACCA
+#=GR Guil.thet.cl SS ,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Heli.pylo DE converted from Zweib's tmRNA dataset 
+
+Heli.pylo         GGGGCUGACUUGGAUUUCGACAGAUUUCUUGUCGCACAGAUAGCAUGCCA
+#=GR Heli.pylo SS [[[[[[[,,,,,,,,,,,,,((((--((-----((((((((-((((((<<
+
+Heli.pylo         AGCGCUGCUUGUAAAACAGCAACAAAAAUAACUGUAAACAACACAGAUUA
+#=GR Heli.pylo SS <<<AAA>>>>>,,,,,,aaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Heli.pylo         CGCUCCAGCUUACGCUAAAGCUGCGUGAGUUAAUCUCCUUUUGGAGCUGG
+#=GR Heli.pylo SS ,,,,,,,,,,,,<-<<<<<<--<___________>-->->>>>>->,<<<
+
+Heli.pylo         ACUGAUUAGAAUUUCUAGCGUUUUAAUCGCUCCAUAACCUUAAGCUAGAC
+#=GR Heli.pylo SS <-<<<<<<<<<<_BBBBBB>>>>>>>>>>->>>>,,,,,,,,,bbbbbb,
+
+Heli.pylo         GCUUUUAAAAGGUGGUUCGCCUUUUAAACUAAGAAACAAGAACUCUUGAA
+#=GR Heli.pylo SS ,,,<<<<<<<<<<CCCCC>>>>>>>>>>,,,,,,,,,,,ccccc,,,,<<
+
+Heli.pylo         ACUAUCUCAAGGUUUUAGAAAGUUGGACCAGAGCUAGUUUUAAGGCUAAA
+#=GR Heli.pylo SS <<<<-<<<---<<<___DDDD_DDD>>>-->>>->>>>>>,,,,,,,,,,
+
+Heli.pylo         AAACCAACCAAUUUUCUAAGCAUUGUAGAAGUUUGUGUUUAGGGCAAGAU
+#=GR Heli.pylo SS ,,,,,,,,ddd,dddd,,,)))-)))----))))))))---------))-
+
+Heli.pylo         UUUUGGACUGGGGUUCGAUUCCCCACAGCUCCACCA
+#=GR Heli.pylo SS -)))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Lact.gass DE converted from Zweib's tmRNA dataset 
+
+Lact.gass         GGGGAUGUUUUGGGAUUCGACAGGCGUAGAUUCGCGUUGACUGCGAUUCG
+#=GR Lact.gass SS [[[[[[[,,,,,,,,,,,,,((((((((------((((--((((((((AA
+
+Lact.gass         UAGGUCACGUCUACGUUAAAACGUCACAGUUAAAUUAUAACUGCAAAUAA
+#=GR Lact.gass SS AAA<<-<<<<aaaaa_____>>>>->>,,,,,,,,,,,,,,,,,,,,,,,
+
+Lact.gass         CGAAAAUUCUUACGCAGUAGCUGCUUAGUCAGGCUGCGUGAUCCAAUGAC
+#=GR Lact.gass SS ,,,,,,,,,,,<<<<---<<<<_________>>>>>>>><<<<<---<<<
+
+Lact.gass         GGAUUGCUCGUGUCUGUCUGCGGGUCUUACCAUUUAACGAGCUACGUUUA
+#=GR Lact.gass SS <<<<_BBBBBB>>>>>>>--->>>>>,,,,,,,,,,bbbbbb,,,,<<<<
+
+Lact.gass         ACUACUUACCUUAAUAGUUAGAAAUAAGAUUCUUAGGUUAGUUUUGAUAG
+#=GR Lact.gass SS <<<<_____CCCCC>>>>>>>>,,,,,,,,,,ccccc,,,<<<<<<<<<<
+
+Lact.gass         UUUAGCCCUGUUAUAUGGCGUUUUAUCAAAGCGAAGUUUAAGUAAUAUAA
+#=GR Lact.gass SS ----<<<__DDDDDDD>>>--->>>>>>>>>>,,,,,,,,,,,,dddddd
+
+Lact.gass         CUAUGAUCGUAGAGGUUAACGACGGAAUACGUUUGGACAGGGGUUCAAUU
+#=GR Lact.gass SS d,,,))))))))-----))))------)))))))),,,<<<<<_______
+
+Lact.gass         CCCCUCAUCUCCACCA
+#=GR Lact.gass SS >>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Lact.sake DE converted from Zweib's tmRNA dataset 
+
+Lact.sake         GGGGCCGUUACGGAUUCGACAUGUGUAGGUGAGCGUGAAUUGCACUUCGU
+#=GR Lact.sake SS [[[[[[[,,,,,,,,,,,,((((((((-----((((---((((((((AAA
+
+Lact.sake         AGGUUACGUCUGCGUUAACAACGUUACAGUUAAUUAUAACUGCAAACAAU
+#=GR Lact.sake SS AA<<-<<<<aaaaa______>>>>->>,,,,,,,,,,,,,,,,,,,,,,,
+
+Lact.sake         AACAAUUCUUACGCUGUAGCUGCCUAAACACCAGCAUAGCGUGAUCCGUC
+#=GR Lact.sake SS ,,,,,,,,,,<<<<--<<<<<___________>>>->>>>>><<<<<<<<
+
+Lact.sake         UGACUUCACCCAAGGGUUAGAUCCGGGUCUCAAAUUAAUUGGGUUACGUU
+#=GR Lact.sake SS <<<<<<_BBBBBB>>>>>>>>-->>>>>>,,,,,,,,,bbbbbb,,,,<<
+
+Lact.sake         AAAUGCCGCCGUUUGAAGUGUUUAAAAGAGAUUUUCAAGCUAGUUAGUCC
+#=GR Lact.sake SS <<<<<<____CCCCCC_>>>>>>>>,,,,,,,,,cccccc,,<<<<<<<<
+
+Lact.sake         AUCCGAGCCUCUGUUGAACGGCGUUUUGGGCUAGCGAAUUUCUAAAUAGU
+#=GR Lact.sake SS <-----<<<___DDDDDDD>>>---->>>>>>>>>,,,,,,,,,,,,,dd
+
+Lact.sake         UCGACUAUGAGUGUAGAGAUUGACGUGGCAAUGCGCAUGGACGCGGGUUC
+#=GR Lact.sake SS ddddd,,,))))))))------))))-----)))))))),,,<<<<<___
+
+Lact.sake         AACCCCCGCCGGCUCCACCA
+#=GR Lact.sake SS ____>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Magn.magn.-2 DE converted from Zweib's tmRNA dataset 
+
+Magn.magn.-2         GGGGGCGAAAUAGGAUCGACGUGCGCAGUAAAGGUCUGGUUUGCGUUCGG
+#=GR Magn.magn.-2 SS [[[[[[[,,,,,,,,,,,,((((((--------((-((((--(((((,AA
+
+Magn.magn.-2         CAUGAUACCACCGUUAUCGGGUCAAUCCUAACAAGUGCCAACGACAACGU
+#=GR Magn.magn.-2 SS A,,<<<-<<___aaa___>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Magn.magn.-2         UGAACUUGCCGCUGCGGCUUAGUCCGUAAGCGCGGUCCGGGGGGAACCGG
+#=GR Magn.magn.-2 SS ,,,,,,,,,,,,<<<<<______>>>>->BB,BBBB,,<<<<<<<bbbb_
+
+Magn.magn.-2         GCAACAGAACUCCCCCCACUUGCCGGGCAACCGGCUAUGACGCUAAACGC
+#=GR Magn.magn.-2 SS bb________>>>>>>>,,CC<<<<<__cc>>>>>,,,)))))-----))
+
+Magn.magn.-2         CACACGGAAUAGACGUUACGGACCCGGGGGCGGUACCCGGCGCCUCCACC
+#=GR Magn.magn.-2 SS ))-))--------))-)))),,,<<<<<_______>>>>>]]]]]]]:::
+
+Magn.magn.-2         A
+#=GR Magn.magn.-2 SS :
+//
+# STOCKHOLM 1.0
+
+#=GS Meso.loti DE converted from Zweib's tmRNA dataset 
+
+Meso.loti         GGGGGCGAAAUAGGAUCGACGAAGGUGUAAAGAUCGUACUUUUGCCCGGC
+#=GR Meso.loti SS [[[[[[[,,,,,,,,,,,,(((((((------((((--((-(((((,AAA
+
+Meso.loti         AUUGUACCACCGUCAUCGGGCUAAACUUAUAGUUGCCAACGACAACUAUG
+#=GR Meso.loti SS ,,,<<-<<___aaa___>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Meso.loti         CGGAAGCACGUCUCGCUGCUUAAUGCAGUGCGAUAGCUUCAAAUCAAGCC
+#=GR Meso.loti SS ,,,,,<<--<<<-<<<<<_______>>>>>->>>->>,,,,,,B,BB,,,
+
+Meso.loti         CUAGGGGUUCGCACUUCUAGGCGGGGUUCGGAGGUACCUGGCAACAGAAA
+#=GR Meso.loti SS ,<<<<<<bb_b__>>>>>>,<<-<<<<__CCCCCC>>>>->>,,,,,,,c
+
+Meso.loti         CCUCCACUUGUCGGCUUGACCGACUAUGGCGAUAAAUGGGCGAUGAAAUA
+#=GR Meso.loti SS ccccc,,,,<<<<<-<_>->>>>>,,,)))))-----))-))))------
+
+Meso.loti         AGCCGUUCGGACCCGGGGGCGGUACCCGGCGCCUCCACCA
+#=GR Meso.loti SS -)))-)))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Meso.viri.cl DE converted from Zweib's tmRNA dataset 
+
+Meso.viri.cl         GGGGUUGAAAUGGUUUCGACGUUUUAGUAUAUAUCUUCUUACAAGCAAGU
+#=GR Meso.viri.cl SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((----((((((
+
+Meso.viri.cl         CGAGAAUGAACCAAUCUCGUAAACUUGAGUUCAAUUGCAAAUAAAUGCUA
+#=GR Meso.viri.cl SS <<<<<_AAAAA___>>>>>,,,,,,,,,aaaaa,,,,,,,,,,,,,,,,,
+
+Meso.viri.cl         ACAAUAUUUUACCUUUUAAUCGUAAGACAGCCGUAGCUGUUUAAAAGUUU
+#=GR Meso.viri.cl SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<--<<-<-<<___________
+
+Meso.viri.cl         UUUGAUAACUUCGAGCAUUUUUGAUUUGUUAAAUACAAUUGUUAUAAAAC
+#=GR Meso.viri.cl SS __>>->->>-->,,,,,,,,,<-<<<<<-<<<<_____BBBBB_______
+
+Meso.viri.cl         AAAUUAAAUAAUAGUUUUUGUUUCUUUACAAAUAAUGUAGAAAUAAUUUU
+#=GR Meso.viri.cl SS ________________>>>>-------->>>>>->,,,,,,bbbbb,,,,
+
+Meso.viri.cl         UUUUAGCUUUUCAAGCUCCAGCUUUGUGGAUUAGCAAAGCUAAACUUGUG
+#=GR Meso.viri.cl SS ,,,,,,,,,,,,,,,CC,,,<<<<<<<cc____>>>>>>>,,,))))))-
+
+Meso.viri.cl         AAUACAAAGAAGAGAUCAAACUAAAGCGGACGCGGGUUCAAAACCCGCCA
+#=GR Meso.viri.cl SS ------))))--))))----)))))))),,,<<<<<_______>>>>>]]
+
+Meso.viri.cl         GCUCCACCA
+#=GR Meso.viri.cl SS ]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Meth.caps DE converted from Zweib's tmRNA dataset 
+
+Meth.caps         GGGGGCGACAUGGCUUCGACGUGGAUCGCGAAACCUGAGGUGCAUGCCGA
+#=GR Meth.caps SS [[[[[[[,,,,,,,,,,,,((((((((------((---(((((((((AAA
+
+Meth.caps         GGUGCAGAUGACCUCGUAAAUCCAUCUGCAAACCAAAUAAACGCCAACGA
+#=GR Meth.caps SS AA,<<<<<<<_aaaaa______>>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Meth.caps         CGACGUUUACGCACUGGCCGCUUAAGCCGGCCGGCCUCUGAUCAGCAGCU
+#=GR Meth.caps SS ,,,,,,,,,,,<<--<<<<<___________>>>>>-->>,,,,,,<<<-
+
+Meth.caps         CGCUUACAAGCGGCUGGUUGGGGGUAACCCAAUUGUAAGCUCGCGCUGAA
+#=GR Meth.caps SS -<<<<----<<____B_______>>----->>-->>-->>>b<<<<<---
+
+Meth.caps         GUCUGUCCGGGGCCGAAGCGCUAAAACCCAACGGAAUCGCCGUCCGUCUU
+#=GR Meth.caps SS <<<__CCCC_>>>--->>>>>,,,,,,,,,,cccc,,,<<<<--<<<---
+
+Meth.caps         CCCUGCCACUCGGGUAGCGUCCGGCUAAAUCAAUAGAGUGGAUACGCAUG
+#=GR Meth.caps SS -<<<_DDDDDD>>>-->>>-->>>>,,,,,,,,,,dddddd,,,,)))))
+
+Meth.caps         UAGAACCGAUGGCAGAGGAUUUGCGGACGCGGGUUCAAUUCCCGCCGCCU
+#=GR Meth.caps SS )---)))---))-----)))))))),,,<<<<<_______>>>>>]]]]]
+
+Meth.caps         CCACCA
+#=GR Meth.caps SS ]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Micr.degr DE converted from Zweib's tmRNA dataset 
+
+Micr.degr         GGGGGCGAUUAGGAUUCGACGCCGGUAACAAAACCCGAAGUGCAUGUCGU
+#=GR Micr.degr SS [[[[[[[,,,,,,,,,,,,((-(((((-------(((-(((((((((<<<
+
+Micr.degr         GAGGGUAGCCAAUCACGUAAAUCCAAAGCUGCAAAUUAUCAGUUGCCAAU
+#=GR Micr.degr SS <<__AAAAA___>>>>>,,,,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,
+
+Micr.degr         GAUGACAACUACGGUGCUCAACUAGCUGCGUAAGUAGCUUUUUGUUACAC
+#=GR Micr.degr SS ,,,,,,,,,,,,,,,,,,<<<--<<<<<______>>>>>-->>>,,,,,,
+
+Micr.degr         CAUCUAGCGGUACGCCGCUAGCGGUUUUUAACAAGGUGCCAGUACCGCGU
+#=GR Micr.degr SS ,,,,,,,,,,,,,,,,,,,,,<<<<<---<<<--<<__BBBBB_>>-->>
+
+Micr.degr         UAACGACUGUCACUUAGAACUGGAUCGCAGUGAAGCCUGCCUGGGGUGGA
+#=GR Micr.degr SS >--->>>>>,,,,,,,,,bbbbb,,,<<-<----<<<<_CCCC>>>>---
+
+Micr.degr         UCAGCUAAACUUUUACAGGAUCGCGCUUUUCGUCCCGCCCGCUGGGCUGU
+#=GR Micr.degr SS ->->>,,,,,,,,,,cccc,,,<<<<<<<-<<-<<<D_DDDDD>>>->>-
+
+Micr.degr         AAAGCGUUAAAUCAAUAAGCGGUUCUAAGCAUGUAGAGCUGACGGCGGAG
+#=GR Micr.degr SS >>>>>>>,,,,,,,,,,ddddd,d,,,,))))))---)))--)))-----
+
+Micr.degr         UACUGACGGACGGGGGUUCAAAUCCCCCCGCCUCCACCA
+#=GR Micr.degr SS )))))-)),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Myco.aviu DE converted from Zweib's tmRNA dataset 
+
+Myco.aviu         GGGGCUGAACGGUUUCGACUUCGCGCAUCGAAUCAAGGGAAGCGUGCCGG
+#=GR Myco.aviu SS [[[[[[[,,,,,,,,,,,((-((-(((-----(((((-(---(((((<<<
+
+Myco.aviu         UGCAGGCAAGAGACCACCGUAAGCGUCGUUGCGACCAAAUAAGCGCCGAU
+#=GR Myco.aviu SS <<___AAAA__A__>>>>>,,,,,,a,,aaaa,,,,,,,,,,,,,,,,,,
+
+Myco.aviu         UCACAUCAGCGCGACUACGCUCUCGCUGCCUAAGCGACGGCUAGUCUGUC
+#=GR Myco.aviu SS ,,,,,,,,,,,,,,,,,,<<<-<<<-<<______>>->>>-->>>,<<<<
+
+Myco.aviu         AGACCGGGAACGCCCUCGGCCCGGACCCUGGCAUCAGCUAGAGGGAUCCA
+#=GR Myco.aviu SS <<-<<<<<--<_BBBBB>->>>>>--->>>>>>,,,,,,,bbbbb,,,,,
+
+Myco.aviu         CCGAUGAGUCCGGUCGCGGGACUCCUCGGGACAACCACAGCGACUGGGAU
+#=GR Myco.aviu SS <<<<-<<<<<<_CCCCC_>>>>>>->>>>,,,,,,,,,,ccccc,,<<<<
+
+Myco.aviu         CGUCAUCUCGGCUAGUUCGCGUGACCGGGAGAUCCGAGCAGAGGCAUAGC
+#=GR Myco.aviu SS <-<<---<<<____DDDDDD_>>>--->>->>>>>,,,,,,,,,,,,,dd
+
+Myco.aviu         GAACUGCGCACGGAGAAGCCUUGAGGGAAUGCCGUAGGACCCGGGUUCGA
+#=GR Myco.aviu SS dddd,,,)))))------))))))-----)))))-)),,,<<<<<_____
+
+Myco.aviu         UUCCCGGCAGCUCCACCA
+#=GR Myco.aviu SS __>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Myco.capr DE converted from Zweib's tmRNA dataset 
+
+Myco.capr         GGGGAUGUCAUGGAUUUGACAGGAUAUCUUUAGUACAUAUAAGCAGUAGU
+#=GR Myco.capr SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((--(((((AAA
+
+Myco.capr         GUUGUAGACUAUAAAUACUACUAGGUUUAAAAAACGCAAAUAAAAACGAA
+#=GR Myco.capr SS AA,,<<<<<<____aaaaa____>>>>>>,,,,,,,,,,,,,,,,,,,,,
+
+Myco.capr         GAAACUUUUGAAAUGCCAGCAUUUAUGAUGAAUAAUGCAUCAGCUGGAGC
+#=GR Myco.capr SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.capr         AAACUUUAUGUUUGCUUAAUAACUACUAGUUUAGUUAUAGUAUUUCACGA
+#=GR Myco.capr SS ,,,,,,<<-<-<<<____________>>>->>><<<<<<<------<-<<
+
+Myco.capr         AUUAUAGAUAUUUUAAGCUUUAUUUAUAACCGUAUUACCCAAGCUUAAUA
+#=GR Myco.capr SS <___________BBBBBB>>>->>>>>>>>,,,,,,,,,,,,bbbbbb,,
+
+Myco.capr         GAAUAUAUGAUUGCAAUAAAUAUAUUUGAAAUCUAAUUGCAAAUGAUAUU
+#=GR Myco.capr SS <<<<<<<<-<CCCCCC>-->>>>>>>>,,,,,,,,,cccccc,,,<<<<<
+
+Myco.capr         UAACCUUUAGUUAAUUUUAGUUAAAUAUUUUAAUUAGAAAAUUAACUAAA
+#=GR Myco.capr SS <<<<--<-<DDDDDDD>->>>>>>>>>>,,,,,,,,,,,ddddddd,,,)
+
+Myco.capr         CUGUAGAAAGUAUGUAUUAAUAUAUCUUGGACGCGAGUUCGAUUCUCGCC
+#=GR Myco.capr SS ))))-----))))))))----)))))))),,,<<<<<_______>>>>>]
+
+Myco.capr         AUCUCCACCA
+#=GR Myco.capr SS ]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Myco.geni DE converted from Zweib's tmRNA dataset 
+
+Myco.geni         GGGGAUGUUUUGGGUUUGACAUAAUGCUGAUAGACAAACAGUAGCAUUGG
+#=GR Myco.geni SS [[[[[[[,,,,,,,,,,,,(((((-(-------(((((((((-(((((<<
+
+Myco.geni         GGUAUGCCCCCUUACAGCGCUAGGUUCAAUAACCGACAAAGAAAAUAACG
+#=GR Myco.geni SS <<A__AAA_>>>>,,,,,,,,,aaa,,a,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.geni         AAGUGUUGGUAGAACCAAAUUUGAUCAUUAACCAACAAGCAAGUGUUAAC
+#=GR Myco.geni SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.geni         UUUGCUUUUGCAUAAGUAGAUACUAAAGCUACAGCUGGUGAAUAGUCAUA
+#=GR Myco.geni SS ,,,<<-<<<<_____________>>>>>>,<<<<<<<<<<<<<_BBBBBB
+
+Myco.geni         GUUUGCUAGCUGUCAUAGUUUAUGACUCGAGGUUAAAUCGUUCAAUUUAA
+#=GR Myco.geni SS >>>>>>>>>>>>>,,,,,,,bbbbbb,,<<<<<<<<<__CCCC_C>>>>>
+
+Myco.geni         CCUUUAAAAAUAGAACUUGUUGUUUCCAUGAUUGUUUUGUGAUCAAUUGG
+#=GR Myco.geni SS >>>>,,,,,,c,cccc,,,<<<<<<<<<-<<<_DDDD_DDD>>>--->>>
+
+Myco.geni         AAACAACAAGACAAAAAUCCACAAAACUAAAAUGUAGAAGCUGUUUGUUG
+#=GR Myco.geni SS >>>>>>,,,,,,,,,,,,,ddd,dddd,,,)))))----)))))))))--
+
+Myco.geni         UGUCCUUUAUGGAAACGGGUUCGAUUCCCGUCAUCUCCACCA
+#=GR Myco.geni SS ----)-))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Myco.pneu DE converted from Zweib's tmRNA dataset 
+
+Myco.pneu         GGGGAUGUAGAGGUUUUGACAUAAUGUUGAAAGGAAAACAGUUGCAGUGG
+#=GR Myco.pneu SS [[[[[[[,,,,,,,,,,,,(((((-(--------((((((((((((((AA
+
+Myco.pneu         GGUAUGCCCCUUACAGCUCUAGGUAUAAUAACCGACAAAAAUAACGACGA
+#=GR Myco.pneu SS AA<<<<<<aaaa_________>>>>>>,,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.pneu         AGUUUUGGUAGAUCCAAUGUUGAUCGCUAACCAACAAGCAAGUAUCAACU
+#=GR Myco.pneu SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.pneu         ACGCUUUCGCUUAGAACAUACUAAAGCUACACGAAUUGAAUCGCCAUAGU
+#=GR Myco.pneu SS ,,<<-<<-<____________>->>>>,<<<<<<<<<<<<<_BBBBBB>>
+
+Myco.pneu         UUGGUUCGUGUCACAGUUUAUGGCUCGGGGUUAACUGGUUCAACUUAAUC
+#=GR Myco.pneu SS >>>>>>>>>>>,,,,,,,bbbbbb,,<<<<<<<<--<CCCCC_>>>>>>>
+
+Myco.pneu         CUUAAAUUAUGAACUUAUCGUUUACUUGUUUGUCUUAUGAUCUAAAGUAA
+#=GR Myco.pneu SS >>,,,,,,,ccccc,,,<<<<<<<<<<<-<_DDDD_DDD>->-->>>>>>
+
+Myco.pneu         GCGAGACAUUAAAACAUAAGACUAAACUGUAGAAGCUGUUUUACCAAUCC
+#=GR Myco.pneu SS >>>>,,,,,,,,,,ddd,dddd,,,)))))---)))))))))-------)
+
+Myco.pneu         UUUAUGGAAACGGGUUCGAUUCCCGUCAUCUCCACCA
+#=GR Myco.pneu SS -))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Myco.pulm DE converted from Zweib's tmRNA dataset 
+
+Myco.pulm         GGGGAUGUAAUGGUUUCGACAGGCAUUUAUAACCUUAUAAUGCAGUAGUU
+#=GR Myco.pulm SS [[[[[[[,,,,,,,,,,,,((-(((((------(((((((-(((((<<<<
+
+Myco.pulm         UGGCAGACUAUAAUGCUACUAGGCGUUUCAAUAAACGGAACAAAAAAACA
+#=GR Myco.pulm SS <AAA>>>>>,,,,,,,,,,,,,,,aaa,,,,,,,,,,,,,,,,,,,,,,,
+
+Myco.pulm         AGAAAAUGACUAUCAAGAUUUAAUGAUUAGUCAAAAUCUAAACCAAAAUC
+#=GR Myco.pulm SS ,,,,,,<-----<--<<<__________________>>>-->----->,<
+
+Myco.pulm         UAGCUUUUGCUAGCGUUUAGCAGCUAGUUGCUCCAUUAUAUGUUCUGGAU
+#=GR Myco.pulm SS <<<--<----<<<-<<-<_BBB__B_>-->>---->>>--->-->>>>,,
+
+Myco.pulm         AAUGGAAGCAUGCCUAAGAACUUAGUGAAGUUGCUCUAGCGUCAAUUUCA
+#=GR Myco.pulm SS ,,,,,,,b,,bbb,,,,,,,,<<-<<<<<<<<<__CCCCC__>>>>>>>>
+
+Myco.pulm         UGAAAUUUAGCUAGUUGAUUUAAUAGAAUUUUGUUCAAUUUUUUCUAUUA
+#=GR Myco.pulm SS >->>,,,,,ccccc,,,<<<<<<<<<<______DDDDDD____>>>>>>>
+
+Myco.pulm         AAUCAACAAUUAAAAAUUGGAAUAAACUGUAGAUUUAUAAGCAUUGUGAA
+#=GR Myco.pulm SS >>>,,,,,,,,,,,,dddddd,,,,)))))----)))))))-------))
+
+Myco.pulm         UGUGUGGACCCGGGUUCGACUCCCGGCAUUUCCACCA
+#=GR Myco.pulm SS )))-)),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Neis.gono DE converted from Zweib's tmRNA dataset 
+
+Neis.gono         GGGGGCGACCUUGGUUUCGACGGGGGUUGCGAAGCAGAUGCGGGCAUACC
+#=GR Neis.gono SS {{{{{{{,,,,,,,,,,,,,[[[[[[[[-----[[[[[-[[[-[[[[[[<
+
+Neis.gono         GGGGUCUCAGAUUCCCGUAAAACACUGAAUUCAAAUAGUCGCAAACGACG
+#=GR Neis.gono SS <<<<__AAAA_A>>>>>,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,,
+
+Neis.gono         AAACUUACGCUUUAGCCGCUUAAGGCUAGCCGUUGCAGCAGUCGGUCAAU
+#=GR Neis.gono SS ,,,,,,,,<--<<<<<<______>>>>>>>((((((,<<<<<<__BBBBB
+
+Neis.gono         GGGCUGUGUGGCGAAAGCCACCGCAACGUCAUCUUACAUUGACUGGUUUC
+#=GR Neis.gono SS B>>>>>>,<<<<____>>>>,,)))))),,,,,,,,bbbbbb,,,<<<<<
+
+Neis.gono         CAGCCGGGUUACUUGGCAGGAAAUAAGACUUAAGGUAACUGGUUUCCAAA
+#=GR Neis.gono SS <-<<<<_CCCCCC>>>>->>>>>>,,,,,,,,,cccccc,,<<<<<<<--
+
+Neis.gono         AGGCCUGUUGGUCGGCAUGAUGGAAAUAAGAUUUUCAAAUAGACACAACU
+#=GR Neis.gono SS <-<<<_DDDDDDD>>>->-->>>>>>>,,,,,,,,,,,,,,ddd,dddd,
+
+Neis.gono         AAGUAUGUAGAACGCUUUGUAGAGGACUUUCGGACGGGGGUUCGAUUCCC
+#=GR Neis.gono SS ,,]]]]]]----]]]]]]]]----]]]]]]]],,,<<<<<_______>>>
+
+Neis.gono         CCCGCCUCCACCA
+#=GR Neis.gono SS >>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Nitr.euro DE converted from Zweib's tmRNA dataset 
+
+Nitr.euro         GGGGGCGAUCCGGUUUCGACGUGGGUUGCAAAGCAGCGCAGGGCAUACCG
+#=GR Nitr.euro SS {{{{{{{,,,,,,,,,,,,[[[[[[[[-----[[[[-[[[[-[[[[[[<<
+
+Nitr.euro         AGGUUCAGUACCCUCGUAAAACAGCUGAAAAAAAAUAGUCGCAAACGACG
+#=GR Nitr.euro SS <<<_AAAAA__>>>>>,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,,
+
+Nitr.euro         AAAACUACGCUUUAGCCGCUUAAUCCGGCUAAACUCCACACCGGUGGGCC
+#=GR Nitr.euro SS ,,,,,,,,,,<<<<<<<<_______>>>>>>>>((((((,<<<<<<__BB
+
+Nitr.euro         UCAACGCCGGGUCUGGCAACAGACAGUGGAGUCAUUAACGAGGAUCGCGU
+#=GR Nitr.euro SS BB__>>>>>>,<<<<____>>>>,,)))))),,,,,,,,bbbb,,,<<<<
+
+Nitr.euro         UUUGCAGGGUUACUUUGCAGAGCGCUAAAAAAUAGGUAACUCGCCUGUCA
+#=GR Nitr.euro SS <<<<<<__CCCCCCC>>>>>>>>>>,,,,,,,,ccccccc,,<<<<<<--
+
+Nitr.euro         UCAGCCUGCCGGUUGGCGGAUGCCAGGUCAAAUUAAAUAACAUGGCUAAG
+#=GR Nitr.euro SS <<-<<<_DDDDDDD>>>>>-->->>>>>,,,,,,,,,,ddd,dddd,,,]
+
+Nitr.euro         UAUGUAGAACUGUCUGUAGAGGACUUGCGGACGCGGGUUCAAUUCCCGCC
+#=GR Nitr.euro SS ]]]]]----]]]]]]]]----]]]]]]]],,,<<<<<_______>>>>>}
+
+Nitr.euro         GCCUCCACCA
+#=GR Nitr.euro SS }}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Odon.sine.cl DE converted from Zweib's tmRNA dataset 
+
+Odon.sine.cl         GGGGCUGACUUGGUUUCGACAUUUAAAAAUUGUUACAGUAUGAUGCAGGU
+#=GR Odon.sine.cl SS {{{{{{{,,,,,,,,,,,,[[[[[[[[----[[[[-[[[[[---[[[[[[
+
+Odon.sine.cl         CGAAGUUUCUAAUCUUCGUAAAAAAAGAGAAAUUUAUAAUAAAUGCUAAU
+#=GR Odon.sine.cl SS <<<<<AAAAA___>>>>>,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,
+
+Odon.sine.cl         AAUUUAAUUUCUUCUGUGUUUAAAAGUUUAUCAACUAAGCAAAAUAGUUU
+#=GR Odon.sine.cl SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Odon.sine.cl         AAAUUUAAGUUUUGCUGUUUAAGUUUUAUGCACAUUUAAUGAUCUAGUAA
+#=GR Odon.sine.cl SS ,,,,,,,,,,<<<<<<<___________________________>>>>>>
+
+Odon.sine.cl         AUAACUUUGUUCGCUAUAAUUUAUAUUUAUAACUAGACUUUUGUCUUUUU
+#=GR Odon.sine.cl SS >,,,,,,,,,,,(((((((,<<<<<BB>>>>>,,<<<<____>>>>,,,)
+
+Odon.sine.cl         UAUAGUUUAGAAUAACUUUAUCAUUUCAAACCUCGUUCCAUCUAGUUGAA
+#=GR Odon.sine.cl SS )))))),,,bb,,,,,,,,,,,,,,,,,,,,,,,<<<<-<<___>>->>>
+
+Odon.sine.cl         CUAAACCUGUGAACGAAUACUAUAAUAAAAUUUUUAGAUGGACGUGGGUU
+#=GR Odon.sine.cl SS >,,,]]]]]]------]]]]]-]]]]------]]]]]]]],,,<<<<<__
+
+Odon.sine.cl         CGACUCCCAUCAGCUCCACCA
+#=GR Odon.sine.cl SS _____>>>>>}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+#=GS Oeno.oeni DE converted from Zweib's tmRNA dataset 
+
+Oeno.oeni         GGGGUAGUUCCGGAAUUCGACAGGUUAUUACAAGCAUGGAUUGCGUUCCC
+#=GR Oeno.oeni SS (((((((-------------((((((((-----((((((((-(((((<<<
+
+Oeno.oeni         GUUUGUCGGGUUAAAGACUGCAGAUAUAACUGCAAAAAAUAAUGAACCAU
+#=GR Oeno.oeni SS <_____>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Oeno.oeni         CUUACGCAUUAGCUGCCUAAUCGCAGUAGCGUAGCCCUUUGUUGAGUCCA
+#=GR Oeno.oeni SS ,,<<<<<----<<<<________>>>>->>>>><<<--<<<<<__AAAAA
+
+Oeno.oeni         CGGCAACAUUCUCGGCCUAAUUAGUGGAUUAGCUGCUGGCAUUUAUGUUC
+#=GR Oeno.oeni SS A>>>>>------->>>,,,,,,,aaaaaa,,,,<<<<<---<<<<<BBBB
+
+Oeno.oeni         GGAAUAAAAGCAGUGAAACAAGAAUCGAACUAGCUCUCGAUUUGGAAGUU
+#=GR Oeno.oeni SS BB_>>>>>-->>>>>,,,,,,,,,bbbbbb,,<<<<--<<<--<<__CCC
+
+Oeno.oeni         AGCAACCUAAUCUUGAGCGAAAUUACUUGUUAACUAUGAGCGUAGAUAUU
+#=GR Oeno.oeni SS CCCC_>>-->>>-->>>>,,,,,,,,,ccccccc,,,,)))))----)))
+
+Oeno.oeni         UAUGUGAUUGGAUAAUUUGGACAUGGGUUCGACUCCCAUCUACUCCACCA
+#=GR Oeno.oeni SS )))))------))))))))--------------------)))))))::::
+//
+# STOCKHOLM 1.0
+
+#=GS Pavl.luth.cl.pa DE converted from Zweib's tmRNA dataset 
+
+Pavl.luth.cl.pa         GGGGCUGUUUAGGUUUCGAUCCUAAAAAAAACUAAUAAGUGUGAUGCAAG
+#=GR Pavl.luth.cl.pa SS ::::::::::::::::::::::::::::::::::::::::::::::::::
+
+Pavl.luth.cl.pa         UAGAGGAAACCCUCUUAAAAAAAAAGCAAACAAUAAAUGCAAACAAUAUU
+#=GR Pavl.luth.cl.pa SS :<<<<<____>>>>>:::::::::::::::::::::::::::::::::::
+
+Pavl.luth.cl.pa         UUAUCUUUUAAUCGAGUAGCUGUAGCCCCGUAUAGUUAUAUAGCAUUAAC
+#=GR Pavl.luth.cl.pa SS ::::::::::::::::::::::::::::::::::::::::::::::::::
+
+Pavl.luth.cl.pa         UCCUUAUGGUCAAAAAAUCUAGAAAGUUUGAUCGUAAAGCAAACCUUAGC
+#=GR Pavl.luth.cl.pa SS :::::<<<<<<---<<<<_______>>>>>>>>>>:::::::::::::::
+
+Pavl.luth.cl.pa         UAGAAGCACACAAGAAUAA
+#=GR Pavl.luth.cl.pa SS :::::<--<____>-->::
+//
+# STOCKHOLM 1.0
+
+#=GS Pedi.pent DE converted from Zweib's tmRNA dataset 
+
+Pedi.pent         GGGGUCGUUAUGGAUUCGACAGGUAUGGGUCGAGCCAUGACUGCAUUUCG
+#=GR Pedi.pent SS [[[[[[[,,,,,,,,,,,,,,,,,,,,,,,,,,((((((((-((((((<<
+
+Pedi.pent         UAGGUUACGGCUACGUAAAAACGUUCAGUUUAUUAUAACUGCAAAAAAUA
+#=GR Pedi.pent SS <<<___AAA_>>>>>,,,,,,aaa,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Pedi.pent         AUAACAAUUCUUACGCUUUAGCUGCCUAAUAGUAGCUUGACGUAGAUCCG
+#=GR Pedi.pent SS ,,,,,,,,,,,,<<<-<---<<<<________>>>>-->->>>,<<<<<<
+
+Pedi.pent         CCUAGUCUCGUCCAUGGGCUAGAUACGGGUCCUAAAUGAAGUGGACUUGC
+#=GR Pedi.pent SS -<<<<<<__BBBBBB_>>>>>>--->>>>>>,,,,,,,,,bbbbbb,,,,
+
+Pedi.pent         GCUUAAGUACUGGCCUGGGUGCUUAAGAAGAGGAUUUACAGACUAGCGUU
+#=GR Pedi.pent SS ,<<<<-<<<<<_C_CCC>>>>>->>>>,,,,,,,,,,,ccc,c,,,<<--
+
+Pedi.pent         UUAAUGAAGCCCCGACAUACGGCGUCUUAUUUCGCGAAAUUUAAGUAGUA
+#=GR Pedi.pent SS -<<<-<--<<<____DDDDD>>>->->>>--->>,,,,,,,,,,,,,ddd
+
+Pedi.pent         UGAAUAUGAAUGUAGAUGUCAUGGUGGCGACAUGCUUGGACGCGGGUUCG
+#=GR Pedi.pent SS dd,,,,,))))))----)))))))),,,,,,,,,,,,,,,,<<<<<____
+
+Pedi.pent         ACUCCCGCCGACUCCACCA
+#=GR Pedi.pent SS ___>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Porp.ging DE converted from Zweib's tmRNA dataset 
+
+Porp.ging         GGGGCUGACCGGCUUUGACAGCGUGAUGAAGCGGUAUGUAAGCAUGUAGU
+#=GR Porp.ging SS [[[[[[[,,,,,,,,,,,(((((((------((((((((--((((((AAA
+
+Porp.ging         GCGUGGGUGGCUUGCACUAUAAUCUCAGACAUCAAAAGUUUAAUUGGCGA
+#=GR Porp.ging SS AA,,,<<<<-<<_aaaaa________>>->>>>,,,,,,,,,,,,,,,,,
+
+Porp.ging         AAAUAACUACGCUCUCGCUGCGUAAUCGAAGAAUAGUAGAUUAGACGCUU
+#=GR Porp.ging SS ,,,,,,,,,,<-<<<-<<<<_____________>>>>>>>->,,,,,,,,
+
+Porp.ging         CAUCGCCGCCAAAGUGGCAGCGACGAGACAUCGCCCGAGCAGCUUUUUCC
+#=GR Porp.ging SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<-<<<<<<<<<-<<<___BBB
+
+Porp.ging         CGAAGUAGCUCGAUGGUGCGGUGCUGACAAAUCGGGAACCGCUACAGGAU
+#=GR Porp.ging SS BBB>>>->>>>>------->>>>->>,,,,,bbbbbb,,,<<<<<<<<__
+
+Porp.ging         GCUUCCUGCCUGUGGUCAGAUCGAACGGAAGAUAAGGAUCGUGCAUUGGG
+#=GR Porp.ging SS _CCCCCC_>>>>>>>>,,,,,,,,c,ccccc,,,,,<<-<<-<<---<<<
+
+Porp.ging         UCGUUUCAGCCUCCGCUCGCUCACGAAAAUUCCAACUGAAACUAAACAUG
+#=GR Porp.ging SS ___DDDDDD_>>>->>->>->>,,,,,,,,,,,,,dddddd,,,,)))))
+
+Porp.ging         UAGAAAGCAUAUUGAUUCCAUGUUUGGACGAGGGUUCAAUUCCCUCCAGC
+#=GR Porp.ging SS )-----))))))))----)))))-)),,,<<<<<_______>>>>>]]]]
+
+Porp.ging         UCCACCA
+#=GR Porp.ging SS ]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Porp.purp.cl DE converted from Zweib's tmRNA dataset 
+
+Porp.purp.cl         GGGGCUGCAAGGUUUCUACAUUGUGAAAAAACAAAUAUAUGAAAGUAAAA
+#=GR Porp.purp.cl SS [[[[[[[,,,,,,,,,,,((((((((-----((((-(-(((----(-(((
+
+Porp.purp.cl         CGAGCUCAUUAUUAGAGCUUUUAGUUAAAUAAAUGCAGAAAAUAAUAUUA
+#=GR Porp.purp.cl SS ,AAAA,,,<<<<<___aaaa_______>>>>>,,,,,,,,,,,,,,,,,,
+
+Porp.purp.cl         UUGCUUUUUCUCGAAAAUUAGCUGUUGCAUAAAUAGUCUCAAUUUUUGUA
+#=GR Porp.purp.cl SS ,,,,,,,,,,,,,,,,<--<<<<<<<<_______________________
+
+Porp.purp.cl         AUUCGAAGUGAUAGACUCUUAUACACUACGAAUAUUCUGUUAGAGUUGCU
+#=GR Porp.purp.cl SS ________>>>>>>->>-->,,,,,,,,,,,,<<<<--<-<<<__>>>->
+
+Porp.purp.cl         CUUAAUAAAAGAAAAGUAAAAAAAUACAAAUUCUUAUGUUUUUUACCUGA
+#=GR Porp.purp.cl SS --->>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<-<<<<<____>>
+
+Porp.purp.cl         AUUGAUUCAAUUUAAGGUUAGUAUUUUUUGAUUUUUACAAUGGACGUGGG
+#=GR Porp.purp.cl SS >-->>->,,,)))-)------))))-))))----)))))))),,,<<<<<
+
+Porp.purp.cl         UUCAAGUCCCACCAGCUCCACCA
+#=GR Porp.purp.cl SS _______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Prev.inte DE converted from Zweib's tmRNA dataset 
+
+Prev.inte         GGGCUUGUAUGGAUUUGACGGCAAGACGAAAUGGUAUGUAAGCAUGCGGA
+#=GR Prev.inte SS [[[[[[[,,,,,,,,,,,(((((((-----((-((((((--((((((AAA
+
+Prev.inte         GCAUUGGUAGCUGGCUCCUAAAUAUCGGUUAUCAAACAAUUAAUUGGCGA
+#=GR Prev.inte SS AA,,,<<<<<<<_aaaaa________>>>>>>>,,,,,,,,,,,,,,,,,
+
+Prev.inte         AAACAAUUACGCUCUCGCUGCCUAAUCGAAGUACAGUAGAUUACUGGCUU
+#=GR Prev.inte SS ,,,,,,,,,,<-<<<-<<<<_____________>>>>>>>->,,,,,,,,
+
+Prev.inte         UAUUCGACUAUUAGAUAGUUGAACGAGACACUGCUCCAAAGAUGUUGUUC
+#=GR Prev.inte SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,<--<<<<<<---<<<____BBB
+
+Prev.inte         CGAAUCGGAGGGUAAAGCGGUGCAGGUUAAAUCGGAAAUAGUUUGGGUAU
+#=GR Prev.inte SS BBB>>>--->>------->>>>-->,,,,,,bbbbbb,,,<<<<<<<<<<
+
+Prev.inte         GCCUCGCUGCCCAAAUGAAAUUUAGAGGAUAAGGCAUUGGUUGGUGGUUC
+#=GR Prev.inte SS _CCCC>->>>>>>>>>,,,,,,,,cccc,,,,<<<<<<<<<----<<DDD
+
+Prev.inte         AGGUCUUGCCAAUGCUCGAAAACCAAAGGCUGAAAUAAGCAUGUAGAAAG
+#=GR Prev.inte SS DD_D>>->>>>>>>>>,,,,,,,,,,,d,ddddd,,,,))))))-----)
+
+Prev.inte         CGUAUGGUUUCCUUGUGCGGACCGGAGUUCGACUCUCCGCAGGUCCACCA
+#=GR Prev.inte SS )))))-))---)))))-)),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Proc.mari.-1 DE converted from Zweib's tmRNA dataset 
+
+Proc.mari.-1         GGGGUUGUAAUGGUUUCGACGGGGCGUAAGGAAGAUGACUGAAGCCUGCU
+#=GR Proc.mari.-1 SS [[[[[[[,,,,,,,,,,,,((((((((-----((((-(((,,AAAA<<<<
+
+Proc.mari.-1         CGGUUAGAGCAAAAACACAAACGCUAACAAAAUCGUUAGUUUCUCCCGUC
+#=GR Proc.mari.-1 SS <aaaa_>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Proc.mari.-1         AAACAGCACCAGUUGCUGCUUGAUCUCAAAGGAGAUGGGGUGAUAUCAGC
+#=GR Proc.mari.-1 SS ,,,,,,,,,,,<<<-<<<_________________>>>>>>,,,,<<<<-
+
+Proc.mari.-1         CUUAUCAACCAAAUGAUCCAAGGAGCCUGGAAGGGCUCCACCAUUACUAG
+#=GR Proc.mari.-1 SS <<--<<________B_BB___>>>>->>>>,,,bb,b,,,,,,,,,,,,)
+
+Proc.mari.-1         GUGAUCUCAACCGAUGUUUCGGACAGCGGUUCGAUUCCGCUCAACUCCAC
+#=GR Proc.mari.-1 SS ))-))))------)))))))),,,<<<<<_______>>>>>]]]]]]]::
+
+Proc.mari.-1         CA
+#=GR Proc.mari.-1 SS ::
+//
+# STOCKHOLM 1.0
+
+#=GS Proc.mari.-2 DE converted from Zweib's tmRNA dataset 
+
+Proc.mari.-2         GGGGCUGCAAUGGUUUCGACGGGGUAUGAGGAGGGUGACUGAAGCCUGCU
+#=GR Proc.mari.-2 SS [[[[[[[,,,,,,,,,,,,((((((((---(-((((-(((,,,AAA<<<<
+
+Proc.mari.-2         CGGUAAGAGCAAAUCCGUAACUGCGAACAACAUCGUUCGUUUCUCCCGUC
+#=GR Proc.mari.-2 SS <aaa__>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Proc.mari.-2         AGCCUGCCCUCGUGGCUGCCUGACCCUAAUAAGGGAGAUGGGGUGAGGUC
+#=GR Proc.mari.-2 SS ,,,,,,,<<<<<<--<<<____________________>>>->>>>>>,<
+
+Proc.mari.-2         AGCCUUAUCACCCAAAUGACCCAUGGGGGCUGCGAGGCCCCUUUAACUAC
+#=GR Proc.mari.-2 SS <<<<<--<<<_______B_BB__>>>>>>>>>,,,bb,b,,,,,,,,,,,
+
+Proc.mari.-2         UAGGUGAUCCACACCAGUGUCUCGGACAGCGGUUCGAUUCCGCUCAGCUC
+#=GR Proc.mari.-2 SS ,,)))-))))-)----)))))))),,,<<<<<_______>>>>>]]]]]]
+
+Proc.mari.-2         CACCA
+#=GR Proc.mari.-2 SS ]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Pseu.puti DE converted from Zweib's tmRNA dataset 
+
+Pseu.puti         GGGGCCGAUUAGGAUUCGACGCCGGUAGCGAAACUCUAGGUGCAUGCCGA
+#=GR Pseu.puti SS [[[[[[[,,,,,,,,,,,,((((((((-------(---(((((((((AAA
+
+Pseu.puti         GUUGGUAACAGAACUCGUAAAUCCACUGUUGCAACUUUUAUAGUUGCCAA
+#=GR Pseu.puti SS AA,,<<<<<<<_aaaaa________>>>>>>>,,,,,,,,,,,,,,,,,,
+
+Pseu.puti         UGACGAAAACUACGGCGCGGAGUACAAGCUGGCUGCGUAAGCAGUCCUCU
+#=GR Pseu.puti SS ,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<-<<<<_______________
+
+Pseu.puti         UGACCCGUUGCUUCUGGUAGCUUCGGCUCCAGCAAUCACUAGGGGAUGCC
+#=GR Pseu.puti SS ______________>>>>>>>>>,,,,,,,,,<<<<<<-<--<<<-<_BB
+
+Pseu.puti         UGUAAACCCGAACUGAUUGUCAUACAGAACAGGAUCGUCGCGUAGCACGU
+#=GR Pseu.puti SS BBB_>->>>-->->>>>>>,,,,,,,,,bbbbb,,,<<<<<-<-<<-<CC
+
+Pseu.puti         UGUGGGCGAAGUGACUAAAACUUACACAACUCAUCCAAAGCACCCUGCCC
+#=GR Pseu.puti SS CCCC>>>->->>>>>,,,,,,,,,cccccc,,<--<---<--<<<_DDD_
+
+Pseu.puti         GUCGGGCGGCUGCGGAUUAAAUCAGUAGACACGGCUAAGCAUGUAGUACC
+#=GR Pseu.puti SS DDD>>>---->--->->,,,,,,,,,,ddd,,ddd,,,))))))---)))
+
+Pseu.puti         GACAGCGGAGUACUGGCGGACGGGGGUUCAAAUCCCCCCGGCUCCACCA
+#=GR Pseu.puti SS ----)-----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Recl.amer.mt DE converted from Zweib's tmRNA dataset 
+
+Recl.amer.mt         GGGGAUGUUUUUAGUAUUCGACAUAGUGGAAUUUAUUUGUGGAAUUUUUA
+#=GR Recl.amer.mt SS (((((((,,,,,,,,,,,,,,<<<<<<-<--<<<<<----<<<<---<<<
+
+Recl.amer.mt         AAUUUUAUUUUUUUAUCUACUUUUAAGAAGGAUUUUUUAAAAACACCUUG
+#=GR Recl.amer.mt SS <<<---A--<<<<<-<____a_____>>>>>>------------------
+
+Recl.amer.mt         UUAAAUAAGUAAAUAAAAAAAAUAAAAUUUAAAUUAUUUUUUUAUAAGAA
+#=GR Recl.amer.mt SS -------------------------->>>>>>---->>>>--->>>>>--
+
+Recl.amer.mt         UGACUAUGGAACCGAGGGCGGAUCUCGGCAUCUCCACCA
+#=GR Recl.amer.mt SS >->>>>>>,,,<<<<<_______>>>>>)))))))::::
+//
+# STOCKHOLM 1.0
+
+#=GS Rhod.spha DE converted from Zweib's tmRNA dataset 
+
+Rhod.spha         GGGGCCGAAACAGGAUCGACGAACGUCUAAAGGGGUUGGCUUUGUCCCGG
+#=GR Rhod.spha SS [[[[[[[,,,,,,,,,,,,(((-(((-----((-(---((--(((((,AA
+
+Rhod.spha         UGAGGUACCACCGUUAUCGGUCCGAAAAGUACAGUUGCCAACGACAACCG
+#=GR Rhod.spha SS AA,<<-<<<__aaaa___>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Rhod.spha         UGCUCCGGUGGCUCUGGCUGCGUAAGCAGUUCGAGUUAUCGAAACUUAAG
+#=GR Rhod.spha SS ,,,,,,,<<<<<<<-<<<<<______>>>>>->>>>>>>,,,,,,BBBB,
+
+Rhod.spha         CCCUUGCGCUUAGCCGCGUAAGGCGGGGUUCGCAGGUACCUGGCAACAGA
+#=GR Rhod.spha SS ,,,<<<<<<bbbb__>>>>>>,<<-<<<<__CCCCCC>>>>->>,,,,,,
+
+Rhod.spha         AACCUGCACUUGUCCGGGGCAACCCGGACUAUGGACAUAAACGCGCUCGU
+#=GR Rhod.spha SS ,cccccc,,,D<<<<<<<d___>>>>>>>,,,)))))-----))---)-)
+
+Rhod.spha         CAUAAGCGGAUCGGACCCGGGGGCGGUACCCGGCGGCUCCACCA
+#=GR Rhod.spha SS )----)))--))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Rick.cono DE converted from Zweib's tmRNA dataset 
+
+Rick.cono         GGGGGCGAAAUAGGAUCGACGUGCCUAAUAAAAAGAUUGCUUUUACUCGG
+#=GR Rick.cono SS [[[[[[[,,,,,,,,,,,,(((((((-------(((((((--(((((AAA
+
+Rick.cono         GAUGAUUCCGCCGAUGGCUUGUGCCAUAUGGGUCAAAACAAAGAAACGCA
+#=GR Rick.cono SS A,,<<-<<<<_______aaaa_______>>>>>>,,,,,,,,,,,,,,,,
+
+Rick.cono         AACGAUAAUAAUCGUUCUGUAGGUCAUUUAGCUUUAGCAGCUUAAUCCUA
+#=GR Rick.cono SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<-<______>->>>
+
+Rick.cono         CGCGGCUGGAGGGUGUGCCGGGCAACAGAACAACCCUCACUUGCUAAUAU
+#=GR Rick.cono SS <-<<<<____BBB_BB>>>>->,,,,,,,,,,bb,bbb,,,C<<<<c__>
+
+Rick.cono         AGCUAUAGUAAUAAACGUAAUUUAGAAUAGAGGUUGCGGACUCGGGGGCA
+#=GR Rick.cono SS >>>,,,)))))-----)))))))-------))))-))),,,<<<<<____
+
+Rick.cono         GUACCCGACGCCUCCACCA
+#=GR Rick.cono SS ___>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Rumi.albu DE converted from Zweib's tmRNA dataset 
+
+Rumi.albu         GGGGAUGUGAAGGUUUCGACGGGGGUCUUGUAUGGCGAUAAGCGAGUGGA
+#=GR Rumi.albu SS [[[[[[[,,,,,,,,,,,,((((((((---((((--(((--((((((<<-
+
+Rumi.albu         GGAGCCGCACUCUCUUAAAACGGCGUACGUUUUAAAAUUAGGCGGCCACG
+#=GR Rumi.albu SS <<___AA__>>->>,,,,,,aa,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Rumi.albu         GUUAUUUUGCAAAGGCAAGCUAAGGGCCACCCGUUCUUCCUGGGAAGUAC
+#=GR Rumi.albu SS ,,,,,,,,,,,,,<<<_________>>>,,,,<<<<----<<<--<<<_B
+
+Rumi.albu         CCCGGGCUGGGUUAAAGCGUUGGAUAAUUGUUGACCUUCGCCAGCCGAUG
+#=GR Rumi.albu SS __BBB>>>--->>>------->>>>,,bbb,,b,,,,,,,,,,<<--<<<
+
+Rumi.albu         CGGUUGCCCGGUCGUUGUAUGCCAUUUUACCAAAGCGAGGGGGCGUGGUC
+#=GR Rumi.albu SS <<<<_____C>>>>->>>-->>,,,,,,,c,,,,,<---<<-<-<<<DDD
+
+Rumi.albu         UGUUUGCCCGUGCGGAGGGAAACGGCGCAAGCCGAAAAUAACCCGACUAG
+#=GR Rumi.albu SS _DDD>>>>>--->--->,,,,,,,,,,,,,,,,,,,,,,ddd,,ddd,,,
+
+Rumi.albu         ACUCGUAGAAAUUCGCGUGAAUGGGCUUUCGGACAGGAGUUCGAUUCUCC
+#=GR Rumi.albu SS ))))))----)))--))))----)))))))),,,<<<<<_______>>>>
+
+Rumi.albu         UCAUCUCCACCA
+#=GR Rumi.albu SS >]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Shew.putr DE converted from Zweib's tmRNA dataset 
+
+Shew.putr         GGGGGCGAUUCUGGAUUCGACAGGAUUCACGAAACCCUGGGAGCAUGCCG
+#=GR Shew.putr SS [[[[[[[,,,,,,,,,,,,,(((((--(--------(((((-((((((AA
+
+Shew.putr         AGGGGCGGUUGGCCUCGUAAAAAGCCGCAAAGUUAUAGUUGCAAACGACG
+#=GR Shew.putr SS AAA,<<<<<<__aaaaa_____>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Shew.putr         AUAACUACGCUCUAGCCGCUUAAUGCCGCUAGCCAUCUACCACACGCUUU
+#=GR Shew.putr SS ,,,,,,,,,,,<<<<<-<_______>->>>>><<<<<-<<<<<--<<<<_
+
+Shew.putr         GCACAUGGGCAGUGGAUUUGAUGGUCAUCUCACAUCGUGCUAGCGAGGGA
+#=GR Shew.putr SS BBBB__>>>>->>>>-->->>>>>,,,,,,,,,,,,bbbb,,<<<-<--<
+
+Shew.putr         ACCCUGUCUGGGGGUGAACCGCGAAACAGUACCGGACUCACCGUGUGGGA
+#=GR Shew.putr SS -<<__CCCCCC>>->--->>>>,,,,,,,,,cccccc,,<<<<<-<<<<-
+
+Shew.putr         UCCUGUCUUUCGGAGUUCAAACGGUUAAACAAUAGAAAGACUAAGCAUGU
+#=GR Shew.putr SS <<<_DDDDDDD>>>->>>>->>>>>,,,,,,,,,ddddddd,,,))))))
+
+Shew.putr         AGCGCCUUGGAUGUAGGUUUUCUGGACGCGGGUUCAAGUCCCGCCGCCUC
+#=GR Shew.putr SS ----))-)))------)--))))),,,<<<<<_______>>>>>]]]]]]
+
+Shew.putr         CACCA
+#=GR Shew.putr SS ]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Sphi.arom DE converted from Zweib's tmRNA dataset 
+
+Sphi.arom         GGGGCCGAACUAGGAUCGACGUGUGUUGAAAAGCGUUGUUUUCACCCGGG
+#=GR Sphi.arom SS [[[[[[[,,,,,,,,,,,,(((((((------(((((((--(((((<<<<
+
+Sphi.arom         CUGAGUAACCCGUUCAAGGCUCAAAACUCACAAGUGCCAACGACAACGAA
+#=GR Sphi.arom SS __AAAA__>>>>,,,,,,aaaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Sphi.arom         GCACUUGCUCUCGCGGCGUAAUUCUAGGGGCUAACGCCCUGAAGUUACUA
+#=GR Sphi.arom SS ,,,,,,<<<<<-<-<<_____>>->->>>>><<<---<BBBB_>>>>,,,
+
+Sphi.arom         AGUUAGAGCACGGUUCGGACCGAACCGGGUAACAGAAUCGGAAACCGGGC
+#=GR Sphi.arom SS ,,bbbb,<<-<<<<_____CCCC>>>>->>,,,,,,,cccc,,,,,D,<<
+
+Sphi.arom         CGGUUCAGGCCGGCUAUGGUGAUAAACUGCGGCGUGCAAUAGGCACAGCG
+#=GR Sphi.arom SS <<<<<d_>>>>>>>,,,)))))------)))))))-------))))-)))
+
+Sphi.arom         GACCCGGGGGCGGUACCCGGCGGCUCCACCA
+#=GR Sphi.arom SS ,,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Spir.kunk DE converted from Zweib's tmRNA dataset 
+
+Spir.kunk         GGGGAUGUUCCGGUUUCGACAGGAAUGAUCUACUAAUAUUGGCAGUAGUU
+#=GR Spir.kunk SS [[[[[[[,,,,,,,,,,,,((-(((((-----((((((((-(((((AAA,
+
+Spir.kunk         UAGUAGACUAUAAUGCUACUAGGUUUGAAGAAACGCAAGCAAAAAACAAA
+#=GR Spir.kunk SS A,,<<<<<<___a_aaa____>>>>>>,,,,,,,,,,,,,,,,,,,,,,,
+
+Spir.kunk         AAGAAGACAAAAUUGAAAUGCCAGCUUUUAUGAUGAACAAUCAAUUAGCA
+#=GR Spir.kunk SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Spir.kunk         GUAUCAAUGUUAGCAGCUUAAUUCCUCGCUGUUAGAGGAUCGCUAGCCGU
+#=GR Spir.kunk SS ,,<-<-<<-<<<<__________________>>>>--->>->->,,,,<<
+
+Spir.kunk         AAUAGUAGUUAAUUGUAGAUUAUUAACUAUUAUCGUAUCUCAAGUCUUAA
+#=GR Spir.kunk SS -<<<<<<<<<<<<__BBBBBB>>>>>>>>>>>>->>,,,,,,,,,,,,bb
+
+Spir.kunk         UCUAAUAGAAAUUCUAAUUGAUAAUGUUAGAAUUUUGAAAGUCUUAUUAU
+#=GR Spir.kunk SS bbbb,,,<<<<<<<<<<<_CCCCCC>>>>>>>>>>>,,,,,,,,,ccccc
+
+Spir.kunk         CUAAUUAUUUAAUUAGUUGUCUAAUCCUAUUAUUAAAUAAUGAAAAAAAG
+#=GR Spir.kunk SS c,,<<<<<<<<<<<<<__DDDD_DDD>>>-->>>>>>>>>>,,,,,,,,,
+
+Spir.kunk         AUGAUUAGACUAAACUGUAGAAGAUAUUAGAAUGUUAUUUGUGGACGCGG
+#=GR Spir.kunk SS ,,ddd,dddd,,,)))))----))))))))-----)))))-)),,,<<<<
+
+Spir.kunk         GUUCAAUUCCCGCCAUCUCCACCA
+#=GR Spir.kunk SS <_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Stap.aure.-1 DE converted from Zweib's tmRNA dataset 
+
+Stap.aure.-1         GGGGACGUUCAUGGAUUCGACAGGGGUCCCCCGAGCUCAUUAAGCGUGUC
+#=GR Stap.aure.-1 SS [[[[[[[,,,,,,,,,,,,,((((((((------((-((((--((((((<
+
+Stap.aure.-1         GGAGGGUUGUCUUCGUCAUCAACACACACAGUUUAUAAUAACUGGCAAAU
+#=GR Stap.aure.-1 SS <<<<_AAAAA>>>>>,,,,,,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,
+
+Stap.aure.-1         CAAACAAUAAUUUCGCAGUAGCUGCCUAAUCGCACUCUGCAUCGCCUAAC
+#=GR Stap.aure.-1 SS ,,,,,,,,,,,,,,,,,<<<<-<<________>>->->>>,<<<<-<<<<
+
+Stap.aure.-1         AGCAUUUCCUAUGUGCUGUUAACGCGAUUCAACCUUAAUAGGAUAUGCUA
+#=GR Stap.aure.-1 SS <<<<<_BBBBBB>>>>>>>>->->>>>,,,,,,,,,,bbbbbb,,,,<<<
+
+Stap.aure.-1         AACACUGCCGUUUGAAGUCUGUUUAGAAGAAACUUAAUCAAACUAGCAUC
+#=GR Stap.aure.-1 SS <<<<<<___CCCCCC>>>-->>>>>>,,,,,,,,,,,cccccc,,<<<<<
+
+Stap.aure.-1         AUGUUGGUUGUUUAUCACUUUUCAUGAUGCGAAACCUAUCGAUAAACUAC
+#=GR Stap.aure.-1 SS <<<--<<<_DDDDDDD>>>--->>>>>>>>,,,,,,,,,,ddddddd,,,
+
+Stap.aure.-1         ACACGUAGAAAGAUGUGUAUCAGGACCUUUGGACGCGGGUUCAAAUCCCG
+#=GR Stap.aure.-1 SS ))))))---))--))-))-----)))))))),,,<<<<<_______>>>>
+
+Stap.aure.-1         CCGUCUCCACCA
+#=GR Stap.aure.-1 SS >]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Stre.coel DE converted from Zweib's tmRNA dataset 
+
+Stre.coel         GGGGAUGAUCGGUUUCGACAGCGGCUGUCGAAGCAGGGGAAGCGUGUCGA
+#=GR Stre.coel SS [[[[[[[,,,,,,,,,,,(((((--((------((((-(---(((((<<<
+
+Stre.coel         GGAAGCGGCCAUGAUCUCGUAAACCACAGGCCGAAAAAAUAAUCGCCAAC
+#=GR Stre.coel SS <<___AAAAA____>>>>>,,,,,,,,,aaaaa,,,,,,,,,,,,,,,,,
+
+Stre.coel         ACCAAGCGCGAUUCCUCCCAGCAGGCCUUCGCCCUCGCUGCCUGAUCUCA
+#=GR Stre.coel SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<-<<-<<<<<<__________
+
+Stre.coel         GGUAGCGAAGCGAGCCUCCUACUAAGGGAGUGUCAGCCCGGGGCUGUUCC
+#=GR Stre.coel SS __>>>>>>->->->,,,,,,,,,,,,,,,,<<<<<<-<<<<<--<BBBBB
+
+Stre.coel         CGACCCGGAUCCUGGCAUCAGCUAGGGGACUAAACCUUGAUCCCGGUCAC
+#=GR Stre.coel SS B>->>>>>--->>>>>>,,,,,,,bbbbbb,,,,<<<<-<<<<__CCCCC
+
+Stre.coel         GGGGUGAAGAGGGAAACCAAACAGUGACUGGGCCCGUCGGAGACUUGUCC
+#=GR Stre.coel SS C>>>>--->>>>,,,,,,,,,c,ccccc,,<<<<<---<<-<____DDDD
+
+Stre.coel         GCGUGAUCUCCGGGGCCGAGAAAAUCGAAGCGGACUGCACACGGAGAAGC
+#=GR Stre.coel SS DD_>--->>--->>>>>,,,,,,,,,,,,dddddd,,,)))))------)
+
+Stre.coel         CCUGAUUCCGCACCGUUGGACGCGGGUUCGAUUCCCGCCAUCUCCACCA
+#=GR Stre.coel SS ))))------))-))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Stre.equi DE converted from Zweib's tmRNA dataset 
+
+Stre.equi         GGGGUUGUUACGGAUUCGACAGGCAUUAUGAGGCCUAUUUUGCAACUCAU
+#=GR Stre.equi SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((-((((((<<<
+
+Stre.equi         CGGCAGAUGUAAAAAUGCCAGUUAAAUAUAACUGCAAAAAAUAACACAAC
+#=GR Stre.equi SS <AAAA>>>>,,,,,,aaaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Stre.equi         UUACGCUUUAGCUGCCUAAAAACCAGCCGGCGUGACUUCUAUAGGAUUGC
+#=GR Stre.equi SS ,,<<<<<---<<<<_________>>>>->>>>><<<<<<<<<<<<<<_BB
+
+Stre.equi         UUGUGUCUUAUUAGAGGUCUCAAAACAGCAAGCUACGUUUAGGUGAUUGU
+#=GR Stre.equi SS BBBB>>>>>>>->>>>>>>,,,,,,,,bbbbbb,,,,<<<<<<<<<__CC
+
+Stre.equi         CUAGUCACCUAAAAAGAGAACCCUAGACUCGCAGGCUGAUGGCUUGAGUU
+#=GR Stre.equi SS CCCC>>>>>>>>>,,,,,,,,,cccccc,,,<<<<<<<<-<<<____DDD
+
+Stre.equi         AUGUGUCCUUGGUCUGUUAAAGUAAGACAUAACCUAUGGUUGUAGACAAA
+#=GR Stre.equi SS DDDD>>>->>>>>>>>,,,,,,,,,,ddddddd,,,,))))))----)))
+
+Stre.equi         UAGGUUAGCAGGUGUUUGGACGUGGGUUCGACUCCCACCAGCUCCACCA
+#=GR Stre.equi SS )))))-----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Stre.muta DE converted from Zweib's tmRNA dataset 
+
+Stre.muta         GGGGUCGUUACGGAUUCGACAGGCAUUAUGAGACCUAUUUUGCGACUCAU
+#=GR Stre.muta SS [[[[[[[,,,,,,,,,,,,((((((((-----((((((((-((((((<<<
+
+Stre.muta         CUAGCGGAUGUAAAACGCCAGUUAAAUAUAACUGCAAAAAAUACAAAUUC
+#=GR Stre.muta SS <A_AAA>>>>,,,,,aaa,a,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Stre.muta         UUACGCAGUAGCUGCCUAAAAACCAGCCUGUGUGAUCAAUAACAAAUUGC
+#=GR Stre.muta SS ,,<<<<<<--<<<<_________>>>>>>>>>><<<<<<<<<<<<<<_BB
+
+Stre.muta         UUGUGUUUGUUGAUUGGUCUUAUUGUUAACAAGCUACGUUAGAACUGAGU
+#=GR Stre.muta SS BBBB>>>>>>>->>>>>>>,,,,,,,,,bbbbbb,,,,<<<<<<<-<_CC
+
+Stre.muta         CAGGCUGUUCUAAAAGAGUUCUACUGACUCGCAUCGUUAGAGUUUGAGUU
+#=GR Stre.muta SS CCC_>->>>>>>>,,,,,,,,,,ccccc,,,<<<<<<<<-<<<____DDD
+
+Stre.muta         AUGUAUUGUAACGGUGUUAAAUAAACACAUAACCUAUAGUUGUAGACAAA
+#=GR Stre.muta SS DDDD>>>->>>>>>>>,,,,,,,,,,ddddddd,,,,))))))----)))
+
+Stre.muta         UGGGUUAGCAGAUGUUUGGACGUGGGUUCGACUCCCACCGGCUCCACCA
+#=GR Stre.muta SS )))))-----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Syne.spec.-1 DE converted from Zweib's tmRNA dataset 
+
+Syne.spec.-1         GGGGCCGCAAUGGUUUCGACAGGUUGGCGAAAGCUUGCCCGUGAUACAGG
+#=GR Syne.spec.-1 SS [[[[[[[,,,,,,,,,,,,((((((((-----((((--((((---(((((
+
+Syne.spec.-1         UCGAGAGUGAGUCUCCUCUCGCAAAUCAAAGGCUCAAAAAAAAGUAACUG
+#=GR Syne.spec.-1 SS (AAAAA,<<<<<<<__aaaaa________>>>>>>>,,,,,,,,,,,,,,
+
+Syne.spec.-1         CGAAUAACAUCGUCAGCUUCAAACGGGUAGCCAUAGCAGCCUAGUCUGUA
+#=GR Syne.spec.-1 SS ,,,,,,,,,,,,,,,,,,,,,,,,,,<<-<-<-<-<<<<___________
+
+Syne.spec.-1         AAAGCUACAUUUUCUUGUCAAAGACCGUUUACUUCUUUUCUGACUCCGUU
+#=GR Syne.spec.-1 SS ______________>>>>-->->->->>,,<<<<<<-<<<<___BBBBBB
+
+Syne.spec.-1         AAGGAUUAGAGGUUAACCCCAACGGAUGCUUUGUUUGGCUCUUCUCUAGU
+#=GR Syne.spec.-1 SS _>>>>-->>>>>>,,,,,,,bbbbbb,,,,<<<<<<<<<<___CCCCCCC
+
+Syne.spec.-1         UAGCUAAACAAUCAAGACUCAGACUAGAGCAUCCCACCAUCAGGGAUAAU
+#=GR Syne.spec.-1 SS C>>>>>>>>>>,,,,,,,,,,cccccccc,<<<<<__DDDD_>>>>>,,,
+
+Syne.spec.-1         CGAUGGUCCCCGUCCUAGGGCUAGAAGGACUAAACCUGUGAAUGAGCGGA
+#=GR Syne.spec.-1 SS ,ddddE,EE,,<<<<<__ee_e___>>>>>,,,))))))------))))-
+
+Syne.spec.-1         AAGUUAAUACCCAGUUUGGACAGCAGUUCAAUUCUGCUCGGCUCCACCA
+#=GR Syne.spec.-1 SS ))))------)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Syne.spec.-2 DE converted from Zweib's tmRNA dataset 
+
+Syne.spec.-2         GGGGCUGUAAUGGUUUCGACGUGUUGGUGAAUCCUUCACCGUGAUUCAGG
+#=GR Syne.spec.-2 SS [[[[[[[,,,,,,,,,,,,((((((((------(((--((((----((((
+
+Syne.spec.-2         CCGAGAGGGAGUCCACUCUCGUAAAUCCAGGCUCAACCAAAAGUAACUGC
+#=GR Syne.spec.-2 SS (<<<<<__AAAAA___>>>>>,,,,,,,,aaaaa,,,,,,,,,,,,,,,,
+
+Syne.spec.-2         GAACAACAUCGUUCCUUUCGCUCGUAAGGCUGCUCCUGUAGCUGCUUAAA
+#=GR Syne.spec.-2 SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<-<<-<<<<<______
+
+Syne.spec.-2         CGCCACAAACUUUCUGGCUCGAGCGUCUAGUCGUAGACUCCGUUAAUACG
+#=GR Syne.spec.-2 SS ______________>>>>>>>->,<<<<<<-<<<<___BBBBBB__>>>>
+
+Syne.spec.-2         CCUAGACUUAAACCCCCAACGGAUGCUCGAGUGGCGGCCUCAGGUCCGUC
+#=GR Syne.spec.-2 SS ->>>>>>,,,,,,,,,,bbbbbb,,,,<<<<-<<<<<_CCCCCCC>>>>>
+
+Syne.spec.-2         CUCUCGCUAAGCAAAAACCUGAGCAUCCCGCCAACGGGGAUAAUCGUUGG
+#=GR Syne.spec.-2 SS -->>>>,,,,,,,,,,ccccccc,<<<<<__DDDDD>>>>>,,,ddddd<
+
+Syne.spec.-2         CUCCCGCACAGUGGGUCAACCGUGCUAAGCCUGUGAACGAGCGGAAAGUU
+#=GR Syne.spec.-2 SS <<<__EEEE___>>>>,,,,,eeee,,,)))))-------))))-)))--
+
+Syne.spec.-2         ACUAGUCAAUGCGGACAGCGGUUCGAUUCCGCUCAGCUCCACCA
+#=GR Syne.spec.-2 SS -----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Thal.weis.cl DE converted from Zweib's tmRNA dataset 
+
+Thal.weis.cl         GGGGCUGAUUUGGUUUCGACAUUUAAAACUUCUUUCUAUGUGUCAGGUCA
+#=GR Thal.weis.cl SS [[[[[[[,,,,,,,,,,,,((((((((----(((----(-((((((((<<
+
+Thal.weis.cl         AAGUUUGUAUUCUUUGUAAAAAAAUACUAAAAUACUAAUAAAUGCUAAUA
+#=GR Thal.weis.cl SS <<<___AAAAA>>>>>,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,,,
+
+Thal.weis.cl         AUAUAAUACCGUUUAUUUUUAAAGCAGUAAAAACAAAAAAAGAAGCAAUG
+#=GR Thal.weis.cl SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Thal.weis.cl         GCUUUAAAUUUUGCUGUAUAGUUCAUUAACUUAGGUUAUUAAAUAUUUUU
+#=GR Thal.weis.cl SS ,,,,,<<<<-<<<-<<____________________>>->->>->>>>,,
+
+Thal.weis.cl         UCAUUAUAACUGGACUUUUCUCUAGUUUAUAGUUUAGAAUAAAUUUAAAU
+#=GR Thal.weis.cl SS ,,<<<<<<<<<<<<_B_BBB>>>>>->>>>>>>,,,bbb,b,,,,,,,,,
+
+Thal.weis.cl         UUUGCAAAACUCGUUCGAAAAUUUUCGGGCUAAACCUGUAAACGCAAAUA
+#=GR Thal.weis.cl SS ,,,,,,,,C,C,<<<<<<<c_c_>>>>>>>,,,)))))-----)))-)--
+
+Thal.weis.cl         CUAAGAAAUUUUAGAUGGACAUGGGUUCAAUUCCCAUCAGUUCCACCA
+#=GR Thal.weis.cl SS --)))----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Ther.fusc DE converted from Zweib's tmRNA dataset 
+
+Ther.fusc         GGGGGUGAUCGGUUUCGACUUCGAUGGUUGUUGUAGGGGAAGCGGGCCGA
+#=GR Ther.fusc SS [[[[[[[,,,,,,,,,,,((((((((------(((((-(---(((((AAA
+
+Ther.fusc         GGAGAGCGGACGCAGCCUCGUUAAAAAUGCGACCGCGAAAAAAUAAGUGC
+#=GR Ther.fusc SS AA,,,,<<<-<<<__aaaaa________>>>->>>,,,,,,,,,,,,,,,
+
+Ther.fusc         CAACUCUAAGCGCACUGAGUUCGCUCUCGCUGCUUGAUCGAGAGUGACUC
+#=GR Ther.fusc SS ,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<___________>>>>>,,,
+
+Ther.fusc         UGUCGGCCUGGGAGCGUCUCCGACCCAGUGUCCGGCAUCGUUGAGGAGAC
+#=GR Ther.fusc SS <<<<<<-<<<<<--<BBBBBB>->>>>>--->>>>>>,,,,,,,bbbbbb
+
+Ther.fusc         UUGCCGGUCAGAUCAGGCCACAGGAUCUGACUGGGACAUGCUCUGUGGCU
+#=GR Ther.fusc SS ,,,<<<<<<<<<<<__CCCCCCC>>>>>>>>>>>,,,,,,,,ccccccc,
+
+Ther.fusc         GGGCCUGUCGGCGACUUGUCUGCGUGAGCGCCGGGGCCGAGGAGAACGCU
+#=GR Ther.fusc SS ,<<<<<----<<<____DDDDDD_>>-->---->>>>>,,,,,,,,,,,,
+
+Ther.fusc         GAGCAGACUGCGCCCGGAGAAGCCCUGCUGCAGCAUCGAAGGACGCGGGU
+#=GR Ther.fusc SS ,,dddddd,,,)))))------))))))-----)))))))),,,<<<<<_
+
+Ther.fusc         UCGAUUCCCGCCACCUCCACCA
+#=GR Ther.fusc SS ______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Ther.mari DE converted from Zweib's tmRNA dataset 
+
+Ther.mari         GGGGGCGAACGGGUUCGACGGGGAUGGAGUCCCCUGGGAAGCGAGCCGAG
+#=GR Ther.mari SS [[[[[[[,,,,,,,,,,,((((((((--((((-(((((---(((((AAAA
+
+Ther.mari         GUCCCCACCUCCUCGUAAAAAAGGUGGGACAAAGAAUAAGUGCCAACGAA
+#=GR Ther.mari SS A,,<<<<<<<aaaaa______>>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Ther.mari         CCUGUUGCUGUUGCCGCUUAAUAGAUAAGCGGCCGUCCUCUCCGAAGUUG
+#=GR Ther.mari SS ,,,,,,,,,,,,<<<<_____________>>>><<<<<<<<<<<<<<<<B
+
+Ther.mari         GCUGGGCUUCGGAAGAGGGCGUGAGAGAUCCAGCCUACCGAUUCAGCUUC
+#=GR Ther.mari SS BBBB>>>>>>>>>->>>>>>>,,,,,,,,,bbbbb,,<<<<<<<<<-<<_
+
+Ther.mari         GCCUUCCGGCCUGAAUCGGGAAAACUCAGGAAGGCUGUGGGAGAGGACAC
+#=GR Ther.mari SS CCCCCCC>>->>>>>>>>>,,,,,,,,,ccccccc,,<<<<<<-<<----
+
+Ther.mari         CCUGCCCGUGGGAGGUCCCUCCCGAGAGCGAAAACACGGGCUGCGCUCGG
+#=GR Ther.mari SS <<_DDDDDDD>>--->>->>>>>>,,,,,,,,,,ddddddd,,,)))))-
+
+Ther.mari         AGAAGCCCAGGGGCCUCCAUCUUCGGACGGGGGUUCGAAUCCCCCCGCCU
+#=GR Ther.mari SS -----)))))))))---)))))))),,,<<<<<_______>>>>>]]]]]
+
+Ther.mari         CCACCA
+#=GR Ther.mari SS ]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Ther.teng DE converted from Zweib's tmRNA dataset 
+
+Ther.teng         GGGGGUGUGUUGGUUUCGACGGGGGCGGUCGAGGUAAAAGUAGCGAGCCG
+#=GR Ther.teng SS [[[[[[[,,,,,,,,,,,,((((((((-----(((((((((--(((((AA
+
+Ther.teng         AGUUCUCCACCAGCUCGUAAAAAAGGUGGAAAAAAAUAAACGCAGACAGA
+#=GR Ther.teng SS AAA,,<<<<<<_aaaaa_______>>>>>>,,,,,,,,,,,,,,,,,,,,
+
+Ther.teng         GAACUCGCUUACGCUGCCUAAUUAAAGGCGGCCGUCCAGCCUGAAAUGCC
+#=GR Ther.teng SS ,,,,,,,,<<<<<<<<____________>>>>->>-->>,,,,,,,,,,,
+
+Ther.teng         CACGUUUCAGGACUGGGCGUCAAAAGAGUGGGGAACUGGUUUUGCCUGCG
+#=GR Ther.teng SS <-<<<<<--<<________>>->>--->>>->,,,<<<<<<<<<<<<__B
+
+Ther.teng         CCUCGGGGCAAAACCGGAAUAAUGAGGCUACCGAAGCGGUUAUCCUGUCG
+#=GR Ther.teng SS BBBB_>>>>>>>>>>>>,,,,,,bbbbb,,<<--<<<<<<--<-<__CCC
+
+Ther.teng         CUGGGAGAACCGCUGAGGGAAAGCUAAAACAGCGACUGCGCUCGGAGAAG
+#=GR Ther.teng SS CC__>->->>>>>>-->>,,,,,,,,,,c,,cccc,,,,)))))-----)
+
+Ther.teng         CUUUUACCGGGACGCCUUCGGACCGGGGUUCGAAUCCCCGCACCUCCACC
+#=GR Ther.teng SS ))))))))----)))))))),,,<<<<<_______>>>>>]]]]]]]:::
+
+Ther.teng         A
+#=GR Ther.teng SS :
+//
+# STOCKHOLM 1.0
+
+#=GS Ther.ther DE converted from Zweib's tmRNA dataset 
+
+Ther.ther         GGGGGUGAAACGGUCUCGACGGGGGUCGCCGAGGGCGUGGCUGCGCGCCG
+#=GR Ther.ther SS [[[[[[[,,,,,,,,,,,,((((((((------((((-((((((((((AA
+
+Ther.ther         AGGUGCGGGUGGCCUCGUAAAAACCCGCAACGGCAUAACUGCCAACACCA
+#=GR Ther.ther SS AAA,<<<<<<__aaaaa_____>>>>>>,,,,,,,,,,,,,,,,,,,,,,
+
+Ther.ther         ACUACGCUCUCGCGGCUUAAUGACCGCGACCUCGCCCGGUAGCCCUGCCG
+#=GR Ther.ther SS ,,,,,,,,,<<<<<<________>>>>>><<<<<<-<<<<<<<<__BBBB
+
+Ther.ther         GGGGCUCACCGGAAGCGGGGACACAAACCCGGCUAGCCCGGGGCCACGCC
+#=GR Ther.ther SS BB>>>>->>>>--->>>>>>,,,,,,,bbbbbb,,<<<<<<<<--<_CCC
+
+Ther.ther         CUCUAACCCCGGGCGAAGCUUGAAGGGGGCUCGCUCCUGGCCGCCCGUCC
+#=GR Ther.ther SS CCC>-->>>>>>>>,,,,,,,,,,cccccc,,,<<<<<<<<-<<<_DDDD
+
+Ther.ther         GCGGGCCAAGCCAGGAGGACACGCGAAACGCGGACUACGCGCGUAGAGGC
+#=GR Ther.ther SS DDD>>>--->>>>>>>>,,,,,,,,,,,ddddddd,,,))))))---)))
+
+Ther.ther         CCGCCGUAGAGACCUUCGGACGGGGGUUCGACUCCCCCCACCUCCACCA
+#=GR Ther.ther SS )))))-----)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Trep.dent DE converted from Zweib's tmRNA dataset 
+
+Trep.dent         GGGGAUGUUCCGGUUUCGACCGGAAAGACGGAGGCUUAAGCUGCAGGCGG
+#=GR Trep.dent SS [[[[[[[,,,,,,,,,,,,((((((((-----((-((((((-((((((AA
+
+Trep.dent         AGUGCCGAUCUCCUGAUUCGGCAAACACUAUAACUGCCGAAAAUAACGAC
+#=GR Trep.dent SS AA<<<<<<_aaaa____>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Trep.dent         AGUUUCGAUUACGCCUUAGCUGCAUAAUCGCGGAAUCUGCUUUGCACUGC
+#=GR Trep.dent SS ,,,,,,,,,,,,,,,,<-<<-<_____>->>><<<<<--<<<<<--<<BB
+
+Trep.dent         UCCGAGCGGGGCAUGAUUCCGACGCCAAUCGGGGCUUGCUUUUUAGCGGC
+#=GR Trep.dent SS BBBB>>>>>>>--->>>>>,,,,,,,,,,bbbbbb,,,<<<<<<---<<<
+
+Trep.dent         GUGUAAACGUUAAAAGGGACUUUUUUUACACUAAGGAUUCGACGCUUUCG
+#=GR Trep.dent SS <CCCCCC>>>>>>>>>>,,,,,,,cccccc,,,,<<<<<<<--<-<_DDD
+
+Trep.dent         GUGCUGCUACCGGAUCCCUACAACCACCUCGCACCGAUAAGCCUGUAGAC
+#=GR Trep.dent SS DDDD_>->-->>>>>>>,,,,,,,,,,,,,ddddddd,,,))))))----
+
+Trep.dent         GCUUCUGAUUCCCUUUUCGGGACGGGGGUUCAAUUCCCCCCAUCUCCACC
+#=GR Trep.dent SS ))))--))-))-)))))))),,,<<<<<_______>>>>>]]]]]]]:::
+
+Trep.dent         A
+#=GR Trep.dent SS :
+//
+# STOCKHOLM 1.0
+
+#=GS Trep.pall DE converted from Zweib's tmRNA dataset 
+
+Trep.pall         GGGGAUGACUAGGUUUCGACUAGGGAUGUGGGGUGUUGCGCUGCAGGUGG
+#=GR Trep.pall SS [[[[[[[,,,,,,,,,,,,(((((((------(((((((((-((((((AA
+
+Trep.pall         AGUGUCGAUCUCCUGAUUCGGCGCCUUUAUAACUGCCAAUUCUGACAGUU
+#=GR Trep.pall SS AA<<<<<<_aaaa____>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Trep.pall         UCGACUACGCGCUCGCCGCGUAAUCGCGGGCCUGUGUUUGCGCUGCUCUG
+#=GR Trep.pall SS ,,,,,,,,,,,,<-<<-<_____>->>><<<<-<<<<<<<--<<BBBBBB
+
+Trep.pall         AGCGAACAUAUCGGCCCGACGCCAAACGGAGCUUGCUCUUACGUUGUGCA
+#=GR Trep.pall SS >>>>>>>-->>->>>>,,,,,,,,,,bbbbbb,,,<<<<<<<<<<<CCCC
+
+Trep.pall         CGGCGGACGUAGGGGGACUUUUGUCUGUGCUAAGACUCUGGCGCGUGCGG
+#=GR Trep.pall SS _CC>>>->>>>>>>>,,,,,,,,cccccc,,,,<<<<<<<--<<-<DDDD
+
+Trep.pall         UGCAGGCCUAGCAGAGUCCGACAAACGCAGUACGCACCGCUAAACCUGUA
+#=GR Trep.pall SS DDD>->-->-->>>>>>>,,,,,,,,,,,,,,,ddddddd,,,))))))-
+
+Trep.pall         GGCGCGCAGCACUCGCUCUUUAGGACGGGGGUUCGAUUCCCCCCAUCUCC
+#=GR Trep.pall SS ---)))))))))----))))))),,,<<<<<_______>>>>>]]]]]]]
+
+Trep.pall         ACCA
+#=GR Trep.pall SS ::::
+//
+# STOCKHOLM 1.0
+
+#=GS Tric.eryt DE converted from Zweib's tmRNA dataset 
+
+Tric.eryt         GGGGCAUUAACGGUUUCGACAGGGUGGUGAAAUCUGCUUUGUGAUGCAGG
+#=GR Tric.eryt SS [[[[[[[,,,,,,,,,,,,((((((((----((((---((((---(((((
+
+Tric.eryt         CCGAGAGUGAGUCUUCUCUCGAAAAUCCUGGACUCAAAAAAUAAUAAGUG
+#=GR Tric.eryt SS ,AAAAA,<<<<<<<__aaaaa________>>>>>>>,,,,,,,,,,,,,,
+
+Tric.eryt         CAAACAACAUUGUACCUUUUGCUCGUAAGCAAGUAGCUGCUCUAGCUUAA
+#=GR Tric.eryt SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<----<<<--<<_____
+
+Tric.eryt         UUGCAAAAACACCUCUUAUAGGUUCGAGCGUCUGUGGUUUGACUCCGUUA
+#=GR Tric.eryt SS ______________>>---->>>---->><<<<<<<<<<____BBBBBB_
+
+Tric.eryt         AUAAUUGCAGACUUAACCCCAACGGAUGCUCUAGCAAUUUUUCUCUGGUU
+#=GR Tric.eryt SS __>>>>>>>>>>,,,,,,,,bbbbbb,,,,<<<<<_______________
+
+Tric.eryt         ACCUGCUAGUUAAGAUUUAACCAGAGCAUCCCACUAUCCGGGAUAAUGGA
+#=GR Tric.eryt SS ____>>>>>,,,,,,,,,,,,,,,,,,<<<<<__CCCCC>>>>>,,,ccc
+
+Tric.eryt         UAGUCCCAGCUCUGAGGGUUAAGAAGGGCUAAACCUGUGAAUGAGUGAAG
+#=GR Tric.eryt SS ccDDDD,,<<<<<__dddd_____>>>>>,,,,)))))------))))-)
+
+Tric.eryt         GGUGAAUAGCCAUUUUGGACAUGGGUUCGACUCCCAUAUGCUCCACCA
+#=GR Tric.eryt SS )))------)))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Trop.whip DE converted from Zweib's tmRNA dataset 
+
+Trop.whip         GGGGAUGACUGGUUUCGACGCUGUUUGUGUACUCGUGGGAAGCGGGUCGA
+#=GR Trop.whip SS [[[[[[[,,,,,,,,,,,((-(((--------(((((-(--((((((AAA
+
+Trop.whip         GGAUGCGAGGUUGUCUCGUUAACGAUCCUCGCAAAAUAUAAGUGCCAACU
+#=GR Trop.whip SS AA,,<<<<<<___aaaaa________>>>>>>,,,,,,,,,,,,,,,,,,
+
+Trop.whip         UAAAGCGCACUGAUCUAAGUCUUGCUGCUUAAGCGCUUAGAUCUGUCGGU
+#=GR Trop.whip SS ,,,,,,,,,,,,,,,,,,,,,<<<-<<______>>->->>,,,<<<<<<-
+
+Trop.whip         AUAGGGCUUGUCUUCGGCCCUGUAUCCGGCAUGGUUUUAGAGGACUUGCC
+#=GR Trop.whip SS -<<<<<-<<BBBBBB>>>>>>>--->>>>>>,,,,,,,,bbbbbb,,,<<
+
+Trop.whip         GCGUGUUUGCCGCUUGCGUGAACACCGGGACUUUAUUGCAAGCUGGGCCU
+#=GR Trop.whip SS <-<<<<<<<<_CCCCCC>>>>>>>>>>>,,,,,,,,,cccccc,,<<<<<
+
+Trop.whip         GUUGAUUUAGAUUCCGCUGCAAAGAAUCAGGGCUGAGUAUAACGGUUUUA
+#=GR Trop.whip SS <-<--<<_____DDDDDDD_>>--->->->>>>>,,,,,,,,,,,,,,dd
+
+Trop.whip         GCGGAUACACCCGUAGAAGUCACGGGCUCCAUGCCGCGGACGGGGGUUCG
+#=GR Trop.whip SS ddddd,,,))))))-----))))))-------))-))),,,<<<<<____
+
+Trop.whip         AUUCCCCCCAUCUCCACCA
+#=GR Trop.whip SS ___>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Urea.urea DE converted from Zweib's tmRNA dataset 
+
+Urea.urea         GGGGAUGUCACGGUUUCGACGUGACACAUUAAUUUUUAAUUGCAGUGGGG
+#=GR Urea.urea SS [[[[[[[,,,,,,,,,,,,((((((((----(((--((((-(((((<<<<
+
+Urea.urea         UUAGCCCCUUAUCGCUUUCGAGGCAUUUUAAAUGCAGAAAAUAAAAAAUC
+#=GR Urea.urea SS <__A___AAA___>>>>>,,aaa,,,a,,,,,,,,,,,,,,,,,,,,,,,
+
+Urea.urea         UUCUGAAGUAGAAUUAAACCCAGCGUUUAUGGCUUCAGCUACUAAUGCAA
+#=GR Urea.urea SS ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Urea.urea         ACUACGCUUUUGCGUACUAAUUAGUUAUUAGUAGAAACGUUCAUUAACAU
+#=GR Urea.urea SS ,,,,,<-<<<<<___________________>>>>>-><<<----<<-<-
+
+Urea.urea         AAUUACUAUUGGUUGGUUUUUGGGCUUAUUUUACAAUAGUUUUAAAUUUA
+#=GR Urea.urea SS <<<_______BBBB_>>>->----->>------->>>,,,,,,,,,,,,,
+
+Urea.urea         AAAUUCUUAUUUGUUGUUUAAAUUUAAAUAGAUUUAACAAAUAGUUAGUU
+#=GR Urea.urea SS ,bbbb,,,<<<<<<<<__C_CCCC>->>>>>>>,,,,,,,,,cccc,c,,
+
+Urea.urea         AAUUUUAAAUUUGUUUUAUUAGUUAUUAACUACACUAUUUUUAAUAAAAC
+#=GR Urea.urea SS ,,<-<<<<--<<DDDD_DDD>>--->>>>-->,,,,,,,,,,ddd,dddd
+
+Urea.urea         UAAACUGUAGAUAUUAUUAAUUAUGUGUUGCGGAAAGGGGUUCGACUCCC
+#=GR Urea.urea SS ,,,)))))----))))--)))---)))))))),,,<<<<<_______>>>
+
+Urea.urea         CUCAUCUCCACCA
+#=GR Urea.urea SS >>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Vibr.chol DE converted from Zweib's tmRNA dataset 
+
+Vibr.chol         GGGGCUGAUUCAGGAUUCGACGGGAAUUUUGCAGUCUGAGGUGCAUGCCG
+#=GR Vibr.chol SS [[[[[[[,,,,,,,,,,,,,((((((((-----((((--(((((((((<<
+
+Vibr.chol         AGGUGCGGUAGGCCUCGUUAACAAACCGCAAAAAAAUAGUCGCAAACGAC
+#=GR Vibr.chol SS <<<_AAAAA___>>>>>,,,,,,,aaaaa,,,,,,,,,,,,,,,,,,,,,
+
+Vibr.chol         GAAAACUACGCACUAGCAGCUUAAUACCCUGCUCAGAGCCCUUCCUCCCU
+#=GR Vibr.chol SS ,,,,,,,,,<<-<<-<<<<_________>>>>-->>->><<<<<<<<<<<
+
+Vibr.chol         AGCUUCCGCUUGUAAGACGGGGAAAUCAGGAAGGUCAAACCAAAUCAAGC
+#=GR Vibr.chol SS --<<<__BBBBB_>>>-->>>>----->>>>>>>,,,,,,,,,,,bbbbb
+
+Vibr.chol         UGGCGUGGAUUCCCCCACCUGAGGGAUGAAGCGCGAGAUCUAAUUCAGGU
+#=GR Vibr.chol SS ,,<<<<----<<<<__CCCCCC>>>>---->>>>,,,,,,,,,,cccccc
+
+Vibr.chol         UAGCCAUUCGUUAGCGUGUCGGUUCGCAGGCGGUGGUGAAAUUAAAGAUC
+#=GR Vibr.chol SS ,,<<<<<<-<<<-<<<_DDDDDDD>>>->>>>>>>>>,,,,,,,,,dddd
+
+Vibr.chol         GACUAAGCAUGUAGUACCAAAGAUGAAUGGUUUUCGGACGGGGGUUCAAC
+#=GR Vibr.chol SS ddd,,,))))))---)))--))))----)))))))),,,<<<<<______
+
+Vibr.chol         UCCCCCCAGCUCCACCA
+#=GR Vibr.chol SS _>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Wolb.spec DE converted from Zweib's tmRNA dataset 
+
+Wolb.spec         GGGGACGAAUAAGGAUCGACAUGCAUAGUAAAGAUGGUAGCUUUGCUCGG
+#=GR Wolb.spec SS [[[[[[[,,,,,,,,,,,,(((((((---(-((--(((((--(((((<<<
+
+Wolb.spec         UUAGACACCACCGCUAAGAGUUCAUAAUUUAAAUGCAAACGAUAAUUUUG
+#=GR Wolb.spec SS <__AAA_A_>>>>,,,,a,aaa,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Wolb.spec         CUGCUGAAGACAAUGUCGACGCAAUAGCUGCUUAAUUUAAGCACUAUAAC
+#=GR Wolb.spec SS ,,,,,,,,,,,,,,,,,,,,,,,,<-<<<__________>>>>,<<<<-<
+
+Wolb.spec         UUCAUUGCUAUAAGCACGGUUCAGGGAACGCCGGGUAACAGAAGUUCCCC
+#=GR Wolb.spec SS ______>->>>>,<<-<<<<___BBBBB_>>>>->>,,,,,,,,bbbbb,
+
+Wolb.spec         AAAAGUACAUUUUGUGUACUAUAGCAAUAAAAUUACCUUGUAAUAGGUGU
+#=GR Wolb.spec SS ,CCC<<<<__ccc__>>>>,,,)))))-----)))))))-)-----))))
+
+Wolb.spec         AUUGGACCCGAGGGCAGUACUCGGCGUCUCCACCA
+#=GR Wolb.spec SS ))-),,,<<<<<_______>>>>>]]]]]]]::::
+//
+# STOCKHOLM 1.0
+
+#=GS Xant.axon DE converted from Zweib's tmRNA dataset 
+
+Xant.axon         GGGGGUGCACUGGUUUCGACGGGGGUCGCGAAGUCGCUUGGCGCAUGCCG
+#=GR Xant.axon SS [[[[[[[,,,,,,,,,,,,(((((((------(((-(-((((((((((<<
+
+Xant.axon         AGGGGGCAGCUUUCCUCGUUAAUCCAGCAGCAAACUUUUAGUUGCCAACG
+#=GR Xant.axon SS <<<__AA_AAA__>>>>>,,,,,,,aaa,aa,,,,,,,,,,,,,,,,,,,
+
+Xant.axon         AUGACAACUACGGUUCGGACUUCGCUAUCGCCGCUUAAUUGGCUUUAGUU
+#=GR Xant.axon SS ,,,,,,,,,,,,,,,,,,,,,,,<<<<--<<<<______>>>>-->>>>,
+
+Xant.axon         GUAGUUCUACAGCCGCCUAAGGCGAACCCCCGAACCUACUUGUGCCCGUG
+#=GR Xant.axon SS ,,,,,,,,,,,,,,,,,,,,,,,,,<<<<----<<<<<<--<___BBBBB
+
+Xant.axon         CUCGUAGGUGUAGGGUCAUUAUCACGGAACCAUCGGUAGUGGCUGCCUGU
+#=GR Xant.axon SS >-->>>>>>--->>>>,,,,,,bbbbb,,,,<<<<<<--<<___CCCCCC
+
+Xant.axon         CAGCUACCGGUCAGAUAAAGCAGGCUGGUUUCCAGGUGCGCUUUGCCAAC
+#=GR Xant.axon SS >>--->>>>>>,,,,,,,,cccccc,,<<<<<<<<<<-<<<___DDD__D
+
+Xant.axon         CGUGCUGCCUGGGAACGAGAUCUAACGGAGGGCUAAGCAUGUAGUGCUGG
+#=GR Xant.axon SS D>>>-->>>>>>>>>>,,,,,,,,,,dd,,ddd,,,))))))---)))))
+
+Xant.axon         GGAUGGAGUGCUUCCGGACGGCGGUUCGAUUCCGCCCACCUCCACCA
+#=GR Xant.axon SS -)))-----))))))),,,<<<<<_______>>>>>]]]]]]]::::
+//
+

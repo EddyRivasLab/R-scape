@@ -1,0 +1,500 @@
+# STOCKHOLM 1.0
+
+bac.A.eutrophus         AAAGCAGGCCAGGCAACCGCUGCCUGCACCGCAAGGUGCAGGGGGAGGAAAGUCCGGACUCCACAGGGCAGGGUGUUGGCUAACAGCCAUCCACGGCAACGUGCGGAAUAGGGCCACAGAGACGAGUCUUGCCGCCGGGUUCGCCCGGCGGGAAGGGUGAAACGCGGUAACCUCCACCUGGAGCAAUCCCAAAUAGGCAGGCGAUGAAGCGGCCCGCUGAGUCUGCGGGUAGGGAGCUGGAGCCGGCUGGUAACAGCCGGCCUAGAGGAAUGGUUGUCACGCACCGUUUGCCGCAAGGCGGGCGGGGCGCACAGAAUCCGGCUUAUCGGCCUGCUUUGCUU
+#=GR bac.A.eutrophus SS {{{{{{{{{{{[[[[[[[,<<<<<<<<<<<____>>>>>>>>>>>,,,,BBB,BBBBB((((---AAAA-(((((<<<<<_____>>>>><<<<<____>>>>-><<---<<<<<-----------<<<<<<<<<<<<<____>>>>>>>>>>>>>--------->>>-->>>>))))))))),,,<<<<------<<<<<<---<<<<<_aaaa>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,]]]]]]]<<<<<<<<<<<<<<____>>>>>>>>>>>>>>,,,,,,bbbbbbbb,}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.N.pyridinolyticus         CACAGGGCAAGGUGGUGGGUAACACCCACCCGGGGCAACCCGCGGGACAGUGCCACAGAGAACAGACCGCCCCUGCGUGCAGGGGUAAGGGUGAAACGGCGGUGUAAGAGACCACCAGCGACCGGGGCGACCCGGCCGGCUCGGCAAACCCCACCUGGAGCAAGGUCAAGAAGUCCGGUGCUCUCACCGGACGCGCGCACGACUGAGGGCGGCCCGCCCGAGUGCGCGGGUAGACCGCUGGAGGGCGUCGGCAACGGCGCUCGUAGAUGGAUGGUCGCCACGCUUCGGCGUU
+#=GR bac.N.pyridinolyticus SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((,,,,,<<<<<<<<____>>>>>>>>,,<<<<<<-----<<<<<_aaaa>>>>>->>>>>>,,,,,))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::<<<<____>>>>:
+//
+# STOCKHOLM 1.0
+
+N.gregoryi         GGGAGAGAGAGCCCGGCUGCCGCGGGCGUCGUGCGACGCGCGCGAGGAAAGUCCCCCCACCUGUUCGGGCAGGUGACCAGACGCAAGUCCGGGGCGGGAGACCGCUGGCUCUGGAACAGAAACGACACGUCUCGGCCCGACCGAUGAUGCGUGCGAACCCGACCGCGAGGAAGGGGAGUUGACCCGCAGAGGGAGUGUGGUCGGUAUCCCGUGGUUCGAAUCCACGGAUUGCGAGCGCGGUUCGACGCGUCUCUGACGCGGGACCCGCGACCGAGUGCGACGGCACGAGCCGUCGAACACGCACGGCGCGAUUGACCACACUGAGACGGCCGAGGAGCGAUGGAACGGCGAACCCUCACCGGUGCAAGUCCGUGCCGUGGUAGCCCGAACAUCUCGCGGCUCCGCCGCGAACGGCGCGGACGCUUAGCCGAAUGCUGGGACGAACAGAAGGGGGCUUACUCCUCUCACCCGUUU
+#=GR N.gregoryi SS {{{{{{{{{{{BBBBBB,,,<<<<<<<<<<____>>>>>>>>>>,,,,{{{-{{{{{AAAA-{{{{{{{{,{{{{{<<<<<<____>>>>>><<<<<____>>>>>{{---{{{{------------{{{{{{{{{{{,,,,,,,,,<<<<-<<---<<<--<<____>>-->>>-->>----->>>>,,,,,[[[[[[[[[[[[,,,<<<<<<_______>>>>>>,,((((,,<<<<<<<<--<<<<<<___>>>>>>>>>>>->>>,<<<<<<<<<<<<<<____>>>>>>>---->>>>>>>))))]]]]]]]]]]]],,,,}}}}}}}}--}}}--------}}}}--}}}}}}}aaaa,,,(<<<<<<<<______>>>>>>>>,,,<<<<<<<___>>>>>>>,,)}}}}}}}}------------bbbbbb----------}}}}}}}},}}-}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+eukarya.P.strasburgensis         UUCUCAUCAAAGUCUGUAUUUACCUGCCUACACAAGGGGCCCUCUUCCCCCAGAGGGACCCAGCAGGAGCAGGUGGGAAAUUCGGUGGUACACGCCGCCCAUUAAUUUCUCUCUUGAGAGAGUCCAGGCGAGGAAUCGCUAGGGUGUUGCCAUAAGAAAUUCAGUCCGCCUAGCGGGCAUGGGAGGCUUCACGGGCGGUUGGUCCCUAGUGCAAAACUUUCGCGCUAGGAGGCUUUUGAGUGCAAUAUACAGACCGCCUAGUGGUUCCUUGGGAUCAUCUGGGCGGAACGCGAUACCGAUUAUUUUGGUGAGAA
+#=GR eukarya.P.strasburgensis SS {{{{{{{{{{{,[[[[[[[,,<<<<<----------<<<<<<<<<______>>>>>>->>>-------->>>>>,,,,AAA,AAAAA,,,,,,,((((((,,,,,,,,<<<<<____>>>>>,<<<<<<<<____>>>>>>>>,<<<<<<<------------<<<<<<___>>>>>>------>>>>>>>,)))))),,,<<<<<<<<<<<<<<___>>>>>>>>>>>->>>,,,,,,,,,,,,,]]]]]]]<<<<<<<<<<<<<<____>>>>>>->>>>>>>>,,,,,,,aaaaaaaa,,}}}}}}}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.C.sporogenes         GAGGAAAGUCCGGGCUCCAUAGGGCAGGGUGCUGGGUAAUACCCAGUGGAGGCGACUUUAAGGAAAGUGCAACAGAGAUAUACCGCCAGAUUUAUCUGGUAAGGGUGGAAAGGCGAGGUAAGAGCUCACCAGCGUAUAGGUGACUAUACGGCUAUGUGAACCCCAUCUGGAGCAAGAUCGAAUAGGAGAGCAGGAAACUUUGGUUUCCAGGGGUGGCCCGUCCCGCUCUCGGGUAGUAUCGCUGGAGCCUAUUGGUAACAAUAGGCCUAGAUAGAUGAUUGUCUAACACAGAAUCCGGCUUA
+#=GR bac.C.sporogenes SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<____>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,((((------((((((,<<<<<______>>>>>,<<<<<_aaaa>>>>>))))))------)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.EM14b-11         GAGGAAAGUCCGGGCUCCAAAGGGCAGGGCGCCGGGUAAUACCCGGGGUGGGGAAACCCCACACGGUAAGGGCCACAGAAACGAGACCGCCGAAGCGGUAAGCCAGGCAAGGGUGAAAGGGUGGGGUAAGGGCCCACCGGCUCCGCGGUAACGCGGGGUGAGGGGGUAAAAAUCCCCCGGCGGGUUUUCCCGCUCUGGUAACCUCCCGCCCGGAGCAAGGCCAAGUAGCGCCGCACCCCGAAAGGGGAUAAGGUGGCCCGCCGAAAUGCGGUGCGGGUAGGCCGCAAUGGAAGUCGGGGGGCAACUCCCGACUCAAGAUAGAUGACCACCUAGUACAGAACCCGGCUUA
+#=GR bac.EM14b-11 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<___>>>>>>->((---(((((,,,,,,,,,,,,<<<<<---<<_____>>-->>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>-><<<-<--<<<<<<<______>>>>>>>-->->>>,)))---))))]]]]]]]]],,,((((-----((((((((<<<<____>>>>,,<<<<<_aaaa>>>>>,,))))))))-----)))),,,,,,,,<<<<<<<<______>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.CPB147         GAGGAAAGUCCGGGCUCCAUAGGGCAGGGUGCCAGGUAACGCCUGGGGGGUGUAACAACCUACGACCAGUGCAACAGAGAGCAAACCGCCGAUGGCCCUUUAUGGGAUCAGGUAAGGGUGAAAGGGUGCGGUAAGAGCGCACCGCGCGACUGGCAACAGUUCGUGGCACGGUAAACUCCACCCGGAGCAAGGCCAAAUAGGGGUUCACAUGGUACGGCCCGUACUGAACCCGGGUAGGCUGCUUGAGCCAGUGAGCGAUUGCUGGCCUAGAUGAAUGACUGUCCACGACAGAAUCCGG
+#=GR bac.CPB147 SS :::::::::{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<______>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<_____>>>->>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>->>>>>->,,)))--))))]]]]]]]]],,,<<<<------<<<<-<----<<<<<_aaaa>>>>>>->>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.Synechocystis-PCC6308         GGGGAGGAAAGUCCGGGCUCCCAAAAGAUCAAACUUGCUGGGUAACGCCCAGUGCGCGUGAGCGUGAGGAUAGUGCCACAGAAAAAUACCGCCCGUUUUCGGGUAAGGGUGCAAAGGUGUCGGUAAGAGCGCACCAGCAGUAUCGAGAGGUACUGGCUCGGUAAACCCCGGUGGGGAGCAAGGACGGAGGAAUUACGGUUGAUCUUUUCCCGAUUUCGUCUUCGGUGUACCGCUUGAGGUGAUCAGUAAUGUUCAUCCUAGAUAGAUAACUACCCCUUUAGUUUACUAAUAGUUUACCAAAGGAACAGAACCCGGCUUAC
+#=GR bac.Synechocystis-PCC6308 SS ::::::::{{{-{{{{{AAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<____>>>>>-->>,,,,,,,<<<<-<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<------<<<<<--<<<_>>>>>>>->>>}}}}}-------------}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<<___>>>>>>>>>>>>>,,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+A.fulgidus         CGGCGGUGGGCGGCUGACCGAAAGGAGGAAAGUCCCCCCACCCGCUGUGGCGGAAGGCCCCUGAGAAGGGGCGGAGGAGGAACAGAAACGAGACCGGUGCGGGGAAAUGCGAUGAUUCCGCAAGGAUGAGGUCACCCGCUCCGGAUGAAACGGCCUCCUCCCCGCCGGGUGCAACGCGUAAGCGGCUCAGUCUAAUGCCGCCGGAACAGAAGGGGGCUUACUACCGCCA
+#=GR A.fulgidus SS {{{{{{{{AAAAAA,,,<<____>>,,,,[[[-[[[[[(((((-----(((((,,,<<<<<<____>>>>>><<<<<<<<<------------<<<<<<<<<<<<-----------<<<____>>>----->>->>>>>>>>>>-------->>>>>>>>>)))))))))),,,<<<____>>>,,,,,,,,,,,,aaaaaa,,,,,,,,,]]]]]]]],,}}}}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.CPA59         GAGGAAAGUCCGGGCUCCACAGAGCAGAACGCCGGGUAACACCCGGUGGGGGAAACCCCGAGGAAAGUGCCACAGAAAACAGACCGCCUUCGCCGCGCGAGCGGCGCGGGUAAGGGUGAAACGGUGGGGUAAGAGCCCACCGCGCAGACGGUAACGGAUGCGGCACGGCAAACCCCGUUCGGAGCAAGGCCAUGUAUAGGAACGUUCGAGGGCUGCUCGCCCGAGUUCCAGGGUAGGCCGCUCGAGGCGCACGGUAACGGGCGUCCCAGAUGAAUGAUCGCCAAGUGUCCCCGGACACUCACAGAACCCGGCUUAU
+#=GR bac.CPA59 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<____>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,<<<<------<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<____>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.P.staleyi         GAGGAAAGUCCGGGCUCCACAGGACAGGGUGGUCGAUAACGUCGACCGGUCGUGAGAUCAGGGACAGUGCCACAGAAAACAGACCGCCGCUGCGGGCAUGAGCCCCCGUCAAGGUUUGAUUGUCUGCAUGCGGUAAGGGUGAAACGGUGCGGUAAGAGCGCACCAGCAGUCGAGGCGACUCGGCUGGCUAGGUAAACCCCGCCCGGAGCAAGACCAAGCAGAGAGCAUGUUGUCGGUGUCACAGCCGACAGCCGGAAUCGGUUCGGUUUCGUAUGACUCUCGGGUAGGUUGCCGGAGCUAGCGAGCAAUUGCUAGCCUAGAGAAAUGGUCGUCAGACGUUUUCGAUCCGUCGAAGAGCCCAACAGAACCCGGCUUA
+#=GR bac.P.staleyi SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<<<________>>>>>>-->>>>>>>>->>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,((((-----(((((,,,<<<<<<<<<______>>>>>>>>><<<<<<<_aaaa>>>>>>>,,,,,)))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<____>>>>>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.M.luteus         GAGGAAAGUCCGGGCACCGCAGAGCAGGAUGGUGGACAACAUCCACCCGGGGCGACCCGCGGGCCAGUGCCACAGAGAGAAGACCGCCUCCGCGCCGCUGCGCGGCGGUAAGGGUGAAAGGGUGGUGUAAGAGACCACCAGCGGCCCCGGUGACGGGGCCGGCUCGGUAAACCCCAUCCGGUGCAAGGCCGAACAGGACGCGUCACGAGGGCGGCUCGCCCCAGCGUCCGGGUUGGCCGCUCGAGCCCGCCAGCGAUGGCGGGCCCAGAUGGAUGGCCGUCACCUCGCGCGGGGCAACGCGCGCGAGGCACAGAAUCCGGCUUAC
+#=GR bac.M.luteus SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<____>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<-----<<<<<<-----<<<<<<_aaaa>>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<____>>>>>>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.L.japonicus-IFO12422         CGCAGAGCAAGGUGGUGGGCAACACCCACCCGGGGCAACCCGCGGGAAAGUGCCACAGAGAACAGACCGCCGCUCUCUCCGUUCAUUCGGGAAGAGGGGUAAGGGUGAAACGGUGGUGUAAGAGACCACCAGCGUGCCGGGUGACCGGGGCGGCUAGGUAAACCCCACCUGGAGCAAGAUCAAGAAGCCGUUCCUCUUCGGAGGAACGGUGCGCACACGUUCGAGGGCUGCUCGCCCGAGUGUGCGGGUAGAUCGCCCGAGGCUGUCGGCAACGGCAGCCCUAGAUGGAUGGUCGCCAACCGGGGCCACGCAAGAAACCCCGGCGA
+#=GR bac.L.japonicus-IFO12422 SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<-<<<<<<<_________>>>->>>>->>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((,,,,,<<<<<<<<<<____>>>>>>>>>>,,<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>,,,,,))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::<<<<<<<<<<<<____>>>>>>>>>>>>:
+//
+# STOCKHOLM 1.0
+
+bac.F.antarctica         CGAAGAGCACGGUGGUGGGUAACGCCCACCCGGGGUGACCCGCGGGACAGUGCCACAGAAAGCAGACCGCCCACCCGCCUCGGCGGCGUGGGUAAGGGUGAAACGGUGGUGCAAGAGACCACCAGCACCCCCGGUGACGGGGGUGGCUAGGCAAACCCCACCGGGAGCAAGACCAAGAAGGCGCCCUCCUGCAGAGGAGGACGCCGCGGGAGCGUUCGAGGGCUGCUCGCCCGAGCUCCCGGGUAGGUCGCACCAGGCCGCUGGCAACAGCGGUCGCAGAUGGAUGAUCGCCCCCUCCGCUCCGGCGGGGGG
+#=GR bac.F.antarctica SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<_____>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((,,,,,<<<<<<<<<<<____>>>>>>>>>>>,,<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>,,,,,))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::<<<<<<<<____>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+bac.LGW23         GAGGAAAGUCCGGGCUCCAUAGGGCAAGGUGCCAGGUAACGCCUGGGGGGCGCGAGCCCACGGACAGUGCAACAGAAAGCAAACCGCCUAUGUCACGGCUCGUGCAAACGGGUCGCGGCAGGUAAGGGUGAAAGGGUGCGGUAAGAGCGCACCGCGCCGGUGGCAACAUUCGGCGGCACGGCAAACCCCACCUGGAGCAAGACCAAAUAGGGAAGCGCGCGGACCUUCGGGUCCGUUCCUGCUGCCCGCAGGGGCUUCCGGGUAGGUCGCUCGAGGCGCACGGCUGUCGUGCGUCCCAGAUGGAUGGUUGUCCUCGACAGAACCCGGCUUA
+#=GR bac.LGW23 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<<<<<<<____>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>->>>>>->,,)))--))))]]]]]]]]],,,((((------((((((,,<<<<<<<____>>>>>>><<<<<<_aaaa>>>>>>))))))-----)))),,,,,,<<<<<<<<_____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.Z.florentinus         GAAUUCAGCGGGACGGCAAUGGGUUAGUCGUCAUGACUAAUUCGGCGCAUAACCGGUCGCCUCUGCAGCGUAAGCUACAUUGGGGACUUUUCCGUGAGGAGGGAUCUUGGGGAACCAAGACCAUAUGGUUGUUGUCAUCAGAAAUCAACCAGGUUACGUAAGUUACCUGGUAUGGGAAGGCAACUGUAAGUUCCGUUUGACUUGUGCUAAUUAGUAUAAGGUCUGUUGAGUGCAAUCGAAGGACAAGUCUUAUAGAUUUGAA
+#=GR eukarya.Z.florentinus SS ::::::::((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<<____>>>>>>,<<<<<<____>>>>>>,,,,,,,,,<<<<<<<-----------<<<<<<<<<<____>>>>>>>>>>------->>>>>>>,,,,)))))):::<<<<<<<<<<____>>>>>>>->>>::::::::::::::::::::<<<<<<<___>>>>>>>::
+//
+# STOCKHOLM 1.0
+
+H.volcanii         GGCAGAGAGAGCCCAGUUCCCGUGCCCGAGACGGGCAUGAGGAAAGUCCCCCCACCGUCCGAACGGGUGACCGGGCGCAAGCCCGGAGUCGGAGACGGCUGGCGCUGGAACAGAAACGAGACCGCUCGACCCGACCGAUGAUGCGCGCGCGACGGCUCCGCCGUCGCCGGCGCGGCCGUCACGGCCGCGUGCGAACCGACCCGUAAGGGAAGGGAGCUAACCCGCAGAGGGAUGAGGUGGCGUCGCCAUCUCCGACGGUCGAGAACGGAUGGAACGGCGAAUCCUCACCGGUGCAAGUCCGCGCCGCGAAGGGUAGUUCGGACGGCGCGUCGGGUUCGCCCGUCGCGCCCUCGGGGGGCUCGCCCCGAGAAGGCGCGGACGCUGAGCCGAAUGCUGGGACGAACAGAAGGGGGCUUACUCCUCUCAGCCGCUU
+#=GR H.volcanii SS {{{{{{{{{{{BBBBBB,,,<<<<<<<<___>>>>>>>>,,,,{{{-{{{{{AAAA-{{{{{{{,{{{{{<<<<<<____>>>>>><<<<<____>>>>>[[---[[[[------------[[[[[[[[[[[,,,,,,,,,((((<<-<<<<<<<<___>>>>>>>>>><<<<<<<<<___>>>>>>>>><<---<<--<<<____>>>-->>-->>,,,,,)))),,,,,,,<<<<<<<<___>>>>>>>>,,,]]]]]]]]--]]]--------]]]]--]]}}}}}aaaa,,,((<<<<<<<__________>>>>>>>,<<<<<<<<<<<____>>>>>>>>>>><<<<<<<______>>>>>>>,,))}}}}}}}------------bbbbbb----------}}}}}}}},}}-}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.Pseudoanabaena-PCC6903         GAAAGAGUAAGCGAGCAGUUGCGAAAUUAGUCUUAAAGUAUAAUGAAAAUUUGCUUUAAGUACGGAUUUUGAGGAAAGUCCGGGCUUCCAAGAAGAUCAGGCUGCUGGAUAACGCCCAGUGCGAGCAAUCGUGAGGAUAGUGCCACAGAAAGAUACCGCCUAACUUCGGUUAGGUAAGGGUGCAAAGGUGUGUUAAGAGCGCACCAGCAGGGUCGUGAGGCUCUGGCUCGGUAAACCCCAGUCGGAAGCAAGGCGAGAGGAAAUAAGCGUUGCGAUCUUCAAUAGACCUUAUUUCCGUGACUUAACUGCGUUUAGUGCGCGAAAGCGUGGCAAGCGUAGUUAAGUGUGUGCCGCAAGAGGUAUUUGGUAACAAAUAUCCCAGAUAGAUAACCGCUAGGGCAGUUGUUAUCAACUCCCAAAACAGAACCCGGCUUAUGUCUUACUCUUUCU
+#=GR bac.Pseudoanabaena-PCC6903 SS ::{{{{{{{{{{{{{{{{{{,<<<<<<<<<<<<<<<<<<<-<<<____>>>>>>>>>>>>->>>>>>>>>>,,,,BBB,BBBBBAAAAA,,{{{{{{{,[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<----<<<<<<<<--<<<<_>>>>>>>--->>>>->>>>}}}},,,<<<<<<<<<<<<<<--<<<<<____>>>>>-->>>>>>>>>>>>>>,,,,}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<-<<<<<____>>>>>>>>>,,,,,,,,bbbbbbbb,}}-}}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+bac.Buchnera-APS         UGAAGUUGACUAAAAACAGUCGCUGUUUAGUUUUUAAAAAUUAAAAAGAGGAAAGUCCGGGCUCCAUAGAGCAGGGUGCCAGAUAACAUCUGGAAAGCGUGAGCUUAUGACUAGUGCAACAGAAAAUAAACCACCUAUUUUGUAAUAUAUAAAAAUAUGGCCAGGGUGAAAAGGCGUGGUAAGAGCACACCGCAUAAUUGGUAACAAUUCAUGGCAUGGUAAACUCCACCCGGAGCAAAGCCAAAUAUAGGAUAAAUUUUUUGUACUGCUCGUACUUCUUAAACCUGGGUAGGCUGCUUGAAUUAGUAAGUGAUUGCUAAUCUAGAUGAAUGACUGUUAAAACAGAACCCGGCUUACACGAGUCAACUUCAAUAAC
+#=GR bac.Buchnera-APS SS :::{{{{{{{{{{{BBBBBBB,<<<<<<<<<<_____>->>>>>>>>>,,,,{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<___>>>>>>->>>->>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>->>>>>->,,)))--))))]]]]]]]]],,,<<<<------<<<<<<-------<<<<<_aaaa>>>>>---->>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,}}}}}}}},}-}}}}}}}}}}::::::::
+//
+# STOCKHOLM 1.0
+
+H.morrhuae         GGCAGAGAGAGCCCGGCCACCGCGGCGUACCGACAGGCACACACGUGCCAGCGGGUACGCACGCGAGGAAAGUCCCCCCACCGCCGGGCAGGUGACCGGGGAAACCCCGGGACGGGAGACCGUCGGCGCUGGAACAGCAACGAGACCCCUCCACCCGACCGAUGAGGCGCGGGCGGUGGCAUCGCCACCGUCUCGGCGCGAGCGGCACGGGGUGCAUCGUGCGCCCCGAAGCGAGCGGGCACCGCCCGCGACGCAGCCGCGAGCGUGCGAACCCGACGCAAAACGGCCACUGGUCGGACAAAGCAACGGGGAGCUAACCCGCCGAGGGAUGAGGGUGGAGAACGGAUGGAACGGCGAAUCCUCACCGGUGCAAGUCCACGCCACGCGGAUCGGCCGCACGGUAGCCCGGCAGGGACGUGGACGCUCAGCCGAAUGCCGGGGCGAACAGAAGGGGGCUUACUCCUCUCAGCCAUGU
+#=GR H.morrhuae SS {{{{{{{{{{{BBBBBB,,,<<<<<<<<<<<----<<<<<____>>>>>---->>>>>>>->>>>,,,,{{{-{{{{{{{{{-AAAAAA-{{{{{<<<<<<___>>>>>><<<<<____>>>>>[[---[[[[------------[[[[[[[[[[[---------[[[[,<<<<<<<<<<___>>>>>>>>>>,,(((((((((((,<<<<<<<<<___>>>>>>>>>,,<<<-<<<<<<___>>>>>>-->>>,)))))))))))<<---<<<<--<<----<<<<<___>>>>>------>>-->>>>-->>,,,,,]]]]---------]]]]]]]]--]]]--------]]]]--]]}}}}}}}}},,,<<<<<<<<<--<<<<<___>>>>>-------aaaaaa-->>->>>>>>>,,,,,,,,,,,,bbbbbb,,,,,,,,,,}}}}}}}},}}-}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.Prochlorococcus-NATL1         UUGAGGAAAGUCCGGGCUCCUAUUUGGCCAGGCUUGCUGGGUAAUUCCCAGUGCGGGUGACCGUGAGGAUAGUGCCACAGAAACACACCGCCUAAUGCUUAAUGGGGAAAUCCCAACAAGCGCGGCAAGGGUGCAAAGGUGCGGUAAGAGCGCACCAGCAGCAUCGAGAGGUGCUGGCUAGGUAAACCCCGGCCAGGAGCAAGGCGAGGGGCACUGGAUGGCCAUAGACCUUGUCCCUGUAGAGAGCCGCUUGAGGCUAGCGGUAACGUUAGUCCCAGAUAGAUGAUUGCCCAUUCCCUUUCUAAAGAAAGAGGAAAGAACAGAACCCGGCUU
+#=GR bac.Prochlorococcus-NATL1 SS :::::::{{{-{{{{{[[[[[---AAAAA-[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<--<<<<<<<<<<<<<___>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]]],,,<<<--<<<<<<--<<<_aaaaa___>>>->>>>>>-------->>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<-<_____>>>>>>->>>>,,,,,,,}}}}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.EM14b-9         GAGGAAAGUCCGGGCUCAGAGGGUGCGCGUAUCCCGUUAAGGCUGAUGAAGCCGGAGCGGGGGCGUGAGAGCGCCGGAAAGUGCCACAGAAAACAUACCGCCUUAUGUGUCUUCACACAUAAGGUAAGGGUGAAAAGGUGCGGUAAGAGCGCACCCAGGAAAGGAGAAGGUUUAAGGGAAAAAACGCCCUUGCCGAAUCCUUUCCUGCGGUAAACCCAUACGCGAGCAAGGCCAAGCAGAGGGGAAUUGCGGGAGUUUUCCAAAUCUGACUCCCGCAUGCGGGUUGCACCCUUCCCGCUAACACCCUCGGGUAGGCCGCUUAGAGUAAUGACCCCUUAACACAGAACCCGGCUUA
+#=GR bac.EM14b-9 SS :::::{{{-{{{{{[[[[-AAAAAAA-[[[[[<<<<<<--<<<<_____>>>>-->>>>>><<<<<____>>>>>((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<____>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<---<<<--<<<<<________>>>>>>>>--->>>>>>>>>>,)))--))))]]]]]]]]],,,((((-----(((((,,,,<<<<<<<<<<__________>>>>>>>>>>,<<<<<<_aaaaaaa>>>>>>,,,,,)))))-----)))),,,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.K.polysporus         GAAUACAGCAGUUCUCUCUUCGUAAGAAGAGAGAUUGUGUUACCCUUCGUAACACAUUACCCGUGAGGGAACUAUUAGGUGGAAACCUAGUUAGCUUUGUCGUCAUAAGUGAUCAACGUCUUUCCCCUCGAUUUAUUUUCGGCGGGCGAAUGACGGAUGGGAACGGCGAUAGUUACAAUGUUUGACGUAUCACGUGAUAUUAUCACAAGGUAUGGUCUGUUGAGUGCAAUCGUAGGACCCCGGUUGUUAUCUACAACCGGUUGAA
+#=GR eukarya.K.polysporus SS :::::::::::::::::::::::::::::::::((((((,,,,,,,,,,,,,,,,,,<<<<<____>>>>>,,<<<<<<<____>>>>>>>,,,,,,<<<<<<<----------------<<<<<<<<<<<_______>>>>>>>>>>>--------------->>>>>>>,,))))))::::<<<<<<<<<<<<<<<___>>>>>>>>>>>>->>>::::::::::::::::::::<<<<<<<<<<_____>>>>>>->>>>::
+//
+# STOCKHOLM 1.0
+
+bac.G.sulfurreducens         GAAGCAGAACAGAUGGCCGCCCUUCGCGUGCGGGGGGAGGAAAGUCCGGGCUCCACAGGGCAUGGUGCUGGAUAACGUCCAGCGGGGGCGACCCCAGGGAUAGUGCCACAGAGAGAAGUCCGCCCGCUCAGGCGGGUAAGGGUGAAAGGGUGAGGUAAGAGCUCACCGGGUUCGGCGGUGACGUCGGAUGCCAGGUAAACCCCACCAGGAGCAAGGCCGAAUAGGGAAGCGUCAAGGAUGGCCCGUCCGUGCUUCCGGGUUGGCUGCUUGAGGCCGUCGGUAACGGCGGUCCCAGAGGAAUGGUCAUCGCCCGCCAAGGGGUAACCCGCGGCGGGAACAGAACCCGGCUUAUGGGCUGCUUCGACCA
+#=GR bac.G.sulfurreducens SS {{{{{{{{{{{{{{{{{{,<<<<<<<____>>>>>>>,,,,BBB,BBBBB[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<____>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<------<<<<<<----<<<<<_aaaa>>>>>->>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<<<<<<<____>>>>>>>>>>>>,,,,,,bbbbbbbb,}}}}}}}}}}}:::::
+//
+# STOCKHOLM 1.0
+
+bac.R.prowazekii         CUAAAUGGUCGUGCAGUUGCGUGAUGAUAAUCACGAGGAAAGUCCGGACUCUAUAGAGGUAUGGUGCCGGUUAACAUCCGGCAGAGUAUUAUUACUUUAGGGCUAGUACCACAGAAAAUAUACCGCCGAGUAUUUCGGUAAGGGUGAAAAGGUGUGGUAAGAGCACACCGGUAAGUUGGCAACAAGUUACGCAUGGUUAACCCCACCAAGAGCAAGAUCAAAUAGGCAUUACAGAAUUUAAAUAUUUAUUUAAGUUCCUGGGUUACCUCUAAUCGGAUUGUAAUGCGGGUAGAUCGCUUGAGGUAAACGGUAACGUUUAUCCUAGAUAAAUAACUGCAAUGAAUUAAUAUUCAUACAGAAUCCGGCUUAUAGACCAGAUGAGCAG
+#=GR bac.R.prowazekii SS {{{{{{{{{{{{{{{{{{,<<<<<<____>>>>>>,,,,BBB,BBBBB[[[[-AAAAAAA-[[[[[<<<<<_____>>>>><<<<<<<____>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<___>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------((((((((<<<<<<<<<<____>>>>>>>>>><<<<<_aaaaaaa_>>>>>,,))))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<____>>>>>>,,,,,,bbbbbbbb,}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.Calothrix-PCC7601         AAGGAGAGAGUAGGCGUAGGCGGUUGCAGAUCAGUCACAAAAACUGAAUUUGAGGAAAGUCCGGGCUCCCGAAAGACCAAACUUGCUGGAUAACGUCCAGUGCGAGCGAUCGUGAGGAUAGUGCCACAGAAAGAUACCGCCAAUUAGUCAUUAGUCAUUUGUCAUUAGUCAUUUGGAAAAACACAAAGGACAAAGGACAAAGAACAAAUGACCAAAUUGGUAAGGGUGCAAAGGUGCGGUAAGAGCGCACCAGCAACGUCGAGAGGCGUUGGCUCGGUAAACCCCGGUUGGGAGCAAGGCGAAAGGAACUAUGGUUGGUCUUUUACCAGUUCCGCUAAAACAGAGCCGCUAGAGGCGUUUGGUAACAAACGUCCCAGAUAGAUAACCGCCCUCAUGUAGAGAAGUUACUUGUAACAUUUCUACAUUCGAGAACAGAACCCGGCUUACUACCAACUCUUUCCCUUUUU
+#=GR bac.Calothrix-PCC7601 SS :::::{{{{{{{{{--{{{{{{{{{,<<<<<<<<<<_____>>>>>->>>>>,,,,BBB,BBBBBAAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>->>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<-----<<<<<--<<<_>>>>>>>->>>>}}}}------------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>-->>>,,,,,,,bbbbbbbb,}-}}}}}}}}}}:::::::::
+//
+# STOCKHOLM 1.0
+
+bac.N.fulvus-KCTC9580         CGAAGGGCAGCGUGGUGGGUAACGCCCACCCGGGGCAACCCGCGGGACAGUGCCACAGAGAACAGACCGCCAGCGGCCUGAGCGAAUUCCGGUUCGCCUCAGGUGCGGGUGAGGGUGAAACGGUGGUGUAAGAGACCACCAGCUCCGCAGGUGACUGCGGAGGCUCGGUAAACCCCACGUGGAGCAAGGCCAAGAAGGACGGCGGGCAACCACCGUCCGCGCGAGCGUUCGAGGGCUGCCCGCCCGAGCUCGCGGGUAGGCCGCUGGAGGCUGCCGGCAACGGCAGCCCUAGAUAGAUGAUCGCCAGC
+#=GR bac.N.fulvus-KCTC9580 SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<<<<<<<<____>>>>>>->>>>->>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((,,,,,<<<<<<<<<____>>>>>>>>>,,<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>,,,,,))))::::::<<<<<<<<____>>>>>>>>::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+bac.S.bikiniensis         CGAGCCGGGCGGGCGGCCGCGUGGGGGUCUUCGGACCUCCCCGAGGAACGUCCGGGCUCCACAGAGCAGGGUGGUGGCUAACGGCCACCCGGGGUGACCCGCGGGACAGUGCCACAGAAAACAGACCGCCGGGGACCUCGGUCCUCGGUAAGGGUGAAACGGUGGUGUAAGAGACCACCAGCGCCUGAGGCGACUCAGGCGGCUAGGUAAACCCCACUCGGAGCAAGGUCAAGAGGGGACACCCCGGUGUCCCUGCGCGGAUGUUCGAGGGCUGCUCGCCCGAGUCCGCGGGUAGACCGCACGAGGCCGGCGGCAACGCCGGCCCUAGAUGGAUGGCCGUCGCCCCGACGACCGCGAGGUCCCGGGGACAGAACCCGGCGUACAGCCCGACUCGUCUG
+#=GR bac.S.bikiniensis SS {{{{{{{{{{{{{{{{{{,<<<<<<<<<<____>>>>>>>>>>,,,,BBB,BBBBB[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<____>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,((((,,,,<<<<<<<<____>>>>>>>>,,<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>,,,,,)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}},<<<<<-<<<<<____>>>>>>>>>>,,,,,,bbbbbbbb,}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.CPB70         GAGGAAAGUCCGGGCUCCACAGGGCAGGGUGGUUGCUAACGGCAACCCGAGGCGACUCGCGGGAAAGUGCCACAGAGAACAGACCGCCGCGGCGACUUCGUCGCUGCGGUAAGGGUGAAACGGUGGUGUAAGAGACCACCAGCGGGCUGGGCGACCAGCUCGGCUUGGUAAACCCCACCCGGAGCAAGGUCAAAAGGGCAGGUUCGCCUGUCUGCGCAAGCGUUCGAGGGCGGCCCGCCCGAGCUUGCGGGUAGACCGCUAGAACCGGUCGGCAACGGCCGGUCCAGAUGGAUGGUCGCCACUGCGCGAGAGCGCGGUACAGAAUCCGGCUUAC
+#=GR bac.CPB70 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<___>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,((((------((((((,,,,,,,,,<<<____>>>,,,<<<<<<_aaaa>>>>>>))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<____>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.Dermocarpa-PCC7437         GGGGAGGAAAGUCCGGGCUCCCGAGAGACCAAACUUGCUGGGUAACGCCCAGUACAGGCGACUGUGAGGAUAGUGCCACAGAAACAUACCGCCUUUUUUUCAGUCAACAGUAAAAAAAAACUGAUAAUUGGAAAAGGUAAGGGUGCAAAGGUGGGGUAAGAGCCCACCAGCAGUAUCGAGAGGUACUGGCUCGGUAAACCCCGGUUGGGAGCAAGGUCGAAGGAACAAUGGUUGGUCUUUUUCCAGUUCCGUUUUAGGUGAACCGCUAGAGACGUUUGGUAACAGCCAUCCCAGAUAGAUAACUACCCCCAAUAAGACGUAGUAUACUAUGUCUUUAACUGGGAACAGAACCCGGCUUA
+#=GR bac.Dermocarpa-PCC7437 SS ::::::::{{{-{{{{{AAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<--<<<<<<<<<<<<<<____________>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<----<<<<<--<<<<_>>>>>>>->>>>>}}}}-----------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<<<<____>>>>>>>>>-->>>>>>,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.S.fibuligera         GAUCUCUGUCCUGUUCUGGUAUCCUACGGGAUAGUCCAGGACUAUUGGAUUUAAUUCCAAAUGCUCCUGAGAGCUCCAUAGAGCGGAAGCUCUGGACGAAGCCAUCAGAAAAAUCGCUUACUUGUGAAGUGAUGGGCCACUCUACUUCGGAGUGGCUCAAUGGAAGCGGCUUCGUGGACAGUUGGCUUAGGCCGCCCUCAGGGGCGGUUUGAGCUGUUAAGUGCAAUACACAGACAUUGUGCA
+#=GR eukarya.S.fibuligera SS ::::::::::((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<____>>>>,,,,,<<<<<____>>>>>,,,<<<<<<<-----------------------------<<<<<<<<<<<_____>>>>>>>>>>>-------->>>>>>>,)))))):::<<<<<<<<<<<<<____>>>>>>>>>>>>>::::::::::::::::::::<<___>>::
+//
+# STOCKHOLM 1.0
+
+bac.M.flocculare         GCACAAGUCAAUCGCAGGUAUAAUCAAAAUAUUAUUUUAUAAAUAUAAAUUAUAUUUUGAUUAAUAUUUGAGGAAAGUCCGCGCUAGCACUACCUGUGAUGGUAGUAGUGUUCAUGUUGGGUCUAAUAAACCCAAGCUUAGACGACAAGUGCCACAGAGACGAGCUUAUUUAUUAAAUUCUUCUUUUUCUAUAUUGAGAAUUACAAUUUUUUUCUUAAUAAAUAAGGUGAAACGCGGUAAACUCCAUGAGCUAGAAACCUAAAUUUUGGUAAGGGAGCCCAAUUUGAAGAAAAAAAACUUCGAUUGGGAAGUUUUUUGAUAAGGUUAUUAUUAAAAGAAAAACUUAGAUAAAUGAUUGACUGAUACAGAACGCGGCUUAUUAGUGCAAAAACAGCGUAAAAACGCUGUUUUU
+#=GR bac.M.flocculare SS {{{{{{AAAAAAA,<<<<<<<<<<<<<<<<<<<<<<<_________>>>>>>>>>>>>>>>>->>>>>>>,,,,{{{-{{{{{[[[[[<<<<<<______>>>>>>,,,,,(((((<<<<<<_______>>>>>><<___>-><<---<<<<<-----------<<<<<<<<<<<<<<<<<<<--<<<<______>>>->>>>>>>------->>>>>>>>>>>>>--------->>>-->>>>)))))]]]]],,,<<<___________>>>,,,<<<<<<<_________________>>>>>>><<<<<<<<<<<<<<_____>>>>---->>>>>>>>>>,,,,,,,,aaaaaaa,,,,,,,,,,}}}}}}}},}-}}}}}<<<<<<<<<<<____>>>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+bac.B.subtilis         GUUCUUAACGUUCGGGUAAUCGCUGCAGAUCUUGAAUCUGUAGAGGAAAGUCCAUGCUCGCACGGUGCUGAGAUGCCCGUAGUGUUCGUGCCUAGCGAAGUCAUAAGCUAGGGCAGUCUUUAGAGGCUGACGGCAGGAAAAAAGCCUACGUCUUCGGAUAUGGCUGAGUAUCCUUGAAAGUGCCACAGUGACGAAGUCUCACUAGAAAUGGUGAGAGUGGAACGCGGUAAACCCCUCGAGCGAGAAACCCAAAUUUUGGUAGGGGAACCUUCUUAACGGAAUUCAACGGAGAGAAGGACAGAAUGCUUUCUGUAGAUAGAUGAUUGCCGCCUGAGUACGAGGUGAUGAGCCGUUUGCAGUACGAUGGAACAAAACAUGGCUUACAGAACGUUAGACCACUU
+#=GR bac.B.subtilis SS :::{{{{{{{{{{{{{{{{{{,<<<<<<<<_____>>>>>>>>,,,,AAA,AAAAA{{{{{<<<<-<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<____>>>>>>->((,<<<<-----<<<---<<<____>>>-->>>------>>>>,,,,,<<<<<------------<<<<<<<<____>>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<________________>>>>>>><<<<<<____>>>>>>,,,,,,,,}}}}}}},<<<<<<<<<<<<<<_____>>>>>----->>>>>>>>>,,,,,,,aaaaaaaa,}-}}}}}}}}}}::::::
+//
+# STOCKHOLM 1.0
+
+SL2D         GAGGAAAGUCCACCCACCUGCUGAGCGCGCAGCCGUAUGCAAGUACGGGUGGCGAGAGUCACGGCUAUGGCACAGAAACGACACGGCCUGCCCCCAGCCAUGAUGCGAUCGAGUCCAUUCGUGGGCAAUGCGUCCGCUCCCAACAAGCGCGGAUGUCUCGCUGAUGCAUAAGGGUAGGUAGCGACGAAACGGUGAAUCCUGCGGGUGCAAGCCAAAACAGGGCAACAAGGCUGCUCAGUGCCUGCCCGGGUAUGGCGCGUAGCUGAAUUGCCGCACCGACAGAAGCGGGCUUA
+#=GR SL2D SS :::::{{{-{{{{{AAAA-{{{{{{{,[[[[[<<<<<<____>>>>>><<<<<____>>>>>((---((((------------((((((((((-----------((((,,,,<<<<<____>>>>>,,,<<<<<<<<___________>>>>>>>>,))))----------))))))))--))--------))))-))]]]]]aaaa,,,<<<<-----<<<<<----<<<_>>>>>>>>>>>>}}}-----}}}}----------------------------}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.LGB5         GAGGAAAGUCCGGGCUCCACAGGGCAAGAUGGUUGCUAGCGGCAACUGUCCCGCUAGUCGGGAUAAGGAAAGUGCCACAGAAAAGAAAACCCCCGCGUCUUGUGCGCGGGAGAGCUGAAACGGUGGUGUAAGAGACCACCAGCUUCGUCGUGAGGCGAAGGCUUGGUAAACCCCAUCUGGAGCAAGGCCGAAUAGGGGAGGGAUAAAGCUGCCCGCCUACCUCCCGGGUGUCGCCGCUAAAGCCCCACGGCAACGUGGGCGCGUAGAUAGAUGAUCACUCUCGACAGAACCCGGCUUA
+#=GR bac.LGB5 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<_____>>>>>>->((---(((((,,,,,,,,,,,,,<<<<<<<<<_____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<------<<<<<<------<<_aaaa>>--->>>>>>------>>>>,,,,,,<<<<<<<<____>>>>>>->>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.E.asper         GCGGAAGGAAGCUCACUGUAGAGGCUACAUGCAGAGUGCAUAUGUCACUCAAGUACCUUGGGGAAGGUCUGAGACAGGAGCCGGUAAUUGCCCCAGCAGGGCAUCCCCUGAAAAGGGGAGCGAGCUCCCAGAGACCCGGGGCCCAAAGGGGGUGGCAUGAGACGCGUGACCGUGUAUCUGGUACUCGCUGAUGCUUACUCCUUCCGGGCAUUGGAAGUGGCUCGCGGCUGGCACUCCCCUGAGUGCAAUGGCUGAGGUGAGGUAAUGGCGCCUCAUAACCCAAUUCAGACCACUCUCCGGAAUUCCG
+#=GR eukarya.E.asper SS {{{{{{{{,,,[[[[,<<--<<<<---------<<<<<_______>>>>>----->>>>>>,,,AAA,AAAAA,,,,,((((,,,,,,<<<<<_____>>>>><<<<<<____>>>>>><<<<<<<-----------<<<____________________________________________________________________>>>------->>>>>>>)))),,,,,,,,,,,,,,,,,,,,,,,]]]]<<<<<<<______>>>>>>>,,,,,,,,aaaaaaaa,,,,}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+eukarya.K.thermotolerans         GAACACAGCGAGACAACAAUCGCCAGGGGCUUCGGCCCUGAUUCUCGUGAGAGAAGCCGCUGGAAAGCGGUUGUGGGCGCUGUCAUCAGAAAUACACAUGUUGGCCGGCGCUAUCGCCGCACCAAUGUGAUGGGAAAGGCAGCGGAUGUCUCGUUUGACUUUGCCUUAGGGUAAAGGUCUGUUGAGUGCAAUGGUAGGAGGCCGCUUUAUGGUGGCCAA
+#=GR eukarya.K.thermotolerans SS :::::::::((((((,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<____>>>>><<<<<<____>>>>>>,,,,,,<<<<<<<---------------<<<<<<<<<<<____>>>>>>>->>>>----------->>>>>>>,,))))))::::<<<<<<<<_____>>->>>->>>::::::::::::::::::::<<<<<<<____>>>>>>>::
+//
+# STOCKHOLM 1.0
+
+bac.SM-A09_11         GAGGAAAGUCCGGGCUCCACAGGACAGGGUGCCAGAUAACGUCUGGGAGGCGCAAGCCUACGGCCAGUGCAACAGAAAGUAUACCGCCAGCUUCGGCUGGUAAGGGUGAAAUGGUGCGGUAAGAGCGCACCGCGCACGUGGUAACACGGGCGGCGAGGGUAAACCCCACCCGGAGCAAGACCAAAUAGGAAAACCAUGACGUUGUCCGCGUCGUUUUCGGGUUGGUCGCUUGAGGCUGGAGGGUGACCUUCAGUCCAGAUGAAUGAUUAUCCUAGACAGAACCCGGCUUAC
+#=GR bac.SM-A09_11 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<____>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,,)))--))))]]]]]]]]],,,<<<<------<<<<<<---<<<<<_aaaa>>>>>>>>>>>----->>>>,,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.LGA2         GAGGAAAGUCCGGGCCCCACAGAGCAGGAUGCCGGCUAACGGCCGGGCGCAGCAAGCUUCGCAAGAAGCCCAAGGCGACAGACACCAGUGCAACAGAAACAUACCGCCUAAGUCCGCAAGGACCGGCAAGGGUGAAAUCGUGCGGUAAGAGCGCACGGCCGUCCUGGUAACAGUGGCGGCGGGCAACCUCAUCCGGGGCAAGGCCAAAUAGGGGAGCAUUGGCGUGGCUCGCGUCGCUCCCGGGUAGGCUGCUAGAGGCCGUCGGCAACGACGGUCCCAGAGGAAUGGUUGCCCACGACAGAACCCGGCUUA
+#=GR bac.LGA2 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<<<<<<<<____>>>>>>>>>>>>>->((------(((((,,,,,,,,,,,<<<<<---<<<<____>>>>->>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>->>>>>>,)))-))))]]]]]]]]],,,<<<<------<<<<<<---<<<<<_aaaa>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.C.difficile         AAUAUUAAGUAAGCCAGAUAAUCGCAUGUAAUCUUACAUGAGGAAAGUCGGAGCUCCAUAGAGCAGGGUGCUAGGUAACGCCUAGUGGGAGCGAUCCUAAGGAUAGUGCAACAGAAAUAAACCGCCACUAUUGUGGUAAGGAUGGAAAGGCGAGGUAAGAGCUCACCAGCAGCUAGGCGACUAGUUGGCUAUGUAAACCCCACCUGGAGCAAGACCAAGAUAGGAAUAAAGAGUGCUGCUCGUACUCUCCGGUAGGUAGGUCGCUUGAGCCUAUUGGUGACAAUAGGCCUAGAAAGAUGAUUAUCUAAUACAGAACUCCGCUUAUAGCCUUGCUUAAUUA
+#=GR bac.C.difficile SS :::::{{{{{{{{{{{BBBBBBB,<<<<<<____>>>>>>,,,,{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<____>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<-------<<<<<<-<<<<<<_aaaa>>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,,}}}}}}}},}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.C.acetobutylicum         CGAGUAAGCCAGACAAUCGCUGCUGCAAUUUGCAGGAGAGGAAAGUCCGAGCUCCAUAGGGCAGGGUGCCGGGUAACUCCCGGUCAAGGCGACUUGAAGGAAAGUGCAACAGAGAUAUACCGCCAUUUUAUAAUGGUAAGGGUGGAAAGGCGAGGUAAGAGCUCACCAGCGCAUUGGCGACUUUGCGGCUAUGUAAACCCCAUCUGGAGCAAGAUCAAAUAGGGAAGCGUUUUGGAGUGGCCCGCUCUGCUUCCGGGUAGCAUCGCUUGAAUCUUAUGGUAACAUAAGGUCUAGAUAGAUGAUUGUCGAAUACAGAACUCGGCUUACAGGUUUAGUCGUCCAUUG
+#=GR bac.C.acetobutylicum SS {{{{{{{{{{{BBBBBBB,<<<<<<<<___>>>>>>>>,,,,{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<____>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<------<<<<<<-----<<<<<_aaaa>>>>>>>>>>>----->->>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,,}}}}}}}},}-}}}}}}}}}}:::::::
+//
+# STOCKHOLM 1.0
+
+eukarya.P.canadensis         UUCCCUCCAAAGUCUGUAUUUUACCUGCCUACAAAAGGAGGAGUCCCCGGCGGACUUCCUCAGUAUUCGCAGGUGGGAAAUUCGGUGAAAUCGCUCUGCCCACCAGGGAAAAGGUAAAACUCUCCCUGGUCCUUGGAAGGACUUGUCCUUCUGAGUCUCGUGAGAGAUGCCAAGCGUGGAGACGCUAGGGUGGUCGCCAUAAGAAACUUCAACAGGUCACACUGUUAUGGGAGGCGCCACGGGCAGUUGGUCCCUUUGCAUCCAGAAGGAAGCUUUGGGGCUGUUGAGUGCAAUAUACAGAGCGCUAGAAGGAGUCCUUCCUUCUACGCGUAA
+#=GR eukarya.P.canadensis SS ::::::::::::[[[[[[[,,,<<<<<----------<<<<<<<<<_____>>>>>>->>>-------->>>>>,,,,,,,,,,,,,,,,,,,,,((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<____>>>>,,<<<<<<<<____>>>>>>>>,,<<<<<<<------------<<<<<______>>>>>------>>>>>>>,)))))),,,<<<<<<<<<<<<<<____>>>>>>>>>>>>>>,,,,,,,,,,,,,]]]]]]]<<<<<<<<<<<<<___>>>>>>>>>->>>>::
+//
+# STOCKHOLM 1.0
+
+eukarya.T.delbrueckii         UCCUACGAUUUAGAAACCUGUUUGCUAACGGAGUCUCAGGGCUCACACUAAUAGCAGGUGGGAAAUUCGGUGAAUCACUGCGGAACCCGACAGAGCCUAACAAGCUUUGUCGACCGGUUGCCUUGGCGACUUUUCCGUGAGGAGGGCCUGGGGAACCAGGCUCAUAUGGUCAUUGUCACAAGAAAUCAACUCGGUAGUCCUGUACUAUCGAGGAUGGGAAGGCAAUGGACGUUCCGUUUAACUUGAUCUCAUCAAGGUUUGUUGAGUGCAAUCGUAGGACGGUCUUAGACCUGAA
+#=GR eukarya.T.delbrueckii SS [[[[[[[,,,,,,,,<<<<<----------<<<<<____>>>>>---------->>>>>,,,,,,,,,,,,,,,,,,,,,((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<____>>>>><<<<<<____>>>>>>,,,,,,,,,<<<<<<<------------<<<<<<<<<_____>>>>>>>->>------->>>>>>>,,,)))))),,,<<<<<<<<___>>>>>->>>,,,,,,,,,,,,,]]]]]]]<<<<<___>>>>->::
+//
+# STOCKHOLM 1.0
+
+T.acidophilum         GGCGGGAAAGCGCGAGGGCAGCUGACGCCCUUGAGGUGAGGAAAGUCCCCCCUCCUCGGCGGUAUCCGGCUGGCGCAAGCCAGCAUCCUGAGAGGGAUGGUAAAGGCAAAAGAAAUAAACGGUCUCCGGUAAAGCAUGAUUCCGAAGGGAUGACGUUUCCGGAGGAUCCGAUGGAAAGCCUCCCCGGAUGGAGAAAGUCUAAACGGAUCCUGUGAGGCCGCCGUGAGGAUCGGGUAAGACGAACAGUCGAAUGCUGCCAGCCCAUUGGGUGAACAGAAGGGGGCUUACUCCGCGGAUUCCCGCCA
+#=GR T.acidophilum SS :::{{{{{{{{{{{{{{{{{{{,,,<<<<_____>>>>,,,,BBB,BBBBBAAAA,[[[[[[,(((((<<<<<<____>>>>>><<<<<____>>>>><<---<<<<------------<<<<<<<<<<---------<<<<<___>>>>>------->>>>>>>-->>>------->>>>->>)))))aaaa,,,<<<<-----<<<<<--<<<__>>>>>>>>>>>>]]-----]]]],,,,,,,,,,,,}}}}}}<<<<<___>>>>>,,,,,,,bbbbbbbb,}}-}}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+eukarya.P.douglassii         GCGGAAGGAAGCUCACUGUAGAGGUCACGCGCUGGGUGUAUCGAUCACCCUCCUUGCUACCUUUGGGAAGGUCUGAGAGAAGGGCCAAGUGUCGCCUUAGCAGGGCGCCAUCUUAGGAAGGUGGGUGAGUUCCCAGCAAUAGGGGUCUCCUGUAAUGCCCCAGUUUGAGGCAGGAGAAGCGGGGCUGGAGGGGCUACUCCCUCCUUCCUGCGGAUGCCUCCGUGGCUUACGCGGGGCUUGGGAAUGACUCACGGCCGGCACGUUGAGUACAAUGGGCAGAGGUGAAGCGGCCGCUUCAUAACCCAAUUCAGACCACUCUCCGGAAUUCCG
+#=GR eukarya.P.douglassii SS {{{{{{{{,,,[[[[,<<--<<<<---------<<<<<_______>>>>>--------->>>>>>,,,AAA,AAAAA,,,,,((((,,,,,,<<<<<_____>>>>><<<<<<<___>>>>>>><<<<<<<-----------<<<__________________________________________________________________________________________>>>------->>>>>>>)))),,,,,,,,,,,,,,,,,,,,,]]]]<<<<<<<____>>>>>>>,,,,,,,,aaaaaaaa,,,,}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+A.brierleyi         GAGGAAAGUCCCGCCUCCUGGCCUAAAGGAGUCUCUAUAGAGACAAGGGCAACACCCUUGGCAACUAUACAGAAACAAGUACCUUGAAAGCUACAUGUGAAAAUGAUUGUGCCCCUUCCUCUGGUAACGGAGGAAGAAACAUGAGAGUAGCUUUCAAGGAUGAAAAGAUAGACCUCCUAGGAGCAAGUAGAGGGAAAGAUGAGACUAGGCCCGAUUUCCCUCUAGGACGCAUAGCCAAAUCCCCCAACCAUUACAAAAGCGGGCUUA
+#=GR A.brierleyi SS :::::[[[-[[[[[AAAA-[[[[[,(((((<<<<<____>>>>><<<<<_____>>>>><<---<<<<-------------<<<<<<<<<<<---------------<<-----<<<<<<<<<____>>>>>>>>>--->>------->>>>>>>>>>>-------->>>>->>)))))aaaa,,,<<-<<<<<<<<---<<<___>>>>>>>>>>>>>]]]----]]------------------------------]]]]]]]]:
+//
+# STOCKHOLM 1.0
+
+bac.A.laidlawii         GAGGAAAGUCCGGGCUAGCACACACCUUAUGGGUGUGUAGUGUUUGUGCUAAGGGAAAUCAUAACCUUAGGUAUGUUGUAUAAACAUAACGGCAAACUAGUUAUAGCUAAGGUGUUUCACUACGUUAUAACUUAAAUUAAAGUGCCACAGAGACGAAUCUAUUUAGAAAUAAAUAGAGUGAAACGCGGUAAACCCCUCAAGCUAGCAACCCAAAUUAGGUAGGGGCACAUGAUGUGUAGCAAUACAACAUCAUGCAAGAUUUGAAUCUUGAGAUUAAUAGUCACAAAAGAAGAAAUUCUUUACAGAACGCGGCUUA
+#=GR bac.A.laidlawii SS :::::{{{-{{{{{{{{{{<<<<<<_______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<_____>>>>>>->((,,,,,,<<<<--------<<<<___>>>>------->>>>,,,,,,,,,<<<<<-----------<<<<<<<<____>>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<__________>>>,,,<<<<<<<_____________>>>>>>><<<<<<____>>>>>>,,,,,,,,,,,,,,,<<<<<<____>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.T.aquaticus         UGCCCCAGGAUAGGGGUGCGGUCGCGCCCGGGGGACUUCCCCCCUGGGUGAGGAAAGUCCGGGCACCAUAGGGCAGGGUGCCAGCUAACGGCUGGGCGGGGCAACCCGACGGAAAGUGCCACAGAGAAGAGACCGCCAGCGGCCGGGGCUUCCCCGGUGCGGGCAAGGGUGAAACGGUGGGGUAAGAGCCCACCGCCUGGCCUGGCAACAGGCUGGGGCACGGCAAACCCCACCCGGUGCAAGGCCCGAUAGGCAGGAAGGGCUUGCCCGGCCCGUUAGAACCUGCGGGAUGGGCCGCUUGAGGCCGGUGGCGACACCGGUCCCAGAGAGAUGACCGCGUAAAACAGAACCCGGCUUACGCCCUAUCCUGGGGACCCCGAGCGCAGGCUCGGGG
+#=GR bac.T.aquaticus SS :::::{{{{{{{{{{{BBBBBBB,<<<<<<<<<<______>>>>>>>>>>,,,,{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<-<<<<<<<___>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,,)))--))))]]]]]]]]],,,<<<<------<<<<<--<<<<<_aaaa>>>>>------->>>>>------>>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,,}}}}}}}},}-}}}}}}}}}}::::<<<<<<<<____>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+bac.PS31         GAGGAAAGUCCGGGCUCCACGAAACAAGGGUGGCGGGUAACGCCCGCCGGCGUUCCUUCGGGGGCGCAAGGGAAAGUGCCACAGAGAGUAUACCGCCGAUGAUCCCGGACUUGAUCCGGGAACAGGCAAGGGUGAAAGGGUGCGGUAAGGGCGCACCGGGGGGCUGGCAACAGCCACCGCAUGGCAAACCCCACCCGGAGCAAGGCCGAAUAGGGGCCGCGUGCCCAUCAGCAAUGGUGGGUAGGGGAGUUUCGCCCCGAGCGGCCCGGGUUGGCUGCUAAAGCGCCGGAGCAAUCCGGCGACCAGAUGAAUGGCUGCCACCGCAGGCCCGUCCCGCAAGGGAUACCGCCUGAGGAGACAGAACCCGGCUUA
+#=GR bac.PS31 SS :::::{{{-{{{{{[[[[--AAAAAA-[[[[[<<<<<_____>>>>><<<<<<<<<____>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<<<<_____>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((,<<<<<<<<<____>>>>>>>>><<<<_aaaaaa>>>>,,)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<<<<<____>>>>>>->>->>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.CPA49         GAGGAAAGUCCGGGCAACACAGAGCACCAUACUUCCUAACGGGAAGGCUUUCUGCUGGUGACGGCAGAAAGACAGACAGGGCCACAGAAACAAACCGCCCUUUGACUUCAAGGCUUGCCAAGAACGUCGAAAGGUAAGGGUGAAAAGGUGGGGUAAGAGCCCACCGUUCCGAUGGUGACAUCGGAAGCUAGGCAAACCUUAUGGGUUGAAAGGUCAAAUAGGCCCCGGGCAAAGAGCUGCUCGUUCGAUUUCUCCUUCGGGAGGAUUCCGGGGUGGGUAGAUCGAUGGAUCCCGAUUGCAAAGUCGGGACUAGAUAAAUGGCAAGAGCCCAUUUUCCCUCGUGGAAAAUGGGAUACAGAACCCGGCUUAU
+#=GR bac.CPA49 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<<<-<_____>>>>>>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<_____>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------((((((,,,,,,,<<<_aaaa>>-><<<<<<<<<____>>>>>>>>>))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<_____>>>>>>>>>>->,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.M.capricolum         GAGAUUUUAUUGGUCAAUCGCUGUAUUUGAAAAAGAAUAUAGAGGAAACUCCACGCUUACACAAUCUGUGAUGAUUGUAGUGUUUAUGCUAAAUGAAAAAAUAAAUUUAGGCAGUAAUUAAUUACUGACGGCAUAACUAACCUAAGGCUUUGCUAUGGUGAUGUUAUAAAGUGCCACAGAGACGAAUAAAGAGAAAUCUUGAAAUGGAACGCGGUAAACCCCAUAAGUAAGAAACUCAAAUUUUGGUAGAGGAAUCUGAUUAAGAAAAUAAGAAUCAAAAUCAGAAGUUAUUAUUAACUAGAUAGAUGAUUGACGCUGAAAAGUACAAAACGUGGGUUAUAAAUAAAAUCUCAUCA
+#=GR bac.M.capricolum SS :{{{{{{{{{{{{{{{{{{,<<<<<<<<______>>>>>>>>,,,,AAA,AAAAA{{{{{<<<<<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<____>>>>>>->((,<<<<---<<<---<<<___>>>-->>>---->>>>,,,<<<<<-----------<<<<<_____>>>>>----------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<_________________>>>>>>><<<<<____>>>>>,,,,,,,,}}}}}}},<<____>>,,,,,,,aaaaaaaa,}-}}}}}}}}}}:::::
+//
+# STOCKHOLM 1.0
+
+SLC         GAGGAAACUCCACCCAUCAUACAGAACCGUGAUGCCAGCAGGCAUCUGCUGAGAAGCAGGACACUGGAGCAGAAACGAUAUGUUUUCUAAUGGACGAACAUGAUGCUUAAAUGCUGAUGGACAUUAGAAAAAUACAGUGAAACGGCUAUUCCACGGGAUGCAAGGACAAAUACUGUUUAUGGAUCCUGUAUGAAACAGAGGUAGUCCGCAAAGAUGAAUGCUGCUAAAACAGAAGGUGGGUUA
+#=GR SLC SS :::::[[[-[[[[[AAAA-[[[[[,,(((((<<<<<____>>>>><<<<<____>>>>><<---<<<<------------<<<<<<<<<<<<------------<<<____>>>------->>>>>>>>>>--->>-------->>>>->>)))))aaaa,,,<<<<-----<<<<<---<<<__>>>>>>>>>>>>]-----]]]]---------------------------]]]]]]]]:
+//
+# STOCKHOLM 1.0
+
+bac.N.albus         CACAGGACAGGGUGGUGGCUAACGGCCACCCGGGGUGACCCGCGGGACAGUGCCACAGAGAACAGACCGCCGCUACCCUCCAGGUAGCGGUAAGGGUGAAACGGUGGGGUAAGAGCCCACCAGUCCUCGUGGUGACACGAGGAGCUAGGUAAACCCCACCCGGAGCAAGACCAGACAGCGUACGACGGUGUUAGUUCACUGGGAGGGCGGUCCGCCCGAGUGCGCGGGUAGGUUGCUAGAGGCCAUCGGCAACGAUGGUCCGAGAUGGAUGGUCGCCGACU
+#=GR bac.N.albus SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<_____>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((-----((((((,,<<<<<______>>>>>,,<<<<<_aaaa>>>>>,))))))-----))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+eukarya.A.truei         GCGGAAGGAAGCUCACUGUAGAGGCUACUUGCUGGGUGCUGUUGUUACUCUAUCAACCAGCCUUGGGGAAGGUCUGAGAUAAGAGCCACUUGUUGCCUUCACAAGGCAUUGCUUGGUGUAAGCAAGUGAGUUCCCAUCAAAGAUGGCUCAGUUGCAAGCUUAAUGCAAGAGACAUAGCAAAGAAGCCCAAUAUACUUCUGAUAUGGAUGCAAUGCCCAACAGACUGGAAAUGACUCACGGCUGGCAUGUUCAAGCUCAAUGACUGAGGGGAAGCAAGUGAUGGCUUCCUAACCCAAUUCAGACCACUCUCCGGAAUUCCG
+#=GR eukarya.A.truei SS {{{{{{{{,,,[[[[,<<--<<<<---------<<<<<_______>>>>>---------->>>>>>,,,AAA,AAAAA,,,,,((((,,,,,,<<<<<_____>>>>><<<<<<<___>>>>>>><<<<<<<-----------<<<___________________________________________________________________________>>>------->>>>>>>)))),,,,,,,,,,,,,,,,,,,,,]]]]<<<<<<<________>>>>>>>,,,,,,,,aaaaaaaa,,,,}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+bac.ESH26-4         GAGGAAAGUCCGGGCUGCACAGAGCGGGAUGACGGCUAACGGCCGUACGCUGAAAGCUGGCAACAGUAUAAGGCGAGGAAUAGGGCCACAGAGACGAGCGUAUUAAGUUACGGUGAAACGCGGUAACCUCCAUCAGCAGCAAUAUCAAAUAGGCUGGCAUUUGUCGCAAGACAUAAGGCGUGGCUCGCGCCUGCCAGCGGGUAGAUAGCUUGAGCGUGUGAGUAAUUGCACGCCUAGAGGAAUGACUGUCAGCUACGCAAGUAGUUACAGAACCCGGCUUA
+#=GR bac.ESH26-4 SS :::::[[[-[[[[[((((---AAAA-(((((<<<<<_____>>>>><<<<<<<<<<<<<____>>>>>>>>>>>>-><<---<<<<<-----------<<<<<____>>>>>--------->>>-->>>>))))))))),,,((((------(((((((,,<<<<____>>>>,,,<<<<<_aaaa>>>>>)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<____>>>>>>,,,,,,]]]]]]]]:
+//
+# STOCKHOLM 1.0
+
+bac.N.plantarum         CACAGAGCAGGGCGGUGGGUAACACCCACCCGGGGCAACCCGCGGGACAGUGCCACAGAGAACAGACCGCCUCCCGAAUCCAGCGCCACCGGACGACGGAGGUAAGGGUGAAACGGUGGAGCAAGAGACCACCAGCAUGCCGGGCGACCGGCGUGGCUAGGCAAACCCCGCCCGGAGCAAGAUCAGACAGCACACGCAGGUUCCGACCGGAAGGGCUGCUCGCCCGAGUGUGCGGGUAGAUCGCUGGAGGCCGUCGGCAACGGCGGUCGUAGAUGGAUGGUCGCCCCUCCUCCCGCAAGGGCGGAGG
+#=GR bac.N.plantarum SS [---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<-------------------<<_____>>->>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((-----((((((,,,<<<____>>>,,<<<<<<_aaaa>>>>>>))))))-----))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::<<<<<<<<<____>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+bac.S.bovis         GAGGAAAGUCCGGGCUAGCACUGGCUGUGAUGCCGGUAGUGUUUGUGCUAGGUGAAUCAAUAAGCCUAGGGACAUCUUUUUGAUGUUACGGCGGGCAAAAAGGCUAAGUCUUUACGGAUAUGUCUGAAUAGCCCUGAAAGUGCCACAGUGACGUAGUUCUUGGGGAAACCUAAGAAGUGGAACGCGGUAAACCCCUCAAGCUAGCAACCCAAACUUUGGUAGGGGCAUGGGAUAGUUGGAAUCCGAACAAUCUAUCCUGACUGGAAACAGUAGACAGAUGAUUAUCGAAGGAGAUAAGACCUAGUUAUCUCUGGAACAAAACACGGCUUAU
+#=GR bac.S.bovis SS :::::{{{-{{{{{{{{{{<<<<<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<_____>>>>>>->((,<<<<-----<<<---<<<____>>>---->>>------>>>>,,,,,<<<<<------------<<<<<<<<____>>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<__________________>>>>>>><<<<____>>>>,,,,,,,,,,,,,,,,,,<<<<<<<<<_____>>>>>>>>>,,,,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+plastid.C.paradoxa-cyanelle         CGAAUUUAAUUAAUGAUUACAGAUUUAUUCAAUCUGAGGAAAGUCCGGGCUCCUAUAAAGGUUAGAAUUGCUGGGUAAUUCCCAGUACGAGAUAUCGUGAGGAUAGUGCCACAGAAAAACACCGCUUAAAAAUAUUUUAAGUAAGGGUGCAAAGGCUUGGUUAAAGCAAACCAGUUAGAUUUCAAAAUCUAUACUUAGUAAACCCCGUUCAGGAGCAAAGUUUAGCGGAAAGUAAUUAACCUUUUUUCUUUCCUUAUAUUUAUUUUUUACUGCUAGAAAAAUUGAGUAAUUAAUUUUGAAGACAGAUAAUCAUUUUAUAAACAAAACCCGGCUUAAAAUUAAGUUCGUUUU
+#=GR plastid.C.paradoxa-cyanelle SS {{{{{{{-{{{{{{{{{C,<<<<<<_____>>>>>>,,,,,CC,CCCCCAAAAA,B{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<___>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>->>>,)))--))))]]]]]aaaaa,,,<<<-----<<<<<<<<<__>>>>>>>>>>>>}}}}---------------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,c}}}}}}<<__>>,,,,,,bccccccc,,}}}-}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+A.ambivalens         GAGGAAAGUCCCGCCUCCAGAUCAAGGGAAGUCCCGCGAGGGACAAGGGUAGUACCCUUGGCAACUGCACAGAAAACUUACCCCUAAAUAUUCAAUGAGGAUUUGAUUCGACUCUUACCUUGGCGACAAGGUAAGAUAGAUGAAGAGAAUAUUUAGGGGUUGAAACGCAGUCCUUCCCGGAGCAAGUAGGGGGGUCAAUGAGAAUGAUCUGAAGACCUCCCUUGACGCAUAGUCGAAUCCCCCAAAUACAGAAGCGGGCUUA
+#=GR A.ambivalens SS :::::[[[-[[[[[AAAA-[[[[[,(((((<<<<<____>>>>><<<<<_____>>>>><<---<<<<------------<<<<<<<<<<<----------------<<---<<<<<<<<<<____>>>>>>>>>>-->>-------->>>>>>>>>>>------->>>>->>)))))aaaa,,,<<-<<<<<<<<--<<<<__>>>>>>>>>>>>>>]]]---]]---------------------------]]]]]]]]:
+//
+# STOCKHOLM 1.0
+
+bac.SM-A55_84         GAGGAAAGUCCGGGCUCUAGAGGGCGCGGCGGUCGUUAACAACGACUGUCCUGACAUGUACAGGAUAAGGAAAGUGCCACAGAAAAUAUACCGCCCUGAGCUUGUCGAAGGGUAAGGGUGAAAUGGUGAGGUAAGAGCUCACCAGUAUCCCAAGUGAUUGGGAUAGCUUGGCAAACCCCGCUGAGAGCAAAACCAAAUAGGGGAGCACUGAAAUGUACAUCAUUUCAUCAAGUGGCCCGCUUGAAGCUCCCGGGUAGGUUGCUAGAGGUACCUGGCAACAGGUAUCCCAGAUGAAUGACCAUUACCCCAACCAUCUGAUUGGGGGACAGAAUCCGGCUUAU
+#=GR bac.SM-A55_84 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<_______>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<_____>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,((((------((((((,,<<<<<<<_____>>>>>>><<<<<<_aaaa>>>>>>,))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<____>>>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.E.thermomarinus         GAGGAAAGUCCGGGCUCCGCAGGGCAGGAUGCUGGGUAAUACCCAGUGGGGGCGACCCUAAGGAUAGUGCAACAGAAAUAUACCGCCUGACACUUAAUAUAUGUAGCUAUAGAUGUUACCAUAUAUUAAGUGCCGGGUAAGGGUGGGAAGGUGAGGUAAGAGCUCACCAGCAGCUAGGCGACUAGCUGGCUCUGUAAACCCCAUCUGGAGCAAGACCAAGUUAGGGACAUAAAAAGGUGGUGGCCCGUCACCGUCCCGGUUGGUAGGUCGCUAGAGCCUAUUGGCGACAAUAGGCGUAGAUAGAUGGCUGUCUAACACAGAACCCGGCUUA
+#=GR bac.E.thermomarinus SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<<<<<<<_______>>>>>->>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<------<<<<<-------<<<<<<_aaaa>>>>>>>>>>>-------->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.LGA6         GAGGAAAGUCCGGGCUCCACAGGACAGAGUGGUCGGUAACGCCGACCGGCCGAAAGGCUCGGGACAGGGCAACAGAAAGCAAACCGCCGCAUGGGACCGGGCCCCCGUCCAAGUCCAUGCGGUAAGGGUGAAACGGUGCGGUAAGAGCGCACCAGCAGCCAAGGUGACUUGACUGGCUAGGCAACCCCCACUCGGAGCAAGACCAAACAGGGAGCAGACGCGUUUUUCGAAACGCGUCGUGGGCUCGUCCGGCCCGCUAUCGACUCCCGGGUAGGUCGCUCGAACCGCCGAGCAAUCGUCGGUCUAGAUGAAUGGCCGUCACCUGAUUCACAGAACCCGGCUUA
+#=GR bac.LGA6 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,((((-----(((((,,<<<<<<<<<____>>>>>>>>><<<<<<<_aaaa>>>>>>>,,,,,,)))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.S.faciem         GAGGAAAGUCCGGGCUCGCACAGGCUGUGAUGCCUGUAGUGUUCGUGCUUAGCGAAACAAUAAGCUAAGGUGCUCUAUUAGAGUAACGGCAGGAAAACAAGCUAAGGUUUUUAACUAUGCUUAAGUAUCCUUGAAAGUGCCACAGUGACGAAGCGGAUAGGGAAACUUAUUCGGUGGAACGCGGUAAACCCCUCGAGCGAGCAACCCAAACAAUGGUAGGGGCGCUUUUUGUUGGGAAUUAAGAACGAGACAAAAAGGCAGGUUAACUGCAGAUAGAUGGUUACCACAUUGCUUUUUCUCCCUGGAAAGUAGUGUACAGAACACGGCUUAU
+#=GR bac.S.faciem SS :::::{{{-{{{{{{{{{{<<<<<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<___>>>>>>->((,<<<<-----<<<---<<<_____>>>-->>>------>>>>,,,,,<<<<<------------<<<<<<<<____>>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<___________________>>>>>>><<<<_____>>>>,,,,,,,,,,,,,,,<<<<<<<<<<<<______>>>>>>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+S.acidocaldarius         UAGGGGAGCCUAACAGGGGGUUACGGGAAUAUCCUGAGGAAACUCCAGCCUCCAAGCCUCAUGGGAGCAGUUAGAUCUGCAGGGUUAGUGCUCUGGCUACUGCACAGAAACGUAACCGGUAUAAUAGGAUAUGAAAAUGAGUUUAUAUGUAGUCUAGGUAACUAGGCUACAUAAAUGAGACCUAUUAUACCGGCUGAAACGGCAGUCCUCCCAGGAGCAAGUAAGGAGGGGAUGAGUUGAGGUUCAACCCUCCUAAGGACGCUUAGUAGAAUCCCCCUAAAUACAAAAGCUGGGUUAUUGUUAGGCUCCCCUUAU
+#=GR S.acidocaldarius SS :{{{{{{{{{{{{{BBBBBB,,,<<<<<___>>>>>,,,,[[[-[[[[[AAAA-[[[[[[,(((((<<<<<____>>>>><<<<<____>>>>><<---<<<<------------<<<<<<<<<<<---------------<<--<<<<<<<<<<<<____>>>>>>>>>>>>>>------->>>>>>>>>>>-------->>>>->>)))))aaaa,,,<<-<<<<<<<---<<<__>>>>>>>>>>>>]]]]----]]------------bbbbbb----------]]]]]]]],,,}}}}}}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+bac.Anabaena-ATCC29413         GGGGAGGAAAGUCCGGGCUCCCGAAAGACCAGACUUGCUGGAUAACUUCCAGUGCGAGCGAUCGUGAGGAUAGUGCCACAGAAAAAUACCGCCAAAACAAUUCAAAAUUCAAAAUUCAAAAUUCAAAAUGAAUAAUUUUGGAUUUUGAGUCUUAGUUAUGAAUUCAAUUUUGGUAAGGGUGCAAAGGUGCGGUAAGAGCGCACCAGCAGUAUCGAGAGGUACUGGCUCGGUAAACCCCGGUUGGGAGCAAGGCCGAAGGAACUAUGGUUGGUCUUUUACCAGUUCCGUUAUCAGAGAGCCGCUAGAGGCGUUUGGUAACAAACGUCCCAGAUAGAUAAUCGCCCUCGUGUAAAGCAAUUUACACAGAGAACAGAACCCGGCUUAC
+#=GR bac.Anabaena-ATCC29413 SS ::::::::{{{-{{{{{AAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<<<-<<<<<<<<<<<<<<<<<<<<<<<<<<<<_____>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>-->>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<-----<<<<<--<<<_>>>>>>>->>>>}}}}------------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<____>>>>>>>->>>,,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.LGB41         GAGGAAAGUCCGGGCUCCACGGAACAACGGUGCCGGGUAACGCCCGGCGGCUCCUGCCUCGGCCGGAGUUAGGGAAAGUGCCACAGAAGCAUACCGCCUGCCUUUGGGCGGGUAAGGGCGAAAGGGUGCGGCAAGAGCGCACCGCGCGGCCGGUAACGGUCGCGGCACGGUAAACCCCACCGGGUGCAAGACCGAAUAGGGGCGGCAUAUGGGCCUGUUCCGGCUCGUCGCCCGGGUUGGUCGCUUGAGGCGAAGGGCAACCUUCGUCCUAGAGGAAUGGUCGCCGAUCCCCUUUAAGGGGUGAACAGAACCCGGCUUA
+#=GR bac.LGB41 SS :::::{{{-{{{{{AAAA,,,{{{{{,[[[[[<<<<<_____>>>>><<<<<<<<<<____>>>>>>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]aaaa,,,<<<<------<<<<<<<----<<<<<_>>>>>>>>>>>>>>>>}-----}}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<___>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.Rr368         GAGGAAAGUCCGGGCACCGCAGGGCAGGAUGCCAGCUAACGGCUGGUCGGCGAGUCGAGCACCCGCACGCGCGCCUUGGCGUGUAGGAAGCGGCGAAGCCGAAGGAAAGUGCCACAGAAACCAGACCGCCAUUCCCGGACAGCCCCGGCGCGGGCGGGAGUGGUCAGGGUGAAACGGUGCGGUAAGAGCGCACCAGGCUCCCCGGAGACGGCGAGCGCUGGUAAACCCCAUCCGGUGCAAGACCCGACAGUGCGGUAUGGAACGGCCCGUUCCUUUGACCGCCAGGAUGGUCGCUAGAGGCGCGCGGCGACGUGCGUCCCAGAGAGAUGACCGUGACCCCACGCGAGUGGGCCACAGAAUCCGGCUUA
+#=GR bac.Rr368 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<---<<<-----<<<<-<<<<<<<____>>>>>>>---->>>>>>>->>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<------<<<<___>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>)))--))))]]]]]]]]],,,<<<<-------<<<<<--<<<<<_aaaa>>>>>---->>>>>------>>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<____>>>>>>>,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+bac.ESH183A         GAGGAAAGUCCGGGCACCACAGGGCUGGUCGCUGGGUAAUGCCCAGUGCGCGUGAGCGUGAGGAUAGUGCCACAGAAAUGAAAACCGCCGGCUUGUCCGGUAAGGGUGCAACGGUGCGGUAAAAGCGUCACCAGCGGAGUCGAGAGGCUCCGGCUAGGUAAACCCCACUAAAGGUGCAAGGCGAAGGUAUAUCACGAGAAAACGGUGGCCCGCCGCCUCGAGAUGCCGAUGCUGCUAGAGGGUUUGGGUAACCAAAUUCCAAGAUAGAUGACGAUUUAAACAGAACCCGGCUUA
+#=GR bac.ESH183A SS :::::{{{-{{{{{[[[[---AAAA-[[[-[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,,<<<<<<<_____>>>>>-->>,,,,,,,<<<<<<_______>>->>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]---]]]],,,<<<<-------<<<<<<<<----<<<<_aaaa>>>>->>>>>>>>---->->>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.R.rubrum         CCAGUCGGCCGGAUGGCCGCUCUCCGUCAUCGUCCCCGGGCCACCCCCGAUGGACCGUCGGGGGGAGGAAAGUCCGGGCUCCACGGGAACACGGUGCCGGGUAACGCCCGGCGGGGGCGACCCUAGGGAAAGUGCCACAGAGAGCAAACCGCCGGCCUAUACGGCCGGUAAGGGUGAAAGGGUGCGGUAAGAGCGCACCGCCUGCCCGGCAACGGGGAGGGCAUGGUAAACCCCACCGGGAGCAAGAUCGAAUAGGGACGGCACGCCCCGGUUUUCCGGGGCAAGCGGCGUUUCCGCGCCGCCGUCCGGGUAGUAUCGCGCGAGGCGUCCGGUAACGGGCGUCCCAGAUGAAUGGCCAUCCCCGUCGUCGCGUCCCUUGCGGGAUACGGCCGGCGUGGACAGAACCCGGCUUACAGGCCGUCUGGCGGU
+#=GR bac.R.rubrum SS {{{{{{{{{{{{{{{{{{,<<<<<<<--<<<<<<<<<<<<_____>>>>>->>>>>>>>>>>>>>,,,,BBB,BBBBB[[[[----AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<_____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((,,<<<<<<<____>>>>>>>,,<<<<_aaaa>>>>,,,)))))))-----)-))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<<<<<<<<<<<____>>>>>>>>>->>>>>->>,,,,,,bbbbbbbb,}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.P.innocua         CACAGAGCAGGGUGGUGGGUAACGCCCACCCGGGGUGACCCGCGGGCCAGUGCCACAGAGAACAGACCGCCCCGAUGCGCCGGUUCGCCGACGUGCCGGGGUAAGGGUGAAACGGCGGUGUAAGAGACCACCGGCACCGUGAGCGAUCACGGUGGCCAGGUAAACCCCACCCGGAGCAAGACCAGACAGCAGGCGGGUUGCUCGCCCUUGCCUGCGGGUAGGUCGCUGGAGGCCGUCAGCAAUGACGGUCCGAGAUGGAUGACCGUCCCACG
+#=GR bac.P.innocua SS A:::{{{{,[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]a,,,,,,<<<<-----<<<<<<<<<<_>>>>>>>>-->>>>>>,,,,,}}}}::::::<<<<<<<<____>>>>>>>>::::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+bac.LGB23         GAGGAAAGUCCGGGCUCCAUGAAGCAAGGGUGCCGGGUAAUGCCCGGCCGGGGAAACCCGAGGGAAAGCGCCACAGAGAAGAGUCUGCCCCGAGCUUCGGGGUGAUGGUGAAACGGUGGGGUAAGAGCCCACCGCGGACCGGGCAACCGGGACGGCACGGCAAGCCCCACCCGGAGCAAUGCCGAAUAGGGGCCCCGCGCGGGCUGGUCCCGGACUACGGUCCGCGAUACCGCCGCAGGGAUGCUUCAGCCCAGGGGCCCGGGUUGGCAGCUUGAGCCCGUCGGUAACGGCGGGCCUAGAGGAAUGGUCAUCCAGGGGGCGCAAGCCCCCGGACAGAAUCCGGCUUA
+#=GR bac.LGB23 SS :::::{{{-{{{{{[[[[----AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<___>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((----(((((((((((<<<<____>>>><<<_______>>>,)))))aaaa))))))-)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<____>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.LGB21         GAGGAAAGUCCGGGCAUCGACGGGCAGGAUGGUCUCUAACGGAGACUGGGGGUAACCCUAAGGAAAGUGCAACAGAAAAUAUACCGCCGCCCGCCUCUGGCGGCACUCAGGCAGAAACGAAAGUUUCUGCCGGUAAGGGUGAAAUGGUGAGGUAAGAGCUCACCAGUCCCGUGGUGACACGGGAGCUUGGCAAACCCCAUCCGAUGCAAGGCCAAAAAGGGGGCUGCCGGAAAUGGCAGCGAGGAUUGCCCAUCCUUUAACCCGGGUAGGCCGCAAGAGGUCCAGGGCAACCGGGACCCAAAGAGAAAUGGUCACCGUCCCGCCACAGGCGGGAAACAGAACCCGGCUUA
+#=GR bac.LGB21 SS :::::{{{-{{{{{{{{{---AAAA-{{{{{<<<<<_____>>>>><<<<<____>>>>->[[---[[[[[,,,,,,,,,,,,(((((<<<-<<<___>>>>>>,,,,,<<<<<<<<<____>>>>>>>>>)))--)),,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,]]]--]]]]}}}}}}}}},,,((((------(((<<<<<<<____>>>>>>><<<<<<_aaaa>>>>>>,,,)))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,<<<<<<<<___>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.PS27         GAGGAAAGUCCGGGCUCCACGGAACGCGGUGCCGGGUAACACCCGGCGGGGGCGACCCCAGGGACAGUGCCACAGAGAGCAGACCGCCGAUCGGCGUUUCGACGUCGAGGCAAGGGUGAAAGGGUGCGGCAAGAGCGCACCGCGCGACGGGUAACCGAAGCGGCAUGGCAAACCCCACCGGGAGCAAGACCGAAUAGGGGCGGCACGAGCCUCGUGCGCAAGCAUGGAGUUCCGGGCAGGAACCGGCCCAGCCGCCCGGGUUGGUUGCUUGAGGCGUCCGGUGACGGGCGUCCUAGAGGAAUGAUCGUCGCCGGCUUUCGGGCCGGGACAGAACCCGGCUUA
+#=GR bac.PS27 SS :::::{{{-{{{{{[[[[-AAAAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<____>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((,,<<<<<<<<<<<____>>>>>>>>>>>,<<<<__aaaaaa>>>>,)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<____>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.PS24         GAGGAAAGUCCGGGCUCCACAUAACCACGGUGCCGGGUAACGCCCGGCGGUCGCGCCUCGGGACUGCGCUAUUGCGUGCGAUAGGGGAAGCCAGACAAGCGCGGCAAGGGACAGUGCCACAGAGAGCAGACCGCCUAUGGCCGUCGUCCGUUUACGGAUACGUGGCCAGGCAAGGGUGAAAGGGUGCGGCAAGAGCGCACCGCGCGAUGGGUAACCGGAGCGGCAUGGCAAACCCCACCGGGAGCAAGACCGAAUAGGGACGGCGCGGACUCGCAAGGGUUCAGGGCGUGGUUGUCGCCCAGUCGUCCGGGUUGGUUGCUAGAGCCGGUCAGCAAUGGCCGGCGUAGAGGAAUGGUCGCCCAUCUGCUGAAAGGCAGUGGACAGAACCCGGCUUA
+#=GR bac.PS24 SS :::::{{{-{{{{{[[[[----AAAA-[[[[[<<<<<_____>>>>><<<<<<<<<<<<<<<<<<<<<<_____________>>>>->>>>>>>>-->>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<<<<<<<____>>>>>->>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((,,<<<<<<____>>>>>>,<<<<<<_aaaa>>>>>>,)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<____>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.ESH167E         GAGGAAAGUCCGGGCAGUACAGAGCAACCCACCGGUGAACAGCCGGCCACCAAUUGGUGAGAGAAAGUGCCACAGAAAAUAACUGUCUUGCCUAAGGCGAGAUGAGGGUGAAAAUGUGAGGUAAGAGCUCACGGUUGUUAUCGGUAACGGUAGCAACGGGUAAACCUUGGGUGCUGCAAUGCCACAUAUAGAGCCGUUUUGAGAGCUGCUCGUUCAAGGCUCAGGGUAGGCAGCAACAGGUAAACAGUAAUGUUUAUCGCAGAUAAAUGAUAGUGUAGAAACAGAACCCGGCUUA
+#=GR bac.ESH167E SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<<<<___>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>>>,)))--))))]]]]]]]]],,,<<<<------<<<<<<-----<<<<<<_aaaa>>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.B.anthracis         UCAUAACGUUUGGGUAAUCGCUGCAACGCCAACGUUGUAGAGGAAAGUCCAUGCUCGCACGGCCUGAGAUGGCUGUAGUGUUCGUGCCUAGCCAAUUCAUAAGCUAGGGUAUUCUGGCUGUAAGGCUGGUUUAACGGCAGGGAAAAAACCUAAGUCCUUUCGGAUAUGGUUUGACUACCUUUAAAGUGCCACAGUGACGAAGUCCUUGAAGAAAUGAUAGGAGUGGAACGAGGUAAACCCCACGAGCGAGAAACCCAAAUAAUGGUAGGGGAAUCUUUUCCAAGGAAAUGAACGAUGGGAAAGGACAGGUUGUAUAACCUGUAGAUAGAUGAUUGCCACCGGAGUACGAGGCGUGGGCCGUUUGCAGUACAAAGGAACAGAACAUGGCUUACAGAACGUUAUGAACCA
+#=GR bac.B.anthracis SS :{{{{{{{{{{{{{{{{{{,<<<<<<<<____>>>>>>>>,,,,AAA,AAAAA{{{{{<<<<<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<<<<<<<____>>>>>>>>>>->((,<<<-----<<<<---<<<<____>>>>-->>>>------>>>,,,,,<<<<<------------<<<<<<<<____>>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<_________________>>>>>>><<<<<<<____>>>>>>>,,,,,,,,}}}}}}},<<<<<<<<<<<<<<____>>>>>----->>>>>>>>>,,,,,,,aaaaaaaa,}-}}}}}}}}}}:::::
+//
+# STOCKHOLM 1.0
+
+eukarya.S.pombe         CAUGCUGGACGUACGGGCGAACGCCGCACUUCCUCAAAUUCAAACGCGUUGAAAAGCGCACAGCUCGUUGAGGGGGUAAGGUCGGAGAAACAUCUUCGUUGCGUGCUCGUGAGGAGCGAAGAACGAACGUUCUGCCGAAUGUACCAGAAAUUCAAUCAGUAUGGCCUCGUUUGUCGUACCUGAUUUUGAAACGCAUUCGAGAAGAUUUAUUUUAGUGCAAUGUGUGGCACCUGUUUGUCAGGUAACUCGAUUCCGACUAAUCUUGUCUGUAUGUCUGGUGUGGU
+#=GR eukarya.S.pombe SS :::::::{{{{{{{{{{{{{,,[[[[[[[,<<<<<----------<<<<_____>->>>---------->>>>>,,,,AAA,AAAAA,,,,,(((((,,,,,<<<<<<_____>>>>>><<<<<____>>>>>,,<<<<<<<------------<<<<<<<<<<<_______>>>>>>>->>>>-------->>>>>>>,))))),,,,,,,,,,,,,,,,]]]]]]]<<<<<_____>>>>>,,,,,,,aaaaaaaa,,}}}}}}}}}}}}}:::::::::::
+//
+# STOCKHOLM 1.0
+
+bac.LGW17         GAGGAAAGUCCGGGCUCCAUAGGGCAGGAUGCCAGUUAACGGCUGGGUGCUAUACGUCGCAAGACCAAGGCAACGGACAGUGCAACAGAGAACAGACCGCCGAUGGCUUUGGGCUGUGCCGCUGCUUGCAGCGGAAAAGUCCCUUUAGCAGAGCGAUGAUCGUUUCGACGGCCAGCGUUUUGCGGGGGGCGAGGCCCAAAGAUCAGGUAAGGGUGAAACGGCGAGGUAAGAGCUCACCGCGCUGGCGGUAACGUUCAGCGGCACGGUGAACCCCAUCCGGAGCAAGACCAAAUAGGGAAGCAUUAGGCGUGGCCCGCGCUGCUUCCGGGUAGGUUGCUUGAGCCUGUCGGUGACGGCAGGCCUAGAGGAAUGAUUGCCGAACCCCGCAAGGGGGGAACAGAACCCGGCUUA
+#=GR bac.LGW17 SS :::::{{{-{{{{{{{{{---AAAA-{{{{{<<<<<_____>>>>><<<<<<<<-<<_____>>>>>->>>>->[[---[[[[[,,,,,,,,,,,,(((((--((((((((((((((,<<<<<<____>>>>>>,,,,<<<<<<<<--<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>>>>>>>>>)))))))))))-))))))--)),,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>->>>>>->,,]]]--]]]]}}}}}}}}},,,<<<<------<<<<<<----<<<<<_aaaa>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<____>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.ESH20b-1         GAGGAAAGUCCGGGCUUCACAGGGCAGGAUGCCAGAUAACGUCUGGCGGAGGCGACUCCAGGGAAAGUGCAACAGAAAUAUACCGCCGCUUAAUGCGGUAAGGGUGGAAAGGUGGUGUAAGAGACCACCGCCCUUCUGGUAACAGAAGGGGUCCAUGUAAACCCCAUCCGAAGCAAGACCGAACAGGGAGCAUAAGGCGGCCCGUCUGCUCCCGGGUAGGUCGCUUGAGCCUGCCGGCGACGGCAGGCCUAGAUAGAUGGCCAUUCAAUGACAGAAUCCGGCUUA
+#=GR bac.ESH20b-1 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<<<_____>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,,)))--))))]]]]]]]]],,,<<<<-----<<<<<<---<<<<_aaaa>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.Z.bailii         GAACACUGUGGGACACUAUGCCGACCCGCUGACUUUCUCGGUCAACGGGCCGUUUCCGUGAGGAAAGUCUGGGGAACUAGGCUUGCAGCUGCUGUCACAAGAAAUCAACGCUCACAGUAGCGGAUGGGAAGACAGCAGAGUUCCAUUUAGCUUGAACACAACGUUGAUUGUUUAAGGCUUGUUGAGUGCAAUCGUAGGACAAGAA
+#=GR eukarya.Z.bailii SS ::::::::((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<____>>>>><<<<<<____>>>>>>,,,,,,,<<<<<<<-----------<<<<<______>>>>>------->>>>>>>,,)))))):::<<<<<<<<<<__________>>>>>>>->>>::::::::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+bac.H.pylori-26695         CGCAUUAGAAGAUGGUCGCUAUUUUAGAAUAGAGGAAAGUCCGGGCUACAUUAGACAAAAUUCCAUCUAACGGAUGGCUAGCGCAAGCUAAGGGAAAGUGCCACAGAAAGCAAACCGCCUUUUAAGGUAAGGGUGAAAGGGUGGGGUAAGAGCCCACCAGAGCUAAAGCAAUUUAGCUUGUUUGGGCAAACCCAAUUUGUAGCAAGAAGCGCAUGGUAAGUCUAAAUUGAUACACGCUUCGCUUGAGGAAUAUUGCAAAAUAUUUCCCAGAUAAAUGGCCAUCCAUUGACAGAACCCGGCUUAUUCUAAUGCUCAA
+#=GR bac.H.pylori-26695 SS {{{{{{{{{{BBBBBBB,<<<<<____>>>>>,,,,{{{-{{{{{AAAA,,{{{{{,[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<____>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,,)))--))))]]]]]aaaa,,,<<<<-------<<<__>>>>>>>}-------}}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,,,}}}}}}}},}}}}}}}}}}:::
+//
+# STOCKHOLM 1.0
+
+bac.L.borgpetersenii         GAGGAAAGUCCGGGCACCAGGAAACACGGGACCGGGUAAUCCCCGGAGUUUUUUCUUUGAGAGAAAUUUUAGGGAAAAAAUAUGGAAAGUGCAACAGAAAGGAUACCGCCUCGUCGAAGAAAUUCGGCGCGGUAAGGGUGAAAUGGCGGGGUAAGAGCCCACCUUCGAUUUCGAGAGAGAUCGGGAACGGUAAACCCUCCCGGGUGCAAUCUCAAAUAGGCAGCCUUUUUGUCGUUUCCGCAGGGCUGUGGGUAGAGAGCAAAGACUCCGAUCGGUAACUUUCGGAGCAAGAUAAAUGAUCAUCCAUCUCUUCAGGAGAGGACAGAACCCGGCUUA
+#=GR bac.L.borgpetersenii SS :::::{{{-{{{{{AAAA,{{{{{{,[[[[[<<<<<_____>>>>><<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<____>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]aaaa,,,<<<<-------<<<<<<--<<<<>>>>>>->>>>>>>>}}-----}}}},,,,,,,<<<<<<<<______>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<___>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+eukarya.P.mississippiensis         UGGACCUGCCCACAAAAGGAGCUCCGUGCUCAGAAUUACGCAGGUGGGAAAUUCGGUGGUUCACGCUGUCCAACAUUACCCUUUCUCUUGAGAGAUCCUGGCGAGGAAUCGCUGGGUGCGGCCAUAAGAAAUCAGCCCCCUAAAAAGGGCAUGGGAGGCUGCACGGACAGUUGGUCCUUGGAAAGAGGGCUAUUGAGUGCAAUAUACAGACUGGGGGCUUUGGCCCCUGGAA
+#=GR eukarya.P.mississippiensis SS [,,<<<<<----------<<<<_____>>>>--------->>>>>,,,,,,,,,,,,,,,,,,,,((((((,,,,,,,,,,,,<<<<____>>>>,,<<<<<<<____>>>>>>>,<<<<<<<-----------<<<<<<____>>>>>>------>>>>>>>,)))))),,,<<<<<<_____>>>>>>,,,,,,,,,,,,,]::::::<<<<<<<<____>>>>>>>>::
+//
+# STOCKHOLM 1.0
+
+eukarya.P.cultripes         AGAUGUGGAGGGAAGCUCAGUGCUGAGGCUACAACCUGAGUGCAUUUGUCACUCUCAUACAUUCCUCAGGGAAGGUCUGAGAUUAGAGCCAUCUAUUGUCUUAACAAGGCAUUGCUUGGUUUGAGCAAAUGAGUUACCAUCAAACCUUGUUCUGUUGUCGCUAGACUGCACAAGUAAUAGAAGUGGUUUUCCUCUAUGGAUGCUGAGGCAACUGAUUUGGAAAGUGACUCAUGACUAGCAAAUUCAAGUUCAAUUGCUGAGAGGAAGUCAUUACCUUCCUAACCCAAUUCAGACCACUCUCCGGAAUUCCG
+#=GR eukarya.P.cultripes SS {-{{{{{{{{{{,,,[[[[,<<--<<<<---------<<<<<_______>>>>>--------->>>>>>,,,AAA,AAAAA,,,,,((((,,,,,,<<<<<_____>>>>><<<<<<<___>>>>>>><<<<<<<-----------<<<_________________________________________________________________>>>-------->>>>>>>)))),,,,,,,,,,,,,,,,,,,,,]]]]<<<<<<<_____>>>>>>>,,,,,,,,aaaaaaaa,,,,}}}}}}}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.Synechococcus-PCC7001         GGGGAGGAAAGUCCGGGCUCCCCAAUGGCCAGGCUUGCUGGGUAACGCCCAGUGCGGGUGACCGUGAGGAGAGUGCCACAGAAACACACCGCCGAUGGCUCCGCUUCCGCUGCGGUGGAGACGAGCACAGGCAAGGGUGCAAAGGUGCGGUAAGAGCGCACCAGCAGCAUCGAGAGGUGCUGGCUCGGUAAACCCCGGCCGGGAGCAAGGCCCAGGGACCAACGGUUGGCCAUGACACCGGUCCCGCCCCAAGUGCGCCGCUCGAGGCCGCCGGAGACGGCGGUCCCAGACAGAUGAUCACCCCGGGCAGGGUCCGCCCCACCCGGAACAGAACCCGGCUUA
+#=GR bac.Synechococcus-PCC7001 SS ::::::::{{{-{{{{{AAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<--<<<<<-<<<<<<<<<____>>>>>>>>>>>>->>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<---<<<<<<---<<<_>>>>>>>-->>>>>}}}}-----------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<-<<<<_____>>>>>>>>>,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.C.diphtheriae         UGAGCCGGCUGGGCGAUCGCGACUUUGCGUACCACAUGCGAUGAACAUGGUGGCGCAAGGACGAGGAAAGUCCGGACUCCACAGAGCACGGUGAUUGUUAACAACAACCCGGGGUGACCCGCGGGCAAGUGCAACAGAAAGUAAACCGCCUAGAAUUUUUCUAGGUAAGGGUGAAACGGUGCGGUAAGAGCGCACCAGCGAGGUAGGUGACUACCUCGGCUAGGUAAACCCCACUGGGAGCAAGGCAUUAGGGCGUACCGUCGUUUCAGACGGUAUGUCUGCACGAACGCUUGAAGGCUGCUCGCCUGAGUUCGUGGGUAGCUGCUUGAGGCGGCCAGUGAUGGUUUCGUCCAGAUGGAUGAUCGCCGCUGAUCUCCGCUUGUCGGGGGUGAGUACAGAAUCCGGCUUAUAUGCUGGCUCAUUCG
+#=GR bac.C.diphtheriae SS {{{{{{{{{{{{{{{{{{,<<<<<<<<<<<<<<<<<<_______>>>>>>>>->>>>>>>>>>,,,,BBB,BBBBB[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<___>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]]]],,,(((,,,,<<<<<<<<-<<<______>>>->>>>>>>>,,<<<<<<----<<<<<<_aaaa>>>>>>>>>>>>,,,,,))),,,,,,<<<<<<<<____>>>>>>->>,,,,,,,,,,}}}}}}}<<<<<<<<<<<_____>>>>>>>>>>>,,,,,,bbbbbbbb,}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+bac.A.fastidiosum         CACAGAGCAACGGUGGUGGCUAACGGCCACCCACGGCGACGUGCGGGACAGUGCCACAGAAAUCAGACCGCCAGCGGCCGCCGCUCCUCGGAGCAGCGGUGCGGGUAAGGGUGAAACGGUGAGGUAAGAGCUCACCAGCGCUCCGGGUGACCGGGGCGGCUAGGUAAACCCCACCGGGAGCAAGACCAAGAGAGUCGCGUGGCGCUUCGGCGGUGCACGGCUUGCGCUGACGGGCUGCUCGUCCGAUGUCAGCGGGUAGGUUGCACGAGGCGUCCAGCAAUGGGCGUCCCAGAUGGAUGGUCGCCCACG
+#=GR bac.A.fastidiosum SS [---AAAA--[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<--<<<<<<<<<<<<____>>>>>>>>>>->>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))--))))]]]]]]::::::((((,,,,<<<<--<<<<-<<<____>>>--->>>>>>>>,,<<<<<<<<<<_aaaa>>>>>--->>>>>,,,,,))))::::::<<<<<<<<____>>>>>>>>:::::::::::::::::::::
+//
+# STOCKHOLM 1.0
+
+bac.CPA61         GAGGAAAGUCCGGGCACCACAGGGCAGGAUGCCGCACGAGCUUCACCGCAAGUGCGGGCGUCGCGUUUCAAGGCGCGGCGACGGACAGUGUCACAGAGAAUAUACCGCCCUCCGUGGUUCGGCGAAAGCCGGGCUUCGAAGGGUAAGGGUGAAAAGGUGGGGUAAGAGCCCACCGCGCCGCCAGCAAUGGCGGCGGCACGAAAAACCCCUUCCGGUGCAAGGCAAAAUAGGUGACUGGGCGGCCCGUCCGAUAGUCACGGGUAUGCCGCAUCCGGCGCCGCUCGCGCAAGUGAGCGGCGCGGGACGAGGCCGCCGCGAGGCGGCCCGAGAGAAAUGACGACUGAAGCGCCGCAAGGCGUGGAACAGAACCCGGCUU
+#=GR bac.CPA61 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<<--<<______>>-->>>>>><<<<<<<<<<____>>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,<<<<------<<<<<<<<<<_aaaa>>>>>--->>>>>----->>>>,,,<<<<<<<____________________>>>>>>>,,,<<<<<<<____>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<____>>>>>>>>,,,,,,}}}}}}}}
+//
+# STOCKHOLM 1.0
+
+bac.P.gingivalis         CAGCAGAUCGGUCUGUCGCUCACUCUUUCGAGAGUGGGAGGAACGUCCGGGCAACGCAGAGCACCAUCCUUCCUAACAGGAAGUUACUCGUGAGGGUAAAGGAGCGUAGAAGAGAAUGACCGCCAUUUUCCAUGAGUUGUCUGUGCUUCGGUACGGACUACGUGGAGGGUAAGGGUGAGAAGGUGGGGUAAGAGCCUACCGGAUGCAGCGGUGACGCUGCAUGCCGUACGUCUGAUGGGUUGUAAGAUCAUGUAUACCGGCGCAUGUAGGGUGGCUCGCCCGAUGCCGGGGGGUAGAUCGCUGGAGCCAUGCGGUGACGCACGGCCAAGAUAAAUGACAGACGCUCUGGCUACGUGUGGCCGUGAGUACAGAACCCGGCUUACAGAUCUGCUGCUUUU
+#=GR bac.P.gingivalis SS {{{{{{{{{{{{{{{{{,<<<<<<<<____>>>>>>>>,,,,BBB,BBBBB[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<____>>>>>>((--(((((,,,,,,,,,,,<<<<<---<<<<<<<--<<<<<<<__________>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<<____>>>>>>>>->>,)))))))]]]]]]]]],,,<<<<-------<<<<<<------<<<<_aaaa>>>>-->>>>>>------>>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<<<<<____>>>>>>->>>>,,,,,,bbbbbbbb,}-}}}}}}}}}:::::
+//
+# STOCKHOLM 1.0
+
+bac.B.burgdorferi         AGCUGGCAGCUAGCCAUCGCUUAGUUUUAUAAUUAAAGCUAAGAGGAAAGUCCGAGCUCCAAUAAGAACAUAAUGCUAGGUAAUGCCUAGGGGUUUUAAACCUAAGAAAGUGUCGCAGAAAAUUACCGCCGUAAAAGGUAAGGGUGAAAAGGUGAGGUAAGAGCUCACCGCUUAUUUAGCAAUAAAUACAGGCAAGAUAAACCUCAUUAGGAGCAAGAUCAAGUAUGAAAGCACCCUUUGUUCUUGAGGACAUGCUUACGGGUAGAUCGCUCGAUUUUUUUAGCGAUAAAAAAAUAAGAGAGAUGAUGGCAUAGUACAGAACUCGGCUUAUGGGUGUCAGCUUAAU
+#=GR bac.B.burgdorferi SS {{{{{{{{{{{BBBBBBB,<<<<<<<<<<____>>>>>>>>>>,,,,{{{-{{{{{AAAA,,,,{{{{{,[[[[[<<<<<_____>>>>><<<<<___>>>>>,((---(((((,,,,,,,,,,,<<<<<______>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>-->>>>,,)))--))))]]]]]aaaa,,,<<<<------<<<<<<--<<<<<_>>>>>>>>>>--->>>>>}-----}}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,bbbbbbb,,,,,,,,,,}}}}}}}},}-}}}}}}}}}}::::
+//
+# STOCKHOLM 1.0
+
+M.barkeri         CAUGCGAGAGAGGCUGGACGGCUGACGGGCCUUCGGGUCUGAGGAAAGUCUCCCCACCGCUCCGGAUACACGAACAUCUGUAAAGGAUGUCGGGCGAGAGCCCGGGCCCUGGCACAGAAACGAUAACCAUCCUCUGAAAAUGCGAUGAUGCGGAAGCUGAGAUCUCAGGGUAAAUGGAUGAAACGGCGAACCCUCGUGGGUGCAAGUUGGAAAUCGGGGAGAAGAGAAUUCCGGACUCUCCCGGUUGUUUUUGGAAACGCAUAGCCGAAUGCCGUCACUGCAAGAGUCCUCAGGACCAUUUCCUCCACUGAUGGGUGAUAGGAAAUCUUUGCAGGAACAGAAGGGAGCUUACGUGCCUCACUCGCAUAAAC
+#=GR M.barkeri SS :::{{{{{{{{{{{{{{{{{{{,,,<<<<<<____>>>>>>,,,,BBB,BBBBBAAAA,,[[[[[[,,(((((<<<<<<_____>>>>>><<<<<____>>>>><<---<<<<-------------<<<<<<<<<<<------------<<____>>------->>>>>>>>-->>>-------->>>>-->>)))))aaaa,,,<<<---<<<<<<<----<<<<___>>>>>>>>>>>>>>]]]---------]]],,,,,,,,,,,,}}}}}}((((((((,<<<<___>>>>,<<<<<<<-<<<<____>>>>-->>>>>>>,)))))))),,,,,,,bbbbbbbb,}}-}}}}}}}}}}}::::::
+//
+# STOCKHOLM 1.0
+
+bac.M.genitalium         GCUGUCGGUUAGUUGCUGCUUUAAAGAUAUAUUUAAAGUAGAGGAAAGUCCAUGCUUGCACUUGCUGGAAUGCAAGUAGUGUUUGUGUAAAUCAAAGCGAUAAGAUUUAGGAUGUGAUAGCCAUAACGACAUAACUAGUCUAAGGUUAAUACUAUGAUGAUGUUUUGAAAGUGCCACAGAGACGAGGCUUGGUGAAAACCAGGUAUGAAACGCGGUAAACUCCACAAGCAAGAAACCUAAAUUUUGGUAAGGGAAUGUUGCUUUAAGAACAAAUAAUUAAAGUAAUGACAGCAAUUGCUGUAGAUAAAUAACUGACUUUAAAACAGAACAUGGCUUAUUGACAGCAUGCUAUCUAAAAAAAGGAUCAUGAUGAUCCUUUUUUUA
+#=GR bac.M.genitalium SS {{{{{{{BBBBBB{,<<<<<<<<<<______>>>>>>>>>>,,,,{{{-{{{{{{{{{{<<<<<<______>>>>>>,,,,,[[[[[<<<<<<__________>>>>>><<<<<_AAAAAA>>>>->((<<<<---<<<<---<<<____>>>-->>>>---->>>>,,,<<<<<-----------<<<<<<<____>>>>>>>--------->>>-->>))]]]]]}}}}},,,<<<___________>>>,,,<<<<<<<__________________>>>>>>><<<<<____>>>>>,,,,,,,,}bbbbbb------------}}}}}}}}-}-}}}}}}::aaaaaa<<<<<<<<<<<<<<___>>>>>>>>>>>>>>
+//
+# STOCKHOLM 1.0
+
+bac.Synechocystis-PCC6803         GAGAGUUAGGGAGGGAGUUGCGGAUUCCUGUCACAGGGAAUCUGAGGAAAGUCCGGGCUUCCCAAAGGCCAAACUUGCUGGGUAACGCCCAGUGCGCGCGAGCGUGAGGACAGUGCCACAGAAAAAUACCGCCCUUUUUAGAAAACAGCAACCAGUAAACAGUUAACAGGGUUUUUCUGCUGACUAACUGGUAACUGACCACUGAAAAGGUAAGGGUGCAAAGGUGCGGUAAGAGCGCACCAGCAGUAUCGAGAGGUACUGGCUCGGUAAACCCCGGUUGGAAGCAAGGUCGGAGGGGCAAAGGUUGGUCUUUUUCCUGCCCCAUGAUUGGUGGAACCGCUUGAGGAAUUUGGUAACAAAUUUCCCAGAUAGAUAACUCCCCAAGGGUGCCUCGCAUCCUGGAACAGAACCCGGCUUACGACUAACUCUCUUUUUUU
+#=GR bac.Synechocystis-PCC6803 SS {{{{{{{{{-{{{{{{{{{,<<<<<<<<<<___>>>>>->>>>>,,,,BBB,BBBBBAAAAA,{{{{{{{,[[[-[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,<<<<<-<<<<<<<<<<<<<<<<<<<<<<---<<<<<<<<<<<<___>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]aaaaa,,,<<<-----<<<<<--<<<_>>>>>>>->>>>}}}}-------------}}},,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,}}}}}}}<<<<<<<<<___>>>>>>>>>,,,,,,,bbbbbbbb,}-}}}}}}}}}}:::::::
+//
+# STOCKHOLM 1.0
+
+bac.C.pecorum-IPA         GAGGAAAGUCCGGACUUCGCAGAAAAAGGUGCCAGUGAAAAACUGGGGGCCGUAAGGCUACGGAAAGUGUAACAGAAAACAAACCGCUAAUUCUACCUAGGUAAGAUUAGACAGGAUGAAAAUGUCGAGCUUAUGGCUCGACCUCUUUGUGGAAACACAAGGACGCUGCAAACCCCACCUGAAGCAAGAAAGAGUUCGUUUCAGUUUUUCGCUCAGGAACUCUUAGAGUCGCUCGAGGAUUUUGGUGAC
+#=GR bac.C.pecorum-IPA SS ::::::::::::::[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<____>>>>>>>>>>>-->>,,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,)))--))))]]]]]]]]]:::<<<<<<<<<<-----<<<_aaaa>>>--->>>>>>>>---->>:::::::::::::<____>
+//
+# STOCKHOLM 1.0
+
+bac.V.spinosum         GAGGAAAGUCCGGGCACCUCAGGGCAGUGUGCCGUGUGAAAACGCGGGGGCUGGCGGCGUAAGCUUCCGGUCACGGAAAGUGUCACAGAAAACAUACCGCCGCGGGCAACUGCGGUAAGGGUGAAAAGGCGAGGUAAGAGCUCACCGCUCCGACUGAAAGGAAGGAGGCAGGACAAACCCCACACGGUGCAAGACAGAACAGGGGAAACGGCCCGCCCUGGCCGCACUGACUCCGCAAGGAGUUGGGAUAACCCCGGGUAUUAGUCGCACCUCGCGCAAAGCGGGGAGCACGGGGCGCAAGCCCCGGGCUAGAGAAAUGACCGCCACCUUUUGCGGCAACGCGGGAGGCACAGAACCCGGCUUA
+#=GR bac.V.spinosum SS :::::{{{-{{{{{AAAA,{{{{{{,[[[[[<<<<<<____>>>>>><<<<<<<<<<<____>>>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<____>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]aaaa,,,(<<------<<<<----<<<<_>>>>>>>>>>,,<<<<<<<<____>>>>>>>>,,,,,)}}}--------}}},,,<<<<<<_____>>>>>><<<<<<<<<<____>>>>>>>>>>,,,,,,,,,,,,,,,<<<<<<<<<<____>>>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.LGW18         GAGGAAAGUCCGGGCUCCGCAGGGCAGUGUGGUUCCUAACGGGAACCGGGAGUAAUCCCAGGGAAAGUGCCACAGAAAACAUACCGCCGCAAGGAAGGCGACUUCGUUGCGGUAAGGGUGAAAAGGUGCGGUAAGAGCGCACCGCUUCUCUGGUGACAGGGAAGGCAGGGUAAACCCCACACGGAGCAAGAUCAAAUAAGGAGGCCCCAAAGCGGCCCGCUUUGCUUCCGGAAACGGAAGCGGGCUUCCGGGUAGAUCGCCAGAGGAGCCUGGCGACAGGCUUCCCAGAGGAAUGGCCAUCCGUUCGUUAGCAACCUUACGGCUACUAAUGGAUGUACAGAACCCGGCUUA
+#=GR bac.LGW18 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<<<<____>>>>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------(((((((,,,<<<<_aaaa>>>><<<<<<<<____>>>>>>>>)))))))-----)))),,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<<<<<____>>>>>>>>>>>>>>>,,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.M.xanthus         GAGGAAAGUCCGGGCUCCAGAGGGCAGGGUGCUGGCUAACGGCCAGUCGAGGCGACUCGCAGGAAAGUGCCACAGAAAACAGACCGCCCGUUCCGAAAGGGGCGGGUAAGGGUGAAACGGUGCGGUAAGAGCGCACCGCGUCCGGGGUGACUCGGACGGCUCGGUAAACCCCGCCUGGAGCAAGAGCCAAUAGGAGCGCGUCCUCGCCGUACGGAGGACAGGGAUGGCCCGUCCCAUGCGUUCGGGUUGCUCGCUGAUGAGGCCCCUGGGCAACCAGGGCCCUUAGAUGAAUGUUCACCGCCCAUCCCGAAAGGGGUGGGAACAGAAUCCGGCUUA
+#=GR bac.M.xanthus SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<____>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<<<____>>>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>>->,,)))--))))]]]]]]]]],,,((((------((((((<<<<<--<<____>>>>>>>,<<<<<_aaaa>>>>>,,))))))-----)))),,,,,,,,<<<<<<<<______>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<____>>>>>>>>>,,,,,,}}}}}}}}:
+//
+# STOCKHOLM 1.0
+
+bac.SM-A13_15         GAGGAAAGUCCGGGCUCCUUAGGGCAGGAUGCUGGGUAACUCCCAGCGGGACAGGGCAUAAGGCCUGUUCCAGCGCCAGUGCAACAGAAAAUAUACCGCCGGACUUUGUCCGGUAAGGGUGAAAUGGCGGGUUAAGAGCCCACCGGCAGGCUGGUGACAGCCUGGUCUGGUAAACCGCAUCCGGAGCAAAGCCAAAUAGGGAAGGUAUGGAGCUGCCCGCUCUUCUUCCGAGUUGGCCGCUUGAGAUAAGCAGUAAUGAUUAUCCUAGAUGGAUGACUGCCGCUGACUGUGCGAGAGUGCAGUUAGUACAGAAUCCGGCUUAC
+#=GR bac.SM-A13_15 SS :::::{{{-{{{{{[[[[---AAAA-[[[[[<<<<<_____>>>>><<<<<<<<<________>>>>>>>>->((---(((((,,,,,,,,,,,,<<<<<<<<<___>>>>>>>-->>,,,,,,,<<<<<<_______>>>>>><<<<<<<<<____>>>>>>>->>,)))--))))]]]]]]]]],,,<<<<------<<<<<<---<<<<<_aaaa>>>>>>>>>>>----->>>>,,,,,,<<<<<<<<____>>>>>>>>,,,,,,,,,,,,,,,,,<<<<<<<<<<<____>>>>>>>>>>>,,,,,,}}}}}}}}::
+//
+# STOCKHOLM 1.0
+
+eukarya.S.unisporus         GAACACAGAGGAUCAAUUAUCAAAGACCAGGAACUGUAAAGGGUUCUGUUUCCUCGUGAGAGGGGCUUGGGGAACCGAGUUUGGCGUUGUUAUAAGAAAUCAACAGGGUUUGGUUUGGCAUUUUUCGAAGUGGUUGGCCGAACUCUGAUGGGAAUGGCAACGGAUGAUCCAUUUGACGUAUCACUAUUAACAAGUGAUAAGGUCUGUUGAGUGCAAUCGUAGAGCAAAUGGUAACACAUUUGAA
+#=GR eukarya.S.unisporus SS :::::::::((((((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<<____>>>>>><<<<<____>>>>>,,,,,<<<<<<<---------------------<<<<<<<<<<<____>>>>>>>>>>>----------------->>>>>>>,,))))))::::<<<<<<<<<<<_______>>>>>>>>->>>::::::::::::::::::::<<<<<<______>>>>>>::
+//
+# STOCKHOLM 1.0
+
+bac.SMB-B3         GAGGAAAGUCCGGGCAGCACAGAGCAAGGGUGCCUGGUGAAAGCCAGGGAGGCGCUAUCUGGCGUCGACAGUCCAGACCGGCACACUCCUCAGGAGUGUGAGAGCAACAGAGACCAAUCUAUUGUGCCAAGGCGCAAUAGCUGAAAAGGGCAAUCCUCCUCGCUGCAAUCUCCGAUCCGGCCGUUACCAGGUUGCUCGCCAAGGCCGAAAGACGAGAGCCGUCGGUGCUCGCAUCGACCGGUCUAUUCGACCGAGAAAGAUGAUCGCCAGGAACAGAACGCGGCUUA
+#=GR bac.SMB-B3 SS :::::{{{-{{{{{[[[[---AAAA--[[[-[<<<<<<____>>>>>><<<<<<<<____>>>>>>>->((,,,,,,,,,,<<<<<<<<___>>>>>>>>,<<<<<------------<<<<<<<<<____>>>>>>>>>-------->>>-->>))]]]]]]]],,,<<<<----<<<<<<-------<<<_aaaa>>>-->>>>>>----->>>>,,,<<<<<<<____>>>>>>><<<<<_____>>>>>,,,,,,,,,,,,,,,,,,,,,,,,,}}}}}}}}:
+//
