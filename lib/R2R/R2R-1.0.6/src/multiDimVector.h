@@ -229,7 +229,7 @@ public:
 		array.resize(s1*s2*s3);
 	}
 	MultiplyArray3d (int _s1,int _s2,int _s3) {
-		this->Load(_s1,_s2,_s3);
+		this->Init(_s1,_s2,_s3);
 	}
 	~MultiplyArray3d () {
 	}
