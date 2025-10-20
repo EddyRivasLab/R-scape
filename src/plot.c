@@ -58,8 +58,10 @@ int
 plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char *xlabel, int samerange, char *errbuf, int verbose)
 {
   char           *psfile = NULL;
+  char           tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok1, *tok2;
@@ -78,7 +80,7 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
 
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
 
   fprintf(pipe, "set style line 1   lt 1 lc rgb 'gray' pt 5 lw 2 ps 0.5\n");
@@ -137,12 +139,13 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
 
 	  fprintf(pipe, "set boxwidth %f absolute\n", width);
 	  fprintf(pipe, "set title '%s        n_comparisons = %d'\n", key, (int)counts);
-	  fprintf(pipe, "plot '-' u 1:2 with boxes ls %d\n", style);
+	  if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
 	  continue;
 	}
 
 	if (strcmp(tok1, "&") == 0) {
-	  fprintf(pipe, "e\n");
+	  fclose(fp);
+	  fprintf(pipe, "plot '%s' u 1:2 with boxes ls %d\n", tmpfile, style);
    	  continue;
 	}      
 
@@ -150,15 +153,16 @@ plot_gplot_Histogram(char *gnuplot, char *pdffile, int Nf, char **hisfile, char 
 	
 	mya   = atof(tok1);
 	count = atoi(tok2);
-	fprintf(pipe,  "%f %d\n", mya, count);		
+	fprintf(fp, "%f %d\n", mya, count);		
       }
-    
+
     free(st); st = NULL;
     free(key); key = NULL;
     esl_fileparser_Close(efp); efp = NULL;
   }
  
   pclose(pipe);
+  remove(tmpfile);
 
   //plot_file_ps2pdf(psfile, errbuf);
 
@@ -178,8 +182,10 @@ int
 plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfield, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp    = NULL;
   FILE           *pipe   = NULL;
+  FILE           *fp     = NULL;
   char           *st     = NULL;
   char           *key    = NULL;
   char           *tok1, *tok2;
@@ -194,7 +200,7 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfie
 
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
 
   fprintf(pipe, "set style line 1   lt 1 lc rgb 'gray'      pt 5 lw 2 ps 0.5\n");
@@ -242,21 +248,26 @@ plot_gplot_XYfile(char *gnuplot, char *pdffile, char *file, int xfield, int yfie
       if (esl_fileparser_GetTokenOnLine(efp, &tok1,  NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);
       
       fprintf(pipe, "set title '%s'\n", key);
-      fprintf(pipe, "plot '-' u %d:%d with points ls %d\n", xfield, yfield, style);
+      
+      if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       if (strcmp(tok1, "#") == 0)  continue;
       
       if (esl_fileparser_GetTokenOnLine(efp, &tok2, NULL) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to parse file %s", file);	
       
       xval = atof(tok1);
       yval = atof(tok2);
-      fprintf(pipe,  "%f %f\n", xval, yval);		
+      fprintf(fp,  "%f %f\n", xval, yval);
+      
+      fclose(fp);
+      fprintf(pipe, "plot '%s' u %d:%d with points ls %d\n", tmpfile, xfield, yfield, style);
     }
   if (st) free(st);   st  = NULL;
   if (key) free(key); key = NULL;
   esl_fileparser_Close(efp); efp = NULL;
 
   pclose(pipe);
-  
+  remove(tmpfile);
+
   //plot_file_ps2pdf(psfile, errbuf);
   
   if (key) free(key);
@@ -324,8 +335,13 @@ int
 plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, double evalcutoff, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile3[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile4[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -355,7 +371,7 @@ plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf,
 
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -488,16 +504,25 @@ plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf,
 
 	 fprintf(pipe, "set size 1,1\n");
 	 fprintf(pipe, "set origin 0,0\n");
-	 fprintf(pipe, "plot '-' u 1:2 with point ls %d, '-' u 1:3 with point ls %d, ", style1, style1+1);
-	 fprintf(pipe, "     '-' u 1:4 with point ls %d, '-' u 1:5 with point ls %d\n", style2, style2+1);
+	 
+	 if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+	 fprintf(fp,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
+	 fclose(fp);
+
+	 if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+	 fprintf(fp,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
+	 fclose(fp);
+	 
+	 if ((status = esl_tmpfile_named(tmpfile3, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
 	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
-	 fprintf(pipe, "e\n");
- 	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
-	 fprintf(pipe, "e\n");
- 	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
-	 fprintf(pipe, "e\n");
- 	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
-	 fprintf(pipe, "e\n");
+	 fclose(fp);
+	 
+	 if ((status = esl_tmpfile_named(tmpfile4, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+	 fprintf(fp,  "%f %f %f %f %f\n", mya, rate, e2rate, (eval<=evalcutoff)? rate:-1.0, (eval<=evalcutoff)?e2rate:-1.0);
+	 fclose(fp);
+
+	 fprintf(pipe, "plot '%s' u 1:2 with point ls %d, '%s' u 1:3 with point ls %d, ", tmpfile1, style1, tmpfile2, style1+1);
+	 fprintf(pipe, "     '%s' u 1:4 with point ls %d, '%s' u 1:5 with point ls %d\n", tmpfile3, style2, tmpfile4, style2+1);
        }
      }
    printf("\n %d plots for file %s\n", nplots, ratefile[f]);
@@ -505,6 +530,11 @@ plot_gplot_SerialRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf,
 
   pclose(pipe);
   
+  remove(tmpfile1);
+  remove(tmpfile2);
+  remove(tmpfile3);
+  remove(tmpfile4);
+
   plot_file_ps2pdf(psfile, errbuf);
 
   if (key) free(key);
@@ -523,8 +553,13 @@ int
 plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, double evalcutoff, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile3[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile4[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -556,7 +591,7 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
   psfile = plot_file_psfilename(pdffile);
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -698,7 +733,8 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
     fprintf(pipe, "set origin 0,0\n");
     fprintf(pipe, "f1mean(x) = %f + %f*x\n", a1_mean, b1_mean);	
     fprintf(pipe, "f2mean(x) = %f + %f*x\n", a2_mean, b2_mean);	
-    fprintf(pipe, "plot f1mean(x) title 'Dickerson rates - %s - UEP %.3f' ls 7, f2mean(x) title 'e2Dickerson rates - %s - UEP %.3f' ls 5\n", key, uep1_mean, key, uep2_mean);
+    fprintf(pipe, "plot f1mean(x) title 'Dickerson rates - %s - UEP %.3f' ls 7, f2mean(x) title 'e2Dickerson rates - %s - UEP %.3f' ls 5\n",
+	    key, uep1_mean, key, uep2_mean);
     
     fprintf(stdout, "TOGETHER_MEAN\n");	
     fprintf(stdout, "Dickerson(x)   = %f + %f*x | %f mya\n", a1_mean, b1_mean, uep1_mean);	
@@ -718,8 +754,9 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
     
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style1++);
-  
+
+    if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
    
@@ -733,9 +770,11 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	fprintf(pipe,  "%f %f\n", mya, rate);	
+	fprintf(fp,  "%f %f\n", mya, rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile1, style1++);
+    
     if (style1 > 7) style1 = 1; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -748,8 +787,8 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style2++);
-  
+    if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+ 
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
    
@@ -763,9 +802,11 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	if (eval <= evalcutoff) fprintf(pipe,  "%f %f\n", mya, rate);	
+	if (eval <= evalcutoff) fprintf(fp,  "%f %f\n", mya, rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile2, style2++);
+    
     if (style2 > 107) style2 = 101; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -776,7 +817,7 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 ls %d\n", style1++);
+    if ((status = esl_tmpfile_named(tmpfile3, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
@@ -791,9 +832,11 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	fprintf(pipe,  "%f %f\n", mya, e2rate);	
+	fprintf(fp,  "%f %f\n", mya, e2rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 ls %d\n", tmpfile3, style1++);
+ 
     if (style1 > 7) style1 = 2; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -805,8 +848,8 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
     
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style2++);
-    
+    if ((status = esl_tmpfile_named(tmpfile4, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+   
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
     
@@ -820,14 +863,20 @@ plot_gplot_TogetherRatesWithLinearRegression(char *gnuplot, char *pdffile, int N
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	if (eval <= evalcutoff) fprintf(pipe,  "%f %f\n", mya, e2rate);	
+	if (eval <= evalcutoff) fprintf(fp,  "%f %f\n", mya, e2rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile4, style2++);
+    
     if (style2 > 107) style2 = 102; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
  
   pclose(pipe);
+  remove(tmpfile1);
+  remove(tmpfile2);
+  remove(tmpfile3);
+  remove(tmpfile4);
   
   plot_file_ps2pdf(psfile, errbuf);
 
@@ -849,8 +898,13 @@ int
 plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, double evalcutoff, float tlinear, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile3[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile4[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -880,7 +934,7 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
   psfile = plot_file_psfilename(pdffile);
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -984,7 +1038,8 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
       fprintf(pipe, "set origin 0,0\n");
       fprintf(pipe, "f1(x) = %f + %f*x\n", a1, b1);	
       fprintf(pipe, "f2(x) = %f + %f*x\n", a2, b2);	
-      fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n", key, uep1, style1, key, uep2, style1+1);
+      fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n",
+	      key, uep1, style1, key, uep2, style1+1);
       
       fprintf(stdout, "JOINT\n");	
       fprintf(stdout, "Dickerson_mean(x)   = %f + %f*x | %f mya\n", a1, b1, uep1);	
@@ -1010,7 +1065,7 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
     
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style1++);
+    if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
@@ -1025,9 +1080,11 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	fprintf(pipe,  "%f %f\n", mya, rate);	
+	fprintf(fp,  "%f %f\n", mya, rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile1, style1++);
+    
     if (style1 > 7) style1 = 1; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -1040,8 +1097,8 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style2++);
-  
+    if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+ 
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
    
@@ -1055,9 +1112,11 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	if (eval <= evalcutoff) fprintf(pipe,  "%f %f\n", mya, rate);	
+	if (eval <= evalcutoff) fprintf(fp,  "%f %f\n", mya, rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile2, style2++);
+    
     if (style2 > 107) style2 = 101; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -1068,7 +1127,7 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 ls %d\n", style1++);
+    if ((status = esl_tmpfile_named(tmpfile3, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
@@ -1083,9 +1142,11 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	fprintf(pipe,  "%f %f\n", mya, e2rate);	
+	fprintf(fp,  "%f %f\n", mya, e2rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 ls %d\n", tmpfile3, style1++);
+   
     if (style1 > 7) style1 = 2; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -1097,8 +1158,8 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
     
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2 with point ls %d\n", style2++);
-    
+    if ((status = esl_tmpfile_named(tmpfile4, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+   
     if (esl_fileparser_Open(ratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", ratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
     
@@ -1112,14 +1173,20 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 	rate   = atof(tok2);
 	e2rate = atof(tok3);
 	eval   = atof(tok4);
-	if (eval <= evalcutoff) fprintf(pipe,  "%f %f\n", mya, e2rate);	
+	if (eval <= evalcutoff) fprintf(fp,  "%f %f\n", mya, e2rate);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2 with point ls %d\n", tmpfile4, style2++);
+	
     if (style2 > 107) style2 = 102; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
  
   pclose(pipe);
+  remove(tmpfile1);
+  remove(tmpfile2);
+  remove(tmpfile3);
+  remove(tmpfile4);
   
   plot_file_ps2pdf(psfile, errbuf);
 
@@ -1137,8 +1204,8 @@ plot_gplot_JointRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, 
 
 
 int 
-plot_write_BinnedRatesWithLinearRegression(char *binratefile, ESL_HISTOGRAM *h, double *yb_rate_ave, double *yb_rate_std, double *yb_e2rate_ave, double *yb_e2rate_std, 
-					   float tlinear, int Ncomp, double *maxtime)
+plot_write_BinnedRatesWithLinearRegression(char *binratefile, ESL_HISTOGRAM *h, double *yb_rate_ave, double *yb_rate_std, double *yb_e2rate_ave,
+					   double *yb_e2rate_std, float tlinear, int Ncomp, double *maxtime)
 {
   FILE   *fp = NULL;
   double *mya = NULL;
@@ -1225,8 +1292,11 @@ int
 plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **binratefile, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -1256,7 +1326,7 @@ plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, i
   psfile = plot_file_psfilename(pdffile);
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -1373,7 +1443,8 @@ plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, i
 	     uep2 = (b2 > 0)? 0.01/b2 : -1;
 	     fprintf(pipe, "set size 1,1\n");
 	     fprintf(pipe, "set origin 0,0\n");	   
-	     fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n", key, uep1, style, key, uep2, style+1);
+	     fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n",
+		     key, uep1, style, key, uep2, style+1);
 	   }
 	 }	 
        }
@@ -1392,16 +1463,23 @@ plot_gplot_SerialBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, i
 	 fprintf(pipe, "unset key\n");
 	 fprintf(pipe, "set size 1,1\n");
 	 fprintf(pipe, "set origin 0,0\n");
-	 fprintf(pipe, "plot '-' u 1:2:3  with yerrorbars ls %d, '-' u 1:4:5  with yerrorbars ls %d\n", style, style+1);
-	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate_m, rate_s, e2rate_m, e2rate_s);
-	 fprintf(pipe, "e\n");
-	 fprintf(pipe,  "%f %f %f %f %f\n", mya, rate_m, rate_s, e2rate_m, e2rate_s);
-	 fprintf(pipe, "e\n");
+	 
+	 if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+	 fprintf(fp,  "%f %f %f %f %f\n", mya, rate_m, rate_s, e2rate_m, e2rate_s);
+	 fclose(fp);
+	 
+	 if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+	 fprintf(fp,  "%f %f %f %f %f\n", mya, rate_m, rate_s, e2rate_m, e2rate_s);
+	 fclose(fp);
+
+	 fprintf(pipe, "plot '%s' u 1:2:3  with yerrorbars ls %d, '%s' u 1:4:5  with yerrorbars ls %d\n", tmpfile1, style, tmpfile2, style+1);
        }
      }
   }
 
   pclose(pipe);
+  remove(tmpfile1);
+  remove(tmpfile2);
   
   plot_file_ps2pdf(psfile, errbuf);
 
@@ -1421,8 +1499,11 @@ int
 plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **binratefile, char *xlabel, char *ylabel, char *errbuf)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -1446,7 +1527,7 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
   psfile = plot_file_psfilename(pdffile);
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -1535,7 +1616,8 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
 	  fprintf(pipe, "set origin 0,0\n");
 	  fprintf(pipe, "f1(x) = %f + %f*x\n", a1, b1);	
 	  fprintf(pipe, "f2(x) = %f + %f*x\n", a2, b2);	
-	  fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n", key, uep1, style, key, uep2, style+1);
+	  fprintf(pipe, "plot f1(x) title 'Dickerson rates - %s - UEP %.3f' ls %d, f2(x) title 'e2Dickerson rates - %s - UEP %.3f' ls %d\n",
+		  key, uep1, style, key, uep2, style+1);
 	}
       }
     
@@ -1553,7 +1635,7 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2:3  with yerrorbars ls %d\n", style++);
+    if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   
     if (esl_fileparser_Open(binratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", binratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
@@ -1568,10 +1650,11 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
 	mya    = atof(tok1);
 	rate_m = atof(tok2);
 	rate_s = atof(tok3);
-	fprintf(pipe,  "%f %f %f\n", mya, rate_m, rate_s);	
+	fprintf(fp,  "%f %f %f\n", mya, rate_m, rate_s);	
       }
-
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3  with yerrorbars ls %d\n", tmpfile1, style++);
+    
     if (style > 7) style = 1; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
@@ -1582,8 +1665,8 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
 
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2:3 with yerrorbars ls %d\n", style++);
-  
+    if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+
     if (esl_fileparser_Open(binratefile[f], NULL, &efp) != eslOK) ESL_XFAIL(eslFAIL, errbuf, "failed to open file %s", binratefile[f]);
     esl_fileparser_SetCommentChar(efp, '#');
    
@@ -1597,14 +1680,18 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
 	mya       = atof(tok1);
 	e2rate_m  = atof(tok2);
 	e2rate_s  = atof(tok3);
-	fprintf(pipe,  "%f %f %f\n", mya, e2rate_m, e2rate_s);	
+	fprintf(fp,  "%f %f %f\n", mya, e2rate_m, e2rate_s);	
       }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3 with yerrorbars ls %d\n", tmpfile2, style++);
+    
     if (style > 7) style = 2; 
     esl_fileparser_Close(efp); efp = NULL;
   }  
   
   pclose(pipe);
+  remove(tmpfile1);
+  remove(tmpfile2);
   
   plot_file_ps2pdf(psfile, errbuf);
 
@@ -1622,14 +1709,18 @@ plot_gplot_TogetherBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile,
   
 /* need to go back to the un-binned data file to do this properly */
 int 
-plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, float bintime, float tlinear, char *xlabel, char *ylabel, char *errbuf, int verbose)
+plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, int Nf, char **ratefile, float bintime, float tlinear,
+						char *xlabel, char *ylabel, char *errbuf, int verbose)
 {
   char           *psfile = NULL;
+  char           tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char           tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
   ESL_FILEPARSER *efp = NULL;
   ESL_HISTOGRAM  *h = NULL;
   char           *jhisfile = NULL;
   char           *jhisps = NULL;
   FILE           *pipe = NULL;
+  FILE           *fp = NULL;
   char           *st = NULL;
   char           *key = NULL;
   char           *tok;
@@ -1666,7 +1757,7 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
   psfile = plot_file_psfilename(pdffile);
   pipe = popen(gnuplot, "w");
 
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
   fprintf(pipe, "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0)\n");
@@ -1797,24 +1888,28 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
     fprintf(pipe, "unset key\n");
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2:3  with yerrorbars ls %d\n", style);
+    if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+
     for (n = 0; n < N; n ++) {
-      fprintf(pipe,  "%f %f %f\n", x_mya[n], y1_m[n], y1_s[n]);	
+      fprintf(fp,  "%f %f %f\n", x_mya[n], y1_m[n], y1_s[n]);	
     }
-    fprintf(pipe, "e\n");
-     
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3  with yerrorbars ls %d\n", tmpfile1, style);
+
     /* (4) plot the binned data points (e2Dickerson) */
     fprintf(pipe, "set size 1,1\n");
     fprintf(pipe, "set origin 0,0\n");
-    fprintf(pipe, "plot '-' u 1:2:3  with yerrorbars ls %d\n", style+1);
+    if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+
     for (n = 0; n < N; n ++) {
-      fprintf(pipe,  "%f %f %f\n", x_mya[n], y2_m[n], y2_s[n]);	
+      fprintf(fp,  "%f %f %f\n", x_mya[n], y2_m[n], y2_s[n]);	
     }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3  with yerrorbars ls %d\n", tmpfile2, style+1);
     
     /* (5) the joint histogram */
     esl_sprintf(&jhisfile, "%s.joint.histo", ratefile[f]);
-    esl_sprintf(&jhisps, "%s.ps", jhisfile);
+    esl_sprintf(&jhisps, "%s.pdf", jhisfile);
     plot_write_Histogram(jhisfile, h);
     plot_gplot_Histogram(gnuplot, jhisps, 1, &jhisfile, "MYA", TRUE, errbuf, verbose);
      
@@ -1840,6 +1935,8 @@ plot_gplot_JointBinnedRatesWithLinearRegression(char *gnuplot, char *pdffile, in
   }
      
   pclose(pipe);
+  remove(tmpfile1);
+  remove(tmpfile2);  
 
   plot_file_ps2pdf(psfile, errbuf);
   

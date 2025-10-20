@@ -236,6 +236,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int               outtreefile;
   int               outnullfile;
   int               outprepfile;
+  int               prep_RF;
   int               prep_onehot;
   int               profmark;
   int               outpottsfile;
@@ -378,7 +379,8 @@ static ESL_OPTIONS options[] = {
          1 },
   { "--outnull",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write null alignments",                                                                     1 },
   { "--outprep",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "write pair representations",                                                                1 },
-  { "--prep_nohot",   eslARG_NONE,      FALSE,    NULL,       NULL,   NULL,"--outprep",NULL,              "write pair representations is don't want to use default onehot representation",            1 },
+  { "--prep_RF",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--outprep",NULL,               "write pair representations",                                                                1 },
+  { "--nohot_prep",   eslARG_NONE,      FALSE,    NULL,       NULL,   NULL,"--outprep",NULL,              "write pair representations ir don't want to use default onehot representation",            1 },
   { "--profmark",     eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,"--outnull",NULL,              "write null alignments with the ss_cons of the original alignment, usefuls for a profmark",  1 },
   { "--allbranch",    eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "output msa with all branges",                                                               1 },
   { "--voutput",      eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "verbose output",                                                                            1 },
@@ -508,7 +510,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     esl_strtok(&s, ":", &tok);
     esl_sprintf(&tok1, "%s/gnuplot", tok);
     if ((stat(tok1, &info) == 0) && (info.st_mode & S_IXOTH)) {
-      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);    
+      esl_sprintf(&cfg.gnuplot, "%s -persist", tok1);
       break;
     }
     free(tok1); tok1 = NULL;
@@ -927,7 +929,8 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.outnullfile   = FALSE; if (esl_opt_IsOn(go,       "--outnull"))      cfg.outnullfile   = TRUE;   // the null alignments
   cfg.outprepfile   = FALSE; if (esl_opt_IsOn(go,       "--outprep"))      cfg.outprepfile   = TRUE;   // the pair representations
   cfg.profmark      = FALSE; if (esl_opt_IsOn(go,       "--profmark"))     cfg.profmark      = TRUE;   // write the orignal ss_cons in the null alignments
-  cfg.prep_onehot   = TRUE;  if (esl_opt_GetBoolean(go, "--prep_nohot"))   cfg.prep_onehot   = FALSE;  // format for the prep file
+  cfg.prep_RF       = FALSE; if (esl_opt_GetBoolean(go, "--prep_RF"))      cfg.prep_RF       = TRUE;  // write preps only for position in RF
+  cfg.prep_onehot   = TRUE;  if (esl_opt_GetBoolean(go, "--nohot_prep"))   cfg.prep_onehot   = FALSE;  // format for the prep file
 
   // the output files nullify
   outfile_null(&cfg.ofile);
@@ -1334,6 +1337,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
   data.prep_onehot      = cfg->prep_onehot;
+  data.prep_RF          = cfg->prep_RF;
 
   status = cov_Calculate(&data, msa, NULL, NULL, NULL, FALSE);   
   if (status != eslOK) goto ERROR; 
@@ -2568,7 +2572,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   data.errbuf           = cfg->errbuf;
   data.ignorebps        = FALSE;
   data.prep_onehot      = cfg->prep_onehot;
-
+  data.prep_RF          = cfg->prep_RF;
 
   status = cov_Calculate(&data, msa, &ranklist, &hitlist, &rmlist, analyze);
   if (status != eslOK) goto ERROR;
@@ -2857,7 +2861,7 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
   
   // Create SPAIR adding all information about subs/power
   //
-  status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, cfg->mi, power, clist, ctlist, nsubs, njoin, ndouble, cfg->errbuf, cfg->verbose);
+  status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, cfg->mi, power, clist, ctlist, nsubs, njoin, ndouble, cfg->omsa, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
 
   if (cfg->power_train) {

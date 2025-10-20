@@ -164,8 +164,8 @@ OBJS     = e1_bg.o\
 
 
 EASEL     = \
-	esl-afetch \
-	esl-reformat \
+	easel \
+
 
 TORNADO  = \
 	grm-fold \

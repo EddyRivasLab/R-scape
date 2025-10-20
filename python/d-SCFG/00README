@@ -596,3 +596,334 @@ done
 done
 done
 done
+
+
+
+===========================================================================================================
+R1
+Fri Oct 17 09:47:15 EDT 2025
+
+grammars/g6/g6_plot_epoch.py modified so that it calculates the structures of the test set with tornado_fold.py if those do not exist already.
+
+adding benchmark for
+data/TORNADO_TrB.sto
+
+cd ~/src/Mysrc/R-scape/python/d-SCFG
+
+#---------------------------------------------------------------------------------------------------------------------
+# FIGURE 2
+#---------------------------------------------------------------------------------------------------------------------
+# G6
+# train: conus_rnabench_RNaseP.50.C
+# test: trna1415_annote_2of2
+#
+#  experiments/ViennaRNA-2.7.0/trna1415_annote_2of2.ViennaRNA.mea.sto.acc
+#  F 68.5860459016393 sen 70.26 ppv 66.99
+#
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP.50.C_uniform/losses_i99.pdf
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP.50.C_uniform/g6_params_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP.50.C_uniform/trna1415_annote_2of2.noss.mea/acc_f1_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP.50.C_uniform/TORNADO_TrB.noss.mea/acc_f1_i99.pdf 
+# 
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP.50.C ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --vienna_sen 70.26 \
+    --vienna_ppv 66.99 ;\
+done
+done
+done
+done
+done
+
+
+# G6
+# train: conus_rnabench_RNaseP.50.C
+# test:  TORNADO_TrB.noss.sto
+#
+# experiments/ViennaRNA-2.7.0/TORNADO_TrB.ViennaRNA.mea.sto.acc
+# F 65.4124726971454 sen 74.42 ppv 58.35
+#
+# paramfile ML: ../../lib/tornado/notebook/05-2025/g6/TORNADO_conus_rnabench_RNaseP.50.C_g6.param
+# sen 0.56 ppv 0.5611 f1 0.5605494603514406
+#
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP.50.C_uniform/TORNADO_TrB.noss.mea/acc_f1_i99.pdf 
+# 
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP.50.C ; do \
+for test  in TORNADO_TrB ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --vienna_sen 74.42 \
+    --vienna_ppv 58.35 ;\
+done
+done
+done
+done
+done
+
+
+
+#---------------------------------------------------------------------------------------------------------------------
+# FIGURE 3
+#
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_TORNADO_7Fam.len0_400.nsq400_random/losses_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_TORNADO_7Fam.len0_400.nsq400_random/g6_params_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_TORNADO_7Fam.len0_400.nsq400_random/trna1415_annote_2of2.noss.mea/acc_f1_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_TORNADO_7Fam.len0_400.nsq400_random/TORNADO_TrB.noss.mea/acc_f1_i99.pdf 
+#
+#---------------------------------------------------------------------------------------------------------------------
+# G6
+# train: TORNADO_7Fam.len0_400.nsq400
+# test: trna1415_annote_2of2
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in  TORNADO_7Fam.len0_400.nsq400; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in random ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --pair_ymax 0.3 \
+    --vienna_sen 70.26 \
+    --vienna_ppv 66.99 ;\
+done
+done
+done
+done
+done
+
+# G6
+# train: TORNADO_7Fam.len0_400.nsq400
+# test:  TORNADO_TrB.noss.sto
+#
+# experiments/ViennaRNA-2.7.0/TORNADO_TrB.ViennaRNA.mea.sto.acc
+# F 65.4124726971454 sen 74.42 ppv 58.35
+#
+# paramfile ML: ../../lib/tornado/notebook/05-2025/g6/TORNADO_TORNADO_7Fam.len0_400.nsq400_g6.param
+# sen 0.5293 ppv 0.5926 f1 0.5591642392370086
+#
+# paramfile ML: ../../lib/tornado/notebook/05-2025/g6/TORNADO_conus_rnabench_RNaseP.50.C_g6.param
+# sen 0.56 ppv 0.5611 f1 0.5605494603514406
+#
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in TORNADO_7Fam.len0_400.nsq400; do \
+for test  in TORNADO_TrB ; do \
+for init  in random ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --pair_ymax 0.3 \
+    --vienna_sen 74.42 \
+    --vienna_ppv 58.35 ;\
+done
+done
+done
+done
+done
+
+
+
+#---------------------------------------------------------------------------------------------------------------------
+# FIGURE 4
+#
+# open ~/projects/d-SCFG_June2025/experiments/g5_optimize_param_conus_rnabench_RNaseP_uniform/losses_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g5_optimize_param_conus_rnabench_RNaseP_uniform/g6_params_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g5_optimize_param_conus_rnabench_RNaseP_uniform/trna1415_annote_2of2.noss.mea/acc_f1_i99.pdf 
+#
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP_uniform_shuffle/losses_i99.pdf
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP_uniform_shuffle/g6_params_i99.pdf 
+# open ~/projects/d-SCFG_June2025/experiments/g6_optimize_param_conus_rnabench_RNaseP_uniform_shuffle/trna1415_annote_2of2.noss.mea/acc_f1_i99.pdf 
+#
+#---------------------------------------------------------------------------------------------------------------------
+# G5
+# train: conus_rnabench_RNaseP
+# test: trna1415_annote_2of2
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g5  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --losses_ymin 10680 \
+    --losses_ymax 10870 \
+    --acc_ymin -1.0 \
+    --acc_ymax 20.0 \
+    --vienna_sen 70.26 \
+    --vienna_ppv 66.99 ;\
+done
+done
+done
+done
+done
+
+
+
+# G6
+# train: conus_rnabench_RNaseP
+# test: trna1415_annote_2of2 SHUFFLED
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init"_shuffle \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --losses_ymin 10680 \
+    --losses_ymax 10870 \
+    --pair_ymax  0.340 \
+    --vienna_sen 70.26 \
+    --vienna_ppv 66.99 ;\
+done
+done
+done
+done
+done
+
+#---------------------------------------------------------------------------------------------------------------------
+# FIGURE 5
+#---------------------------------------------------------------------------------------------------------------------
+
+# G6
+# train: conus_rnabench_RNaseP
+# test: trna1415_annote_2of2
+#
+#  experiments/ViennaRNA-2.7.0/trna1415_annote_2of2.ViennaRNA.mea.sto.acc
+#  F 68.5860459016393 sen 70.26 ppv 66.99
+#
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --losses_ymin 10640 \
+    --losses_ymax 10900 \
+    --pair_ymax  0.340 \
+    --vienna_sen 70.26 \
+    --vienna_ppv 66.99 ;\
+done
+done
+done
+done
+done
+
+
+
+# G6
+# train: conus_rnabench_RNaseP
+# test: TORNADO_TrB.noss.sto
+#
+# experiments/ViennaRNA-2.7.0/TORNADO_TrB.ViennaRNA.mea.sto.acc
+# F 65.4124726971454 sen 74.42 ppv 58.35
+#
+# paramfile ML: ../../lib/tornado/notebook/05-2025/g6/TORNADO_conus_rnabench_RNaseP_g6.param
+# sen 56.89 ppv 56.9 f1 56.89499956059409
+#
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in TORNADO_TrB ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --losses_ymin 10600 \
+    --losses_ymax 10900 \
+    --pair_ymax  0.340 \
+    --vienna_sen 74.42 \
+    --vienna_ppv 58.35 ;\
+done
+done
+done
+done
+done
+
+# G6
+# train: conus_rnabench_RNaseP
+# test: TORNADO_TestB.noss.sto
+#
+# experiments/ViennaRNA-2.7.0/TORNADO_TestB.ViennaRNA.mea.sto.acc
+# F 53.9050256410256 sen 60.76 ppv 48.44
+#
+#
+# paramfile ML: ../../lib/tornado/notebook/05-2025/g6/TORNADO_conus_rnabench_RNaseP_g6.param
+# sen 43.98 ppv 48.89 f1 46.30520512544416
+#
+#---------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP ; do \
+for test  in TORNADO_TestB ; do \
+for init  in uniform ; do \
+    python3 -m grammars."$grm"."$grm"_plot_epoch "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --test_data data/"$test".noss.sto  \
+    --losses_ymin 10600 \
+    --losses_ymax 10900 \
+    --pair_ymax  0.340 \
+    --vienna_sen 60.76 \
+    --vienna_ppv 48.44 ;\
+done
+done
+done
+done
+done
+
+
+
+
+
+
+#---------------------------------------------
+# TIME to training 99 epochs
+# for 50 RNaseP
+# (no testing)
+#----------------------------------------------
+for outdir in ../../../../../projects/d-SCFG_June2025/experiments ; do \
+for grm in g6  ; do \
+for train in conus_rnabench_RNaseP.50.A ; do \
+for test  in trna1415_annote_2of2 ; do \
+for init  in uniform ; do \
+    time python3 -m grammars."$grm"."$grm"_optimize_param "$grm"_optimize_param_"$train"_"$init" \
+    --outdir "$outdir" \
+    --train_data data/"$train".fa \
+    --grm_file     ../../lib/tornado/grammars/"$grm.grm" \
+    --fold_method mea \
+    --init_"$init"  ;\
+done
+done
+done
+done
+done

@@ -47,18 +47,16 @@ static double evalue2cov(double eval_thres, int Nc, ESL_HISTOGRAM *h, double *su
 static int    cov_add_pair2covct(int ih, int jh, CTLIST *ctlist, int verbose);
 static int    cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbose);
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
-static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
-static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2);
+static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf);
+static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf);
 static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
-					   int linespoints, int style1, int style2);
+					   int linespoints, int style1, int style2, char *errbuf);
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
-				   int linespoints, int style1, int style2);
+				   int linespoints, int style1, int style2, char *errbuf);
 static int    cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA);
 static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
-
-				    
-				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2);
-static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style);
+				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf);
+static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style, char *errbuf);
 
 int                 
 cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, int analyze)
@@ -353,7 +351,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	if (data->spair) {
 	  if (data->verbose) power_SPAIR_Write(stdout, dim, data->spair, TRUE);
 	  if (data->ofile->outprepfile) {
-	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
+	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot, data->prep_RF);
 	  }
 	}
       }
@@ -382,7 +380,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 	if (data->spair) {
 	  if (data->verbose) power_SPAIR_Write(stdout, dim, data->spair, TRUE);
 	  if (data->ofile->outprepfile) {
-	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
+	    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot, data->prep_RF);
 	  }
 	}
       }
@@ -964,7 +962,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     power_SPAIR_Write(stdout,  dim, data->spair, TRUE);
     power_SPAIR_Write(powerfp, dim, data->spair, TRUE);
 
-    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot);
+    power_PREP_Write(data->ofile->outprepfile, data->OL, dim, data->spair, TRUE, data->prep_onehot, data->prep_RF);
   }
 
   // calculate aggregated p-values for the RNA motifs (rmlist)
@@ -1101,7 +1099,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   // write the power file output
   power_SPAIR_Write(stdout,  dim, data->spair, FALSE);
   power_SPAIR_Write(powerfp, dim, data->spair, FALSE);
-  power_PREP_Write(data->ofile->outprepfoldfile, data->OL, dim, data->spair, FALSE, data->prep_onehot);
+  power_PREP_Write(data->ofile->outprepfoldfile, data->OL, dim, data->spair, FALSE, data->prep_onehot, data->prep_RF);
 
   fclose(covfp);
   fclose(covsrtfp);
@@ -1828,9 +1826,9 @@ cov_WriteHistogram(struct data_s *data, char *gnuplot, char *covhisfile, char *c
 
     ignorebps = (samplesize == SAMPLE_ALL)? TRUE : data->ignorebps;
     if (!data->nofigures) {
-      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE, ignorebps);
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, FALSE, ignorebps, errbuf);
       if (status != eslOK) goto ERROR;
-      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE,  ignorebps);
+      status = cov_PlotHistogramSurvival(data, gnuplot, covhisfile, ranklist, title, TRUE,  ignorebps, errbuf);
       if (status != eslOK) goto ERROR;
     }
   }
@@ -1914,7 +1912,7 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *r
 
 
 int 
-cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg, int ignorebps)
+cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg, int ignorebps, char *errbuf)
 {
   FILE     *pipe;
   RANKLIST *ranklist_null = data->ranklist_null;
@@ -1974,8 +1972,8 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     linew       = 1;
   }
   else {
-    esl_sprintf(&outplot, "%s.ps", covhisfile);
-    fprintf(pipe, "set terminal postscript color 14\n");
+    esl_sprintf(&outplot, "%s.pdf", covhisfile);
+    fprintf(pipe, "set terminal pdfcairo\n");
     pointype    = 65;
     pointsize   = 0.7;
     pointintbox = 1.0;
@@ -1999,7 +1997,6 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   fprintf(pipe, "set style line 333 dashtype 3 lc rgb 'blue' pt 7 lw %d ps %f\n", linew, pointsize);
     
   // plot evalue
-  fprintf(pipe, "set multiplot layout 1,1\n");  
   fprintf(pipe, "set lmargin 5\n");  
   if (dosvg) fprintf(pipe, "set lmargin 10\n");
   fprintf(pipe, "set bmargin 1\n");  
@@ -2065,21 +2062,21 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
     if (ignorebps) {
       cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ha, "x1y1",
-			      key, ymax, ymin, xmax, xmin, 3, 333);
+			      key, ymax, ymin, xmax, xmin, 3, 333, errbuf);
      }
     else {
       cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ht, "x1y1",
-			      key, ymax, ymin, xmax, xmin, 1, 111);
+			      key, ymax, ymin, xmax, xmin, 1, 111, errbuf);
       if (has_bpairs)
 	cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->hb, "x1y1",
-			      key, ymax, ymin, xmax, xmin, 3, 333);
+			      key, ymax, ymin, xmax, xmin, 3, 333, errbuf);
     }
     
     linespoints = FALSE;
     posy = ymin*exp(1.0*incy);
 
     status = cov_histogram_plotexpectsurv(pipe, ranklist_null->ha->Nc, ranklist_null->ha, ranklist_null->survfit, key3, "x1y1",
-					  FALSE, posx, posy, FALSE, linespoints, 55, 5);
+					  FALSE, posx, posy, FALSE, linespoints, 55, 5, errbuf);
     if (status != eslOK) goto ERROR;
     linespoints = TRUE;
   }
@@ -2087,23 +2084,23 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   if (ignorebps) {
     posy = ymin*exp(2.0*incy);
     status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist->ha, NULL, key0, "x1y1", FALSE, posx, posy,
-					  FALSE, linespoints, 33, 3);
+					  FALSE, linespoints, 33, 3, errbuf);
     if (status != eslOK) goto ERROR;
-    cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -4.0, "Expected # pairs with score > t", 3);
+    cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -4.0, "Expected # pairs with score > t", 3, errbuf);
   }
   else {
     posy = ymin*exp(2.0*incy);
     status = cov_histogram_plotexpectsurv  (pipe, ranklist->ht->Nc, ranklist->ht, NULL, key1, "x1y1", FALSE, posx, posy,
-					    FALSE, linespoints, 11, 1);
+					    FALSE, linespoints, 11, 1, errbuf);
     if (status != eslOK) goto ERROR;
     
     if (has_bpairs) { // the distribution of base-pairs pairs
       posy = ymin*exp(3.0*incy);
       status = cov_histogram_plotexpectsurv(pipe, ranklist->hb->Nc, ranklist->hb, NULL, key2, "x1y1", FALSE, posx, posy,
-					    FALSE, linespoints, 33, 3);
+					    FALSE, linespoints, 33, 3, errbuf);
       if (status != eslOK) goto ERROR;
     }
-    cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -12.0, "Expected # not proposed pairs with score > t", 1);
+    cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -12.0, "Expected # not proposed pairs with score > t", 1, errbuf);
   }
   
   pclose(pipe);
@@ -2177,8 +2174,8 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
     linew       = 1;
   }
   else {
-    esl_sprintf(&outplot, "%s.ps", covhisfile);
-    fprintf(pipe, "set terminal postscript color 14\n");
+    esl_sprintf(&outplot, "%s.pdf", covhisfile);
+    fprintf(pipe, "set terminal pdfcairo\n");
     pointype    = 65;
     pointsize   = 0.7;
     pointintbox = 1.0;
@@ -2208,7 +2205,6 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
   fprintf(pipe, "set style line 99  lt 1 lc rgb 'blue'      pt %d pi -1  lw %d ps %f \nset pointintervalbox %f\n", pointype, linew, pointsize, pointintbox);
 
   // plot qq
-  fprintf(pipe, "set multiplot\n");  
   fprintf(pipe, "set ylabel 'Observed #pairs'\n");
   fprintf(pipe, "set xlabel 'Expected #pairs (E-value)'\n");
 
@@ -2225,10 +2221,10 @@ cov_PlotHistogramQQ(struct data_s *data, char *gnuplot, char *covhisfile, RANKLI
 
   fprintf(pipe, "plot x title 'exp=obs' ls 77\n");
   if (ranklist_null) {
-    status = cov_histogram_plotqq(pipe, data, ranklist->ha, ranklist_null->ha, key1, FALSE, linespoints, 99, 2);
+    status = cov_histogram_plotqq(pipe, data, ranklist->ha, ranklist_null->ha, key1, FALSE, linespoints, 99, 2, data->errbuf);
     if (status != eslOK) goto ERROR;
 #if 0
-    status = cov_histogram_plotqq(pipe, data, ranklist->ht, ranklist_null->ha, key2, FALSE, linespoints, 44, 2);
+    status = cov_histogram_plotqq(pipe, data, ranklist->ht, ranklist_null->ha, key2, FALSE, linespoints, 44, 2, data->errbuf);
     if (status != eslOK) goto ERROR;
 #endif
   }
@@ -2425,12 +2421,16 @@ cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit
 
 
 static int
-cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2)
+cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf)
 {
+  char      tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE     *fp = NULL;
   int       i;
   uint64_t  obs;
   double    exp;
   double    ai;
+  int       status;
  
   /* The observed binned counts:
    */
@@ -2438,10 +2438,10 @@ cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *k
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
-  fprintf(pipe, "plot '-' using 1:2 with linespoints ls %d \n", style1);
 
+  if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   if (h->obs[h->imax] > 1) 
-    if (fprintf(pipe, "%f\t%f\n", 
+    if (fprintf(fp, "%f\t%f\n", 
 		h->xmax, (logval)? -log((double)h->Nc) : 1.0/(double) h->Nc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
   for (i = h->imax; i >= h->imin; i--)
     {
@@ -2449,12 +2449,13 @@ cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *k
 
       if (obs > 0) {
 	ai = esl_histogram_Bin2LBound(h, i);
-	if (fprintf(pipe, "%f\t%g\n", 
+	if (fprintf(fp, "%f\t%g\n", 
 		    ai, (logval)? log((double)obs)-log((double)h->Nc) : (double)obs/(double) h->Nc) < 0) 
 	  ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
       }
     }
-  fprintf(pipe, "e\n");
+  fclose(fp);
+  fprintf(pipe, "plot '%s' using 1:2 with linespoints ls %d \n", tmpfile1, style1);
   
   /* The expected binned counts:
    */
@@ -2463,31 +2464,44 @@ cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *k
       fprintf(pipe, "set size 1,1\n");
       fprintf(pipe, "set origin 0,0\n");
       fprintf(pipe, "set key off\n");
-      fprintf(pipe, "plot '-' using 1:2 with lines ls %d \n", style2);
       
+      if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       for (i = h->nb-1; i > 0; i--)
 	{
 	  exp = survfit[i]-survfit[i-1];        /* some worry about 1+eps=1 problem here */
 
 	  if (exp > 0.) { 
 	    ai = esl_histogram_Bin2LBound(h, i);
-	    if (fprintf(pipe, "%f\t%g\n", 
+	    if (fprintf(fp, "%f\t%g\n", 
 			ai, (logval)? log(exp)-log((double)h->Nc) : exp/(double) h->Nc) < 0) 
 	      ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
 	  }
 	}
-      fprintf(pipe, "e\n"); 
+      fclose(fp);
+      fprintf(pipe, "plot '%s' using 1:2 with lines ls %d \n", tmpfile2, style2);
     }
+
+  pclose(pipe);
+
+  remove(tmpfile1);
+  remove(tmpfile2);
   
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 static int
-cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2)
+cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf)
 {
+  char      tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE     *fp = NULL;
   int       i;
   uint64_t  c = 0;
   double    esum;
   double    ai;
+  int       status;
  
   /* The observed binned counts:
    */
@@ -2495,20 +2509,21 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%f '%s' center tc ls %d\n", posx, posy, key, style1);
-  fprintf(pipe, "plot '-' using 1:2 with linespoints ls %d \n", style1);
 
+  if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   for (i = h->imax; i >= h->imin; i--)
     {
       c += h->obs[i];
 
       if (h->obs[i] > 0) {
 	ai = esl_histogram_Bin2LBound(h, i);
-	if (fprintf(pipe, "%f\t%g\n", 
+	if (fprintf(fp, "%f\t%g\n", 
 		    ai, (logval)? log((double)c)-log((double)h->Nc) : (double)c/(double) h->Nc) < 0) 
 	  ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
       }
     }
-  fprintf(pipe, "e\n");
+  fclose(fp);
+  fprintf(pipe, "plot '%s' using 1:2 with linespoints ls %d \n", tmpfile1, style1);
   
   /* The survival fit:
    */
@@ -2517,8 +2532,8 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *
       fprintf(pipe, "set size 1,1\n");
       fprintf(pipe, "set origin 0,0\n");
       fprintf(pipe, "set key off\n");
-      fprintf(pipe, "plot '-' using 1:2 with lines ls %d \n", style2);
       
+      if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       esum = 0.;
       for (i = h->nb-1; i >= 0; i--)
 	{
@@ -2526,31 +2541,43 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *
 	  
 	  if (esum > 0.) { 
 	    ai = esl_histogram_Bin2LBound(h, i);
-	    if (fprintf(pipe, "%f\t%g\n", 
+	    if (fprintf(fp, "%f\t%g\n", 
 			ai, (logval)? log(esum) : esum) < 0) 
 	      ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
 	  }
 	}
-      fprintf(pipe, "e\n"); 
+      fclose(fp);
+      fprintf(pipe, "plot '%s' using 1:2 with lines ls %d \n", tmpfile2, style2);
     }
+
+  pclose(pipe);
+
+  remove(tmpfile1);
+  remove(tmpfile2);
   
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 
 static int
-cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, int linespoints, int style1, int style2)
+cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, int linespoints, int style1, int style2, char *errbuf)
 {
+  char      tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE     *fp = NULL;
   int       i;
   uint64_t  c = 0;
   double    eval = 0.;
   double    ai;
+  int       status;
  
   /* The observed binned counts:
    */
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
-  fprintf(pipe, "plot '-' using 1:2 title '%s' with linespoints ls %d \n", key, style1);
-
+  
+  if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   for (i = h1->imax; i >= h1->imin; i--)
     {
       c += h1->obs[i];
@@ -2558,25 +2585,37 @@ cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HIS
       if (h1->obs[i] > 0) {
 	ai = esl_histogram_Bin2LBound(h1, i);
 	eval = cov2evalue(ai, h1->Nc, h2, NULL);
-	if (fprintf(pipe, "%g\t%g\n", 
+	if (fprintf(fp, "%g\t%g\n", 
 		    (logval)? log(eval)      : eval,
 		    (logval)? log((double)c) : (double)c) < 0) 
 	  ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
      }
     }
-  fprintf(pipe, "e\n");
-   
+  fclose(fp);
+  fprintf(pipe, "plot '%s' using 1:2 title '%s' with linespoints ls %d \n", tmpfile, key, style1);
+
+  pclose(pipe);
+
+  remove(tmpfile);
+ 
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 
 static int
 cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
-			     int linespoints, int style1, int style2)
+			     int linespoints, int style1, int style2, char *errbuf)
 {
+  char      tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE     *fp = NULL;
   int       i;
   uint64_t  c = 0;
   double    esum;
   double    ai;
+  int       status;
 
   if (posy <= 0.) posy = 1e-5;
   
@@ -2586,28 +2625,29 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %f,%g '%s' center tc ls %d\n", posx, posy, key, style1);
-  if (addtics) {
-    if (linespoints) fprintf(pipe, "plot '-' using 1:2:yticlabels(3) axes %s with linespoints ls %d \n", axes, style1);
-    else             fprintf(pipe, "plot '-' using 1:2:yticlabels(3) axes %s with points ls %d \n", axes, style1);
-  }
-  else {
-    if (linespoints) fprintf(pipe, "plot '-' using 1:2 axes %s with linespoints ls %d \n", axes, style1);
-    else             fprintf(pipe, "plot '-' using 1:2 axes %s with points ls %d \n", axes, style1);
-  }
 
+  if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   for (i = h->imax; i >= h->imin; i--)
     {
       c += h->obs[i];
       if (h->obs[i] > 0) {
 	ai = esl_histogram_Bin2LBound(h, i);
-	if (fprintf(pipe, "%g\t%g\t%g\n", 
+	if (fprintf(fp, "%g\t%g\t%g\n", 
 		    ai,
 		    (logval)? log((double)c)                   - log((double)h->Nc) : (double)c              / (double)h->Nc,
 		    (logval)? log((double)c) + log((double)Nc) - log((double)h->Nc) : (double)c * (double)Nc / (double)h->Nc) < 0) 
 	  ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
       }
     }
-  fprintf(pipe, "e\n");
+  fclose(fp);
+  if (addtics) {
+    if (linespoints) fprintf(pipe, "plot '%s' using 1:2:yticlabels(3) axes %s with linespoints ls %d \n", tmpfile1, axes, style1);
+    else             fprintf(pipe, "plot '%s' using 1:2:yticlabels(3) axes %s with points ls %d \n", tmpfile1, axes, style1);
+  }
+  else {
+    if (linespoints) fprintf(pipe, "plot '%s' using 1:2 axes %s with linespoints ls %d \n", tmpfile1, axes, style1);
+    else             fprintf(pipe, "plot '%s' using 1:2 axes %s with points ls %d \n", tmpfile1, axes, style1);
+  }
   
   /* The survplot:
    */
@@ -2616,36 +2656,50 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
       fprintf(pipe, "set size 1,1\n");
       fprintf(pipe, "set origin 0,0\n");
       fprintf(pipe, "set key off\n");
-      fprintf(pipe, "plot '-' using 1:2 with lines ls %d \n", style2);
       
+      if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       for (i = 2*h->nb-1; i >= 0; i--)
 	{
 	  esum = survfit[i];
 	  if (esum > 0.) { 
 	    ai = esl_histogram_Bin2LBound(h, i);
-	    if (fprintf(pipe, "%g\t%g\t%g\n", 
+	    if (fprintf(fp, "%g\t%g\t%g\n", 
 			ai,
 			(logval)? log(esum)                   : esum,
 			(logval)? log(esum) + log((double)Nc) : esum * (double)Nc) < 0) 
 	      ESL_EXCEPTION_SYS(eslEWRITE, "histogram survival plot write failed");
 	  }
 	}
-      fprintf(pipe, "e\n"); 
-    }
+      fclose(fp);
+      fprintf(pipe, "plot '%s' using 1:2 with lines ls %d \n", tmpfile2, style2);
+
+   }
+
+  pclose(pipe);
   
+  remove(tmpfile1);
+  remove(tmpfile2);
+
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 
 static int
 cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, char *axes, char *key, 
-		      double ymax, double ymin, double xmax, double xmin, int style1, int style2)
+		      double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf)
 {
-  double cov;
-  double eval;
-  double eval2;
-  double posx, posy;
-  double lenx, leny;
-  double ex, ey, dy;
+  char    tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char    tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE   *fp = NULL;
+  double  cov;
+  double  eval;
+  double  eval2;
+  double  posx, posy;
+  double  lenx, leny;
+  double  ex, ey, dy;
+  int     status;
  
   cov   = evalue2cov(expsurv, Nc, h, survfit); if (cov <= -eslINFINITY) return eslOK;
   eval  = cov2evalue(cov, 1, h, survfit);
@@ -2666,25 +2720,39 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
   fprintf(pipe, "set label 1 at %g,%g '%s' center tc ls %d\n", posx, posy, key, style1);
-  fprintf(pipe, "plot '-' using 1:2 axes %s with lines ls %d \n", axes, style1);
-  fprintf(pipe, "%g\t%g\n", cov, (eval*ey >ymin)? eval*ey :ymin);
-  fprintf(pipe, "%g\t%g\n", cov, (eval2*dy<ymax)? eval2*dy:ymax);
-  fprintf(pipe, "e\n");
+
+  if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+  fprintf(fp, "%g\t%g\n", cov, (eval*ey >ymin)? eval*ey :ymin);
+  fprintf(fp, "%g\t%g\n", cov, (eval2*dy<ymax)? eval2*dy:ymax);
+  fprintf(fp, "e\n");
+  fclose(fp);
+  fprintf(pipe, "plot '%s' using 1:2 axes %s with lines ls %d \n", tmpfile1, axes, style1);
 
   /* The horizontal line */
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");
   fprintf(pipe, "set key off\n");
-  fprintf(pipe, "plot '-' using 1:2 axes %s with lines ls %d \n", axes, style2);
-  fprintf(pipe, "%g\t%g\n", (cov-ex > xmin)? cov-ex:xmin, eval);
-  fprintf(pipe, "%g\t%g\n", xmax,                         eval);
-  fprintf(pipe, "e\n");
+
+  if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+  fprintf(fp, "%g\t%g\n", (cov-ex > xmin)? cov-ex:xmin, eval);
+  fprintf(fp, "%g\t%g\n", xmax,                         eval);
+  fprintf(fp, "e\n");
+  fclose(fp);
+  fprintf(pipe, "plot '%s' using 1:2 axes %s with lines ls %d \n", tmpfile2, axes, style2);
+
+  pclose(pipe);
   
+  remove(tmpfile1);
+  remove(tmpfile2);
+
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 
 static int
-cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *label, int style)
+cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *label, int style, char *errbuf)
 {
   /* The observed binned counts:
    */

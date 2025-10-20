@@ -192,6 +192,11 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
 	       HITLIST *hitlist, int dosvg, char *errbuf, int verbose)
 {
   FILE    *pipe;
+  FILE    *fp     = NULL;
+  char     tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char     tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char     tmpfile3[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char     tmpfile4[16] = "esltmpXXXXXX"; /* tmpfile template */
   char    *filename = NULL;
   char    *outplot = NULL;
   int     *ct;
@@ -223,8 +228,8 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
   else {
     ps_max = 1.40;
     ps_min = 0.30;
-    esl_sprintf(&outplot, "%s.ps", dplotfile);
-    fprintf(pipe, "set terminal postscript color 14\n");
+    esl_sprintf(&outplot, "%s.pdf", dplotfile);
+    fprintf(pipe, "set terminal pdfcairo\n");
   }
   fprintf(pipe, "set output '%s'\n", outplot);
   pointsize = (mi->maxCOV > 0.)? ps_max/mi->maxCOV : ps_min;
@@ -276,8 +281,6 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
   fprintf(pipe, "set yrange [%d:%d]\n", msamap[ileft-1]+firstpos, msamap[iright-1]+firstpos);
   fprintf(pipe, "set xrange [%d:%d]\n", msamap[ileft-1]+firstpos, msamap[iright-1]+firstpos);
 
-  fprintf(pipe, "set multiplot\n");
-
   fprintf(pipe, "set size 1,1\n");
   fprintf(pipe, "set origin 0,0\n");  
   fprintf(pipe, "fun(x)=x\n");
@@ -292,22 +295,24 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
   }
   if (!isempty) {
     fprintf(pipe, "set size 1,1\n");
-    fprintf(pipe, "set origin 0,0\n");  
-    fprintf(pipe, "plot '-' u 1:2:3 with points ls 9\n");
+    fprintf(pipe, "set origin 0,0\n");
+
+    if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
     for (s = 0; s < ctlist->nct; s ++) {
       ct = ctlist->ct[s];
       for (i = 1; i <= msa->alen; i ++) {
 	ipair = ct[i];
 	
 	if (ipair > 0) {
-	  fprintf(pipe, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
+	  fprintf(fp, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
 		  (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
-	  fprintf(pipe, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
+	  fprintf(fp, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
 		  (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
 	}	
       }
     }
-    fprintf(pipe, "e\n");
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3 with points ls 9\n", tmpfile1);
   }
   
   // the covarying basepairs
@@ -336,8 +341,9 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
 
   if (!isempty && hitlist) {
     fprintf(pipe, "set size 1,1\n");
-    fprintf(pipe, "set origin 0,0\n");  
-    fprintf(pipe, "plot '-' u 1:2:3 with points ls 8 \n");
+    fprintf(pipe, "set origin 0,0\n");
+    
+    if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
     for (h = 0; h < hitlist->nhit; h ++) {
       ih = hitlist->hit[h].i;
       jh = hitlist->hit[h].j;
@@ -358,11 +364,12 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
       }
       
       if (select) {
-	fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
-	fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
+	fprintf(fp, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);
+	fprintf(fp, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);
       }	
-    } 
-    fprintf(pipe, "e\n");
+    }
+    fclose(fp);
+    fprintf(pipe, "plot '%s' u 1:2:3 with points ls 8 \n", tmpfile2);
   }
 
   // covarying pairs compatible with the given structure
@@ -374,17 +381,19 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
     
     if (!isempty) {
       fprintf(pipe, "set size 1,1\n");
-      fprintf(pipe, "set origin 0,0\n");  
-      fprintf(pipe, "plot '-' u 1:2:3 with points ls 5\n");
+      fprintf(pipe, "set origin 0,0\n");
+      
+      if ((status = esl_tmpfile_named(tmpfile3, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       for (h = 0; h < hitlist->nhit; h ++) {
 	ih = hitlist->hit[h].i;
 	jh = hitlist->hit[h].j;
 	if (hitlist->hit[h].is_compatible) {
-	  fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-	  fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(fp, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(fp, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
 	}
       } 
-      fprintf(pipe, "e\n");
+      fclose(fp);
+      fprintf(pipe, "plot '%s' u 1:2:3 with points ls 5 \n", tmpfile3);
     }
   }
   
@@ -397,21 +406,28 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
     
     if (!isempty) {
       fprintf(pipe, "set size 1,1\n");
-      fprintf(pipe, "set origin 0,0\n");  
-      fprintf(pipe, "plot '-' u 1:2:3 with points ls 7\n");
+      fprintf(pipe, "set origin 0,0\n");
+      
+      if ((status = esl_tmpfile_named(tmpfile4, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
       for (h = 0; h < hitlist->nhit; h ++) {
 	ih = hitlist->hit[h].i;
 	jh = hitlist->hit[h].j;
 	if (!hitlist->hit[h].is_compatible) {
-	  fprintf(pipe, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
-	  fprintf(pipe, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(fp, "%d %d %f\n", msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc);	
+	  fprintf(fp, "%d %d %f\n", msamap[jh]+firstpos, msamap[ih]+firstpos, hitlist->hit[h].sc);	
 	}
       } 
-      fprintf(pipe, "e\n");
+      fclose(fp);
+      fprintf(pipe, "plot '%s' u 1:2:3 with points ls 7 \n", tmpfile4);
     }
   }
   
   pclose(pipe);
+
+  remove(tmpfile1);
+  remove(tmpfile2);
+  remove(tmpfile3);
+  remove(tmpfile4);
   
   free(outplot);
   free(filename);

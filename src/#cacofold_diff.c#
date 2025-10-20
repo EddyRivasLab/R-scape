@@ -1,0 +1,12 @@
+/* cacofold_diff.c */
+
+#include <stdlib.h> 
+#include <stdio.h>
+#include <string.h>
+
+define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
+#include "easel.h"
+#include "esl_alphabet.h"
+

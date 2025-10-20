@@ -236,6 +236,7 @@ typedef struct spair_s {
   double  Pval;   // The P-value
   double  Eval;   // The E-value
   int     covary; // TRUE if pair covaries
+  int     isRF;   // TRUE if both residues are in the RF
   
   BPTYPE  bptype_given; // in given structure
   BPTYPE  bptype_caco;  // in cacofold structure
@@ -427,6 +428,7 @@ struct data_s {
   int                  doDotPlot;
   int                  ignorebps;  // FALSE for R-scape, TRUE for Pfcar
   int                  prep_onehot;
+  int                  prep_RF;
 };
 
 

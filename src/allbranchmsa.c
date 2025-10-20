@@ -75,7 +75,7 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
   if (allmsa->nseq != dim) esl_fatal("Tree_AllBranchMSAPlot() not a all-branch msa");
 
   pipe = popen(gnuplot, "w");
-  fprintf(pipe, "set terminal postscript color 14\n");
+  fprintf(pipe, "set terminal pdfcairo\n");
   esl_sprintf(&psfile, "%s.ps", plotfile);
   fprintf(pipe, "set output '%s'\n", psfile);
   /* matlab's 'jet' colormap scale */
@@ -160,17 +160,20 @@ AllBranchMSA_Plot(char *plotfile, char *gnuplot, ESL_TREE *T, int *msamap, ESL_M
 static int
 allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
-  int mut;
-  int val;
-  int b;
-  int c;
+  char  tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE *fp = NULL;
+  int   mut;
+  int   val;
+  int   b;
+  int   c;
+  int   status;
   
   fprintf(pipe, "set ylabel 'Tree Branch'\n");
   fprintf(pipe, "set xlabel 'Alignment position'\n");
   fprintf(pipe, "set xrange [%d:%d]\n", 1, L);
   fprintf(pipe, "set yrange [%d:%d]\n", 1, dim);
   fprintf(pipe, "unset title\n");
-  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 107 palette\n");
+  if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
 
   for (b = 0; b < dim; b ++) {
     for (c = 0; c < L; c ++) {
@@ -178,18 +181,26 @@ allbranch_branchcol(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIS
       mut = mutb[c][b];
 
       val = (ct && ct[c] > 0 && ismut(mut,K))? TRUE: FALSE;
-      fprintf(pipe,   "%d %d %d\n", c, b, val);
+      fprintf(fp,   "%d %d %d\n", c, b, val);
     }
   }
+  fclose(fp);
+  fprintf(pipe, "plot '%s' u 1:2:3:3 title '' with point ls 107 palette\n", tmpfile);
 
-  fprintf(pipe, "e\n");
+  pclose(pipe);
+  remove(tmpfile);
 
   return eslOK;
+
+ ERROR:
+  return eslFAIL;
 }
 
 static int
 allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
+  char  tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE *fp = NULL;
   int **pmut = NULL;
   int   K2 = K*K;
   int   kx, ky;
@@ -234,13 +245,17 @@ allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIS
   fprintf(pipe, "set size square\n");
   fprintf(pipe, "set xrange [-0.2:%f]\n", K2-0.8);
   fprintf(pipe, "set yrange [-0.2:%f]\n", K2-0.8);
-  
-  fprintf(pipe, "plot '-' u 1:2:3:3 title '' with point ls 108 palette\n");
+  if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
+
   for (kx = 0; kx < K2; kx ++) 
     for (ky = 0; ky < K2; ky ++) 
-      if (pmut[kx][ky] > 50) fprintf(pipe,   "%d %d %d\n", kx, ky, pmut[kx][ky]);
-      else                   fprintf(pipe,   "%d %d 0\n", kx, ky);
-  fprintf(pipe, "e\n");
+      if (pmut[kx][ky] > 50) fprintf(fp,   "%d %d %d\n", kx, ky, pmut[kx][ky]);
+      else                   fprintf(fp,   "%d %d 0\n", kx, ky);
+  fclose(fp);
+  fprintf(pipe, "plot '%s' u 1:2:3:3 title '' with point ls 108 palette\n", tmpfile);
+
+  pclose(pipe);
+  remove(tmpfile);
 
   free(pmut[0]);
   free(pmut);
@@ -255,18 +270,20 @@ allbranch_pmutation(FILE *pipe, int L, int K, int dim, int **mutb, int *ct, CLIS
 static int
 allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allmsa, int *ct, CLIST *clist, char *errbuf, int verbose)
 {
-  CLIST          *list = NULL;
-  int             K = allmsa->abc->K;
-  int             L = allmsa->alen;
-  int             alloc_ncnt = 5;
-  int             ncnt;
-  int             ncnt_cutoff;
-  int             posi, posj;
-  int             h;
-  int             tt = 0;
-  int             tc = 0;
-  int             ci, cj;
-  int             status;
+  char   tmpfile[16] = "esltmpXXXXXX"; /* tmpfile template */
+  FILE  *fp = NULL;
+  CLIST *list = NULL;
+  int    K = allmsa->abc->K;
+  int    L = allmsa->alen;
+  int    alloc_ncnt = 5;
+  int    ncnt;
+  int    ncnt_cutoff;
+  int    posi, posj;
+  int    h;
+  int    tt = 0;
+  int    tc = 0;
+  int    ci, cj;
+  int    status;
 
   clist = CMAP_CreateCList(alloc_ncnt, NULL, NULL, NULL, -1, -1, DIST_NONE);
   if (clist == NULL) ESL_XFAIL(eslFAIL, errbuf, "Failed to allocate clist");
@@ -306,7 +323,7 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
   fprintf(pipe, "set size square\n");
   fprintf(pipe, "set xrange [%d:%d]\n", 1, msamap[L-1]+1);
   fprintf(pipe, "set yrange [%d:%d]\n", 1, msamap[L-1]+1);
-  fprintf(pipe, "plot '-' u 1:2 title '' with point ls 108\n");
+  if ((status = esl_tmpfile_named(tmpfile, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   
   for (h = 0; h < ncnt_cutoff; h ++) {
     posi = list->srtcnt[h]->posi;
@@ -314,10 +331,15 @@ allbranch_columncov(FILE *pipe, int dim, int **mutb, int *msamap, ESL_MSA *allms
     
     if (list->srtcnt[h]->isbp) { fprintf(stdout, "*%d %d %f\n", posi, posj, list->srtcnt[h]->sc); tt ++; tc ++; }
     else                       { fprintf(stdout, " %d %d %f\n", posi, posj, list->srtcnt[h]->sc); tt ++; }
-    fprintf(pipe,   "%d %d %d\n", posi, posj, 1);
-    fprintf(pipe,   "%d %d %d\n", posj, posi, 1);
+    fprintf(fp,   "%d %d %d\n", posi, posj, 1);
+    fprintf(fp,   "%d %d %d\n", posj, posi, 1);
   }
-  fprintf(pipe, "e\n");
+  fclose(fp);
+  fprintf(pipe, "plot '%s' u 1:2 title '' with point ls 108\n", tmpfile);
+
+  pclose(pipe);
+  remove(tmpfile);
+  
   printf("%d/%d\n", tc, tt);
 
   free(list);

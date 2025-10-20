@@ -63,7 +63,7 @@ power_Histogram_Destroy(POWERHIS *powerhis)
 
 int 
 power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct mutual_s *mi, POWER *power, CLIST *clist, CTLIST *ctlist,
-		   int *nsubs, int *njoin, int *ndouble, char *errbuf, int verbose)
+		   int *nsubs, int *njoin, int *ndouble, ESL_MSA  *omsa, char *errbuf, int verbose)
 {
   SPAIR   *spair = NULL;
   int     *ct;
@@ -71,6 +71,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   int64_t  dim = alen * (alen - 1.) / 2;
   int64_t  n = 0;
   int64_t  s;
+  int      gc;
   int      i, j;
   int      ii, jj;
   int      c;
@@ -79,6 +80,8 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   if (ret_spair == NULL) return eslOK;
 
   if (!nsubs && !ndouble && !njoin) esl_fatal("need some kind of substitutions!");
+
+  printf("\n^^^^RFRF %s\n", omsa->rf);
   
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 
@@ -98,6 +101,16 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
       spair[n].nsubs_double = (ndouble)? ndouble[i*alen+j]   : 0;
       spair[n].power_double = -1.;
 
+      // default if there is no ref sequence provided with the alignment
+      spair[n].isRF = FALSE;
+      
+      // isRF = TRUE if both residues are in the reference sequence
+      if (omsa->rf) {
+	spair[n].isRF = TRUE;
+	if (omsa->rf[spair[n].iabs] == '.' ||  omsa->rf[spair[n].jabs] == '.')
+	  spair[n].isRF = FALSE;
+      }
+	  
       spair[n].covary = FALSE;
       spair[n].sc     = -1.;
       spair[n].Pval   = -1.;
@@ -322,7 +335,7 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 }
 
 int
-power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in_given, int onehot)
+power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in_given, int onehot, int RFonly)
 {
   POWERTYPE      powertype;
   FILE          *fp = NULL;
@@ -334,13 +347,18 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   double         Eval_fake  = -1.;
   double         power_fake = -1.;
   int64_t        iabs, jabs;
+  int64_t        curr_n = 0;
   int64_t        n;
   int64_t        l;
   int64_t        x;
+  int            is_basepair;
   int            status;
 
   if (!prepfile) return eslOK;
 
+  // MASK=0 position in the input alignment     analyzed by R-scape
+  // MASK=1 position in the input alignment NOT analyzed by R-scape
+  //
   ESL_ALLOC(mask, sizeof(int) * Labs);
   esl_vec_ISet(mask, Labs, 1);
   for (n = 0; n < dim; n ++) { mask[spair[n].iabs-1] = 0; }
@@ -349,18 +367,17 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   
   powertype = spair[0].powertype;
  
-
   fprintf(fp, "# legend\n#\n");
-  if (onehot) fprintf(fp, "# i j E-value power ctype bptype_onehot\n#\n");
-  else        fprintf(fp, "# i j E-value power ctype bptype\n#\n");
+  if (onehot) fprintf(fp, "# i j E-value power bptype_onehot\n#\n");
+  else        fprintf(fp, "# i j E-value power bptype\n#\n");
   fprintf(fp, "# 1 < i < j < alignment length=%lld\n", Labs);
   fprintf(fp, "# E-value [0,%.1f), provided by R-scape.\n", Eval_max);
   fprintf(fp, "# power[0,1], provided by R-scape\n");
   if (onehot) {
-    fprintf(fp, "# BPTPYE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT]\n");
+    fprintf(fp, "# BPTYPE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT]\n");
   }
   else {
-    fprintf(fp, "# BYTPYE: \n");
+    fprintf(fp, "# BPTYPE: \n");
     fprintf(fp, "# WWc=0, WWt=1, WHc=2, WHt=3, WSc=4, WSt=5, Wxc=6, Wxt=7, xWc=8, xWt=9,\n");
     fprintf(fp, "# HWc=10, HWt=11, HHc=12, HHt=13, HSc=14, HSt=15, Hxc=16, Hxt=17, xHc=18, xHt=19,\n");
     fprintf(fp, "# SWc=20, SWt=21, SHc=22, SHt=23, SSc=24, SSt=25, Sxc=26, Sxt=27, xSc=28, xSt=29,\n");
@@ -370,47 +387,82 @@ power_PREP_Write(char *prepfile, int64_t Labs, int64_t dim, SPAIR *spair, int in
   fprintf(fp, "#MASK:");
   for (l = 0; l < Labs; l ++) fprintf(fp, "%d", mask[l]);
   fprintf(fp, "\n");
-
+  
+  // if you want to write all alignments positions in the prep
+#if 0
   for (iabs = 1; iabs <= Labs-1; iabs ++)
     for (jabs = iabs+1; jabs <= Labs; jabs ++) {
       
-      for (n = 0; n < dim; n ++) {
-	if (iabs == spair[n].iabs && jabs == spair[n].jabs) {
-	  
-	  bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
-	  bptype2onehot(bptype, bp_onehot);
+      if (iabs == spair[curr_n].iabs && jabs == spair[curr_n].jabs) {
+	
+	bptype = (in_given)? spair[curr_n].bptype_given : spair[curr_n].bptype_caco;
+	bptype2onehot(bptype, bp_onehot);
+	
+	Evalue = (spair[curr_n].Eval < Eval_max)? spair[curr_n].Eval : Eval_max;
 
-	  Evalue = (spair[n].Eval < Eval_max)? spair[n].Eval : Eval_max;
-	  
-	  switch(powertype) {
-	  case SINGLE_SUBS:
-	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power);
-	    break;
-	  case JOIN_SUBS:
-	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power_join);
-	    break;
-	  case DOUBLE_SUBS:
-	    fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[n].power_double);
-	    break; 
-	  }
-	  if (onehot) {
-	    for (x = 0; x < BPONEHOT; x ++) 
-	      fprintf(fp, "%d\t", bp_onehot[x]);
-	    fprintf(fp, "\n");      
-	  }
-	  else 
-	    fprintf(fp, "%d\n", bptype);
-	  
+	switch(powertype) {
+	case SINGLE_SUBS:
+	  fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[curr_n].power);
 	  break;
+	case JOIN_SUBS:
+	  fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[curr_n].power_join);
+	  break;
+	case DOUBLE_SUBS:
+	  fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Evalue, spair[curr_n].power_double);
+	  break; 
 	}
+	if (onehot) {
+	  for (x = 0; x < BPONEHOT; x ++) 
+	    fprintf(fp, "%d\t", bp_onehot[x]);
+	  fprintf(fp, "\n");      
+	}
+	else 
+	  fprintf(fp, "%d\n", bptype);
+	
+	curr_n ++;
       }
-      
-      if (n == dim) {
+      else {
 	fprintf(fp, "%lld\t%lld\t%g\t%g\t", iabs, jabs, Eval_fake, power_fake);
 	if (onehot) fprintf(fp, "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\n");
 	else        fprintf(fp, "\n");
       }
     }
+#endif
+  
+  // if you want to write in the prep only the analyzed positions in the alignment
+#if 1
+  for (n = 0; n < dim; n ++) {
+    bptype = (in_given)? spair[n].bptype_given : spair[n].bptype_caco;
+    is_basepair = (bptype < STACKED)? TRUE : FALSE;
+    bptype2onehot(bptype, bp_onehot);
+
+    // if RF_only=TRUE, report only RFs or basepairs
+    if (RFonly && !(spair[curr_n].isRF || is_basepair) ) continue;
+
+    Evalue = (spair[n].Eval < Eval_max)? spair[n].Eval : Eval_max;
+    
+    switch(powertype) {
+    case SINGLE_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t", spair[n].iabs, spair[n].jabs, Evalue, spair[n].power);
+      break;
+    case JOIN_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t", spair[n].iabs, spair[n].jabs, Evalue, spair[n].power_join);
+      break;
+    case DOUBLE_SUBS:
+      fprintf(fp, "%lld\t%lld\t%g\t%g\t", spair[n].iabs, spair[n].jabs, Evalue, spair[n].power_double);
+      break; 
+    }
+    if (onehot) {
+      for (x = 0; x < BPONEHOT; x ++) 
+	fprintf(fp, "%d\t", bp_onehot[x]);
+      fprintf(fp, "\n");      
+    }
+    else 
+      fprintf(fp, "%d\n", bptype);
+  }
+  
+#endif  
+
   
   fclose(fp);
   free(mask);

@@ -1,0 +1,279 @@
+import numpy as np
+import jax
+import jax.numpy as jnp
+import jax.nn as jnn
+
+
+def G6X_Inside_JAX(K: int, min_hairpin: int = 0):
+    
+    @jax.jit
+    def g6x_inside_jax(log_psq, log_t, e_single, e_pair):
+        L      = len(log_psq)
+        psq    = jnn.softmax(log_psq, axis=1)
+        L_arr  = jnp.arange(L)
+        a_arr  = jnp.arange(K)
+        ab_arr = jnp.arange(K*K)
+
+        # G6X/G6XS Grammar
+        #
+        #   S -> LS   | L   | end
+        #   L -> aFa' | aa' | a
+        #   F -> aFa' | aa' | LS
+        N = 3
+        nt_idx = jnp.arange(N)
+         
+        t         = jnn.softmax(log_t)     # transition probabilities
+        pe_single = jnn.softmax(e_single)  # single emission probabilities
+        pe_pair   = jnn.softmax(e_pair)    # pair   emission probabilities
+
+        # the nussinov model
+        N = 1 # number of nonterminals
+        
+        # initialize
+        S_zero = jnp.zeros((L, L))
+        L_zero = jnp.zeros((L, L))
+        F_zero = jnp.zeros((L, L))
+ 
+        def S_i_jarray(i_: int, S, L, F):
+            """fills S[i,0..L-1]"""
+            # Iterate backwards through i
+            i = L - i_ - 1            
+            S_i_jarray_ret = S.at[i].set(jax.vmap(lambda j: g6X_S_ij(K,i,j,S,L,F,psq,t,pe_single,pe_pair,min_hairpin))(L_arr))
+            return S_i_jarray_ret
+        
+        def L_i_jarray(i_: int, S, L, F):
+            """fills L[i,0..L-1]"""
+            # Iterate backwards through i
+            i = L - i_ - 1            
+            L_i_jarray_ret = L.at[i].set(jax.vmap(lambda j: g6X_L_ij(K,i,j,S,L,F,psq,t,pe_single,pe_pair,min_hairpin))(L_arr))
+            return L_i_jarray_ret
+        
+        def F_i_jarray(i_: int, S, L, F):
+            """fills S[i,0..L-1]"""
+            # Iterate backwards through i
+            i = L - i_ - 1
+            F_i_jarray_ret = F.at[i].set(jax.vmap(lambda j: g6X_F_ij(K,i,j,S,L,F,psq,t,pe_single,pe_pair,min_hairpin))(L_arr))
+            return F_i_jarray_ret 
+        
+        """S[0..L-1,0..L-1]"""
+        # order is: L, F, S
+        L_iarray_jarray = jax.lax.fori_loop(0, L, L_i_jarray, L_zero)
+        F_iarray_jarray = jax.lax.fori_loop(0, L, F_i_jarray, F_zero)
+        S_iarray_jarray = jax.lax.fori_loop(0, L, S_i_jarray, S_zero)
+        
+        S_1_L_val = S_iarray_jarray[0, L-1]
+        return S_1_L_val
+                      
+    return g6x_inside_jax
+
+def g6x_S_ij(K: int, i: int, j: int, S, L, F, psq, t, pe_single, pe_pair, min_hairpin):
+    """fills S[i,j]"""
+    L      = len(psq)
+    L_arr  = jnp.arange(L)
+    a_arr  = jnp.arange(K)
+    ab_arr = jnp.arange(K*K)
+
+    def S_rule1_k(k: int):
+        """ L(i,k) S(k+1,j) """
+        nonterm_1 = jax.lax.select(k < i, 0.0, L[i,k])
+        nonterm_2 = jax.lax.select(j < k, 0.0, S[k+1,j])
+            
+        S_rule1_k_val = t[0][0] * nonterm_1 * nonterm_2
+        return S_rule1_k_val
+    
+    def S_rule2():
+        """ L(i,j) """
+        S_rule2_val = t[0][1] * L[i,j]
+        return S_rule2_val
+  
+    def S_rule3():
+        """ end """
+        S_rule2_val = jax.lax.select(i <= j, 0.0, t[0][2])
+        return S_rule3_val
+  
+    S_rule1_val = jnp.sum(jax.vmap(S_rule1_k)(L_arr))
+    S_rule2_val = S_rule2
+    S_rule3_val = S_rule3
+    
+    #  LS + L + end
+    S_ij_val = jax.lax.select(j >= i, S_rule1_val + S_rule2_val + S_rule3_val, 0.0)
+    return S_ij_val
+
+def g6x_L_ij(K: int, i: int, j: int, S, L, F, psq, t, pe_single, pe_pair, min_hairpin):
+    """fills L[i,j]"""
+    L      = len(psq)
+    L_arr  = jnp.arange(L)
+    a_arr  = jnp.arange(K)
+    ab_arr = jnp.arange(K*K)
+
+    def L_rule1_ab(k: int):
+        """ a F(i+1,j-1) b """
+        nonterm = jax.lax.select(j < i, 0.0, F[i+1,j-1])
+        L_rule1_ab_val = psq[i,ab//4] * psq[j,ab%4] * t[1][0] * pe_pair[ab] * nonterm
+        return L_rule1_ab_val
+    
+    def L_rule2_ab():
+        """ ab """
+        nonterm = jax.lax.select(j < i, 0.0, 1.0)
+        L_rule2_ab_val = psq[i,ab//4] * psq[j,ab%4] * t[1][1] * nonterm
+        return L_rule2_ab_val
+  
+    def L_rule3_a():
+        """ a """
+        nonterm = jax.lax.select(j < i, 0.0, 1.0)
+        L_rule3_a_val = psq[i,a] * t[1][2] * nonterm
+        return L_rule3_a_val
+  
+    L_rule1_val = jnp.sum(jax.vmap(L_rule1_ab)(ab_arr))
+    L_rule2_val = jnp.sum(jax.vmap(L_rule2_ab)(ab_arr))
+    L_rule3_val = jnp.sum(jax.vmap(L_rule3_a)(a_arr))
+    
+    #  aFb + ab + a
+    L_ij_val = jax.lax.select(j >= i, L_rule1_val + L_rule2_val + L_rule3_val, 0.0)
+    return L_ij_val
+
+def g6x_F_ij(K: int, i: int, j: int, S, L, F, psq, t, pe_single, pe_pair, min_hairpin):
+    """fills F[i,j]"""
+    L      = len(psq)
+    F_arr  = jnp.arange(L)
+    a_arr  = jnp.arange(K)
+    ab_arr = jnp.arange(K*K)
+
+    def F_rule1_ab(k: int):
+        """ a F(i+1,j-1) b """
+        nonterm = jax.lax.select(j < i, 0.0, F[i+1,j-1])
+        F_rule1_ab_val = psq[i,ab//4] * psq[j,ab%4] * t[2][0] * pe_pair[ab] * nonterm
+        return F_rule1_ab_val
+    
+    def F_rule2_ab():
+        """ ab """
+        nonterm = jax.lax.select(j < i, 0.0, 1.0)
+        F_rule2_ab_val = psq[i,ab//4] * psq[j,ab%4] * t[2][1] * nonterm
+        return F_rule2_ab_val
+  
+    def F_rule3_k():
+        """ LS """
+        nonterm_1 = jax.lax.select(k < i, 0.0, L[i,k])
+        nonterm_2 = jax.lax.select(j < k, 0.0, S[k+1,j])    
+        F_rule3_K_val = t[2][2] * nonterm_1 * nonterm_2
+        return F_rule3_k_val
+  
+    F_rule1_val = jnp.sum(jax.vmap(F_rule1_ab)(ak_arr))
+    F_rule2_val = jnp.sum(jax.vmap(F_rule2_ab)(ab_arr))
+    F_rule3_val = jnp.sum(jax.vmap(F_rule3_k)(L_arr))
+    
+    #  aFb + ab + LS
+    F_ij_val = jax.lax.select(j >= i, F_rule1_val + F_rule2_val + F_rule3_val, 0.0)
+    return F_ij_val
+
+def g6x_inside_standard(log_psq, log_t, e_single, e_pair, K: int=4, min_hairpin: int = 0):
+    
+    """Standard implementation of probabilistic nussinov"""
+    L   = len(log_psq)
+    psq = jnn.softmax(log_psq, axis=1)
+
+    t         = jnn.softmax(log_t)     # transition probabilities
+    pe_single = jnn.softmax(e_single)  # single emission probabilities
+    pe_pair   = jnn.softmax(e_pair)    # pair   emission probabilities
+
+    S = [[0.0 for _ in range(L)] for _ in range(L)]
+    L = [[0.0 for _ in range(L)] for _ in range(L)]
+    F = [[0.0 for _ in range(L)] for _ in range(L)]
+    
+    #   L -> aFa' | aa' | a
+    #   F -> aFa' | aa' | LS
+    #   S -> LS   | L   | end
+ 
+    for i in range(L-1, -1, -1):
+        for j in range(i, L):
+
+            # L 
+            for p in range(K*K):
+                L[i][j] += psq[i][p//K] * psq[j][p%K] * t[1][0] * pe_pair[p] * (F[i+1][j-1] if i < j-1  else 0.0)
+            for p in range(K*K):
+                L[i][j] += psq[i][p//K] * psq[j][p%K] * t[1][1] * pe_pair[p] * (1.0         if i == j-1 else 0.0)
+            for a in range(K):
+                L[i][j] += psq[i][a] * t[1][2] * pe_single[a] * (1.0 if i == j else 0)
+                
+            # F
+            for p in range(K*K):
+                F[i][j] += psq[i][p//K] * psq[j][p%K] * t[2][0] * pe_pair[p] * (F[i+1][j-1] if i < j-1  else 0.0)
+            for p in range(K*K):
+                F[i][j] += psq[i][p//K] * psq[j][p%K] * t[2][1] * pe_pair[p] * (1.0         if i == j-1 else 0.0)
+                
+            for k in range(i+min_hairpin+1, j+1):
+                for p in range(K*K):
+                    nonterm_1 = L[i][k]
+                    nonterm_2 = S[k+1][j]
+                    F[i][j] += psq[i][p//K] * psq[k][p%K] * t[2][2] * pe_pair[p] * nonterm_1 * nonterm_2
+
+            # S 
+            for k in range(i+min_hairpin+1, j+1):
+                for p in range(K*K):
+                    nonterm_1 = L[i][k]
+                    nonterm_2 = S[k+1][j]
+                    S[i][j] += psq[i][p//K] * psq[k][p%K] * t[0][0] * pe_pair[p] * nonterm_1 * nonterm_2
+            
+            S[i][j] += t[2][1] * L[i][j] 
+            S[i][j] += (t[2][2] if i==j+1 else 0.0)
+
+    return float(S[0][L-1])
+
+
+def test_G6X_Inside_JAX(L: int, min_hairpin: int = 0):
+    K = 4
+    
+    # paired emission probabilities 4x4 matrix
+    e_pair = np.array([-6.716494,-6.893637,-6.396199,-1.875715,  #AA AC AG AU
+                       -6.556362,-7.468432,-1.316826,-6.944485,  #CA CC CG CU
+                       -6.497039,-1.265024,-6.815633,-2.819071,  #GA GC GG GU
+                       -1.796519,-6.921051,-2.806054,-6.366497]) #UA UC UG UU
+
+    # unpaired emission probabilities 4x1 matrix
+    e_single = np.array([-1.013576,-1.753141,-1.518408,-1.405715]) # A, C, G, U
+
+    # transition probabilities (t[0]=tS[3],t[1]=tL[3],t[2]=tF[3])
+    log_t = np.zeros([3,3])
+    log_t[0][0] = -0.313780 # t0   S -> LS     | L    | epsilon 
+    log_t[0][1] = -2.855211
+    log_t[0][2] = -1.550808
+    log_t[1][0] = -1.395566 # t1   L -> a F a' | a a' | a
+    log_t[1][1] = -9.210340
+    log_t[1][2] = -0.284345
+    log_t[2][0] = -0.987890 # t2   F -> a F a' | a a' | LS
+    log_t[2][1] = -9.210340
+    log_t[2][2] = -0.465472
+
+    print("G6X param")
+    print("     transistion S", np.exp(log_t[0]))
+    print("     transistion L", np.exp(log_t[1]))
+    print("     transistion F", np.exp(log_t[2]))
+    print("     emissions single", np.exp(e_single))
+    print("     emissions paired", np.exp(e_pair))
+
+    # a random probabilistic sequence"
+    log_psq = np.random.normal(size=(L, K))
+    psq     = np.exp(log_psq) / np.sum(np.exp(log_psq), axis=1, keepdims=True)
+    print("The prob sequence of length", len(psq))
+    print(psq)
+
+    g6x_inside_jax  = G6X_Inside_JAX(K, min_hairpin)
+    inside_jax      = g6x_inside_jax     (log_psq, log_t, e_single, e_pair)
+    inside_standard = g6x_inside_standard(log_psq, log_t, e_single, e_pair, K, min_hairpin)
+    
+    assert np.allclose(
+        inside_jax, inside_standard, atol=1e-5), f"jax={inside_jax} std={inside_standard}"
+    print(f"Test passed", inside_standard, inside_jax)
+
+
+def main():
+
+    L = 40
+    
+    print("test G6X inside")
+    test_G6X_Inside_JAX(L, min_hairpin=0)
+    test_G6X_Inside_JAX(L, min_hairpin=3)
+
+
+if __name__ == "__main__":
+    main()

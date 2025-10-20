@@ -21,13 +21,15 @@ class bcolors:
 def tree_stack(trees):
     return jax.tree.map(lambda *v: jnp.stack(v), *trees)
 
-def plot_losses(outdir, epoch, losses, x_max, y_max):
+def plot_losses(outdir, epoch, losses, x_max, y_min, y_max):
     plt.plot(losses)
     plt.xlabel("Epoch")
     plt.ylabel("Loss = - log P(sq)")
     if (x_max >= 0):
        plt.xlim(xmax=x_max)
-    if (y_max >= 0):
+    if y_min >= 0 and y_max >= 0:
+       plt.ylim(y_min, y_max)
+    elif (y_max >= 0):
        plt.ylim(top=y_max)
          
     plt.savefig(outdir / f"losses_i{epoch}.pdf",  format="pdf")
