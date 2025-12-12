@@ -43,8 +43,9 @@ def get_argparse():
     parser.add_argument('--vienna_sen', type=float)
     parser.add_argument('--vienna_ppv', type=float)
     
-    parser.add_argument('--acc_ymin',    type=float, default = -3.0)
-    parser.add_argument('--acc_ymax',    type=float, default = 78.0)
+    parser.add_argument('--acc_ymin',    type=float, default = -0.03)
+    parser.add_argument('--acc_ymax',    type=float, default = 0.78)
+    parser.add_argument('--losses_xmax', type=float, default = -1.0)
     parser.add_argument('--losses_ymin', type=float, default = -1.0)
     parser.add_argument('--losses_ymax', type=float, default = -1.0)
 
@@ -68,12 +69,12 @@ def get_argparse():
     
     return parser
 
-def replot_losses(run_dir, loss_file, epoch, ymax):
+def replot_losses(run_dir, loss_file, epoch, xmax, ymin, ymax):
     
     losses = pd.read_csv(loss_file,sep='\s+',header=None)
     losses = pd.DataFrame(losses)
     
-    plot_losses(run_dir, epoch, losses[0], ymax)
+    plot_losses(run_dir, epoch, losses[0], xmax, ymin, ymax)
     
     return
 
@@ -87,7 +88,7 @@ def plot_param(run_dir, epoch, param_file, param_file_ref):
     
     return
 
-def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, losses_ymin, losses_ymax, verbose):
+def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, losses_xmax, losses_ymin, losses_ymax, verbose):
 
     # optimization parameters
     n_epoch = args['n_epoch']
@@ -106,11 +107,18 @@ def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc
     postgrm_file = args['postgrm_file']
     fold_method  = args['fold_method']
 
+    # the test directory and file
     test_name = str(Path(test_file).stem)
     test_dir =  Path(str(run_dir)+"/"+test_name+"."+fold_method)
-    print("\ntest_dir:", test_dir)
     print("test_name:", test_name)
-    
+    print("\ntest_dir:", test_dir)
+
+    # this may be a new test to perform 
+    # check whether the directory exists or create
+    if not os.path.exists(test_dir):
+        test_dir.mkdir(parents=False, exist_ok=True)
+        print("\ncreating test_dir:", test_dir)
+   
     # run tornado with ML parameters as control
     train_name = str(Path(args['train_data']).stem)
 
@@ -130,6 +138,10 @@ def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc
         else:
             sen_ML, ppv_ML, f1_ML, t_ML, f_ML, tp_ML = tornado_fold.tornado_fold(test_dir, fold_method, param_file_ML, grm_file, postgrm_file, test_file)
             params_ML = g5_params.G5_read_paramfile(param_file_ML, False)
+
+        sen_ML = sen_ML / 100
+        ppv_ML = ppv_ML / 100
+        f1_ML  = f1_ML  / 100
         print(f"paramfile ML: {param_file_ML}\nsen {sen_ML} ppv {ppv_ML} f1 {f1_ML}")
  
             
@@ -149,10 +161,14 @@ def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc
 
         if os.path.exists(stats_file):
             sen, ppv, f1, t, f, tp = tornado_fold.grmfold_stats_parse(stats_file)
-        #else:
-        #    sen, ppv, f1, t, f, tp = tornado_fold.tornado_fold(test_outdir, fold_method, param_file, grm_file, postgrm_file, test_file)
+        else:
+            sen, ppv, f1, t, f, tp = tornado_fold.tornado_fold(test_dir, fold_method, param_file, grm_file, postgrm_file, test_file)
 
+        sen = sen / 100
+        ppv = ppv / 100
+        f1  = f1 / 100        
         print(f"Epoch {epoch} sen {sen} ppv {ppv} f1 {f1}")
+        
         acc_sen[epoch] = sen
         acc_ppv[epoch] = ppv
         acc_f1[epoch]  = f1
@@ -163,7 +179,7 @@ def plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc
 
     # plot losses
     loss_file = str(run_dir / "loss.txt")
-    replot_losses(run_dir, loss_file, epoch, losses_ymin, losses_ymax)
+    replot_losses(run_dir, loss_file, epoch, losses_xmax, losses_ymin, losses_ymax)
 
  
     return
@@ -181,6 +197,7 @@ def main(args):
 
     acc_ymin    = args['acc_ymin']
     acc_ymax    = args['acc_ymax']
+    losses_xmax = args['losses_xmax']
     losses_ymin = args['losses_ymin']
     losses_ymax = args['losses_ymax']
     
@@ -189,11 +206,11 @@ def main(args):
     method  = str(args['fold_method'])
 
     # ~/projects/d-SCFG_June2025/experiments/ViennaRNA-2.7.0/trna1415_annote_2of2.ViennaRNA.mea.sto.acc
-    vienna_sen = args['vienna_sen'] # 70.26 for trna1415_annote_2of2
-    vienna_ppv = args['vienna_ppv'] # 66.99 for trna1415_annote_2of2
+    vienna_sen = args['vienna_sen'] / 100 # 70.26 for trna1415_annote_2of2
+    vienna_ppv = args['vienna_ppv'] / 100 # 66.99 for trna1415_annote_2of2
     vienna_F1 = 2*vienna_sen*vienna_ppv / (vienna_sen + vienna_ppv)
     
-    plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, losses_ymin, losses_ymax, verbose)
+    plot_epochs_G5(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, losses_xmax, losses_ymin, losses_ymax, verbose)
 
 
     

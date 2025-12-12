@@ -1611,7 +1611,6 @@ r3d_read_J4(esl_pos_t i, char *p, esl_pos_t n, R3D_J4 **ret_J4, ESL_ALPHABET *ab
   len = 0;
   while ( isspace(p[i]) && i < n) i ++;
   while (!isspace(p[i]) && i < n) {
-    
     J4->name[len++] = p[i++];
   }
   J4->name[len] = '\0';
@@ -1637,7 +1636,7 @@ r3d_read_BS(esl_pos_t i, char *p, esl_pos_t n, R3D_BS **ret_BS, ESL_ALPHABET *ab
   ESL_ALLOC(BS->Loop, sizeof(char) * salloc);
   ESL_ALLOC(BS->name, sizeof(char) * salloc);
   BS->type = R3D_TP_BS;
-  
+
   // Loop
   len = 0;
   while ( isspace(p[i]) && i < n) i ++;
@@ -1649,9 +1648,10 @@ r3d_read_BS(esl_pos_t i, char *p, esl_pos_t n, R3D_BS **ret_BS, ESL_ALPHABET *ab
   // name
   len = 0;
   while ( isspace(p[i]) && i < n) i ++;
-  while (!isspace(p[i]) && i < n) {
+  while (!isspace(p[i]) && i < n-1) {
     BS->name[len++] = p[i++];
   }
+  if (!isspace(p[i])) BS->name[len++] = p[i];
   BS->name[len] = '\0';
   
   *ret_BS = BS;

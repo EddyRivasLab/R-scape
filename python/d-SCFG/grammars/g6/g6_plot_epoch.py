@@ -172,18 +172,22 @@ def plot_epochs_G6(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc
             sen, ppv, f1, t, f, tp = tornado_fold.grmfold_stats_parse(stats_file)
         else:
             sen, ppv, f1, t, f, tp = tornado_fold.tornado_fold(test_dir, fold_method, param_file, grm_file, postgrm_file, test_file)
- 
+
+        sen = sen / 100
+        ppv = ppv / 100
+        f1  = f1 / 100        
         print(f"Epoch {epoch} sen {sen} ppv {ppv} f1 {f1}")
-        acc_sen[epoch]     = sen/100
-        acc_ppv[epoch]     = ppv/100
-        acc_f1[epoch]      = f1/100
+        
+        acc_sen[epoch]     = sen
+        acc_ppv[epoch]     = ppv
+        acc_f1[epoch]      = f1
         acc_true[epoch]    = t
         acc_found[epoch]   = f
         acc_truepos[epoch] = tp
             
         # plot accuracy
         plot_accuracy(test_dir, epoch, acc_ymin, acc_ymax, acc_sen, acc_ppv, acc_f1, sen_ML, ppv_ML, f1_ML, vienna_sen, vienna_ppv, vienna_F1)
-        plot_accuracy_found_bps(test_dir, epoch, -2, 38, acc_found)
+        plot_accuracy_found_bps(test_dir, epoch, -2, 52, acc_found)
 
     # plot losses
     loss_file = str(run_dir / "loss.txt")
@@ -221,7 +225,7 @@ def main(args):
     if (vienna_sen + vienna_ppv > 0):
         vienna_F1 = 2*vienna_sen*vienna_ppv / (vienna_sen + vienna_ppv)
     
-    plot_epochs_G6(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, pair_ymax, losses_xmax, losses_ymin,losses_ymax, verbose)
+    plot_epochs_G6(args, run_dir, method, vienna_sen, vienna_ppv, vienna_F1, acc_ymin, acc_ymax, pair_ymax, losses_xmax, losses_ymin, losses_ymax, verbose)
 
     
 if __name__ == "__main__":

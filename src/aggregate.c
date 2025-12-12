@@ -51,8 +51,9 @@ agg_CalculatePvalues(SPAIR *spair, CTLIST *ctlist, RMLIST **ret_rmlist, int heli
   int     status;
 
   rmlist = struct_rmlist_FromCTLIST(helix_unpaired, pc_codon_thresh, nagg, agg_method, ctlist, r3d, add_bounds, errbuf, verbose);
-  if (!rmlist)  ESL_XFAIL(eslFAIL, errbuf, "error in agg_CalculatePvalues()");
-
+  if (!rmlist)
+    return eslOK;
+ 
   // the ctlist has been annotated with CTTYPE, pass that info to the pairs
   spair_annotate_from_rmlist(spair, rmlist, errbuf, verbose);
   
@@ -110,7 +111,7 @@ agg_CalculatePvalues(SPAIR *spair, CTLIST *ctlist, RMLIST **ret_rmlist, int heli
       
       rm->Pval[agg] = pval_agg;
       rm->Eval[agg] = rmlist->nrm * pval_agg;  // multiple test correction for testing nrm helices
-      if (rm->Eval[agg] < agg_Eval) rm->covary[agg] = TRUE;
+      if (rm->Eval[agg] >= 0 && rm->Eval[agg] < agg_Eval) rm->covary[agg] = TRUE;
     
       rm->agg_method[agg] = agg_method[agg];
     }

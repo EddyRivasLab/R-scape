@@ -285,7 +285,7 @@ static ESL_OPTIONS options[] = {
   { "--gapthresh",    eslARG_REAL,     "0.75",   NULL,  "0<=x<=1",   NULL,    NULL,  NULL,               "keep columns with < <x> fraction of gaps",                                                  1 },
   { "--minid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "minimum avgid of the given alignment",                                                      1 },
   { "--maxid",        eslARG_REAL,      NULL,    NULL, "0<x<=1.0",   NULL,    NULL,  NULL,               "maximum avgid of the given alignment",                                                      1 },
-  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,"-ntree",             "provide external tree to use",                                                              1 },
+  { "--treefile",   eslARG_STRING,      NULL,    NULL,       NULL,   NULL,    NULL,"--ntree",            "provide external tree to use",                                                              1 },
 
   { "--ntree",         eslARG_INT,       "1",    NULL,      "n>0",   NULL,    NULL,"--treefile",         "number of trees obtained by sequence rearrangements. Default is one from msa as is",        1 },
   { "--vshuffle",     eslARG_NONE,      NULL,    NULL,       NULL,   NULL,    NULL,  NULL,               "shuffle the residues in a column",                                                          1 },
@@ -704,7 +704,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
     
     cfg.foldparam->r3d = R3D_Read(cfg.r3dfile, cfg.abc, cfg.errbuf, cfg.verbose);
     if (cfg.foldparam->r3d == NULL) esl_fatal("%s\nfailed to create R3D grammar from file %s\n", cfg.errbuf, cfg.r3dfile);
-    if (1||cfg.verbose) R3D_Write(stdout, cfg.foldparam->r3d, TRUE);
+    if (cfg.verbose) R3D_Write(stdout, cfg.foldparam->r3d, TRUE);
   }
   
   // sequence used to fold
@@ -1421,7 +1421,7 @@ create_tree(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
       if (cfg->T[n]->N != msa->nseq)  { printf("Tree[%d] cannot not be used for this msa. T->N = %d nseq = %d\n", n, cfg->T[n]->N, msa->nseq); esl_fatal(cfg->errbuf); }
     }
       /* outtree file if requested */
-      if (cfg->ofile.outtreefile) {
+      if (cfg->ofile.outtreefile && msa->nseq > 1) {
 	if ((outtreefp = fopen(cfg->ofile.outtreefile, "w")) == NULL) esl_fatal("Failed to open outtreefile %s", cfg->ofile.outtreefile);
 	for (n = 0; n < cfg->nT; n ++)  esl_tree_WriteNewick(outtreefp, cfg->T[n]);
       }
@@ -2596,7 +2596,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 	printf("imin %d imax %d xmax %f xmin %f width %f\n",
 	       ranklist->ht->imin, ranklist->ht->imax, ranklist->ht->xmax, ranklist->ht->xmin, ranklist->ht->w);
       }
-      
+
       status = cov_WriteHistogram(&data, cfg->gnuplot, cfg->ofile.covhisfile, cfg->ofile.covqqfile, cfg->samplesize, ranklist, title);
       if (status != eslOK) goto ERROR;
       
@@ -2615,12 +2615,12 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   
   // find the CaCoFold structure 
   if (cfg->dofold && cfg->mode != RANSS) {
-    
+
     data.mode = FOLDSS;
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
-
+ 
     if (1||cfg->helix_stats) {
       //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
       struct_rmlist_Dump(msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);

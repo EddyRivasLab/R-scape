@@ -25,7 +25,7 @@ my $stofile = "$msafile";
 if ($afafile =~ /^(\S+).msa$/) { $afafile = "$1.afa"; }
 if ($stofile =~ /^(\S+).msa$/) { $stofile = "$1.sto"; }
 
-my $eslreformat = "/n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/rscape_v0.6.1/lib/hmmer/easel/miniapps/esl-reformat ";
+my $eslreformat = "/n/eddyfs01/home/erivas/src/src/mysource/versions/rscape/rscape_v0.6.1/lib/hmmer/easel/miniapps/easel reformat ";
 
 my $name = "";
 my $asq = "";

@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.5.9], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.6.4.d], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGS
@@ -117,7 +117,7 @@ E2MSA_SADIR="lib/hmmer/libdivsufsort"
 E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
-RSCAPE_DATE="July 2025"
+RSCAPE_DATE="December 2025"
 RSCAPE_COPYRIGHT="Copyright (C) 2017-2025 Elena Rivas, Harvard University."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
@@ -767,25 +767,43 @@ lib/RNAVIEW/src/rnaview_config.h
 AC_CONFIG_SUBDIRS(lib/hmmer)
 AC_CONFIG_SUBDIRS(lib/R2R/R2R-current)
 AC_CONFIG_SUBDIRS(lib/infernal)
-AC_CONFIG_SUBDIRS(lib/tornado)
+
+AC_PATH_PROG([BISON], [bison])
+
+if test -z "$BISON"; then
+  AC_MSG_WARN([bison not found; tornado will not be configured.])
+else
+  AC_CONFIG_SUBDIRS(lib/tornado)
+fi
+
+if test -z "$BISON"; then
+  EXTRA_TORNADO_FILES=""
+else
+  EXTRA_TORNADO_FILES="
+    lib/tornado/Makefile
+    lib/tornado/src/Makefile
+  "
+fi
 
 AC_CONFIG_FILES([
-Makefile
-src/Makefile
-documentation/Makefile
-documentation/e2msa/Makefile
-documentation/titlepage.tex
-documentation/copyright.tex
-lib/R2R/R2R-current/src/Makefile
-lib/FastTree/src/Makefile
-lib/hmmer/libdivsufsort/Makefile
-lib/hmmer/easel/Makefile
-lib/hmmer/Makefile
-lib/infernal/Makefile
-lib/tornado/Makefile
-lib/R-view/src/Makefile
-lib/RNAVIEW/src/Makefile
+  Makefile
+  src/Makefile
+  documentation/Makefile
+  documentation/e2msa/Makefile
+  documentation/titlepage.tex
+  documentation/copyright.tex
+  lib/R2R/R2R-current/src/Makefile
+  lib/FastTree/src/Makefile
+  lib/infernal/Makefile
+  lib/hmmer/libdivsufsort/Makefile
+  lib/hmmer/easel/Makefile
+  lib/hmmer/Makefile
+  lib/R-view/src/Makefile
+  lib/RNAVIEW/src/Makefile
+  $EXTRA_TORNADO_FILES
 ])
+
+
 
 #################################################################
 # 14. AC_OUTPUT

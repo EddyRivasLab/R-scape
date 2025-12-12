@@ -2287,8 +2287,8 @@ sub contacts_from_pdb {
     my $hmmersearch = "$hmmer/src/hmmsearch";
     
     my $easel    = "$hmmer/easel";
-    my $sfetch   = "$easel/miniapps/esl-sfetch";
-    my $reformat = "$easel/miniapps/esl-reformat";
+    my $sfetch   = "$easel/miniapps/easel sfetch";
+    my $reformat = "$easel/miniapps/easel reformat";
     
     my $isrna = 0;
     if ($dornaview) { $isrna = 1; }
@@ -2612,8 +2612,8 @@ sub find_pdbsq_in_ali {
     my $cmalign     = "$infernal/src/cmalign";
     
     my $easel    = "$hmmer/easel";
-    my $sfetch   = "$easel/miniapps/esl-sfetch";
-    my $reformat = "$easel/miniapps/esl-reformat";
+    my $sfetch   = "$easel/miniapps/easel sfetch";
+    my $reformat = "$easel/miniapps/easel reformat";
 
     open(F, ">$pdbsqfile") || die;
     print F ">$pdbname\n$pdbsq\n";
@@ -2976,7 +2976,7 @@ sub pdb_atoms {
     my $hmmalign  = "$hmmer/src/hmmalign";
     
     my $easel    = "$hmmer/easel";
-    my $reformat = "$easel/miniapps/esl-reformat";
+    my $reformat = "$easel/miniapps/easel reformat";
 
     # the @res array is indexed in the coords of seqres
     # which is our ultimately coordinate system.
@@ -3840,7 +3840,7 @@ sub pdb_contact_map {
     printf COR  "# type  $which\n";
 
     my $easel    = "$rscapebin/../lib/hmmer/easel";
-    my $reformat = "$easel/miniapps/esl-reformat";
+    my $reformat = "$easel/miniapps/easel reformat";
 
     my $thissto = "$stofile.sto"; # the msa may not be stockholm formatted
     system("$reformat stockholm $stofile > $thissto\n");

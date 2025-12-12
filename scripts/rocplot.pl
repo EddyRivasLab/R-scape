@@ -652,7 +652,7 @@ sub mapDCA2MSA {
     my $asqDCA   = "";
 
     my $afafile = "$stofile.afa";
-    my $reformat = "$rscapebin/../lib/hmmer/easel/miniapps/esl-reformat afa ";
+    my $reformat = "$rscapebin/../lib/hmmer/easel/miniapps/easel reformat afa ";
     system("$reformat $stofile > $afafile\n");
     
     # grab the first sequence

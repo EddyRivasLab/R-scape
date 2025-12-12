@@ -49,12 +49,12 @@ static int    cov_add_hitlist2covct(HITLIST *hitlist, CTLIST *ctlist, int verbos
 static double cov_histogram_pmass(ESL_HISTOGRAM *h, double target_pmass, double target_fracfit);
 static int    cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf);
 static int    cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *key, double posx, double posy, int logval, int style1, int style2, char *errbuf);
-static int    cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
-					   int linespoints, int style1, int style2, char *errbuf);
+static int    cov_histogram_plotexpectsurv(FILE *pipe, char *tmpfile1, char *tmpfile2, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics,
+					   double posx, double posy, int logval, int linespoints, int style1, int style2, char *errbuf);
 static int    cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HISTOGRAM *h2, char *key, int logval, 
 				   int linespoints, int style1, int style2, char *errbuf);
 static int    cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA);
-static int    cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
+static int    cov_plot_lineatexpcov(FILE *pipe, char *tmpfile1, char *tmpfile2, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
 				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style, char *errbuf);
 
@@ -506,7 +506,10 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
   if (rmlist)     struct_rmlist_Destroy(rmlist);
   if (threshtype) free(threshtype); 
   if (covtype)    free(covtype);
-  if (data->ranklist_null && (data->mode == GIVSS || data->mode == FOLDSS)) free(data->ranklist_null->survfit);
+  if (data->ranklist_null && (data->mode == GIVSS || data->mode == FOLDSS)) {
+    free(data->ranklist_null->survfit);
+    data->ranklist_null->survfit = NULL;
+  }
   return status;
 }
 
@@ -1914,6 +1917,16 @@ cov_NullFitGamma(ESL_HISTOGRAM *h, double **ret_survfit, double pmass, double *r
 int 
 cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, RANKLIST *ranklist, char *title, int dosvg, int ignorebps, char *errbuf)
 {
+  char      tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile3[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile4[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile5[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile6[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile7[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile8[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile9[16] = "esltmpXXXXXX"; /* tmpfile template */
+  char      tmpfile10[16] = "esltmpXXXXXX"; /* tmpfile template */
   FILE     *pipe;
   RANKLIST *ranklist_null = data->ranklist_null;
   RANKLIST *ranklist_aux  = data->ranklist_aux;
@@ -2061,21 +2074,21 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
     esl_sprintf(&key, "E %.3f", expsurv);
 
     if (ignorebps) {
-      cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ha, "x1y1",
+      cov_plot_lineatexpcov  (pipe, tmpfile1, tmpfile2, data, expsurv, ranklist->ha->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ha, "x1y1",
 			      key, ymax, ymin, xmax, xmin, 3, 333, errbuf);
      }
     else {
-      cov_plot_lineatexpcov  (pipe, data, expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ht, "x1y1",
+      cov_plot_lineatexpcov  (pipe, tmpfile1, tmpfile2, data, expsurv, ranklist->ht->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->ht, "x1y1",
 			      key, ymax, ymin, xmax, xmin, 1, 111, errbuf);
       if (has_bpairs)
-	cov_plot_lineatexpcov(pipe, data, expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->hb, "x1y1",
+	cov_plot_lineatexpcov(pipe, tmpfile3, tmpfile4, data, expsurv, ranklist->hb->Nc, ranklist_null->ha, ranklist_null->survfit, ranklist->hb, "x1y1",
 			      key, ymax, ymin, xmax, xmin, 3, 333, errbuf);
     }
     
     linespoints = FALSE;
     posy = ymin*exp(1.0*incy);
 
-    status = cov_histogram_plotexpectsurv(pipe, ranklist_null->ha->Nc, ranklist_null->ha, ranklist_null->survfit, key3, "x1y1",
+    status = cov_histogram_plotexpectsurv(pipe, tmpfile5, tmpfile6, ranklist_null->ha->Nc, ranklist_null->ha, ranklist_null->survfit, key3, "x1y1",
 					  FALSE, posx, posy, FALSE, linespoints, 55, 5, errbuf);
     if (status != eslOK) goto ERROR;
     linespoints = TRUE;
@@ -2083,20 +2096,20 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
 
   if (ignorebps) {
     posy = ymin*exp(2.0*incy);
-    status = cov_histogram_plotexpectsurv(pipe, ranklist->ha->Nc, ranklist->ha, NULL, key0, "x1y1", FALSE, posx, posy,
+    status = cov_histogram_plotexpectsurv(pipe, tmpfile7, tmpfile8, ranklist->ha->Nc, ranklist->ha, NULL, key0, "x1y1", FALSE, posx, posy,
 					  FALSE, linespoints, 33, 3, errbuf);
     if (status != eslOK) goto ERROR;
     cov_plot_extra_yaxis(pipe, (double)ranklist->ht->Nc*ymax, (double)ranklist->ht->Nc*ymin, -4.0, "Expected # pairs with score > t", 3, errbuf);
   }
   else {
     posy = ymin*exp(2.0*incy);
-    status = cov_histogram_plotexpectsurv  (pipe, ranklist->ht->Nc, ranklist->ht, NULL, key1, "x1y1", FALSE, posx, posy,
+    status = cov_histogram_plotexpectsurv  (pipe, tmpfile7, tmpfile8, ranklist->ht->Nc, ranklist->ht, NULL, key1, "x1y1", FALSE, posx, posy,
 					    FALSE, linespoints, 11, 1, errbuf);
     if (status != eslOK) goto ERROR;
     
     if (has_bpairs) { // the distribution of base-pairs pairs
       posy = ymin*exp(3.0*incy);
-      status = cov_histogram_plotexpectsurv(pipe, ranklist->hb->Nc, ranklist->hb, NULL, key2, "x1y1", FALSE, posx, posy,
+      status = cov_histogram_plotexpectsurv(pipe, tmpfile9, tmpfile10, ranklist->hb->Nc, ranklist->hb, NULL, key2, "x1y1", FALSE, posx, posy,
 					    FALSE, linespoints, 33, 3, errbuf);
       if (status != eslOK) goto ERROR;
     }
@@ -2113,6 +2126,17 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   free(key);
   free(outplot);
   free(filename);
+
+  remove(tmpfile1);
+  remove(tmpfile2);
+  remove(tmpfile3);
+  remove(tmpfile4);
+  remove(tmpfile5);
+  remove(tmpfile6);
+  remove(tmpfile7);
+  remove(tmpfile8);
+  remove(tmpfile9);
+  remove(tmpfile10);
   return eslOK;
   
  ERROR:
@@ -2124,7 +2148,7 @@ cov_PlotHistogramSurvival(struct data_s *data, char *gnuplot, char *covhisfile, 
   if (key)  free(key);
   if (outplot) free(outplot);
   if (filename) free(filename);
-  pclose(pipe);
+  if (pipe) pclose(pipe);
   return status;
 }
 
@@ -2481,8 +2505,6 @@ cov_histogram_plotdensity(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *k
       fprintf(pipe, "plot '%s' using 1:2 with lines ls %d \n", tmpfile2, style2);
     }
 
-  pclose(pipe);
-
   remove(tmpfile1);
   remove(tmpfile2);
   
@@ -2550,8 +2572,6 @@ cov_histogram_plotsurvival(FILE *pipe, ESL_HISTOGRAM *h, double *survfit, char *
       fprintf(pipe, "plot '%s' using 1:2 with lines ls %d \n", tmpfile2, style2);
     }
 
-  pclose(pipe);
-
   remove(tmpfile1);
   remove(tmpfile2);
   
@@ -2594,8 +2614,6 @@ cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HIS
   fclose(fp);
   fprintf(pipe, "plot '%s' using 1:2 title '%s' with linespoints ls %d \n", tmpfile, key, style1);
 
-  pclose(pipe);
-
   remove(tmpfile);
  
   return eslOK;
@@ -2605,11 +2623,9 @@ cov_histogram_plotqq(FILE *pipe, struct data_s *data, ESL_HISTOGRAM *h1, ESL_HIS
 }
 
 static int
-cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics, double posx, double posy, int logval, 
-			     int linespoints, int style1, int style2, char *errbuf)
+cov_histogram_plotexpectsurv(FILE *pipe, char *tmpfile1, char *tmpfile2, int Nc, ESL_HISTOGRAM *h, double *survfit, char *key, char *axes, int addtics,
+			     double posx, double posy, int logval, int linespoints, int style1, int style2, char *errbuf)
 {
-  char      tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char      tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
   FILE     *fp = NULL;
   int       i;
   uint64_t  c = 0;
@@ -2675,11 +2691,6 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
 
    }
 
-  pclose(pipe);
-  
-  remove(tmpfile1);
-  remove(tmpfile2);
-
   return eslOK;
 
  ERROR:
@@ -2687,11 +2698,9 @@ cov_histogram_plotexpectsurv(FILE *pipe, int Nc, ESL_HISTOGRAM *h, double *survf
 }
 
 static int
-cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2, char *axes, char *key, 
-		      double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf)
+cov_plot_lineatexpcov(FILE *pipe, char *tmpfile1, char *tmpfile2, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
+		      char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf)
 {
-  char    tmpfile1[16] = "esltmpXXXXXX"; /* tmpfile template */
-  char    tmpfile2[16] = "esltmpXXXXXX"; /* tmpfile template */
   FILE   *fp = NULL;
   double  cov;
   double  eval;
@@ -2724,7 +2733,6 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
   if ((status = esl_tmpfile_named(tmpfile1, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   fprintf(fp, "%g\t%g\n", cov, (eval*ey >ymin)? eval*ey :ymin);
   fprintf(fp, "%g\t%g\n", cov, (eval2*dy<ymax)? eval2*dy:ymax);
-  fprintf(fp, "e\n");
   fclose(fp);
   fprintf(pipe, "plot '%s' using 1:2 axes %s with lines ls %d \n", tmpfile1, axes, style1);
 
@@ -2736,14 +2744,8 @@ cov_plot_lineatexpcov(FILE *pipe, struct data_s *data, double expsurv, int Nc, E
   if ((status = esl_tmpfile_named(tmpfile2, &fp)) != eslOK) ESL_XFAIL(status, errbuf, "failed to create tmp file");
   fprintf(fp, "%g\t%g\n", (cov-ex > xmin)? cov-ex:xmin, eval);
   fprintf(fp, "%g\t%g\n", xmax,                         eval);
-  fprintf(fp, "e\n");
   fclose(fp);
   fprintf(pipe, "plot '%s' using 1:2 axes %s with lines ls %d \n", tmpfile2, axes, style2);
-
-  pclose(pipe);
-  
-  remove(tmpfile1);
-  remove(tmpfile2);
 
   return eslOK;
 

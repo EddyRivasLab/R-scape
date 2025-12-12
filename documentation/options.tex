@@ -461,6 +461,44 @@ secondary structure and do not change.
 those that are more than 50\% occupied or are base paired are
 depicted.
 
+\subsection{Options for producing preps (pair representations in one-hot format)}
+
+\subsubsection{\prog{--outprep}} Saves a file .prep with information about all annotated pairs in one-hot format.
+\begin{sreoutput}
+# legend
+#
+# i j E-value power bptype_onehot
+#
+# 1 < i < j < alignment length=153
+# E-value [0,10.0), provided by R-scape.
+# power[0,1], provided by R-scape
+# BPTYPE_onehot: [W H S X] [W H S X] [c t] [STACKED CONTACT]
+#MASK [1,alen]
+#  MASK = 0 position analyzed by R-scape
+#  MASK = 1 position NOT analyzed by R-scape
+\end{sreoutput}
+
+\subsubsection{\prog{--prep\_RF}} Used along option \prog{--outprep} produces preps using only positions that appear in the reference sequence (RF) or that form a base pair.
+
+\subsubsection{\prog{--nohot\_prep}} Used along option \prog{--outprep} reports the base pair information in standard format.
+\begin{sreoutput}
+# legend
+#
+# i j E-value power bptype
+#
+# 1 < i < j < alignment length=153
+# E-value [0,10.0), provided by R-scape.
+# power[0,1], provided by R-scape
+# BPTYPE: 
+# WWc=0, WWt=1, WHc=2, WHt=3, WSc=4, WSt=5, Wxc=6, Wxt=7, xWc=8, xWt=9,
+# HWc=10, HWt=11, HHc=12, HHt=13, HSc=14, HSt=15, Hxc=16, Hxt=17, xHc=18, xHt=19,
+# SWc=20, SWt=21, SHc=22, SHt=23, SSc=24, SSt=25, Sxc=26, Sxt=27, xSc=28, xSt=29,
+# xxc=30, xxt=31,
+# STACKED=32, CONTACT=33
+#MASK [1,alen]
+#  MASK = 0 position analyzed by R-scape
+#  MASK = 1 position NOT analyzed by R-scape
+\end{sreoutput}
 
 \subsection{Other options}
 

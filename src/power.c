@@ -76,13 +76,11 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   int      ii, jj;
   int      c;
   int      status;
-  
-  if (ret_spair == NULL) return eslOK;
+
+ if (ret_spair == NULL) return eslOK;
 
   if (!nsubs && !ndouble && !njoin) esl_fatal("need some kind of substitutions!");
 
-  printf("\n^^^^RFRF %s\n", omsa->rf);
-  
   ESL_ALLOC(spair, sizeof(SPAIR) * dim);
   for (i = 0; i < alen-1; i ++) 
     for (j = i+1; j < alen; j ++) {
@@ -124,14 +122,17 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
       
       if (power) {
 	if (nsubs) {
+	  
 	  prob = 0.;
 	  for (s = 0; s < power->ns; s ++) {
 	    if (spair[n].nsubs > power->subs[s]) prob = power->prob[s];
 	    else break;
 	  }
+
 	  spair[n].power = prob;
 	}
 	if (njoin) {
+	  
 	  prob = 0.;
 	  for (s = 0; s < power->ns; s ++) {
 	    if (spair[n].nsubs_join > power->subs_join[s]) prob = power->prob_join[s];
@@ -139,7 +140,8 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
 	  }
 	  spair[n].power_join = prob;
 	}
-	if (ndouble) { 
+	if (ndouble) {
+	  
 	  prob = 0.;
 	  for (s = 0; s < power->ns; s ++) {
 	    if (spair[n].nsubs_double > power->subs_double[s]) prob = power->prob_double[s];
@@ -501,7 +503,7 @@ power_Read(char *powerfile, int doublesubs, int joinsubs, int includegaps, POWER
   int              reached = FALSE;
   int              idx;
   int              status;
-  
+
   status = esl_buffer_Open(powerfile, NULL, &bf);
   if      (status == eslENOTFOUND) esl_fatal("open failed: %s",     bf ? bf->errmsg : "(no other diagnostics available)");
   else if (status == eslFAIL)      esl_fatal("gzip -dc failed: %s", bf ? bf->errmsg : "(no other diagnostics available)");

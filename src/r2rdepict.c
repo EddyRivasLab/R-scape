@@ -440,7 +440,7 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
       if (j > i && rmlist) {
 	for (h = 0; h < rmlist->nrm; h ++) {
 	  rm = rmlist->rm[h];
-	  if (rm->Eval[0] >= Eval_target) continue;
+	  if (rm->Eval[0] < 0 || rm->Eval[0] >= Eval_target) continue;
 	  
 	  ih = rm->i;
 	  kh = rm->k1;

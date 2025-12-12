@@ -381,7 +381,7 @@ CACO_CYK(ESL_RANDOMNESS *r, enum grammar_e G, FOLDPARAM *foldparam, PSQ *psq, st
     // hack for single-sequence analysis. a frac > 1 forces to use the whole R3D paramters
     if (mi->nseq == 1) bp_cov_frac = 1.1;
   }
-  
+
   /* get the grammar parameters and run the corresponding CYK */
   switch(G) {
   case G6X:
@@ -667,6 +667,7 @@ CACO_RBG_CYK(ESL_RANDOMNESS *r, ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p,
 
   /* Fill the cyk matrix */
   if ((status = CACO_RBG_Fill_CYK        (allow, foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ret_sc,              errbuf, verbose)) != eslOK) goto ERROR;
+	    
   /* Report a traceback */
   if ((status = CACO_RBG_Traceback_CYK(r, allow, foldparam, p, r3dp, psq, mi, spair, covct, exclude, cyk, cyk_r3d, ct,     ret_r3dlist, errbuf, verbose)) != eslOK) goto ERROR;
  
@@ -1132,7 +1133,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
   int      status;
 
   L = mi->alen;
-
+  
   // RBG grammar  order:
   //
   //  F0  before ILi
@@ -1258,7 +1259,7 @@ CACO_RBG_Fill_CYK(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *r3d
 	    status = dp_recursion_r3d_cyk(allow, foldparam, r3d_p, psq, mi, spair, covct, exclude, cyk, cyk_r3d, R3D_NT_BS, m, 0, j, d, &(gmx->dp[j][d]), NULL, errbuf, verbose);
 	    if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "R3D BS caco failed");
 	    if (verbose) 
-	      printf("R3D CYK m=%d BS %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, cyk_r3d->BSmx[m]->mx->mx[0]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
+	      printf("R3D CYK m=%d/%d BS %f| i=%d j=%d d=%d L=%d | covct %d %d\n", m, r3d->nBS_total, cyk_r3d->BSmx[m]->mx->mx[0]->dp[j][d], j-d+1, j, d, L, covct[j-d+1], covct[j]); 
 	  }
 	}
 
@@ -8123,7 +8124,7 @@ R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *err
     
     // First S^m then I^m
     for (m = 1; m <= M; m++) {
-
+ 
       if (profsq) emit_m = (l>0)? emitsc_prof_sum(la-1, hmm->abc->K, pm, hmm->e[m]) : -eslINFINITY;
       else        emit_m = (l>0)? emitsc_prof_max(la-1, hmm->abc->K, pm, hmm->e[m]) : -eslINFINITY;
       
@@ -8146,15 +8147,15 @@ R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *err
       //	
       else {
 	// t_M P_{m-1}(x_{l-1}) S^{m-1}(l-1)
-	sc    = (l>0)? fwd->Sdp[m-1][l-1] + hmm->tS[0] + emit_m_prv : -eslINFINITY;
+	sc    = (l>0 && m>1)? fwd->Sdp[m-1][l-1] + hmm->tS[0] + emit_m_prv : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
 	
 	// t_D          S^{m-1}(l)
-	sc    = fwd->Sdp[m-1][l] + hmm->tS[2];
+	sc    = (m>1)? fwd->Sdp[m-1][l] + hmm->tS[2] : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
 	
 	// (1-tI) P_I(x_{l-1}) I^{m-1}(l-1)
-	sc    = (l>0)? fwd->Idp[m-1][l-1] + hmm->tI[1] + emit_i : -eslINFINITY;
+	sc    = (l>0 && m>1)? fwd->Idp[m-1][l-1] + hmm->tI[1] + emit_i : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
       }
       fwd->Sdp[m][l] = sumsc;
@@ -8165,11 +8166,11 @@ R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *err
       // t_MI P_{m}(x_{l-1}) S^{m}(l-1)
       sc    = (l>0)? fwd->Sdp[m][l-1] + hmm->tS[1] + emit_m : -eslINFINITY;
       sumsc = e2_FLogsum(sumsc, sc);
-      
+     
       // t_DI          S^{m}(l)
       sc    = fwd->Sdp[m][l] + hmm->tS[3];
       sumsc = e2_FLogsum(sumsc, sc);
-      
+     
       // tIe  P_I(x_{l-1}) I^{M}(l-1)
       if (m == M) {
 	sc    = (l>0)? fwd->Idp[m][l-1] + hmm->tIe[0] + emit_i : -eslINFINITY;
@@ -8180,12 +8181,12 @@ R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *err
 	sc    = (l>0)? fwd->Idp[m][l-1] + hmm->tI[0]  + emit_i : -eslINFINITY;
 	sumsc = e2_FLogsum(sumsc, sc);
       }
-      
+     
       //
       fwd->Idp[m][l] = sumsc;
     }
   }
-  
+
   // End state E(j)
   //
   // special case M=0

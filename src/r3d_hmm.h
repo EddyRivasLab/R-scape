@@ -94,7 +94,6 @@ extern void     R3D_hmm_Destroy(R3D_HMM *hmm);
 extern int      R3D_hmm_Write(FILE *fp, R3D_HMM *hmm);
 
 extern R3D_HMX *R3D_hmx_Create(int allocL, int allocM);
-extern int      R3D_hmx_GrowTo(R3D_HMX *mx, int L, int M);
 extern void     R3D_hmx_Destroy(R3D_HMX *mx);
 
 //extern SCVAL    R3D_hmm_Forward(int i, int j, double **pm, R3D_HMM *hmm, R3D_HMX *fwd, char *errbuf);

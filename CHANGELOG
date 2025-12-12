@@ -54,10 +54,49 @@ R-scape v2.5.5 Jan 2024
 R-scape v2.5.6 Jan 2024
         bug fixed when identify protein-coding exons covariation
 
-R-scape v2.5.7 February 2024
+R-scape v2.5.7 February 2025
         msa names and seqnames edited to identify more characters not recognized by Fasttree
 	added jax/python code to implement differentiable folding algorithms.
-	
-R-scape v2.5.9 July 2024
+
+R-scape v2.5.9 July 2025
 	fixed an issue with R2R that failed compilation in some OSs.
+	
+R-scape v2.5.9.b August 2025
+	speeds up prep calculations.
+	
+R-scape v2.5.9.c August 2025
+	speeds up prep calculations further by not reporint positions not analyzed
+	
+R-scape v2.6.0 July 2025
+	adds JAX code to optimizie scfg parameters
+	adds TORNADO as a li
+	
+R-scape v2.6.1 October 2025 / v2.5.9.d October 2025 (w/o tornado)
+	fixes issue that arises with gnuplot 6.0
+	adds option --prep_RF to write preps using only RF positions in the alignment (or positions that form a base pair)
+	
+R-scape v2.6.2 November 2025 / v2.5.9.e November 2025 (w/o tornado)
+	fixed some additional issues with gnuplot 6.0
+	fixed some memory leaks
+	fixed an issue with the R3D_HMMs memory allocation.
+
+R-scape v2.6.4 November 2025
+	tested on systems:
+	          Mac Arm
+	          Ubuntu-linux-22-04-02
+	          Rocky Linux release 8.10 (Green Obsidian)
+
+R-scape v2.6.4.a November 2025 / v2.5.9.f November 2025 (w/o tornado)
+	updated scripts to the new easel miniapps. (example esl-reformat is now easel reformat)
+	If affected options --pdb and --onlypdb
+
+R-scape v2.6.4.b November 2025
+	Fixes issue with aggregated E-values. The case of "no aggregated evalue calculated" was not considered properly.
+
+R-scape v2.6.4.c December 2025
+	updated config.guess/config.sub files to automake-1.18
+	configure.ac modified so that if bison is not install, tornado does not get configured.
+
+R-scape v2.6.4.d December 2025
+	configure.ac modified so that if bison is not install, tornado does not get configured.
 	

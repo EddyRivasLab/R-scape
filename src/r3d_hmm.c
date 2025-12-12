@@ -308,7 +308,7 @@ R3D_HMX *
 R3D_hmx_Create(int allocL, int allocM)
 {
   R3D_HMX *mx = NULL;
-  int      i;
+  int      m;
   int      status;
   
   ESL_ALLOC(mx, sizeof(R3D_HMX));
@@ -317,20 +317,20 @@ R3D_hmx_Create(int allocL, int allocM)
   mx->Sdp     = NULL;
   mx->Idp     = NULL;
 
-  ESL_ALLOC(mx->Sdp_mem, sizeof(SCVAL) * (allocL+1) * allocM);
-  ESL_ALLOC(mx->Idp_mem, sizeof(SCVAL) * (allocL+1) * allocM);
-  mx->ncells = (allocL+1) * allocM;
+  ESL_ALLOC(mx->Sdp_mem, sizeof(SCVAL) * (allocM+1) * allocL);
+  ESL_ALLOC(mx->Idp_mem, sizeof(SCVAL) * (allocM+1) * allocL);
+  mx->ncells = (allocM+1) * allocL;
   
-  ESL_ALLOC(mx->Sdp, sizeof (SCVAL *) * (allocL+1));
-  ESL_ALLOC(mx->Idp, sizeof (SCVAL *) * (allocL+1));
+  ESL_ALLOC(mx->Sdp, sizeof (SCVAL *) * (allocM+1));
+  ESL_ALLOC(mx->Idp, sizeof (SCVAL *) * (allocM+1));
   mx->allocR = allocL+1;
 
-  for (i = 0; i <= allocL; i++) {
-    mx->Sdp[i] = mx->Sdp_mem + i*allocM;
-    mx->Idp[i] = mx->Idp_mem + i*allocM;
+  for (m = 0; m <= allocM; m++) {
+    mx->Sdp[m] = mx->Sdp_mem + m*allocL;
+    mx->Idp[m] = mx->Idp_mem + m*allocL;
   }
-  mx->validR = allocL+1;
-  mx->allocM = allocM;
+  mx->validR = allocL;
+  mx->allocM = allocM+1;
 
   mx->L = 0;
   mx->M = 0;
@@ -341,65 +341,6 @@ R3D_hmx_Create(int allocL, int allocM)
   return NULL;
 }
 
-int
-R3D_hmx_GrowTo(R3D_HMX *mx, int L, int M)
-{
-  uint64_t ncells;
-  void    *p;
-  int      do_reset = FALSE;
-  int      i;
-  int      status;
-
-  if (L < mx->allocR && M <= mx->allocM) return eslOK;
-
-  /* Do we have to reallocate the 2D matrix, or can we get away with
-   * rejiggering the row pointers into the existing memory? 
-   */
-  ncells = (L+1) * (M+1);
-  if (ncells > mx->ncells) 
-    {
-      ESL_RALLOC(mx->Sdp_mem, p, sizeof(SCVAL) * ncells);
-      ESL_RALLOC(mx->Idp_mem, p, sizeof(SCVAL) * ncells);
-      mx->ncells = ncells;
-      do_reset   = TRUE;
-    }
-
-  /* must we reallocate row pointers? */
-  if (L >= mx->allocR)
-    {
-      ESL_RALLOC(mx->Sdp, p, sizeof(SCVAL *) * (L+1));
-      ESL_RALLOC(mx->Idp, p, sizeof(SCVAL *) * (L+1));
-      mx->allocR = L+1;
-      mx->allocM = M;
-      do_reset   = TRUE;
-    }
-
-  /* must we widen the rows? */
-  if (M > mx->allocM)
-    {
-      mx->allocM = M;
-      do_reset = TRUE;
-    }
-
-  /* must we set some more valid row pointers? */
-  if (L >= mx->validR)
-    do_reset = TRUE;
-
-  /* did we trigger a relayout of row pointers? */
-  if (do_reset)
-    {
-      mx->validR = ESL_MIN(mx->ncells / mx->allocM, mx->allocR);
-      for (i = 0; i < mx->validR; i++)
-	mx->Sdp[i] = mx->Sdp_mem + i*mx->allocM;
-	mx->Idp[i] = mx->Idp_mem + i*mx->allocM;
-    }
-  mx->M = 0;
-  mx->L = 0;
-  return eslOK;
-
- ERROR:
-  return status;
-}
 
 void
 R3D_hmx_Destroy(R3D_HMX *mx)

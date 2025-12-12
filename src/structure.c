@@ -303,7 +303,7 @@ struct_DotPlot(char *gnuplot, char *dplotfile, ESL_MSA *msa, CTLIST *ctlist, str
       for (i = 1; i <= msa->alen; i ++) {
 	ipair = ct[i];
 	
-	if (ipair > 0) {
+	if (ipair > 0 && ipair <= msa->alen) {
 	  fprintf(fp, "%d %d %f\n", msamap[i-1]+firstpos,     msamap[ipair-1]+firstpos, 
 		  (mi->COV->mx[i-1][ipair-1]*pointsize > ps_min)? mi->COV->mx[i-1][ipair-1]:ps_min/pointsize);
 	  fprintf(fp, "%d %d %f\n", msamap[ipair-1]+firstpos, msamap[i-1]+firstpos,     
@@ -1644,14 +1644,14 @@ struct_rm_Dump(int L, RM *rm, int OL, int *msamap, int firstpos, char *errbuf, i
   int       k3, l3;
   int       agg;
 
-  i =  (msamap)? msamap[rm->i-1]  + firstpos : rm->i;
-  k1 = (msamap)? msamap[rm->k1-1] + firstpos : rm->k1;
-  k2 = (msamap)? msamap[rm->k2-1] + firstpos : rm->k2;
-  k3 = (msamap)? msamap[rm->k3-1] + firstpos : rm->k3;
-  l1 = (msamap)? msamap[rm->l1-1] + firstpos : rm->l1;
-  l2 = (msamap)? msamap[rm->l2-1] + firstpos : rm->l2;
-  l3 = (msamap)? msamap[rm->l3-1] + firstpos : rm->l3;
-  j =  (msamap)? msamap[rm->j-1]  + firstpos : rm->j;
+  i  = (msamap && rm->i  > 0)? msamap[rm->i-1]  + firstpos : rm->i;
+  k1 = (msamap && rm->k1 > 0)? msamap[rm->k1-1] + firstpos : rm->k1;
+  l1 = (msamap && rm->l1 < L)? msamap[rm->l1-1] + firstpos : rm->l1;
+  k2 = (msamap && rm->k2 > 0)? msamap[rm->k2-1] + firstpos : rm->k2;
+  l2 = (msamap && rm->l2 < L)? msamap[rm->l2-1] + firstpos : rm->l2;
+  k3 = (msamap && rm->k3 > 0)? msamap[rm->k3-1] + firstpos : rm->k3;
+  l3 = (msamap && rm->l3 < L)? msamap[rm->l3-1] + firstpos : rm->l3;
+  j  = (msamap && rm->j  < L)? msamap[rm->j-1]  + firstpos : rm->j;
 
   if (rm->name == NULL) {
     if      (rm->ctlist->cttype[0] == CTTYPE_NESTED) esl_sprintf(&rm->name, "NESTED");
@@ -1719,6 +1719,8 @@ struct_rm_Dump(int L, RM *rm, int OL, int *msamap, int firstpos, char *errbuf, i
       if (rm->covary[agg]) printf("%g *\n", rm->Eval[agg]);
       else                 printf("%g\n",   rm->Eval[agg]);
     }
+    else
+       printf("n/a\n");
   }
   struct_ctlist_Dump(rm->ctlist);
   struct_ctlist_MAP(L, rm->ctlist, OL, msamap, firstpos, &octlist, NULL, NULL, errbuf, verbose);
@@ -1738,14 +1740,14 @@ struct_rm_Write(FILE *fp, int L, RM *rm, int OL, int *msamap, int firstpos, char
   int       n;
   int       agg;
 
-  i  = (msamap)? msamap[rm->i-1]  + firstpos : rm->i;
-  k1 = (msamap)? msamap[rm->k1-1] + firstpos : rm->k1;
-  l1 = (msamap)? msamap[rm->l1-1] + firstpos : rm->l1;
-  k2 = (msamap)? msamap[rm->k2-1] + firstpos : rm->k2;
-  l2 = (msamap)? msamap[rm->l2-1] + firstpos : rm->l2;
-  k3 = (msamap)? msamap[rm->k3-1] + firstpos : rm->k3;
-  l3 = (msamap)? msamap[rm->l3-1] + firstpos : rm->l3;
-  j  = (msamap)? msamap[rm->j-1]  + firstpos : rm->j;
+  i  = (msamap && rm->i  > 0)? msamap[rm->i-1]  + firstpos : rm->i;
+  k1 = (msamap && rm->k1 > 0)? msamap[rm->k1-1] + firstpos : rm->k1;
+  l1 = (msamap && rm->l1 < L)? msamap[rm->l1-1] + firstpos : rm->l1;
+  k2 = (msamap && rm->k2 > 0)? msamap[rm->k2-1] + firstpos : rm->k2;
+  l2 = (msamap && rm->l2 < L)? msamap[rm->l2-1] + firstpos : rm->l2;
+  k3 = (msamap && rm->k3 > 0)? msamap[rm->k3-1] + firstpos : rm->k3;
+  l3 = (msamap && rm->l3 < L)? msamap[rm->l3-1] + firstpos : rm->l3;
+  j  = (msamap && rm->j  < L)? msamap[rm->j-1]  + firstpos : rm->j;
 
   if (rm->name == NULL) {
     if      (rm->ctlist->cttype[0] == CTTYPE_NESTED) esl_sprintf(&rm->name, "NESTED");
@@ -2037,7 +2039,7 @@ struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAI
   for (s = 0; s < nct; s ++) {
     if (s == 0) G = foldparam->G0;
     else        G = foldparam->GP;
- 
+
     // cascade variation/covariance constrained FOLD using a probabilistic grammar
     status = struct_cacofold_expandct(r, msa, spair, mi, ctlist->covct[s], ctlist->ct[s], &sc[s], exclude[s], &r3dlist, G, foldparam, gapthresh, errbuf, verbose);
     if (status != eslOK) goto ERROR;

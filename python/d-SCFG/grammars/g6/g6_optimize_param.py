@@ -178,7 +178,7 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
     epoch = 0
     params = init_params
     param_file = g6_params.G6_write_paramfile(run_dir, epoch, params)
-    
+   
     # if we are testing....
     # run TORNADO with those parameters
     param_file_ML = ''
@@ -199,12 +199,20 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
         
         if os.path.exists(param_file_ML):
             sen_ML, ppv_ML, f1_ML, t_ML, f_ML, tp_ML = tornado_fold.tornado_fold(test_outdir, fold_method, param_file_ML, grm_file, postgrm_file, test_file)
+            
+            sen_ML = sen_ML / 100
+            ppv_ML = ppv_ML / 100
+            f1_ML  = f1_ML / 100
             print(f"paramfile ML: {param_file_ML}\nsen {sen_ML} ppv {ppv_ML} f1 {f1_ML}  t {t_ML} f {f_ML} tp {tp_ML}")
             params_ML = g6_params.G6_read_paramfile(param_file_ML, False)
         
         param_file_ML_best = "../../lib/tornado/notebook/05-2025/g6/TORNADO_TORNADO_TrATrBTrB_g6.param"
         if os.path.exists(param_file_ML_best):
             sen_ML_best, ppv_ML_best, f1_ML_best, t_ML_best, f_ML_best, tp_ML_best = tornado_fold.tornado_fold(test_outdir, fold_method, param_file_ML_best, grm_file, postgrm_file, test_file)
+            
+            sen_ML_best = sen_ML_best / 100
+            ppv_ML_best = ppv_ML_best / 100
+            f1_ML_best  = f1_ML_best / 100
             print(f"paramfile ML best: {param_file_ML_best}\nsen {sen_ML_best} ppv {ppv_ML_best} f1 {f1_ML_best}  t {t_ML_best} f {f_ML_best} tp {tp_ML_best}")
             params_ML_best = g6_params.G6_read_paramfile(param_file_ML_best, False)
 
@@ -213,6 +221,10 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
             # before any optimization
             print(f"\n----- EPOCH {epoch} -----")
             sen, ppv, f1, t, f, tp = tornado_fold.tornado_fold(test_outdir, fold_method, param_file, grm_file, postgrm_file, test_file)
+            
+            sen = sen / 100
+            ppv = ppv / 100
+            f1  = f1 / 100
             print(f"Epoch {epoch} sen {sen} ppv {ppv} f1 {f1}  f1 {f1} t {t} f {f} tp {tp}")
     
         if os.path.exists(param_file_ML):
@@ -294,6 +306,10 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
             # run TORNADO with those parameters
             if os.path.exists(test_file):
                 sen, ppv, f1, t, f, tp = tornado_fold.tornado_fold(test_outdir, fold_method, param_file, grm_file, postgrm_file, test_file)
+                
+                sen = sen / 100
+                ppv = ppv / 100
+                f1  = f1 / 100
                 print(f"Epoch {epoch} sen {sen} ppv {ppv} f1 {f1} t {t} f {f} tp {tp}")
                 
                 acc_sen[epoch] = sen
@@ -301,7 +317,7 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
                 acc_f1[epoch]  = f1
 
             # plot the losses
-            plot_losses(run_dir, epoch, losses, -1)
+            plot_losses(run_dir, epoch, losses, -1, -1, -1)
             if os.path.exists(test_file):
                 plot_accuracy(test_outdir, epoch, acc_ymin, acc_ymax, acc_sen, acc_ppv, acc_f1, sen_ML, ppv_ML, f1_ML, sen_ML_best, ppv_ML_best, f1_Vienna)
             if os.path.exists(param_file_ML):
@@ -311,7 +327,7 @@ def optimize_param_G6(args, run_dir, K, mask, psq, log_psq, grad_accum, acc_ymin
                 
      
     # plot after all iterations
-    plot_losses(run_dir, epoch, losses, -1)
+    plot_losses(run_dir, epoch, losses, -1, -1, -1)
     if os.path.exists(test_file):
         plot_accuracy(test_outdir, epoch, acc_ymin, acc_ymax, acc_sen, acc_ppv, acc_f1, sen_ML, ppv_ML, f1_ML, sen_ML_best, ppv_ML_best, f1_Vienna)
     if os.path.exists(param_file_ML):

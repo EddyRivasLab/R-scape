@@ -5,8 +5,8 @@ use Class::Struct;
 
 our $VERSION = "1.00";
 
-my $esl_reformat = "esl-reformat";
-my $esl_afetch   = "esl-afetch";
+my $esl_reformat = "easel reformat";
+my $esl_afetch   = "easel afetch";
 
 
 sub afa2sto {
