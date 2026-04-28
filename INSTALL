@@ -1,29 +1,29 @@
 Brief installation instructions.
 
-R-scape v2.6.4.d	   December 2025
+R-scape v2.6.6	   May 2026
 http://eddylab.org/R-scape
 
 ----------------------------------------------------------------------------
-Starting from a source distribution, R-scape_v2.6.4.d/:
+Starting from a source distribution, R-scape_v2.6.6/:
 
- move into new directory:   cd R-scape_v2.6.4.d
+ move into new directory:   cd R-scape_v2.6.6
  configure:                 ./configure
  build:                     make
  install:		    make install
 
-The newly compiled binary "R-scape" is in the R-scape_v2.6.4.d/bin directory.
+The newly compiled binary "R-scape" is in the R-scape_v2.6.6/bin directory.
 You can run it from there.
 
 For complete documentation, see the R-scape User's Guide 
 (R-scape_v2.5.5/documentation/R-scape_userguide.pdf).
 
-The default installation produces executable: R-scape_v2.6.4.d/bin/R-scape
+The default installation produces executable: R-scape_v2.6.6/bin/R-scape
 
 ----------------------------------------------------------------------------
-Starting from tarball: rscape_v2.6.4.d.tar.gz
+Starting from tarball: rscape_v2.6.6.tar.gz
 
-tar xvf rscape_v2.6.4.d.tar.gz
-cd rscape_v2.6.4.d/
+tar xvf rscape_v2.6.6.tar.gz
+cd rscape_v2.6.6/
 
 ==============================================
 Mac arm 

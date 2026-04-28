@@ -14,8 +14,8 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "2.6.4.d"
-#define RSCAPE_DATE "December 2025"
+#define RSCAPE_VERSION "2.6.6"
+#define RSCAPE_DATE "May 2026"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2017-2025 Elena Rivas, Harvard University."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
 #define RSCAPE_HOME "/Users/erivas/src/Mysrc/R-scape"

@@ -608,8 +608,15 @@ grammars/g6/g6_plot_epoch.py modified so that it calculates the structures of th
 adding benchmark for
 data/TORNADO_TrB.sto
 
-cd ~/src/Mysrc/R-scape/python/d-SCFG
+===========================================================================================================
+R2
+Thu Dec 18 13:54:15 EST 2025
+lib/utils.py modified to plot only dots, no lines
 
+Sat Jan  3 10:34:30 EST 2026
+lib/utils.py modified to plot dots and lines
+
+cd ~/src/Mysrc/R-scape/python/d-SCFG
 #---------------------------------------------------------------------------------------------------------------------
 # FIGURE 2
 #---------------------------------------------------------------------------------------------------------------------

@@ -100,3 +100,5 @@ R-scape v2.6.4.c December 2025
 R-scape v2.6.4.d December 2025
 	configure.ac modified so that if bison is not install, tornado does not get configured.
 	
+R-scape v2.6.6 May 2026
+	updated script pdb_parse.pl and library PDBFUNCS.pm to deal with pdb files that only include the ATOMS fields

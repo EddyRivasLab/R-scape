@@ -2301,13 +2301,18 @@ sub contacts_from_pdb {
     
     my $resolution;
     my $pdbname = pdb_seqres($pdbfile, \$resolution, \$nch, \@chname, \@chsq, $isrna);
-    if ($nch == 0 && !$usechain) { print "\nFound no chains in pdbfile: $pdbfile\n"; die; }
+    if ($nch == 0 && !$usechain) { print "could not find any chains\n"; die; }
     
     print     "# ALI:        $stofile\n";
     print     "# PDB:        $pdbname\n";
-    print     "# chains:     $nch:";
-    for (my $n = 0; $n < $nch; $n ++) { printf " %s", $chname[$n]; }
-    print "\n";
+    if ($nch > 0) {
+	print     "# chains:     $nch:";
+	for (my $n = 0; $n < $nch; $n ++) { printf " %s", $chname[$n]; }
+	print "\n";
+    }
+    elsif ($usechain) {
+ 	print     "# chains:     $usechain\n";
+    }
     print     "# resolution: $resolution\n";
     
     for (my $n = 0; $n <= $nch; $n ++) {
@@ -3158,7 +3163,8 @@ sub pdb_get_coords {
 	    my $z        = substr($line, 46, 8); if ($z        =~ /^\s*(\S+)\s*$/) { $z        = $1; }
 
 	    # Look for the target chain
-	    if ($chainid ne $chain) { next; }
+	    if ( ($chain !~ /all/) && ($chainid ne $chain)) { next; }
+	    if ($chain =~ /all/) { next; }
 	    
 	    # Ignore HOH WAT MN atoms
 	    if ($atom =~ /^HETATM$/ && ( $resname =~ /^HOH$/ || $resname =~ /^WAT$/ || $resname =~ /^MN$/) ) { next; }
@@ -3167,7 +3173,7 @@ sub pdb_get_coords {
 	    $recording = 1;
 	    if ($nn == 0) { 
 		$respos_prv = $respos; 
-		$atomres_ref->[$ll]->{"RES::nat"} = 0;
+ 		$atomres_ref->[$ll]->{"RES::nat"} = 0;
 	    }
 
 	    # a new residue 
@@ -3638,8 +3644,8 @@ sub pdb_seqres {
 
     open(FILE, "<$pdbfile") || die;
     while (<FILE>) {
-	$cur_chain = "Unknonwn";
-	$sq        = "Unknonwn";
+	$cur_chain = "Unknown";
+	$sq        = "Unknown";
 	
 	if (/^HEADER\s+.+\s+(\S+)\s*$/) {
 	    $pdbname = lc($1);
@@ -3698,7 +3704,47 @@ sub pdb_seqres {
 	}
    }
     close(FILE);
-    if ($sqlen > 0) { $nch ++; }
+    if ($sqlen > 0) {
+	$nch ++;
+    }
+
+    # no SEQRES, rearch in ATOMS
+    if ($nch == 0) {
+	open(FILE, "<$pdbfile") || die;
+	while (<FILE>) {
+	    $cur_chain = "Unknown";
+	    $sq        = "Unknown";
+	
+	    if (/^ATOM\s+\d+\s+P\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+/) {
+		#ATOM      1  P     G A   1      50.626  49.730  50.573  1.00  0.00      A    P  
+		$sq        = $1;
+		$cur_chain = $2;
+		$sqlen     = $3;
+		
+		if ($prv_chain =~ /^$/) {
+		    $chsq_ref->[$nch]   = "$sq ";
+		    $chname_ref->[$nch] = $cur_chain;
+		    $sqlen[$nch]        = $sqlen;
+		}
+		elsif ($cur_chain =~ /^$prv_chain$/) {
+		    $chsq_ref->[$nch]  .= "$sq ";
+		    $chname_ref->[$nch] = $cur_chain;
+		    $sqlen[$nch]        = $sqlen;
+		}
+		else { 
+		    $nch ++; 
+		    $chsq_ref->[$nch]   = "$sq ";
+		    $chname_ref->[$nch] = $cur_chain;
+		    $sqlen[$nch]        = $sqlen;
+		}
+		
+		$prv_chain = $cur_chain;
+	    }
+	}
+	if ($sqlen[0] > 0) { $nch ++; }
+	
+	close(FILE);  
+    }
 
     for (my $n = 0; $n < $nch; $n ++) {
 	my $len = sq_conversion(\$chsq_ref->[$n], $isrna);

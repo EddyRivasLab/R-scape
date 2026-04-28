@@ -22,7 +22,9 @@ def tree_stack(trees):
     return jax.tree.map(lambda *v: jnp.stack(v), *trees)
 
 def plot_losses(outdir, epoch, losses, x_max, y_min, y_max):
-    plt.plot(losses)
+    plt.plot(losses, marker='o',    markersize=2, linestyle='none')
+    plt.gca().set_prop_cycle(None)
+    plt.plot(losses, marker='none', markersize=2, linestyle='--', dashes=(5, 5), linewidth=0.25)
     plt.xlabel("Epoch")
     plt.ylabel("Loss = - log P(sq)")
     if (x_max >= 0):
@@ -36,8 +38,11 @@ def plot_losses(outdir, epoch, losses, x_max, y_min, y_max):
     plt.clf()
 
 def plot_accuracy(outdir, epoch, ymin, ymax, acc_sen, acc_ppv, acc_f1, sen_ML, ppv_ML, f1_ML, sen_ML_best, ppv_ML_best, f1_ML_best):
+    
     if (os.path.exists(outdir)):
-        plt.plot(acc_f1)
+        plt.plot(acc_f1, marker='o',    markersize=2, linestyle='none')
+        plt.gca().set_prop_cycle(None)
+        plt.plot(acc_f1, marker='none', markersize=2, linestyle='--', dashes=(5, 5), linewidth=0.25)
         plt.axhline(y=f1_ML,      color='g', linestyle='-')
         plt.axhline(y=f1_ML_best, color='r', linestyle='-')
         plt.xlabel("Epoch")
@@ -49,7 +54,9 @@ def plot_accuracy(outdir, epoch, ymin, ymax, acc_sen, acc_ppv, acc_f1, sen_ML, p
         
 def plot_accuracy_found_bps(outdir, epoch, ymin, ymax, found):
     if (os.path.exists(outdir)):
-        plt.plot(found)
+        plt.plot(found, marker='o',    markersize=2, linestyle='none')
+        plt.gca().set_prop_cycle(None)
+        plt.plot(found, marker='none', markersize=2, linestyle='--', dashes=(5, 5), linewidth=0.25)
         plt.xlabel("Epoch")
         plt.ylabel("Found")
         plt.ylim(ymin, ymax)

@@ -9,12 +9,12 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.4.d
+PACKAGE_VERSION = 2.6.6
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.4.d
-RSCAPE_DATE     = December 2025
+RSCAPE_VERSION  = 2.6.6
+RSCAPE_DATE     = May 2026
 
 E2MSA           = @E2MSA_NAME@
 E2MSA_VERSION   = 0.1.0
