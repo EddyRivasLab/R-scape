@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.6.6], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.6.7], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGSesl_cflags_env_set=no
@@ -771,13 +771,13 @@ AC_PATH_PROG([BISON], [bison])
 
 if test -z "$BISON"; then
   AC_MSG_WARN([bison not found; tornado will not be configured.])
+  EXTRA_TORNADO_FILES=""	
+  ln -sf Makefile_short.in Makefile.in
+  cd src; ln -sf Makefile_short.in Makefile.in; cd ..
 else
   AC_CONFIG_SUBDIRS(lib/tornado)
-fi
-
-if test -z "$BISON"; then
-  EXTRA_TORNADO_FILES=""
-else
+  ln -sf Makefile_long.in Makefile.in
+  cd src; ln -sf Makefile_long.in Makefile.in; cd ..
   EXTRA_TORNADO_FILES="
     lib/tornado/Makefile
     lib/tornado/src/Makefile
@@ -787,10 +787,6 @@ fi
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
-  documentation/Makefile
-  documentation/e2msa/Makefile
-  documentation/titlepage.tex
-  documentation/copyright.tex
   lib/R2R/R2R-current/src/Makefile
   lib/FastTree/src/Makefile
   lib/infernal/Makefile
@@ -801,6 +797,7 @@ AC_CONFIG_FILES([
   lib/RNAVIEW/src/Makefile
   $EXTRA_TORNADO_FILES
 ])
+
 
 
 
