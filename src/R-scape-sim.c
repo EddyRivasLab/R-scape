@@ -946,7 +946,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   useme[usesq] = TRUE;
 
   esl_msa_SequenceSubset(msa, useme, &root);
-  if (esl_msa_MinimGaps(root, NULL, "-", FALSE) != eslOK) 
+  if (esl_msa_MinimGaps(root,FALSE) != eslOK) 
     esl_fatal("failed to generate the root sequence");
   esl_sprintf(&rootname, "%s", cfg->filename);
   esl_sprintf(&rootdesc, "%s-%s", cfg->filename, root->sqname[0]);
@@ -992,7 +992,7 @@ simulate_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, ESL_MSA **ret_sim
   }
   if (esl_msa_SequenceSubset(msafull, useme, &simsa) != eslOK)
     esl_fatal("failed to generate leaf alignment");
-  if (esl_msa_MinimGaps(simsa, NULL, "-", FALSE) != eslOK) 
+  if (esl_msa_MinimGaps(simsa, FALSE) != eslOK) 
     esl_fatal("failed to remove gaps alignment");
   
  if (cfg->verbose) 

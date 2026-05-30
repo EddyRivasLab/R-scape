@@ -1170,7 +1170,7 @@ main(int argc, char **argv)
 
 	last = ESL_MIN(first+cfg.window-1, msa->alen);	
 	for (i = first-1; i < last; i ++) useme[i] = TRUE;
-	status = esl_msa_ColumnSubset(wmsa, cfg.errbuf, useme);
+	status = esl_msa_ColumnSubset(wmsa, useme);
 	if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
 
 	/* add the name including the from-to information */

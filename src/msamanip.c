@@ -648,7 +648,7 @@ msamanip_SingleSequenceRemoveGaps(ESL_MSA *msa, char *errbuf, int verbose)
       if (esl_abc_XIsGap(msa->abc, msa->ax[s][l+1])) useme[l] = FALSE;
   }
 
-  if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK)
+  if ((status = esl_msa_ColumnSubset(msa, useme)) != eslOK)
     ESL_XFAIL(eslFAIL, errbuf, "Truncation failed\n");
 
   if (verbose) esl_msafile_Write(stdout, msa, eslMSAFILE_STOCKHOLM);
@@ -688,7 +688,7 @@ msamanip_Truncate(ESL_MSA *msa, int64_t tstart, int64_t tend, int64_t *ret_start
   for(apos = from; apos <= to;       apos++) useme[apos] = TRUE; 
   for(apos = to+1; apos < msa->alen; apos++) useme[apos] = FALSE;
 
-  if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK)
+  if ((status = esl_msa_ColumnSubset(msa, useme)) != eslOK)
     ESL_XFAIL(eslFAIL, errbuf, "Truncation failed\n");
 
   if (ret_startpos) *ret_startpos = from;
@@ -1029,16 +1029,16 @@ msamanip_SelectRandomSet(ESL_RANDOMNESS *r, ESL_MSA **msa, ESL_MSA **restmsa, in
       nuse ++;
     }
   }
-  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+  if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+  if ((status = esl_msa_MinimGaps(new, FALSE)) != eslOK) goto ERROR;
 
   if (restmsa) {
     for (x = 0; x < omsa->nseq; x ++) {
       useme[x] = abs(1-useme[x]);
      }
     
-    if ((status = esl_msa_SequenceSubset(omsa, useme, &rest))  != eslOK) goto ERROR;
-    if ((status = esl_msa_MinimGaps(rest, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+    if ((status = esl_msa_SequenceSubset(omsa, useme, &rest)) != eslOK) goto ERROR;
+    if ((status = esl_msa_MinimGaps(rest, FALSE)) != eslOK) goto ERROR;
      *restmsa = rest;
   }
   
@@ -1141,9 +1141,9 @@ msamanip_SelectTrio(ESL_RANDOMNESS *r, ESL_MSA **msa, float idthresh1, float idt
   if (failed) { status = eslFAIL; goto ERROR; }
 
   /* replace msa */
-  if ((status = reorder_msa(omsa, order, NULL))             != eslOK) goto ERROR;
-  if ((status = esl_msa_SequenceSubset(omsa, useme, &new))  != eslOK) goto ERROR;
-  if ((status = esl_msa_MinimGaps(new, NULL, "-.~", FALSE)) != eslOK) goto ERROR;
+  if ((status = reorder_msa(omsa, order, NULL))            != eslOK) goto ERROR;
+  if ((status = esl_msa_SequenceSubset(omsa, useme, &new)) != eslOK) goto ERROR;
+  if ((status = esl_msa_MinimGaps(new, FALSE))             != eslOK) goto ERROR;
 
   esl_msa_Destroy(omsa);
   *msa = new;
@@ -1865,7 +1865,7 @@ msamanip_MSALeaves(ESL_MSA **msa, int incnode)
   }
   if (esl_msa_SequenceSubset(msafull, useme, &new) != eslOK)
     esl_fatal("failed to generate leaf alignment");
-  if (esl_msa_MinimGaps(new, NULL, "-", FALSE) != eslOK) 
+  if (esl_msa_MinimGaps(new, FALSE) != eslOK) 
     esl_fatal("failed to generate leaf alignment");
   
   /* replace msa */
