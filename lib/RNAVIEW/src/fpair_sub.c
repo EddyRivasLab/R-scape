@@ -62,7 +62,7 @@ get_reference_pdb(char *BDIR)
     std[i].sNatom = snum;
     for(j=1; j<=snum; j++){
       for(k=1; k<=3; k++)
-	std[i].sxyz[j][k] = sx[j][k];            
+	std[i].sxyz[j-1][k-1] = sx[j][k];            
       strcpy(std[i].sAtomNam[j], sAtomName[j]);
     }
   }
@@ -670,7 +670,7 @@ char identify_uncommon(long ry, char **AtomName, long ib, long ie)
 /* identify the unknown residue  */
 {
 
-    char c;
+    char c='N';
     long N2, C5M, N4, O4,O2p;
 
     if(ry == 1){    /* Purine (R base) */
@@ -865,7 +865,7 @@ void get_BDIR(char *BDIR, char *filename)
   FILE *fp;
   
   fp = fopen(filename, "r");        /* check current directory */
-  if (fp != NULL){
+  if (fp != NULL) {
     iscd = 1;
     fclose(fp);
   }
@@ -1797,7 +1797,7 @@ void base_frame(long num_residue, char *bseq, long **seidx, long *RY,
                 ++nmatch;
                 for (k = 1; k <= 3; k++) {
                     eRing_xyz[nmatch][k] = xyz[exp_katom][k];
-                    sRing_xyz[nmatch][k] = std[ii].sxyz[std_katom][k];
+                    sRing_xyz[nmatch][k] = std[ii].sxyz[std_katom-1][k-1];
                 }
             }
         }
@@ -2044,12 +2044,12 @@ void base_info(long num_residue, char *bseq, long **seidx, long *RY,
         }
         if (RY[i] >= 0) {
               
-         /* 
+          
             j =
                 (RY[i] == 1) ?
                 find_1st_atom(" N9 ", AtomName, ib, ie,
                               "") :find_1st_atom(" N1 ", AtomName, ib, ie, "");
-         */   
+            
             for (k = 1; k <= 3; k++)       
                 Nxyz[i][k] = xyz[j][k];
             o3_p_xyz(ib, ie, " O3'", AtomName, xyz, o3_p[i], 4);
@@ -2946,6 +2946,8 @@ void check_zdna(long *num_helix, long **helix_idx, long *bp_idx,
     double txyz[4];
     long i, j, k, m, n, nwired = 0, nrev, mixed_rl = 0;
 
+    txyz[0] = txyz[1] = txyz[2] = txyz[3] = 0.;
+    
     for (i = 1; i <= *num_helix; i++) {
         if (helix_idx[i][5] || helix_idx[i][6] || helix_idx[i][7] ||
             helix_idx[i][3] <= 1) {

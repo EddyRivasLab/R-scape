@@ -1,6 +1,3 @@
-extern void process_3d_fig(char *pdbfile, long num_residue, char *bseq, long **seidx,
-			   char **AtomName,char **ResName, char *ChainID,double **xyz,
-			   long num_pair_tot, char **pair_type, long **bs_pairs_tot);
 static void vrml_start_plot(void);
 static void vrml_draw_chain(long j,  long **chain_idx, double **C4xyz);
 extern void label_residue(long j, long **chain_idx, double **C4xyz, char **resnam);

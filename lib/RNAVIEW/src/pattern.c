@@ -195,7 +195,7 @@ void get_str(char *inpfile, long *nline, char **str_pair)
 /* read the string from inpfile */
   
 {
-  long nl;
+  long nl=0;
   char str[200];
   FILE *finp;
   
@@ -228,7 +228,7 @@ void get_str(char *inpfile, long *nline, char **str_pair)
 long nline(char *inpfile)
 /* get the number of line from the input */
 {
-  long nl;
+  long nl=0;
   char str[256];
   FILE *finp;
   

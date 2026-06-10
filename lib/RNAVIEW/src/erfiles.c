@@ -39,7 +39,7 @@ int er_PDB_GetSeq(char *pdbfile, char *chainname, int *ret_from, int *ret_to, ch
   int             *ismissing = NULL;
   int              to = *ret_to;
   int              from = *ret_from;
-  int              tmp;
+  int              tmp=0;
   int              num = 0;
   char             ch[2];
   char            *tok;
@@ -285,7 +285,7 @@ int er_PrintChainSeqs(char *pdbfile, char *user_chain, char *ChainID, long num_r
     if (status != eslOK) ESL_XFAIL(eslFAIL, errbuf, "%s. er_PrintChainSeqs(): could not get the coords correspondence", errbuf);
 
     free(ismissing); ismissing = NULL;
-    if (sq) free(sq); sq = NULL;
+    if (sq) { free(sq); sq = NULL; }
   }
 
   *ret_nchain = nchain;

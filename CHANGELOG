@@ -105,3 +105,6 @@ R-scape v2.6.6 May 2026
 
 R-scape v2.6.7 May 2026
 	It compiles correctly if bison is not installed. Then, tornado is not compiled.
+
+R-scape v2.6.8 June 2026
+	Fixed some warning/error in RNAVIEW that made the compilation fail in some systems

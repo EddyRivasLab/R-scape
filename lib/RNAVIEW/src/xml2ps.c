@@ -450,7 +450,7 @@ void read_pair_type(char *inpfile,char **pair_type,long **npair_idx,long *npair,
     char item[1000];  /* characters for the first item in <> */
     char value[100];
     long size, key, np=0, nh=0, ns=0, id1=0,id2=0;
-    long position, position_new,  mol_id=0;
+    long position=0, position_new=0,  mol_id=0;
     FILE *inp;
     inp = fopen(inpfile, "r");
     if(inp==NULL) {        
@@ -813,7 +813,7 @@ void read_xy_coord(char *inpfile, double **xy, long *resid_idx, long *num_xy)
   char lett[5000];  /* characters in <> */
   char item[100];  /* characters for the first item in <> */
   long size, key;
-  long position, nposit=0, nxy=0, model_id=0;
+  long position=0, nposit=0, nxy=0, model_id=0;
   double x, y;
   FILE *inp;
   inp = fopen(inpfile, "r");
@@ -889,7 +889,7 @@ void read_sugar_syn(char *inpfile, long **SUGAR_SYN)
     char lett[5000];  /* characters in <> */
     char item[100];  /* characters for the first item in <> */
     long size, key, nmol;
-    long position, model_id=0;
+    long position=0, model_id=0;
     char type[10]; /* syn or anti */
     FILE *inp;
     inp = fopen(inpfile, "r");
@@ -1110,7 +1110,7 @@ void extract_sequence(FILE *inp, char *resname, long *nres)
 void read_bs_pair(char *inpfile, long *npair, char *edge_type, char *cis_tran,
                   char *resname, long *chain_id, long *seq, long **num_idx)
 {
-    long n, nres1, nres2;
+    long n=0, nres1, nres2;
     char str[100];
     FILE *finp;
     finp = fopen(inpfile, "r");
@@ -1192,7 +1192,7 @@ void get_residue_num(char *str, long *nres1, long *nres2, long *seq)
 long num_of_pair(char *inpfile)
 /* read the output file from RNAVIEW program */
 {
-  long nlt;
+  long nlt=0;
   char str[100];
   FILE *finp;
   finp = fopen(inpfile, "r");
@@ -1748,7 +1748,7 @@ void LW_shapes(char *bseq, long k1, long k2, char *pair_type, double *x,
  at is the slope of the line
 */ 
 {
-    long n,fill, width=1;
+    long n,fill=0, width=1;
     double xy0[3], a, d,  d1, d2, d3, dpair, r, dt1, dt2;
     double xy1[3], xy2[3], xy3[3], xy4[3], xy5[3], xy6[3];
     double txy1[3], txy2[3], txy3[3], txy4[3];

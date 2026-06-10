@@ -16,7 +16,7 @@ void write_multiplets(char *pdbfile)
     char **pair_name, **pair_type, **line, tmp[100];
     
     long **work_num;
-    long i, j, k, n1, n2, nl_tot=0, nstr, nmul, npair;
+    long i, j, k, n1, n2, nl_tot=0, nstr, nmul, npair=0;
     FILE *fout, *finp;
     
     sprintf(inpfile, "%s.out", pdbfile);

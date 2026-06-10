@@ -34,4 +34,9 @@
 
 #include "rna_header.h"
 
+extern void process_3d_fig(char *pdbfile, long num_residue, char *bseq, long **seidx,
+			   char **AtomName,char **ResName, char *ChainID,double **xyz,
+			   long num_pair_tot, char **pair_type, long **bs_pairs_tot);
+
 #endif                                /* RNA_H */
+

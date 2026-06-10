@@ -71,7 +71,7 @@ static int  generate_ancestral(ESL_RANDOMNESS *r, E1_RATE *R,  ESQ ***ret_esq, i
 int
 main(int argc, char **argv)
 {
-  ESL_GETOPTS        *go  = p7_CreateDefaultApp(options, 1, argc, argv, banner, usage);
+  ESL_GETOPTS        *go  = p7_CreateDefaultApp("e1sim", options, 1, argc, argv, banner, usage);
   ESL_RANDOMNESS     *r = NULL;	  
   char                errbuf[eslERRBUFSIZE];
   char               *outfile;

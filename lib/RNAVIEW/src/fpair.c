@@ -651,6 +651,7 @@ void ring_center(long i,long **seidx,char *bseq,char **AtomName,
   static char *RingAtom[9] =
   {" C4 ", " N3 ", " C2 ", " N1 ", " C6 ", " C5 ", " N7 ", " C8 ", " N9 " };
 
+  natm = 0;
 
   if(bseq[i]=='A' || bseq[i]=='G' || bseq[i]=='a' || bseq[i]=='g'
      || bseq[i]=='I' || bseq[i]=='i'){      
@@ -2072,6 +2073,8 @@ void single_BB_Hbond(long i, long j, long **seidx, char **AtomName, char *bseq,
   /*
     Hbond_pair(i, j, seidx, AtomName, bseq, xyz, Hyes);
   */
+
+  dist = 0;
   
   for (m = seidx[i][1]; m <= seidx[i][2]; m++) {
     
@@ -2178,6 +2181,8 @@ void syn_or_anti( long num_residue, char **AtomName, long **seidx,
     char c2c4[5],  n1n9[5];
     long chi[10], ib, ie,  idx, i, m,n;
     double chi_angle,  **xyz4;
+
+    chi_angle = 0;
     
     xyz4 = dmatrix(1, 4, 1, 3);
 

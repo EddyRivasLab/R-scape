@@ -200,8 +200,7 @@ void edge_type(long nh, char **hb_atm, long i, char *bseq, char *type_wd)
 	 strcmp(hb_atm[k], " O2'") == 0 ) Suger++;
     };
     
-  } else 
-    if(bseq[i] == 'I' || bseq[i] == 'i'){
+  } else if(bseq[i] == 'I' || bseq[i] == 'i'){
       
       for(k=1; k<=nh; k++){
 	if(k>1 && !strcmp(hb_atm[k], hb_atm[k-1]))
@@ -228,8 +227,7 @@ void edge_type(long nh, char **hb_atm, long i, char *bseq, char *type_wd)
 	   strcmp(hb_atm[k], " O2'") == 0 ) Suger++;
 	};
       
-    } else 
-    if(bseq[i] == 'G' || bseq[i] == 'g'){
+    } else if(bseq[i] == 'G' || bseq[i] == 'g'){
 
       for(k=1; k<=nh; k++){
             if(k>1 && !strcmp(hb_atm[k], hb_atm[k-1]))
@@ -253,8 +251,7 @@ void edge_type(long nh, char **hb_atm, long i, char *bseq, char *type_wd)
 	 strcmp(hb_atm[k], " O2'") == 0 )  Suger++; 
 	};
       
-    }else 
-    if(bseq[i] == 'C' || bseq[i] == 'c'){
+    }else if(bseq[i] == 'C' || bseq[i] == 'c'){
 
       for(k=1; k<=nh; k++){
             if(k>1 && !strcmp(hb_atm[k], hb_atm[k-1]))
@@ -277,9 +274,7 @@ void edge_type(long nh, char **hb_atm, long i, char *bseq, char *type_wd)
 	};
     
 
-    }else
-
-    if(bseq[i] == 'U' || bseq[i] == 'T' || bseq[i] == 'u' || bseq[i] == 't' ){
+    }else if(bseq[i] == 'U' || bseq[i] == 'T' || bseq[i] == 'u' || bseq[i] == 't' ){
 
       for(k=1; k<=nh; k++){
             if(k>1 && !strcmp(hb_atm[k], hb_atm[k-1]))
@@ -303,9 +298,7 @@ void edge_type(long nh, char **hb_atm, long i, char *bseq, char *type_wd)
 	};
     
 
-    }else
-
-    if(bseq[i] == 'P' || bseq[i] == 'p' ){
+    }else if(bseq[i] == 'P' || bseq[i] == 'p' ){
 
       for(k=1; k<=nh; k++){
             if(k>1 && !strcmp(hb_atm[k], hb_atm[k-1]))
@@ -413,7 +406,7 @@ void NC_vector(long i,long ib, long ie, char **AtomName,char *bseq,
 
 /* get the vector of N1(or N9)-->C1' for the given base.*/
 {
-  long j,k,m,n,natm;
+  long j,k,m,n,natm=0;
   double C_xyz[4];
   static char *RingAtom[9] =
   {" C4 ", " N3 ", " C2 ", " N1 ", " C6 ", " C5 ", " N7 ", " C8 ", " N9 " };

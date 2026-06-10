@@ -88,7 +88,7 @@ void rest_bases(long num_residue, long nhelix, long *npair_per_helix,
 /* get the rest of bases by subtracting the longer helix pairs from the
    num_residue */
 {
-    long i,j,k,n, ntest,ns=0;
+    long i,j,k,n, ntest=0,ns=0;
     for (k=1; k<=num_residue; k++){
         for(i=1; i<=nhelix; i++){
             ntest = 0;            
@@ -115,7 +115,7 @@ void rest_pairs(long num_pair_tot, long **bs_pairs_tot, long nhelix,
                 long *npsub,long **bsp_sub)
 /* get the rest of base pairs (pairs off the longer helix)*/
 {
-    long i,j,k,n, ntest,ns=0;
+    long i,j,k,n, ntest=0,ns=0;
     for (k=1; k<=num_pair_tot; k++){
         for(i=1; i<=nhelix; i++){
             ntest = 0;            

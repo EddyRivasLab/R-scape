@@ -783,7 +783,7 @@ void work_horse(char *pdbfile, FILE *fout, long num_residue, long num,
   char **pair_type;
   double **orien, **org, **Nxyz, **o3_p;
   long num_multi, *multi_idx, **multi_pair;
-
+  
   if (num_residue == 0) { printf("No residues\n"); exit(1); }
   
   multi_pair   = lmatrix(1, num_residue, 1, 20);   /* max 20-poles */

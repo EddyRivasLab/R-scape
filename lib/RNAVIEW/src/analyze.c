@@ -982,7 +982,7 @@ void ref_frames(long ds, long num_bp, long **pair_num, char **bp_seq,
                     ++nmatch;
                     for (m = 1; m <= 3; m++) {
                         eRing_xyz[nmatch][m] = xyz[exp_katom][m];
-                        sRing_xyz[nmatch][m] = std[ii].sxyz[std_katom][m];
+                        sRing_xyz[nmatch][m] = std[ii].sxyz[std_katom][m-1];
                     }
                 }
             }

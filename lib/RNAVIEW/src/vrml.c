@@ -121,7 +121,8 @@ void draw_interact(int k1, int k2, char *pair_type, double **C4xyz)
   double cyl_scale[4], box_scale[4], cone_scale[4];
   double Yphy[4] = {EMPTY_NUMBER, 0.0, 1.0, 0.0}; /* the physical axis (Y) */
   char dc[30];
-  
+
+  tr = 0.;
 
   for (i=1; i<=3; i++){        
     xyz1[i] = C4xyz[k1][i];

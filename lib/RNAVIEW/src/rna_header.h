@@ -442,7 +442,6 @@ extern void rot_2_Yaxis (long num_residue,  double *z, long **seidx, double **xy
 
 extern void rot_mol (long num_residue,  char **AtomName,char **ResName, char *ChainID,
 		     long *ResSeq, double **xyz, long **seidx, long *RY);
-extern void process_3d_fig();
 extern void process_2d_fig(long num_residue, char *bseq, long **seidx, long *RY,
 			   char **AtomName, char **ResName, char *ChainID,
 			   long *ResSeq,char **Miscs, double **xyz,

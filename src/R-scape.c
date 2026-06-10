@@ -1207,7 +1207,7 @@ main(int argc, char **argv)
 
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("# MSA %s alen=%d nseq=%d time=%.2f secs\n\n", msa->name, msa->alen, msa->nseq, time_spent);
+    printf("# MSA %s alen=%lld nseq=%d time=%.2f secs\n\n", msa->name, msa->alen, msa->nseq, time_spent);
     
     if (omsaname) free(omsaname); 
     if (useme) free(useme); 
