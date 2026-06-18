@@ -176,5 +176,5 @@ extern void      struct_pairlist_Destroy(PAIRLIST *pairlist);
 extern void      struct_pairlist_Dump(PAIRLIST *pairlist);
 extern int       struct_pairlist_Realloc(PAIRLIST *pairlist, int n);
 extern int       esl_ct2wuss_er(int *ct, int n, char *ss);
-extern int       esl_ct2simplewuss_er(int *ct, int n, char *ss);
+extern int       esl_ct2ss_er(int *ct, int n, char *ss, int simple);
 #endif

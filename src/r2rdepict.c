@@ -26,7 +26,6 @@
 
 static int   r2r_depict_pdf             (char *r2rfile, char *metafile, int verbose, char *errbuf);
 static int   r2r_depict_svg             (char *r2rfile, char *metafile, int verbose, char *errbuf);
-static int   r2r_esl_msa_AppendGC       (ESL_MSA *msa, char *tag, char *value);
 static int   r2r_keep                   (ESL_MSA *msa, int r2rall);
 static int   r2r_pseudoknot_outline     (ESL_MSA *msa, CTLIST *ctlist);
 static int   r2r_RM_outline             (ESL_MSA *msa, CTLIST *ctlist);
@@ -207,7 +206,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
   for (s = 0; s < nct; s ++) {
 
     // first modify the ss to a simple <> format. R2R cannot deal with fullwuss 
-    esl_ct2simplewuss_er(ctlist->ct[s], msa->alen, ss);
+    esl_ct2ss_er(ctlist->ct[s], msa->alen, ss, TRUE);
 
     // replace the 'SS_cons' GC line with the new ss
     switch(ctlist->cttype[s]) {
@@ -223,7 +222,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_PC:
     case CTTYPE_NONE:
       esl_sprintf(&tag, "%s_%s", sstag, ctlist->ctname[s]);
-      r2r_esl_msa_AppendGC(msa, tag, ss);
+      esl_msa_AppendGC_er(msa, tag, ss);
       free(tag); tag = NULL;
       break;
     case CTTYPE_RM_HL:
@@ -234,7 +233,7 @@ r2r_Overwrite_SS_cons(ESL_MSA *msa, CTLIST *ctlist, char *errbuf, int verbose)
     case CTTYPE_RM_BS:
       n_rm ++;
       esl_sprintf(&tag, "%s_rm%d_%s", sstag, n_rm, ctlist->ctname[s]);
-      r2r_esl_msa_AppendGC(msa, tag, ss);
+      esl_msa_AppendGC_er(msa, tag, ss);
       free(tag); tag = NULL;
       break;
     default:
@@ -538,57 +537,6 @@ r2r_Write_cov_helix_SS_cons(ESL_MSA *msa, CTLIST *ctlist, RMLIST *rmlist, double
 
 /*------- internal functions -------------------*/
 
-// A version of esl_msa_AppendGC that assumes
-// we are adding a new tag, which is the case here.
-//
-// The proper esl_msa_AppenGC is more general and looks at the gc_idx hash table to figure out whether it's
-// a new tag or not. Because I have to first remove the given gc tags to add R-scape's the hash table would have
-// to be propertly
-//
-int
-r2r_esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
-{
-  int   tagidx;
-  void *p;
-  int   status = eslOK;
-
-  /* Is this an unparsed tag name that we recognize?
-   * If not, handle adding it to index, and reallocating
-   * as needed.
-   */
-  tagidx = msa->ngc;
-  
-  if (msa->gc_tag == NULL)	/* first tag? init&allocate  */
-    {
-      msa->gc_idx = esl_keyhash_Create();
-      if (status != eslOK && status != eslEDUP) return status;
-      ESL_DASSERT1((tagidx == 0));
-
-      ESL_ALLOC(msa->gc_tag, sizeof(char **));
-      ESL_ALLOC(msa->gc,     sizeof(char **));
-      msa->gc[0]     = NULL;
-      msa->gc_tag[0] = NULL;
-    }
-  else
-    {
-      ESL_RALLOC(msa->gc_tag, p, (msa->ngc+1) * sizeof(char **));
-      ESL_RALLOC(msa->gc,     p, (msa->ngc+1) * sizeof(char **));
-      msa->gc[tagidx]     = NULL;
-      msa->gc_tag[tagidx] = NULL;
-   }
-  
-  // store the new tag
-  if (msa->gc_tag[tagidx]) free(msa->gc_tag[tagidx]); msa->gc_tag[tagidx] = NULL;
-  if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
-  msa->ngc++;
-    
-  if (msa->gc[tagidx]) free(msa->gc[tagidx]); msa->gc[tagidx] = NULL;
-  return (esl_strcat(&(msa->gc[tagidx]), -1, value, -1));
-
- ERROR:
-  return status;
-}
-
 static int
 r2r_depict_pdf(char *r2rfile, char *metafile, int verbose, char *errbuf)
 {
@@ -768,7 +716,7 @@ r2r_pseudoknot_outline(ESL_MSA *msa, CTLIST *ctlist)
     esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;
 
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R_LABEL", s);
-    r2r_esl_msa_AppendGC(msa, tag, new); free(tag); tag = NULL;
+    esl_msa_AppendGC_er(msa, tag, new); free(tag); tag = NULL;
 
     // extra annotation suggested by zasha
     esl_sprintf(&tag, "SUBFAM_pknot%d_R2R ignore_ss primary", s);
@@ -880,9 +828,9 @@ r2r_RM_outline(ESL_MSA *msa, CTLIST *ctlist)
 	    
 	// markups necessary for r2r to outline the RMs
 	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s", n_rm, ctlist->ctname[s]);
-	r2r_esl_msa_AppendGC(msa, tag, rmss1); free(tag); tag = NULL;
+	esl_msa_AppendGC_er(msa, tag, rmss1); free(tag); tag = NULL;
 	esl_sprintf(&tag, "R2R_XLABEL_rm%d_%s_tick", n_rm, ctlist->ctname[s]);
-	r2r_esl_msa_AppendGC(msa, tag, rmss2); free(tag); tag = NULL;
+	esl_msa_AppendGC_er(msa, tag, rmss2); free(tag); tag = NULL;
 
 	esl_sprintf(&tag, "R2R keep rm%d_%s:x", n_rm, ctlist->ctname[s]);
 	esl_msa_AddGF(msa, tag, -1, "", -1); free(tag); tag = NULL;

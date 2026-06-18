@@ -38,10 +38,10 @@ extern int              cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldc
 					      HITLIST **ret_foldhitlist, RMLIST **ret_foldrmlist, char *covtype, char *threshtype);
 extern int              cov_ReadNullHistogram(char *nullhisfile, RANKLIST **ret_ranklist, char *errbuf, int verbose);
 extern int              cov_WriteNullHistogram(char *nullhisfile, RANKLIST *ranklist, char *errbuf, int verbose);
-extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos);
-extern int              cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos);
-extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);
-extern int              cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod);
+extern int              cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int dim, SPAIR *spair, int *msamap, int firstpos, char *errbuf);
+extern int              cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int dim, SPAIR *spair, int *msamap, int firstpos, char *errbuf);
+extern int              cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int dim, SPAIR *spair, int *msamap, int firstpos, STATSMETHOD statsmethod, char *errbuf);
+extern int              cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int dim, SPAIR *spair, int *msamap, int firstpos, STATSMETHOD statsmethod, char *errbuf);
 extern void             cov_FreeRankList(RANKLIST *ranklist);
 extern void             cov_FreeHitList(HITLIST *hitlist);
 extern int              cov_SignificantPairs_ZScore(struct mutual_s *mi, int *msamap, int firstpos, int *ct, int verbose, char *errbuf);

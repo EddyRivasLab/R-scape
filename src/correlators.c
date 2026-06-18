@@ -1724,13 +1724,13 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
   for (s = 0; s < msa->nseq; s ++) {
     resi = coli[s];
     resj = colj[s];
-    
+     
+#if GAPASCHAR
+    // add the contribution of A - and - - columns
     if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
       mi->nseff[i][j]                += msa->wgt[s];
       mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s];
     }
-#if GAPASCHAR
-    // add the contribution of A - and - - columns
     else if (esl_abc_XIsCanonical(msa->abc, resi)) {
       mi->nseff[i][j] += msa->wgt[s];
       mi->pp[i][j][IDX(resi,msa->abc->K,K)] += msa->wgt[s]; 
@@ -1743,9 +1743,17 @@ mutual_naive_ppij(ESL_RANDOMNESS *r, int i, int j, ESL_MSA *msa, struct mutual_s
       mi->nseff[i][j] += msa->wgt[s];
       mi->pp[i][j][IDX(msa->abc->K,msa->abc->K,K)] += msa->wgt[s]; 
     }
+#else
+    if (esl_abc_XIsCanonical(msa->abc, resi) && esl_abc_XIsCanonical(msa->abc, resj)) {
+      mi->nseff[i][j]                += msa->wgt[s];
+      mi->pp[i][j][IDX(resi,resj,K)] += msa->wgt[s];
+    }
+    else {
+      mi->ngap[i][j] += msa->wgt[s];
+    }
 #endif
   }
-
+  
   // normalize
   esl_vec_DNorm(mi->pp[i][j], K2);
     

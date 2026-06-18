@@ -229,6 +229,10 @@ typedef struct spair_s {
   double  power_double;
 
   double  nseff;          // effective number of sequences
+  double  ngap;           // effective number of gaps (x-, -x, --)
+  double  wcf_f;          // fraction of WCF pairs in nseff
+  double  wobble_f;       // fraction of Wobble pairs in nseff
+  double  noncan_f;       // fraction of non-canonical pairs in nseff
 
   POWERTYPE  powertype;   // which power type?
   

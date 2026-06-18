@@ -78,6 +78,7 @@ extern int esl_msaweight_IDFilter_ER(const ESL_MSA *msa, double maxid, ESL_MSA *
 extern int esl_msaweight_Gremlin(ESL_MSA *msa, double reweight_thresh, int isplmDCA, char *errbuf, int verbose);
 extern int esl_dst_CPairId_Overmaxid(const char *asq1, const char *asq2, double maxid);
 extern int esl_dst_XPairId_Overmaxid(const ESL_ALPHABET *abc, const ESL_DSQ *ax1, const ESL_DSQ *ax2, double maxid);
+extern int esl_msa_AppendGC_er(ESL_MSA *msa, char *tag, char *value);
 #endif /*MSAMANIP_INCLUDED*/
 
 /************************************************************

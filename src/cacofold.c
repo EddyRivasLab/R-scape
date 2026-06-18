@@ -4975,7 +4975,7 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     d1 = d2 = 0;
     if (d > 0) {
       sc = (allow_si)? cyk->BB->dp[j][d-1] + p->tM1[0] + emitsc_singi : -eslINFINITY;
-      
+
       if (sc >= bestsc) {
 	if (sc > bestsc) { /* if an outright winner, clear/reinit the stack */
 	  if (alts) esl_stack_Reuse(alts);
@@ -6202,7 +6202,8 @@ dp_recursion_rbg_score_P_IL_plain(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *
   l = j - d2 + 1;
 
   il_allow = (l > 0 && allow_loop(i,k,L,covct) && allow_loop(l,j,L,covct))? TRUE : FALSE;
-  if (d1 + d2 > MAXLOOP_I && !force_bpair(k+1, l-1, L, covct)) il_allow = FALSE;
+  //if (d1 + d2 > MAXLOOP_I && !force_bpair(k+1, l-1, L, covct)) il_allow = FALSE;
+  // allow to go over MAXLOOP_I otherwise, cyk may return -\infty do to other constraints
 
   d1_ng   = segment_remove_gaps_prof(i,k,psq); if (d1_ng == 0) d1_ng = d1;
   d2_ng   = segment_remove_gaps_prof(l,j,psq); if (d2_ng == 0) d2_ng = d2;
@@ -7638,7 +7639,7 @@ allow_calculate(ALLOW *allow, FOLDPARAM *foldparam, int i, int j, int L, int *co
   allow->allow_bp = allow_bpair(foldparam->power_thresh, foldparam->neg_eval_thresh, foldparam->hloop_min, i, j, L, covct, exclude, spair, ret_nneg);
   allow->allow_si = allow_single(i, L, covct);
   allow->allow_sj = allow_single(j, L, covct);
-
+  
   return eslOK;
 }
 

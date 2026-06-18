@@ -4767,7 +4767,7 @@ esl_ct2wuss_er(int *ct, int n, char *ss)
   return status;
 }
 int
-esl_ct2simplewuss_er(int *ct, int n, char *ss)
+esl_ct2ss_er(int *ct, int n, char *ss, int simple)
 {
   int       *cct = NULL;    /* copy of ct vector */
   int        j;             /* sequence indices */
@@ -4782,7 +4782,7 @@ esl_ct2simplewuss_er(int *ct, int n, char *ss)
   if (esl_vec_IMin(cct, n+1) < 0)
     status = R3D_RMCTtoSS(cct, NULL, n, ss);
   else
-    status = esl_ct2simplewuss(cct, n, ss);
+    status = (simple)? esl_ct2simplewuss(cct, n, ss) : esl_ct2wuss(cct, n, ss);
 
   free(cct);
   return status;

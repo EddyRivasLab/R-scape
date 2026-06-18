@@ -114,6 +114,7 @@ struct cfg_s { /* Shared configuration in masters & workers */
   int              infmt;
  
   int              R2Rall;
+  int              R2Rmsa;
 
   int              dofold;
   ESL_MSA         *omsa;
@@ -264,6 +265,7 @@ static ESL_OPTIONS options[] = {
   /* other options */
   { "--outdir",     eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a directory for all output files",                                                  1 },
   { "--outname",    eslARG_STRING,       NULL,   NULL,       NULL,   NULL,    NULL,  NULL,               "specify a filename for all outputs",                                                        1 },
+  { "--r2rmsa",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "save R2R alignment, just useful for plotting",                                              1 },
   { "--r2rall",       eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "make R2R plot all position in the alignment",                                               1 },
   { "-v",             eslARG_NONE,      FALSE,   NULL,       NULL,   NULL,    NULL,  NULL,               "be verbose",                                                                                1 },
   { "--window",       eslARG_INT,       NULL,    NULL,      "n>0",   NULL,    NULL,  NULL,               "window size",                                                                               1 },
@@ -604,6 +606,7 @@ static int process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, stru
   cfg.nofigures   = esl_opt_IsOn(go, "--nofigures")?  esl_opt_GetBoolean(go, "--nofigures") : FALSE;
   cfg.doexpfit    = esl_opt_IsOn(go, "--expo")?       esl_opt_GetBoolean(go, "--expo")      : FALSE;
   cfg.R2Rall      = esl_opt_GetBoolean(go, "--r2rall");
+  cfg.R2Rmsa      = esl_opt_GetBoolean(go, "--r2rmsa");
   cfg.singlelink  = esl_opt_GetBoolean(go, "--singlelink");
   
   ESL_ALLOC(cfg.thresh, sizeof(THRESH));
@@ -2115,9 +2118,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       // covqq file 
       esl_sprintf(&ofile->covqqfile, "%s/%s.qq", cfg->outdir, outname);
       
-      // R2R annotated sto file 
-      esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
-      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
+      // R2R annotated sto file
+      if (cfg->R2Rmsa) {
+	esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
+	if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
+      }
       
       // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s/%s.dplot", cfg->outdir, outname);
@@ -2187,11 +2192,13 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       // covqq file 
       esl_sprintf(&ofile->covqqfile, "%s.qq", outname);
       
-     // R2R annotated sto file 
-      esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
-      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
+     // R2R annotated sto file
+      if (cfg->R2Rmsa) {
+	esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
+	if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
+      }
       
-       // dotplot file 
+      // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s.dplot", outname);
       if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.cacofold.dplot", outname);
     }
@@ -2437,8 +2444,10 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   if (cfg->abcisRNA && (cfg->pdbfile || cfg->omsa->ss_cons) ) has_ss = TRUE;
 
-  status = substitutions(go, cfg, msa, cfg->power, cfg->clist, cfg->ctlist, &nsubs, &njoin, &ndouble, &spair, cfg->verbose);
-  if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  if ( cfg->mode == GIVSS) {
+    status = substitutions(go, cfg, msa, cfg->power, cfg->clist, cfg->ctlist, &nsubs, &njoin, &ndouble, &spair, cfg->verbose);
+    if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
+  }
   
   status = run_rscape(go, cfg, msa, nsubs, ndouble, njoin, spair, ranklist_null, ranklist_aux, NULL, analyze);
   if (status != eslOK) goto ERROR;
@@ -2863,7 +2872,10 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
   //
   status = power_SPAIR_Create(&np, ret_spair, msa->alen, cfg->msamap, cfg->mi, power, clist, ctlist, nsubs, njoin, ndouble, cfg->omsa, cfg->errbuf, cfg->verbose);
   if (status != eslOK) ESL_XFAIL(status, cfg->errbuf, "%s\n", cfg->errbuf);
-
+  if (verbose) {
+    if (spair) power_SPAIR_Write(stdout, dim, *ret_spair, TRUE);
+  }
+  
   if (cfg->power_train) {
     spair = *ret_spair;
     for (p = 0; p < np; p ++) {
@@ -2885,9 +2897,6 @@ substitutions(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, POWER *power, CL
     }
   }
 
-  if (verbose) {
-    if (spair) power_SPAIR_Write(stdout, dim, *ret_spair, TRUE);
-  }
   
   if ((verbose) && cfg->power_train) {
     esl_histogram_Write(stdout, cfg->powerhis->hsubs_pr);
@@ -2918,9 +2927,11 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   CTLIST   *octlist = NULL;
   char    **osslist = NULL;
   char     *tag;
+  char      sstag[7] = "SS_cons";
   int       remove_overlap = FALSE;
   int       is_RM = FALSE;
   int       OL = omsa->alen;
+  int       n_rm = 0;  // number of RMs
   int       s;
   int       i;
   int       status;
@@ -2931,7 +2942,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   omsa->ss_cons[0] = '\0';
 
   // the main nested structure (s=0) is annotated as SS_cons
-  // The rest of the pseudoknots are annotated as SS_cons_1, SS_cons_2
+  // The rest of the motifs are annotated as SS_cons_xx, SS_cons_yy
   //
   // SS_cons_xx is not orthodox stockholm format.
   //
@@ -2939,16 +2950,43 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   if (status != eslOK) goto ERROR;
   strcpy(omsa->ss_cons, osslist[0]);
 
-  // I add the SS_cons_1,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
+  // I add the SS_cons_<motif_name>,... annotation to SS_cons when possible (omit ovelaps with SS_cons)
   for (s = 1; s < foldctlist->nct; s ++) {
 
     if (esl_vec_IMin(octlist->ct[s], OL+1) < 0) is_RM = TRUE; // an RM
     
     // these are the extra GC lines.
     //
-    esl_sprintf(&tag, "SS_cons_%d", s);
-    esl_msa_AppendGC(omsa, tag, osslist[s]);
-    free(tag); tag = NULL;
+    switch(foldctlist->cttype[s]) {
+    case CTTYPE_NESTED:
+      break;
+    case CTTYPE_PK:
+    case CTTYPE_NONWC:
+    case CTTYPE_TRI:
+    case CTTYPE_SCOV:
+    case CTTYPE_XCOV:
+    case CTTYPE_PC:
+    case CTTYPE_NONE:
+      esl_sprintf(&tag, "%s_%s", sstag, foldctlist->ctname[s]);
+      esl_msa_AppendGC_er(omsa, tag, osslist[s]);
+      free(tag); tag = NULL;
+      break;
+    case CTTYPE_RM_HL:
+    case CTTYPE_RM_BL:
+    case CTTYPE_RM_IL:
+    case CTTYPE_RM_J3:
+    case CTTYPE_RM_J4:
+    case CTTYPE_RM_BS:
+      n_rm ++;
+      esl_sprintf(&tag, "%s_rm%d_%s", sstag, n_rm, foldctlist->ctname[s]);
+      esl_msa_AppendGC_er(omsa, tag, osslist[s]);
+      free(tag); tag = NULL;
+      break;
+    default:
+      ESL_XFAIL(eslFAIL, cfg->errbuf, "Unknown cttype");
+      break;
+    }
+    if (verbose) printf("%d/%d %s\n%s\n", s, foldctlist->nct, tag, osslist[s]); 
   
     for (i = 1; i <= OL; i ++) {      
       if (!is_RM && remove_overlap) {
@@ -2968,9 +3006,13 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
       } 
     }
   }
+
+  //Add the names of the extra SS
+  //msa_extra_SSCons(omsa, octlist, cfg->errbuf, cfg->verbose);
   
   // write alignment with the foldcov structure to file
-  if ((omsafoldfp = fopen(cfg->ofile.omsafoldfile, "w")) == NULL) esl_fatal("Failed to open omsafoldfile %s", cfg->ofile.omsafoldfile);
+  if ((omsafoldfp = fopen(cfg->ofile.omsafoldfile, "w")) == NULL)
+    esl_fatal("Failed to open omsafoldfile %s", cfg->ofile.omsafoldfile);
   esl_msafile_Write(omsafoldfp, omsa, eslMSAFILE_STOCKHOLM);
   fclose(omsafoldfp);
 

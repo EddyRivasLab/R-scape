@@ -524,7 +524,7 @@ msamanip_RemoveGapColumns(double gapthresh, ESL_MSA *msa, int64_t startpos, int6
 
   if (verbose) {
     for (newpos = 0; newpos < msa->alen; newpos++)
-      printf("%d %d\n", newpos, map[newpos]);
+      printf("%d[0,%lld] maps to %d [0,%lld] \n", newpos, msa->alen-1, map[newpos], alen-1);
   }
   
   if (ret_map)    *ret_map    = map;    else free(map);
@@ -2476,4 +2476,55 @@ esl_dst_XPairId_Overmaxid(const ESL_ALPHABET *abc, const ESL_DSQ *ax1, const ESL
 
  ERROR:
   return FALSE;
+}
+
+// A version of esl_msa_AppendGC that assumes
+// we are adding a new tag, which is the case here.
+//
+// The proper esl_msa_AppenGC is more general and looks at the gc_idx hash table to figure out whether it's
+// a new tag or not. Because I have to first remove the given gc tags to add R-scape's the hash table would have
+// to be propertly
+//
+int
+esl_msa_AppendGC_er(ESL_MSA *msa, char *tag, char *value)
+{
+  int   tagidx;
+  void *p;
+  int   status = eslOK;
+
+  /* Is this an unparsed tag name that we recognize?
+   * If not, handle adding it to index, and reallocating
+   * as needed.
+   */
+  tagidx = msa->ngc;
+  
+  if (msa->gc_tag == NULL)	/* first tag? init&allocate  */
+    {
+      msa->gc_idx = esl_keyhash_Create();
+      if (status != eslOK && status != eslEDUP) return status;
+      ESL_DASSERT1((tagidx == 0));
+
+      ESL_ALLOC(msa->gc_tag, sizeof(char **));
+      ESL_ALLOC(msa->gc,     sizeof(char **));
+      msa->gc[0]     = NULL;
+      msa->gc_tag[0] = NULL;
+    }
+  else
+    {
+      ESL_RALLOC(msa->gc_tag, p, (msa->ngc+1) * sizeof(char **));
+      ESL_RALLOC(msa->gc,     p, (msa->ngc+1) * sizeof(char **));
+      msa->gc[tagidx]     = NULL;
+      msa->gc_tag[tagidx] = NULL;
+   }
+  
+  // store the new tag
+  if (msa->gc_tag[tagidx]) free(msa->gc_tag[tagidx]); msa->gc_tag[tagidx] = NULL;
+  if ((status = esl_strdup(tag, -1, &(msa->gc_tag[tagidx]))) != eslOK) goto ERROR;
+  msa->ngc++;
+    
+  if (msa->gc[tagidx]) free(msa->gc[tagidx]); msa->gc[tagidx] = NULL;
+  return (esl_strcat(&(msa->gc[tagidx]), -1, value, -1));
+
+ ERROR:
+  return status;
 }

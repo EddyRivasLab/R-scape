@@ -57,6 +57,7 @@ static int    cov_iscompatible(int i, int j, CTLIST *ctlist, int abcisRNA);
 static int    cov_plot_lineatexpcov(FILE *pipe, char *tmpfile1, char *tmpfile2, struct data_s *data, double expsurv, int Nc, ESL_HISTOGRAM *h, double *survfit, ESL_HISTOGRAM *h2,
 				    char *axes, char *key, double ymax, double ymin, double xmax, double xmin, int style1, int style2, char *errbuf);
 static int    cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *ylabel, int style, char *errbuf);
+static double get_pair_canonicals(int i, int j, int dim, SPAIR *spair, double *ret_canonical, double *ret_nseff, double *ret_nseff_f, char *errbuf);
 
 int                 
 cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, int analyze)
@@ -253,6 +254,11 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
   default:
     ESL_XFAIL(eslFAIL, data->errbuf, "wrong covariation type\n");
     break;
+  }
+
+  if (data->mode == GIVSS) {
+    status = power_SPAIR_AddMI(msa->alen, data->mi, data->spair, data->errbuf, data->verbose);
+    if (status != eslOK) ESL_XFAIL(status, data->errbuf, "%s\n", data->errbuf);
   }
 
   if (data->verbose) {
@@ -935,7 +941,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    if (data->nseq > 1) cov_WriteHitList(covfp, nhit, hitlist, data->msamap, data->firstpos);
+    if (data->nseq > 1) cov_WriteHitList(covfp, nhit, hitlist, dim, data->spair, data->msamap, data->firstpos, data->errbuf);
   }
   if (covsrtfp) {
     if (data->nseq > 1) {
@@ -945,8 +951,8 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
 	      covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
       fprintf(covsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	      covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-      cov_WriteRankedHitList(stdout,   nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
-      cov_WriteRankedHitList(covsrtfp, nhit, hitlist, data->msamap, data->firstpos, data->statsmethod);
+      cov_WriteRankedHitList(stdout,   nhit, hitlist, dim, data->spair, data->msamap, data->firstpos, data->statsmethod, data->errbuf);
+      cov_WriteRankedHitList(covsrtfp, nhit, hitlist, dim, data->spair, data->msamap, data->firstpos, data->statsmethod, data->errbuf);
     }
   }
   
@@ -1070,7 +1076,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
     fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteFOLDHitList(covfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos);
+    cov_WriteFOLDHitList(covfp, nhit, hitlist, foldhitlist, dim, data->spair, data->msamap, data->firstpos, data->errbuf);
   }
 
   status = power_SPAIR_AddCaCo(dim, data->spair, data->clist, foldctlist, data->errbuf, data->verbose);
@@ -1079,7 +1085,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
   fprintf(stdout, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
   fprintf(stdout, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	  covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-  cov_WriteFOLDRankedHitList(stdout, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
+  cov_WriteFOLDRankedHitList(stdout, nhit, hitlist, foldhitlist, dim, data->spair, data->msamap, data->firstpos, data->statsmethod, data->errbuf);
     
   if (covsrtfp) {
     fprintf(covsrtfp, "\n# The predicted CaCoFold structure\n");
@@ -1087,7 +1093,7 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
     fprintf(covsrtfp, "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(covsrtfp, "# %s    %g         [%.2f,%.2f]     [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, (ranklist)?ranklist->ha->xmin:0, (ranklist)?ranklist->ha->xmax:0, fp, tf, t, f, sen, ppv, F);
-    cov_WriteFOLDRankedHitList(covsrtfp, nhit, hitlist, foldhitlist, data->msamap, data->firstpos, data->statsmethod);
+    cov_WriteFOLDRankedHitList(covsrtfp, nhit, hitlist, foldhitlist, dim, data->spair, data->msamap, data->firstpos, data->statsmethod, data->errbuf);
   }
 
   fprintf(stdout, "\n# The predicted CaCoFold structure\n");
@@ -1120,10 +1126,13 @@ cov_CreateFOLDHitList(struct data_s *data, CTLIST *foldctlist, RANKLIST *ranklis
 
 
 int
-cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos)
+cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int dim, SPAIR *spair, int *msamap, int firstpos, char *errbuf)
 {
-  int h;
-  int ih, jh;
+  double canonical;
+  double nseff;
+  double nseff_f;
+  int    h;
+  int    ih, jh;
 
   if (fp == NULL) return eslOK;
 
@@ -1133,37 +1142,45 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
   }
   else {
     fprintf(fp, "# #tests = %lld (base pairs) %lld (others)\n", hitlist->Nb, hitlist->Nt);
-    fprintf(fp, "# in_given  left_pos       right_pos        score      E-value          pvalue      substitutions      power\n");
-    fprintf(fp, "#----------------------------------------------------------------------------------------------------------------\n");
+    fprintf(fp, "# in_given  left_pos       right_pos        score      E-value          pvalue      substitutions       power   nseff(%%)       %% canonical_pairs\n");
+    fprintf(fp, "#-------------------------------------------------------------------------------------------------------------------------------------------------\n");
   }
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
+
+    get_pair_canonicals(ih, jh, dim, spair, &canonical, &nseff, &nseff_f, errbuf);
     
     if (hitlist->hit[h].bptype == WWc)      { 
-      fprintf(fp, "*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, "*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }
     else if (hitlist->hit[h].bptype < STACKED) { 
-      fprintf(fp, "**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, "**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, "c~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }
    else if (hitlist->hit[h].bptype < BPNONE) { 
-      fprintf(fp, "c\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, "c\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }
     else if (hitlist->hit[h].is_compatible) { 
-      fprintf(fp, "~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, "~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }
     else { 
-      fprintf(fp, " \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n",
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power); 
+      fprintf(fp, " \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n",
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical); 
     }  
   }
 
@@ -1171,92 +1188,115 @@ cov_WriteHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos
 }
 
 int 
-cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos)
+cov_WriteFOLDHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int dim, SPAIR *spair, int *msamap, int firstpos, char *errbuf)
 {
-  int h;
-  int ih, jh;
+  double canonical;
+  double nseff;
+  double nseff_f;
+  int    h;
+  int    ih, jh;
 
   if (!fp)         return eslOK;
   if (!foldhitlist) return eslOK;
 
-  fprintf(fp, "# in_CaCoFold in_given  left_pos      right_pos  score            E-value       pvalue       substitutions    power\n");
-  fprintf(fp, "#------------------------------------------------------------------------------------------------------------------------\n");
+  fprintf(fp, "# in_CaCoFold in_given  left_pos      right_pos  score            E-value       pvalue       substitutions      power   nseff(%%)       %% canonical_pairs\n");
+  fprintf(fp, "#---------------------------------------------------------------------------------------------------------------------------------------------------------\n");
    if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->hit[h].i;
     jh = hitlist->hit[h].j;
-    
+
+    get_pair_canonicals(ih, jh, dim, spair, &canonical, &nseff, &nseff_f, errbuf);
+ 
     if (hitlist->hit[h].bptype == WWc)      {
       if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       }
     
     else if (hitlist->hit[h].bptype < STACKED) {
       if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
     }
     
     else if (hitlist->hit[h].bptype < BPNONE && hitlist->hit[h].is_compatible) {
       if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
     }
     
    else if (hitlist->hit[h].bptype < BPNONE) {
            if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
    }
     
     else if (hitlist->hit[h].is_compatible) {
             if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
     }
     
     else {
             if (foldhitlist->hit[h].bptype == WWc) 
-	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else if (foldhitlist->hit[h].is_compatible)
-	fprintf(fp, "~\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, "~\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power);
+	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->hit[h].sc, hitlist->hit[h].Eval, hitlist->hit[h].pval, hitlist->hit[h].nsubs, hitlist->hit[h].power,
+	      nseff, nseff_f, canonical);
     }  
   }
 
@@ -1302,47 +1342,52 @@ hit_sorted_by_eval(const void *vh1, const void *vh2)
 }
 
 int 
-cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
+cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int dim, SPAIR *spair, int *msamap, int firstpos, STATSMETHOD statsmethod, char *errbuf)
 {
-  int h;
-  int ih, jh;
+  double canonical;
+  double nseff;
+  double nseff_f;
+  int    h;
+  int    ih, jh;
 
   if (fp == NULL) return eslOK;
 
   for (h = 0; h < nhit; h++) hitlist->srthit[h] = hitlist->hit + h;
   if (nhit > 1) qsort(hitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
-  fprintf(fp, "#       left_pos       right_pos        score          E-value           pvalue       substitutions      power\n");
-  fprintf(fp, "#--------------------------------------------------------------------------------------------------------------\n");
+  fprintf(fp, "#       left_pos       right_pos        score          E-value           pvalue       substitutions      power   nseff(%%)       %% canonical_pairs\n");
+  fprintf(fp, "#--------------------------------------------------------------------------------------------------------------------------------------------------\n");
   if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->srthit[h]->i;
     jh = hitlist->srthit[h]->j;
 
-   if (hitlist->srthit[h]->bptype == WWc) { 
-      fprintf(fp, "*\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+    get_pair_canonicals(ih, jh, dim, spair, &canonical, &nseff, &nseff_f, errbuf);
+ 
+    if (hitlist->srthit[h]->bptype == WWc) { 
+      fprintf(fp, "*\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }
     else if (hitlist->srthit[h]->bptype < STACKED) { 
-      fprintf(fp, "**\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+      fprintf(fp, "**\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "c~\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+      fprintf(fp, "c~\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }
     else if (hitlist->srthit[h]->bptype < BPNONE) { 
-      fprintf(fp, "c\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+      fprintf(fp, "c\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }
     else if (hitlist->srthit[h]->is_compatible) { 
-      fprintf(fp, "~\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+      fprintf(fp, "~\t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }
     else { 
-      fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n",
-	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power); 
+      fprintf(fp, " \t%8d\t%8d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n",
+	      msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical); 
     }  
   }
 
@@ -1350,95 +1395,100 @@ cov_WriteRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, int *msamap, int fi
 }
 
 int 
-cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int *msamap, int firstpos, STATSMETHOD statsmethod)
+cov_WriteFOLDRankedHitList(FILE *fp, int nhit, HITLIST *hitlist, HITLIST *foldhitlist, int dim, SPAIR *spair, int *msamap, int firstpos, STATSMETHOD statsmethod, char *errbuf)
 {
-  int h;
-  int ih, jh;
+  double canonical;
+  double nseff;
+  double nseff_f;
+  int    h;
+  int    ih, jh;
 
-  if (!fp)         return eslOK;
+  if (!fp)          return eslOK;
   if (!foldhitlist) return eslOK;
 
   for (h = 0; h < nhit; h++) foldhitlist->srthit[h] = foldhitlist->hit + h;
   if (nhit > 1) qsort(foldhitlist->srthit, nhit, sizeof(HIT *), (statsmethod == NAIVE)? hit_sorted_by_score:hit_sorted_by_eval);
 
-  fprintf(fp, "# in_fold in_given   left_pos       right_pos      score           E-value    pvalue       substitutions      power\n");
-  fprintf(fp, "#-----------------------------------------------------------------------------------------------------------------------\n");
+  fprintf(fp, "# in_fold in_given   left_pos       right_pos      score           E-value    pvalue       substitutions        power   nseff(%%)        %% canonical_pairs\n");
+  fprintf(fp, "#----------------------------------------------------------------------------------------------------------------------------------------------------------\n");
   if (nhit == 0) fprintf(fp, "no significant pairs\n");
 
   for (h = 0; h < nhit; h ++) {
     ih = hitlist->srthit[h]->i;
     jh = hitlist->srthit[h]->j;
-    
+
+    get_pair_canonicals(ih, jh, dim, spair, &canonical, &nseff, &nseff_f, errbuf);
+ 
     if (hitlist->srthit[h]->bptype == WWc) {
       if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \t*\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
    }
     
     else if (hitlist->srthit[h]->bptype < STACKED) { 
       if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \t**\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
   }
     
     else if (hitlist->srthit[h]->bptype < BPNONE && hitlist->srthit[h]->is_compatible) {
            if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \tc~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
    }
     
     else if (hitlist->srthit[h]->bptype < BPNONE) {
            if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \tc\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
     }
     
     else if (hitlist->srthit[h]->is_compatible) {
            if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\t~\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t~%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \t~%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
    }
     
     else {
            if (foldhitlist->srthit[h]->bptype == WWc) 
-	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "*\t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else if (foldhitlist->srthit[h]->is_compatible)
-	fprintf(fp, "~\t?\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, "~\t?\t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
       else 
-	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\n", 
-		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power);
+	fprintf(fp, " \t \t%10d\t%10d\t%.5f\t%g\t%g\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n", 
+		msamap[ih]+firstpos, msamap[jh]+firstpos, hitlist->srthit[h]->sc, hitlist->srthit[h]->Eval, hitlist->srthit[h]->pval, hitlist->srthit[h]->nsubs, hitlist->srthit[h]->power, nseff, nseff_f, canonical);
     }  
   }
 
@@ -2339,6 +2389,7 @@ cov2evalue(double cov, int Nc, ESL_HISTOGRAM *h, double *survfit)
   return eval;
 }
 
+
 static double
 evalue2cov(double eval_thresh, int Nc, ESL_HISTOGRAM *h, double *survfit)
 {
@@ -2769,3 +2820,35 @@ cov_plot_extra_yaxis(FILE *pipe, double ymax, double ymin, double xoff, char *la
    
   return eslOK;
 }
+
+static double
+get_pair_canonicals(int i, int j, int dim, SPAIR *spair, double *ret_canonical, double *ret_nseff, double *ret_nseff_f, char *errbuf)
+{
+  double canonical;
+  double nseff;
+  double nseff_f;
+  int    this;
+  int    n;
+
+  for (n = 0; n < dim; n++) {
+    if (i == spair[n].i && j == spair[n].j) {
+      this = n;
+      break;
+    }
+  }
+  if (n == dim) esl_fail(errbuf, "get pair canonicals() failed");
+
+  canonical  = 100. * (spair[this].wcf_f+spair[this].wobble_f);
+  nseff      = spair[n].nseff;
+  nseff_f    = (spair[n].nseff+spair[this].ngap)? 100. * (spair[this].nseff/(spair[this].nseff+spair[this].ngap)) : 0.;
+
+  *ret_canonical = canonical;
+  *ret_nseff     = nseff;
+  *ret_nseff_f   = nseff_f;
+  
+  return eslOK;
+
+ ERROR:
+  return eslFAIL;
+}
+

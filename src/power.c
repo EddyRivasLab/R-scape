@@ -71,6 +71,7 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
   int64_t  dim = alen * (alen - 1.) / 2;
   int64_t  n = 0;
   int64_t  s;
+  int      K = mi->abc->K;
   int      gc;
   int      i, j;
   int      ii, jj;
@@ -90,7 +91,12 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
       spair[n].i      = i;
       spair[n].j      = j;
 
-      spair[n].nseff        = mi->nseff[i][j];
+      spair[n].nseff     = mi->nseff[i][j];
+      spair[n].ngap      = mi->ngap[i][j];
+      spair[n].wcf_f     = 0.;       
+      spair[n].wobble_f  = 0.;     
+      spair[n].noncan_f  = 0.;
+    
       spair[n].powertype    = (ndouble)? DOUBLE_SUBS : ( (njoin)? JOIN_SUBS : SINGLE_SUBS );
       spair[n].nsubs        = (nsubs)?   nsubs[i] + nsubs[j] : 0;
       spair[n].power        = 0.;
@@ -192,6 +198,26 @@ power_SPAIR_Create(int *ret_np, SPAIR **ret_spair, int alen, int *msamap, struct
 }
 
 int 
+power_SPAIR_AddMI(int alen, struct mutual_s *mi, SPAIR *spair, char *errbuf, int verbose)
+{
+  int64_t  dim = alen * (alen - 1.) / 2;
+  int64_t  n = 0;
+  int      K = mi->abc->K;
+  int      i, j;
+ 
+  for (n = 0; n < dim; n ++) {
+    i = spair[n].i;
+    j = spair[n].j;
+
+    spair[n].wcf_f     = mi->pp[i][j][IDX(0,3,K)] + mi->pp[i][j][IDX(3,0,K)] + mi->pp[i][j][IDX(1,2,K)] + mi->pp[i][j][IDX(2,1,K)];       
+    spair[n].wobble_f  = mi->pp[i][j][IDX(2,3,K)] + mi->pp[i][j][IDX(3,2,K)];     
+    spair[n].noncan_f  = 1.0 - spair[n].wcf_f - spair[n].wobble_f;
+  }
+  
+  return eslOK;
+}
+ 
+int 
 power_SPAIR_AddCaCo(int dim, SPAIR *spair, CLIST *clist, CTLIST *ctlist, char *errbuf, int verbose)
 {
   int *ct;
@@ -238,6 +264,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   double     expect    = 0.;
   double     exp_std   = 0.;
   double     avgsub    = 0.;
+  double     canonical = 0.;
+  double     nseff_f   = 0;
   int64_t    nbp       = 0;
   int64_t    ncv       = 0;
   int64_t    ncv_pc    = 0;
@@ -254,8 +282,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   switch(powertype) {
   case SINGLE_SUBS:
     fprintf(fp, "# Powertype = SINGLE SUBSTITUTIONS\n");
-    fprintf(fp, "# covary  left_pos      right_pos    substitutions      power\n");
-    fprintf(fp, "#----------------------------------------------------------------\n");
+    fprintf(fp, "# covary  left_pos      right_pos    substitutions      power   nseff(%%)       %% canonical_pairs\n");
+    fprintf(fp, "#-------------------------------------------------------------------------------------------------\n");
     for (n = 0; n < dim; n ++) {
       if (spair[n].powertype != powertype)
 	esl_fatal("power_SPAIR_Write(): all pairs should use the same powertype. n=%d found %d and %d",
@@ -267,8 +295,15 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 	expect    += spair[n].power;
 	exp_std   += spair[n].power * (1.0-spair[n].power);
 	avgsub    += spair[n].nsubs;
-	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power); ncv ++; }
-	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power);
+	canonical  = 100. * (spair[n].wcf_f+spair[n].wobble_f);
+	nseff_f    = (spair[n].nseff+spair[n].ngap)? 100. * (spair[n].nseff/(spair[n].nseff+spair[n].ngap)) : 0.;
+      
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power,
+				       spair[n].nseff, nseff_f, canonical); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\t%.2f (%.1f%%)\t%.1f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs, spair[n].power,
+				       spair[n].nseff, nseff_f, canonical);
       }
     }
     avgsub /= (nbp > 0)? nbp : 1;
@@ -286,8 +321,10 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 	expect    += spair[n].power_join;
 	exp_std   += spair[n].power_join * (1.0-spair[n].power_join);
 	avgsub    += spair[n].nsubs_join;
-	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join); ncv ++; }
-	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join);
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs_join, spair[n].power_join);
       }
     }
     avgsub /= (nbp > 0)? nbp : 1;
@@ -305,8 +342,10 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
 	expect    += spair[n].power_double;
 	exp_std   += spair[n].power_double * (1.0-spair[n].power_double);
 	avgsub    += spair[n].nsubs_double;
-	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double); ncv ++; }
-	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n", spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double);
+	if (spair[n].covary) { fprintf(fp, "     *    %lld\t\t%lld\t\t%lld\t\t%.2f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double); ncv ++; }
+	else                   fprintf(fp, "          %lld\t\t%lld\t\t%lld\t\t%.2f\n",
+				       spair[n].iabs, spair[n].jabs, spair[n].nsubs_double, spair[n].power_double);
       }
     }
     avgsub /= (nbp > 0)? nbp : 1;
@@ -333,7 +372,8 @@ power_SPAIR_Write(FILE *fp, int64_t dim, SPAIR *spair, int in_given)
   fprintf(fp, "# avg substitutions per BP  %.1f\n", avgsub);
   fprintf(fp, "# BPAIRS expected to covary %.1f +/- %.1f\n", expect, exp_std);
   fprintf(fp, "# BPAIRS observed to covary %lld\n#\n", ncv);
-  if (ncv_pc > 0) fprintf(fp, "# BPAIRS observed to covary possibly coding %lld/%lld (%.2f%%)\n#\n", ncv_pc, ncv, (double)ncv_pc/(double)ncv*100.0);
+  if (ncv_pc > 0) fprintf(fp, "# BPAIRS observed to covary possibly coding %lld/%lld (%.2f%%)\n#\n",
+			  ncv_pc, ncv, (double)ncv_pc/(double)ncv*100.0);
 }
 
 int
