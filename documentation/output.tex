@@ -33,12 +33,13 @@ The output file \emprog{tutorial/updated\_Arisong\_1.cov} looks like this:\\
 
 \begin{sreoutput}
 # Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] 
-# GTp    0.05           [-9.78,121.66]    [0 | 11 20 11 | 55.00 100.00 70.97] 
+# GTp    0.05         [-9.95,121.66]     [0 | 11 20 11 | 55.00 100.00 70.97] 
 #
-# in_given  left_pos       right_pos        score          E-value       substitutions      power
-#-------------------------------------------------------------------------------------------------------
-*               94             110      57.27959        0.00760538      37              0.40
-*               96             108      88.43400        0.000466924     26              0.28
+#       left_pos   right_pos    score          E-value           pvalue       substitutions     power   nseff(\%)       \% canonical_pairs
+#----------------------------------------------------------------------------------------------------------------------------------------------
+*             98         106    121.65824       9.48364e-12     4.74182e-13     8               0.28    76.48 (80.5\%)   100.0
+*            122         137    91.44681        1.53068e-07     7.65341e-09     22              0.66    87.92 (92.5\%)   99.2
+*
 ...
 \end{sreoutput}
 The output file is a tabular list of significant pairs sorted by sequence positions:
@@ -67,6 +68,10 @@ The output file is a tabular list of significant pairs sorted by sequence positi
  \item[\prog{Sixth column}] is the estimated number of total substitutions in the two columns.
  
  \item[\prog{Seventh column}] is the basepair power or probability that it should covary.
+ 
+ \item[\prog{Eight column}] is the number of (weighted) seqs for which the pair is present (no gaps), and as a fraction of the total number of weigthed sequences.
+ 
+ \item[\prog{Nineth column}] is the fraction of weighted sequences for which the pair is canonical: AU, UA, CG, GC, GU, UG.
  
  \end{sreitems}
  The output file also includes two comment lines per alignment in the
@@ -97,22 +102,12 @@ The output file \emprog{tutorial/updated\_Arisong\_1.power} looks like this:\\
 \begin{sreoutput}
 # Power analysis of given structure 
 #
-# covary  left_pos      right_pos    substitutions      power
-#----------------------------------------------------------------
-     *    94            110             37              0.40
-          95            109             28              0.31
-     *    96            108             26              0.28
-     *    97            107             58              0.59
-     *    98            106             45              0.48
-     *    99            105             15              0.14
-          100           104             20              0.21
-.
-.
-.
-     *    122           137             57              0.58
-     *    123           135             72              0.68
-     *    124           134             20              0.21
-          125           133             31              0.34
+# Powertype = SINGLE SUBSTITUTIONS
+# covary  left_pos      right_pos    substitutions      power   nseff(\%)       \% canonical_pairs
+#-------------------------------------------------------------------------------------------------
+     *    94            110             12              0.42    87.61 (92.2\%)   97.3
+          95            109             9               0.32    77.90 (82.0\%)   97.3
+...
 #
 # BPAIRS 20
 # avg substitutions per BP  43.7
@@ -122,7 +117,7 @@ The output file \emprog{tutorial/updated\_Arisong\_1.power} looks like this:\\
 %
 This file includes the list of all basepairs in the proposed structure
 given with the input alignment. Each basepair is annotated with the
-estimated number of substitutions and power.
+estimated number of substitutions and power, number of effective sequences (and fraction of total weighted sequences), and the fraction of those with that are canonical (AU,UA,CG,GC,GU,UG).
 
 \subsection{Default graphical outputs}
 By default, the following files are also produced

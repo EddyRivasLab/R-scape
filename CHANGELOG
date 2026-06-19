@@ -114,3 +114,10 @@ R-scape v2.6.9 June 2026
 	The xxx.cacofold.sto original alignment annotated with the CaCoFold structure now reports the extra structural annotations adding their nane: SS_cons_pk1, SS_cons_tr1,...
 	The R2R.sto alignments (used only for R2R plotting) are not produced by default. Need to use option --r2rmsa to produce them.
 	Files .cov and .power have two columns added describing: the number of sequences that contain the pair, and the % of those that are canonical base pairs (AU,UA,CG,GC,GU,UG).
+
+R-scape v2.6.9.a June 2026
+	Fix a type in the configure.ac file that described the version as v2.6.0 instead of v2.6.9
+
+R-scape v2.6.10 July 2026
+	Documantation updated with new formats for .cov and .power files
+	Need to rethink the cyk algorithm regarding MAXLOOP_I, previous fix was taking too long.

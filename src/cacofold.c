@@ -4523,6 +4523,8 @@ dp_recursion_rbg_cyk(ALLOW *allow, FOLDPARAM *foldparam, RBGparam *p, R3Dparam *
     /* w=3 rule15: P -> m..m F0 m..m */
     for (d1 = 1; d1 <= d; d1++) {
       for (d2 = 1; d2 <= d-d1; d2++) {
+	
+	if (d1 + d2 > MAXLOOP_I) break;
 	status = dp_recursion_rbg_score_P_IL_plain(allow, foldparam, p, psq, mi, covct, cyk, j, d, d1, d2, &sc, &il_allow, errbuf, verbose);
 	if (!il_allow) break;
 	    

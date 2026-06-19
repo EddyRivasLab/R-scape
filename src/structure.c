@@ -3949,7 +3949,7 @@ ctlist_helices_select(FOLDPARAM *foldparam, CTLIST **ret_ctlist, char *errbuf, i
 // Clean up the CaCoFold structure if asked to to make it Rfam friendly
 // rules:
 //
-// (1) hairpin looks include at least 3 nts (hloop_min = 3)
+// (1) hairpin loops include at least 3 nts (hloop_min = 3)
 // (2) remove tr, xc, sc
 // (3) no nonWc 
 //
