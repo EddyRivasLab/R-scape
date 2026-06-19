@@ -37,7 +37,7 @@ static int   r2r_write_meta             (char *metafile, char *r2rfile, CTLIST *
 static char *strtokm(char *str, const char *delim);
 
 int 
-r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *ctlist, HITLIST *hitlist, RMLIST *rmlist,
+r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, int r2rmsa_save, ESL_MSA *omsa, CTLIST *ctlist, HITLIST *hitlist, RMLIST *rmlist,
 	   double Eval_target, int makepdf, int makesvg, char *errbuf, int verbose)
 {
   char    **r2rpkfile = NULL;
@@ -91,7 +91,7 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
   status = r2r_RM_outline(r2rmsa, ctlist);
   if (status != eslOK) goto ERROR;
   
-  // write the R2R annotated msa to PFAM format 
+  // write the R2R annotated msa to PFAM format
   if ((fp = fopen(r2rfile, "w")) == NULL) esl_fatal("Failed to open r2rfile %s", r2rfile);
   esl_msafile_Write(fp, r2rmsa, eslMSAFILE_PFAM);
   fclose(fp);
@@ -147,6 +147,8 @@ r2r_Depict(ESL_RANDOMNESS *r, char *r2rfile, int r2rall, ESL_MSA *omsa, CTLIST *
 
   for (s = 1; s < nct; s ++) if (r2rpkfile[s]) remove(r2rpkfile[s]);
   remove(metafile);
+
+  if (!r2rmsa_save) remove(r2rfile);
   
   if (metafile) free(metafile);
   free(buf);

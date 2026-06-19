@@ -370,6 +370,7 @@ struct data_s {
   struct outfiles_s   *ofile;
   char                *gnuplot;
   int                  R2Rall;
+  int                  R2Rmsa;
   ESL_RANDOMNESS      *r;
 
   SAMPLESIZE           samplesize;

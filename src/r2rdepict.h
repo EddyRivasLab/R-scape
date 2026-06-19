@@ -19,7 +19,7 @@
                            // If the alignment has more sequences, a random subset of R2R_NSEQ_MAX is used.
                            // It does not affect any analysis only the visualization of the consensus structure.
 
-extern int r2r_Depict(ESL_RANDOMNESS  *r, char *r2rfile, int r2rall, ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, RMLIST *rmlist,
+extern int r2r_Depict(ESL_RANDOMNESS  *r, char *r2rfile, int r2rall, int r2rmsa_save,  ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist, RMLIST *rmlist,
 		      double Eval_target, int makepdf, int makesvg, char *errbuf, int verbose);
 extern int r2r_Overwrite_SS_cons      (ESL_MSA *msa, CTLIST *ctlist,                                       char *errbuf, int verbose);
 extern int r2r_Overwrite_cov_SS_cons  (ESL_MSA *msa, CTLIST *ctlist, HITLIST *hitlist,                     char *errbuf, int verbose);

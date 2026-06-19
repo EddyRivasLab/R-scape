@@ -284,7 +284,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 			      FALSE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
 
-      status = r2r_Depict(data->r, data->ofile->R2Rfile, data->R2Rall, msa, data->ctlist,
+      status = r2r_Depict(data->r, data->ofile->R2Rfile, data->R2Rall, data->R2Rmsa, msa, data->ctlist,
 			  (data->statsmethod != NAIVE)? hitlist:NULL,(data->statsmethod != NAIVE)? rmlist:NULL,
 			  data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;

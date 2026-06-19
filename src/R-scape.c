@@ -1294,6 +1294,7 @@ calculate_width_histo(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa)
   /* main function */
   data.ofile            = NULL;
   data.R2Rall           = FALSE;
+  data.R2Rmsa           = FALSE;
   data.gnuplot          = NULL;
   data.r                = cfg->r;
   data.samplesize       = cfg->samplesize;
@@ -2119,10 +2120,8 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       esl_sprintf(&ofile->covqqfile, "%s/%s.qq", cfg->outdir, outname);
       
       // R2R annotated sto file
-      if (cfg->R2Rmsa) {
-	esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
-	if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
-      }
+      esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
       
       // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s/%s.dplot", cfg->outdir, outname);
@@ -2193,10 +2192,8 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       esl_sprintf(&ofile->covqqfile, "%s.qq", outname);
       
      // R2R annotated sto file
-      if (cfg->R2Rmsa) {
-	esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
-	if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
-      }
+      esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
       
       // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s.dplot", outname);
@@ -2531,6 +2528,7 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
   /* main function */
   data.ofile            = &cfg->ofile;
   data.R2Rall           = cfg->R2Rall;
+  data.R2Rmsa           = cfg->R2Rmsa;
   data.gnuplot          = cfg->gnuplot;
   data.r                = cfg->r;
   data.samplesize       = cfg->samplesize;

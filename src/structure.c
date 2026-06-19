@@ -35,8 +35,8 @@
 #include "r2rdepict.h"
 #include "structure.h"
 
-static inline int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, CTLIST **ret_ctlist, COVLIST **exclude,
-			     FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
+static inline int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi,
+				    CTLIST **ret_ctlist, COVLIST **exclude, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static inline int   struct_cacofold_expandct(ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi, int *covct,int *ct, double *ret_sc, COVLIST *exclude,
 				      CTLIST **ret_r3dlist, enum grammar_e G, FOLDPARAM *foldparam, double gapthresh, char *errbuf, int verbose);
 static inline int   struct_write_ss(FILE *fp, int blqsize, int nss, char **sslist);
@@ -146,7 +146,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
   }
 
   /* R2R */
-  status = r2r_Depict(data->r, data->ofile->R2Rfoldfile, data->R2Rall, msa, ctlist, foldhitlist, rmlist, data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
+  status = r2r_Depict(data->r, data->ofile->R2Rfoldfile, data->R2Rall, data->R2Rmsa, msa, ctlist, foldhitlist, rmlist, data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
  
   /* DotPlots (pdf,svg) */
