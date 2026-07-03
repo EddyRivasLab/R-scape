@@ -9,16 +9,18 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.10
+PACKAGE_VERSION = 2.6.11
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.10
+RSCAPE_VERSION  = 2.6.11
 RSCAPE_DATE     = July 2026
 
 E2MSA           = @E2MSA_NAME@
 E2MSA_VERSION   = 0.1.0
 E2MSA_DATE      = MARCH 2017
+
+DOWNLOAD = /Users/erivas/anaconda3/bin/curl -L -o
 
 # Installation targets
 #
@@ -83,6 +85,31 @@ TORNADODIR  = ../lib/tornado/src
 RIBOSUMDIR  = ../data/ribosum
 POWERDIR    = ../data/power
 EVOPARAMDIR = ../data/training/evoparam
+
+OS_LINUX_ARM64  := 
+OS_LINUX_X86_64 := 
+OS_MAC          := 1
+
+RFVIEW_URL    = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.3
+RSCAPE_RFVIEW = lib/RFview/RFview-1.1.3
+ifeq ($(OS_LINUX_ARM64),1)
+   RFVIEWFILE        = RFview-cli_linux_arm64.AppImage
+   RSCAPE_RFVIEWFILE = ${RFVIEWFILE}
+   RSCAPE_RFVIEWDIR  = ../${RSCAPE_RFVIEW}/linux_arm64
+   RFVIEWFILE_URL    = ${RFVIEW_URL}/${RFVIEWFILE}.gz
+
+else ifeq ($(OS_LINUX_X86_64),1)
+   RFVIEWFILE        = RFview-cli_linux_x86_64.AppImage
+   RSCAPE_RFVIEWFILE = ${RFVIEWFILE}
+   RSCAPE_RFVIEWDIR  = ../${RSCAPE_RFVIEW}/linux_x86_64
+   RFVIEWFILE_URL    = ${RFVIEW_URL}/${RFVIEWFILE}.gz
+
+else ifeq ($(OS_MAC),1)
+   RFVIEWFILE        = RFview_mac.app.tar.gz
+   RSCAPE_RFVIEWFILE = RFview.app
+   RSCAPE_RFVIEWDIR  = ../${RSCAPE_RFVIEW}/mac
+   RFVIEWFILE_URL    = ${RFVIEW_URL}/${RFVIEWFILE}
+endif
 
 PROGS    = scorematrix2rate\
 	   e1sim\
@@ -154,6 +181,7 @@ OBJS     = e1_bg.o\
 	   r3d.o\
 	   r3d_hmm.o\
 	   r2rdepict.o\
+	   rfview.o\
 	   ratematrix.o\
 	   ratebuilder.o\
 	   fasta.o\
@@ -239,6 +267,41 @@ install:
 	for file in ${POWER}; do \
 	   cp ${POWERDIR}/$$file ${DESTDIR}${datadir}/doc/$$file ;\
 	done
+	if [ ! -d $(RSCAPE_RFVIEW) ]; then \
+	   mkdir -p $(RSCAPE_RFVIEW) ; \
+	fi
+	if [ "$(OS_LINUX_ARM64)" = "1" ] || [ "$(OS_LINUX_X86_64)" = "1" ]; then \
+           if [ ! -f $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE).gz ]; then \
+              echo "Downloading $(RFVIEWFILE).gz... to $(RSCAPE_RFVIEWDIR)/" ; \
+              if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
+                 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
+              fi ;\
+              $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE).gz $(RFVIEWFILE_URL) ; \
+           else \
+              echo "$(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE).gz already exists, skipping download" ; \
+           fi ;\
+           gunzip $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE}.gz ; \
+	   chmod 755 $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE} ;\
+           $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE} --appimage-extract ; \
+           gzip $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE} ; \
+        elif [ "$(OS_MAC)" = "1" ]; then \
+	   if [ ! -d $(RSCAPE_RFVIEWDIR)/$(RSCAPE_RFVIEWFILE) ]; then \
+              echo "Downloading $(RFVIEWFILE)..- to $(RSCAPE_RFVIEWDIR)/" ; \
+              if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
+                 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
+              fi ;\
+              $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) $(RFVIEWFILE_URL) ; \
+           else \
+              echo "$(RFVIEWFILE) already exists, skipping download" ; \
+           fi ;\
+	   cd $(RSCAPE_RFVIEWDIR) ;\
+	   if [ ! -d $(RSCAPE_RFVIEWFILE) ]; then \
+	      tar xvf $(RFVIEWFILE) ; \
+           fi ;\
+           if [ -f $(RFVIEWFILE) ]; then \
+              rm $(RFVIEWFILE) ; \
+           fi ;\
+        fi
 
 uninstall:
 	for file in ${PROGS}; do \
@@ -265,6 +328,9 @@ uninstall:
 	for file in ${POWER}; do \
 	   rm -f ${DESTDIR}${datadir}/doc/$$file ;\
 	done
+	if [ "$(OS_LINUX_ARM64)" = "1" ] || [ "$(OS_LINUX_X86_64)" = "1" ]; then \
+	   rm -rf squashfs-root ; \
+	fi
 
 clean:
 	-rm -f ${PROGS} ${OBJS} librscape.a *.tab.c *.output *.o programs/*.o
@@ -272,6 +338,10 @@ clean:
 	-rm -f *.gcno *.gcda *.gcov
 	-rm -f core.[0-9]*
 	-rm -f config.log config.status
+	if [ "$(OS_LINUX_ARM64)" = "1" ] || [ "$(OS_LINUX_X86_64)" = "1" ]; then \
+	   rm -rf squashfs-root ; \
+	fi
+
 
 distclean:
 	-rm -f ${PROGS} ${OBJS} librscape.a *.tab.c *.output *.o programs/*.o
@@ -283,6 +353,12 @@ distclean:
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
 	-rm -f cscope.po.out cscope.out cscope.in.out cscope.files
 	-rm Makefile
+	 if [ "$(OS_LINUX_ARM64)" = "1" ] || [ "$(OS_LINUX_X86_64)" = "1" ]; then \
+	   rm -rf squashfs-root ; \
+	 fi
+	if [ -d $(RSCAPE_RFVIEW) ]; then \
+	   rm -rf  ../$(RSCAPE_RFVIEW) ; \
+	fi
 
 
 

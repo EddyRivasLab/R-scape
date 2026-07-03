@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.6.10], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.6.11], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGSesl_cflags_env_set=no
@@ -130,6 +130,10 @@ RSCAPE_ESLDIR="lib/hmmer/easel"
 RSCAPE_INFERNALDIR="lib/infernal"
 RSCAPE_TORNADODIR="lib/tornado"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
+
+RFVIEW_VERSION="1.1.3"
+RFVIEW_URL="https://github.com/dincarnato/RFviewJS/releases/download/v${RFVIEW_VERSION}"
+RSCAPE_RFVIEWDIR="lib/RFview/RFview-${RFVIEW_VERSION}"
 
 RVIEW_NAME="R-view"
 RVIEW_DATE="Feb 2023"
@@ -207,6 +211,7 @@ AC_SUBST(RSCAPE_VERSION)
 AC_SUBST(RSCAPE_URL)
 AC_SUBST(RSCAPE_FASTTREEDIR)
 AC_SUBST(RSCAPE_R2RDIR)
+AC_SUBST(RSCAPE_RFVIEWDIR)
 AC_SUBST(RSCAPE_RNAVIEWDIR)
 AC_SUBST(RSCAPE_HMMERDIR)
 AC_SUBST(RSCAPE_ESLDIR)
@@ -217,6 +222,9 @@ AC_SUBST(RSCAPE_HOME)
 AC_SUBST(RSCAPE_BIN)
 AC_SUBST(RSCAPE_SHARE)
 AC_SUBST(RSCAPE_DATA)
+
+AC_SUBST(RFVIEW_VERSION)
+AC_SUBST(RFVIEW_URL)
 
 AC_SUBST(RVIEW_NAME)
 AC_SUBST(RVIEW_DATE)
@@ -247,6 +255,9 @@ AC_DEFINE_UNQUOTED(RSCAPE_BIN,       "$RSCAPE_BIN")
 AC_DEFINE_UNQUOTED(RSCAPE_SHARE,     "$RSCAPE_SHARE")
 AC_DEFINE_UNQUOTED(RSCAPE_DATA,      "$RSCAPE_DATA")
 
+AC_DEFINE_UNQUOTED(RSCAPE_RFVIEWDIR, "$RSCAPE_RFVIEWDIR")
+AC_DEFINE_UNQUOTED(RFVIEW_VERSION,   "$RFVIEW_VERSION")
+
 AC_DEFINE_UNQUOTED(RVIEW_NAME,      "$RVIEW_NAME")
 AC_DEFINE_UNQUOTED(RVIEW_DATE,      "$RVIEW_DATE")
 AC_DEFINE_UNQUOTED(RVIEW_COPYRIGHT, "$RVIEW_COPYRIGHT")
@@ -266,7 +277,54 @@ AC_DEFINE_UNQUOTED(RNAVIEW_HOME,    "$RNAVIEW_HOME")
 #       host_cpu        example: i686
 #       host_vendor     example: pc
 #       host_os         example: linux-gnu
+# 0. Enable host detection
 AC_CANONICAL_HOST
+
+# 1. Initialize variables
+is_linux_x86_64=no
+is_linux_arm64=no
+is_windows=no
+is_mac=no
+
+# 2. Check the host_os string
+# 3. Pass as C Preprocessor macros (for config.h)
+case "${host_os}" in
+    linux*)
+        # Nest a second case statement to check the target CPU architecture
+        case "${host_cpu}" in
+            x86_64)
+                is_linux_x86_64=yes
+                AC_DEFINE([OS_LINUX_X86_64], [1], [Building for Linux x86_64])
+		OS_LINUX_X86_64=1
+		AC_SUBST(OS_LINUX_X86_64)
+                ;;
+            aarch64*|arm64*)
+                is_linux_arm64=yes
+                AC_DEFINE([OS_LINUX_ARM64], [1], [Building for Linux ARM64])
+		OS_LINUX_ARM64=1
+		AC_SUBST(OS_LINUX_ARM64)
+                ;;
+            *)
+                AC_MSG_WARN([Linux detected, but unhandled architecture: $host_cpu])
+                ;;
+        esac  # <--- Properly closes the host_cpu case statement
+        ;;
+    cygwin*|mingw*)
+        is_windows=yes
+        AC_DEFINE([OS_WINDOWS], [1], [Building for Windows])
+        OS_WINDOWS=1
+	AC_SUBST(OS_WINDOWS)
+        ;;
+    darwin*)
+        is_mac=yes
+        AC_DEFINE([OS_MAC], [1], [Building for macOS])
+	OS_MAC=1
+	AC_SUBST(OS_MAC)
+        ;;
+    *)
+        AC_MSG_ERROR([Unsupported operating system: ${host_os}])
+        ;;
+esac  # <--- Properly closes the host_os case statement
 
 
 
@@ -579,6 +637,19 @@ fi
 # 'make check' to the user if they can't use it.
 # 
 AC_PATH_PROG([PYTHON3], [python3])
+
+# Check for curl/wget and use whichever is available
+AC_PATH_PROG([CURL], [curl])
+AC_PATH_PROG([WGET], [wget])
+
+if test -n "$CURL"; then
+    DOWNLOAD="$CURL -L -o"
+elif test -n "$WGET"; then
+      DOWNLOAD="$WGET -O"
+fi
+
+AC_SUBST([DOWNLOAD])
+
 
 ################################################################
 # 6. Checks for libraries

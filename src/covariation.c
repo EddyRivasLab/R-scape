@@ -38,6 +38,7 @@
 #include "pottsscore.h"
 #include "power.h"
 #include "r2rdepict.h"
+#include "rfview.h"
 #include "ratematrix.h"
 #include "ribosum_matrix.h"
 #include "structure.h"
@@ -284,6 +285,7 @@ cov_Calculate(struct data_s *data, ESL_MSA *msa, RANKLIST **ret_ranklist, HITLIS
 			      FALSE, data->errbuf, data->verbose);
       if  (status != eslOK) goto ERROR;
 
+      // graph with R2R
       status = r2r_Depict(data->r, data->ofile->R2Rfile, data->R2Rall, data->R2Rmsa, msa, data->ctlist,
 			  (data->statsmethod != NAIVE)? hitlist:NULL,(data->statsmethod != NAIVE)? rmlist:NULL,
 			  data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
@@ -325,6 +327,7 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
 {
   struct mutual_s *mi  = data->mi;
   ESL_DMATRIX     *mtx = mi->COV;
+  FILE            *covfp = NULL;
   char            *threshtype = NULL;
   char            *covtype    = NULL;
   RANKLIST        *ranklist   = NULL;
@@ -379,6 +382,13 @@ cov_SignificantPairs_Ranking(struct data_s *data, RANKLIST **ret_ranklist, HITLI
       fprintf(stdout, "#-------------------------------------------------------------------------------------------------------\n");
       fprintf(stdout, "one sequence, no covariation analysis.\n");
 
+      if ((covfp = fopen(data->ofile->covfile, "w")) == NULL) esl_fatal("Failed to open covfile %s",    data->ofile->covfile);
+      fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
+      fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
+	      covtype, data->thresh->val, mi->minCOV, mi->maxCOV, 0, 0, data->clist->ncnt, 0, 0.0, 0.0, 0.0);    
+      fprintf(covfp, "#-------------------------------------------------------------------------------------------------------\n");
+      fclose(covfp);
+     
       if (data->abcisRNA) {
 	rmlist = struct_rmlist_FromCTLIST(data->helix_unpaired, data->pc_codon_thresh, data->nagg, data->agg_method, data->ctlist, data->r3d, TRUE, data->errbuf, data->verbose);
 	if (!rmlist)  ESL_XFAIL(eslFAIL, data->errbuf, "error calculating rmlist");
@@ -766,7 +776,8 @@ cov_DumpHistogram(FILE *fp, ESL_HISTOGRAM *h)
 }
 
 int 
-cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist, char *covtype, char *threshtype)
+cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, HITLIST **ret_hitlist, RMLIST **ret_rmlist,
+		  char *covtype, char *threshtype)
 {
   FILE     *covfp    = NULL;
   FILE     *covsrtfp = NULL;
@@ -795,7 +806,6 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
   int64_t   i, j;
   int       status;
 
-  if (data->nseq == 1)            return eslOK;
   if (!data->ofile->covfile)      return eslOK;
   if (!data->ofile->covsrtfile)   return eslOK;
   if (!data->ofile->alipowerfile) return eslOK;
@@ -941,7 +951,7 @@ cov_CreateHitList(struct data_s *data, struct mutual_s *mi, RANKLIST *ranklist, 
     fprintf(covfp,    "#\n# Method Target_E-val [cov_min,cov_max] [FP | TP True Found | Sen PPV F] \n");
     fprintf(covfp,    "# %s    %g           [%.2f,%.2f]    [%d | %d %d %d | %.2f %.2f %.2f] \n#\n", 
 	    covtype, data->thresh->val, ranklist->ha->xmin, ranklist->ha->xmax, fp, tf, t, f, sen, ppv, F);
-    if (data->nseq > 1) cov_WriteHitList(covfp, nhit, hitlist, dim, data->spair, data->msamap, data->firstpos, data->errbuf);
+    cov_WriteHitList(covfp, nhit, hitlist, dim, data->spair, data->msamap, data->firstpos, data->errbuf);
   }
   if (covsrtfp) {
     if (data->nseq > 1) {

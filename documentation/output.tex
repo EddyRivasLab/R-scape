@@ -19,6 +19,9 @@ each individual alignment in an input Stockholm file:
 Tabular output with the list of basepairs in the proposed RNA structure annotated their power. The file also reports 
 the alignment power, and the expected number of basepairs to covary.
 %
+%
+\item[\emprog{rnafile\_msaname.original.sto}]
+The original single alignment in stockholm format. 
 \end{sreitems}
 
 \subsection{Covariation tabular output}
@@ -77,8 +80,8 @@ The output file is a tabular list of significant pairs sorted by sequence positi
  The output file also includes two comment lines per alignment in the
  file:
 
- \begin{sreitems}{\prog{Second comment line}} \item[\prog{First
- comment line}]describes properties of the alignment: number of
+ \begin{sreitems}{\prog{Second comment line}}
+ \item[\prog{First comment line}]describes properties of the alignment: number of
  sequence (nseq), alignment length (alen), average percentage identity
  (avgid), and number of base pairs (nbpairs).  Values in parentheses
  correspond to the alignment as given. Values not in parentheses
@@ -122,23 +125,19 @@ estimated number of substitutions and power, number of effective sequences (and 
 \subsection{Default graphical outputs}
 By default, the following files are also produced
 
-\begin{sreitems}{\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}}
-\item[\emprog{rnafile\_msaname.R2R.sto}] Stockholm file annotated by a
-  modified version of the R2R program. This file includes the
-  information necessary to draw the consensus structure, and to
-  annotate the significantly covarying base pairs.
+\begin{sreitems}{\prog{rnafile\_msaname.RFview.sto.\{pdf,svg\}}}
+\item[\emprog{rnafile\_msaname.RFview.sto.\{pdf,svg\}}] Drawing of the
+  \rscape-annotated consensus secondary structure using RFview.
 %
 \item[\emprog{rnafile\_msaname.R2R.sto.\{pdf,svg\}}] Drawing of the
-  \rscape-annotated consensus secondary structure.
+  \rscape-annotated consensus secondary structure using R2R.
 %
 \item[\emprog{rnafile\_msaname.surv}] A two column file with the 
 survival functions (surv) for the covariation scores.
 %
 \item[\emprog{rnafile\_msaname.surv.ps}] Plot of the score's survival function
-$P(X > \mbox{score})$. Drawing this
-file requires that program \emprog{gnuplot} is installed somewhere in
-the
-\prog{\$\{PATH\}}, or that the environmental variable GNUPLOT 
+$P(X > \mbox{score})$. Drawing this file requires that program \emprog{gnuplot} is installed somewhere in
+the \prog{\$\{PATH\}}, or that the environmental variable GNUPLOT 
 pointing to a gnuplot executable is defined.
 %
 \item[\emprog{rnafile\_msaname.dplot.\{ps,svg\}}] Dot plot of the consensus
@@ -148,6 +147,7 @@ file requires that program \emprog{gnuplot} is installed somewhere in the
 pointing to a gnuplot executable is defined.
 %
 \end{sreitems}
+
 For each alignment, \emprog{msaname} is given
 by \prog{<ACC>\_<ID>}, the combination of the accession \prog{\#=GF
 AC <ACC>} and name \prog{\#=GF ID <ID>} in the Stockholm-format markups (or
@@ -158,18 +158,12 @@ file of the given alignment.
 \subsection{Details about graphical outputs}
  Two files are produced per alignment in the input file: \\
 
- File \emprog{tutorial/updated\_Arisong\_1.R2R.sto} is a Stockholm
- formatted alignment that includes the input alignment annotated with
- the consensus structure. This Stockholm file also includes the
- additional annotation required to use the drawing program R2R.
+ File \emprog{tutorial/updated\_Arisong\_1.RFview.sto.\{pdf,svg\}} depicts the
+ consensus structure with the R-scape covariation annotation using the
+ RFview software to depict the alignment.  The defaults used by R-scape
+ to depict the alignment positions are given in this legend,
 
- It is possible that the resulting drawing will show parts of the
- secondary structure occluded from each other (especially for long
- RNAs).  Using this file, one can customize a different drawing of the
- structure using the R2R documentation, provided in
- \prog{lib/R2R/R2R-manual.pdf}.\\
-
- File \emprog{tutorial/updated\_Arisong\_1.R2R.sto.pdf} depicts the
+ File \emprog{tutorial/updated\_Arisong\_1.R2R.sto.\{pdf,svg\}} depicts the
  consensus structure with the R-scape covariation annotation using the
  R2R software to depict the alignment.  The defaults used by R-scape
  to depict the alignment positions are given in this legend,
@@ -223,20 +217,19 @@ If the option \prog{--cacofold} is used, \rscape\, produces the
 following additional files describing the maximal-covariation optimal
 secondary structure:
 
-\begin{sreitems}{\emprog{rnafile\_msaname.fold.R2R.sto.\{pdf,svg\}}}
-\item[\emprog{rnafile\_msaname.fold.sto}]
+\begin{sreitems}{\prog{rnafile\_msaname.cacofold.R2R.sto.\{pdf,svg\}}}
+\item[\emprog{rnafile\_msaname.cacofold.sto}]
 The original alignment with the R-scape structural annotation 
 %
-\item[\emprog{rnafile\_msaname.fold.R2R.sto}]
-File used by R2R to display the R-scape structure
+\item[\emprog{rnafile\_msaname.cacofold.RFview.sto.\{pdf,svg\}}]
 %
-\item[\emprog{rnafile\_msaname.fold.R2R.sto.\{pdf,svg\}}]
+\item[\emprog{rnafile\_msaname.cacofold.R2R.sto.\{pdf,svg\}}]
 %
-\item[\emprog{rnafile\_msaname.fold.surv}]
+\item[\emprog{rnafile\_msaname.cacofold.surv}]
 %
-\item[\emprog{rnafile\_msaname.fold.surv.\{ps.svg\}}]
+\item[\emprog{rnafile\_msaname.cacofold.surv.\{ps.svg\}}]
 %
-\item[\emprog{rnafile\_msaname.fold.dplot.\{ps,svg\}}]
+\item[\emprog{rnafile\_msaname.cacofold.dplot.\{ps,svg\}}]
 %
 \end{sreitems}
 These files are formatted identically to those describing the given
@@ -245,12 +238,21 @@ consensus structure.
 
 \clearpage
 \subsection{Graphical outputs per alignment}
- Three plots are produced per alignment in the input file: 
+ Four plots are produced per alignment in the input file: 
 
+ \begin{figure}[h]
+   \includegraphics[scale=0.4]{Arisong_RFview.pdf} 
+ \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.RFview.sto.\{pdf,svg\}}:
+     annotated consensus secondary structure using RFview.} Base pairs with
+   covariation scores equal or below the target E-value (0.05 as
+   default) are depicted in green.   }
+ \label{fig:rfview}
+ \end{figure}
+ 
  \begin{figure}[h]
    \includegraphics[scale=1.5]{Arisong_R2R.pdf} 
  \caption{\small\textbf{\emprog{tutorial/updated\_Arisong\_1.R2R.sto.\{pdf,svg\}}:
-     annotated consensus secondary structure.} Base pairs with
+     annotated consensus secondary structure using R2R.} Base pairs with
    covariation scores equal or below the target E-value (0.05 as
    default) are depicted in green. By default only positions in the
    alignment with more than 50\% occupancy are depicted (unless they form

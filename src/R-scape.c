@@ -21,6 +21,7 @@
 #include "esl_tree.h"
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
+#include "esl_mem.h"
 #include "e2.h"
 
 #include "rscape_config.h"
@@ -38,6 +39,7 @@
 #include "power.h"
 #include "ribosum_matrix.h"
 #include "structure.h"
+#include "rfview.h"
 
 #define ALPHOPTS     "--amino,--dna,--rna"                      /* Exclusive options for alphabet choice */
 #define METHODOPTS   "--nonparam,--potts,--akmaev"              
@@ -440,6 +442,7 @@ static int  msaweight(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa);
 static int  null_rscape (ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANKLIST **ret_ranklist_null);
 static int  null_add2cumranklist(RANKLIST *ranklist, RANKLIST **ocumranklist, int verbose, char *errbuf);
 static int  original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **msa);
+static int  original_msa_check_SS_cons(ESL_MSA **omsa);
 static int  original_msa_doctor_names(ESL_MSA **omsa);
 static int  original_tree_doctor_names(ESL_TREE **oT);
 static void outfile_null(struct outfiles_s *ofile);
@@ -1078,6 +1081,7 @@ main(int argc, char **argv)
 { 
   ESL_GETOPTS     *go;
   struct cfg_s     cfg;
+  FILE            *omsafp = NULL;
   char            *omsaname = NULL;
   ESL_MSAFILE     *afp   = NULL;
   ESL_MSA         *msa   = NULL;           /* the input alignment    */
@@ -1111,6 +1115,9 @@ main(int argc, char **argv)
     
     original_msa_doctor_names(&msa); 
 
+    // currently, it just returns an error if the given SS_cons has broken pairs
+    original_msa_check_SS_cons(&msa); 
+
     // reset the histogram step for each msa
     cfg.w = W;  /* default. histogram step, will be determined for each msa */
 
@@ -1124,8 +1131,8 @@ main(int argc, char **argv)
     if (cfg.onemsa && cfg.nmsa > 1) break;
 
     cfg.omsa = esl_msa_Clone(msa); // save original msa to output the fold structure with it
-     
-    /* the msaname */
+    
+   /* the msaname */
     status = get_msaname(go, &cfg, msa);
     if (status != eslOK)  { printf("%s\n", cfg.errbuf); esl_fatal("Failed to manipulate alignment"); }
     cfg.abcisRNA = FALSE;
@@ -1716,6 +1723,23 @@ null_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, int nshuffle, ESL_MSA *msa, RANK
   return status;
 }
 
+// cheks for unbalanced base pairs.
+// Returns error if  unbalanced brakets are present in the inout SS_cons
+static int
+original_msa_check_SS_cons(ESL_MSA **omsa)
+{
+  ESL_MSA *msa = *omsa;
+  int      is_simple = FALSE;
+
+  if (!msa->ss_cons) return eslOK;
+  
+  if (esl_wuss_IsSimple(msa->ss_cons, msa->alen)) is_simple = TRUE;
+  else if (! esl_wuss_IsFull  (msa->ss_cons, msa->alen))
+    esl_fatal("\nError: the input alignment's SS_cons has broken pairs.");
+
+  return eslOK;
+}
+
 static int
 original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
 {
@@ -1735,7 +1759,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   int      i;
   int      status;
 
-  /* stats of the original alignment */
+ /* stats of the original alignment */
   msamanip_XStats(msa, &cfg->omstat);
   msamanip_CalculateCTList(msa, NULL, &cfg->onbpairs, cfg->errbuf, cfg->verbose);
  
@@ -1769,6 +1793,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
     printf("%s\n", cfg->errbuf);                                          esl_fatal(msg); }
 
   msa = *omsa;
+
   if (msa->alen != alen) {
     printf("filtering altered the length of the alignment!\n");
     esl_fatal(msg);
@@ -1808,7 +1833,8 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   if (msamanip_RemoveFragments(cfg->fragfrac, omsa, &nfrags, &seq_cons_len)           != eslOK) {
     printf("%s\nremove_fragments failed\n", cfg->errbuf); esl_fatal(msg); }
 
-   msa = *omsa;   
+   msa = *omsa;
+
   /* remove columns with gaps.
    * Important: the mapping is done here; cannot remove any other columns beyond this point.
    */
@@ -1916,6 +1942,7 @@ original_msa_manipulate(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **omsa)
   return status;
 }
 
+  
 // check the msa name does not include |, replace with _
 // both FastTree and R2R have isssues with | in the msa name
 //
@@ -2028,14 +2055,17 @@ outfile_null(struct outfiles_s *ofile)
 
   // structure files
   ofile->omsapdbfile  = NULL;        
+  ofile->omsafile     = NULL;          
   ofile->omsafoldfile = NULL;        
   ofile->cmapfile     = NULL;        
 
   // structure plots
-  ofile->R2Rfile       = NULL;             
-  ofile->R2Rfoldfile   = NULL;
-  ofile->dplotfile     = NULL;           
-  ofile->folddplotfile = NULL;
+  ofile->R2Rfile        = NULL;             
+  ofile->R2Rfoldfile    = NULL;
+  ofile->RFviewfile     = NULL;             
+  ofile->RFviewfoldfile = NULL;
+  ofile->dplotfile      = NULL;           
+  ofile->folddplotfile  = NULL;
   
   // optional files
   ofile->rocfile         = NULL;            
@@ -2057,6 +2087,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
   outfile_null(ofile);
 
   if (cfg->outdir) {
+    // original msa (maybe with names modified)
+    esl_sprintf(&ofile->omsafile, "%s/%s.original.sto", cfg->outdir, outname);   
+    // original msa annotated with the  CaCoFold structure
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.cacofold.sto", cfg->outdir, outname);
+    
     // covariations file 
     esl_sprintf(&ofile->covfile, "%s/%s.cov", cfg->outdir, outname);
     if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s/%s.cacofold.cov", cfg->outdir, outname);
@@ -2073,9 +2108,6 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
 
     // original msa annotated with a PDB structure
     if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s/%s.PDB.sto", cfg->outdir, outname);
-    
-    // original msa annotated with the  CaCoFold structure
-    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s/%s.cacofold.sto", cfg->outdir, outname);
     
     // contact map file 
     if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s/%s.cmap", cfg->outdir, outname);
@@ -2123,6 +2155,10 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       esl_sprintf(&ofile->R2Rfile, "%s/%s.R2R.sto", cfg->outdir, outname);
       if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s/%s.cacofold.R2R.sto", cfg->outdir, outname);
       
+      // RFview annotated sto file
+      esl_sprintf(&ofile->RFviewfile, "%s/%s.RFview.sto", cfg->outdir, outname);
+      if (cfg->dofold) esl_sprintf(&ofile->RFviewfoldfile, "%s/%s.cacofold.RFview.sto", cfg->outdir, outname);
+      
       // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s/%s.dplot", cfg->outdir, outname);
       if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s/%s.cacofold.dplot", cfg->outdir, outname);
@@ -2131,6 +2167,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
 
   // when no outdir is provided
   else {
+    // omsa original msa possibly edited
+    esl_sprintf(&ofile->omsafile, "%s.original.sto", outname);    
+    // original msa annotated with the CaCoFold structure
+    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.cacofold.sto", outname);
+    
     // covariations file 
     esl_sprintf(&ofile->covfile, "%s.cov", outname);
     if (cfg->dofold) esl_sprintf(&ofile->covfoldfile, "%s.cacofold.cov", outname);
@@ -2146,9 +2187,6 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
     
     // original msa annotated with a PDB structure
     if (cfg->pdbfile) esl_sprintf(&ofile->omsapdbfile, "%s.PDB.sto", outname);
-    
-     // original msa annotated with the CaCoFold structure
-    if (cfg->dofold) esl_sprintf(&ofile->omsafoldfile, "%s.cacofold.sto", outname);
     
     // contact map file 
     if (cfg->pdbfile) esl_sprintf(&ofile->cmapfile, "%s.cmap", outname);
@@ -2195,7 +2233,11 @@ outfile_create(struct cfg_s *cfg, char *outname, struct outfiles_s *ofile)
       esl_sprintf(&ofile->R2Rfile, "%s.R2R.sto", outname);
       if (cfg->dofold) esl_sprintf(&ofile->R2Rfoldfile, "%s.cacofold.R2R.sto", outname);
       
-      // dotplot file 
+     // RFview annotated sto file
+      esl_sprintf(&ofile->RFviewfile, "%s.RFview.sto", outname);
+      if (cfg->dofold) esl_sprintf(&ofile->RFviewfoldfile, "%s.cacofold.RFview.sto", outname);
+      
+     // dotplot file 
       esl_sprintf(&ofile->dplotfile, "%s.dplot", outname);
       if (cfg->dofold) esl_sprintf(&ofile->folddplotfile, "%s.cacofold.dplot", outname);
     }
@@ -2217,13 +2259,16 @@ outfile_destroy(struct outfiles_s *ofile)
   if (ofile->covhisfile) free(ofile->covhisfile);
   if (ofile->covqqfile)  free(ofile->covqqfile);
 
-  if (ofile->R2Rfile)       free(ofile->R2Rfile);             
-  if (ofile->R2Rfoldfile)   free(ofile->R2Rfoldfile);  
-  if (ofile->dplotfile)     free(ofile->dplotfile);           
-  if (ofile->folddplotfile) free(ofile->folddplotfile);
+  if (ofile->R2Rfile)        free(ofile->R2Rfile);             
+  if (ofile->R2Rfoldfile)    free(ofile->R2Rfoldfile);  
+  if (ofile->RFviewfile)     free(ofile->RFviewfile);             
+  if (ofile->RFviewfoldfile) free(ofile->RFviewfoldfile);  
+  if (ofile->dplotfile)      free(ofile->dplotfile);           
+  if (ofile->folddplotfile)  free(ofile->folddplotfile);
 
   if (ofile->cmapfile)     free(ofile->cmapfile);        
   if (ofile->omsapdbfile)  free(ofile->omsapdbfile);        
+  if (ofile->omsafile)     free(ofile->omsafile);          
   if (ofile->omsafoldfile) free(ofile->omsafoldfile);        
   
   if (ofile->rocfile)         free(ofile->rocfile);            
@@ -2333,7 +2378,14 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
   // the output files
   outfile_create(cfg, outname, &cfg->ofile);
     
-  /* outmsa file if requested */
+  /* file with original (single) alignment */
+  if (cfg->ofile.omsafile) {
+    if ((outmsafp = fopen(cfg->ofile.omsafile, "w")) == NULL) esl_fatal("Failed to open omsafile %s", cfg->ofile.omsafile);
+    esl_msafile_Write(outmsafp, cfg->omsa, eslMSAFILE_STOCKHOLM);
+    fclose(outmsafp);
+  }
+  
+  /* file with the analized msa if requested */
   if (cfg->ofile.outmsafile) {
     if ((outmsafp = fopen(cfg->ofile.outmsafile, "w")) == NULL) esl_fatal("Failed to open outmsafile %s", cfg->ofile.outmsafile);
     esl_msafile_Write(outmsafp, msa, eslMSAFILE_STOCKHOLM);
@@ -2347,7 +2399,8 @@ rscape_for_msa(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA **ret_msa)
 
   
   if (cfg->abcisRNA) {
-    cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->pc_codon_thresh, cfg->foldparam->draw_nonWC, cfg->clist, cfg->errbuf, cfg->verbose);
+    cfg->ctlist = struct_ctlist_FromContacts(cfg->helix_unpaired, cfg->pc_codon_thresh, cfg->foldparam->draw_nonWC, cfg->clist,
+					     cfg->errbuf, cfg->verbose);
     if (!cfg->ctlist) ESL_XFAIL(eslFAIL, cfg->errbuf, "%s\nNo structure annotated.", cfg->errbuf);
      
     // write the original alignment with a PDB structure 
@@ -2588,11 +2641,16 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
 
   if (cfg->mode == GIVSS && rmlist) {
 
-    if (1||cfg->helix_stats) {
-      //struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump (msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose); 
-      struct_rmlist_Write(cfg->ofile.helixcovfile, msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
-    }
+    // the helixcov file
+    struct_rmlist_Dump (msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose); 
+    struct_rmlist_Write(cfg->ofile.helixcovfile, msa->alen, rmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) 
+      struct_ctlist_HelixStats(cfg->foldparam, data.ctlist, cfg->errbuf, cfg->verbose);
+
+    // graph with RFview
+    status = rfview_Depict(cfg->ofile.RFviewfile, (cfg->pdbfile)? cfg->ofile.omsapdbfile:cfg->ofile.omsafile, cfg->ofile.covfile,
+			   cfg->nagg, cfg->agg_method, cfg->ofile.helixcovfile, TRUE, TRUE, cfg->errbuf, cfg->verbose);
+    if  (status != eslOK) goto ERROR;
 
     if (ranklist) {
       if (cfg->verbose) {
@@ -2627,15 +2685,22 @@ run_rscape(ESL_GETOPTS *go, struct cfg_s *cfg, ESL_MSA *msa, int *nsubs, int *nd
     // notice: data->clist is reused here for the cacofold structure
     status = struct_CACOFOLD(&data, msa, &foldctlist, &foldrmlist, ranklist, hitlist, cfg->foldparam, cfg->thresh);
     if (status != eslOK) goto ERROR;
- 
-    if (1||cfg->helix_stats) {
-      //struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Dump(msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
-      struct_rmlist_Write(cfg->ofile.helixcovfoldfile, msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
-    }
- 
+
+    // write the input original file with the CaCoFold annotation
     status = write_omsa_CaCoFold(cfg, msa->alen, foldctlist, FALSE);
     if (status != eslOK) goto ERROR;
+
+    // The helixcov file
+    struct_rmlist_Dump(msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
+    struct_rmlist_Write(cfg->ofile.helixcovfoldfile, msa->alen, foldrmlist, data.OL, cfg->msamap, cfg->firstpos, cfg->errbuf, cfg->verbose);
+    if (cfg->helix_stats) 
+      struct_ctlist_HelixStats(cfg->foldparam, foldctlist, cfg->errbuf, cfg->verbose);
+
+    // graph with RFview
+    status = rfview_Depict(cfg->ofile.RFviewfoldfile, cfg->ofile.omsafoldfile, cfg->ofile.covfoldfile,
+			   cfg->nagg, cfg->agg_method, cfg->ofile.helixcovfoldfile, TRUE, TRUE, cfg->errbuf, cfg->verbose);
+    if  (status != eslOK) goto ERROR;
+
   }
   
   if (ret_ranklist) *ret_ranklist = ranklist; else if (ranklist) cov_FreeRankList(ranklist);  
@@ -3005,9 +3070,6 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
     }
   }
 
-  //Add the names of the extra SS
-  //msa_extra_SSCons(omsa, octlist, cfg->errbuf, cfg->verbose);
-  
   // write alignment with the foldcov structure to file
   if ((omsafoldfp = fopen(cfg->ofile.omsafoldfile, "w")) == NULL)
     esl_fatal("Failed to open omsafoldfile %s", cfg->ofile.omsafoldfile);
@@ -3058,7 +3120,7 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
 
     // these are the extra GC lines.
     // I keep it in case there is overlap
-    esl_sprintf(&tag, "SS_cons_%d", s);
+    esl_sprintf(&tag, "SS_cons_pdb_%s", ctlist->ctname[s]);
     esl_msa_AppendGC(omsa, tag, osslist[s]);
     free(tag); tag = NULL;
     
@@ -3071,7 +3133,7 @@ write_omsa_PDB(struct cfg_s *cfg, int L, CTLIST *ctlist, int verbose)
   }
   
   // write alignment with the cov structure to file
-  if ((omsapdbfp = fopen(cfg->ofile.omsapdbfile, "w")) == NULL) esl_fatal("Failed to open omsafile %s", cfg->ofile.omsapdbfile);
+  if ((omsapdbfp = fopen(cfg->ofile.omsapdbfile, "w")) == NULL) esl_fatal("Failed to open omsapdffile %s", cfg->ofile.omsapdbfile);
   esl_msafile_Write(omsapdbfp, omsa, eslMSAFILE_STOCKHOLM);
   fclose(omsapdbfp);
 

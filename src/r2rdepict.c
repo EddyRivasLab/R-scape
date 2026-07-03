@@ -569,6 +569,8 @@ r2r_depict_pdf(char *r2rfile, char *metafile, int verbose, char *errbuf)
  ERROR:
   if (cmd)  free(cmd);
   if (args) free(args);
+  if (r2rpdf) free(r2rpdf);
+  
   return status;
  }
 

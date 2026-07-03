@@ -281,15 +281,20 @@ struct outfiles_s {
   char            *R2Rfile;             // msa annotated with given    structure to be drawn by R2R
   char            *R2Rfoldfile;         // msa annotated with CaCoFold structure to be drawn by R2R
   
+  char            *RFviewfile;          // msa annotated with given    structure to be drawn by RFview
+  char            *RFviewfoldfile;      // msa annotated with CaCoFold structure to be drawn by RFview
+  
   char            *dplotfile;           // dotplot of given    structure
   char            *folddplotfile;       // dotplot of CaCoFold structure
 
   char            *cmapfile;            // cmapfile has the contacts (including bpairs) mapped to the input alignment coordinates
   char            *omsapdbfile;         // ouput msa with a PDB structure
-  char            *omsafoldfile;        // ouput msa with the CaCoFold structure
+  char            *omsafile;            // ouput original msa with given structure (if any)
+  char            *omsafoldfile;        // ouput original msa with the CaCoFold structure
   
   char            *rocfile;             // roc plot (optional)
   char            *outmsafile;          // output msa only with consensus columns used (optional)
+  char            *outomsafile;         // output the original alignment possibly edited  (optional)
   char            *outsubsfile;         // output # of substitutions per alignment position (optional)
   char            *outtreefile;         // output tree (optional)
   char            *nullhisfile;         // output of null histogram (optional)

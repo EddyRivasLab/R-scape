@@ -14,7 +14,7 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "2.6.10"
+#define RSCAPE_VERSION "2.6.11"
 #define RSCAPE_DATE "July 2026"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2017-2025 Elena Rivas, Harvard University."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
@@ -22,6 +22,13 @@
 #define RSCAPE_BIN "/Users/erivas/src/Mysrc/R-scape/bin"
 #define RSCAPE_SHARE "/Users/erivas/src/Mysrc/R-scape/share"
 #define RSCAPE_DATA "/Users/erivas/src/Mysrc/R-scape/data"
+
+#define RFVIEW_VERSION "1.1.3"
+
+#define OS_MAC 1
+/* #undef OS_LINUX_X86_64 */
+/* #undef OS_LINUX_ARM64 */
+/* #undef OS_WIN */
 
 /* Large file support
  * Must precede any header file inclusion.

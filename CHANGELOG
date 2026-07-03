@@ -121,3 +121,9 @@ R-scape v2.6.9.a June 2026
 R-scape v2.6.10 July 2026
 	Documantation updated with new formats for .cov and .power files
 	Need to rethink the cyk algorithm regarding MAXLOOP_I, previous fix was taking too long.
+
+R-scape v2.6.11 July 2026
+	R-scape now checks for a  balanced SS_cons in the input alignment, return error if there are broken pairs.
+	The output now includes a file in stockholm format for each alignment (xxx.original.sto) in the input stockholm file.
+	New RFview consensus structure outputs with covariation/helixcov reported in pdf/svg format. 
+	

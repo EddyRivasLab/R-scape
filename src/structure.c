@@ -33,6 +33,7 @@
 #include "maxcov.h"
 #include "ribosum_matrix.h"
 #include "r2rdepict.h"
+#include "rfview.h"
 #include "structure.h"
 
 static inline int   struct_cacofold(char *r2rfile, int r2rall, ESL_RANDOMNESS *r, ESL_MSA *msa, SPAIR *spair, struct mutual_s *mi,
@@ -145,7 +146,7 @@ struct_CACOFOLD(struct data_s *data, ESL_MSA *msa, CTLIST **ret_ctlist, RMLIST *
       if (ct[i] > 0 && i < ct[i]) data->nbpairs_fold ++;
   }
 
-  /* R2R */
+  /* graph with R2R */
   status = r2r_Depict(data->r, data->ofile->R2Rfoldfile, data->R2Rall, data->R2Rmsa, msa, ctlist, foldhitlist, rmlist, data->thresh->val, TRUE, TRUE, data->errbuf, data->verbose);
   if (status != eslOK) goto ERROR;
  
@@ -453,7 +454,7 @@ struct_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *u
   ESL_ALLOC(ct, sizeof(int) * (len+1));
   esl_wuss2ct(ss, len, ct);
 
-  for (apos = 1; apos <= len; apos++) { 
+  for (apos = 1; apos <= len; apos++) {
     if (!(useme[apos-1])) { 
       if (ct[apos] != 0) ct[ct[apos]] = 0;
       ct[apos] = 0;
@@ -479,6 +480,7 @@ struct_RemoveBrokenBasepairs(ESL_MSA *msa, char *errbuf, const int *useme)
   int   status;
 
   if (msa->ss_cons) {
+ 
     if ((status = struct_RemoveBrokenBasepairsFromSS(msa->ss_cons, errbuf, msa->alen, useme)) != eslOK) return status;
 
     // remove broken pairs also from the additional SS_cons_1,... annotations if any
