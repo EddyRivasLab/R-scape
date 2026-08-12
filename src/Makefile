@@ -9,22 +9,22 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.14
+PACKAGE_VERSION = 2.6.16
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.14
+RSCAPE_VERSION  = 2.6.16
 RSCAPE_DATE     = August 2026
 
 E2MSA           = @E2MSA_NAME@
 E2MSA_VERSION   = 0.1.0
 E2MSA_DATE      = MARCH 2017
 
-DOWNLOAD = /usr/bin/curl -L -o
+DOWNLOAD = /Users/erivas/anaconda3/bin/curl -L -o
 
 # Installation targets
 #
-prefix      = /media/psf/Home/src/Mysrc/R-scape
+prefix      = /Users/erivas/src/Mysrc/R-scape
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 bindir      = ${exec_prefix}/bin
@@ -86,9 +86,9 @@ RIBOSUMDIR  = ../data/ribosum
 POWERDIR    = ../data/power
 EVOPARAMDIR = ../data/training/evoparam
 
-OS_LINUX_ARM64  := 1
+OS_LINUX_ARM64  := 
 OS_LINUX_X86_64 := 
-OS_MAC          := 
+OS_MAC          := 1
 
 RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.5
 RFVIEW_DIR = lib/RFview/RFview-1.1.5

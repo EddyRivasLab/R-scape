@@ -3692,7 +3692,7 @@ sub pdb_seqres {
 		$sqlen[$nch]        = $sqlen;
 	    }
 	    elsif ($cur_chain =~ /^$prv_chain$/) {
-		$chsq_ref->[$nch] .= $sq;
+		$chsq_ref->[$nch] .= " ".$sq; # the space prevents that the first residue merges (no space) with the last residue of the previous line
 	    }
 	    else { 
 		$nch ++; 

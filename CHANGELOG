@@ -137,4 +137,7 @@ R-scape v2.6.14 August 2026
 
 R-scape v2.6.15 August 2026
 	RFview v1.1.5 (draws alignments w/o structure)
-	Fixed a type in reading a pdb file
+	Fixed a typo when reading a pdb file
+	
+R-scape v2.6.16 August 2026
+	Fixed a typo when reading a pdb file

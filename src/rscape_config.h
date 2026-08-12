@@ -14,21 +14,21 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "2.6.14"
+#define RSCAPE_VERSION "2.6.16"
 #define RSCAPE_DATE "August 2026"
-#define RSCAPE_COPYRIGHT "Copyright (C) 2017-2025 Elena Rivas, Harvard University."
+#define RSCAPE_COPYRIGHT "Copyright (C) 2017-2026 Elena Rivas, Harvard University."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
-#define RSCAPE_HOME "/media/psf/Home/src/Mysrc/R-scape"
-#define RSCAPE_BIN "/media/psf/Home/src/Mysrc/R-scape/bin"
-#define RSCAPE_SHARE "/media/psf/Home/src/Mysrc/R-scape/share"
-#define RSCAPE_DATA "/media/psf/Home/src/Mysrc/R-scape/data"
+#define RSCAPE_HOME "/Users/erivas/src/Mysrc/R-scape"
+#define RSCAPE_BIN "/Users/erivas/src/Mysrc/R-scape/bin"
+#define RSCAPE_SHARE "/Users/erivas/src/Mysrc/R-scape/share"
+#define RSCAPE_DATA "/Users/erivas/src/Mysrc/R-scape/data"
 
 #define RFVIEW_VERSION "1.1.5"
 #define RFVIEW_DIR "lib/RFview/RFview-1.1.5"
 
-/* #undef OS_MAC */
+#define OS_MAC 1
 /* #undef OS_LINUX_X86_64 */
-#define OS_LINUX_ARM64 1
+/* #undef OS_LINUX_ARM64 */
 /* #undef OS_WIN */
 
 /* Large file support
@@ -50,7 +50,7 @@
 
 /* System headers
  */
-#define HAVE_ENDIAN_H 1
+/* #undef HAVE_ENDIAN_H */
 #define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
 #define HAVE_UNISTD_H 1
@@ -58,7 +58,7 @@
 #define HAVE_STRINGS_H 1
 
 #define HAVE_SYS_PARAM_H 1
-/* #undef HAVE_SYS_SYSCTL_H */
+#define HAVE_SYS_SYSCTL_H 1
 
 /* #undef HAVE_EMMINTRIN_H */
 /* #undef HAVE_PMMINTRIN_H */
@@ -107,9 +107,9 @@
 #define HAVE_STAT 1
 #define HAVE_STRCASECMP 1
 #define HAVE_SYSCONF 1
-/* #undef HAVE_SYSCTL */
+#define HAVE_SYSCTL 1
 #define HAVE_TIMES 1
-/* #undef HAVE_ERFC */
+#define HAVE_ERFC 1
 
 #define HAVE_FUNC_ATTRIBUTE_NORETURN 1
 

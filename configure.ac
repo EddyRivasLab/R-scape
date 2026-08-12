@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.6.15], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.6.16], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGSesl_cflags_env_set=no
@@ -117,7 +117,7 @@ E2MSA_HMMERDIR="lib/hmmer/src"
 
 RSCAPE_NAME="R-scape"
 RSCAPE_DATE="August 2026"
-RSCAPE_COPYRIGHT="Copyright (C) 2017-2025 Elena Rivas, Harvard University."
+RSCAPE_COPYRIGHT="Copyright (C) 2017-2026 Elena Rivas, Harvard University."
 RSCAPE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)."
 RSCAPE_VERSION=$PACKAGE_VERSION
 RSCAPE_URL="http://rivaslab.org/"

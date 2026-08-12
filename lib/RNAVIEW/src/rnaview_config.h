@@ -14,7 +14,7 @@
 
 /* Version info.
  */
-#define RNAVIEW_HOME "/media/psf/Home/src/Mysrc/R-scape/lib/RNAVIEW"
+#define RNAVIEW_HOME "/Users/erivas/src/Mysrc/R-scape/lib/RNAVIEW"
 
 
 #endif /*rnaviewCONFIG_INCLUDED*/
