@@ -3692,7 +3692,7 @@ sub pdb_seqres {
 		$sqlen[$nch]        = $sqlen;
 	    }
 	    elsif ($cur_chain =~ /^$prv_chain$/) {
-		$chsq_ref->[$nch] .= $sq;
+		$chsq_ref->[$nch] .= " " . $sq;
 	    }
 	    else { 
 		$nch ++; 
