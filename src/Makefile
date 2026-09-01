@@ -9,12 +9,12 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.16
+PACKAGE_VERSION = 2.6.18
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.16
-RSCAPE_DATE     = August 2026
+RSCAPE_VERSION  = 2.6.18
+RSCAPE_DATE     = Sept 2026
 
 E2MSA           = @E2MSA_NAME@
 E2MSA_VERSION   = 0.1.0
@@ -90,8 +90,8 @@ OS_LINUX_ARM64  :=
 OS_LINUX_X86_64 := 
 OS_MAC          := 1
 
-RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.5
-RFVIEW_DIR = lib/RFview/RFview-1.1.5
+RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.6
+RFVIEW_DIR = lib/RFview/RFview-1.1.6
 ifeq ($(OS_LINUX_ARM64),1)
    RFVIEWFILE        = RFview-cli_linux_arm64.AppImage
    RSCAPE_RFVIEWFILE = ${RFVIEWFILE}
@@ -202,6 +202,7 @@ TORNADO  = \
 SCRIPTS   = \
 	FUNCS.pm \
 	PDBFUNCS.pm \
+	PDBFUNCS_check_seqres.pl \
 	pdb_parse.pl \
 	r2r_msa_comply.pl \
 

@@ -14,8 +14,8 @@
 
 /* Version info.
  */
-#define RSCAPE_VERSION "2.6.16"
-#define RSCAPE_DATE "August 2026"
+#define RSCAPE_VERSION "2.6.18"
+#define RSCAPE_DATE "Sept 2026"
 #define RSCAPE_COPYRIGHT "Copyright (C) 2017-2026 Elena Rivas, Harvard University."
 #define RSCAPE_LICENSE "Freely distributed under the GNU General Public License (GPLv3)."
 #define RSCAPE_HOME "/Users/erivas/src/Mysrc/R-scape"
@@ -23,8 +23,8 @@
 #define RSCAPE_SHARE "/Users/erivas/src/Mysrc/R-scape/share"
 #define RSCAPE_DATA "/Users/erivas/src/Mysrc/R-scape/data"
 
-#define RFVIEW_VERSION "1.1.5"
-#define RFVIEW_DIR "lib/RFview/RFview-1.1.5"
+#define RFVIEW_VERSION "1.1.6"
+#define RFVIEW_DIR "lib/RFview/RFview-1.1.6"
 
 #define OS_MAC 1
 /* #undef OS_LINUX_X86_64 */

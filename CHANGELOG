@@ -141,3 +141,7 @@ R-scape v2.6.15 August 2026
 	
 R-scape v2.6.16 August 2026
 	Fixed a typo when reading a pdb file
+	
+R-scape v2.6.18 Sept 2026
+	Fixed a typo when reading a pdb file when SEQRES is not provided
+	RFview v1.1.6 (makes code more robust to special characters used in the input alignment)

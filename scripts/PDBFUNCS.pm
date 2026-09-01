@@ -3680,7 +3680,7 @@ sub pdb_seqres {
 	    }
 	    $prv_chain = $cur_chain;	    
 	}
-	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.+)$/) {
+	elsif (/^SEQRES\s+\d+\s+(\S+)\s+(\d+)\s+(\S+.*)$/) {
 	    $cur_chain = $1;
 	    $sqlen     = $2;
 	    $sq        = $3;
@@ -3708,37 +3708,64 @@ sub pdb_seqres {
 	$nch ++;
     }
 
+    my $cur_pos = 0;
+    my $prv_pos = 0;
     # no SEQRES, rearch in ATOMS
     if ($nch == 0) {
+	$prv_pos = 0;
 	open(FILE, "<$pdbfile") || die;
 	while (<FILE>) {
 	    $cur_chain = "Unknown";
 	    $sq        = "Unknown";
-	
-	    if (/^ATOM\s+\d+\s+P\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+/) {
-		#ATOM      1  P     G A   1      50.626  49.730  50.573  1.00  0.00      A    P  
-		$sq        = $1;
-		$cur_chain = $2;
-		$sqlen     = $3;
-		
+
+	    # does not depende on finding any particular atom for the residue, as long as there is 1
+	    # It also works if a residue has no atoms
+	    if (/^ATOM\s+\d+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+/) {
+		#ATOM   1403  P     C A  67      -4.748  -7.922  14.050  1.00 81.16           P   
+		$sq        = $1; # residue C
+		$cur_chain = $2; # chain A
+		$sqlen     = $3; # at position 67
+
+		$cur_pos = $sqlen;
+
 		if ($prv_chain =~ /^$/) {
-		    $chsq_ref->[$nch]   = "$sq ";
-		    $chname_ref->[$nch] = $cur_chain;
-		    $sqlen[$nch]        = $sqlen;
+		    if ($prv_pos < $cur_pos) {
+			for (my $pos = $prv_pos+1; $pos < $cur_pos; $pos ++) {
+			    # missing positions?
+			    $chsq_ref->[$nch]   = "N ";
+			    $chname_ref->[$nch] = $cur_chain;
+			    $sqlen[$nch]        = $pos;
+			}
+			$chsq_ref->[$nch]   = "$sq ";
+			$chname_ref->[$nch] = $cur_chain;
+			$sqlen[$nch]        = $sqlen;
+		    }
 		}
 		elsif ($cur_chain =~ /^$prv_chain$/) {
-		    $chsq_ref->[$nch]  .= "$sq ";
-		    $chname_ref->[$nch] = $cur_chain;
-		    $sqlen[$nch]        = $sqlen;
+		    if ($prv_pos < $cur_pos) {
+			for (my $pos = $prv_pos+1; $pos < $cur_pos; $pos ++) {
+			    # missing positions?
+			    $chsq_ref->[$nch]   .= "N ";
+			    $chname_ref->[$nch]  = $cur_chain;
+			    $sqlen[$nch]         = $pos;
+			}
+			$chsq_ref->[$nch]  .= "$sq ";
+			$chname_ref->[$nch] = $cur_chain;
+			$sqlen[$nch]        = $sqlen;
+		    }
 		}
 		else { 
 		    $nch ++; 
+		    $prv_pos = 0;
+
 		    $chsq_ref->[$nch]   = "$sq ";
 		    $chname_ref->[$nch] = $cur_chain;
 		    $sqlen[$nch]        = $sqlen;
+
 		}
 		
 		$prv_chain = $cur_chain;
+		$prv_pos = $cur_pos;
 	    }
 	}
 	if ($sqlen[0] > 0) { $nch ++; }
