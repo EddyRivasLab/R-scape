@@ -145,3 +145,11 @@ R-scape v2.6.16 August 2026
 R-scape v2.6.18 Sept 2026
 	Fixed a typo when reading a pdb file when SEQRES is not provided
 	RFview v1.1.6 (makes code more robust to special characters used in the input alignment)
+
+R-scape v2.6.19 Sept 2026
+	RFview v1.1.7
+	Fixed some errors in src/Makefile.in where some spaces made it fail with Ubuntu 24.04 and 26.04
+
+R-scape v2.6.20 Sept 2026
+	RFview v1.1.8
+	Improved configuration script detecting when curl or wgets are not installed (needed for installing RFview)

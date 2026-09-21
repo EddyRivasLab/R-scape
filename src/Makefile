@@ -9,11 +9,11 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.18
+PACKAGE_VERSION = 2.6.20
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.18
+RSCAPE_VERSION  = 2.6.20
 RSCAPE_DATE     = Sept 2026
 
 E2MSA           = @E2MSA_NAME@
@@ -90,8 +90,8 @@ OS_LINUX_ARM64  :=
 OS_LINUX_X86_64 := 
 OS_MAC          := 1
 
-RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.6
-RFVIEW_DIR = lib/RFview/RFview-1.1.6
+RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.8
+RFVIEW_DIR = lib/RFview/RFview-1.1.8
 ifeq ($(OS_LINUX_ARM64),1)
    RFVIEWFILE        = RFview-cli_linux_arm64.AppImage
    RSCAPE_RFVIEWFILE = ${RFVIEWFILE}
@@ -272,38 +272,38 @@ install:
 	   mkdir -p $(RSCAPE_RFVIEW) ; \
 	fi
 	if [ "$(OS_LINUX_ARM64)" = "1" ] || [ "$(OS_LINUX_X86_64)" = "1" ]; then \
-           if [ ! -f $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) ]; then \
-              echo "Downloading $(RFVIEWFILE).gz... to $(RSCAPE_RFVIEWDIR)/" ; \
-              if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
-                 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
-              fi ;\
-              $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE).gz $(RFVIEWFILE_URL) ; \
+	      if [ ! -f $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) ]; then \
+	      echo "Downloading $(RFVIEWFILE).gz... to $(RSCAPE_RFVIEWDIR)/" ; \
+	      if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
+		 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
+	      fi ;\
+	      $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE).gz $(RFVIEWFILE_URL) ; \
 	      gunzip $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE}.gz ; \
 	      chmod 755 $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE} ;\
-           else \
-              echo "$(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) already exists, skipping download" ; \
-           fi ;\
+	   else \
+	      echo "$(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) already exists, skipping download" ; \
+	   fi ;\
 	   if [ ! -f squashfs-root/rfview ]; then \
 	      $(RSCAPE_RFVIEWDIR)/${RFVIEWFILE} --appimage-extract ; \
 	   fi ;\
- 	 elif [ "$(OS_MAC)" = "1" ]; then \
+	 elif [ "$(OS_MAC)" = "1" ]; then \
 	   if [ ! -d $(RSCAPE_RFVIEWDIR)/$(RSCAPE_RFVIEWFILE) ]; then \
-              echo "Downloading $(RFVIEWFILE)..- to $(RSCAPE_RFVIEWDIR)/" ; \
-              if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
-                 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
-              fi ;\
-              $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) $(RFVIEWFILE_URL) ; \
-           else \
-              echo "$(RFVIEWFILE) already exists, skipping download" ; \
-           fi ;\
+	      echo "Downloading $(RFVIEWFILE)..- to $(RSCAPE_RFVIEWDIR)/" ; \
+	      if [ ! -d $(RSCAPE_RFVIEWDIR) ]; then \
+		 mkdir -p $(RSCAPE_RFVIEWDIR) ; \
+	      fi ;\
+	      $(DOWNLOAD) $(RSCAPE_RFVIEWDIR)/$(RFVIEWFILE) $(RFVIEWFILE_URL) ; \
+	   else \
+	      echo "$(RFVIEWFILE) already exists, skipping download" ; \
+	   fi ;\
 	   cd $(RSCAPE_RFVIEWDIR) ;\
 	   if [ ! -d $(RSCAPE_RFVIEWFILE) ]; then \
 	      tar xvf $(RFVIEWFILE) ; \
-           fi ;\
-           if [ -f $(RFVIEWFILE) ]; then \
-              rm $(RFVIEWFILE) ; \
-           fi ;\
-        fi
+	   fi ;\
+	   if [ -f $(RFVIEWFILE) ]; then \
+	      rm $(RFVIEWFILE) ; \
+	   fi ;\
+	fi
 
 uninstall:
 	for file in ${PROGS}; do \

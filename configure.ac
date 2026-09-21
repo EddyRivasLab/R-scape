@@ -74,7 +74,7 @@ m4_include([lib/hmmer/easel/m4/esl_pic_flags.m4])
 ################################################################
 # 2. AC_INIT
 ################################################################
-AC_INIT([R-scape], [2.6.18], [elenarivas@fas.harvard.edu], [R-scape])
+AC_INIT([R-scape], [2.6.20], [elenarivas@fas.harvard.edu], [R-scape])
 AC_MSG_NOTICE([Configuring R-scape for your system.])
 
 # remember if the user is overriding CFLAGSesl_cflags_env_set=no
@@ -131,7 +131,7 @@ RSCAPE_INFERNALDIR="lib/infernal"
 RSCAPE_TORNADODIR="lib/tornado"
 RSCAPE_SADIR="lib/hmmer/libdivsufsort"
 
-RFVIEW_VERSION="1.1.6"
+RFVIEW_VERSION="1.1.8"
 RFVIEW_URL="https://github.com/dincarnato/RFviewJS/releases/download/v${RFVIEW_VERSION}"
 RFVIEW_DIR="lib/RFview/RFview-${RFVIEW_VERSION}"
 
@@ -643,9 +643,11 @@ AC_PATH_PROG([CURL], [curl])
 AC_PATH_PROG([WGET], [wget])
 
 if test -n "$CURL"; then
-    DOWNLOAD="$CURL -L -o"
+   DOWNLOAD="$CURL -L -o"
 elif test -n "$WGET"; then
-      DOWNLOAD="$WGET -O"
+   DOWNLOAD="$WGET -O"
+else
+   AC_MSG_ERROR([Neither curl nor wget is installed. RFview download needs one.])
 fi
 
 AC_SUBST([DOWNLOAD])
