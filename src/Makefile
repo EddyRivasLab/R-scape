@@ -9,12 +9,12 @@ SHELL          = /bin/sh
 # Package information
 #
 PACKAGE         = R-scape
-PACKAGE_VERSION = 2.6.20
+PACKAGE_VERSION = 2.6.21
 PACKAGE_TARNAME = R-scape
 
 RSCAPE          = R-scape
-RSCAPE_VERSION  = 2.6.20
-RSCAPE_DATE     = Sept 2026
+RSCAPE_VERSION  = 2.6.21
+RSCAPE_DATE     = November 2026
 
 E2MSA           = @E2MSA_NAME@
 E2MSA_VERSION   = 0.1.0
@@ -90,8 +90,8 @@ OS_LINUX_ARM64  :=
 OS_LINUX_X86_64 := 
 OS_MAC          := 1
 
-RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/download/v1.1.8
-RFVIEW_DIR = lib/RFview/RFview-1.1.8
+RFVIEW_URL = https://github.com/dincarnato/RFviewJS/releases/latest/download/
+RFVIEW_DIR = lib/RFview/RFview-latest
 ifeq ($(OS_LINUX_ARM64),1)
    RFVIEWFILE        = RFview-cli_linux_arm64.AppImage
    RSCAPE_RFVIEWFILE = ${RFVIEWFILE}

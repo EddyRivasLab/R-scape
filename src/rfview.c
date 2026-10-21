@@ -33,7 +33,7 @@ rfview_Depict(char *rfviewfile, char *omsafile, char *covfile, int nagg, enum ag
   // MAC
 #ifdef OS_MAC
   esl_sprintf(&package, "%s/../lib/RFview/RFview-%s/mac/RFview_mac.app/Contents/MacOS/RFview",
-	      RSCAPE_BIN, RFVIEW_VERSION);
+    RSCAPE_BIN, RFVIEW_VERSION);
   
   // LINUX_X86_64
 #elif defined(OS_LINUX_X86_64)

@@ -3005,7 +3005,7 @@ write_omsa_CaCoFold(struct cfg_s *cfg, int L, CTLIST *foldctlist, int verbose)
   CTLIST   *octlist = NULL;
   char    **osslist = NULL;
   char     *tag;
-  char      sstag[7] = "SS_cons";
+  char      sstag[8] = "SS_cons";
   int       remove_overlap = FALSE;
   int       is_RM = FALSE;
   int       OL = omsa->alen;

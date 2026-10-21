@@ -153,3 +153,7 @@ R-scape v2.6.19 Sept 2026
 R-scape v2.6.20 Sept 2026
 	RFview v1.1.8
 	Improved configuration script detecting when curl or wgets are not installed (needed for installing RFview)
+	
+R-scape v2.6.21 Nov 2026
+	Downloads RFview lastest verstion (v1.2.0 Oct 2026)
+	Fixed a memory allocation error that affected the display of  the cacofold.sto alignment 
